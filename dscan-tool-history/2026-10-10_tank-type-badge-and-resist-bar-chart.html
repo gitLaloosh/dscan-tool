@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Tank Type badge + resistance bar chart</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+.warn{color:#9a6700;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Tank Type badge + resistance bar chart</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified via 28/28 regression PASS (exact expected values, not just ranges) + direct unit test of the new render functions + real-Chromium screenshot of the new markup against the tool's real CSS</span></p>
+<p><b>Origin:</b> two separate threads converged into one implementation. First, Erik asked "I like option A but the resistance data isn't very easy to discern at a glance... make it look more like a chart with the biggest resistance hole at the top," then "can you please make it very apparent as to whether a fit is shield, armor or hull tanked?" and asked both be combined into one new mockup iteration. After reviewing the mockup, Erik separately noticed the live tool's existing resist display showed no visible color and asked whether that was intentional. Investigation found it was a side effect of an earlier request (show resists "less prominent than effective HP"), implemented by stacking <code>.dmg-badge</code>'s <code>.sm</code> (small) and <code>.faded</code> (opacity:0.4) modifiers — which, combined with Kinetic's already-low chroma (flagged during the mockup's accessibility pass), washed the color out further than intended. Erik then said "let's implement it," referring to building the approved Option A iteration 2 direction (both the resist chart and the Tank Type badge) into the live tool.</p>
+
+<h2>The changes</h2>
+<p><b>Tank Type badge:</b> a new "Tank type" subsection above "Weakest damage type" showing SHIELD TANK / ARMOR TANK / STRUCTURE TANK / MIXED TANK, classified by each layer's share of this fit's RAW (pre-resist) HP — not effective HP, since raw share answers "where does most of this fit's health actually sit" without double-counting the resist profile the chart below already shows separately. A layer needs &ge;60% of raw HP to be named outright; below that it's shown as "Mixed." Computed entirely from HP values the tool already calculates (<code>shieldHP</code>/<code>armorHP</code>/<code>hullHP</code> inside <code>estimateHpAndDps()</code>, before they're divided by resonance to become effective HP) — no new ESI calls. Shield and Armor use a validated 2-color categorical pair (<code>--tank-shield:#1f9ab3</code>, <code>--tank-armor:#b9812f</code>), confirmed via the dataviz skill's <code>validate_palette.js</code> to clear all six categorical-palette checks together in dark mode (lightness band, chroma floor, CVD separation &Delta;E 17.2 protan / 22.0 tritan, normal-vision floor &Delta;E 21.3, contrast). The rare Structure-tank case and a genuinely Mixed fit both use a neutral dashed-outline badge instead of a third saturated hue — several 3-color candidate sets were tried and repeatedly failed the chroma-floor or contrast checks alongside the validated pair, so a non-filled treatment was used instead (it doesn't need to compete in the same categorical-chroma space as a filled swatch).</p>
+<p><b>Resistance bar chart:</b> replaces the original flat badge-row implementation (<code>resistSummaryHtml</code>) with <code>resistChartHtml</code> — one small chart per layer that actually has HP behind it (Shield/Armor/Structure), each showing all 4 damage types sorted ascending by resist% so the biggest hole sits on top, visually emphasized (taller bar, full opacity, bolder label) versus the other three (shorter, opacity 0.6). Root-cause fix for the "no color" report: the old version stacked <code>.dmg-badge</code>'s <code>.sm</code> + <code>.faded</code> (opacity:0.4) on top of hues already close to the chroma floor, reading as nearly colorless. Bars now use the same per-type color variables as every other damage badge in the tool, at full saturation — "less prominent than effective HP" comes from being a small chart tucked under the EHP tile, not from fading the hue away.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS, exact expected values unchanged — both additions are purely new fields/display, no existing calculation touched</td></tr>
+<tr><td>Direct unit test of <code>tankTypeHtml()</code>/<code>resistChartHtml()</code> against a synthetic armor-tanked fit (70% armor / 20% shield / 10% structure raw HP share, armor's weakest resist at 45% EM)</td><td>Correct classification ("ARMOR TANK"), correct sort order (weakest row first in every one of the 3 charts), correct percentages/raw-HP figures in the share row</td></tr>
+<tr><td>Real-Chromium screenshot of the new markup rendered against the tool's actual CSS</td><td>Visually confirmed: tank badge legible with proper contrast, resist bars show full per-type color (not washed out), weakest row in each chart is visibly taller/bolder/brighter than the other three</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li>New <code>:root</code> variables <code>--tank-shield</code>/<code>--tank-armor</code>, with inline comment documenting the validator results.</li>
+<li>New CSS: <code>.tank-highlight</code>, <code>.tank-badge</code> (+ <code>.shield</code>/<code>.armor</code>/<code>.mixed</code>), <code>.tank-sub</code>, <code>.tank-share-row</code>, <code>.tank-share</code>; <code>.resist-chart</code>, <code>.resist-chart-title</code>, <code>.resist-bar-row</code> (+ <code>.weakest</code>), <code>.resist-bar-label</code>, <code>.resist-bar-track</code>, <code>.resist-bar-fill</code>, <code>.resist-bar-value</code>. Removed the now-unused <code>.resist-line</code>/<code>.resist-line-label</code>.</li>
+<li><code>estimateHpAndDps()</code> — added the Tank Type classification (raw-HP-share based, 60% threshold) just before its return, and new return fields <code>rawShieldHP</code>/<code>rawArmorHP</code>/<code>rawHullHP</code>/<code>tankType</code>.</li>
+<li>Replaced <code>resistSummaryHtml()</code> with <code>resistChartHtml()</code> (sorted-bars version); added new <code>tankTypeHtml()</code>.</li>
+<li><code>renderFitSummaryHtml()</code> — added the "Tank type" subsection and wired the new chart function in place of the old one.</li>
+</ul>
+
+<h2>What's next</h2>
+<p>Three follow-on ideas came up alongside this change, not yet started: (1) effective range/falloff/max travel distance for the weapons and ammo already feeding the DPS estimate — straightforward for turrets (same loaded-ammo/cargo-fallback pattern as DPS), genuinely harder for missiles (range isn't a single number; it depends on target signature/velocity vs. the missile's own explosion radius/velocity, a mechanic this tool doesn't model anywhere yet); (2) an active-rep vs. buffer-fit indicator — easy, since it only needs a new module-group check (Shield Booster/Armor Repairer/Hull Repairer) in the same per-item classification pass already used for resist mods and the Propulsion badge, zero new ESI calls; (3) the DPS required to break an active-rep fit's sustained tank — a natural follow-up to (2), needs the repair module's own dogma attributes verified live against ESI before building (same primary-source standard as everything else here).</p>
+</body>
+</html>

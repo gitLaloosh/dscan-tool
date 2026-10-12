@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Tank Type threshold lowered 60% -> 55%</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Tank Type threshold lowered 60% &rarr; 55%</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; per Erik's request</p>
+
+<h2>Change</h2>
+<p><code>TANK_TYPE_THRESHOLD</code> (a layer's share of raw, pre-resist HP needed to be called the fit's "tank type" rather than "Mixed") changed from <code>0.6</code> to <code>0.55</code>. Pure constant change -- no other logic touched.</p>
+
+<h2>Verification</h2>
+<p>This constant had never been flattened/asserted in the regression suite before (tank type was display-only, never pinned). Added a flattening block to <code>run_regression.mjs</code> (<code>tankTypeKind</code>, <code>shieldSharePct</code>, <code>armorSharePct</code>, <code>hullSharePct</code>) and scanned all 74 existing golden fits under both the old and new threshold to find real, naturally-occurring cases rather than constructing synthetic ones:</p>
+<ul>
+<li><code>vedmak_zkb138993362_precursor</code> sits at 58% armor HP share -- "Mixed" under the old 60% threshold, now classified "armor". Pinned as the positive case.</li>
+<li><code>vedmak_zkb139012125_precursor_role_bonus</code> sits at 54% armor HP share -- just below the NEW 55% threshold, stays "Mixed" under both. Pinned as the boundary negative control.</li>
+</ul>
+<p>Together these two real fits bracket the exact threshold (54% stays Mixed, 58% flips to armor), confirming the change takes effect exactly where intended with no off-by-one error.</p>
+<p><strong>Full suite: 74/74 fits, ALL PASS.</strong></p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 453,533 &rarr; 453,614 bytes</li>
+<li><code>golden_fits.json</code>: 74 fits (unchanged count, 2 existing fits extended), 6,464,336 &rarr; 6,465,146 bytes</li>
+<li><code>run_regression.mjs</code>: 25,102 &rarr; 25,937 bytes</li>
+</ul>
+
+</body>
+</html>

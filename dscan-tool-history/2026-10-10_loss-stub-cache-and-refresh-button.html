@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Pilot Analyzer loss-list caching + "Refresh losses" button</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Pilot Analyzer loss-list caching + "Refresh losses" button</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified via code audit + 28/28 regression PASS + byte-identical diff + real-Chromium network-call-counting check</span></p>
+<p><b>Reported by Erik:</b> "i've noticed that re-clicking a hull from the list of 'Most flown across their last 30 recorded losses' re-fetches the data for those zkill records. Does it make more sense for that data to persist on the page for faster reload and fewer queries?" — followed by "there could be refresh button if that helps" when asked whether to implement it.</p>
+
+<h2>Root cause</h2>
+<p>Individual killmail details were already cached forever in <code>killmailCache</code> (safe — a killmail's own contents never change once it exists). But the zKillboard <i>loss-list</i> query itself — <code>fetchLossesStubs(charId, shipTypeId)</code>, hitting <code>zkillboard.com/api/losses/characterID/&lt;id&gt;/shipTypeID/&lt;id&gt;/</code> — had no caching at all. Every click on a candidate hull button called <code>runFitForShip()</code>, which called that function fresh every time, even when re-clicking a hull already viewed this session.</p>
+
+<h2>The fix</h2>
+<p>Added <code>lossStubCache</code>, a plain in-memory <code>Map</code> keyed by <code>charId|shipTypeId</code> (mirroring <code>killmailCache</code>'s own no-TTL, page-lifetime-only pattern — a pilot picking up a brand-new loss in the few seconds/minutes spent flipping between candidate hulls is a vanishingly rare edge case, and a page reload clears it anyway). <code>fetchLossesStubs()</code> now checks this cache before hitting zKillboard.</p>
+<p>Since a cache with no invalidation path is a real risk if a pilot <i>does</i> die again mid-session, added an explicit escape hatch: a new "Refresh losses" button next to "Analyze Pilot." A new <code>lastFitRun</code> variable captures exactly the lookup currently on screen (either the speculate-and-rank flow, or one specific hull) at the three places a fit gets rendered — the initial <code>runFitCheck()</code> call and each candidate-button click — so the button can re-invoke that exact same lookup with <code>forceRefresh=true</code>, which bypasses (and then refreshes) just that one cache entry. Nothing else is touched: <code>killmailCache</code> and the Phase 3 ESI type/group cache stay as they were, since there's nothing stale in either to refresh.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS</td></tr>
+<tr><td>Byte-for-byte diff of regression output, before vs. after</td><td>IDENTICAL (diff exit code 0) — this suite never exercises live zKillboard calls, so it can't see this change either way; included for completeness/safety</td></tr>
+<tr><td>Real-browser check (Chromium), counting actual network calls via Playwright route interception</td><td>7/7 PASS: first analysis makes exactly 1 "all losses" call + 1 "Confessor losses" call; re-clicking the same candidate button makes <b>zero</b> new "Confessor losses" calls (cache hit); clicking "Refresh losses" (with a 3rd loss injected into the mock mid-test) makes a fresh call and the UI correctly updates to "Showing the 3 most recent losses"; zero console errors throughout</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li>New <code>lossStubCache</code> Map, declared alongside <code>killmailCache</code>.</li>
+<li><code>fetchLossesStubs(charId, shipTypeId, forceRefresh)</code> — now checks/populates the cache, bypassable per-call.</li>
+<li><code>speculateShip()</code> and <code>runFitForShip()</code> — both gained a <code>forceRefresh</code> parameter threaded straight to <code>fetchLossesStubs()</code>.</li>
+<li>New module-level <code>lastFitRun</code> variable, assigned in <code>runFitCheck()</code> (both branches) and in each candidate button's click handler in <code>renderCandidates()</code>.</li>
+<li>New "Refresh losses" button + click handler next to "Analyze Pilot," calling <code>lastFitRun(true)</code>.</li>
+</ul>
+</body>
+</html>

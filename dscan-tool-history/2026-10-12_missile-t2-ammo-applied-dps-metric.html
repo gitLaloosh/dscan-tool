@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Missile T2 ammo tiers + applied-DPS metric correction</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Missile T2 ammo tiers + applied-DPS metric correction</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; follow-up to the 2026-10-11 missile damage-application-efficiency feature, raised by Erik: "are we excluding T2 ammo from the calculations?" then "I'd imagine precision would likely have a higher chance to apply damage in many cases... we're looking for better applied DPS over time, right?"</p>
+
+<h2>The correction</h2>
+<p>Erik's own catch, not a bug report: ranking ammo by application percentage alone is not the same as ranking by actual damage dealt over time. Precision-tier ammo buys a higher application % specifically by cutting its own raw damage -- a naive "best application %" pick can recommend an ammo that lands more often but deals less total damage than an alternative with lower application. This was already a latent gap in the 2026-10-11 T1-only release (Rocket vs. Torpedo application % was never a fair comparison without each class's own raw damage and cycle time), not something newly introduced by adding T2 -- T2 just made it obviously wrong, since Precision's entire design purpose is trading damage for application.</p>
+<p>New metric: <code>appliedDps = (per-shot damage / launcher cycle time) x applicationFraction</code>. Confirmed with Erik: within one launcher class, every tier shares the same launcher, so cycle time cancels out of a tier-vs-tier comparison -- ranking by (damage x application) alone is mathematically sufficient there, no new data needed beyond what T1 already fetched. Across classes, cycle time genuinely differs (a Rocket Launcher cycles far faster than a Torpedo Launcher), so a true applied-DPS comparison needs each class's own reference launcher's rate of fire too -- this was the scope Erik explicitly approved extending into.</p>
+<div class="callout">
+<strong>Revert switch, per Erik's request:</strong> <code>MISSILE_REC_METRIC = 'appliedDps'</code> (one constant, every ranking call site reads it). Setting it to <code>'applicationPct'</code> reverts to the pre-2026-10-12 behavior with a one-line change -- confirmed via a throwaway-copy revert test (see Verification below).
+<br><br>
+<strong>Flagged for later, per Erik's request:</strong> revisit this metric choice in more depth, possibly with an independent Opus-model review. Not urgent, logged so it isn't forgotten.
+</div>
+
+<h2>T2 ammo coverage (grounded live, not assumed)</h2>
+<p>Checked via ESI's <code>/universe/ids/</code> name resolution rather than assumed symmetric: T2 tiers exist for Rocket (Rage/Javelin), Light Missile (Fury/Precision), Heavy Missile (Fury/Precision), and Cruise Missile (Fury/Precision). Torpedo and Heavy Assault Missile have <strong>no T2 tiers at all</strong> -- every T2-name candidate for those two classes returned no match. Confirmed (same "identical mechanics across damage types" discovery as the T1-only pass, spot-checked on a 2nd race) that a T2 tier's own explosion mechanics and damage are identical across all 4 racial damage-type variants of that class+tier, so one reference id per (class, tier) -- 14 total, not 56 -- covers every damage-type recommendation. 6 reference T2-launcher ids (one per class) were also fetched live for their rate of fire (<code>RATE_OF_FIRE_ATTR</code>=51, already an established constant in this file).</p>
+
+<h2>Concrete before/after examples (as requested)</h2>
+<p><strong>Small, fast target</strong> (bare Rifter: sig radius 35, cruising speed 456 -- the same case already in the regression suite):</p>
+<table>
+<tr><th></th><th>#1 pick</th><th>#2 pick</th><th>#3 pick</th></tr>
+<tr><td>OLD (application % only)</td><td>Precision Light Missile (76.9%)</td><td>Rocket T1 (70%)</td><td>Rocket Javelin (68.6%)</td></tr>
+<tr><td>NEW (applied DPS)</td><td>Rocket T1 (5.78 DPS, 70% applied)</td><td>Rocket Javelin (5.09 DPS)</td><td>Precision Light Missile (4.99 DPS)</td></tr>
+</table>
+<p class="small">A modest reorder here: Rocket overtakes Precision Light Missile because its raw damage/cycle time more than compensates for a slightly lower hit percentage.</p>
+<p><strong>Large, slow target</strong> (bare Megathron, reused hull dogma: sig radius 380, cruising speed 152.5):</p>
+<table>
+<tr><th></th><th>#1 pick</th><th>#2 pick</th></tr>
+<tr><td>OLD (application % only)</td><td colspan="2">HAM T1 and Rocket Rage TIE at 100% applied -- an uninformative tie, tells a pilot nothing</td></tr>
+<tr><td>NEW (applied DPS)</td><td>Cruise Missile Precision (17.37 DPS, only 76.6% applied)</td><td>HAM T1 (15.63 DPS)</td></tr>
+</table>
+<p class="small">This is the dramatic case: under the old metric, several classes tie at a meaningless 100%, hiding the fact that Cruise Missile Precision's much higher per-shot damage (375, vs. HAM's 100 or Rocket Rage's 51.3) makes it the actual best choice despite not having the single highest hit chance.</p>
+
+<h2>Implementation</h2>
+<p><code>MISSILE_CLASS_REFERENCE_AMMO</code> (6 class-only ids) replaced by <code>MISSILE_AMMO_CATALOG</code> (class -> {launcherTypeId, tiers: {tierName -> ammoTypeId}}), 14 ammo ids + 6 launcher ids, all still live-fetched via the existing <code>getType()</code>/IndexedDB pipeline (ARCH-1 avoidance unchanged). <code>rankMissileClasses()</code> renamed <code>rankMissileAmmo()</code>, now flat-maps every (class, tier) combination, computes <code>rawDps</code> (summed <code>DAMAGE_DEALT_ATTR</code> / launcher cycle seconds) once per entry, and sorts by <code>MISSILE_REC_METRIC</code>. Each entry's <code>label</code> field renamed <code>name</code> and now carries the tier (e.g. <code>"Precision Light Missile"</code>, not just <code>"Light Missile"</code>), following EVE's own naming convention (confirmed live: T1 = "&lt;race name&gt; &lt;class&gt;", T2 = "&lt;race name&gt; &lt;tier&gt; &lt;class&gt;"). <code>missileRecTileHtml()</code> updated for the renamed field. <code>run_regression.mjs</code>'s flattening block renamed to match (<code>missileBestClass*</code> -&gt; <code>missileBest*</code>) and gained <code>*AppliedDps</code> fields.</p>
+
+<h2>Verification</h2>
+<p>Regression-harness compatibility: injected the 8 new T2 ammo ids + 6 launcher ids' full live-ESI type JSON into every existing fit's <code>types</code> blob (990 new entries across 72 fits), same pattern as the original T1-only injection.</p>
+<p>Updated the 2 existing missile-application golden fits for the renamed fields and new <code>appliedDps</code> values -- both fits' top pick is STILL Rocket T1 under the new metric (confirmed via sandbox, not assumed). Added a 3rd golden fit, <code>megathron_constructed_missile_t2_applied_dps_metric</code> (bare Megathron, reused hull dogma, no weapons), specifically isolating the case above where the metric correction changes the top recommendation -- this is the fit that actually exercises the "does the fix matter" question, since the Rifter/Crow fits alone don't prove it on their own.</p>
+<p>Revert-sanity-checked by flipping <code>MISSILE_REC_METRIC</code> back to <code>'applicationPct'</code> in a throwaway copy: all 3 fits' <code>missileBest*</code> assertions correctly flipped to different values (Precision Light Missile instead of Rocket on the Rifter/Crow fits; Rocket T1 instead of Precision Cruise Missile on the Megathron fit) -- confirms the revert switch genuinely works end-to-end, and that all 3 golden fits meaningfully exercise the metric choice, not just the Megathron one.</p>
+<p><strong>Full suite: 73/73 fits, ALL PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 444,670 &rarr; 448,477 bytes</li>
+<li><code>golden_fits.json</code>: 72 &rarr; 73 fits, 3,717,015 &rarr; 6,402,181 bytes (size jump is mostly the 990 injected reference-ammo/launcher <code>types</code> entries, duplicated per-fit per the existing golden-fit-format convention)</li>
+<li><code>run_regression.mjs</code>: 23,881 &rarr; 24,517 bytes</li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">Missile damage-application-efficiency (missile-side): now covers T1 + T2 ammo tiers, ranked by applied DPS (revertable to application-% via one constant). Turret-side remains open/deferred, unchanged. Follow-up note logged: revisit the applied-DPS metric choice in more depth later, possibly via an independent Opus-model review.</p>
+
+</body>
+</html>

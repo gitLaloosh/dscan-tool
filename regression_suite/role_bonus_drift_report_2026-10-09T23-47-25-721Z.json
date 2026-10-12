@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-10-09T23:47:25.722Z",
+  "htmlPath": "dscan-tool.html",
+  "idsChecked": [
+    "47270",
+    "49711",
+    "47271"
+  ],
+  "findings": [
+    {
+      "id": "47271",
+      "status": "MATCH",
+      "table": [
+        [
+          "precursor",
+          "damage",
+          25
+        ],
+        [
+          "precursor",
+          "rof",
+          25
+        ]
+      ],
+      "derivedFromPage": [
+        [
+          "precursor",
+          "damage",
+          25
+        ],
+        [
+          "precursor",
+          "rof",
+          25
+        ]
+      ],
+      "missingFromTable": [],
+      "extraInTable": [],
+      "url": "https://everef.net/types/47271",
+      "typeBonusExcerpt": "\n Precursor Battleship bonuses per level \n 5 %   bonus to Large Precursor Weapon damage \n 5 %   bonus to Large Precursor Weapon rate of fire \n ",
+      "roleBonusExcerpt": "\n 100 %   bonus to Remote Armor Repair Systems range \n 50 %   reduced Capacitor Emission Systems capacitor need \n 50 %   reduced Remote Armor Repair Systems capacitor need \n 50 %   reduced Energy Pulse Weapons capacitor need \n 100 %   bonus to Shield Upgrades hitpoints \n 50 %   bonus to Hull Upgrades hitpoints \n 5 %   additional bonus to Hull Upgrades hitpoints \n "
+    },
+    {
+      "id": "47270",
+      "status": "MATCH",
+      "table": [
+        [
+          "precursor",
+          "damage",
+          25
+        ]
+      ],
+      "derivedFromPage": [
+        [
+          "precursor",
+          "damage",
+          25
+        ]
+      ],
+      "missingFromTable": [],
+      "extraInTable": [],
+      "url": "https://everef.net/types/47270",
+      "typeBonusExcerpt": "\n Precursor Cruiser bonuses per level \n 5 %   bonus to Medium Precursor Weapon damage \n 7.5 %   bonus to Medium Precursor Weapon optimal range \n ",
+      "roleBonusExcerpt": "\n 100 %   bonus to Remote Armor Repair Systems range \n 50 %   reduced Capacitor Emission Systems capacitor need \n 50 %   reduced Remote Armor Repair Systems capacitor need \n 50 %   reduced Energy Pulse Weapons capacitor need \n "
+    },
+    {
+      "id": "49711",
+      "status": "MATCH",
+      "table": [
+        [
+          "precursor",
+          "damage",
+          50
+        ]
+      ],
+      "derivedFromPage": [
+        [
+          "precursor",
+          "damage",
+          50
+        ]
+      ],
+      "missingFromTable": [],
+      "extraInTable": [],
+      "url": "https://everef.net/types/49711",
+      "typeBonusExcerpt": "\n Precursor Battlecruiser bonuses per level \n 10 %   bonus to Medium Precursor Weapon damage \n 4 %   bonus to all armor resistances \n ",
+      "roleBonusExcerpt": "\n Can use one Leadership module \n 50 %   bonus to Leadership area of effect range \n 25 %   bonus to Medium Precursor Weapon optimal range \n 50 %   reduced Capacitor Emission Systems capacitor need \n 50 %   reduced Remote Armor Repair Systems capacitor need \n 50 %   reduced Energy Pulse Weapons capacitor need \n 100 %   bonus to Remote Armor Repair Systems range \n "
+    }
+  ]
+}

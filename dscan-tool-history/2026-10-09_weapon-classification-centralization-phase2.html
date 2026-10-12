@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-09 — Weapon-classification centralization (ARCH-2, Remediation Phase 2)</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+pre{padding:12px;overflow-x:auto}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Weapon-classification centralization (ARCH-2 fix) — Remediation Plan Phase 2</h1>
+<p><b>Date:</b> 2026-10-09 &nbsp; <b>Status:</b> <span class="ok">Delivered, 28/28 regression PASS, byte-identical before/after diff</span></p>
+
+<h2>What this fixes</h2>
+<p>ARCH-2 (logged 2026-10-09 in the architecture critique): <code>classifyHighSlotItem()</code> and <code>getWeaponDamageInfo()</code> each carried their own private copy of the exact same "is this group name a turret/launcher-type weapon" check — a literal duplicated regex, <code>/turret|launcher|weapon/.test(g) || g.includes('vorton projector')</code>. This is the precise bug class the EDENCOM Vorton Projector fix already exposed once: because the check was duplicated, the fix for the Vorton Projector's blind spot had to be applied by hand in <i>both</i> places separately (and in <code>weaponCategoryFromGroup()</code>, a third, structurally different function) — fixing one copy and missing another would have left a Stormbringer's weapon invisible in exactly one of those code paths.</p>
+
+<h2>The fix</h2>
+<p>Extracted the duplicated regex into a single shared function, <code>isWeaponLikeGroupName(groupName)</code>, declared once near <code>weaponCategoryFromGroup()</code>. Both <code>classifyHighSlotItem()</code> and <code>getWeaponDamageInfo()</code> now call this one function instead of maintaining their own copies. The next new weapon type EVE adds only needs this one function updated, not two (or three, counting <code>weaponCategoryFromGroup()</code>, which already had its own separate, correct handling and was left untouched).</p>
+
+<p><b>Deliberately NOT touched:</b> <code>weaponCategoryFromGroup()</code> itself remains a separate function with its own Bomb Launcher exclusion (<code>if(g.includes('bomb')) return null;</code>) — that is a DPS-correctness decision (bombs are a burst/alpha tool, not sustained DPS) distinct from the broader "does this look weapon-shaped" check the other two functions need. <code>isWeaponLikeGroupName()</code> intentionally still returns <code>true</code> for a Bomb Launcher's group name ("Missile Launcher Bomb" contains "launcher"), exactly matching the pre-refactor behavior — confirmed by direct test below.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 individual assertions)</td><td>ALL PASS</td></tr>
+<tr><td>Byte-for-byte diff of full regression suite output, pre-refactor vs. post-refactor</td><td>IDENTICAL (diff exit code 0)</td></tr>
+<tr><td>Direct unit check of <code>isWeaponLikeGroupName()</code> / <code>weaponCategoryFromGroup()</code> against 9 representative group names, including the Bomb Launcher edge case</td><td>Matches pre-refactor behavior exactly for every case</td></tr>
+</table>
+
+<p>Direct edge-case check (run against the live sandboxed script):</p>
+<pre>Missile Launcher Bomb     isWeaponLike= true   category= null    (unchanged: still contributes 0 DPS)
+Energy Weapon             isWeaponLike= true   category= energy
+Hybrid Weapon             isWeaponLike= true   category= hybrid
+Projectile Weapon         isWeaponLike= true   category= projectile
+Missile Launcher          isWeaponLike= true   category= missile
+Vorton Projector          isWeaponLike= true   category= vorton
+Precursor Weapon          isWeaponLike= true   category= precursor
+Drone Bay Extender        isWeaponLike= false  category= null
+Shield Extender           isWeaponLike= false  category= null</pre>
+
+<h2>Files changed</h2>
+<ul>
+<li><code>weaponCategoryFromGroup()</code> — unchanged (already a single, correct function).</li>
+<li>New function <code>isWeaponLikeGroupName(groupName)</code> added near <code>weaponCategoryFromGroup()</code>, with a comment explaining exactly what it is and is not a replacement for.</li>
+<li><code>classifyHighSlotItem()</code> — its own inline regex copy removed, now calls <code>isWeaponLikeGroupName(group.name)</code>.</li>
+<li><code>getWeaponDamageInfo()</code> — its own inline regex copy removed, now calls <code>isWeaponLikeGroupName(group.name)</code>.</li>
+</ul>
+
+<h2>Remaining duplication (deliberately out of scope here)</h2>
+<p><code>ammoCategoryFromGroup()</code> is a separate, already-single function for classifying charges/ammo (not weapons) and was not touched. The <code>MODULE_DAMAGE_GROUP_CATEGORY</code> lookup table (Gyrostabilizer/Heat Sink/BCS/etc. → category) is a different concern (low-slot damage modules, not weapon detection) and was not touched.</p>
+</body>
+</html>

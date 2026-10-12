@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SHIP_RESIST_BONUS exhaustive sweep (finding #5)</title></head>
+<body>
+<h1>Hull resist bonuses: 6 hand-picked hulls &rarr; 90, from an exhaustive live sweep</h1>
+
+<p>Context: independent review finding #5 (deferred to the backlog earlier today), picked by Erik to resolve next. The old <code>SHIP_RESIST_BONUS</code> table held 6 hand-picked hulls (Muninn, Nighthawk, Sacrilege, Broadsword, Absolution, Rokh). The reviewer listed 9 more it had spotted by reading trait pages; rather than patching those 9, the table was regenerated from an exhaustive sweep so it can't silently miss hulls again.</p>
+
+<h2>Root cause</h2>
+<p>The table was built on 2026-10-08 from whichever hulls happened to come up during a role-bonus re-audit, not from a sweep. Every hull with an intrinsic all-shield/all-armor resist bonus that wasn't one of those 6 had its tanked layer's resonance missing a &times;0.8 (or &times;0.75/&times;0.7) factor &mdash; about <b>20% too little EHP on that layer</b> for 84 hulls, including very common ones: Drake, Maller, Moa, Abaddon, Prophecy, Punisher, Merlin, Harpy, Eagle, Vulture, Damnation, Claymore, Eos, every HIC except the Broadsword, and every carrier/supercarrier/FAX/dread with a resist bonus. Drekavac's armor-resist bonus was even noted in a SHIP_ROLE_BONUS comment but never added.</p>
+
+<h2>Method (so this can be re-run after a balance patch, not hand-patched)</h2>
+<ol>
+<li>ESI <code>/universe/categories/6</code> &rarr; all 50 ship groups &rarr; all 424 published hull types.</li>
+<li>Every hull's <code>dogma_effects</code> (1,350 unique effects) fetched from <code>/dogma/effects/{id}</code>.</li>
+<li>Kept every effect with a modifier targeting a resonance attribute: armor 267&ndash;270, shield 271&ndash;274, hull 109/110/111/113. Every hit had the same shape &mdash; <code>ItemModifier</code>, domain <code>shipID</code>, operator 6 (PostPercent), driven by a hull attribute holding the (negative) magnitude &mdash; and every hit covered all 4 damage types with one shared number, so a uniform per-layer value is exact.</li>
+<li>All 90 hits cross-checked line-by-line against CCP's SDE trait data (<code>ref-data.everef.net/types/{id}</code> &rarr; <code>traits</code>) to tell per-skill-level bonuses (&times;5 at the max-level-V convention) from flat role bonuses &mdash; the raw dogma magnitude alone can't distinguish them. <b>90/90 ESI-vs-trait magnitudes agree exactly; all 6 pre-existing entries re-confirmed unchanged.</b></li>
+</ol>
+
+<h2>New capability: hull (structure) resist bonus</h2>
+<p>Two hulls carry a hull-resist bonus, which the table never supported: <b>Monitor</b> (Flag Cruiser, 4%/lvl to shield+armor+hull) and <b>Hubris</b> (Lancer Dreadnought, 5%/lvl hull only). <code>adjHullRes</code> now reads a <code>hull</code> key, same multiplicative slot as the existing shield/armor ones.</p>
+
+<h2>Hulls added (84)</h2>
+<table border="1" cellpadding="4" cellspacing="0">
+<tr><th>Group</th><th>Hulls (layer, magnitude at V)</th></tr>
+<tr><td>Frigate</td><td>Punisher (armor 20%), Merlin (shield 20%), Gold Magnate (armor 20%, role), Silver Magnate (armor 20%, role), Worm (shield 20%), Astero (armor 20%), Damavik (armor 20%), Skybreaker (shield 30%)</td></tr>
+<tr><td>Cruiser</td><td>Moa (shield 20%), Maller (armor 20%), Gila (shield 20%), Stratios (armor 20%), Stratios Emergency Responder (armor 20%), Stormbringer (shield 30%)</td></tr>
+<tr><td>Battleship</td><td>Rattlesnake (shield 20%), Abaddon (armor 20%), Scorpion Navy Issue (shield 20%), Nestor (armor 20%)</td></tr>
+<tr><td>Titan</td><td>Komodo (shield 20%)</td></tr>
+<tr><td>Corvette</td><td>Impairor (armor 8%, role), Ibis (shield 8%, role), Taipan (shield 12%, role)</td></tr>
+<tr><td>Assault Frigate</td><td>Malice (armor 20%), Vengeance (armor 20%), Harpy (shield 20%), Cambion (shield 20%), Nergal (armor 20%)</td></tr>
+<tr><td>Heavy Assault Cruiser</td><td>Vangel (armor 20%), Eagle (shield 20%), Mimir (armor 20%)</td></tr>
+<tr><td>Deep Space Transport</td><td>Bustard (shield 20%), Occator (armor 20%), Mastodon (shield 20%), Impel (armor 20%), Torrent (shield 20%)</td></tr>
+<tr><td>Combat Battlecruiser</td><td>Prophecy (armor 20%), Drake (shield 20%), Drekavac (armor 20%), Alligator (shield 20%)</td></tr>
+<tr><td>Destroyer</td><td>Mamba (shield 20%)</td></tr>
+<tr><td>Dreadnought</td><td>Revelation (armor 20%), Phoenix (shield 20%), Caiman (shield 20%), Zirnitra (armor 20%), Revelation Navy Issue (armor 20%), Phoenix Navy Issue (shield 20%)</td></tr>
+<tr><td>Lancer Dreadnought</td><td>Hubris (hull 25%)</td></tr>
+<tr><td>Command Ship</td><td>Eos (armor 20%), Vulture (shield 20%), Claymore (shield 20%), Damnation (armor 20%)</td></tr>
+<tr><td>Expedition Command Ship</td><td>Odysseus (armor 20%)</td></tr>
+<tr><td>Interdictor</td><td>Heretic (armor 20%)</td></tr>
+<tr><td>Exhumer</td><td>Hulk (shield 20%), Skiff (shield 20%), Mackinaw (shield 20%)</td></tr>
+<tr><td>Carrier</td><td>Archon (armor 20%), Chimera (shield 20%)</td></tr>
+<tr><td>Command Carrier</td><td>Salvation (armor 20%), Simurgh (shield 20%)</td></tr>
+<tr><td>Supercarrier</td><td>Wyvern (shield 20%), Aeon (armor 20%)</td></tr>
+<tr><td>Force Auxiliary</td><td>Apostle (armor 20%), Minokawa (shield 20%), Loggerhead (shield 20%)</td></tr>
+<tr><td>Covert Ops</td><td>Sidewinder (shield 20%)</td></tr>
+<tr><td>Interceptor</td><td>Raptor (shield 20%), Malediction (armor 20%), Whiptail (shield 20%)</td></tr>
+<tr><td>Force Recon Ship</td><td>Cobra (shield 20%)</td></tr>
+<tr><td>Heavy Interdiction Cruiser</td><td>Onyx (shield 20%, role), Devoter (armor 20%, role), Phobos (armor 20%, role), Fiend (shield 20%, role), Laelaps (shield 20%, role)</td></tr>
+<tr><td>Black Ops</td><td>Widow (shield 20%), Python (shield 20%)</td></tr>
+<tr><td>Expedition Frigate</td><td>Endurance (shield 20%)</td></tr>
+<tr><td>Command Destroyer</td><td>Bifrost (shield 20%), Pontifex (armor 20%), Stork (shield 20%), Magus (armor 20%), Outrider (shield 30%)</td></tr>
+<tr><td>Flag Cruiser</td><td>Monitor (shield/armor/hull 20%)</td></tr>
+</table>
+<p>Most are 20% (4%/level). Exceptions: Skybreaker/Stormbringer/Outrider 30% (6%/level); Hubris 25% hull (5%/level); flat role bonuses on Gold/Silver Magnate (20% armor), Impairor (8% armor), Ibis (8% shield), Taipan (12% shield), and all HICs (20%).</p>
+
+<h2>Also corrected</h2>
+<p>The Fit Analyzer methodology note said "a handful of hulls carry their own intrinsic &hellip; resistance skill bonus", implying a complete, small list. Updated to say about 90 hulls, from an exhaustive sweep of live game data, including flat role bonuses and the rare hull-layer case. A stale code comment about Archon/Chimera ("not yet added there either") updated.</p>
+
+<h2>Verification</h2>
+<p>Two new isolating golden fits, both hand-derived and exact-matched to the sandbox:</p>
+<ul>
+<li><code>drake_constructed_hull_shield_resist_bonus</code> &mdash; bare Drake: shield EHP 5500&times;1.25/(0.725&times;0.8) = 11,853 (was 9,482); armor 6,019 and hull 6,996 unchanged (negative-path guard). Resulting shield resists 20/36/52/60% (EM/Th/Kin/Exp) &mdash; the well-known bare-Drake-at-Battlecruiser-V profile.</li>
+<li><code>monitor_constructed_hull_resist_bonus_all_layers</code> &mdash; bare Monitor: shield and armor EHP 140,625 each, hull EHP 4,664 (was 112,500/112,500/3,731), exercising the new hull-layer path.</li>
+</ul>
+<p><b>Full suite: 54/54 PASS.</b> No existing golden fit changed &mdash; the only two real fits on newly-added hulls (Abaddon, Stormbringer) assert DPS/weapon counts only, not EHP. Not pyfa-screenshot-confirmed; an optional quick check would be a bare Drake in pyfa (should show the same 20/36/52/60 shield profile).</p>
+
+<h2>Not in scope / follow-ups noted</h2>
+<p>Unpublished hulls were excluded (can't normally appear on a killmail). T3 cruiser Defensive subsystems that grant resists are a separate table/mechanism and weren't part of this sweep. Tactical Destroyer Defense Mode resists are handled by their own table (and are backlog item #9).</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html: 381,817 &rarr; 391,706 bytes. regression_suite/golden_fits.json: 3,189,559 &rarr; 3,210,585 bytes (2 new fits). regression_suite/run_regression.mjs unchanged (21,322 bytes).</p>
+</body>
+</html>

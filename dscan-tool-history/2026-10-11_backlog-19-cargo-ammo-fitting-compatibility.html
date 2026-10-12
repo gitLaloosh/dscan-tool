@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Backlog #19 -- cargo-ammo-fallback fitting compatibility (chargeGroup + chargeSize)</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Backlog #19: cargo-ammo-fallback fitting compatibility</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; "the cargo-ammo-fallback DPS guess matches spare cargo ammo to an unresolved weapon by weapon CATEGORY ... but doesn't check the weapon's own specific chargeGroup compatibility ... may currently over-match ... needs verification of what compatibility data ESI exposes per-weapon" (backlog item's own framing)</p>
+
+<h2>What the real fitting mechanism is (live-ESI-verified, not guessed)</h2>
+<p>Fetched live dogma_attributes for a matched small/medium pair in every weapon family this tool models: 125mm Gatling AutoCannon I (small) / 220mm Vulcan AutoCannon I (medium) + EMP S/EMP M; Light/Heavy Entropic Disintegrator I + Occult S/M; Small/Medium Vorton Projector II + GalvaSurge Condenser Pack S/M; and separately every missile launcher size class (Rocket/Light/Heavy/Torpedo/Cruise Missile Launcher) with its own ammo. The real rule, confirmed identical across all of them:</p>
+<ul style="padding-left:1.2em">
+<li>A weapon declares up to 5 allowed charge <strong>group ids</strong> via attributes 604/605/606/609/610 (chargeGroup1-5). A charge is only loadable if its own <code>group_id</code> is one of those.</li>
+<li>For turret-family weapons (projectile/hybrid/energy/precursor/vorton), that check alone is <strong>not enough</strong>: EVE packs every size of a given ammo family into ONE shared SDE group (group 83 "Projectile Ammo" holds EMP S <em>and</em> EMP M together; group 1987 holds both Entropic Disintegrator charge sizes; group 4062 holds both Vorton Condenser Pack sizes). The actual size gate is attribute 128 (chargeSize) -- present on BOTH the weapon (its required size) and the charge (its own size), using the same 1=small/2=medium/etc numbering on each side.</li>
+<li>Missile launchers need no size attribute at all -- confirmed each size class (Rocket/Light/Heavy/Torpedo/Cruise) is its own dedicated SDE group with no attribute 128 on either side, so the group-id check alone fully disambiguates them.</li>
+</ul>
+
+<h2>Two real bugs this exposed</h2>
+<div class="fix">
+<strong>1. Turret-family size blindness (the case the backlog item named).</strong> The old code matched by broad category string (<code>ammoCategoryFromGroup(a.group.name) === category</code>) -- both EMP S and EMP M resolve to the same <code>'projectile'</code> category, so a Small AutoCannon with spare Medium ammo in cargo would have been credited with that Medium ammo's (much higher) DPS. Replayed the old rule directly against the new golden fit: wrongly credits EMP M alone at <strong>53 DPS</strong> for a single Small AutoCannon, vs. EMP S's correct <strong>26 DPS</strong> -- roughly 2x overstated.
+</div>
+<div class="fix">
+<strong>2. Missile launcher class collapse (worse, and not explicitly named by the backlog item, but the same root cause).</strong> The old category function collapsed <em>all five</em> missile launcher classes -- Rocket, Light Missile, Heavy Missile, Torpedo, Cruise Missile -- into one <code>'missile'</code> bucket, despite each being its own mutually-exclusive weapon class in real EVE (a Rocket Launcher cannot load a Cruise Missile, full stop). Replayed the old rule: a spare Cruise Missile in cargo gets wrongly credited at <strong>135 DPS</strong> for an empty Rocket Launcher, vs. the correct Mjolnir Rocket's <strong>12 DPS</strong> -- <strong>over 11x overstated</strong>. This is a materially worse version of the exact failure mode the backlog item raised, just one level the item's own framing (turret size) didn't reach.
+</div>
+
+<h2>The fix</h2>
+<p>Added <code>isChargeCompatibleWithWeapon(weaponDogma, chargeGroupId, chargeDogma)</code>: reads the weapon's chargeGroup1-5 attributes directly, requires the candidate's group_id to be among them, and additionally requires the chargeSize attribute to match when the weapon declares one (missile launchers don't, so that half is a no-op for them -- the group check alone already does the full job). This single, uniform rule replaces the old category-string match for cargo-ammo-fallback purposes, with no per-weapon-family special-casing needed.</p>
+<p><code>ammoCategoryFromGroup()</code> itself is now dead code (it had no other callers) and was removed, with its history preserved as a comment pointing to the new mechanism. <code>weaponCategoryFromGroup()</code> is untouched -- its broad category bucketing is still correct and still used for skill-bonus grouping (<code>categoryMods</code>), which is a genuinely different, coarser question than fitting compatibility.</p>
+
+<h2>Verification</h2>
+<p>Constructed two fits (Rifter + empty Small AutoCannon + cargo{EMP S, EMP M}; Rifter + empty Rocket Launcher + cargo{Mjolnir Rocket, Scourge Cruise Missile}), all live-ESI dogma data, run through the tool's own sandboxed <code>buildLossTally()</code>+<code>estimateHpAndDps()</code>. Both now correctly match only the compatible ammo (<code>ammoEstimatesCount: 1</code> in each case) and exclude the incompatible one entirely -- confirmed via a negative control (cargo containing <em>only</em> the incompatible ammo produces an empty <code>ammoEstimates</code>, not a fallback match). Replaying the OLD rule against the same fits reproduces exactly the 53 DPS / 135 DPS over-credits above, and reverting the fix in a throwaway copy of the file makes both new regression fits fail with <code>got 2, expected 1</code> (ammoEstimatesCount) while disturbing nothing else in the 65-fit suite -- confirms this coverage would actually catch the bug class regressing, not just look like it does.</p>
+<p>Added both as permanent golden fits. <strong>Full suite: 65/65 fits, 304/304 assertions, ALL PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 416,037 &rarr; 418,318 bytes</li>
+<li><code>golden_fits.json</code>: 63 &rarr; 65 fits, 3,338,020 &rarr; 3,374,262 bytes</li>
+<li><code>run_regression.mjs</code>: unchanged (21,322 bytes) -- no new flattening fields needed, <code>ammoEstimatesCount</code> already existed from an earlier session's cargo-fallback work</li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">#19 closed. Remaining per the merged/prioritized backlog: #10 (MWD sig-bloom halving bonus), T3 subsystem speed/agility, #16 (T3 subsystem cap bonus), the tool-wide weapon range/falloff gap, P1 (damage-application-efficiency), P3 (cyno-fit flagging).</p>
+
+</body>
+</html>

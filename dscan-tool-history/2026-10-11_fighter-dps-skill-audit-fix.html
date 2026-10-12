@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Fighter DPS skill-audit fix (comprehensive skill audit, P1-A)</title></head>
+<body>
+<h1>Fighter DPS fix — 3 missing skills found in the comprehensive skill audit (2026-10-11, P1-A)</h1>
+
+<p>Context: after the EWAR effectiveness work found two real "required-skill, not own-effects" bugs, a full comprehensive skill audit was run across every skill group plausibly touching this tool's calculations (Gunnery, Missiles, Drones, Navigation, Shields, Armor, Targeting, Engineering, Spaceship Command — all pulled live from ESI, not guessed). The single biggest finding: Fighter DPS (Carrier/Supercarrier/FAX weapon system) was missing 3 real skill bonuses, confirmed live via each skill's own ESI description text.</p>
+
+<h2>What was wrong</h2>
+<p>The tool only applied the universal "Fighters" skill (+5%/level damage, +25% at V) to fighter damage. The original 2026-10-08 research that built this feature also guessed — without independently checking — that "by the same per-class-skill pattern [as Light Fighters], Support/Heavy Fighters grants ONLY a fighter velocity bonus." Checking live:</p>
+<ul>
+<li><b>Light Fighters</b> (40572): confirmed correct — "5% increase in LIGHT fighter VELOCITY per level." No DPS effect, no fix needed.</li>
+<li><b>Support Fighters</b> (40573): actually "5% increase in SUPPORT fighter HIT-POINTS per level" — not velocity, but still no DPS effect either way. Comment corrected, no calculation change.</li>
+<li><b>Heavy Fighters</b> (32339): actually "5% increase in HEAVY fighter DAMAGE per level" (+25% at V) — a real, entirely unmodeled DPS bonus for heavy-class squadrons. The original guess was wrong here.</li>
+</ul>
+<p>Two further real, previously unmodeled sources:</p>
+<ul>
+<li><b>Drone Interfacing</b> (3442 — the same skill already behind drone damage) carries its own separate clause: "10% bonus to fighter damage per level" (+50% at V), universal across every fighter class. This is the single biggest correction — it alone roughly doubles the fighter damage multiplier that was being applied.</li>
+<li><b>Racial "[Race] Fighter Specialization"</b> (Amarr/Gallente/Minmatar/Caldari — 92397/92398/92399/92400): "2% bonus per skill level to the damage of fighters requiring [Race] Fighter Specialization" (+10% at V). Confirmed live (checked every real type in ESI's Light Fighter and Heavy Fighter item groups) that <i>only</i> the Light-class T2 tier (Templar II/Dragonfly II/Firbolg II/Einherji II and their Navy-faction-named siblings) carries this as a required skill (attribute 184, the exact same slot already used to detect T2 turret Specialization) — Heavy and Support fighters never carry it.</li>
+</ul>
+
+<h2>What changed in dscan-tool.html</h2>
+<ul>
+<li>New constants: <code>MAX_FIGHTER_DRONE_INTERFACING_DAMAGE_MULT = 1.50</code>, <code>MAX_HEAVY_FIGHTERS_DAMAGE_MULT = 1.25</code>, <code>FIGHTER_SPECIALIZATION_MULT = 1.10</code>.</li>
+<li>Fighter DPS loop now computes <code>fighterSkillDmgMult = MAX_FIGHTER_DAMAGE_MULT × MAX_FIGHTER_DRONE_INTERFACING_DAMAGE_MULT × (heavy-class ? MAX_HEAVY_FIGHTERS_DAMAGE_MULT : 1) × (reqSkill3 present ? FIGHTER_SPECIALIZATION_MULT : 1)</code>, reusing the fighter's own <code>squadronClass</code> detection (already in the code) and the same generic <code>REQUIRED_SKILL_3_ATTR</code> (184) check already used for T2 turret Specialization — no hardcoded per-race table needed.</li>
+<li>Corrected the in-code comment block and the in-app methodology disclosure to reflect the real per-skill breakdown instead of the old guess.</li>
+</ul>
+
+<h2>Magnitude</h2>
+<p>Example: a T2 Heavy Fighter (no racial-spec tier exists for Heavy — confirmed, so it doesn't stack with Specialization): Fighters(1.25) × Drone Interfacing(1.50) × Heavy Fighters(1.25) = <b>2.34375×</b> — vs. the 1.25× this file showed before this fix. A plain T1 Light Fighter: Fighters(1.25) × Drone Interfacing(1.50) = 1.875× vs. 1.25× before — a 50% undercount. A T2 Light Fighter (racial-spec gated): 1.25 × 1.50 × 1.10 = 2.0625×. This affects every delivered Carrier/Supercarrier/FAX fighter-DPS estimate.</p>
+
+<h2>Verification</h2>
+<p>Ran the actual updated code (sandboxed) against 3 cases and independently hand-derived the expected DPS for each, cross-checking the hand-derivation against the code's own output (not just reading the code back to itself):</p>
+<ul>
+<li>Real killmail fit (Thanatos + Templar I ×6, zkb138975919): dpsFixed goes from 182.8 (178–188 range) to 274.2 — golden fit's expected range updated accordingly.</li>
+<li>Constructed: Nyx (Supercarrier, +50% hull fighter-damage bonus) + Cyclops I (Heavy Fighter, T1): hand-derived 1544.06, code produced 1544. Isolates the Heavy Fighters bonus.</li>
+<li>Constructed: Thanatos (Carrier, +25% hull fighter-damage bonus) + Templar II (Light Fighter, T2, Amarr Fighter Specialization-gated): hand-derived 334.1, code produced 334. Isolates the racial Specialization bonus.</li>
+</ul>
+<p><b>Not pyfa-cross-checked</b> — pyfa has no fighter-DPS support at all (confirmed, same as the original 2026-10-08 fighter-DPS feature and the existing real-killmail golden fit), so this is grounded in each skill's own live ESI description text plus independent hand-arithmetic, not a pyfa screenshot. Same evidentiary bar as everything else fighter-related in this file.</p>
+
+<h2>Regression suite</h2>
+<p>golden_fits.json grows from 40 to 42 fits. The one pre-existing fighter fit (<code>thanatos_zkb138975919_fighter_bay</code>) had its expected dpsFixed range updated (182.8/178–188 → 274.2/270–279) with an explanation of why. Two new fits added: <code>nyx_constructed_heavy_fighter_specialization_bonus</code>, <code>thanatos_constructed_t2_light_fighter_specialization_bonus</code>. run_regression.mjs unchanged (no new flattening needed — dpsFixed/fighterSquadronCount/fighterBayCount were already flat fields). <b>42/42 PASS.</b></p>
+
+<h2>Scope note</h2>
+<p>This is the first of a phased sub-backlog from the comprehensive skill audit (P1-A of P1). Still open: P1-B (Drones — the RoF multiplier currently modeled is fictional, no drone RoF skill exists; the real racial-Specialization skill is a damage bonus, not RoF; missing Light/Medium/Heavy/Sentry Drone Operation size-class damage skills), P1-C/D (turret Sharpshooter/Trajectory Analysis range-falloff skills, missile Projection/Bombardment velocity-flight-time skills), and P1-E (lower-confidence niche items — Controlled Bursts, Armor Layering, Resistance Phasing, Nanite Operation/Interfacing — need further tracing before deciding whether to fix).</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (340,848 bytes), regression_suite/golden_fits.json (3,027,973 bytes) — both byte-verified against this machine's copies after delivery. regression_suite/run_regression.mjs unchanged this delivery.</p>
+</body>
+</html>

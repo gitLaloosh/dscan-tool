@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Backlog #1 -- T3 Strategic Cruiser Propulsion subsystem speed/agility bonus</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Backlog #1: T3 Strategic Cruiser Propulsion subsystem speed/agility bonus</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; "T3 subsystem speed/agility excluded -- the Speed/Align card reads only hull-level attributes + Tactical Destroyer Propulsion Mode bonuses, with zero consideration of fitted T3 Propulsion subsystems" (backlog item's own framing; a prior v1 pass had explicitly flagged and deferred this exact gap, see below)</p>
+
+<h2>What the real mechanism is (live-ESI-verified, not guessed)</h2>
+<p>Fetched live dogma data for all 12 Propulsion Subsystem types (ESI group 957) across all 4 T3 races, plus the 4 race-specific "&lt;Race&gt; Propulsion Systems" skills. Each race's "speed+agility" variant (Legion/Loki "Intercalated Nanofibers", Tengu "Chassis Optimization", Proteus "Hyperspatial Optimization") carries two flat per-level container attributes -- a maxVelocity-bonus one and an agility-bonus one -- but their value <em>as given</em> by <code>/universe/types/{id}</code> is only the PER-LEVEL magnitude. The actual scaling happens on the race's own Propulsion skill ITEM (not the subsystem), via a <code>LocationGroupModifier</code>/domain <code>shipID</code>/operator 0 effect:</p>
+<table>
+<tr><th>Race</th><th>Subsystem</th><th>maxVelocity</th><th>Agility</th><th>Scaling skill (effects)</th></tr>
+<tr><td>Legion (Amarr)</td><td>45611 Intercalated Nanofibers</td><td>+5%/lvl &rarr; +25%@V</td><td>-5%/lvl &rarr; -25%@V</td><td>Amarr Propulsion Systems (30538), effects 3848/4211</td></tr>
+<tr><td>Tengu (Caldari)</td><td>45614 Chassis Optimization</td><td>+3%/lvl &rarr; +15%@V</td><td>-7.5%/lvl &rarr; -37.5%@V</td><td>Caldari Propulsion Systems (30552), effects 3849/4212</td></tr>
+<tr><td>Loki (Minmatar)</td><td>45620 Intercalated Nanofibers</td><td>+5%/lvl &rarr; +25%@V</td><td>-5%/lvl &rarr; -25%@V</td><td>Minmatar Propulsion Systems (30554), effects 3851/4214</td></tr>
+<tr><td>Proteus (Gallente)</td><td>45617 Hyperspatial Optimization</td><td><strong>none at all</strong></td><td>-7.5%/lvl &rarr; -37.5%@V</td><td>Gallente Propulsion Systems (30553), effects 3850/4213</td></tr>
+</table>
+<p>This <em>exact</em> "container attribute, value actually scaled by a SEPARATE skill effect, not the subsystem's own effect list" trap had already caught one bug in this file (<code>SUBSYSTEM_EWAR_BONUS</code>'s Tengu/Proteus Core subsystems, fixed earlier this project). It applies here too -- re-checked individually for all 4 races rather than assumed, since the first provisional pass (before this re-check) wrongly treated these as flat, unscaled +/-5% ItemModifiers.</p>
+
+<h2>The confirmed Proteus asymmetry</h2>
+<div class="callout">
+Proteus's own in-game description for Hyperspatial Optimization literally says "improves the agility <strong>and warp speed</strong>" -- and live ESI confirms it is NOT a drop-in replacement for the other 3 races' maxVelocity+agility subsystem. It cuts agility by -37.5%@V same as Tengu, but has <strong>zero effect on maxVelocity</strong> -- instead granting +50%@V to <code>warpSpeedMultiplier</code> (attribute 1440), a stat this tool doesn't model anywhere (no warp-speed figure exists in the Speed/Align card at all). This is disclosed as an explicit out-of-scope gap, not silently dropped or incorrectly folded into the maxVelocity bonus.
+</div>
+
+<h2>Deliberately excluded subsystems (checked, not just assumed irrelevant)</h2>
+<ul style="padding-left:1.2em">
+<li><strong>"Interdiction Nullifier"</strong> (45610/45613/45616/45619, all 4 races): no speed/agility effect at all -- confirmed for Loki's 45619, whose own container attribute instead feeds a warp-capacitor-need mechanic (effect 6927), unrelated to maxVelocity/agility.</li>
+<li><strong>The 3rd variant per race</strong> -- "Wake Limiter" (Legion 45612, Loki 45621), "Fuel Catalyst" (Tengu 45615), "Localized Injectors" (Proteus 45618): also confirmed not to touch maxVelocity/agility directly. Legion's/Loki's Wake Limiter instead boosts a FITTED prop mod's own speedFactor AND reduces a fitted MWD's own sig-bloom -- the same mechanism CLASS as backlog #10's Interceptor fix, but scoped to "this subsystem fitted" rather than "this hull group". Tengu's Fuel Catalyst instead grants an overheat-tolerance bonus -- a runtime-state-dependent mechanic, same out-of-scope class as Tactical Destroyer Modes. <strong>These are a disclosed, deliberately deferred separate gap, not part of this fix.</strong></li>
+</ul>
+<p>Also debunked, in passing, a mistaken claim in the old v1 "flagged gap" comment: it suspected Loki's Offensive subsystem (Support Processor, 45609) "also touches these attributes" because it carries an attribute numerically adjacent to the real propulsion-bonus attributes. Live ESI confirms the effect that actually consumes it (4290) targets capacitor-need for remote reps, nothing to do with maxVelocity/agility -- a reminder to check the effect's actual <code>modified_attribute_id</code>, not just attribute-id proximity.</p>
+
+<h2>The fix</h2>
+<p>Added <code>SUBSYSTEM_SPEED_AGILITY_BONUS</code>, keyed by stringified Propulsion subsystem type id &rarr; <code>{maxVelocityPct, agilityPct}</code> (both already expressed at max-skill-V, this file's standing convention). A new <code>subsystemSpeedAgilityBonus</code> reduce sums across whichever subsystem(s) are actually fitted (0/0 for anything off-table or non-T3), folded into <code>baseAgility</code>/<code>cruisingSpeed</code> as one more independent multiplicative layer -- same "no stacking penalty between a ship/subsystem bonus and a module bonus" convention already used for every other hull-level bonus in those two formulas.</p>
+
+<h2>Verification</h2>
+<p>Rather than build every fit from scratch, reused 3 EXISTING golden fits that happened to already carry a relevant Propulsion subsystem, and patched one fit's hull dogma to add the previously-absent maxVelocity/agility/mass attributes:</p>
+<ul style="padding-left:1.2em">
+<li><code>legion_popejoy</code> (real-world-style fit, already has 45611 fitted): patched Legion hull (29986) to carry attrs 37/70/4 (live-ESI). <code>speedCruising: 289, alignTimeBase: 5.9</code> -- exact match to hand-derived 185&times;1.25&times;1.25 and the agility/mass formula.</li>
+<li><code>loki_zkb138935092</code> (real killmail, already has 45620 fitted): <code>speedCruising: 289, alignTimeBase: 5.8</code> -- confirms the Minmatar-race path independently of Legion, via a genuine killmail, not a constructed fit.</li>
+<li><code>loki_zkb138990669</code> (real killmail, has 45621 Wake Limiter fitted instead) -- NEGATIVE CONTROL: <code>speedCruising: 231, alignTimeBase: 7.7</code>, i.e. the unmodified baseline, confirming an off-table Propulsion subsystem correctly contributes zero bonus.</li>
+<li><code>proteus_constructed_propulsion_speed_agility_asymmetry</code> (new, constructed from live-ESI Proteus hull + Hyperspatial Optimization data): <code>speedCruising: 288</code> (unchanged from the no-bonus baseline -- pins that Proteus gets NO maxVelocity inflation) while <code>alignTimeBase: 4.8</code> reflects the real -37.5%@V agility cut -- the asymmetry, pinned in one fit.</li>
+</ul>
+<p>Reverting the fix in a throwaway copy of the file makes all 3 positive-case assertions (Legion's and Loki's speedCruising/alignTimeBase, Proteus's alignTimeBase) correctly fail with exactly the pre-fix baseline numbers, while the negative control (Loki/Wake Limiter) is correctly unaffected either way -- confirms this coverage would actually catch the bug class regressing.</p>
+<p><strong>Full suite: 67/67 fits, 317/317 assertions, ALL PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 421,243 &rarr; 427,323 bytes</li>
+<li><code>golden_fits.json</code>: 66 &rarr; 67 fits, 3,388,702 &rarr; 2,595,314 bytes (the drop is re-serialization formatting only -- JSON.stringify with a tighter indent -- not data loss; fit count and all prior content verified intact)</li>
+<li><code>run_regression.mjs</code>: unchanged (21,707 bytes) -- the <code>speedCruising</code>/<code>alignTimeBase</code> flattening fields this fix needed already existed from an earlier session.</li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">#1 closed. Continuing autonomously per standing instruction to the next backlog item (T3 subsystem capacitor bonus unmodeled) unless a genuine decision point comes up.</p>
+
+</body>
+</html>

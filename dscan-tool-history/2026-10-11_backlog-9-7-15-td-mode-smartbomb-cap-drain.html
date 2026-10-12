@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Backlog batch #9/#7/#15 -- TD Mode verification, smartbomb DPS fix, cap-drain RoF-consistency fix</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.nogap{background:#e3f2fd;border-left:4px solid #1e88e5;padding:10px 14px;margin:1em 0}
+.oos{background:#fafafa;border-left:4px solid #999;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Backlog batch: #9 (TD Mode), #7 (smartbombs), #15 (cap-drain RoF consistency)</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; first batch off the merged/prioritized backlog, run per the new WORKFLOW/USAGE POLICY (batched items, no independent-review subagent, targeted verification instead of a full exhaustive sweep where the item was self-contained)</p>
+
+<h2>#9 -- TD Sharpshooter/Defense Mode: confirmed NOT a gap</h2>
+<div class="nogap">
+<strong>No code change.</strong> The independent review flagged this as "may be display-only." Traced directly: <code>TACTICAL_DESTROYER_MODE_BONUS</code>'s <code>sharpshooter</code> entry is folded into <code>dmgSkillMult</code> via <code>tdSharpshooterMult</code> in both the confirmed-ammo and cargo-fallback DPS branches, and its <code>defense</code> entry is folded into <code>tdShieldResMult</code>/<code>tdArmorResMult</code>/<code>tdHullResMult</code> right alongside the hull-intrinsic resist bonus in the effective-HP calc. Both the Pilot Analyzer and Fit Analyzer precompute all three modes up front and the UI toggle swaps which precomputed estimate is displayed. This has had dedicated regression coverage since 2026-10-08 -- <code>confessor_zkb138993321_t3d_miscbonus</code> (Sharpshooter default, dpsFixed 432&rarr;576) and <code>confessor_zkb138993321_t3d_defense_mode</code> (armor HP 3304&rarr;4953) -- so the independent reviewer's concern was stale/unfounded, not a real gap. No new fit added; the existing two already guard this.
+</div>
+
+<h2>#7 -- Smartbombs: REAL bug, fixed</h2>
+<div class="fix">
+<strong>classifyHighSlotItem()</strong> decided "is this a fixed-damage weapon" by checking for a nonzero <code>RATE_OF_FIRE_ATTR</code> (attribute 51). Live-ESI-confirmed 2026-10-11 (Small Proton Smartbomb I, type 1547, and Large Proton Smartbomb II, type 3979): a real smartbomb carries attribute 116 (explosive damage) and attribute 6 (capacitorNeed) but <strong>no attribute 51 at all</strong> -- its cycle time lives on attribute 73 (<code>REP_CYCLE_DURATION_ATTR</code>) instead, same as every other non-turret active module in this file. Pre-fix, every fitted smartbomb's <code>cycleMs</code> read 0, so it fell through to the <code>'ammo'</code> branch instead of <code>'fixed-weapon'</code> -- misclassified as a charge, which meant the per-flag weapon loop found no actual weapon item for that slot and silently dropped it. A fitted smartbomb's damage was never credited to <code>dpsFixed</code>, exactly as the backlog item suspected.
+</div>
+<div class="callout">
+<strong>Caught on a real killmail, not just a constructed test.</strong> The existing golden fit <code>rokh_zkb138993491_rolebonus_audit</code> (a real 2026-10-08 loss with 8x Large Proton Smartbomb II fitted) had its <code>dpsFixed</code> expectation pinned at 123-135 with the comment "drones only" -- that comment was accidentally correct evidence of the exact bug being fixed now. Post-fix, that same real fit's <code>dpsFixed</code> is 369 (129 drone DPS + 240 from the 8 smartbombs, 30 DPS each: 300 damage / 10s cycle). Updated that fit's expected range to 363-375 with an UPDATE note explaining why.
+</div>
+<p>Fix: <code>cycleMs = attrVal(dogma, RATE_OF_FIRE_ATTR, 0) || attrVal(dogma, REP_CYCLE_DURATION_ATTR, 0)</code> -- the same OR-fallback pattern the cap-drain code already used elsewhere in this file. Confirmed live that real ammo (Antimatter Charge S, Conflagration S, Scourge Rage Rocket) carries neither attribute, so this can't misclassify a genuine charge as a fixed-weapon.</p>
+
+<h2>#15 -- Cap drain RoF consistency: REAL bug, fixed</h2>
+<div class="fix">
+A self-consistency bug, not a live-ESI question: the capacitor-drain loop read each cap-using module's cycle time directly off its raw dogma attribute, with none of the RoF skill (Rapid Firing, assumed max-level everywhere else in this tool), hull <code>SHIP_ROLE_BONUS</code> <code>'rof'</code> entry, or fitted-module RoF bonus that the DPS calc's own <code>effectiveCycleSec</code> applies to that exact same attribute. Net effect: a turret modeled as firing FASTER for DPS purposes was modeled as draining cap at its SLOWER, un-boosted rate -- understating capacitor drain for every weapon with a nonzero capacitorNeed (energy turrets, Precursor Entropic Disintegrators, EDENCOM Vorton Projectors; ordinary hybrid/projectile turrets and missile launchers carry capacitorNeed=0 and are unaffected).
+</div>
+<p>Why it wasn't just a one-line fix: the early per-item loop that reads capacitorNeed runs <em>before</em> <code>categoryMods</code> (which holds the hull/module RoF multiplier) exists in the file's execution order -- it can't apply a bonus that hasn't been computed yet. Fix: added a second small pass, after <code>categoryMods</code> is built, that walks the same fitted-item list, finds turret/launcher items specifically (<code>weaponCategoryFromGroup() !== null</code>, which also correctly excludes smartbombs -- no RoF skill ever applies to one), backs out the naive raw-cycle-time contribution the early loop already added for that item, and re-adds it using the exact same <code>effectiveCycleSec</code> formula the DPS calc itself uses.</p>
+<table>
+<tr><th>Fit</th><th>Before</th><th>After</th><th>Why</th></tr>
+<tr><td><code>rifter_constructed_controlled_bursts</code> (Rifter + Mega Pulse Laser II, no ammo)</td><td>3.4 GJ/s</td><td>4.8 GJ/s</td><td>27 / (7.875s raw) &rarr; 27 / (7.875s &times; 0.72 RoF-skill-adjusted) = 27/5.67</td></tr>
+</table>
+<p>Verified directly against the tool's own sandboxed <code>estimateHpAndDps()</code> output, both pre- and post-fix (hand-derived value matched exactly). The other two existing cap-drain fits (<code>rifter_constructed_resistance_phasing</code>, a Reactive Armor Hardener; the TD Propulsion Mode fits' AB/MWD cap draws) are unaffected -- none of those module groups resolve to a non-null <code>weaponCategoryFromGroup()</code>, so they correctly keep using the raw-cycle-time value, which is already correct for them (no RoF skill applies to reps/prop mods).</p>
+
+<h2>Verification</h2>
+<p>Both real fixes (#7, #15) were verified by direct ESI lookups for the exact items involved (Small/Large Proton Smartbomb, Mega Pulse Laser II) and by running the tool's own sandboxed <code>estimateHpAndDps()</code> before and after each change, not by hand-deriving the full formula independently. #9 required no fix -- confirmed via direct code trace that it was already correct and already regression-guarded.</p>
+<p>1 new golden fit added (<code>rifter_constructed_smartbomb_fixed_weapon</code>), 2 existing fits corrected with UPDATE notes (<code>rokh_zkb138993491_rolebonus_audit</code> for #7, <code>rifter_constructed_controlled_bursts</code> for #15).</p>
+<p><strong>Full regression suite: 63/63 PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 409,774 &rarr; 414,779 bytes</li>
+<li><code>golden_fits.json</code>: 62 fits, 3,324,137 bytes &rarr; 63 fits, 3,338,020 bytes</li>
+<li><code>run_regression.mjs</code>: unchanged (21,322 bytes) -- no new flattening fields needed, all new/updated assertions use fields already returned directly by <code>estimateHpAndDps()</code></li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">Per the merged/prioritized backlog: items 1-3 (TD Mode, smartbombs, cap drain) are now closed. Next up per that ordering: #13 (D-scan name-parsing robustness, needs adversarial test pastes), #19 (cargo-ammo chargeGroup compatibility), #10 (MWD sig-bloom halving bonus), T3 subsystem speed/agility, #16 (T3 subsystem cap bonus), the tool-wide weapon range/falloff gap, P1 (damage-application-efficiency), P3 (cyno-fit flagging).</p>
+
+</body>
+</html>

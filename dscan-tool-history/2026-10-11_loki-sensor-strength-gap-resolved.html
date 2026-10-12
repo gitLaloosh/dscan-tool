@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Loki sensor-strength open gap — resolved (re-investigation)</title></head>
+<body>
+<h1>Loki sensor-strength "open gap" — resolved: different subsystem, not a bug</h1>
+
+<p>Context: per Erik's request ("take a look at the loki sensor strength issue first"), re-investigated the long-standing flagged open gap on the Navigation &amp; Targeting card's Sensor Strength stat: a real pyfa figure pasted for the <code>loki_zkb138935092</code> golden fit (138935092) showed 20.4 (Ladar) vs. this tool's 17, despite an earlier "exhaustive" live-ESI sweep of the hull, all 4 fitted subsystems, every module/rig/charge/booster, and every skill in the Targeting/Engineering/Electronic Systems groups finding nothing that touched attributes 208-211. That sweep was real but incomplete in one specific way, found this time.</p>
+
+<h2>What was actually missed</h2>
+<p>The earlier sweep checked only the 4 subsystems <i>actually fitted</i> on this killmail (Immobility Drivers/Covert Reconfiguration/Launcher Efficiency Configuration/Intercalated Nanofibers). It never enumerated the other, unfitted variants available in each of the Loki's 4 subsystem slots. Confirmed live via ESI market groups (Minmatar Core/Defensive/Offensive/Propulsion Subsystems, 3 real variants per slot, 12 types total) that exactly one of the 12 — <b>Loki Core - Dissolution Sequencer</b> (type 45631) — carries an effect (id 3893) applying attribute 1446 (<code>subsystemBonusMinmatarCore</code>, base value 15) as a PostPercent bonus to attribute 209 (Ladar) specifically. Its own description text confirms the mechanic: "improved sensor range and target acquisition speed... protection against hostile ECM."</p>
+<p>That container attribute (1446) is itself scaled up by the required skill, Minmatar Core Systems (30547, effect 3843) — the exact same "required-skill-scales-a-container-attribute" architecture that caused the earlier Tengu/Proteus EWAR subsystem bug (documented in dscan-tool-architecture.md), now confirmed on a different attribute/subsystem family entirely.</p>
+
+<h2>The math checks out exactly</h2>
+<p>17 (hull base Ladar, already confirmed correct via everef.net's own type data in the earlier investigation) × 1.15 (Dissolution Sequencer's base +15%, skill level 0) = 19.55. This codebase's own established pattern for these per-level subsystem container bonuses is +1 percentage point per skill level (5 levels, same convention seen elsewhere in SUBSYSTEM_ROLE_BONUS). At Minmatar Core Systems V: 1446 = 20, so 17 × 1.20 = <b>20.4</b> — an exact match to the pasted pyfa figure.</p>
+<p>The killmail/golden fit actually fits <b>Loki Core - Immobility Drivers</b> (type 45633), not Dissolution Sequencer. Immobility Drivers carries zero dogma attributes or effects touching 208-211 — reconfirmed exhaustively this pass. So 17 is the fully correct answer for the fit the tool is actually modeling; the pasted 20.4 almost certainly came from a pyfa session showing a Loki fitted with the other Core subsystem variant, not this fit.</p>
+
+<h2>Caveat (same bar as everything else in this file)</h2>
+<p>The exact skill-level-to-percentage mapping (1446 = 20 at level V) is inferred from this codebase's established convention for subsystem-container bonuses, not independently re-verified against a live character — ESI's type endpoint only exposes the level-0 base value, the same limitation the original investigation ran into. The mechanism (which subsystem, which attribute, which skill) is fully confirmed live; only the precise magnitude at max skill rests on pattern-matching rather than a direct character read. Flagged here rather than silently treated as 100% certain.</p>
+
+<h2>What changed</h2>
+<ul>
+<li>dscan-tool.html: replaced the old "known open gap, unresolved" comment on <code>SCAN_STRENGTH_ATTRS</code> with the resolution above. <b>No calculation code changed</b> — this fit's own displayed value (17) was already correct; the tool still doesn't model Dissolution Sequencer's bonus (same v1 scope limitation as the Propulsion-subsystem speed gap already disclosed nearby), so a Loki fitted with it will still show its unboosted base sensor strength here, same as before.</li>
+<li>run_regression.mjs: added a new flattening block for <code>result.sensorStrength</code> (→ <code>sensorStrengthValue</code>/<code>sensorStrengthType</code>) — this stat had no regression coverage at all before now.</li>
+<li>golden_fits.json: added <code>sensorStrengthValue: 17</code> to <code>loki_zkb138935092</code>'s expected block, locking in the confirmed-correct value so a future change can't silently regress this card.</li>
+</ul>
+
+<h2>Regression suite</h2>
+<p>golden_fits.json unchanged in fit count (43), 1 existing fit gained a new expected field. run_regression.mjs gained the sensorStrength flattening block (new). <b>43/43 PASS.</b></p>
+
+<h2>Scope note</h2>
+<p>This closes the pre-existing Loki sensor-strength re-open item from the comprehensive skill audit backlog as RESOLVED (no bug found; different subsystem explains the discrepancy). Still open: P1-E (lower-confidence niche skill items) and the damage-application-efficiency finding captured earlier today (tracking speed/angular velocity for turrets; explosion velocity/radius vs. target signature/speed for missiles) — not sequenced yet, per Erik's "I'll decide later."</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (351,573 bytes), regression_suite/golden_fits.json (3,072,532 bytes), regression_suite/run_regression.mjs (20,934 bytes) — all three byte-verified against this machine's copies after delivery.</p>
+</body>
+</html>

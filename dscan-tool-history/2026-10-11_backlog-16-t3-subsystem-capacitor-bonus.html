@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Backlog #16 -- T3 Strategic Cruiser subsystem capacitor-capacity bonus</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Backlog #16: T3 Strategic Cruiser subsystem capacitor-capacity bonus</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; "T3 subsystem capacitor bonus unmodeled -- some T3 Strategic Cruiser subsystems carry an intrinsic capacitor capacity/recharge bonus not currently read" (backlog item's own framing)</p>
+
+<h2>What the real mechanism is (live-ESI-verified, not guessed)</h2>
+<p>This file already has two established "flat self-add" patterns for T3 subsystem bonuses: a fitted subsystem can carry the SAME attribute id as a ship stat it feeds (shield HP via attribute 263, hull HP via attribute 2688), consumed by an <code>ItemModifier</code> effect whose <code>modified_attribute_id</code> and <code>modifying_attribute_id</code> are identical. Capacitor capacity turns out to be a 3rd instance of exactly this pattern: effect 3811 (<code>capacitorCapacityAddPassive</code>) reads a subsystem's own attribute 482 (the same id as the ship's own <code>CAPACITOR_CAPACITY_ATTR</code>) and adds it directly to the ship's capacitor capacity, with no skill scaling involved (confirmed live: none of the 4 races' "Core Systems" skills carry any effect touching attribute 482 at all).</p>
+
+<div class="callout">
+<strong>Found while building this fix's own regression coverage, not assumed:</strong> this self-add is NOT exclusive to the Core subsystem slot. Each race's "Reactor"-named Core variant (Legion 45623 Augmented Antimatter Reactor, Tengu 45626 Augmented Graviton Reactor, Proteus 45629 Augmented Fusion Reactor, Loki 45632 Augmented Nuclear Reactor, all +50 GJ, plus Legion's Energy Parasitic Complex 45624) carries it as expected -- but a real Legion fit already in the golden-fit set (<code>legion_popejoy</code>) revealed its OWN fitted <strong>Defensive</strong> subsystem (45586 Covert Reconfiguration, +200 GJ) and <strong>Offensive</strong> subsystem (45598 Liquid Crystal Magnifiers, +100 GJ) also carry this exact effect, independently confirmed live via ESI. So the real mechanism spans multiple subsystem slots, not just Core.
+</div>
+
+<h2>The fix</h2>
+<p>Rather than hand-build an exhaustive 48-subsystem (4 groups &times; 4 races &times; 3 variants) lookup table and risk missing an id -- the exact class of mistake the per-race EWAR/speed-agility subsystem tables elsewhere in this file were built to avoid -- this fix reuses the SAME generic "check unconditionally on every <code>defensiveGroups</code> item" approach already used for the Shield/Hull HP self-adds. A new <code>SUBSYSTEM_CAPACITOR_CAPACITY_SELFADD_ATTR</code> (482) is checked on every fitted item the same way; any item carrying a nonzero value for it contributes to a new <code>flatCapacitorCapacityAdd</code>, which folds into <code>baseCapacitorCapacity</code> before the Capacitor Management skill multiplier (same "flat adds first, then max-skill multiply" order already used for shield/armor/hull HP). This automatically picks up a capacitor bonus on any subsystem slot that carries one -- present or future -- with zero maintained id list, and correctly ignores ordinary capacitor-related modules (a Capacitor Battery's bonus lives on a different attribute id entirely, confirmed not to collide).</p>
+
+<h2>Verification</h2>
+<p>New golden fit <code>loki_constructed_core_subsystem_capacitor_bonus</code>: reuses the already-verified real Loki hull dogma from <code>loki_zkb138935092</code> (base capacitorCapacity attribute 482=1300) + the Augmented Nuclear Reactor Core subsystem (45632) fitted, nothing else. Result: <code>capacitorCapacity: 1688</code>, exact match to hand-derived <code>(1300+50)&times;1.25(CapMgmt@V)=1687.5</code>.</p>
+<p>Added <code>capacitorCapacity</code> expectations as NEGATIVE CONTROLS to 4 existing fits whose Core subsystem (where applicable) is NOT one of the capacitor-bonus variants: <code>legion_popejoy</code> (375 -- genuinely non-zero, from its real Defensive+Offensive subsystem contributions explained above, not a false positive), <code>loki_zkb138935092</code> and <code>loki_zkb138990669</code> (both 1875, Core subsystem is Immobility Drivers on both, unaffected), <code>proteus_constructed_propulsion_speed_agility_asymmetry</code> (1875, no Core subsystem fitted at all).</p>
+<p>Reverting the fix in a throwaway copy of the file makes all 4 of those capacitorCapacity assertions correctly fail with the lower pre-fix baseline (e.g. <code>legion_popejoy</code> 375&rarr;0, <code>loki_*</code> 1875&rarr;1625, the new Loki fit 1688&rarr;1625), while every other assertion in the suite stays green -- confirms this coverage would actually catch the bug class regressing, AND incidentally proves the fix's broader (not Core-only) scope is real, not a quirk of the new fit alone.</p>
+<p>Also added a <code>capacitorCapacity</code> flattening field to <code>run_regression.mjs</code> -- <code>capacitor.capacity</code> had no regression coverage at all before now.</p>
+<p><strong>Full suite: 68/68 fits, 324/324 assertions, ALL PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 427,323 &rarr; 431,208 bytes</li>
+<li><code>golden_fits.json</code>: 67 &rarr; 68 fits, 2,595,314 &rarr; 2,607,894 bytes</li>
+<li><code>run_regression.mjs</code>: 21,707 &rarr; 22,050 bytes (new <code>capacitorCapacity</code> flattening field)</li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">#16 closed. Continuing autonomously per standing instruction to the next backlog item (tool-wide weapon range/falloff role-bonus gap) unless a genuine decision point comes up.</p>
+
+</body>
+</html>

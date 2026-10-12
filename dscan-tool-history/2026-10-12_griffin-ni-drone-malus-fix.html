@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Griffin Navy Issue drone-damage/control-range malus fix</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f5f5f5}
+</style>
+</head>
+<body>
+
+<h1>Griffin Navy Issue drone-damage/control-range malus fix</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; KNOWN OPEN ITEM #3 in dscan-tool.md: "a real, entirely-unmodeled mechanic -- the tool has no concept of a malus, only bonuses"</p>
+
+<h2>The gap</h2>
+<p>The tool's role-bonus mechanism (<code>SHIP_ROLE_BONUS</code>) has always been capable of negative percentages -- the multiply at <code>dmgMult *= (1 + bPct/100)</code> works correctly for a negative <code>bPct</code> with zero code changes -- but no hull had ever actually been given one. The Griffin Navy Issue is the one real example confirmed live: its own dogma carries two negative role-bonus attributes that were never added to the table, so the tool silently treated it like any other ship with no drone malus at all.</p>
+
+<h2>Root cause, grounded</h2>
+<p>Fetched Griffin Navy Issue's (type 37455) raw dogma_attributes live via ref-data.everef.net:</p>
+<table>
+<tr><th>Attribute</th><th>Value</th><th>Matches everef Traits text</th></tr>
+<tr><td>2091</td><td>-70.0</td><td>"-70% Drone damage" (Misc. drawback, FLAT, not skill-scaled)</td></tr>
+<tr><td>2298</td><td>-50.0</td><td>"-50% reduction in Drone hitpoints and control range" (same)</td></tr>
+</table>
+<p>The existing table entry for this hull (<code>"37455":[["hybrid","damage",100]]</code>, its +20%/lvl Small Hybrid Turret bonus at V) only ever carried the positive turret bonus -- the two negative drawbacks were never added.</p>
+
+<h2>Fix</h2>
+<p><b>Drone damage (-70%):</b> added directly to the existing <code>SHIP_ROLE_BONUS</code> entry -- <code>["drone","damage",-70]</code>. No new mechanism needed; the per-category <code>dmgMult</code> multiply already handles a negative <code>bPct</code> correctly (confirmed by inspection and by this fix's own golden fit).</p>
+<p><b>Drone control range (-50%):</b> a genuinely different shape -- a multiplier on the ship's *total* control range, not a flat km add like the existing <code>SHIP_DRONE_CONTROL_RANGE_BONUS</code> table (Ishtar's own +25km elite bonus). New <code>SHIP_DRONE_CONTROL_RANGE_PENALTY_MULT</code> table, applied as a final multiplicative stage after the existing additive base+skill+module+ship-bonus sum. The Navigation &amp; Targeting card's breakdown sub-text now appends a "X% hull role bonus PENALTY applied" note whenever this multiplier isn't 1, so the breakdown stays honest (the additive parts no longer sum to the displayed total on this one hull).</p>
+<p><b>Drone hitpoints (-50%):</b> explicitly NOT modeled -- the tool has never tracked drone HP for any ship (confirmed via code search, zero references anywhere), so there's nothing for this half of the role bonus to attach to. Disclosed, not silently dropped.</p>
+
+<h2>Verification</h2>
+<p>New golden fit <code>griffin_navyissue_constructed_drone_malus</code> (bare Griffin NI hull + 10x Hobgoblin II in the drone bay, no other modules), sandbox-verified against the live post-fix code:</p>
+<table>
+<tr><th>Stat</th><th>Pre-fix</th><th>Post-fix</th><th>Ratio</th></tr>
+<tr><td>Drone DPS (5 deployed)</td><td>99</td><td>30</td><td>0.30x (exactly the -70% malus)</td></tr>
+<tr><td>Drone control range</td><td>60,000 m</td><td>30,000 m</td><td>0.50x (exactly the -50% malus)</td></tr>
+</table>
+<p>Hand-derivation: dmgPerCycle = 20(thermal) &times; 1.92(Hobgoblin II's own multiplier) &times; 2.0625(Drone Interfacing &times; Light Drone Operation &times; Gallente Drone Specialization, all V) &times; 0.30(this fix) = 23.76; perDroneDps = 23.76/4s = 5.94; droneDps = 5.94 &times; 5 deployed = 29.7, rounds to 30 -- exact match to sandbox output.</p>
+<div class="callout">
+Pre-fix, the tool was overestimating this hull's drone DPS by a factor of ~3.3x (99 vs. the real 30) -- a much larger error than the open item's original "Moderate scope" framing suggested, now that the actual magnitude is confirmed. Drone control range was overestimated 2x (60km vs. the real 30km), which would also mis-inform threat assessment of how far out this hull's drones can be sent.
+</div>
+
+<h2>Scope</h2>
+<p>Only the Griffin Navy Issue is affected -- this is the one hull in the entire table confirmed to carry a negative drone role bonus; no sweep of other hulls for similar negative bonuses was done (out of scope for this narrow, single-hull fix per the project's own "narrow discrepancy -> go straight to that item's own dogma, skip the full exhaustive sweep" policy). Drone hitpoints remain unmodeled for every ship, same as before.</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 467,497 &rarr; 469,427 bytes</li>
+<li><code>golden_fits.json</code>: 4,015,877 &rarr; 4,057,372 bytes (1 new fit)</li>
+<li><code>run_regression.mjs</code>: unchanged</li>
+<li><b>Full suite: 77/77 fits, 369 checks, ALL PASS</b></li>
+</ul>
+
+</body>
+</html>

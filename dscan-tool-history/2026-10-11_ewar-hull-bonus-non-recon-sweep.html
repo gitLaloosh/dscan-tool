@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EWAR Hull Bonus Sweep (non-Recon) -- 2026-10-11</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:900px;margin:2rem auto;padding:0 1.5rem;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.6rem;border-bottom:3px solid #2563eb;padding-bottom:.5rem}
+h2{font-size:1.25rem;color:#2563eb;margin-top:2rem}
+h3{font-size:1.05rem;color:#444;margin-top:1.3rem}
+code{background:#f1f5f9;padding:.15rem .35rem;border-radius:4px;font-size:.9em}
+pre{background:#0f172a;color:#e2e8f0;padding:1rem;border-radius:8px;overflow-x:auto;font-size:.85em}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.92em}
+th,td{border:1px solid #d1d5db;padding:.4rem .6rem;text-align:left;vertical-align:top}
+th{background:#eff6ff}
+.note{background:#fffbeb;border-left:4px solid #f59e0b;padding:.75rem 1rem;margin:1rem 0;font-size:.92em}
+.ok{color:#059669;font-weight:600}
+.scope{background:#f8fafc;border-left:4px solid #94a3b8;padding:.75rem 1rem;margin:1rem 0;font-size:.9em}
+.delta{font-family:monospace;background:#f1f5f9;padding:.6rem;border-radius:6px;font-size:.85em}
+</style>
+</head>
+<body>
+
+<h1>EWAR hull bonus sweep: non-Recon hulls (independent review finding #12)</h1>
+<p><em>2026-10-11 &mdash; dscan-tool.html</em></p>
+
+<h2>The problem</h2>
+<p><code>SHIP_EWAR_BONUS</code> was built and audited <strong>only</strong> against the 8 dedicated T2 Recon Ships
+(Rook/Falcon, Huginn/Rapier, Lachesis/Arazu, Curse/Pilgrim). Its own leading comment said so explicitly: "All 8 T2
+Recon Ships checked." Every other hull in the game with a genuine ship-intrinsic EWAR bonus &mdash; the entire T1
+EWAR frigate/cruiser line, the ECM battleships, the T2 Electronic Attack Ships, and several one-off role bonuses
+&mdash; was a silent gap: the tool would show a fitted ECM/Damp/Paint/Weapon-Disruptor module's <em>base</em>
+numbers only, understating its real effectiveness whenever the firing ship itself carried a hull bonus.</p>
+
+<h2>Method</h2>
+<p>Same exhaustive-sweep discipline established for finding #5 (SHIP_RESIST_BONUS), adapted for EWAR:</p>
+<ol>
+<li>Re-ran the full ESI sweep: <code>/universe/categories/6</code> &rarr; all 50 ship groups &rarr; all 424
+published hull types &rarr; all 1,350 unique <code>dogma_effects</code> referenced across them.</li>
+<li>Filtered twice, independently: once by effect <strong>name</strong> keyword
+(<code>ecm/jam/damp/paint/trackingdisrupt/guidancedisrupt/weapondisrupt/sensorlink</code>), and once by
+<strong>modified-attribute id</strong> (238-241 ECM strength, 2044 shared falloff, 554/54 target-painter
+magnitude+range, 309/566 sensor-dampener, 351/349/767 tracking disruptor, 547/596/847/848 guidance disruptor, 105
+scram strength, 20 web strength). The attribute filter caught hulls the name filter missed &mdash; e.g.
+Crucifier's own tracking-disruptor-range effect is literally named <code>shipBonusTDOptimalBonusAF1</code>, no
+"trackingdisrupt" substring anywhere.</li>
+<li>Every magnitude cross-checked against <code>ref-data.everef.net</code>'s own Traits payload, which tags each
+bonus either <code>role_bonuses</code> (FLAT, never skill-scaled) or <code>types[skillId]</code> (PER-LEVEL, &times;5
+at this project's assumed-max-skill-V convention) &mdash; the raw dogma magnitude alone can't tell those apart,
+same lesson as the finding #5 resist sweep.</li>
+</ol>
+
+<h2>What was found</h2>
+<p><strong>25 hulls</strong> added or extended in <code>SHIP_EWAR_BONUS</code> (20 brand-new entries across T1
+EWAR frigates/cruisers, ECM battleships/black ops, Electronic Attack Ships, a Marauder, a Navy Issue dreadnought,
+a Navy Issue frigate, 2 pirate-faction ships, 1 Faction Warfare LP-store frigate, 3 SOE/Drifter-tech faction
+analogs of the Recon line &mdash; plus a wholly new EWAR entry for the Monitor, which already had a
+<code>SHIP_RESIST_BONUS</code> entry from finding #5 but no EWAR entry at all).</p>
+
+<table>
+<tr><th>Hull</th><th>Bonus</th><th>Source</th></tr>
+<tr><td>Griffin</td><td>+75% ECM jam strength</td><td>Caldari Frigate skill, 15%/lvl</td></tr>
+<tr><td>Maulus</td><td>+37.5% damp targeting-range &amp; scan-res effectiveness</td><td>Gallente Frigate skill, 7.5%/lvl</td></tr>
+<tr><td>Crucifier</td><td>+37.5% Weapon Disruptor effectiveness (all 7 attrs) <em>plus a separate</em> +50% optimal-range-only layer</td><td>Amarr Frigate skill, 7.5%/lvl + 10%/lvl (2 independent bonuses, same skill)</td></tr>
+<tr><td>Vigil</td><td>+37.5% paint effectiveness, +50% paint range</td><td>Minmatar Frigate skill, 7.5%/lvl + 10%/lvl</td></tr>
+<tr><td>Crucifier Navy Issue</td><td>same +37.5% WD effectiveness as Crucifier, <em>but</em> a FLAT -85% penalty to the module's own optimal range &amp; falloff</td><td>skill-scaled bonus + flat role-bonus glass-cannon tradeoff</td></tr>
+<tr><td>Arbitrator</td><td>+37.5% Weapon Disruptor effectiveness</td><td>Amarr Cruiser skill, 7.5%/lvl</td></tr>
+<tr><td>Bellicose</td><td>+37.5% paint effectiveness</td><td>Minmatar Cruiser skill, 7.5%/lvl</td></tr>
+<tr><td>Blackbird</td><td>+75% ECM strength, +62.5% ECM range &amp; falloff</td><td>Caldari Cruiser skill, 15%/lvl + 12.5%/lvl</td></tr>
+<tr><td>Celestis</td><td>+37.5% damp effectiveness, +37.5% damp range &amp; falloff</td><td>Gallente Cruiser skill, 7.5%/lvl + 7.5%/lvl</td></tr>
+<tr><td>Scorpion</td><td>+75% ECM strength, +125% ECM range &amp; falloff</td><td>Caldari Battleship skill, 15%/lvl + 25%/lvl</td></tr>
+<tr><td>Widow</td><td>+200% ECM strength</td><td>Black Ops skill, 40%/lvl &mdash; the single strongest ECM bonus in the game</td></tr>
+<tr><td>Keres</td><td>+37.5% damp effectiveness, +75% scram/disruptor range</td><td>Electronic Attack Ship, 2 skills</td></tr>
+<tr><td>Sentinel</td><td>+37.5% Weapon Disruptor effectiveness</td><td>Electronic Attack Ship</td></tr>
+<tr><td>Kitsune</td><td>+100% ECM strength, +75% ECM range</td><td>Electronic Attack Ship, 2 skills</td></tr>
+<tr><td>Hyena</td><td>+50% paint effectiveness &amp; range, +200% web range</td><td>Electronic Attack Ship, 2 skills</td></tr>
+<tr><td>Raiju</td><td>+50% damp effectiveness, +100% scram/disruptor range</td><td>Electronic Attack Ship (Tactical Destroyer), 2 skills</td></tr>
+<tr><td>Golem (Marauder)</td><td>+50% paint effectiveness</td><td>Caldari Marauders skill, 10%/lvl</td></tr>
+<tr><td>Phoenix Navy Issue</td><td>+37.5% paint effectiveness</td><td>Caldari Dreadnoughts skill, 7.5%/lvl</td></tr>
+<tr><td><strong>Monitor</strong></td><td>FLAT -99.9% paint effectiveness, FLAT +300% paint range</td><td>Flag Cruiser role bonus &mdash; nerfs its own Target Painter to near-zero effect at absurd range</td></tr>
+<tr><td>Daredevil / Vigilant</td><td>+50% web effectiveness</td><td>Pirate faction frigate/HAC, incidental tackle bonus</td></tr>
+<tr><td>Maulus Navy Issue</td><td>+50% scram/disruptor range</td><td>Faction Warfare LP-store frigate</td></tr>
+<tr><td>Chameleon</td><td>+150% ECM strength</td><td>SOE/Drifter-tech Caldari-recon analog</td></tr>
+<tr><td>Victor</td><td>+100% web range, +50% web effectiveness</td><td>SOE/Drifter-tech Minmatar-recon analog</td></tr>
+<tr><td>Virtuoso</td><td>+50% web effectiveness</td><td>SOE/Drifter-tech stealth-bomber analog, incidental</td></tr>
+</table>
+
+<div class="note"><strong>Most consequential single finding:</strong> the <strong>Monitor</strong>. It doesn't
+just lack an entry &mdash; it has a genuinely counter-intuitive one. A Monitor's Target Painter is reduced to
+0.0375% effectiveness (essentially nothing) while its range is quadrupled. A Monitor showing a Target Painter on
+d-scan is <em>not</em> meaningfully painting anyone's signature, despite the module being lit &mdash; a threat
+read that would have been flatly wrong without this fix.</div>
+
+<h2>Deliberately out of scope (disclosed, not silent)</h2>
+<div class="scope">
+<ul>
+<li><strong>6 Rookie ships</strong> (Reaper/Impairor/Ibis/Velator/Hematos/Violator) &mdash; real, flat bonuses,
+but vanishingly unlikely to matter on a d-scan read of an actual engagement.</li>
+<li><strong>Griffin Navy Issue</strong> &mdash; its only EWAR-adjacent effect is an ECM-<em>drone</em>
+jam-duration bonus (a drone mechanic this table doesn't model). It genuinely traded away the real ECM module
+bonus for a turret-damage bonus; this is not an omission.</li>
+<li><strong>Python</strong> &mdash; Alliance Tournament-exclusive reward ship.</li>
+<li><strong>Maulus Navy Issue's flat scrambler-<em>strength</em> dogma row</strong> (effect 6358, +2 flat) &mdash;
+present in <code>dogma_effects</code> but absent from its own Traits text, so left out rather than guessed at
+(the per-level/flat ambiguity-resolution source itself didn't corroborate it).</li>
+<li><strong>ECM Burst Jammer module group</strong> &mdash; already a disclosed, pre-existing
+<code>EWAR_GROUP_INFO</code> gap (deferred before this fix); not reopened here. Scorpion's regular ECM Target
+Jammer numbers are unaffected.</li>
+</ul>
+</div>
+
+<h2>Verification</h2>
+<p>4 new isolating golden fits added, each hand-derived then confirmed against actual sandbox output before
+locking in <code>expected</code>:</p>
+<table>
+<tr><th>Fit</th><th>Isolates</th><th>Result</th></tr>
+<tr><td><code>griffin_constructed_ecm_hull_bonus</code></td><td>Griffin's 75% ECM jam-strength bonus</td><td class="ok">jamStrength 2.6 &times; 1.25 (universal) &times; 1.75 (hull) = 5.6875 &mdash; exact match</td></tr>
+<tr><td><code>scorpion_constructed_ecm_range_falloff_hull_bonus</code></td><td>Scorpion's 125% ECM range+falloff bonus</td><td class="ok">rangeM 77760 / falloffM 72900 &mdash; exact match</td></tr>
+<tr><td><code>monitor_constructed_target_painter_nerf_and_range</code></td><td>Monitor's flat paint nerf + range</td><td class="ok">sigRadiusBonusPct 0.0375 / rangeM 216000 / falloffM 135000 &mdash; exact match</td></tr>
+<tr><td><code>crucifier_constructed_tracking_disruptor_double_bonus</code></td><td>Crucifier's 2 independent, non-stacking-penalized TD layers</td><td class="ok">opticalBonusPct -44.32 (both layers) / falloffBonusPct &amp; trackingSpeedBonusPct -29.55 (one layer) &mdash; exact match</td></tr>
+</table>
+<p>Full regression suite: <strong>58/58 PASS</strong> (54 pre-existing + 4 new), including all prior
+independent-review-pass fixes and the finding #5 resist sweep &mdash; this change is purely additive to
+<code>SHIP_EWAR_BONUS</code> and touches no other code path.</p>
+
+<h2>Delivered files</h2>
+<div class="delta">
+dscan-tool.html&nbsp;&nbsp;&nbsp;&nbsp;391,706 &rarr; 401,848 bytes (+10,142)
+golden_fits.json&nbsp;&nbsp;3,210,585 &rarr; 3,261,821 bytes (+51,236)
+run_regression.mjs&nbsp;&nbsp;&nbsp;21,322 bytes (unchanged &mdash; the ewarPaint*/ewarTd*/ewarEcm* flattening
+fields needed were already added in an earlier segment of this session)
+</div>
+
+<h2>Not addressed here (remaining backlog)</h2>
+<p>This closes independent-review finding #12 specifically. The phased backlog items #7, #9, #10, #11, #13, #15,
+#16, #19 (documented in project memory) remain untouched.</p>
+
+</body>
+</html>

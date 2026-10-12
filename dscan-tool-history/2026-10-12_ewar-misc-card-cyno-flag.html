@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: EWAR card renamed "EWAR / Misc" + cyno-fit flag</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+</style>
+</head>
+<body>
+
+<h1>EWAR card renamed "EWAR / Misc" + cyno-fit flag</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; addresses backlog item "cyno-fit flagging"</p>
+
+<h2>What shipped</h2>
+<p>The EWAR card is now titled <strong>"EWAR / Misc"</strong> and also surfaces notable fitted modules that aren't EWAR themselves but materially change the threat picture. First (only) trait implemented: a fitted <strong>Cynosural Field Generator</strong>, flagged in red/danger styling with the note "can bridge in capital ships, Black Ops, or jump freighters within seconds -- treat as a reinforcement threat independent of this ship's own stats".</p>
+
+<h2>Grounding (live ESI, not assumed)</h2>
+<p>Confirmed the Cynosural Field Generator group (id 658) live via ESI rather than assuming which variants exist: exactly 3 published types --</p>
+<ul>
+<li><code>Cynosural Field Generator I</code> (21096) -- visible to anyone; any capital/Black-Ops jump drive can lock onto it</li>
+<li><code>Covert Cynosural Field Generator I</code> (28646) -- undetectable except to a Black Ops jump drive</li>
+<li><code>Industrial Cynosural Field Generator</code> (52694) -- Jump Freighter/Rorqual-only</li>
+</ul>
+<p>All 3 confirmed High-power-slot modules (each type's own <code>dogma_effects</code> carries effect 12 "hiPower"). The tool flags a fit regardless of which of the 3 variants is fitted -- the threat (a capital/BLOPS bridge landing within seconds) doesn't depend on which jump-drive class can see the cyno, only on whether one is fitted at all.</p>
+
+<h2>Implementation</h2>
+<p>New <code>MISC_TRAIT_GROUP_INFO</code> constant, keyed by lowercased ESI group name (same lookup convention as the existing <code>EWAR_GROUP_INFO</code>), each entry carrying <code>{note, severity}</code>. Detection added as one extra check inside the SAME defensive-slot loop that already builds <code>ewarModules</code> -- no second pass over fitted items. New <code>miscTraits</code> accumulator/result field, parallel to <code>ewarModules</code>. <code>ewarCardHtml()</code> updated to group+render both lists together under the renamed title; the card is now omitted only when BOTH lists are empty. Misc trait chips get their own "!" badge using the existing <code>--danger</code> color token (already used for error states elsewhere in this file) -- not a new color.</p>
+
+<div class="callout">
+This is a narrow, self-contained first slice of the broader "cyno-fit flagging" backlog item -- it covers detection + display of a fitted cyno only. It does not (yet) do anything with that information beyond displaying it (e.g. no separate warning banner, no cross-reference against other fit traits). Future misc-trait candidates (if any come up) slot into the same <code>MISC_TRAIT_GROUP_INFO</code> table without further architecture work.
+</div>
+
+<h2>Verification</h2>
+<p><code>run_regression.mjs</code> gained a <code>miscTraits</code> flattening block (mirrors the existing <code>ewarModules</code> one): <code>miscTraitCount</code> (summed qty) and <code>hasCynoFitted</code> (always 0 or 1, so absence is assertable too -- same "assert absence separately" convention as <code>hasEwar</code>).</p>
+<p>New golden fit <code>rifter_constructed_cyno_fitted</code>: bare Rifter (reused from the existing missile-application fit) + 1x Cynosural Field Generator I in a High slot, nothing else -- isolates the detection mechanism cleanly. Also asserts <code>hasEwar: 0</code> on this fit to confirm the cyno module isn't double-counted as an EWAR module (no group-name collision between the two lookup tables).</p>
+<p>Negative controls added to 2 existing fits rather than built from scratch (reusing the same fits that already serve as <code>hasEwar</code> negative/positive controls): <code>abaddon_zkb138966900_cargo_fallback</code> (no EWAR, no cyno) and <code>curse_zkb139073592_ewar</code> (real EWAR, no cyno) both now assert <code>hasCynoFitted: 0</code>.</p>
+<p><strong>Full suite: 74/74 fits, ALL PASS.</strong></p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 448,876 &rarr; 453,533 bytes</li>
+<li><code>golden_fits.json</code>: 73 &rarr; 74 fits, 6,402,181 &rarr; 6,464,336 bytes</li>
+<li><code>run_regression.mjs</code>: 24,517 &rarr; 25,102 bytes</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Capacitor Booster cargo-inference + bounded-range fallback</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.4rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.15rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f5f5f5}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+</style>
+</head>
+<body>
+
+<h1>Capacitor Booster: cargo-inference fallback + bounded range for the no-data case</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; direct follow-up to the Capacitor Booster gain-modeling feature shipped earlier the same day</p>
+
+<p>Erik asked: "if the fit has a module that uses boosters but doesn't have charges loaded, account for the possibility and provide boosted/unboosted numbers anyway. any issue with this?" The honest issue: Capacitor Booster charges span a genuine 25&ndash;3200 GJ range (~128x) with no hard compatibility gate on the module side (confirmed live: neither the Medium F-RX Compact nor the Small Capacitor Booster II's own dogma attributes include a chargeSize gate), so inventing a single number for a module with zero charge data anywhere would be a guess, not a calculation. Two concrete, fully grounded options were offered instead, and Erik approved both: infer from spare charges sitting in cargo when they exist, and show a real bounded range (not a single invented figure) when nothing at all is available.</p>
+
+<h2>1. Cargo-inference fallback</h2>
+<p>A Capacitor Booster module with no charge sharing its own Mid-slot flag (nothing was loaded at time of death/paste, or the charge sits unracked) very often still has its real charge type sitting as spare reload stock in Cargo/Fleet hangar &mdash; the real Curse killmail is a direct example: 4 spare Navy Cap Booster 800s sit in Cargo alongside the one that happened to be loaded. This reuses the exact same cargo-scan shape as the existing turret/launcher cargo-ammo-fallback (same <code>cargoIds</code>, same <code>analyzeChunks</code> pattern), matched by ESI group name (<code>Capacitor Booster Charge</code>, group 87) rather than a hardcoded id list. When multiple distinct charge types sit in cargo at once, the one with the most copies on hand wins (tie-broken by largest GJ) as the most likely real reload stock.</p>
+<p>The resulting figure is numerically identical to a confirmed-loaded charge of the same type &mdash; it's the same real GJ/cycle time math &mdash; but the card is honest about the difference: a new <code>fromCargo</code> flag swaps the wording from "a loaded X actively cycling" to "a spare X actively cycling (inferred from spare charges in cargo, not confirmed loaded)".</p>
+
+<h2>2. Bounded range for the true no-data case</h2>
+<p>When no charge can be found anywhere (neither flag-paired nor in cargo), rather than guessing or staying silent, the card now shows a genuinely grounded envelope: every real Capacitor Booster Charge type that exists (all 18 confirmed live this session via <code>ref-data.everef.net/groups/87</code> &mdash; 9 GJ tiers &times; plain/Navy variants, no others exist) is filtered down to only the ones whose own volume actually fits inside this specific module's charge-bay capacity (attribute 38) &mdash; the one real physical constraint that exists, since there's no chargeSize gate to narrow it further. The smallest and largest charges that pass that filter bound the range, each run through the full stability simulation (not just a raw GJ/s figure), so the card reads the same way as the confirmed-boosted case: "if loaded, gain could range 2.1&ndash;33.3 GJ/s depending on charge size (smallest fitting charge: stable at 72.1%; largest fitting charge: stable at 100%)".</p>
+
+<h2>A 3rd pre-existing fixture gap, found the same way as the first two</h2>
+<p>Testing the new range fallback against the Ishkur golden fit's own real fitted Small Capacitor Booster II (which genuinely has no charge data at all) surfaced that this type's cached dogma stub was missing attribute 73 (cycle duration) entirely &mdash; the same class of data-completeness gap found twice earlier this same day (the Nosferatu's missing attribute 90, the Ishkur hull's missing attribute 55). Fixed with the live-confirmed value (12,000ms, <code>ref-data.everef.net/types/3568</code>).</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Fit</th><th>Scenario</th><th>Result</th></tr>
+<tr><td>curse_zkb139073592_ewar (real, unmodified)</td><td>Charge genuinely flag-paired</td><td><code>fromCargo=0</code> &mdash; confirms the new code path doesn't fire when a real loaded charge is already identified</td></tr>
+<tr><td>curse_constructed_cap_booster_cargo_inference (new, a modified clone of the real Curse killmail with its flag-19 charge item removed)</td><td>Charge only in cargo as spares</td><td><code>fromCargo=1</code>, gain/stability figures numerically identical to the confirmed case (62.7 GJ/s, drains dry in 1m20s)</td></tr>
+<tr><td>ishkur_constructed_dual_prop_mod</td><td>No charge anywhere</td><td>Range: 2.1&ndash;33.3 GJ/s (25 GJ smallest charge that exists vs. Navy Cap Booster 400, the largest that fits this module's 15 m&sup3; hold); min/max stability 72.1%/100%</td></tr>
+<tr><td>rifter_user (negative-path guard)</td><td>No Capacitor Booster fitted</td><td>Both new code paths stay a complete no-op</td></tr>
+</table>
+<p>Playwright screenshot confirms all three card states render distinctly and correctly, including the honest "inferred, not confirmed" wording difference between the flag-paired and cargo-inferred cases.</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 499,804 &rarr; 511,145 bytes</li>
+<li><code>golden_fits.json</code>: 4,108,774 &rarr; 4,172,294 bytes (new <code>curse_constructed_cap_booster_cargo_inference</code> golden fit; extended Curse/Ishkur expected blocks; 1 more fixture data-completeness fix)</li>
+<li><code>run_regression.mjs</code>: new flattened fields (<code>capacitorBoostedFromCargo</code>, <code>capacitorRangeMinGainPerSec</code>/<code>MaxGainPerSec</code>/<code>MinStable</code>/<code>MaxStable</code>/<code>MinStablePct</code>/<code>MaxStablePct</code>)</li>
+<li><b>Full suite: 79/79 fits, ALL PASS</b></li>
+</ul>
+
+<div class="callout">
+Backlog note (not part of this change): Erik flagged mid-session that the Weaknesses card's cap-drain text is too wordy and would rather have a graphic with the duration front and center &mdash; logged in the architecture doc for a future pass, not addressed here.
+</div>
+
+</body>
+</html>

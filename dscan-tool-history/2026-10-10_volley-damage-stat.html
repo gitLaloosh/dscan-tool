@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Volley damage stat</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Volley damage stat</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified via 29/29 regression PASS + an EXACT match against a real pyfa report + a real-Chromium render check</span></p>
+<p><b>Requested by Erik:</b> "volley stats would probably be good to have along w/ dps in the tool" — prompted by comparing the tool's output against a real pyfa report for the newly-scaffolded Loki fit (killmail 138935092), which showed pyfa's own "Volley: 1349" line alongside its DPS.</p>
+
+<h2>The change</h2>
+<p>Each fit's "Total DPS" stat now shows a second line, "Volley &lt;number&gt;", whenever it's nonzero: the one-shot/one-cycle total damage across every CERTAIN damage source (confirmed-loaded turrets/launchers, fixed-damage weapons, deployable drones, deployable fighter squadrons) — the exact same source set <code>dpsFixed</code> already covers, just without dividing by each source's own cycle time. A weapon only resolved via the cargo-ammo guess doesn't contribute (same scoping as <code>dpsFixed</code> itself).</p>
+<p>Checked pyfa/eos's own source before assuming scope (<code>eos/stats/register/dmg_dealer.py</code>'s <code>DmgDealerRegister.get_volley()</code>): it sums every damage-dealing item's own <code>get_volley()</code> with no category exclusion, confirming drones and fighters genuinely do count toward pyfa's Volley stat, not just turrets/missiles — this was worth checking rather than assuming, since EVE players colloquially think of "volley"/"alpha" as a turret/missile-only concept.</p>
+<p>Each of the four existing DPS-computation blocks (drone, fighter, fixed-weapon, confirmed-ammo turret/launcher) already computed an intermediate "damage per cycle" value before dividing by cycle time to get DPS — this change just also accumulates that same intermediate value (times quantity/deployed-count) into a new <code>volleyFixed</code> total. Zero new ESI calls, zero new multipliers/skill constants — pure reuse of already-verified building blocks.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (29 golden fits, including the new Loki fit)</td><td>ALL PASS — purely additive new return-object field, no existing calculation touched</td></tr>
+<tr><td>Exact match against a real pyfa report</td><td>Erik's own pyfa output for killmail 138935092 (the Loki scaffolded earlier this session) reported Volley 1349 — this implementation computes 1349 exactly, from the real killmail data, with zero tuning</td></tr>
+<tr><td>Sanity check on 2 more real golden fits exercising the drone and fighter code paths (Leshak: turret+drone; Thanatos: fighter-only)</td><td>Both produced plausible, nonzero volley figures (volley/dps ratio lines up with each fit's own known cycle times) — no throw, no NaN</td></tr>
+<tr><td>Real-Chromium render check (actual <code>renderFitSummaryHtml()</code> called live against the real Loki data)</td><td>"Volley 1,349" renders correctly formatted, positioned under Total DPS, legible against the tool's real CSS</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li><code>estimateHpAndDps()</code>'s drone loop — <code>droneTypesInfo</code> entries now also carry <code>dmgPerCycle</code>; a new <code>droneVolley</code> accumulator.</li>
+<li><code>estimateHpAndDps()</code>'s fighter-squadron loop — same pattern, <code>fighterVolley</code>.</li>
+<li><code>estimateHpAndDps()</code>'s fixed-weapon and confirmed-ammo turret/launcher blocks — <code>fixedHighSlotVolley</code>/<code>confirmedVolley</code> accumulators alongside their existing DPS accumulators.</li>
+<li>New <code>volleyFixed</code> field on the return object (sum of the four accumulators above).</li>
+<li><code>renderFitSummaryHtml()</code> — new conditional line under the Total DPS stat.</li>
+<li>The "How effective HP and DPS are calculated" note — updated to document the new stat and its pyfa/eos-verified scope.</li>
+</ul>
+
+<h2>What's next</h2>
+<p>Still queued: a "Fit Analyzer" tab (backlog only, not scoped), the buffer-tank/Tank-Type badge visual integration tweak, nav-speed/scan-res/sensor/cap-stability stats, missile-velocity ship/skill bonuses affecting the range/falloff figure (flagged earlier today, not yet implemented).</p>
+</body>
+</html>

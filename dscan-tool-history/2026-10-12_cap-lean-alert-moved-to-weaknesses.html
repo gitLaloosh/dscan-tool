@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Cap-lean alert pulled from EWAR card, folded into Weaknesses instead</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.4rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.15rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Correction: cap-lean neut-vulnerability alert removed from EWAR card</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; same-day correction to the overnight follow-up</p>
+
+<p>[stated] reviewed the overnight delivery and flagged the new "Cap-lean target" badge on the EWAR/Misc card: that alert should not have been there, and if anywhere belongs on the Weaknesses card. Asked directly whether there was a reason -- answer was that the request itself said "ewar / misc card," plus a self-chosen offense/defense framing split between the two cards. [stated] then asked what the actual difference was between the new alert and the existing Weaknesses-card capacitor flag.</p>
+
+<p>There wasn't one: both read the identical <code>capWeak</code>/<code>stablePct</code>/<code>netRate</code> values computed by <code>simulateCapacitorStability()</code> -- no new math, no distinct signal, just the same fact stated twice in two places with different wording and badge colors. [stated]'s call: remove the EWAR-card copy entirely rather than relocate it, and fold any useful wording into the existing Weaknesses flag ("you can choose the wording for now").</p>
+
+<h2>What changed</h2>
+<ul>
+<li>Removed the <code>miscTraits.push({name:'Cap-lean target', ...})</code> block from <code>estimateHpAndDps()</code>.</li>
+<li>Removed the now-unused <code>--opportunity</code> CSS variable and <code>.ewar-badge.opportunity</code> rule.</li>
+<li>Removed the <code>hasCapLeanAlert</code> flattened field from <code>run_regression.mjs</code> and its assertions on 3 golden fits (Curse/Rifter/Ishkur).</li>
+<li>Reworded the existing Weaknesses-card <code>capWeakReason</code> text: the stable-but-weak case now also states the GJ/s margin number ("as little as N GJ/s of extra average drain... can push it negative"); the unstable case now adds "already unstable without any outside help, and any neut/nos pressure speeds up the bleed-out". Same underlying values as before, just a bit more actionable wording -- [stated] may want to adjust this further later.</li>
+</ul>
+<p>Everything else from the overnight delivery (neut/nos as a new 'drain' EWAR category, the 2 fixture data-completeness fixes) is unchanged.</p>
+<p>78/78 fits PASS after this correction.</p>
+
+</body>
+</html>

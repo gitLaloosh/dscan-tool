@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Missile damage-application-efficiency (missile-side)</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Missile damage-application-efficiency (missile-side only)</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; backlog item: damage-application-efficiency, scoped by explicit user direction to missile-side only this session ("1. ship missile-side only for now. 2. keep turret-side in the backlog. 3. the ability to determine which missiles (damage type, size, class...) should be used..."); output structured as reusable per-class data for a later counter-fit-generator feature ("we will use this for a later feature that will generate a fit to counter the one we're assessing as a threat")</p>
+
+<h2>Scope decision</h2>
+<p>Turret-side application efficiency needs the attacker's own tracking speed (not modeled anywhere in this tool, since D-Scan/killmail data never exposes it) and an assumed engagement range (no canonical source) -- both missing, so it stays explicitly deferred in the backlog rather than guessed. Missile-side application only needs the TARGET's own signature radius and speed (both already computed by this tool) plus each missile class's own explosion mechanics (public ESI data), so it's fully groundable now.</p>
+
+<h2>The formula (grounded, not guessed)</h2>
+<p>Sourced from eveuniversity.org's Missile_mechanics page (CC BY-SA 4.0), cross-checked against live ESI attribute names/values on 6 representative T1 named ammo types:</p>
+<pre>appliedFraction = min(1, S/E, ((S/E) x (Ve/Vt))^drf)</pre>
+<p>where <code>S</code> = target signature radius, <code>Vt</code> = target velocity, <code>E</code> = missile's Explosion Radius (ESI attribute 654), <code>Ve</code> = missile's Explosion Velocity (ESI attribute 653), <code>drf</code> = the missile's own <code>aoeDamageReductionFactor</code> (ESI attribute 1353).</p>
+<div class="callout">
+<strong>Checked and explicitly excluded:</strong> <code>aoeFalloff</code> (ESI attribute 655, present on all missile ammo, value 1500 on every class fetched) is NOT part of this formula per eveuniversity's own sourced text -- disclosed as checked, not silently omitted.
+<br><br>
+<strong>drf is NOT a universal constant</strong> -- confirmed live it varies by class/tier: 0.604 (Light Missile) vs. 0.944 (Torpedo) vs. 0.882 (Cruise Missile/Heavy Assault Missile) vs. 0.682 (Heavy Missile) vs. 0.644 (Rocket). Must be read per-ammo, never hardcoded as one number.
+</div>
+
+<h2>Architecture: live fetch, not a hand-maintained table</h2>
+<p>Confirmed via live ESI fetch of 24 ammo types (6 classes x 4 damage types) that explosionVelocity/explosionRadius/drf/maxVelocity/flightTime are IDENTICAL across all 4 damage-type variants (Scourge/Inferno/Nova/Mjolnir) of the same class+tier -- only damage type+amount differs. This means ONE live fetch per class covers the application math for all 4 damage-type recommendations at that class.</p>
+<p>Chosen specifically to avoid this project's own previously-identified ARCH-1 lesson (hand-maintained tables like SHIP_ROLE_BONUS/SHIP_RESIST_BONUS drift from live data and are the root cause of most historic bugs here): <code>MISSILE_CLASS_REFERENCE_AMMO</code> stores only 6 TYPE IDS (266 Rocket, 210 Light Missile, 209 Heavy Missile, 20307 Heavy Assault Missile, 203 Cruise Missile, 267 Torpedo). The actual explosionVelocity/explosionRadius/drf values are fetched live via the EXISTING <code>getType()</code>/IndexedDB-cached ESI pipeline at runtime, never hardcoded.</p>
+<p class="small">Deliberately excluded this pass (disclosed, not silently dropped): T2 ammo tiers (Precision/Fury/Javelin/Rage -- confirmed live they carry DIFFERENT drf/explosion values than their T1 base, a genuinely separate trade-off axis) and XL Torpedo/XL Cruise Missile (capital-only, scope control).</p>
+
+<h2>The fix</h2>
+<p>New <code>missileAppliedFraction(sigRadius, targetVelocity, explosionVelocity, explosionRadius, drf)</code> implements the formula exactly. <code>rankMissileClasses(sigRadius, velocity)</code> runs it against all 6 live-fetched reference-ammo profiles and sorts best-to-worst by <code>applicationPct</code>. Computed twice per fit using this file's existing dual-state convention (already used elsewhere for speed/alignTime/signatureRadius): once for <code>cruising</code> (base signature radius + cruising speed, no prop mod) and once for <code>boosted</code> (boosted signature radius + boosted speed, only when a prop mod is fitted) -- base/cruising and boosted numbers are never cross-mixed, since they're physically simultaneous states. The recommended damage TYPE (ammo name) reuses the already-existing <code>weakest</code> variable from the per-fit weighted-resist calculation -- not new logic, just paired with the new class ranking.</p>
+<p>Result object gains a <code>missileApplication: {ammoName, cruising: [...], boosted: [...] | null}</code> field -- structured, reusable per-class data (per the user's own stated intent: "we will use this for a later feature that will generate a fit to counter the one we're assessing as a threat"), not just a rendered sentence. The Fit Analyzer's Weaknesses card Missile tile (<code>missileRecTileHtml()</code>) now shows the best-applying class+damage-type at cruising speed as the headline, flags low application (&lt;50%) explicitly rather than silently recommending a missile that mostly won't land, and shows a 2nd line only when a prop mod is fitted AND its boosted state picks a genuinely different best class.</p>
+<p class="small">Deliberately left unchanged: the simpler plain D-Scan summary card's Missile line (<code>RECS[weakest].missile</code>) -- that code path has no signature-radius/speed data available (only raw hull dogma from a D-Scan, no fitting detail), so it correctly keeps using the old static damage-type-only text.</p>
+
+<h2>Verification</h2>
+<p>Regression-harness-only compatibility issue hit and fixed first: the new unconditional <code>getType()</code> calls for the 6 reference ammo ids broke every one of the (then-)70 existing golden fits with <code>Type 266 fetch: not found</code>, since the sandboxed <code>fakeFetch</code> only serves each fit's own pre-captured <code>types</code> blob. Fetched full live ESI <code>/universe/types/{id}/</code> JSON for all 6 ids (203/209/210/266/267/20307) via the browser pane and injected them into every existing fit's <code>types</code> object (418 new entries across 70 fits; 2 fits already had one or more of these ids from their own missile loadout, left untouched). Confirmed this alone restores <code>ALL PASS</code> on every pre-existing assertion with no other regressions.</p>
+<p>Constructed 2 new golden fits specifically isolating the new math:</p>
+<ul style="padding-left:1.2em">
+<li><code>rifter_constructed_missile_application_cruising_only</code>: bare Rifter hull, NO weapons or modules fitted at all. Clean, hand-derivable inputs: sig radius 35 (hull attr552, no rigs), cruising speed 456.25 (hull attr37=365 x this file's MAX_NAVIGATION_MULT=1.25-at-V convention, no prop mod). Hand-computed ALL 6 class application percentages independently (Rocket 70.0% / Light Missile 50.8% / Heavy Missile 12.4% / HAM 8.6% / Cruise 2.6% / Torpedo 1.9%) and confirmed EVERY one matched the sandboxed output exactly -- not just the pinned top-ranked value.</li>
+<li><code>crow_constructed_missile_application_dual_state</code>: reuses the existing Crow+MWD Interceptor fit verbatim (already-verified signatureRadiusBase=35/Boosted=79) to isolate the cruising-vs-boosted pairing. Cruising: Rocket 63.0%. Boosted (sig 79, speed ~3790 after the MWD's ~7x speed multiplier and Interceptor-specific sig-bloom reduction): Rocket 30.2%. Hand-derivation off this fit's own rounded display values (79/3790) gave 30.3%, 0.1pp off the sandbox's 30.2% -- expected, per this project's established convention that rounding happens on unrounded internal intermediates, not already-rounded UI display values (same pattern documented for the Draugur/Kikimora range fixes).</li>
+</ul>
+<p><code>run_regression.mjs</code> changes: added a <code>missileApplication</code> flattening block (<code>missileAmmoName</code>, <code>missileBestClassCruising</code>/<code>Pct</code>, <code>missileBestClassBoosted</code>/<code>Pct</code>) following the file's existing per-feature flattening convention. Also fixed a latent bug this flattening exposed: <code>closeEnough()</code>'s tolerance comparison did raw numeric subtraction, which silently fails (NaN, always falsy) for the first-ever STRING-valued assertion field (<code>missileBestClassCruising</code> = <code>"Rocket"</code>) -- added exact string-equality handling alongside the existing numeric-tolerance path.</p>
+<p>Revert-sanity-check: neutralized <code>missileAppliedFraction()</code> to always return 1 in a throwaway copy. Every new <code>*Pct</code> assertion correctly FAILED (100 vs. the expected 70/63/30.2) -- confirms this coverage actually catches the math regressing. (The <code>*ClassCruising</code>/<code>*ClassBoosted</code> label assertions still happened to pass in that broken state, since a stable sort with every class tied at 100% leaves Rocket first by object-key insertion order -- a disclosed limitation of this particular revert method, not a gap in the Pct coverage, which is what actually exercises the formula.)</p>
+<p><strong>Full suite: 72/72 fits, ALL PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: unchanged this delivery step at 444,670 bytes (the feature code itself was already wired in before this verification pass; no further code changes needed)</li>
+<li><code>golden_fits.json</code>: 70 &rarr; 72 fits, 2,640,479 &rarr; 3,717,015 bytes (the size jump is mostly the 418 injected reference-ammo <code>types</code> entries, duplicated per-fit per the existing golden-fit-format convention)</li>
+<li><code>run_regression.mjs</code>: 22,050 &rarr; 23,881 bytes (missileApplication flattening block + the closeEnough() string-equality fix)</li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">Damage-application-efficiency: MISSILE-SIDE closed (damage type AND size/class recommendation, application-weighted, structured for the future counter-fit-generator feature). TURRET-SIDE remains open/deferred in the backlog, explicitly per user direction -- blocked on attacker tracking speed (unmodeled) and an assumed engagement range (no canonical source).</p>
+
+</body>
+</html>

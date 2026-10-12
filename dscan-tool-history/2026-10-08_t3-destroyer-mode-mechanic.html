@@ -1,0 +1,2847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>D-Scan Analyzer</title>
+<style>
+  /* ============================================================
+     TYPE SYSTEM — "Structured HUD"
+     One rule per tier, applied uniformly everywhere that tier appears.
+     Tier 1  Page title........... sans 26px / 600 / plain case / bright
+     Tier 2  Section heading....... sans 15px / 600 / plain case / bright
+                                     (every <h2> in the tool, no per-instance overrides)
+     Tier 3  Card / item title..... sans 14px / 600 / plain case / bright
+     Tier 4  Micro-label........... ONE treatment for every small caption that
+                                     was previously amber, white-700, faint-500,
+                                     or dim — now always: 10.5px / 600 / uppercase /
+                                     0.6px tracking / --text-dim. Emphasis is carried
+                                     by layout (accent bars, boxes) instead of by
+                                     giving the label itself a louder color/weight.
+     Body    Descriptive copy...... sans 13px / 400 / --text-dim (or --text-faint
+                                     for de-emphasized asides)
+     Data    Numeric read-outs..... mono, unchanged — numbers keep monospace for
+                                     column alignment, everything else is sans.
+     ============================================================ */
+  :root{
+    --bg:#0a0d10;
+    --panel:#12171c;
+    --panel-2:#161c22;
+    --line:#232d35;
+    --line-soft:#1a2126;
+    --text:#d7dee3;
+    --text-dim:#7c8a94;
+    --text-faint:#4d5960;
+    --amber:#d99a3c;
+    --amber-dim:#8a6529;
+    --cyan:#4fc3d9;
+    --em:#5b8fd9;
+    --therm:#d9604f;
+    --kin:#a68a6b;
+    --exp:#d9c23c;
+    --danger:#c65b4e;
+    --heading:#eef2f4;
+    --label-size:10.5px;
+    --label-tracking:0.6px;
+    --mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans:'Space Grotesk', 'Segoe UI', Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    padding:32px 20px 80px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  header.hero{
+    position:relative;
+    padding:28px 0 24px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:28px;
+    overflow:hidden;
+  }
+  header.hero .scanline{
+    position:absolute; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, var(--amber), transparent);
+    top:0;
+    animation:sweep 5s linear infinite;
+    opacity:0.7;
+  }
+  @keyframes sweep{
+    0%{transform:translateY(0); opacity:0;}
+    10%{opacity:0.8;}
+    90%{opacity:0.8;}
+    100%{transform:translateY(140px); opacity:0;}
+  }
+  /* Tier 1 — page title */
+  header.hero h1{
+    font-size:26px;
+    font-weight:600;
+    letter-spacing:0.3px;
+    margin:0 0 6px;
+    color:var(--heading);
+  }
+  header.hero p{
+    margin:0;
+    color:var(--text-dim);
+    font-size:14px;
+    max-width:560px;
+    line-height:1.5;
+  }
+
+  .tabs{
+    display:flex; gap:4px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:24px;
+  }
+  .tab-btn{
+    background:transparent;
+    border:none;
+    border-bottom:2px solid transparent;
+    color:var(--text-dim);
+    font-family:var(--sans);
+    font-size:14px;
+    font-weight:600;
+    padding:10px 4px;
+    margin-right:20px;
+    cursor:pointer;
+    border-radius:0;
+  }
+  .tab-btn:hover{background:transparent; color:var(--text);}
+  .tab-btn.active{
+    color:var(--amber);
+    border-bottom-color:var(--amber);
+  }
+
+  section.panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px;
+    margin-bottom:24px;
+  }
+  /* Tier 2 — every section heading in the tool shares this single rule,
+     including "Contacts" (previously a bare browser-bold h2 with an inline
+     font-size, now identical to "Scan input" / "Pilot Analyzer"). */
+  h2{
+    font-family:var(--sans);
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:0;
+    margin:0 0 4px;
+    color:var(--heading);
+  }
+  section.panel .sub{
+    font-size:13px;
+    color:var(--text-dim);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  textarea{
+    width:100%;
+    min-height:150px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:3px;
+    color:var(--cyan);
+    font-family:var(--mono);
+    font-size:12.5px;
+    padding:12px;
+    resize:vertical;
+    line-height:1.5;
+  }
+  textarea:focus{outline:none; border-color:var(--amber-dim);}
+
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .row + .row{margin-top:10px;}
+
+  input[type=text], select{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:3px;
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:13px;
+    padding:9px 10px;
+    min-width:200px;
+  }
+  input[type=text]:focus, select:focus{outline:none; border-color:var(--amber-dim);}
+
+  button{
+    background:transparent;
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    font-family:var(--sans);
+    font-size:13px;
+    font-weight:600;
+    padding:9px 18px;
+    border-radius:3px;
+    cursor:pointer;
+    letter-spacing:0.2px;
+  }
+  button:hover{background:rgba(217,154,60,0.08); border-color:var(--amber);}
+  button:disabled{opacity:0.4; cursor:default;}
+  button:disabled:hover{background:transparent; border-color:var(--amber-dim);}
+
+  .status{
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--text-dim);
+    margin-top:12px;
+    min-height:16px;
+  }
+  .status.err{color:var(--danger);}
+
+  .contacts-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:14px;
+  }
+  .contacts-head h2{margin:0;}
+  .contacts-head .count{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    gap:14px;
+  }
+
+  .card{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:16px;
+  }
+  .card .ctop{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    margin-bottom:2px;
+  }
+  /* Tier 3 — card / item title */
+  .card .cname{font-size:14px; font-weight:600; color:var(--heading);}
+  .card .ccount{font-family:var(--mono); font-size:11px; color:var(--text-dim);}
+  .card .cmeta{font-size:11.5px; color:var(--text-dim); margin-bottom:12px;}
+  .card .cmeta.notship{color:var(--text-faint); font-style:italic;}
+
+  .bars{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+  .bar-row{display:flex; align-items:center; gap:8px;}
+  .bar-label{
+    font-family:var(--mono); font-size:10.5px; width:34px; flex-shrink:0;
+    color:var(--text-dim); text-align:right;
+  }
+  .bar-track{
+    flex:1; height:7px; background:var(--line-soft); border-radius:2px; overflow:hidden;
+    position:relative;
+  }
+  .bar-fill{height:100%; border-radius:2px;}
+  .bar-pct{font-family:var(--mono); font-size:10.5px; width:34px; color:var(--text-dim);}
+  .bar-row.weakest .bar-label{color:var(--heading); font-weight:600;}
+  .bar-row.weakest .bar-pct{color:var(--heading); font-weight:600;}
+
+  .fill-em{background:var(--em);}
+  .fill-therm{background:var(--therm);}
+  .fill-kin{background:var(--kin);}
+  .fill-exp{background:var(--exp);}
+
+  .weak-line{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--line-soft);
+  }
+  .weak-sub{font-size:11px; color:var(--text-dim);}
+
+  .dmg-badge{
+    display:inline-flex; align-items:center;
+    padding:4px 11px; border-radius:3px;
+    font-size:13px; font-weight:600; letter-spacing:0.2px;
+    border:1px solid currentColor;
+  }
+  .dmg-badge.em{color:var(--em); background:rgba(91,143,217,0.14);}
+  .dmg-badge.therm{color:var(--therm); background:rgba(217,96,79,0.14);}
+  .dmg-badge.kin{color:var(--kin); background:rgba(166,138,107,0.14);}
+  .dmg-badge.exp{color:var(--exp); background:rgba(217,194,60,0.14);}
+
+  .drone-rec{
+    display:flex; justify-content:space-between; align-items:baseline;
+    background:var(--line-soft); border-radius:3px;
+    padding:8px 10px; margin-bottom:12px;
+  }
+  /* Tier 4 — micro-label, single shared treatment */
+  .drone-rec-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking);}
+  .drone-rec-value{font-size:14px; font-weight:600; color:var(--heading);}
+
+  .drone-alt{
+    font-size:12px; color:var(--text-dim); line-height:1.5;
+    margin:-4px 0 12px; padding:0 2px;
+  }
+  .drone-alt b{color:var(--text); font-weight:600;}
+
+  .rec{font-size:12px; line-height:1.7; color:var(--text-dim);}
+  .rec b{color:var(--text); font-weight:600;}
+
+  .select-target{
+    margin-top:10px;
+    font-size:11.5px;
+  }
+  .select-target button{
+    padding:5px 10px; font-size:11px; border-color:var(--line); color:var(--cyan);
+  }
+  .select-target button:hover{border-color:var(--cyan); background:rgba(79,195,217,0.08);}
+
+  .legend{
+    display:flex; gap:16px; flex-wrap:wrap;
+    font-size:11.5px; color:var(--text-dim);
+    margin-top:6px;
+  }
+  .legend span{display:inline-flex; align-items:center; gap:5px;}
+  .legend i{width:8px; height:8px; border-radius:2px; display:inline-block;}
+
+  .fitgroup{margin-bottom:14px;}
+
+  /* fit-summary keeps its identity via a left accent bar, not via a
+     louder label — the label inside it uses the same Tier 4 treatment
+     as every other micro-label in the tool. */
+  .fit-summary{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-left:3px solid var(--amber-dim);
+    border-radius:5px;
+    padding:16px 18px;
+    margin:14px 0 18px;
+  }
+  .fit-summary-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); margin-bottom:12px;}
+  .fit-subsection-label{font-family:var(--sans); font-size:13px; font-weight:600; color:var(--heading); letter-spacing:0; margin-bottom:10px;}
+  .fit-subsection-divider{
+    border-top:1px dashed var(--line);
+    margin:16px 0;
+  }
+  .fit-detail-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); margin:0 0 12px;}
+
+  .estimate-box{
+    display:flex; flex-wrap:wrap; gap:12px; margin:0 0 12px;
+  }
+  .estimate-stat{
+    flex:1; min-width:140px; background:var(--line-soft); border-radius:3px;
+    padding:10px 12px; display:flex; flex-direction:column; gap:2px;
+  }
+  .estimate-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking);}
+  .estimate-value{font-size:20px; font-weight:600; color:var(--heading); display:flex; align-items:center; gap:6px;}
+  .estimate-sub{font-size:11px; color:var(--text-faint); line-height:1.4;}
+
+  /* Tactical Destroyer Mode toggle (bug #17b) — a mode icon badge inline
+     with the HP/DPS values above, plus the "Mode:" row of clickable icons
+     below the estimate box. Placeholder glyphs, not CCP's in-game icons —
+     Tactical Destroyer Modes have no type id, so there's no sanctioned
+     images.evetech.net source for them to pull the real ones from. */
+  .td-mode-badge{
+    width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:4px; background:var(--panel-2); color:var(--amber); flex:none;
+  }
+  .td-mode-badge svg{width:12px; height:12px;}
+  .td-mode-row{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
+  .td-mode-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking);}
+  .td-mode-icons{display:flex; gap:6px;}
+  .td-mode-btn{
+    width:30px; height:30px; border-radius:5px; border:1px solid var(--line);
+    background:var(--line-soft); color:var(--text-dim); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .td-mode-btn svg{width:16px; height:16px;}
+  .td-mode-btn:hover{color:var(--text);}
+  .td-mode-btn.active{border-color:var(--amber); color:var(--amber); background:rgba(217,154,60,0.1);}
+
+  .ammo-dps-list{
+    background:var(--line-soft); border-radius:3px;
+    padding:10px 12px; margin-bottom:12px;
+  }
+  .ammo-dps-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); margin-bottom:6px;}
+  .ammo-dps-row{
+    display:flex; justify-content:space-between; font-size:13px;
+    padding:4px 0; border-bottom:1px solid var(--line);
+  }
+  .ammo-dps-row:last-child{border-bottom:none;}
+  .ammo-dps-value{font-family:var(--mono); font-weight:600; color:var(--heading);}
+
+  .weakness-highlight{
+    display:flex; flex-direction:column; gap:12px;
+    background:rgba(217,154,60,0.06);
+    border:1px solid var(--amber-dim);
+    border-radius:4px; padding:12px 14px; margin-bottom:12px;
+  }
+  .weakness-badge-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .dmg-badge.lg{font-size:16px; padding:6px 14px; font-weight:700;}
+
+  .rec-grid{
+    display:flex; gap:12px;
+  }
+  .rec-stat{
+    flex:1; background:var(--line-soft); border-radius:3px;
+    padding:10px 12px; display:flex; flex-direction:column; gap:3px;
+  }
+  .rec-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking);}
+  .rec-value{font-size:13px; font-weight:600; color:var(--heading); line-height:1.4;}
+  .rec-sub{font-size:11px; color:var(--text-faint); line-height:1.4;}
+
+  .fitgroup h3{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); margin:0 0 8px;}
+  .fititem{
+    display:flex; justify-content:space-between;
+    font-size:13px; padding:5px 0; border-bottom:1px solid var(--line-soft);
+  }
+  .fititem:last-child{border-bottom:none;}
+  .fititem .freq{font-family:var(--mono); color:var(--text-dim); font-size:12px;}
+
+  .lossrow{
+    display:flex; justify-content:space-between; font-size:12px;
+    color:var(--text-dim); padding:5px 0; border-bottom:1px solid var(--line-soft);
+    font-family:var(--mono);
+  }
+  .lossrow a{color:var(--cyan); text-decoration:none;}
+  .lossrow a:hover{text-decoration:underline;}
+
+  .candidates{
+    display:flex; gap:8px; flex-wrap:wrap; margin:12px 0;
+  }
+  .candidate-btn{
+    padding:8px 12px; font-size:12.5px; border-color:var(--line); color:var(--text);
+    display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+  }
+  .candidate-btn .cfreq{font-family:var(--mono); font-size:11px; color:var(--text-dim);}
+  .candidate-btn.active{border-color:var(--amber); color:var(--amber);}
+  .candidate-btn.active .cfreq{color:var(--amber-dim);}
+  .candidates-note{font-size:11.5px; color:var(--text-faint); margin-bottom:4px;}
+
+  /* Sub-tabs — one per recent loss, inside the Pilot Analyzer results.
+     Same active/hover language as the top-level .tabs, scaled down so it
+     reads as nested rather than a second top-level nav. */
+  .subtabs{
+    display:flex; gap:4px; flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    margin:2px 0 16px;
+  }
+  .subtab-btn{
+    background:transparent;
+    border:none;
+    border-bottom:2px solid transparent;
+    color:var(--text-dim);
+    font-family:var(--sans);
+    font-size:12.5px;
+    font-weight:600;
+    padding:8px 4px;
+    margin-right:16px;
+    cursor:pointer;
+    border-radius:0;
+  }
+  .subtab-btn:hover{background:transparent; color:var(--text);}
+  .subtab-btn.active{
+    color:var(--amber);
+    border-bottom-color:var(--amber);
+  }
+
+  .lastkill{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:4px;
+    padding:12px 14px; margin:12px 0; font-size:13px; line-height:1.6;
+  }
+  .lastkill .lk-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); margin-bottom:4px;}
+  .lastkill b{color:var(--heading); font-weight:600;}
+  .lastkill a{color:var(--cyan); text-decoration:none; font-size:12px;}
+  .lastkill a:hover{text-decoration:underline;}
+
+  .dmg-badge.sm{padding:2px 7px; font-size:10.5px; margin-right:2px;}
+  .dmg-badge.faded{opacity:0.4;}
+  .dmg-variable-note{font-size:11px; color:var(--text-faint); margin-left:4px;}
+
+  .lk-toggle{
+    margin-top:10px; padding:5px 10px; font-size:11.5px;
+    border-color:var(--line); color:var(--cyan);
+  }
+  .lk-toggle:hover{border-color:var(--cyan); background:rgba(79,195,217,0.08);}
+
+  .attacker-list{margin-top:10px; padding-top:10px; border-top:1px solid var(--line-soft);}
+  .attacker-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    font-size:12.5px; padding:6px 0; border-bottom:1px solid var(--line-soft);
+  }
+  .attacker-row:last-child{border-bottom:none;}
+  .attacker-row .a-who{color:var(--text-dim);}
+  .attacker-row .a-who b{color:var(--text); font-weight:600;}
+  .attacker-row.finalblow .a-who b{color:var(--amber);}
+  .attacker-row .a-dmg{display:flex; align-items:center; flex-shrink:0;}
+
+  .note{
+    font-size:11.5px; color:var(--text-faint); margin-top:14px; line-height:1.6;
+    border-top:1px solid var(--line-soft); padding-top:12px;
+  }
+
+  ::placeholder{color:var(--text-faint);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="scanline"></div>
+    <h1>D-Scan Analyzer</h1>
+    <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI.</p>
+  </header>
+
+  <div class="tabs">
+    <button type="button" class="tab-btn active" id="tabBtnDscan">D-Scan Analyzer</button>
+    <button type="button" class="tab-btn" id="tabBtnPilot">Pilot Analyzer</button>
+  </div>
+
+  <div id="tabDscan" class="tab-panel">
+  <section class="panel">
+    <h2>Scan input</h2>
+    <p class="sub">Copy your D-Scan window (Ctrl+A, Ctrl+C in the client) and paste it below — or just type a single ship name if you don't have a scan handy and want to check one hull directly.</p>
+    <textarea id="dscanInput" placeholder="Paste directional scan output here, or type a ship name like &quot;Purifier&quot;…"></textarea>
+    <div class="row" style="margin-top:12px;">
+      <button id="analyzeBtn">Analyze scan</button>
+      <button id="debugToggle" type="button" style="border-color:var(--line); color:var(--text-dim);">Show parsed rows</button>
+      <span class="status" id="scanStatus"></span>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--em)"></i>EM</span>
+      <span><i style="background:var(--therm)"></i>Thermal</span>
+      <span><i style="background:var(--kin)"></i>Kinetic</span>
+      <span><i style="background:var(--exp)"></i>Explosive</span>
+    </div>
+    <div id="debugRows" style="display:none; margin-top:14px; padding-top:12px; border-top:1px solid var(--line-soft);"></div>
+  </section>
+
+  <div id="resultsWrap" style="display:none;">
+    <div class="contacts-head">
+      <h2>Contacts</h2>
+      <span class="count" id="contactsCount"></span>
+    </div>
+    <div class="grid" id="resultsGrid"></div>
+  </div>
+  </div>
+
+  <div id="tabPilot" class="tab-panel" style="display:none;">
+  <section class="panel">
+    <h2>Pilot Analyzer</h2>
+    <p class="sub">Enter a pilot's name and, optionally, a ship type (from the scan above, or typed manually). Leave the ship blank and it'll sample their recent losses to guess which hull they fly most.</p>
+    <div class="row">
+      <input type="text" id="pilotName" placeholder="Pilot name">
+      <select id="shipSelect"><option value="">— pick ship from scan (optional) —</option></select>
+      <input type="text" id="manualShip" placeholder="or type a ship name (optional)">
+      <button id="fitBtn">Analyze Pilot</button>
+    </div>
+    <div class="status" id="fitStatus"></div>
+    <div id="lastKillInfo"></div>
+    <div id="fitCandidates"></div>
+    <div id="fitResults"></div>
+  </section>
+  </div>
+
+</div>
+
+<script>
+const ESI = 'https://esi.evetech.net/latest';
+const ZKB = 'https://zkillboard.com/api';
+
+const DMG = ['em','therm','kin','exp'];
+const DMG_LABEL = {em:'EM', therm:'Therm', kin:'Kin', exp:'Exp'};
+const DMG_FULL = {em:'EM', therm:'Thermal', kin:'Kinetic', exp:'Explosive'};
+
+const SHIELD_ATTR = {em:271, exp:272, kin:273, therm:274};
+const ARMOR_ATTR  = {em:267, exp:268, kin:269, therm:270};
+const HULL_ATTR   = {em:113, exp:111, kin:109, therm:110};
+const DAMAGE_DEALT_ATTR = {em:114, exp:116, kin:117, therm:118};
+const RATE_OF_FIRE_ATTR = 51;
+const DC_HULL_ATTR = {em:974, exp:975, kin:976, therm:977};
+const RESISTANCE_BONUS_ATTR = {em:984, exp:985, kin:986, therm:987};
+const DAMAGE_MULTIPLIER_ATTR = 64;
+const STACKING_PENALTY = [1, 0.869, 0.571, 0.283, 0.106, 0.030, 0.006, 0.001];
+const MAX_COMPENSATION_SKILL = 0.20;
+
+// Verified against pyfa's eos/effects.py: flat HP-adding modules (raw HP
+// points, summed with no stacking penalty — pyfa calls increaseItemAttr,
+// a plain addition) and the two multiplicative HP sources that share their
+// attribute between a max-skill assumption and a fitted rig/module of the
+// same kind (pyfa calls boostItemAttr / multiplyItemAttr, both non-stacking
+// -penalized by default — confirmed by reading modifiedAttributeDict.py's
+// multiply()/boost() — so 2 fitted items of the same kind still just
+// straight-multiply together, unlike the damage mods above).
+const SHIELD_HP_FLAT_ADD_ATTR = 72;   // capacityBonus: Shield Extender's flat shield HP
+const ARMOR_HP_FLAT_ADD_ATTR = 1159;  // armorHPBonusAdd: Armor Plate's flat armor HP
+const HULL_HP_MULT_ATTR = 150;        // structureHPMultiplier: Reinforced Bulkhead / Nanofiber (own value, e.g. 1.25)
+const SHIELD_HP_PCT_ATTR = 337;       // shieldCapacityBonus: Shield Management skill AND Core Defense Field Extender rig
+const ARMOR_HP_PCT_ATTR = 335;        // armorHpBonus: Hull Upgrades skill AND Trimark Armor Pump rig
+const HULL_HP_PCT_ATTR = 327;         // hullHpBonus: Mechanics skill (no common rig equivalent)
+// Universal skills every capsuleer can train — assumed at max level (V) per
+// the tool's "ceiling, not guarantee" convention: Shield Management/Hull
+// Upgrades/Mechanics each give +5%/level to their HP pool (confirmed via
+// pyfa's bundled CCP data: attribute value 5.0 on each skill's own dogma).
+const MAX_SHIELD_MGMT_MULT = 1.25;
+const MAX_HULL_UPGRADES_MULT = 1.25;
+const MAX_MECHANICS_MULT = 1.25;
+
+// Every DPS figure below assumes the pilot has the relevant damage- and
+// rate-of-fire-boosting skills trained to level V — same "max training"
+// assumption already used for shield/armor Compensation above.
+//
+// CORRECTED 2026-09-10 per a from-scratch reconciliation against a real
+// pyfa-verified Hawk fit (rocket-only volley/DPS matched to <0.5%) and
+// cross-checked against an Enyo fit for the turret side: the previous
+// constants below modeled the weapon-size-class Specialization skill
+// (Rocket/Light Missile/.../Small-Medium-Large [X] Turret) as a DAMAGE
+// bonus, but that skill is actually a RATE-OF-FIRE bonus (confirmed:
+// 2%/level). The real, previously entirely-unmodeled damage bonus is the
+// weapon-SIZE-CLASS skill itself (Rockets/Light Missiles/.../Small-Medium-
+// Large [X] Turret — 5%/level damage, so +25% at V) — a bigger single
+// source of error than any other DPS bug found this session.
+//   Turrets:  Surgical Strike V (+15% dmg) × weapon-size-class Turret skill V (+25% dmg)
+//             Rapid Firing V (-20% cycle time) × Gunnery V (-10% cycle time)
+//   Missiles: Warhead Upgrades V (+10% dmg) × weapon-size-class missile skill V (+25% dmg)
+//             Rapid Launch V (-15% cycle time) × Missile Launcher Operation V (-10%) × weapon-size-class Specialization V (-10%)
+//   Drones:   Drone Interfacing V (+50% dmg)
+//             [Race] Drone Specialization V (-20% cycle time)
+const MAX_TURRET_DAMAGE_MULT = 1.15 * 1.25;
+const MAX_TURRET_ROF_MULT = 0.80 * 0.90;
+const MAX_MISSILE_DAMAGE_MULT = 1.10 * 1.25;
+const MAX_MISSILE_ROF_MULT = 0.90 * 0.85 * 0.90;
+const MAX_DRONE_DAMAGE_MULT = 1.50;
+const MAX_DRONE_ROF_MULT = 0.80;
+
+// FOUND 2026-09-10 (fifth pass the same day), per an explicit user follow-up
+// on a real pyfa-verified Megathron (7x Neutron Blaster Cannon II/Void L):
+// the tool's turret DPS was landing ~9-11% below pyfa's reported value (1086
+// vs 1195) even after every other known bug fix. Root cause, confirmed live
+// via ESI: EVERY T2 ("...II") turret module carries a THIRD required-skill
+// attribute (184 = requiredSkill3) pointing at a per-subtype "Specialization"
+// skill — e.g. Neutron Blaster Cannon II (type 3186) requires "Large Blaster
+// Specialization" (type 12212). That skill's own description, fetched
+// directly: "2% Bonus per skill level to the damage of large turrets
+// requiring [X] Specialization" — a DAMAGE bonus, not a RoF bonus as the
+// (incorrect) 2026-09-10-earlier-pass comment above assumed for the
+// turret/missile "Specialization" family. Checked all 15 live specialization
+// skills (Small/Medium/Large x Blaster/Railgun/Autocannon/Artillery/Pulse
+// Laser/Beam Laser, ids 12201-12215) plus the pre-existing "Large Blaster"
+// one (12212): all identically worded, 2%/level, so +10% at level V.
+// Confirmed this is T2-only: "Neutron Blaster Cannon I" (type 573, T1) has
+// only reqSkill1/reqSkill2 (182/183) and NO reqSkill3 at all — so the bonus
+// must be applied conditionally per-weapon (does THIS turret's own dogma
+// carry attribute 184?), never as a flat constant, or T1-turret fits would
+// be overstated. Missile launchers were checked too (e.g. Heavy Missile
+// Launcher II, type 2410) and carry no reqSkill3 at all — this fitting-
+// requirement mechanic is turret-specific, so missile DPS is unaffected.
+// Applying this brought the Megathron fit from 1086 to ~1195 DPS, matching
+// pyfa almost exactly (within rounding).
+const REQUIRED_SKILL_3_ATTR = 184;       // requiredSkill3 — present only on T2 turrets, pointing at their Specialization skill
+const TURRET_SPECIALIZATION_MULT = 1.10; // 2%/level confirmed live via ESI across all 15 turret Specialization skills; +10% at V
+
+function weaponCategoryFromGroup(groupName){
+  const g = (groupName || '').toLowerCase();
+  // Bomb Launchers must be excluded BEFORE the missile-launcher check below:
+  // EVE's own ESI/SDE group name for a Bomb Launcher is "Missile Launcher
+  // Bomb" (confirmed live, type 27914 "Bomb Launcher I" -> group_id 862),
+  // which contains "missile launcher" as a substring -- so without this
+  // early return, every Bomb Launcher was silently caught by the next line
+  // and treated as an ordinary sustained-fire missile weapon, inheriting
+  // missile skill/Warhead-Upgrade/BCS bonuses and getting its one-shot
+  // ~5800 raw bomb damage divided by its own 10s cycle time as if it fired
+  // continuously (bug-class #18, found 2026-10-08 on a Manticore kill --
+  // inflated that fit's reported dpsFixed by >6x, with a single Concussion
+  // Bomb alone outscoring all 3 of the ship's real torpedo launchers
+  // combined). Bombs get none of those bonuses in real EVE and are a
+  // situational burst/alpha tool, not a sustained DPS source, so a Bomb
+  // Launcher is treated the same as a Probe Launcher (bug-class #17c):
+  // excluded from dpsFixed entirely (returns null, same as an unrecognized
+  // module) rather than invented as a fake "DPS" number.
+  if(g.includes('bomb')) return null;
+  if(g.includes('missile launcher') || g.includes('rocket launcher')) return 'missile';
+  if(g.includes('energy weapon')) return 'energy';
+  if(g.includes('hybrid weapon')) return 'hybrid';
+  if(g.includes('projectile weapon')) return 'projectile';
+  // Triglavian Entropic Disintegrators live in ESI/SDE group "Precursor
+  // Weapon" (group_id 1986, confirmed live 2026-10-08, e.g. type 47272
+  // "Light Entropic Disintegrator I") -- none of the 4 phrase checks above
+  // match that name, so every Entropic Disintegrator was previously falling
+  // through to null and getting ZERO dpsFixed credited, no matter how it
+  // was fit (bug-class #20, found via the post-#18 substring-match audit).
+  // Treated as its own weapon category ('precursor') rather than folded
+  // into one of the 4 legacy categories because its ammo ("Exotic Plasma
+  // Charge", see ammoCategoryFromGroup below) is its own unique family, not
+  // a reskin of energy/hybrid/projectile charges -- isMissile-style category
+  // equality is all the DPS pipeline actually needs (see categoryMods below).
+  if(g.includes('precursor weapon')) return 'precursor';
+  return null;
+}
+function ammoCategoryFromGroup(groupName){
+  const g = (groupName || '').toLowerCase();
+  // Same exclusion as weaponCategoryFromGroup() above, and for the same
+  // reason: a bomb's own damage must never be read as "compatible ammo"
+  // for a real (unresolved) missile launcher in the cargo-fallback matching
+  // below -- a Bomb Launcher cannot load one, and in-cargo bombs sitting
+  // next to an empty Torpedo/Cruise Launcher were otherwise a second path
+  // to the same over-counting bug.
+  if(g.includes('bomb')) return null;
+  if(g.includes('missile') || g.includes('rocket') || g.includes('torpedo')) return 'missile';
+  if(g.includes('frequency crystal')) return 'energy';
+  if(g.includes('hybrid charge')) return 'hybrid';
+  if(g.includes('projectile ammo') || g.includes('autocannon') || g.includes('artillery')) return 'projectile';
+  // Entropic Disintegrator ammo: ESI/SDE groups "Exotic Plasma Charge"
+  // (group_id 1987, T1) and "Advanced Exotic Plasma Charge" (group_id 1989,
+  // T2) -- both confirmed live 2026-10-08. Part of bug-class #20 (see
+  // weaponCategoryFromGroup above): must map to the SAME category string
+  // ('precursor') as the weapon-side check so the cargo-ammo-fallback match
+  // (`ammoCategoryFromGroup(a.group.name) === category`) can still pair a
+  // spare Exotic Plasma Charge with an empty Entropic Disintegrator.
+  if(g.includes('exotic plasma charge')) return 'precursor';
+  return null;
+}
+
+function applyStacking(fractions){
+  const sorted = fractions.slice().sort((a,b) => b - a);
+  let mult = 1;
+  sorted.forEach((f, i) => {
+    const penalty = STACKING_PENALTY[i] !== undefined ? STACKING_PENALTY[i] : 0;
+    mult *= (1 - f * penalty);
+  });
+  return mult;
+}
+// Mirror of applyStacking() for bonuses that INCREASE a value (damage mods)
+// rather than reduce one (resistances, RoF mods) — same penalty curve, sign flipped.
+function applyStackingBonus(fractions){
+  const sorted = fractions.slice().sort((a,b) => b - a);
+  let mult = 1;
+  sorted.forEach((f, i) => {
+    const penalty = STACKING_PENALTY[i] !== undefined ? STACKING_PENALTY[i] : 0;
+    mult *= (1 + f * penalty);
+  });
+  return mult;
+}
+// A hull/skill damage role bonus restricted to one damage type (see
+// hullDamageBonuses above) only applies when the ammo actually loaded is
+// (predominantly) that type — e.g. a Hawk's real Assault Frigates bonus
+// only ever touches kineticDamage, so it must NOT apply to EM-damage
+// Mjolnir ammo. Approximated by the ammo's single highest-damage type,
+// which is exact for missiles (always monotype in practice) and a
+// reasonable approximation for mixed-damage-type turret ammo.
+function hullDamageMultFor(hullDamageBonuses, chargeDogma){
+  if(!hullDamageBonuses || !hullDamageBonuses.length) return 1;
+  let dominant = null, dominantVal = -1;
+  for(const d of DMG){
+    const v = attrVal(chargeDogma, DAMAGE_DEALT_ATTR[d], 0);
+    if(v > dominantVal){ dominantVal = v; dominant = d; }
+  }
+  let mult = 1;
+  for(const hb of hullDamageBonuses){
+    if(hb.dmgType === null || hb.dmgType === dominant) mult *= (1 + hb.pct / 100);
+  }
+  return mult;
+}
+
+// Fitted low-slot damage modules that boost turret/launcher/drone output —
+// verified against pyfa's (github.com/pyfa-org/Pyfa) effect implementations:
+// each module carries its OWN dogma attributes representing its contribution
+// (a raw multiplier for damage, e.g. 1.10 = +10%; a sub-1 multiplier for
+// speed/cycle time, e.g. 0.895 = 10.5% faster), and multiple modules of the
+// same type stack with EVE's standard stacking penalty, same formula already
+// used above for resistances.
+const MODULE_DAMAGE_GROUP_CATEGORY = {
+  'Gyrostabilizer': 'projectile',
+  'Heat Sink': 'energy',
+  'Magnetic Field Stabilizer': 'hybrid',
+  'Ballistic Control System': 'missile',
+  // Weapon rate-of-fire rigs (e.g. Small/Medium/Large [Projectile/Hybrid/
+  // Energy] Burst Aerator) were previously silently ignored entirely —
+  // they carry the same SPEED_MULTIPLIER_ATTR (204) as Gyro/Heat Sink/MFS/
+  // BCS, so recognizing their group here is enough to pick them up via the
+  // existing per-module loop below. (No turret/hybrid/projectile "damage"
+  // rig exists in EVE — Locus Coordinator rigs in the same rig groups are
+  // range-only and carry neither attribute, so they're harmlessly ignored.)
+  'Rig Projectile Weapon': 'projectile',
+  'Rig Energy Weapon': 'energy',
+  'Rig Hybrid Weapon': 'hybrid',
+  // Entropic Radiation Sink: the Precursor-weapon low-slot damage module
+  // (ESI/SDE group "Entropic Radiation Sink", group_id 1988, confirmed live
+  // 2026-10-08 via type 47911 "Entropic Radiation Sink II" -- carries
+  // attribute 64 = 1.13 and attribute 204 = 0.94, the exact same two
+  // attributes Heat Sink/Gyrostabilizer/MFS carry, so it plugs into the
+  // existing per-module loop below with no special-casing). Part of
+  // bug-class #20 -- was previously entirely unrecognized, same as the
+  // weapon/ammo group names above.
+  'Entropic Radiation Sink': 'precursor'
+};
+const SPEED_MULTIPLIER_ATTR = 204;                 // cycle-time multiplier carried by Gyro/Heat Sink/MFS/BCS
+const MISSILE_DAMAGE_MULTIPLIER_BONUS_ATTR = 213;  // BCS's own damage contribution (missiles have no shared damageMultiplier attr like turrets)
+const DRONE_DAMAGE_BONUS_ATTR = 1255;               // Drone Damage Amplifier's own contribution, given in percentage points (e.g. 20.5), not a fraction
+// Entropic Disintegrator "spool-up": the weapon's own damage climbs the
+// longer it stays on the same target, capped at attribute 2734
+// (damageMultiplierBonusMax) -- confirmed both live via ESI (type 47272
+// "Light Entropic Disintegrator I" carries attribute_id 2734 = 2.125, i.e.
+// +212.5% at full spool) AND against pyfa's actual production source
+// (github.com/pyfa-org/eos, eos/eve_obj/effect/dmg_dealer/turret/
+// target_disintegrator_attack.py, class TargetDisintegratorAttack.get_volley:
+// `1 + item.attrs[AttrId.dmg_mult_bonus_max]` applied as a flat multiplier
+// on top of the ordinary ammo-damage x damageMultiplier volley). Notably,
+// the companion attribute 2733 (damageMultiplierBonusPerCycle, the 7%-per-
+// cycle ramp RATE) is never referenced anywhere in eos's codebase -- pyfa's
+// own displayed DPS assumes the weapon is already fully spooled up (steady-
+// state, same "every bonus at max" convention this tool already uses
+// everywhere else), not a time-weighted ramp average. This tool follows
+// that same convention: apply the max bonus as a flat multiplier, no
+// ramp-up simulation needed (bug-class #20).
+const SPOOLUP_BONUS_MAX_ATTR = 2734;
+// Some hulls (Ishtar/Eos, Rattlesnake, etc.) carry TWO independent drone-
+// damage role bonuses from two different skills: one that boosts only
+// light/medium/heavy COMBAT drones, one that boosts only SENTRY drones —
+// mutually exclusive per drone, never both on the same one (confirmed via
+// pyfa's eos/effects.py: e.g. Ishtar's Effect6052/6053 filter on 'Medium
+// Drone Operation'/'Heavy Drone Operation', while Effect6045 filters
+// separately on 'Sentry Drone Interfacing'). SHIP_ROLE_BONUS tags a
+// sentry-only entry with bCat 'dronesentry' (as opposed to plain 'drone'
+// for the combat-only one); a drone is classified as a sentry by checking
+// its own requiresSkill attributes (182/183/184) for this skill type id —
+// the same test pyfa itself uses. This split was found and fixed in an
+// earlier session (against a real Ishtar killmail) and had regressed —
+// re-confirmed and re-fixed this session against the same killmail.
+const SENTRY_DRONE_INTERFACING_SKILL_ID = 23594;
+const REQUIRED_SKILL_ATTRS = [182, 183, 184];
+function isSentryDrone(dogma){
+  return REQUIRED_SKILL_ATTRS.some(attrId => attrVal(dogma, attrId, 0) === SENTRY_DRONE_INTERFACING_SKILL_ID);
+}
+
+// Every hull's intrinsic role/skill bonuses to turret, missile, or drone
+// damage and rate of fire, pre-computed at max skill level (V) — extracted
+// from pyfa's bundled CCP static-data traits (the same "Role Bonus" / "...per
+// skill level" text shown in the in-game fitting window), so a Vexor's 25%
+// hybrid damage or a Drake's 50% kinetic missile damage bonus is no longer
+// silently missing from the DPS estimate. Per-hull entries: [category, 'damage'|'rof', percentAtMaxSkill].
+// Multiple entries for the same category/kind compound multiplicatively, matching
+// how EVE itself layers non-stacking-penalized skill/hull bonuses.
+//
+// 2026-10-08 re-audit (bug-class #17a/#19 follow-up): project memory claimed
+// all 12 of Zealot/Cerberus/Muninn/Nighthawk/Broadsword/Rokh/Vindicator/Deimos/
+// Vagabond/Sacrilege/Absolution/Crusader had ZERO entry here. Re-reading the
+// live file fresh (not trusting that memory note) found 11 of the 12 already
+// present and correct, except: (11993 Cerberus) damage was 25, re-verified
+// live via everef.net trait text that Caldari Cruiser's missile-damage skill
+// is 2.5%/level not 5%/level -> corrected to 12.5. (12019 Sacrilege) rof was
+// 25, re-verified HAC skill for Sacrilege is 7.5%/level not 5%/level ->
+// corrected to 37.5. (22470 Nighthawk) damage was unrestricted 50, but
+// Caldari Battlecruiser's missile-damage skill is explicitly KINETIC-ONLY
+// per trait text -> added the 'kin' 4th-element restriction (same mechanism
+// already used by 29340/11379). Rokh (24688) genuinely has no entry and
+// that's correct -- its only intrinsic bonus is a shield-RESIST skill (see
+// SHIP_RESIST_BONUS below), it has no turret damage/rof role bonus at all.
+//
+// 2026-10-08 (bug #17b research, T3 Destroyer Mode mechanic): all 4 Tactical
+// Destroyers (Confessor 34317, Hecate 35683, Jackdaw 34828, Svipul 34562)
+// were missing their flat 33% weapon-damage "Misc Bonus" role bonus
+// (confirmed live via each hull's own shipBonusRole7 attribute = 33, and
+// independently via everef.net trait text's "Misc Bonuses: 33% bonus to
+// [weapon] damage" line on all 4) -- this is SEPARATE from and compounds
+// with their already-correct skill-scaled "Type Bonus" entry below. Added
+// as a 2nd array entry per hull (same compounding-multiplier mechanism as
+// every other multi-entry hull in this table). This was never caught by
+// the original 340-ship audit since T3 Destroyers are their own hull
+// category and weren't in scope for that sweep.
+// NOTE: this fix does NOT yet implement the Tactical Destroyer Mode
+// mechanic itself (Defense/Propulsion/Sharpshooter stance-switching, which
+// adds further conditional bonuses depending which mode is active) -- that
+// is bug #17b, tracked separately and still open; this is just the
+// always-on baseline weapon-damage piece.
+const SHIP_ROLE_BONUS ={"583":[["missile","damage",50]],"585":[["projectile","damage",25]],"587":[["projectile","rof",37.5]],"588":[["projectile","damage",10]],"589":[["energy","damage",25]],"591":[["energy","damage",25]],"594":[["hybrid","damage",25]],"596":[["energy","damage",10]],"598":[["missile","rof",25]],"601":[["missile","damage",10]],"602":[["missile","damage",25]],"603":[["hybrid","damage",25]],"606":[["hybrid","damage",10],["drone","damage",20]],"608":[["hybrid","damage",25]],"615":[["energy","damage",100]],"617":[["projectile","damage",50]],"621":[["missile","rof",25]],"622":[["projectile","rof",37.5]],"623":[["hybrid","damage",25]],"624":[["energy","damage",25]],"626":[["hybrid","damage",25],["drone","damage",50]],"627":[["hybrid","damage",25]],"628":[["drone","damage",50]],"629":[["projectile","damage",50]],"630":[["missile","rof",25]],"638":[["missile","rof",25]],"639":[["projectile","rof",37.5],["projectile","damage",25]],"641":[["hybrid","rof",25]],"642":[["energy","damage",25]],"643":[["drone","damage",50]],"644":[["missile","rof",25]],"645":[["drone","damage",50]],"671":[["hybrid","damage",900],["hybrid","rof",25]],"2006":[["energy","rof",25]],"2834":[["drone","damage",50]],"2836":[["hybrid","damage",100]],"3516":[["energy","damage",100]],"3518":[["missile","rof",50]],"3756":[["hybrid","damage",20],["missile","damage",20],["drone","damage",50]],"3764":[["missile","damage",250],["missile","damage",200],["missile","rof",75]],"4302":[["energy","damage",25]],"4306":[["hybrid","damage",25]],"4308":[["hybrid","damage",25]],"4310":[["projectile","rof",25]],"11011":[["hybrid","damage",25]],"11178":[["hybrid","damage",50]],"11184":[["energy","damage",50]],"11186":[["missile","rof",25]],"11196":[["projectile","rof",25],["projectile","damage",50]],"11198":[["projectile","damage",25]],"11200":[["hybrid","damage",75]],"11365":[["missile","damage",37.5],["missile","rof",25]],"11371":[["projectile","damage",25],["projectile","damage",25]],"11377":[["missile","damage",75]],"11379":[["missile","damage",50,"kin"],["missile","rof",25]],"11381":[["hybrid","damage",25]],"11393":[["energy","damage",25],["energy","rof",25]],"11400":[["missile","damage",25],["missile","rof",25]],"11567":[["energy","damage",900]],"11938":[["energy","rof",25]],"11940":[["energy","damage",125]],"11942":[["energy","damage",100]],"11957":[["hybrid","damage",25]],"11959":[["missile","damage",37.5]],"11961":[["projectile","rof",25],["projectile","damage",25]],"11963":[["missile","damage",50]],"11965":[["drone","damage",50]],"11969":[["hybrid","damage",25]],"11993":[["missile","rof",25],["missile","damage",12.5]],"11995":[["missile","damage",25],["missile","rof",25]],"11999":[["projectile","rof",25],["projectile","damage",25]],"12003":[["energy","damage",25],["energy","damage",37.5]],"12005":[["drone","damage",50],["dronesentry","damage",25]],"12011":[["hybrid","damage",25]],"12013":[["projectile","rof",25],["projectile","damage",25]],"12015":[["missile","damage",25],["missile","rof",25]],"12017":[["energy","damage",25]],"12019":[["missile","rof",37.5],["missile","damage",25]],"12021":[["hybrid","rof",25]],"12023":[["hybrid","damage",25],["hybrid","damage",37.5]],"12032":[["missile","damage",75]],"12034":[["missile","damage",75]],"12038":[["missile","damage",75]],"12042":[["hybrid","damage",25]],"12044":[["hybrid","damage",50]],"13202":[["hybrid","damage",25]],"16227":[["hybrid","damage",25]],"16229":[["hybrid","damage",50]],"16231":[["missile","rof",37.5]],"16233":[["drone","damage",50]],"16242":[["projectile","damage",25]],"17480":[["drone","damage",50]],"17619":[["missile","damage",125],["missile","damage",100]],"17634":[["missile","rof",30]],"17703":[["energy","damage",125]],"17709":[["energy","damage",50]],"17713":[["projectile","rof",37.5]],"17715":[["missile","damage",50],["drone","damage",500]],"17718":[["energy","damage",150]],"17720":[["projectile","damage",50],["projectile","rof",25]],"17722":[["hybrid","damage",75]],"17726":[["energy","damage",37.5]],"17728":[["hybrid","rof",25]],"17732":[["projectile","rof",37.5],["projectile","damage",25]],"17736":[["energy","damage",150]],"17738":[["projectile","damage",25],["projectile","rof",25]],"17740":[["hybrid","damage",37.5]],"17812":[["projectile","damage",125]],"17841":[["hybrid","damage",100]],"17843":[["drone","damage",50],["hybrid","damage",50]],"17918":[["missile","damage",50],["drone","damage",275]],"17920":[["energy","damage",100]],"17922":[["energy","damage",125]],"17924":[["energy","damage",150]],"17926":[["energy","damage",125]],"17928":[["hybrid","damage",200]],"17930":[["missile","damage",50],["drone","damage",300]],"17932":[["projectile","damage",100]],"19720":[["energy","damage",25]],"19722":[["projectile","damage",25],["projectile","rof",25]],"19724":[["hybrid","damage",25],["hybrid","rof",25]],"19726":[["missile","damage",25]],"20125":[["drone","damage",50]],"22428":[["energy","rof",50]],"22430":[["hybrid","damage",100],["drone","damage",50]],"22436":[["missile","rof",50]],"22440":[["projectile","rof",25],["projectile","damage",50]],"22442":[["drone","damage",50],["dronesentry","damage",25]],"22444":[["projectile","damage",50],["projectile","damage",50]],"22446":[["hybrid","damage",50]],"22448":[["energy","damage",100]],"22452":[["missile","rof",25]],"22456":[["projectile","damage",25]],"22460":[["hybrid","rof",37.5]],"22464":[["missile","damage",50]],"22466":[["hybrid","damage",50],["hybrid","damage",50]],"22468":[["missile","rof",25],["missile","damage",37.5]],"22470":[["missile","rof",37.5],["missile","damage",50,"kin"]],"22474":[["missile","damage",50]],"22546":[["drone","damage",50]],"23773":[["projectile","damage",900],["projectile","rof",25]],"24690":[["hybrid","damage",50]],"24692":[["energy","damage",37.5]],"24694":[["projectile","damage",50]],"24696":[["energy","damage",50]],"24698":[["missile","damage",50]],"24700":[["drone","damage",50]],"24702":[["projectile","damage",25],["projectile","rof",25]],"26840":[["missile","rof",25]],"26842":[["projectile","rof",25],["projectile","damage",25]],"28352":[["drone","damage",50]],"28606":[["drone","damage",50],["drone","damage",100]],"28659":[["energy","damage",25],["energy","damage",100]],"28661":[["hybrid","damage",25],["hybrid","damage",100]],"28665":[["projectile","damage",37.5],["projectile","damage",100]],"28710":[["missile","damage",100]],"29336":[["projectile","rof",50],["missile","damage",50]],"29337":[["energy","damage",125]],"29340":[["missile","damage",125,"kin"],["missile","damage",100]],"29344":[["hybrid","damage",87.5]],"32207":[["projectile","damage",62.5]],"32209":[["projectile","damage",100]],"32305":[["energy","damage",50],["drone","damage",50]],"32307":[["drone","damage",50],["hybrid","damage",37.5]],"32309":[["missile","rof",25]],"32311":[["missile","damage",37.5],["projectile","rof",37.5]],"32788":[["missile","rof",25],["missile","damage",115]],"32872":[["drone","damage",50]],"32874":[["drone","damage",50]],"32876":[["missile","damage",25]],"32878":[["missile","damage",25]],"33079":[["energy","damage",100]],"33081":[["drone","damage",30]],"33083":[["hybrid","damage",75]],"33099":[["projectile","damage",25]],"33151":[["hybrid","damage",50]],"33153":[["missile","damage",50]],"33155":[["energy","damage",50]],"33157":[["projectile","damage",50]],"33395":[["projectile","damage",150],["projectile","rof",25]],"33397":[["projectile","damage",200]],"33470":[["drone","damage",50],["energy","damage",50]],"33472":[["drone","damage",50]],"33553":[["drone","damage",50],["energy","damage",50]],"33623":[["energy","damage",25]],"33625":[["energy","damage",25]],"33631":[["projectile","rof",25]],"33633":[["projectile","rof",25]],"33635":[["hybrid","damage",50]],"33637":[["hybrid","damage",50]],"33639":[["energy","rof",25]],"33641":[["energy","rof",25]],"33643":[["missile","rof",25]],"33645":[["missile","rof",25]],"33647":[["projectile","rof",25]],"33649":[["projectile","rof",25]],"33651":[["hybrid","damage",25]],"33653":[["hybrid","damage",25]],"33655":[["energy","damage",25]],"33657":[["energy","damage",25]],"33659":[["hybrid","damage",25]],"33661":[["hybrid","damage",25]],"33663":[["projectile","damage",25]],"33665":[["projectile","damage",25]],"33667":[["hybrid","damage",25]],"33669":[["hybrid","damage",25]],"33673":[["missile","damage",50],["drone","damage",375]],"33675":[["missile","damage",100],["drone","damage",600]],"33677":[["hybrid","damage",100]],"33687":[["drone","damage",100]],"33816":[["missile","damage",125]],"33818":[["missile","damage",75]],"33820":[["missile","damage",50]],"33869":[["hybrid","damage",50]],"33871":[["missile","rof",25]],"33875":[["drone","damage",50]],"33883":[["projectile","damage",25]],"34118":[["hybrid","rof",25]],"34151":[["missile","damage",50],["drone","damage",275]],"34219":[["energy","damage",25],["energy","damage",100]],"34221":[["energy","damage",25],["energy","damage",100]],"34223":[["energy","damage",25],["energy","damage",100]],"34225":[["missile","rof",25]],"34227":[["missile","rof",25]],"34229":[["missile","rof",25]],"34231":[["missile","damage",100]],"34233":[["missile","damage",100]],"34235":[["missile","damage",100]],"34237":[["hybrid","rof",25]],"34239":[["hybrid","rof",25]],"34241":[["hybrid","damage",25],["hybrid","damage",100]],"34243":[["hybrid","damage",25],["hybrid","damage",100]],"34245":[["hybrid","damage",25],["hybrid","damage",100]],"34247":[["projectile","rof",25],["projectile","damage",25]],"34249":[["projectile","rof",25],["projectile","damage",25]],"34251":[["projectile","rof",25],["projectile","damage",25]],"34253":[["projectile","rof",25],["projectile","damage",100]],"34255":[["projectile","rof",25],["projectile","damage",100]],"34257":[["projectile","rof",25],["projectile","damage",100]],"34317":[["energy","damage",37.5],["energy","damage",33]],"34339":[["hybrid","damage",25],["hybrid","rof",25]],"34341":[["projectile","damage",25],["projectile","rof",25]],"34343":[["missile","damage",25]],"34345":[["energy","damage",25]],"34441":[["drone","damage",50]],"34445":[["hybrid","damage",25],["drone","damage",50]],"34457":[["drone","damage",50]],"34459":[["energy","damage",25]],"34461":[["projectile","damage",25],["projectile","rof",25]],"34463":[["missile","damage",50],["drone","damage",275]],"34465":[["drone","damage",50]],"34467":[["hybrid","rof",25]],"34469":[["missile","rof",25]],"34473":[["missile","damage",50]],"34475":[["missile","damage",50],["drone","damage",500]],"34477":[["hybrid","damage",25]],"34479":[["drone","damage",50],["dronesentry","damage",25]],"34562":[["projectile","damage",37.5],["projectile","damage",33]],"34828":[["missile","rof",15],["missile","damage",33]],"35683":[["hybrid","rof",15],["hybrid","damage",33]],"35779":[["energy","damage",250]],"35781":[["energy","damage",250]],"37453":[["energy","damage",100]],"37454":[["missile","damage",125],["missile","damage",100]],"37455":[["hybrid","damage",100]],"37480":[["missile","damage",50]],"37481":[["drone","damage",50]],"37482":[["missile","damage",50]],"37483":[["drone","damage",50]],"42124":[["hybrid","rof",25],["hybrid","damage",50]],"42126":[["hybrid","rof",25],["hybrid","damage",1000]],"42241":[["energy","damage",1400]],"42243":[["energy","damage",37.5]],"42244":[["drone","damage",50]],"42246":[["energy","damage",400]],"42685":[["hybrid","damage",20],["missile","damage",20],["drone","damage",50]],"44993":[["hybrid","damage",25],["projectile","rof",25],["energy","damage",25],["missile","rof",25]],"44995":[["projectile","rof",25],["missile","rof",25],["energy","damage",25],["hybrid","damage",25]],"44996":[["energy","damage",50],["missile","rof",37.5],["projectile","rof",50],["hybrid","damage",50]],"45530":[["hybrid","damage",50],["missile","damage",75],["hybrid","damage",300],["missile","rof",33]],"45531":[["hybrid","damage",50],["hybrid","damage",100]],"45647":[["missile","damage",25]],"45649":[["missile","rof",75],["missile","damage",250],["missile","damage",200]],"47466":[["hybrid","damage",20],["missile","damage",20],["drone","damage",50]],"60764":[["missile","damage",100],["missile","rof",25]],"60765":[["missile","damage",125]],"72811":[["missile","rof",37.5]],"72812":[["hybrid","damage",37.5]],"72869":[["drone","damage",50],["hybrid","damage",50]],"72872":[["energy","damage",37.5],["drone","damage",25]],"72903":[["missile","rof",62.5]],"72904":[["missile","damage",150]],"72907":[["energy","damage",100]],"72913":[["hybrid","damage",37.5]],"73787":[["projectile","damage",37.5],["projectile","rof",25]],"73789":[["energy","damage",37.5]],"73790":[["energy","damage",37.5]],"73792":[["hybrid","damage",37.5],["hybrid","rof",25]],"73793":[["missile","damage",37.5]],"73794":[["projectile","damage",25],["projectile","rof",25]],"73795":[["hybrid","damage",37.5]],"73796":[["hybrid","damage",50]],"74141":[["missile","rof",37.5],["missile","damage",37.5]],"74316":[["missile","damage",50],["missile","rof",50]],"77114":[["hybrid","damage",80],["missile","damage",80]],"77281":[["hybrid","rof",25]],"77283":[["missile","damage",25]],"77726":[["hybrid","damage",100]],"78333":[["projectile","damage",100]],"78366":[["missile","damage",50],["drone","damage",500]],"78367":[["missile","damage",50],["drone","damage",300]],"78369":[["projectile","damage",25],["projectile","rof",25]],"78414":[["hybrid","damage",50]],"78576":[["projectile","damage",1000],["projectile","rof",25]],"81008":[["missile","damage",100]],"81040":[["missile","damage",50],["missile","damage",100]],"81046":[["missile","damage",75]],"81047":[["missile","damage",125]],"85062":[["drone","damage",150]],"85086":[["projectile","damage",125]],"85087":[["projectile","damage",150]],"85229":[["projectile","rof",37.5],["missile","rof",50],["energy","damage",37.5],["hybrid","damage",37.5],["drone","damage",150]],"85236":[["energy","damage",75],["missile","rof",62.5],["projectile","rof",62.5],["hybrid","damage",75]],"87381":[["projectile","damage",50],["projectile","damage",25]],"89607":[["drone","damage",50]],"89649":[["drone","damage",50]],"89807":[["missile","rof",25],["missile","rof",50],["missile","rof",25]],"89808":[["missile","rof",30]],"91775":[["drone","damage",50],["energy","damage",50]],"91849":[["drone","damage",50],["hybrid","damage",50]],"91857":[["missile","damage",50],["missile","damage",25]],"91858":[["missile","rof",37.5]]};
+
+// Hull-intrinsic ALL-SHIELD / ALL-ARMOR resistance role bonuses (e.g. a
+// Nighthawk's Caldari Battlecruiser skill, +4%/level -> +20% at V all shield
+// resistances), found 2026-10-08 during the SHIP_ROLE_BONUS #17a/#19
+// re-audit above. These are a genuinely different mechanic from everything
+// in SHIP_ROLE_BONUS (which only ever covers turret/missile/drone
+// damage+rof) -- there was previously NO mechanism anywhere in this file
+// for an intrinsic ship skill bonus to shield/armor RESISTANCE, so these 6
+// hulls' resist bonuses were silently dropped from EHP entirely, same kind
+// of gap as bug #9 (Universal Battleship HP role bonus) before that was
+// fixed. Values confirmed live via everef.net trait text 2026-10-08.
+// Applied as an independent multiplicative layer against adjShieldRes/
+// adjArmorRes below (same slot as Damage Control's dcShieldMult/dcArmorMult
+// and the Reactive Armor Hardener's rahArmorMult) -- deliberately NOT folded
+// into the stacking-penalized shieldBonusFractions/armorBonusFractions pool,
+// because a ship-intrinsic skill bonus does not stacking-penalize against a
+// fitted module's own resistance bonus in real EVE (same principle already
+// documented above for the Compensation skill and the Bastion/Siege RoF
+// bonus). Per-hull: {shield: pctAtMaxSkill} and/or {armor: pctAtMaxSkill}.
+const SHIP_RESIST_BONUS = {
+  "12015": {shield: 15, armor: 15}, // Muninn: Minmatar Cruiser 3%/lvl all shield+armor resist
+  "22470": {shield: 20},            // Nighthawk: Caldari Battlecruiser 4%/lvl all shield resist
+  "12019": {armor: 25},             // Sacrilege: Amarr Cruiser 5%/lvl all armor resist
+  "12013": {shield: 20},            // Broadsword: flat Role Bonus, 20% all shield resist (not skill-scaled)
+  "22448": {armor: 20},             // Absolution: Amarr Battlecruiser 4%/lvl all armor resist
+  "24688": {shield: 20}             // Rokh: Caldari Battleship 4%/lvl all shield resist
+};
+
+// Tactical Destroyer ("T3D") Mode mechanic (bug #17b, 2026-10-08). Confessor/
+// Hecate/Jackdaw/Svipul can each switch between Defense/Propulsion/
+// Sharpshooter Mode once every 10s -- confirmed live via ESI dogma data that
+// this is a BUILT-IN SHIP ABILITY with no fitted item/type backing it at all
+// (no type exists named anything like "Sharpshooter Mode"; EVE University's
+// wiki independently corroborates "unique ability", and attribute 1985
+// "Cooldown between mode switching" = 10000ms lives directly on the hull
+// type, not on any module). That has one hard consequence: a killmail/dscan
+// snapshot can NEVER reveal which mode was active at time of death -- it's
+// pure runtime ship state with no item to leave a trace. So this tool can't
+// detect the real mode; it computes all three and lets the viewer toggle
+// (see the "Mode:" icon row in renderFitSummaryHtml below), defaulting to
+// Sharpshooter -- consistent with this tool's existing "assume the max/
+// worst-case" DPS convention everywhere else.
+//
+// Per-hull, confirmed via everef.net trait text 2026-10-08:
+// - sharpshooter.cat/damagePct: +33.3% damage to that hull's own weapon
+//   category only (matches weaponCategoryFromGroup's categories). Each hull
+//   also gets +range, +100% sensor strength/targeting range, and +66.6%
+//   sensor-linking/weapon-disruption resistance in Sharpshooter Mode, none
+//   of which this tool tracks, so they're omitted here.
+// - defense.{shield,armor,hull}: +33.3% resistance to whichever layer(s)
+//   that specific hull's Defense Mode boosts (varies by hull -- Hecate also
+//   gets hull resist, Svipul and Jackdaw are shield-only or shield+armor).
+//   Each hull also gets a signature-radius reduction or remote-repair boost
+//   in Defense Mode, not tracked here.
+// - propulsion: deliberately EMPTY on every hull -- Propulsion Mode only
+//   affects velocity/inertia, which this tool doesn't compute at all, so it
+//   has zero effect on the DPS/EHP numbers this tool shows. (If 'propulsion'
+//   is picked in the UI, the viewer sees the same baseline numbers as if no
+//   mode bonus applied -- that's correct, not a bug.)
+const TACTICAL_DESTROYER_MODE_BONUS = {
+  "34317": { sharpshooter: {cat:'energy',     damagePct: 33.3}, defense: {armor: 33.3},               propulsion: {} }, // Confessor
+  "35683": { sharpshooter: {cat:'hybrid',     damagePct: 33.3}, defense: {armor: 33.3, hull: 33.3},    propulsion: {} }, // Hecate
+  "34828": { sharpshooter: {cat:'missile',    damagePct: 33.3}, defense: {shield: 33.3},               propulsion: {} }, // Jackdaw
+  "34562": { sharpshooter: {cat:'projectile', damagePct: 33.3}, defense: {shield: 33.3, armor: 33.3},  propulsion: {} }  // Svipul
+};
+const TACTICAL_MODE_LABEL = {sharpshooter: 'Sharpshooter Mode', defense: 'Defense Mode', propulsion: 'Propulsion Mode'};
+function tacticalModeIconSvg(mode){
+  if(mode === 'sharpshooter') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>';
+  if(mode === 'defense') return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>';
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 16 12 4 18 16"/><polyline points="8 20 12 13 16 20"/></svg>'; // propulsion
+}
+
+// Strategic Cruiser (T3: Tengu/Legion/Proteus/Loki) subsystems fitted in the
+// Subsystems slot group behave like permanently-installed modules — verified
+// live against ESI for a Legion (type 29986) and its 4 fitted subsystems.
+// Two flat-HP-granting patterns showed up that no ordinary module uses, so
+// they're safe to check unconditionally on every defensiveGroups item:
+//   - shieldCapacityAddPassive: the subsystem's OWN shieldCapacity attribute
+//     (263 — the exact same attribute id used for a ship's base shield HP)
+//     is added directly to the ship's shield HP.
+//   - structureHPBonusAddPassive: the subsystem's structureHPBonusAdd
+//     attribute (2688) is added to the ship's hull HP (attribute 9).
+// A Defensive subsystem can also carry an ordinary hardener-style resistance
+// bonus via the same RESISTANCE_BONUS_ATTR/DC_HULL_ATTR attributes modules
+// use — that's already handled by the existing loop below once 'Subsystems'
+// is included in defensiveGroups, no extra code needed.
+const SUBSYSTEM_SHIELD_HP_SELFADD_ATTR = 263;
+const SUBSYSTEM_HULL_HP_ADD_ATTR = 2688;
+
+// Universal Battleship role bonus (effect 8377, "BattleshipRoleBonusArmorPlate
+// &ShieldExtenderHP" — confirmed via live ESI dogma_effects on 9 different T1/
+// navy battleship hulls, e.g. Megathron/Raven/Tempest/Apocalypse/Rokh, all
+// carrying the identical values below): every battleship innately boosts the
+// FLAT HP its own fitted Armor Plates / Shield Extenders contribute — NOT the
+// ship's own base armor/shield HP, and not a stacking-penalized bonus (it's a
+// straight LocationGroupModifier percentage onto the module's own attribute).
+// Found this session: previously entirely unhandled, silently undercounting
+// armor/shield buffer on every plated/extended battleship fit (e.g. a real
+// pyfa-verified Megathron fit: 2x 1600mm Steel Plates II each contribute 50%
+// MORE flat armor HP than their own raw dogma value alone implies).
+const ARMOR_PLATE_ROLE_BONUS_ATTR = 3266;    // % bonus to Armor Plate group's own flat armor HP attribute (1159)
+const SHIELD_EXTENDER_ROLE_BONUS_ATTR = 3267; // % bonus to Shield Extender group's own flat shield HP attribute (72)
+
+// Reactive Armor Hardener (group "Armor Resistance Shift Hardener") does NOT
+// sit at a static 15%/15%/15%/15% resistance split like the tool previously
+// assumed (folding its own 267-270 dogma values straight into the same direct-
+// multiply path Damage Control uses). In real EVE it continuously shifts a
+// fixed per-cycle percentage of resistance FROM whichever damage type(s) it's
+// taking the LEAST damage from TOWARD whichever it's taking the MOST from,
+// converging (or settling into a short repeating cycle) rather than staying
+// flat. Ported directly from pyfa/eos's own reactive_armor_hardener.py
+// simulation (donor/recipient/loop-detection logic verified against that
+// source this session) and validated against a real pyfa-verified Megathron
+// fit (RAH resistances converged to 75%/72%/71%/71% here, matching pyfa's
+// reported 75%/71%/71%/71% almost exactly). Assumes a uniform (25% each type)
+// incoming damage profile — pyfa's own default damage pattern when the user
+// hasn't set a custom one, which is the only assumption this tool can make
+// with no actual incoming-fire context.
+const RAH_GROUP_NAME = 'Armor Resistance Shift Hardener';
+const RESIST_SHIFT_AMOUNT_ATTR = 1849;
+
+// Bastion Module (Marauders) / Siege Module (dreadnoughts) / Triage Module
+// (carriers) / Industrial Core (Rorquals) -- all group_id 515 "Siege
+// Module" -- carry attributes 3108 and 3109 (both -50 on a real Bastion
+// Module I, confirmed live via ESI) which drive its "while active" effect's
+// turret/launcher rate-of-fire bonus (moduleBonusBastionModule, effect
+// 6658 -- its RoF-targeting modifiers all point at one of these two
+// attributes with identical magnitude). Found 2026-10-08 against 3
+// independent real, pyfa-verified Marauder killmails (Vargur/projectile,
+// Paladin/energy, Kronos/hybrid -- all 3 all-V-skills, Bastion active):
+// weapon-only DPS was EXACTLY 2.000x the tool's pre-fix (no-RoF-bonus)
+// figure in every case, confirming this is a flat -50% cycle time (i.e.
+// 2x RoF) applied identically across every turret weapon category, not a
+// stacking-penalized bonus and not hull/weapon-type-specific. A 4th data
+// point (Golem/torpedo missiles) came out to ~2.10x instead of 2.00x --
+// kept as a separate, NOT-yet-understood open item (see project notes:
+// possibly the Marauder's own unmodeled intrinsic
+// eliteBonusMaraudersCruiseAndTorpedoDamageRole1 hull bonus, confirmed
+// present on Golem via live ESI but not yet reconciled) rather than
+// assumed to mean turrets and missiles get different Bastion RoF bonuses.
+const SIEGE_ROF_BONUS_ATTR_A = 3108;
+const SIEGE_ROF_BONUS_ATTR_B = 3109;
+const RAH_SIM_ORDER = ['em','exp','kin','therm']; // mirrors pyfa's res_attr_ids tie-break order exactly
+function simulateReactiveArmorHardener(startReso, otherMult, shiftAmt){
+  let rahRes = {...startReso};
+  const incoming = {em:0.25, exp:0.25, kin:0.25, therm:0.25};
+  const history = [];
+  const seen = new Set();
+  const keyOf = r => RAH_SIM_ORDER.map(d => r[d].toFixed(10)).join(',');
+  for(let tick = 0; tick < 500; tick++){
+    const recv = {};
+    for(const d of RAH_SIM_ORDER) recv[d] = incoming[d] * otherMult[d] * rahRes[d];
+    const sorted = RAH_SIM_ORDER.slice().sort((a,b) => recv[a] - recv[b]);
+    const donors = sorted.slice(0,2), recipients = sorted.slice(2);
+    let donated = 0;
+    const next = {...rahRes};
+    for(const d of donors){
+      const toDonate = Math.min(1 - rahRes[d], shiftAmt);
+      donated += toDonate;
+      next[d] = rahRes[d] + toDonate;
+    }
+    for(const d of recipients) next[d] = rahRes[d] - donated / recipients.length;
+    const k = keyOf(next);
+    if(seen.has(k)){
+      const idx = history.findIndex(h => h.key === k);
+      const loop = history.slice(idx);
+      const avg = {};
+      for(const d of RAH_SIM_ORDER) avg[d] = loop.reduce((s,h) => s + h.res[d], 0) / loop.length;
+      return avg;
+    }
+    seen.add(k);
+    history.push({key:k, res:{...next}});
+    rahRes = next;
+  }
+  const tail = history.slice(250);
+  const avg = {};
+  for(const d of RAH_SIM_ORDER) avg[d] = tail.reduce((s,h) => s + h.res[d], 0) / tail.length;
+  return avg;
+}
+
+// Per-subsystem weapon-damage role bonuses — the Strategic Cruiser equivalent
+// of SHIP_ROLE_BONUS, but keyed by the fitted SUBSYSTEM's own type id rather
+// than the hull. Confirmed via ESI that none of the 4 T3 hulls have (or can
+// structurally have) a SHIP_ROLE_BONUS entry of their own: a T3's damage
+// bonus lives on whichever Offensive (or occasionally Core) subsystem
+// variant is actually fitted, not a fixed hull trait. Only
+// individually-verified entries are listed; an unfitted/unlisted subsystem
+// contributes no bonus — same "unaudited, treat as 0" convention as
+// SHIP_ROLE_BONUS. Values are already expressed at max skill level (V) of
+// the required racial Strategic Cruiser skill, same "percentAtMaxSkill"
+// convention as SHIP_ROLE_BONUS.
+const SUBSYSTEM_ROLE_BONUS = {
+  // Legion Offensive - Liquid Crystal Magnifiers (45598): verified via ESI
+  // effect subsystemBonusAmarrOffensiveEnergyWeaponDamageMultiplier, a
+  // LocationRequiredSkillModifier on ship-level damageMultiplier (attribute
+  // 64) worth 10 (%) per level of Amarr Strategic Cruiser -> 50% at level V.
+  // (This entry previously existed, wrongly, as a SHIP_ROLE_BONUS keyed to
+  // this same id — which could never fire there, since SHIP_ROLE_BONUS is
+  // looked up by the ship's hull type id, never a fitted subsystem's id.
+  // Moved here so it actually applies.)
+  '45598': [['energy','damage',50.0]],
+  // The following 7 entries (45599, 45601, 45602, 45604, 45605, 45607, 45608)
+  // were found 2026-10-08 to have exactly the same bug as 45598 above: they
+  // already existed in SHIP_ROLE_BONUS with CORRECT values (independently
+  // verified against everef.net's type-traits pages for each id) but keyed
+  // by a subsystem type id rather than any T3 Strategic Cruiser hull's real
+  // type id (Legion/Tengu/Proteus/Loki never appear as SHIP_ROLE_BONUS keys),
+  // so none of them could ever actually apply. Moved here, unchanged in
+  // value except 45601 which also picked up the 'kin' damage-type
+  // restriction everef.net's traits text specifies ("5% kinetic damage
+  // bonus...") but which the original mis-keyed entry omitted.
+  '45599': [['missile','damage',25.0],['missile','rof',25.0],['drone','damage',50.0]], // Legion Offensive - Assault Optimization
+  '45601': [['missile','damage',25.0,'kin'],['missile','rof',37.5]], // Tengu Offensive - Accelerated Ejection Bay
+  '45602': [['hybrid','damage',25.0]], // Tengu Offensive - Magnetic Infusion Basin
+  '45604': [['hybrid','damage',50.0]], // Proteus Offensive - Hybrid Encoding Platform
+  '45605': [['drone','damage',50.0]], // Proteus Offensive - Drone Synthesis Projector
+  '45607': [['projectile','damage',87.5]], // Loki Offensive - Projectile Scoping Array
+  '45608': [['missile','rof',50.0]] // Loki Offensive - Launcher Efficiency Configuration
+};
+
+const SHIELD_HP_ATTR = 263;
+const ARMOR_HP_ATTR  = 265;
+const HULL_HP_ATTR   = 9;
+
+// A ship's drone bay can hold far more drones than it can ever fly at once —
+// deployment is capped by BOTH how many drones the pilot can control
+// (maxActiveDrones) and how much bandwidth the ship has to support them
+// (droneBandwidth vs. each drone's own droneBandwidthUsed).
+const MAX_ACTIVE_DRONES_ATTR = 352;
+const DRONE_BANDWIDTH_ATTR = 1271;
+const DRONE_BANDWIDTH_USED_ATTR = 1272;
+
+// Corrected 2026-09-10, then RE-corrected the same day after a direct ESI
+// dogma check on the actual ammo types (Mjolnir/Nova/Scourge/Inferno Rage
+// Rocket AND Light Missile, all four checked directly): the true mapping is
+// Mjolnir=EM (attr 114), Scourge=Kinetic (attr 117), Nova=EXPLOSIVE (attr
+// 116 — NOT Thermal, an earlier "fix" this same day had this backwards),
+// Inferno=THERMAL (attr 118 — NOT Explosive). Cosmetic only — this table
+// only drives the "recommended ammo" display text, never a DPS/EHP calc.
+const RECS = {
+  em:      {missile:'Mjolnir (pure EM)', turret:'Laser crystals — Multifrequency/Radio lean EM-heavy'},
+  therm:   {missile:'Inferno (pure Thermal)', turret:'Hybrid charges (Antimatter/Null) and laser crystals both carry heavy Thermal'},
+  kin:     {missile:'Scourge (pure Kinetic)', turret:'Hybrid charges (Antimatter/Iron) lean Kinetic'},
+  exp:     {missile:'Nova (pure Explosive)', turret:'Projectile ammo (EMP/Fusion) can be tuned toward Explosive'}
+};
+
+const DMG_TO_RACE = {em:'Amarr', therm:'Gallente', kin:'Caldari', exp:'Minmatar'};
+const DRONES_BY_RACE = {
+  Amarr:    {light:'Acolyte',   medium:'Infiltrator', heavy:'Praetor',   sentry:'Curator'},
+  Gallente: {light:'Hobgoblin', medium:'Hammerhead',  heavy:'Ogre',      sentry:'Garde'},
+  Caldari:  {light:'Hornet',    medium:'Vespa',        heavy:'Wasp',      sentry:'Warden'},
+  Minmatar: {light:'Warrior',   medium:'Valkyrie',     heavy:'Berserker', sentry:'Bouncer'}
+};
+
+function droneRecommendation(weakest, droneSizes){
+  const race = DMG_TO_RACE[weakest];
+  const line = DRONES_BY_RACE[race];
+  const entries = droneSizes.map(sz => ({size: sz, name: line[sz]}));
+  const primary = entries[0];
+  let alt = entries.find(e => e.size !== 'sentry');
+  if(primary.size === 'sentry' && !alt){
+    alt = {size:'heavy', name: line.heavy};
+  }
+  return { primary, alt: primary.size === 'sentry' ? alt : null };
+}
+
+const typeCache = new Map();
+const groupCache = new Map();
+let lastScanShips = [];
+
+function setStatus(el, msg, isErr){
+  el.textContent = msg || '';
+  el.classList.toggle('err', !!isErr);
+}
+
+function parseDscan(text){
+  const DIST_ONLY_RE = /^[\d,]+(\.\d+)?\s*(m|km|au|ly)?$/i;
+  const raw = text.split('\n').map(l => l.replace(/ /g, ' ').trim()).filter(Boolean);
+  const rows = [];
+  for(const line of raw){
+    let parts = line.split('\t').map(p => p.trim()).filter(p => p.length);
+    let splitMethod = 'tab';
+
+    if(parts.length < 2){
+      parts = line.split(/\s{2,}/).map(p => p.trim()).filter(p => p.length);
+      splitMethod = 'multi-space';
+    }
+
+    if(parts.length < 2){
+      rows.push({ raw: line, splitMethod: 'single', ok: true, candidates: [line], distance: '' });
+      continue;
+    }
+
+    let distance = '';
+    const nonDistance = [];
+    for(const p of parts){
+      if(!distance && DIST_ONLY_RE.test(p)) distance = p;
+      else nonDistance.push(p);
+    }
+    const candidates = [...new Set(nonDistance)];
+    rows.push({ raw: line, splitMethod, ok: true, candidates, distance });
+  }
+  return rows;
+}
+
+const CELESTIAL_RE = /^(sun|star|stargate|planet|moon|asteroid belt|deep space signature)\b/i;
+function isCelestial(typeName){
+  return CELESTIAL_RE.test(typeName);
+}
+
+async function resolveNamesToIds(names){
+  const unique = [...new Set(names)].slice(0, 500);
+  if(!unique.length) return {};
+  const res = await fetch(`${ESI}/universe/ids/?datasource=tranquility&language=en`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(unique)
+  });
+  if(!res.ok){
+    let detail = '';
+    try{ detail = await res.text(); }catch(e){}
+    throw new Error('ESI name resolution failed (' + res.status + ')' + (detail ? ': ' + detail.slice(0,200) : ''));
+  }
+  return await res.json();
+}
+
+function titleCase(str){
+  return str.replace(/[A-Za-z]+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
+// Ship/item type names have one canonical (Title Case) form in ESI, but the person
+// typing or pasting them shouldn't have to match it exactly — only the resolution
+// itself is case-sensitive. This sends both the as-typed string and its title-cased
+// variant together in a single request (rather than a fallback second call, to avoid
+// any chance of the two sequential requests to the same endpoint interacting oddly).
+// Every returned entry carries both `name` (whatever string actually matched — used
+// for matching against what the person typed/pasted) and `canonicalName` (ESI's own
+// correctly-cased name — used for anything shown to the person).
+async function resolveNamesToIdsFlexible(names){
+  const queryNames = new Set();
+  const variantOf = new Map();
+  for(const n of names){
+    queryNames.add(n);
+    const variant = titleCase(n);
+    if(variant !== n){
+      queryNames.add(variant);
+      variantOf.set(variant, n);
+    }
+  }
+
+  const result = await resolveNamesToIds([...queryNames]);
+  const rawInvTypes = result.inventory_types || [];
+  const resolvedNames = new Set(rawInvTypes.map(t => t.name));
+
+  const invTypes = rawInvTypes.map(t => ({id: t.id, name: t.name, canonicalName: t.name}));
+  for(const t of rawInvTypes){
+    const original = variantOf.get(t.name);
+    if(original && !resolvedNames.has(original)){
+      invTypes.push({id: t.id, name: original, canonicalName: t.name});
+    }
+  }
+  return { ...result, inventory_types: invTypes };
+}
+
+async function getType(typeId){
+  if(typeCache.has(typeId)) return typeCache.get(typeId);
+  const res = await fetch(`${ESI}/universe/types/${typeId}/?datasource=tranquility&language=en`);
+  if(!res.ok) throw new Error('type fetch failed');
+  const data = await res.json();
+  typeCache.set(typeId, data);
+  return data;
+}
+
+async function getGroup(groupId){
+  if(groupCache.has(groupId)) return groupCache.get(groupId);
+  const res = await fetch(`${ESI}/universe/groups/${groupId}/?datasource=tranquility&language=en`);
+  if(!res.ok) throw new Error('group fetch failed');
+  const data = await res.json();
+  groupCache.set(groupId, data);
+  return data;
+}
+
+async function resolveIdsToNames(ids){
+  const unique = [...new Set(ids)].slice(0, 1000);
+  if(!unique.length) return [];
+  const res = await fetch(`${ESI}/universe/names/?datasource=tranquility`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(unique)
+  });
+  if(!res.ok) throw new Error('id resolution failed (' + res.status + ')');
+  return await res.json();
+}
+
+function attrVal(dogma, id, fallback){
+  if(!dogma) return fallback;
+  const found = dogma.find(a => a.attribute_id === id);
+  return found ? found.value : fallback;
+}
+
+const SIZE_TIERS = {
+  light:      {label:'Small hull',       droneSizes:['light']},
+  destroyer:  {label:'Small hull',       droneSizes:['light']},
+  medium:     {label:'Medium hull',      droneSizes:['medium']},
+  bc:         {label:'Medium-large hull',droneSizes:['medium','heavy']},
+  bs:         {label:'Large hull',       droneSizes:['sentry','heavy']},
+  capital:    {label:'Capital hull',     droneSizes:['sentry','heavy'], note:' (fighters also apply, not covered here)'},
+  industrial: {label:'Industrial hull',  droneSizes:['light']}
+};
+
+const GROUP_TIER = {
+  'frigate':'light', 'rookie ship':'light', 'shuttle':'light', 'corvette':'light',
+  'assault frigate':'light', 'covert ops':'light', 'interceptor':'light',
+  'electronic attack ship':'light', 'logistics frigate':'light', 'expedition frigate':'light',
+  'mining frigate':'light', 'prototype exploration ship':'light',
+
+  'destroyer':'destroyer', 'interdictor':'destroyer', 'command destroyer':'destroyer',
+  'tactical destroyer':'destroyer',
+
+  'cruiser':'medium', 'heavy assault cruiser':'medium', 'heavy interdiction cruiser':'medium',
+  'logistics':'medium', 'recon ship':'medium', 'force recon ship':'medium',
+  'combat recon ship':'medium', 'strategic cruiser':'medium',
+
+  'battlecruiser':'bc', 'attack battlecruiser':'bc', 'command ship':'bc',
+
+  'battleship':'bs', 'elite battleship':'bs', 'marauder':'bs', 'black ops':'bs',
+
+  'carrier':'capital', 'dreadnought':'capital', 'titan':'capital',
+  'supercarrier':'capital', 'force auxiliary':'capital',
+
+  'industrial':'industrial', 'freighter':'industrial', 'transport ship':'industrial',
+  'deep space transport':'industrial', 'blockade runner':'industrial',
+  'mining barge':'industrial', 'exhumer':'industrial', 'capital industrial ship':'industrial'
+};
+
+function sizeClassFromGroup(groupName){
+  const g = groupName.toLowerCase().trim();
+  if(GROUP_TIER[g]) return {...SIZE_TIERS[GROUP_TIER[g]], label: SIZE_TIERS[GROUP_TIER[g]].label};
+
+  if(/frigate|shuttle|corvette|rookie/.test(g)) return SIZE_TIERS.light;
+  if(/destroyer|interdictor/.test(g)) return SIZE_TIERS.destroyer;
+  if(/battlecruiser/.test(g)) return SIZE_TIERS.bc;
+  if(/battleship|marauder/.test(g)) return SIZE_TIERS.bs;
+  if(/cruiser/.test(g)) return SIZE_TIERS.medium;
+  if(/carrier|dreadnought|titan|force auxiliary/.test(g)) return SIZE_TIERS.capital;
+  if(/industrial|freighter|hauler|barge|exhumer|transport/.test(g)) return SIZE_TIERS.industrial;
+
+  return {label: groupName, droneSizes:['medium']};
+}
+
+async function analyzeChunks(items, worker, concurrency){
+  const results = new Array(items.length);
+  let idx = 0;
+  async function runNext(){
+    while(idx < items.length){
+      const i = idx++;
+      try{ results[i] = await worker(items[i]); }
+      catch(e){ results[i] = {error: e.message}; }
+    }
+  }
+  const runners = [];
+  for(let i=0;i<concurrency;i++) runners.push(runNext());
+  await Promise.all(runners);
+  return results;
+}
+
+document.getElementById('analyzeBtn').addEventListener('click', runAnalysis);
+document.getElementById('debugToggle').addEventListener('click', () => {
+  const el = document.getElementById('debugRows');
+  const showing = el.style.display !== 'none';
+  el.style.display = showing ? 'none' : 'block';
+  document.getElementById('debugToggle').textContent = showing ? 'Show parsed rows' : 'Hide parsed rows';
+});
+
+function switchTab(tab){
+  const dscanTab = document.getElementById('tabDscan');
+  const pilotTab = document.getElementById('tabPilot');
+  const dscanBtn = document.getElementById('tabBtnDscan');
+  const pilotBtn = document.getElementById('tabBtnPilot');
+  const showDscan = tab === 'dscan';
+  dscanTab.style.display = showDscan ? 'block' : 'none';
+  pilotTab.style.display = showDscan ? 'none' : 'block';
+  dscanBtn.classList.toggle('active', showDscan);
+  pilotBtn.classList.toggle('active', !showDscan);
+}
+document.getElementById('tabBtnDscan').addEventListener('click', () => switchTab('dscan'));
+document.getElementById('tabBtnPilot').addEventListener('click', () => switchTab('pilot'));
+
+async function runAnalysis(){
+  const statusEl = document.getElementById('scanStatus');
+  const input = document.getElementById('dscanInput').value;
+  const rows = parseDscan(input);
+  if(!rows.length){ setStatus(statusEl, 'Paste some D-Scan output first.', true); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  document.getElementById('resultsWrap').style.display = 'none';
+
+  renderDebugRows(rows);
+
+  const okRows = rows.filter(r => r.ok);
+  const celestialCounts = new Map();
+  const lookupSet = new Set();
+
+  for(const r of okRows){
+    r.celestialMatch = r.candidates.find(isCelestial) || null;
+    if(r.celestialMatch){
+      celestialCounts.set(r.celestialMatch, (celestialCounts.get(r.celestialMatch) || 0) + 1);
+    } else {
+      for(const c of r.candidates){
+        if(c.trim().length >= 3) lookupSet.add(c);
+      }
+    }
+  }
+  const lookupTypes = [...lookupSet];
+
+  try{
+    setStatus(statusEl, `Resolving ${lookupTypes.length} candidate names…`);
+    let idsRes;
+    try{
+      idsRes = await resolveNamesToIdsFlexible(lookupTypes);
+    }catch(e){
+      throw new Error(e.message + ' — the batch of names sent to ESI was rejected. Check "parsed rows" above to see whether columns are being split correctly.');
+    }
+    const invTypes = idsRes.inventory_types || [];
+    const nameToId = new Map(invTypes.map(t => [t.name, t.id]));
+    const nameToCanonical = new Map(invTypes.map(t => [t.name, t.canonicalName]));
+    const canonicalToId = new Map(invTypes.map(t => [t.canonicalName, t.id]));
+
+    const typeCounts = new Map();
+    const unresolvedCounts = new Map();
+    for(const r of okRows){
+      if(r.celestialMatch) continue;
+      const match = r.candidates.find(c => nameToId.has(c));
+      if(match){
+        const canonical = nameToCanonical.get(match) || match;
+        r.resolvedName = canonical;
+        typeCounts.set(canonical, (typeCounts.get(canonical) || 0) + 1);
+      } else {
+        const label = r.candidates.join(' / ') || '(unparsed)';
+        unresolvedCounts.set(label, (unresolvedCounts.get(label) || 0) + 1);
+      }
+    }
+
+    const resolvedList = [...typeCounts.keys()];
+    setStatus(statusEl, `Fetching ship data for ${resolvedList.length} recognized types…`);
+
+    const typeResults = await analyzeChunks(resolvedList, async (name) => {
+      const typeId = canonicalToId.get(name);
+      const type = await getType(typeId);
+      const group = await getGroup(type.group_id);
+      return {name, typeId, type, group};
+    }, 5);
+
+    lastScanShips = typeResults.filter(t => t && !t.error && t.group.category_id === 6)
+      .map(t => ({name:t.name, typeId:t.typeId}));
+    populateShipSelect();
+
+    renderResults(typeResults, typeCounts, unresolvedCounts, celestialCounts);
+    const badRows = rows.length - okRows.length;
+    setStatus(statusEl, `Done — ${resolvedList.length} type(s) recognized from ${rows.length} line(s)${badRows ? `, ${badRows} line(s) couldn't be split` : ''}.`);
+  }catch(e){
+    setStatus(statusEl, 'Error: ' + e.message + '. Check your network connection to esi.evetech.net.', true);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function renderResults(typeResults, typeCounts, unresolvedCounts, celestialCounts){
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+  const wrap = document.getElementById('resultsWrap');
+  wrap.style.display = 'block';
+  const celestialTotal = [...celestialCounts.values()].reduce((a,b) => a+b, 0);
+  const unresolvedTotal = [...unresolvedCounts.values()].reduce((a,b) => a+b, 0);
+  document.getElementById('contactsCount').textContent = `${typeResults.length} type(s), ${celestialTotal + unresolvedTotal} other line(s)`;
+
+  for(const item of typeResults){
+    if(!item || item.error){
+      continue;
+    }
+    const { name, type, group } = item;
+    const count = typeCounts.get(name) || 1;
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    if(group.category_id !== 6){
+      card.innerHTML = `
+        <div class="ctop"><span class="cname">${escapeHtml(name)}</span><span class="ccount">x${count}</span></div>
+        <div class="cmeta notship">${escapeHtml(group.name)} — not a ship, no resistance profile</div>
+      `;
+      grid.appendChild(card);
+      continue;
+    }
+
+    const dogma = type.dogma_attributes;
+    const shieldHP = attrVal(dogma, SHIELD_HP_ATTR, 0);
+    const armorHP  = attrVal(dogma, ARMOR_HP_ATTR, 0);
+    const hullHP   = attrVal(dogma, HULL_HP_ATTR, 0);
+    const totalHP = shieldHP + armorHP + hullHP || 1;
+
+    const weighted = {};
+    for(const d of DMG){
+      const sRes = attrVal(dogma, SHIELD_ATTR[d], 1);
+      const aRes = attrVal(dogma, ARMOR_ATTR[d], 1);
+      const hRes = attrVal(dogma, HULL_ATTR[d], 1);
+      weighted[d] = (sRes*shieldHP + aRes*armorHP + hRes*hullHP) / totalHP;
+    }
+    const weakest = DMG.reduce((a,b) => weighted[b] > weighted[a] ? b : a, DMG[0]);
+    const sizeInfo = sizeClassFromGroup(group.name);
+    const rec = RECS[weakest];
+    const drones = droneRecommendation(weakest, sizeInfo.droneSizes);
+
+    const barsHtml = DMG.map(d => {
+      const pct = Math.min(1, weighted[d]) * 100;
+      const isWeak = d === weakest;
+      return `
+        <div class="bar-row ${isWeak ? 'weakest' : ''}">
+          <span class="bar-label">${DMG_LABEL[d]}</span>
+          <div class="bar-track"><div class="bar-fill fill-${d}" style="width:${pct.toFixed(0)}%"></div></div>
+          <span class="bar-pct">${pct.toFixed(0)}%</span>
+        </div>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="ctop"><span class="cname">${escapeHtml(name)}</span><span class="ccount">x${count}</span></div>
+      <div class="cmeta">${escapeHtml(group.name)} · ${sizeInfo.label}${sizeInfo.note || ''}</div>
+      <div class="bars">${barsHtml}</div>
+      <div class="weak-line">
+        <span class="dmg-badge ${weakest}">${DMG_FULL[weakest]}</span>
+        <span class="weak-sub">weakest damage type (higher % = less resisted)</span>
+      </div>
+      <div class="drone-rec">
+        <span class="drone-rec-label">Best drone</span>
+        <span class="drone-rec-value">${drones.primary.name} (${drones.primary.size})</span>
+      </div>
+      ${drones.alt ? `
+      <div class="drone-alt">
+        Sentries can't chase — if the target won't sit still, use <b>${drones.alt.name}</b> (${drones.alt.size}) instead.
+      </div>` : ''}
+      <div class="rec">
+        <b>Missile:</b> ${rec.missile}<br>
+        <b>Turret:</b> ${rec.turret}
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+
+  if(celestialCounts.size){
+    const card = document.createElement('div');
+    card.className = 'card';
+    const list = [...celestialCounts.entries()].map(([n,c]) => `${escapeHtml(n)} (x${c})`).join(', ');
+    card.innerHTML = `
+      <div class="cname" style="margin-bottom:8px;">Celestials (${celestialCounts.size})</div>
+      <div class="cmeta notship">${list} — skipped, not ships</div>
+    `;
+    grid.appendChild(card);
+  }
+
+  if(unresolvedCounts.size){
+    const card = document.createElement('div');
+    card.className = 'card';
+    const list = [...unresolvedCounts.entries()].map(([n,c]) => `${escapeHtml(n)} (x${c})`).join(', ');
+    card.innerHTML = `
+      <div class="cname" style="margin-bottom:8px;">Unrecognized (${unresolvedCounts.size})</div>
+      <div class="cmeta notship">${list}</div>
+      <div class="note">No match on ESI, as-typed or in Title Case. Open "parsed rows" above the scan box to check what was extracted — if it's a real ship/item name, it may be misspelled or not yet indexed by ESI.</div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function renderDebugRows(rows){
+  const el = document.getElementById('debugRows');
+  if(!el) return;
+  const bad = rows.filter(r => !r.ok);
+  let html = '';
+  if(bad.length){
+    html += `<div class="note" style="border:none;padding:0;margin-bottom:8px;color:var(--danger);">${bad.length} line${bad.length>1?'s':''} could not be split into columns — the type lookup for these will fail. This usually means tab characters were lost when the scan was pasted.</div>`;
+  }
+  html += rows.slice(0, 60).map(r => `
+    <div class="lossrow" style="font-family:var(--mono);">
+      <span style="color:${r.ok ? 'var(--text-dim)' : 'var(--danger)'}">[${r.splitMethod}]</span>
+      <span>candidates: ${r.candidates.map(c => `"${escapeHtml(c)}"`).join(', ') || '(none)'} · distance: "${escapeHtml(r.distance)}"</span>
+    </div>`).join('');
+  if(rows.length > 60){
+    html += `<div class="cmeta">…and ${rows.length - 60} more rows not shown.</div>`;
+  }
+  el.innerHTML = html;
+}
+
+function populateShipSelect(){
+  const sel = document.getElementById('shipSelect');
+  sel.innerHTML = '<option value="">— pick ship from scan (optional) —</option>';
+  for(const s of lastScanShips){
+    const opt = document.createElement('option');
+    opt.value = s.name;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  }
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// Hulls that can show up as a "loss" on a pilot's zKillboard history but
+// aren't a combat threat worth surfacing in the "most flown ships" ranking:
+// Capsule (a pod loss rides along with every real ship loss), Shuttle,
+// Corvette (EVE's own ESI/SDE group name for the 4 racial "rookie ships" --
+// Reaper/Ibis/Velator/Impairor -- is literally "Corvette", not "Rookie
+// ship"), and Mobile Tractor Unit (a Deployable, not a Ship, but it still
+// shows up with its own victim.ship_type_id on a killmail like any other
+// loss). Matched by exact group_id, confirmed live via ESI
+// /universe/categories/6/ (Ship) and /22/ (Deployable) on 2026-10-08 --
+// deliberately NOT a substring/name match (unlike the old isCapsule()
+// check this replaces), per the lesson from bug-classes #17c/#18: a
+// substring match on a group or item NAME is fragile against EVE's actual
+// (sometimes counterintuitive) naming, where an exact group_id is not.
+const EXCLUDED_HULL_GROUP_IDS = new Set([
+  29,   // Capsule
+  31,   // Shuttle
+  237,  // Corvette (rookie ships)
+  1250  // Mobile Tractor Unit
+]);
+
+const SLOT_GROUPS = [
+  {label:'High slots', min:27, max:34},
+  {label:'Mid slots', min:19, max:26},
+  {label:'Low slots', min:11, max:18},
+  {label:'Rigs', min:92, max:99},
+  {label:'Subsystems', min:125, max:132},
+  {label:'Drone bay', min:87, max:87},
+  {label:'Cargo', min:5, max:5}
+];
+function slotGroupFor(flag){
+  for(const g of SLOT_GROUPS){
+    if(flag >= g.min && flag <= g.max) return g.label;
+  }
+  return null;
+}
+
+const killmailCache = new Map();
+async function fetchKillmail(stub){
+  const hash = stub.zkb && stub.zkb.hash;
+  if(!hash) return {error:'no hash'};
+  if(killmailCache.has(stub.killmail_id)) return killmailCache.get(stub.killmail_id);
+  const res = await fetch(`${ESI}/killmails/${stub.killmail_id}/${hash}/?datasource=tranquility`);
+  if(!res.ok){ const r = {error:'killmail fetch failed'}; killmailCache.set(stub.killmail_id, r); return r; }
+  const km = await res.json();
+  const result = {killmail_id: stub.killmail_id, hash, km};
+  killmailCache.set(stub.killmail_id, result);
+  return result;
+}
+
+async function fetchLossesStubs(charId, shipTypeId){
+  const url = shipTypeId
+    ? `${ZKB}/losses/characterID/${charId}/shipTypeID/${shipTypeId}/`
+    : `${ZKB}/losses/characterID/${charId}/`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('zKillboard request failed (' + res.status + ')');
+  return await res.json();
+}
+
+document.getElementById('fitBtn').addEventListener('click', runFitCheck);
+
+let currentPilotName = '';
+let currentCharacter = null;
+
+async function getWeaponDamageInfo(weaponTypeId){
+  if(!weaponTypeId) return {mode:'unknown', types:[]};
+  try{
+    const type = await getType(weaponTypeId);
+    const dogma = type.dogma_attributes || [];
+    const fixed = DMG.filter(d => {
+      const found = dogma.find(a => a.attribute_id === DAMAGE_DEALT_ATTR[d]);
+      return found && found.value > 0;
+    });
+    if(fixed.length) return {mode:'fixed', types:fixed};
+    const group = await getGroup(type.group_id);
+    const g = group.name.toLowerCase();
+    if(/turret|launcher|weapon/.test(g)) return {mode:'variable', types:['em','therm','kin','exp']};
+    return {mode:'unknown', types:[]};
+  }catch(e){
+    return {mode:'unknown', types:[]};
+  }
+}
+
+function damageBadgesHtml(info){
+  if(info.mode === 'fixed'){
+    return info.types.map(d => `<span class="dmg-badge sm ${d}">${DMG_FULL[d]}</span>`).join('');
+  }
+  if(info.mode === 'variable'){
+    const badges = info.types.map(d => `<span class="dmg-badge sm faded ${d}">${DMG_LABEL[d]}</span>`).join('');
+    return `${badges}<span class="dmg-variable-note">ammo-dependent</span>`;
+  }
+  return '';
+}
+
+async function renderLastKill(character, pilotName){
+  const el = document.getElementById('lastKillInfo');
+  el.innerHTML = `<div class="lastkill">Checking last kill…</div>`;
+  try{
+    const res = await fetch(`${ZKB}/kills/characterID/${character.id}/`);
+    if(!res.ok) throw new Error('zKillboard request failed (' + res.status + ')');
+    const stubs = await res.json();
+    if(!stubs.length){
+      el.innerHTML = `<div class="lastkill">No recorded kills for ${escapeHtml(pilotName)} on zKillboard.</div>`;
+      return;
+    }
+    const stub = stubs[0];
+    const kmResult = await fetchKillmail(stub);
+    if(kmResult.error){
+      el.innerHTML = `<div class="lastkill">Could not retrieve their last kill (${escapeHtml(kmResult.error)}).</div>`;
+      return;
+    }
+    const km = kmResult.km;
+    const attacker = (km.attackers || []).find(a => a.character_id === character.id);
+    if(!attacker){
+      el.innerHTML = `<div class="lastkill">Could not identify ${escapeHtml(pilotName)} among the attackers on their last kill.</div>`;
+      return;
+    }
+    const ids = [km.victim.ship_type_id];
+    if(attacker.ship_type_id) ids.push(attacker.ship_type_id);
+    if(attacker.weapon_type_id) ids.push(attacker.weapon_type_id);
+    const [names, weaponInfo] = await Promise.all([
+      resolveIdsToNames(ids),
+      getWeaponDamageInfo(attacker.weapon_type_id)
+    ]);
+    const idToName = new Map(names.map(n => [n.id, n.name]));
+
+    const flownName = attacker.ship_type_id ? (idToName.get(attacker.ship_type_id) || `type ${attacker.ship_type_id}`) : 'an unknown ship';
+    const targetName = idToName.get(km.victim.ship_type_id) || `type ${km.victim.ship_type_id}`;
+    const weaponName = attacker.weapon_type_id ? (idToName.get(attacker.weapon_type_id) || `type ${attacker.weapon_type_id}`) : null;
+    const killDate = km.killmail_time ? new Date(km.killmail_time).toLocaleString() : '';
+    const otherCount = (km.attackers || []).length - 1;
+
+    el.innerHTML = `
+      <div class="lastkill">
+        <div class="lk-label">Last kill${killDate ? ' · ' + escapeHtml(killDate) : ''}</div>
+        Flying a <b>${escapeHtml(flownName)}</b>, ${escapeHtml(pilotName)} killed a <b>${escapeHtml(targetName)}</b>${weaponName ? ` using <b>${escapeHtml(weaponName)}</b>` : ''}.
+        ${weaponName ? `<div style="margin-top:6px;">${damageBadgesHtml(weaponInfo)}</div>` : ''}
+        <div style="margin-top:6px;"><a href="https://zkillboard.com/kill/${stub.killmail_id}/" target="_blank" rel="noopener">view on zKillboard</a></div>
+        ${otherCount > 0 ? `<button type="button" class="lk-toggle" id="attackerToggle">Show ${otherCount} other attacker${otherCount > 1 ? 's' : ''}</button>` : ''}
+        <div id="attackerList"></div>
+      </div>
+    `;
+
+    if(otherCount > 0){
+      const toggleBtn = document.getElementById('attackerToggle');
+      let loaded = false;
+      toggleBtn.addEventListener('click', async () => {
+        const listEl = document.getElementById('attackerList');
+        const showing = listEl.classList.contains('attacker-list');
+        if(showing){
+          listEl.className = '';
+          listEl.innerHTML = '';
+          toggleBtn.textContent = `Show ${otherCount} other attacker${otherCount > 1 ? 's' : ''}`;
+          return;
+        }
+        toggleBtn.textContent = 'Hide other attackers';
+        if(!loaded){
+          listEl.innerHTML = 'Loading…';
+          await renderOtherAttackers(km, character.id, listEl);
+          loaded = true;
+        }
+        listEl.className = 'attacker-list';
+      });
+    }
+  }catch(e){
+    el.innerHTML = `<div class="lastkill">Could not check last kill: ${escapeHtml(e.message)}.</div>`;
+  }
+}
+
+async function renderOtherAttackers(km, mainCharacterId, container){
+  const others = (km.attackers || [])
+    .filter(a => a.character_id !== mainCharacterId)
+    .sort((a,b) => (b.damage_done || 0) - (a.damage_done || 0))
+    .slice(0, 20);
+
+  const idSet = new Set();
+  for(const a of others){
+    if(a.character_id) idSet.add(a.character_id);
+    if(a.ship_type_id) idSet.add(a.ship_type_id);
+    if(a.weapon_type_id) idSet.add(a.weapon_type_id);
+  }
+  const names = await resolveIdsToNames([...idSet]);
+  const idToName = new Map(names.map(n => [n.id, n.name]));
+
+  const uniqueWeapons = [...new Set(others.map(a => a.weapon_type_id).filter(Boolean))];
+  const weaponInfos = await analyzeChunks(uniqueWeapons, getWeaponDamageInfo, 4);
+  const weaponInfoMap = new Map(uniqueWeapons.map((w, i) => [w, weaponInfos[i]]));
+
+  const totalAttackers = (km.attackers || []).length - 1;
+  const truncated = totalAttackers > others.length;
+
+  let html = '';
+  for(const a of others){
+    const who = a.character_id ? (idToName.get(a.character_id) || `character ${a.character_id}`) : 'NPC';
+    const ship = a.ship_type_id ? (idToName.get(a.ship_type_id) || `type ${a.ship_type_id}`) : 'unknown ship';
+    const weapon = a.weapon_type_id ? (idToName.get(a.weapon_type_id) || `type ${a.weapon_type_id}`) : null;
+    const info = a.weapon_type_id ? (weaponInfoMap.get(a.weapon_type_id) || {mode:'unknown', types:[]}) : {mode:'unknown', types:[]};
+    html += `
+      <div class="attacker-row ${a.final_blow ? 'finalblow' : ''}">
+        <span class="a-who"><b>${escapeHtml(who)}</b> — ${escapeHtml(ship)}${weapon ? ' — ' + escapeHtml(weapon) : ''}${a.final_blow ? ' (final blow)' : ''}</span>
+        <span class="a-dmg">${damageBadgesHtml(info)}</span>
+      </div>`;
+  }
+  if(truncated){
+    html += `<div class="cmeta" style="padding-top:6px;">…and ${totalAttackers - others.length} more attacker(s) not shown.</div>`;
+  }
+  container.innerHTML = html;
+}
+
+async function runFitCheck(){
+  const statusEl = document.getElementById('fitStatus');
+  document.getElementById('fitResults').innerHTML = '';
+  document.getElementById('fitCandidates').innerHTML = '';
+  document.getElementById('lastKillInfo').innerHTML = '';
+  const pilotName = document.getElementById('pilotName').value.trim();
+  const shipName = (document.getElementById('manualShip').value.trim()) || document.getElementById('shipSelect').value;
+
+  if(!pilotName){ setStatus(statusEl, 'Enter a pilot name.', true); return; }
+
+  const btn = document.getElementById('fitBtn');
+  btn.disabled = true;
+  currentPilotName = pilotName;
+
+  try{
+    setStatus(statusEl, 'Resolving pilot…');
+    const idsRes = await resolveNamesToIds([pilotName]);
+    const character = (idsRes.characters || [])[0];
+    if(!character){
+      setStatus(statusEl, `No pilot found named "${pilotName}" (check spelling — pilot names must match exactly, including capitalization).`, true);
+      return;
+    }
+    currentCharacter = character;
+    await renderLastKill(character, pilotName);
+
+    if(shipName){
+      let shipTypeId = null;
+      let displayShipName = shipName;
+      const known = lastScanShips.find(s => s.name.toLowerCase() === shipName.toLowerCase());
+      if(known){
+        shipTypeId = known.typeId;
+        displayShipName = known.name;
+      }else{
+        const shipRes = await resolveNamesToIdsFlexible([shipName]);
+        if((shipRes.inventory_types || []).length){
+          shipTypeId = shipRes.inventory_types[0].id;
+          displayShipName = shipRes.inventory_types[0].canonicalName;
+        }
+      }
+      if(!shipTypeId){
+        setStatus(statusEl, `No ship type found named "${shipName}".`, true);
+        return;
+      }
+      await runFitForShip(character, shipTypeId, displayShipName, statusEl);
+    }else{
+      await speculateShip(character, statusEl);
+    }
+  }catch(e){
+    setStatus(statusEl, 'Error: ' + e.message + '. Check your network connection to zkillboard.com and esi.evetech.net.', true);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function speculateShip(character, statusEl){
+  setStatus(statusEl, 'No ship specified — sampling recent losses to guess their most-flown hull…');
+  const stubs = await fetchLossesStubs(character.id);
+  if(!stubs.length){
+    setStatus(statusEl, `No recorded losses for ${currentPilotName} on zKillboard — try specifying a ship directly.`, true);
+    return;
+  }
+  const sample = stubs.slice(0, 30);
+  const kmResults = await analyzeChunks(sample, fetchKillmail, 3);
+  const valid = kmResults.filter(r => r && !r.error);
+  if(!valid.length){
+    setStatus(statusEl, 'Could not retrieve killmail details to guess a ship.', true);
+    return;
+  }
+
+  const shipTally = {};
+  for(const {km} of valid){
+    const sid = km.victim.ship_type_id;
+    shipTally[sid] = (shipTally[sid] || 0) + 1;
+  }
+
+  // Capsule/Shuttle/Corvette(rookie ship)/Mobile Tractor Unit losses ride
+  // along with a pilot's real combat losses but aren't a hull worth
+  // threat-assessing — they'd otherwise crowd out the pilot's actual ships
+  // in the "most flown" ranking. Only include one if the user asked for it
+  // directly, via the ship dropdown or the manual ship box (that path calls
+  // runFitForShip() straight away and never reaches here). Excluded by
+  // exact group_id (EXCLUDED_HULL_GROUP_IDS above), not by name.
+  const candidateIds = Object.keys(shipTally).map(Number);
+  const [candidateNames, candidateTypes] = await Promise.all([
+    resolveIdsToNames(candidateIds),
+    analyzeChunks(candidateIds, async (id) => ({id, type: await getType(id)}), 5)
+  ]);
+  const idToName = new Map(candidateNames.map(n => [n.id, n.name]));
+  const idToGroupId = new Map(candidateTypes.filter(r => r && !r.error).map(r => [r.id, r.type.group_id]));
+  const isExcludedHull = (id) => EXCLUDED_HULL_GROUP_IDS.has(idToGroupId.get(id));
+
+  const ranked = Object.entries(shipTally)
+    .map(([id, count]) => ({id: Number(id), count}))
+    .filter(r => !isExcludedHull(r.id))
+    .sort((a,b) => b.count - a.count)
+    .slice(0, 5);
+
+  if(!ranked.length){
+    setStatus(statusEl, `${currentPilotName}'s recent losses on zKillboard were all capsules/shuttles/rookie ships/MTUs — try specifying a ship directly.`, true);
+    return;
+  }
+
+  ranked.forEach(r => r.name = idToName.get(r.id) || `type ${r.id}`);
+
+  renderCandidates(ranked, valid.length, character, statusEl);
+  await runFitForShip(character, ranked[0].id, ranked[0].name, statusEl);
+}
+
+function renderCandidates(ranked, sampleSize, character, statusEl){
+  const el = document.getElementById('fitCandidates');
+  let html = `<div class="candidates-note">Most flown across their last ${sampleSize} recorded losses (any ship, capsules excluded) — pick one to see its typical fit:</div>`;
+  html += `<div class="candidates">`;
+  ranked.forEach((r, i) => {
+    html += `<button type="button" class="candidate-btn ${i===0 ? 'active' : ''}" data-id="${r.id}" data-name="${escapeHtml(r.name)}">
+      <span>${escapeHtml(r.name)}</span>
+      <span class="cfreq">${r.count}/${sampleSize} losses</span>
+    </button>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+
+  el.querySelectorAll('.candidate-btn').forEach(b => {
+    b.addEventListener('click', async () => {
+      el.querySelectorAll('.candidate-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      await runFitForShip(character, Number(b.dataset.id), b.dataset.name, statusEl);
+    });
+  });
+}
+
+// Builds the tally shape estimateHpAndDps() expects, but scoped to a SINGLE
+// killmail — lossCount is always 1, so nothing from any other loss ever gets
+// mixed into this fit's modules, resistances, or DPS calculation.
+function buildLossTally(km){
+  const shaped = {};
+  const allItemIds = new Set();
+  // A charge/ammo loaded into a turret or launcher shows up on the killmail as
+  // its OWN item entry sharing the exact same `flag` as the weapon module it's
+  // loaded into (flags 27-34 = High slots). Keep that per-flag pairing intact
+  // here so DPS can later be computed from the ammo that was actually loaded,
+  // instead of only guessing from whatever's left over in the cargo hold.
+  const highSlotByFlag = new Map();
+  const items = (km.victim && km.victim.items) || [];
+  for(const it of items){
+    const group = slotGroupFor(it.flag);
+    if(!group) continue;
+    const qty = (it.quantity_destroyed || 0) + (it.quantity_dropped || 0) || 1;
+    shaped[group] = shaped[group] || {};
+    const entry = shaped[group][it.item_type_id] || {lossCount:1, totalQty:0};
+    entry.totalQty += qty;
+    shaped[group][it.item_type_id] = entry;
+    allItemIds.add(it.item_type_id);
+
+    if(group === 'High slots'){
+      const list = highSlotByFlag.get(it.flag) || [];
+      list.push({id: it.item_type_id, qty});
+      highSlotByFlag.set(it.flag, list);
+    }
+  }
+  const cargoItemIds = new Set(Object.keys(shaped['Cargo'] || {}).map(Number));
+  return { tally: shaped, cargoItemIds, allItemIds, highSlotByFlag };
+}
+
+async function runFitForShip(character, shipTypeId, shipName, statusEl){
+  setStatus(statusEl, `Querying zKillboard for ${shipName} losses…`);
+  try{
+    const stubs = await fetchLossesStubs(character.id, shipTypeId);
+    if(!stubs.length){
+      setStatus(statusEl, `No recorded losses of ${shipName} for ${currentPilotName} on zKillboard.`);
+      document.getElementById('fitResults').innerHTML = '';
+      return;
+    }
+    // The 3 most recent losses of this hull, each kept and scored entirely on
+    // its own — no averaging or blending of modules across different fits.
+    const sample = stubs.slice(0, 3);
+    setStatus(statusEl, `Pulling fit details from the ${sample.length} most recent loss${sample.length>1?'es':''}…`);
+    const kmResults = await analyzeChunks(sample, fetchKillmail, 3);
+    const valid = kmResults.filter(r => r && !r.error);
+    if(!valid.length){
+      setStatus(statusEl, 'Could not retrieve killmail details for these losses.', true);
+      return;
+    }
+
+    setStatus(statusEl, `Estimating hull HP and DPS for ${shipName}…`);
+
+    const fits = [];
+    const allItemIds = new Set();
+    for(const v of valid){
+      const built = buildLossTally(v.km);
+      const estimate = await estimateHpAndDps(shipTypeId, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter');
+      for(const id of built.allItemIds) allItemIds.add(id);
+      // Tactical Destroyers (see TACTICAL_DESTROYER_MODE_BONUS above): since
+      // which Mode was active can never be known from a killmail/dscan
+      // snapshot, compute all 3 up front (getType/getGroup are cached, so
+      // this costs no extra network calls) and let the viewer toggle between
+      // them — defaulting to Sharpshooter. tacticalModes/activeMode are left
+      // undefined on every other hull, which renderFitSummaryHtml treats as
+      // "no mode toggle to show".
+      let tacticalModes, activeMode;
+      if(TACTICAL_DESTROYER_MODE_BONUS[String(shipTypeId)]){
+        tacticalModes = {
+          sharpshooter: estimate,
+          defense: await estimateHpAndDps(shipTypeId, built.tally, built.cargoItemIds, built.highSlotByFlag, 'defense'),
+          propulsion: await estimateHpAndDps(shipTypeId, built.tally, built.cargoItemIds, built.highSlotByFlag, 'propulsion'),
+        };
+        activeMode = 'sharpshooter';
+      }
+      fits.push({ km: v.km, killmailId: v.killmail_id, tally: built.tally, estimate, tacticalModes, activeMode });
+    }
+
+    const names = await resolveIdsToNames([...allItemIds]);
+    const idToName = new Map(names.map(n => [n.id, n.name]));
+
+    renderFitTabs(currentPilotName, shipName, fits, idToName);
+    setStatus(statusEl, `Showing the ${fits.length} most recent loss${fits.length>1?'es':''} of ${shipName}.`);
+  }catch(e){
+    setStatus(statusEl, 'Error: ' + e.message, true);
+  }
+}
+
+// Classifies a High-slot item for DPS purposes. Unlike getWeaponDamageInfo
+// (which lumps ammo in with fixed-damage weapons because both carry
+// DAMAGE_DEALT_ATTR), this tells the three apart by whether the item ALSO
+// carries its own rate-of-fire: a turret/launcher module has none (its damage
+// is ammo-dependent), a fixed-damage module like a smartbomb has both, and a
+// charge/ammo item has damage but no rate-of-fire of its own.
+async function classifyHighSlotItem(typeId){
+  const type = await getType(typeId);
+  const group = await getGroup(type.group_id);
+  const dogma = type.dogma_attributes || [];
+  const dmgTypes = DMG.filter(d => attrVal(dogma, DAMAGE_DEALT_ATTR[d], 0) > 0);
+  const cycleMs = attrVal(dogma, RATE_OF_FIRE_ATTR, 0);
+  if(dmgTypes.length && cycleMs > 0) return {kind:'fixed-weapon', type, group, dmgTypes, cycleMs};
+  if(dmgTypes.length) return {kind:'ammo', type, group, dmgTypes};
+  const g = (group.name || '').toLowerCase();
+  if(/turret|launcher|weapon/.test(g)) return {kind:'variable-weapon', type, group};
+  return {kind:'other', type, group};
+}
+
+async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag, tacticalMode = 'sharpshooter'){
+  // See TACTICAL_DESTROYER_MODE_BONUS above: null on every hull except the
+  // 4 Tactical Destroyers, in which case tacticalMode picks which of the 3
+  // modes' conditional bonuses (if any) get folded in below. Harmless no-op
+  // for every other ship -- tdBonus is null, so every td* multiplier derived
+  // from it stays 1.
+  const tdBonus = TACTICAL_DESTROYER_MODE_BONUS[String(shipTypeId)] || null;
+  const shipType = await getType(shipTypeId);
+  const shipGroup = await getGroup(shipType.group_id);
+  const shipDogma = shipType.dogma_attributes || [];
+  let shieldHP = attrVal(shipDogma, SHIELD_HP_ATTR, 0);
+  let armorHP  = attrVal(shipDogma, ARMOR_HP_ATTR, 0);
+  let hullHP   = attrVal(shipDogma, HULL_HP_ATTR, 0);
+
+  // Base resonance per layer/type, then we'll fold in module + max-skill bonuses below.
+  const baseShieldRes = {}, baseArmorRes = {}, baseHullRes = {};
+  for(const d of DMG){
+    baseShieldRes[d] = attrVal(shipDogma, SHIELD_ATTR[d], 1);
+    baseArmorRes[d]  = attrVal(shipDogma, ARMOR_ATTR[d], 1);
+    baseHullRes[d]   = attrVal(shipDogma, HULL_ATTR[d], 1);
+  }
+
+  // Every damage type's stacking group starts with max-level Compensation skills
+  // (4%/level shield or armor resistance, ×5 levels = 20%) — there's no hull equivalent.
+  const shieldBonusFractions = {}, armorBonusFractions = {}, hullBonusFractions = {};
+  // Damage Control's own shield/armor/hull resonance attributes (e.g. 0.875/
+  // 0.85/0.6 on a DC II) are NOT stacking-penalized together with hardener/
+  // rig resistance bonuses — DC applies as its own separate, independent
+  // multiplier layer (confirmed against pyfa's eos/effects.py and validated
+  // against a real Rifter killmail in a prior session; re-confirmed this
+  // session against live ESI data: base hull resonance 0.67 x DC II's own
+  // 0.6 = 0.402 -> 60% hull resist, matching the tool's actual reported
+  // output for a Legion fit with a lone DC II and no other hull-resist
+  // source). Collected separately from shieldBonusFractions/etc. and
+  // multiplied in AFTER the stacking-penalized hardener pool below.
+  const dcShieldMult = {}, dcArmorMult = {}, dcHullMult = {};
+  for(const d of DMG){
+    // Compensation skills (EM/Exp/Kin/Therm Shield/Armor Compensation) do
+    // nothing on their own — they multiply a fitted hardener MODULE's own
+    // bonus attribute, and only for specific module groups (Shield
+    // Resistance Amplifier; Armor Coating / Energized Armor Membrane —
+    // notably NOT the common "Armor Hardener" group). Starts empty; the
+    // max-skill 20% is pushed in below only if a qualifying module is
+    // actually fitted (verified against pyfa's eos/effects.py, re-confirmed
+    // this session against a real Legion fit with no shield/armor hardener
+    // at all — the tool must NOT assume Compensation skill resistance on
+    // that fit).
+    shieldBonusFractions[d] = [];
+    armorBonusFractions[d] = [];
+    hullBonusFractions[d] = [];
+    dcShieldMult[d] = 1; dcArmorMult[d] = 1; dcHullMult[d] = 1;
+  }
+
+  // 'High slots' added 2026-10-08: Marauder Bastion Modules (and Siege
+  // Modules on dreadnoughts, Triage Modules on carriers, Industrial Core on
+  // Rorquals -- all group_id 515 "Siege Module") sit in a HIGH slot but
+  // carry the exact same resistance attribute ids (267-274 shield/armor,
+  // 974-977 DC_HULL_ATTR) that Damage Control and hardener modules carry
+  // elsewhere -- confirmed live via ESI on Bastion Module I (type 33400):
+  // attrs 267-274 and 974-977 all = 0.7 (the documented +30% all-resist
+  // bonus). Without this, that resist bonus was silently dropped for every
+  // Marauder fit with an active Bastion (bug-class #14). Safe to add
+  // unconditionally, same as Subsystems above: no turret, launcher, ammo,
+  // or any other High-slot item carries these specific attribute ids, so
+  // this can't pick up anything but genuine resist-granting modules.
+  const defensiveGroups = ['Mid slots', 'Low slots', 'Rigs', 'Subsystems', 'High slots'];
+  const defensiveIds = [...new Set(defensiveGroups.flatMap(g => Object.keys(tally[g] || {}).map(Number)))];
+  const defensiveTypes = await analyzeChunks(defensiveIds, async (id) => {
+    const type = await getType(id);
+    const group = await getGroup(type.group_id);
+    return {id, type, group};
+  }, 5);
+
+  // Real fitted quantity per item id (e.g. 3x Heat Sink II) — a fit with
+  // multiple copies of the same module must have that module's effect
+  // applied once per copy, not once total. defensiveIds/defensiveTypes are
+  // deduplicated by type id (one getType/getGroup call per unique item),
+  // so the per-item loop below must separately multiply back in by this
+  // quantity. This exact bug (module quantity silently collapsed to 1) was
+  // found and fixed in an earlier session against a real Caracal killmail
+  // and has regressed since; re-confirmed this session against a real
+  // Legion fit (3x Heat Sink II) via live ESI data.
+  const qtyById = new Map();
+  for(const g of defensiveGroups){
+    for(const [idStr, data] of Object.entries(tally[g] || {})){
+      const id = Number(idStr);
+      const q = (data.totalQty || 1) / (data.lossCount || 1);
+      qtyById.set(id, (qtyById.get(id) || 0) + q);
+    }
+  }
+
+  // Fitted low-slot damage modules (Gyrostabilizer, Heat Sink, Magnetic Field
+  // Stabilizer, Ballistic Control System, Drone Damage Amplifier) — collected
+  // per weapon category, stacking-penalized the same way as resistance mods above.
+  const moduleDamageFractions = {energy: [], hybrid: [], projectile: [], missile: [], precursor: [], drone: []};
+  const moduleRofFractions = {energy: [], hybrid: [], projectile: [], missile: [], precursor: []};
+
+  // Fitted HP modules/rigs (Armor Plates, Shield Extenders, Reinforced
+  // Bulkhead/Nanofiber, Trimark Armor Pump, Core Defense Field Extender) —
+  // verified via pyfa's effects.py (see constants above for exact formulas).
+  let flatShieldHpAdd = 0, flatArmorHpAdd = 0, flatHullHpAdd = 0;
+  const armorHpPctMults = [], shieldHpPctMults = [], hullHpMults = [];
+  // Reactive Armor Hardener instances found on this fit — their own raw
+  // 267-270 values are kept OUT of dcArmorMult (see below) and simulated
+  // separately instead. Real EVE only allows one at a time (maxGroupActive),
+  // but this stays a list for robustness.
+  const rahItems = [];
+  // Universal Battleship role bonus — see constants above. 1 (no-op) on any
+  // hull that doesn't carry these attributes.
+  const armorPlateBonusMult = 1 + attrVal(shipDogma, ARMOR_PLATE_ROLE_BONUS_ATTR, 0) / 100;
+  // Bastion/Siege/Triage/Industrial Core module RoF bonus — see
+  // SIEGE_ROF_BONUS_ATTR_A/B above. Percentage (e.g. 50), not yet applied;
+  // folded into hullBonusList once it's built, below.
+  let siegeRofBonusPct = 0;
+  const shieldExtBonusMult = 1 + attrVal(shipDogma, SHIELD_EXTENDER_ROLE_BONUS_ATTR, 0) / 100;
+
+  for(const dt of defensiveTypes){
+    if(!dt || dt.error) continue;
+    const dogma = dt.type.dogma_attributes || [];
+    const groupName = (dt.group.name || '').toLowerCase();
+    const qty = qtyById.get(dt.id) || 1;
+    const isRAH = dt.group.name === RAH_GROUP_NAME;
+    const rahOwnReso = {};
+    // Bastion/Siege/Triage/Industrial Core module (group_id 515) -- see
+    // SIEGE_ROF_BONUS_ATTR_A/B above. Assumed active whenever fitted, same
+    // convention already used for its resist bonus (bug-class #14 fix).
+    const siegeRof = Math.max(attrVal(dogma, SIEGE_ROF_BONUS_ATTR_A, 0), attrVal(dogma, SIEGE_ROF_BONUS_ATTR_B, 0));
+    if(siegeRof < 0) siegeRofBonusPct = Math.max(siegeRofBonusPct, Math.abs(siegeRof));
+    for(const d of DMG){
+      // Damage Control carries its own copy of the ship's shield/armor
+      // resonance attribute ids (271-274 / 267-270) whose value IS the
+      // direct post-bonus multiplier (e.g. 0.85 = the module makes armor
+      // resonance x0.85 on its own) — not a stacking-penalized "bonus
+      // fraction" like hardener modules use (see RESISTANCE_BONUS_ATTR
+      // below). Applied as an independent multiplier, not pooled here.
+      // (DC/subsystems are always qty 1, so ** below is a no-op for them.)
+      // A Reactive Armor Hardener ALSO carries these same 267-270 attribute
+      // ids (its own static/"unsimulated" starting resonance) but must NOT
+      // be folded into dcArmorMult here — it adapts over time instead of
+      // sitting flat, so it's collected separately and simulated below.
+      const dcShield = attrVal(dogma, SHIELD_ATTR[d], 0);
+      if(dcShield > 0) dcShieldMult[d] *= Math.pow(dcShield, qty);
+      const dcArmor = attrVal(dogma, ARMOR_ATTR[d], 0);
+      if(isRAH){ if(dcArmor > 0) rahOwnReso[d] = dcArmor; }
+      else if(dcArmor > 0) dcArmorMult[d] *= Math.pow(dcArmor, qty);
+      const dcHull = attrVal(dogma, DC_HULL_ATTR[d], 0);
+      if(dcHull > 0) dcHullMult[d] *= Math.pow(dcHull, qty);
+
+      // RESISTANCE_BONUS_ATTR (984-987) values are percentage POINTS on real
+      // hardener/rig modules (e.g. -55.0 for a 55% EM resistance bonus on an
+      // EM Shield Hardener II), not a 0-1 fraction — confirmed against live
+      // ESI data this session (EM Shield Hardener II carries attribute 984 =
+      // -55). This exact "off by 100x" bug was already found and fixed in an
+      // earlier session and had regressed; re-confirmed via a real Ishtar
+      // killmail fit with two fitted shield hardeners.
+      const genericBonus = attrVal(dogma, RESISTANCE_BONUS_ATTR[d], 0);
+      if(genericBonus !== 0){
+        let frac = Math.abs(genericBonus) / 100;
+        // Compensation skills (EM/Exp/Kin/Therm Shield/Armor Compensation,
+        // max level 20%) are a direct multiplier on THIS SPECIFIC qualifying
+        // module's own resistance-bonus attribute -- not an independent,
+        // separately-stacking-penalized resistance source of their own.
+        // Found 2026-10-08 against a real Paladin killmail fit (Multispectrum
+        // Energized Membrane II + Damage Control II + Bastion Module I):
+        // pushing MAX_COMPENSATION_SKILL as its OWN entry into
+        // armorBonusFractions (the old code, below this block) let it get
+        // stacking-penalized ALONGSIDE the module's own frac as if it were a
+        // second physical hardener, compounding to roughly 1-(1-0.2)*(1-0.2*0.869)
+        // =~ 34% combined armor resistance from a single EANM instead of the
+        // correct 1-(1-0.20*1.20) = 24% -- overstating this fit's armor EHP
+        // by ~16% against pyfa. Multiplying the skill bonus directly into
+        // frac here (so a single EANM still produces exactly ONE stacking-pool
+        // entry) brought every armor-resist damage type within ~1% of pyfa's
+        // reported values.
+        const compHardener = (groupName === 'shield resistance amplifier') ||
+                              (groupName === 'armor coating' || groupName === 'energized armor membrane');
+        if(compHardener) frac *= (1 + MAX_COMPENSATION_SKILL);
+        for(let n = 0; n < qty; n++){
+          if(groupName.includes('shield')) shieldBonusFractions[d].push(frac);
+          else if(groupName.includes('armor')) armorBonusFractions[d].push(frac);
+        }
+      }
+    }
+    if(isRAH && Object.keys(rahOwnReso).length){
+      const shiftAmt = attrVal(dogma, RESIST_SHIFT_AMOUNT_ATTR, 6) / 100;
+      rahItems.push({reso: rahOwnReso, shiftAmt});
+    }
+
+    const dmgModCat = MODULE_DAMAGE_GROUP_CATEGORY[dt.group.name];
+    if(dmgModCat){
+      const dmgAttr = dmgModCat === 'missile' ? MISSILE_DAMAGE_MULTIPLIER_BONUS_ATTR : DAMAGE_MULTIPLIER_ATTR;
+      const dmgVal = attrVal(dogma, dmgAttr, 0);
+      const speedVal = attrVal(dogma, SPEED_MULTIPLIER_ATTR, 0);
+      for(let n = 0; n < qty; n++){
+        if(dmgVal > 0) moduleDamageFractions[dmgModCat].push(dmgVal - 1);
+        if(speedVal > 0) moduleRofFractions[dmgModCat].push(1 - speedVal);
+      }
+    }else if(dt.group.name === 'Drone Damage Modules'){
+      const droneBonus = attrVal(dogma, DRONE_DAMAGE_BONUS_ATTR, 0);
+      if(droneBonus > 0) for(let n = 0; n < qty; n++) moduleDamageFractions.drone.push(droneBonus / 100);
+    }
+
+    // The Battleship role bonus (see ARMOR_PLATE_ROLE_BONUS_ATTR/
+    // SHIELD_EXTENDER_ROLE_BONUS_ATTR above) only boosts these two specific
+    // module groups' OWN flat-HP attribute, per its real LocationGroupModifier
+    // scope — not the ship's base HP, and not any other HP-granting module.
+    const flatShield = attrVal(dogma, SHIELD_HP_FLAT_ADD_ATTR, 0);
+    if(flatShield > 0) flatShieldHpAdd += flatShield * (dt.group.name === 'Shield Extender' ? shieldExtBonusMult : 1) * qty;
+    const flatArmor = attrVal(dogma, ARMOR_HP_FLAT_ADD_ATTR, 0);
+    if(flatArmor > 0) flatArmorHpAdd += flatArmor * (dt.group.name === 'Armor Plate' ? armorPlateBonusMult : 1) * qty;
+    const shieldPct = attrVal(dogma, SHIELD_HP_PCT_ATTR, 0);
+    if(shieldPct > 0) for(let n = 0; n < qty; n++) shieldHpPctMults.push(1 + shieldPct / 100);
+    const armorPct = attrVal(dogma, ARMOR_HP_PCT_ATTR, 0);
+    if(armorPct > 0) for(let n = 0; n < qty; n++) armorHpPctMults.push(1 + armorPct / 100);
+    const hullMult = attrVal(dogma, HULL_HP_MULT_ATTR, 0);
+    if(hullMult > 0) for(let n = 0; n < qty; n++) hullHpMults.push(hullMult);
+
+    // Strategic Cruiser subsystem flat-HP grants — see constants above. Only
+    // a fitted subsystem carries these two attributes with this "add to
+    // ship" meaning, so checking them unconditionally on every
+    // defensiveGroups item (not just Subsystems) is safe. Subsystems are
+    // always qty 1 (can't fit two of the same), so no *qty needed here.
+    const subShieldAdd = attrVal(dogma, SUBSYSTEM_SHIELD_HP_SELFADD_ATTR, 0);
+    if(subShieldAdd > 0) flatShieldHpAdd += subShieldAdd;
+    const subHullAdd = attrVal(dogma, SUBSYSTEM_HULL_HP_ADD_ATTR, 0);
+    if(subHullAdd > 0) flatHullHpAdd += subHullAdd;
+  }
+
+  // Compensation skills (max level, 20%) are now folded directly into each
+  // qualifying module's own frac inside the loop above -- see the comment
+  // there. They are no longer pushed here as a second, independent
+  // stacking-penalized entry (that double-counted them -- see above).
+
+  // Apply flat HP adds first (pyfa applies "pre" increases before
+  // multiplications), then the max-skill assumption plus any fitted rig/
+  // module sharing that same bonus attribute, each layered as a plain
+  // multiply (verified non-stacking-penalized — see constants above).
+  shieldHP = (shieldHP + flatShieldHpAdd) * MAX_SHIELD_MGMT_MULT * shieldHpPctMults.reduce((a,b) => a*b, 1);
+  armorHP  = (armorHP + flatArmorHpAdd) * MAX_HULL_UPGRADES_MULT * armorHpPctMults.reduce((a,b) => a*b, 1);
+  hullHP   = (hullHP + flatHullHpAdd) * MAX_MECHANICS_MULT * hullHpMults.reduce((a,b) => a*b, 1);
+
+  // Combine fitted-module bonuses (stacking-penalized among themselves) with
+  // this hull's own intrinsic role/skill bonuses at max skill (each an
+  // independent multiplicative layer, same as EVE itself — no stacking
+  // penalty between a ship bonus and a module bonus, only module-vs-module),
+  // plus any Strategic Cruiser subsystem role bonus for whichever subsystem
+  // is actually fitted (see SUBSYSTEM_ROLE_BONUS above — T3 hulls have no
+  // SHIP_ROLE_BONUS entry of their own, this is what replaces it for them).
+  const subsystemIds = Object.keys(tally['Subsystems'] || {}).map(Number);
+  const subsystemRoleBonuses = subsystemIds.flatMap(id => SUBSYSTEM_ROLE_BONUS[String(id)] || []);
+  // Bastion/Siege/Triage/Industrial Core RoF bonus (see SIEGE_ROF_BONUS_ATTR_A/B
+  // above) applies to every turret AND launcher category alike -- confirmed
+  // 2026-10-08 via 3 independent pyfa-verified Marauder fits (bug-class #15).
+  const siegeRofBonuses = siegeRofBonusPct > 0
+    ? [['energy','rof',siegeRofBonusPct], ['hybrid','rof',siegeRofBonusPct], ['projectile','rof',siegeRofBonusPct], ['missile','rof',siegeRofBonusPct]]
+    : [];
+  const hullBonusList = [...(SHIP_ROLE_BONUS[String(shipTypeId)] || []), ...subsystemRoleBonuses, ...siegeRofBonuses];
+  const categoryMods = {};
+  // 'dronesentry' shares fitted Drone Damage Amplifier bonuses with 'drone'
+  // (those apply to every drone universally, per pyfa's Effect6556 — not
+  // part of the sentry/combat split) but gets its own hull-role-bonus
+  // entries (bCat 'dronesentry') instead of 'drone's.
+  for(const cat of ['energy', 'hybrid', 'projectile', 'missile', 'precursor', 'drone', 'dronesentry']){
+    const moduleCat = cat === 'dronesentry' ? 'drone' : cat;
+    let dmgMult = moduleDamageFractions[moduleCat].length ? applyStackingBonus(moduleDamageFractions[moduleCat]) : 1;
+    let rofMult = (moduleRofFractions[moduleCat] && moduleRofFractions[moduleCat].length) ? applyStacking(moduleRofFractions[moduleCat]) : 1;
+    // Hull/skill DAMAGE role bonuses are often restricted to ONE specific
+    // damage type in real EVE (e.g. a Hawk's Assault Frigates bonus only
+    // ever touches kineticDamage, confirmed via pyfa's actual per-effect
+    // dogma-attribute targeting) even though the bonus is granted to a
+    // whole WEAPON CATEGORY ("missile"). Applying it unconditionally to
+    // whatever ammo happens to be loaded overstates DPS whenever the
+    // loaded ammo is a different damage type. Kept separate from dmgMult
+    // here (which only folds in category-universal fitted-module bonuses)
+    // and applied per-weapon-instance below once the loaded ammo's actual
+    // damage type is known — see hullDamageBonuses. RoF role bonuses are
+    // NOT type-restricted (rate of fire doesn't depend on ammo type), so
+    // those still fold into rofMult here same as before.
+    // Only turret/missile categories defer damage-role-bonus application to
+    // per-weapon-instance time (they alone have a specific loaded ammo whose
+    // damage type a bonus can be restricted to). Drone/dronesentry role
+    // bonuses apply immediately here as before — a drone's damage type is
+    // an inherent property of the drone itself, not a swappable "ammo", and
+    // no evidence so far suggests drone role bonuses are type-restricted.
+    const isWeaponCat = cat === 'energy' || cat === 'hybrid' || cat === 'projectile' || cat === 'missile' || cat === 'precursor';
+    const hullDamageBonuses = [];
+    for(const [bCat, bKind, bPct, bDmgType] of hullBonusList){
+      if(bCat !== cat) continue;
+      if(bKind === 'damage'){
+        if(isWeaponCat) hullDamageBonuses.push({pct: bPct, dmgType: bDmgType || null});
+        else dmgMult *= (1 + bPct / 100);
+      }else if(bKind === 'rof') rofMult *= (1 - bPct / 100);
+    }
+    categoryMods[cat] = {dmgMult, rofMult, hullDamageBonuses};
+  }
+
+  const MIN_RES = 0.03;
+  // Hull-intrinsic all-shield/all-armor resist role bonus (see
+  // SHIP_RESIST_BONUS above) -- an independent multiplicative layer, same
+  // slot as dcShieldMult/dcArmorMult, never stacking-penalized against
+  // fitted hardener modules. Defined before the RAH block below so it's
+  // included in otherArmorMult, same as dcArmorMult already is -- it's a
+  // uniform per-type scalar so it doesn't change the RAH's weakest-type
+  // convergence decision, but it should still be part of "every other
+  // source" the sim is told about, for consistency with how DC is handled.
+  const hullResistBonus = SHIP_RESIST_BONUS[String(shipTypeId)] || {};
+  const hullShieldResMult = 1 - (hullResistBonus.shield || 0) / 100;
+  const hullArmorResMult  = 1 - (hullResistBonus.armor  || 0) / 100;
+  // Reactive Armor Hardener (if fitted) is simulated against the armor
+  // resonance produced by every OTHER source (base hull + stacking-penalized
+  // hardener/membrane bonuses + Damage Control + hull-intrinsic resist role
+  // bonus) to get its own converged per-type resonance, then folded in as
+  // one more multiplicative layer — see simulateReactiveArmorHardener() and
+  // rahItems above. Real EVE only allows one RAH fitted at a time; a second
+  // would compound here harmlessly.
+  const rahArmorMult = {em:1, exp:1, kin:1, therm:1};
+  if(rahItems.length){
+    const otherArmorMult = {};
+    for(const d of DMG) otherArmorMult[d] = baseArmorRes[d] * applyStacking(armorBonusFractions[d]) * dcArmorMult[d] * hullArmorResMult;
+    for(const rah of rahItems){
+      const converged = simulateReactiveArmorHardener(rah.reso, otherArmorMult, rah.shiftAmt);
+      for(const d of DMG) rahArmorMult[d] *= converged[d];
+    }
+  }
+  // Tactical Destroyer Defense Mode (see TACTICAL_DESTROYER_MODE_BONUS
+  // above): only applies when tacticalMode === 'defense', and only to
+  // whichever layer(s) that specific hull's Defense Mode actually boosts.
+  // Folded in as its own independent multiplier, same slot/pattern as
+  // hullShieldResMult/hullArmorResMult just above.
+  const tdDefense = (tdBonus && tacticalMode === 'defense') ? tdBonus.defense : null;
+  const tdShieldResMult = 1 - ((tdDefense && tdDefense.shield) || 0) / 100;
+  const tdArmorResMult  = 1 - ((tdDefense && tdDefense.armor)  || 0) / 100;
+  const tdHullResMult   = 1 - ((tdDefense && tdDefense.hull)   || 0) / 100;
+
+  const adjShieldRes = {}, adjArmorRes = {}, adjHullRes = {};
+  for(const d of DMG){
+    adjShieldRes[d] = Math.max(MIN_RES, baseShieldRes[d] * applyStacking(shieldBonusFractions[d]) * dcShieldMult[d] * hullShieldResMult * tdShieldResMult);
+    adjArmorRes[d]  = Math.max(MIN_RES, baseArmorRes[d] * applyStacking(armorBonusFractions[d]) * dcArmorMult[d] * rahArmorMult[d] * hullArmorResMult * tdArmorResMult);
+    adjHullRes[d]   = Math.max(MIN_RES, baseHullRes[d] * applyStacking(hullBonusFractions[d]) * dcHullMult[d] * tdHullResMult);
+  }
+  const avg = obj => DMG.reduce((sum, d) => sum + obj[d], 0) / DMG.length;
+  const avgShieldRes = avg(adjShieldRes), avgArmorRes = avg(adjArmorRes), avgHullRes = avg(adjHullRes);
+
+  const effectiveHP = (shieldHP / avgShieldRes) + (armorHP / avgArmorRes) + (hullHP / avgHullRes);
+
+  // Weakest damage type against THIS fit (post-module/skill resistances), weighted by
+  // each layer's raw HP share — same method used for the D-Scan weakness cards.
+  const totalRawHP = shieldHP + armorHP + hullHP || 1;
+  const weighted = {};
+  for(const d of DMG){
+    weighted[d] = (shieldHP*adjShieldRes[d] + armorHP*adjArmorRes[d] + hullHP*adjHullRes[d]) / totalRawHP;
+  }
+  const weakest = DMG.reduce((a,b) => weighted[b] > weighted[a] ? b : a, DMG[0]);
+  const sizeInfo = sizeClassFromGroup(shipGroup.name);
+  const drones = droneRecommendation(weakest, sizeInfo.droneSizes);
+  const weaknessRec = RECS[weakest];
+
+  const droneEntries = Object.entries(tally['Drone bay'] || {});
+  const droneIds = droneEntries.map(([id]) => Number(id));
+  const droneInfos = await analyzeChunks(droneIds, getWeaponDamageInfo, 5);
+  const droneInfoMap = new Map(droneIds.map((id, i) => [id, droneInfos[i]]));
+
+  // A drone bay is often stocked with more drones than the ship can ever have
+  // in space at once — bounded by maxActiveDrones (a hard count) AND
+  // droneBandwidth (a total Mbit/s budget shared across whatever's launched).
+  // Fall back to "no cap" only if the ship's dogma is missing these attributes
+  // entirely, rather than silently zeroing out a fit's drone DPS.
+  const maxActiveDrones = attrVal(shipDogma, MAX_ACTIVE_DRONES_ATTR, Infinity);
+  const droneBandwidth = attrVal(shipDogma, DRONE_BANDWIDTH_ATTR, Infinity);
+
+  // First pass: per-drone-type DPS, bandwidth cost, and how many are in the bay.
+  const droneTypesInfo = [];
+  let droneBayCount = 0;
+  for(const [id, data] of droneEntries){
+    const info = droneInfoMap.get(Number(id));
+    if(!info || info.mode !== 'fixed') continue;
+    const type = await getType(Number(id));
+    const dmgDogma = type.dogma_attributes || [];
+    const droneCatMod = isSentryDrone(dmgDogma) ? categoryMods.dronesentry : categoryMods.drone;
+    // Found 2026-09-10 against a real Osprey Navy Issue fit (pyfa-verified):
+    // every combat drone carries its own intrinsic damageMultiplier attribute
+    // (64 — the exact same "Damage Modifier" attribute a turret's own charge
+    // multiplier uses, confirmed via ESI's dogma attribute metadata), and it
+    // was never applied here at all. Acolyte II (1.68), Berserker II (1.56),
+    // Caldari Navy Vespa (1.8), etc. all carry a non-1 value — omitting it
+    // was silently undercounting every drone's DPS by exactly that factor.
+    const droneOwnMult = attrVal(dmgDogma, DAMAGE_MULTIPLIER_ATTR, 1);
+    const dmgPerCycle = info.types.reduce((sum, d) => sum + attrVal(dmgDogma, DAMAGE_DEALT_ATTR[d], 0), 0) * droneOwnMult * MAX_DRONE_DAMAGE_MULT * droneCatMod.dmgMult;
+    const cycleMs = attrVal(dmgDogma, RATE_OF_FIRE_ATTR, 0);
+    if(!cycleMs) continue;
+    const effectiveCycleSec = (cycleMs / 1000) * MAX_DRONE_ROF_MULT * droneCatMod.rofMult;
+    const bayQty = data.totalQty / data.lossCount;
+    const bandwidthUsed = attrVal(dmgDogma, DRONE_BANDWIDTH_USED_ATTR, 0);
+    droneTypesInfo.push({name: type.name, perDroneDps: dmgPerCycle / effectiveCycleSec, bayQty, bandwidthUsed});
+    droneBayCount += bayQty;
+  }
+
+  // Greedily launch the hardest-hitting flight first, then the next, until
+  // either cap is hit — the way a pilot maximizing damage actually would.
+  droneTypesInfo.sort((a, b) => b.perDroneDps - a.perDroneDps);
+
+  let droneDps = 0;
+  let droneCount = 0;
+  let bandwidthUsedTotal = 0;
+  const droneDpsBreakdown = []; // {name, qty, dps} — one row per drone type actually deployable
+  for(const d of droneTypesInfo){
+    let deployable = Math.min(d.bayQty, maxActiveDrones - droneCount);
+    if(d.bandwidthUsed > 0 && isFinite(droneBandwidth)){
+      const bwRoom = Math.floor((droneBandwidth - bandwidthUsedTotal) / d.bandwidthUsed);
+      deployable = Math.min(deployable, bwRoom);
+    }
+    deployable = Math.max(0, Math.floor(deployable));
+    if(deployable <= 0) continue;
+    droneCount += deployable;
+    bandwidthUsedTotal += deployable * d.bandwidthUsed;
+    const dps = d.perDroneDps * deployable;
+    droneDps += dps;
+    droneDpsBreakdown.push({name: d.name, qty: Math.round(deployable), dps: Math.round(dps)});
+  }
+  droneDpsBreakdown.sort((a, b) => b.dps - a.dps);
+
+  // --- High-slot weapon DPS ---
+  // Walk each individual High slot (flag 27-34) rather than the item-id tally,
+  // so a turret/launcher can be paired with the exact charge that was loaded
+  // into IT (same flag) instead of just being matched by category against
+  // whatever's floating in the cargo hold. This is what makes DPS scale
+  // correctly with weapon count even when there's no "spare" ammo in cargo.
+  const flagList = [...(highSlotByFlag ? highSlotByFlag.keys() : [])];
+  const flagItemIds = new Set();
+  for(const flag of flagList) for(const it of highSlotByFlag.get(flag)) flagItemIds.add(it.id);
+  const flagClassified = await analyzeChunks([...flagItemIds], async (id) => ({id, cls: await classifyHighSlotItem(id)}), 5);
+  const classById = new Map(flagClassified.filter(r => r && !r.error).map(r => [r.id, r.cls]));
+
+  let fixedHighSlotDps = 0;       // smartbombs and other intrinsic-damage high-slot mods
+  let confirmedDps = 0;           // DPS computed directly from ammo actually loaded at time of death
+  let variableWeaponCount = 0;    // total turret/launcher instances fitted
+  let confirmedWeaponCount = 0;   // instances resolved via their own loaded charge
+  const confirmedAmmoDps = new Map(); // ammoTypeId -> { name, dps } — each ammo's own confirmed contribution
+  const fixedWeaponDps = new Map();   // itemTypeId -> { name, dps } — each fixed-damage module's own contribution
+  const unresolvedWeapons = [];   // turret/launcher instances with no identifiable loaded charge -> fall back to cargo guessing
+
+  for(const flag of flagList){
+    let weaponItem = null, weaponCls = null, chargeItem = null, chargeCls = null;
+    for(const it of highSlotByFlag.get(flag)){
+      const cls = classById.get(it.id);
+      if(!cls) continue;
+      if(cls.kind === 'variable-weapon' || cls.kind === 'fixed-weapon'){ weaponItem = it; weaponCls = cls; }
+      else if(cls.kind === 'ammo'){ chargeItem = it; chargeCls = cls; }
+    }
+    if(!weaponItem) continue;
+    const qty = weaponItem.qty || 1;
+
+    if(weaponCls.kind === 'fixed-weapon'){
+      const dmgDogma = weaponCls.type.dogma_attributes || [];
+      const dmgPerCycle = weaponCls.dmgTypes.reduce((sum, d) => sum + attrVal(dmgDogma, DAMAGE_DEALT_ATTR[d], 0), 0);
+      const dps = (dmgPerCycle / (weaponCls.cycleMs / 1000)) * qty;
+      fixedHighSlotDps += dps;
+      const existingFixed = fixedWeaponDps.get(weaponItem.id) || {name: weaponCls.type.name, dps: 0};
+      existingFixed.dps += dps;
+      fixedWeaponDps.set(weaponItem.id, existingFixed);
+      continue;
+    }
+
+    // variable-weapon: a turret or launcher, damage depends entirely on ammo
+    variableWeaponCount += qty;
+    const weaponDogma = weaponCls.type.dogma_attributes || [];
+    const multiplier = attrVal(weaponDogma, DAMAGE_MULTIPLIER_ATTR, 1);
+    const cycleMs = attrVal(weaponDogma, RATE_OF_FIRE_ATTR, 0);
+    const category = weaponCategoryFromGroup(weaponCls.group.name);
+
+    if(chargeItem && cycleMs && category){
+      const isMissile = category === 'missile';
+      const catMod = categoryMods[category] || {dmgMult: 1, rofMult: 1, hullDamageBonuses: []};
+      const chargeDogma = chargeCls.type.dogma_attributes || [];
+      const hullDmgMult = hullDamageMultFor(catMod.hullDamageBonuses, chargeDogma);
+      const turretSpecMult = (!isMissile && attrVal(weaponDogma, REQUIRED_SKILL_3_ATTR, 0) > 0) ? TURRET_SPECIALIZATION_MULT : 1;
+      // Tactical Destroyer Sharpshooter Mode (see TACTICAL_DESTROYER_MODE_BONUS
+      // above): only applies when tacticalMode === 'sharpshooter' AND this
+      // weapon's category matches that specific hull's own weapon category
+      // (e.g. a Confessor's bonus only ever applies to energy turrets).
+      const tdSharpshooterMult = (tdBonus && tacticalMode === 'sharpshooter' && tdBonus.sharpshooter.cat === category) ? 1 + tdBonus.sharpshooter.damagePct / 100 : 1;
+      const dmgSkillMult = (isMissile ? MAX_MISSILE_DAMAGE_MULT : MAX_TURRET_DAMAGE_MULT * turretSpecMult) * catMod.dmgMult * hullDmgMult * tdSharpshooterMult;
+      const rofSkillMult = (isMissile ? MAX_MISSILE_ROF_MULT : MAX_TURRET_ROF_MULT) * catMod.rofMult;
+      const effectiveCycleSec = (cycleMs / 1000) * rofSkillMult;
+      // Entropic Disintegrator spool-up (bug-class #20, see
+      // SPOOLUP_BONUS_MAX_ATTR above): 0 for every other weapon type, since
+      // no other turret/launcher carries attribute 2734 at all.
+      const spoolupMult = 1 + attrVal(weaponDogma, SPOOLUP_BONUS_MAX_ATTR, 0);
+      const perShot = DMG.reduce((sum, d) => sum + attrVal(chargeDogma, DAMAGE_DEALT_ATTR[d], 0), 0) * multiplier * dmgSkillMult * spoolupMult;
+      const dps = (perShot / effectiveCycleSec) * qty;
+      confirmedDps += dps;
+      confirmedWeaponCount += qty;
+      const existing = confirmedAmmoDps.get(chargeItem.id) || {name: chargeCls.type.name, dps: 0};
+      existing.dps += dps;
+      confirmedAmmoDps.set(chargeItem.id, existing);
+    }else{
+      unresolvedWeapons.push({id: weaponItem.id, qty});
+    }
+  }
+
+  // Fallback, for turret/launcher instances with no identifiable loaded charge
+  // (gun was empty, or the killmail didn't report one): guess from ammo types
+  // sitting spare in the cargo hold, matched by weapon category, same as before.
+  const unresolvedById = new Map();
+  for(const w of unresolvedWeapons){
+    const e = unresolvedById.get(w.id) || {id: w.id, qty: 0};
+    e.qty += w.qty;
+    unresolvedById.set(w.id, e);
+  }
+  const unresolvedWeaponList = [...unresolvedById.values()];
+
+  const ammoContribution = new Map(); // ammoTypeId -> { name, dps } (full total, baseline + this ammo)
+  let cargoResolvedWeaponCount = 0;
+  const cargoIds = [...(cargoItemIds || [])];
+  if(unresolvedWeaponList.length && cargoIds.length){
+    const [weaponMeta, cargoMeta] = await Promise.all([
+      analyzeChunks(unresolvedWeaponList.map(w => w.id), async (id) => {
+        const type = await getType(id);
+        const group = await getGroup(type.group_id);
+        return {id, type, group};
+      }, 5),
+      analyzeChunks(cargoIds, async (id) => {
+        const type = await getType(id);
+        const group = await getGroup(type.group_id);
+        return {id, type, group};
+      }, 5)
+    ]);
+
+    const compatibleAmmo = cargoMeta.filter(c => {
+      if(!c || c.error) return false;
+      const dogma = c.type.dogma_attributes || [];
+      return DMG.some(d => attrVal(dogma, DAMAGE_DEALT_ATTR[d], 0) > 0);
+    });
+
+    weaponMeta.forEach((w, i) => {
+      if(!w || w.error) return;
+      const category = weaponCategoryFromGroup(w.group.name);
+      if(!category) return;
+      const matches = compatibleAmmo.filter(a => ammoCategoryFromGroup(a.group.name) === category);
+      if(!matches.length) return;
+
+      const weaponDogma = w.type.dogma_attributes || [];
+      const multiplier = attrVal(weaponDogma, DAMAGE_MULTIPLIER_ATTR, 1);
+      const cycleMs = attrVal(weaponDogma, RATE_OF_FIRE_ATTR, 0);
+      if(!cycleMs) return;
+      const qty = unresolvedWeaponList[i].qty;
+
+      const isMissile = category === 'missile';
+      const catMod = categoryMods[category] || {dmgMult: 1, rofMult: 1, hullDamageBonuses: []};
+      const rofSkillMult = (isMissile ? MAX_MISSILE_ROF_MULT : MAX_TURRET_ROF_MULT) * catMod.rofMult;
+      const effectiveCycleSec = (cycleMs / 1000) * rofSkillMult;
+      const turretSpecMult = (!isMissile && attrVal(weaponDogma, REQUIRED_SKILL_3_ATTR, 0) > 0) ? TURRET_SPECIALIZATION_MULT : 1;
+      // Same spool-up handling as the confirmed-charge path above (bug-class #20).
+      const spoolupMult = 1 + attrVal(weaponDogma, SPOOLUP_BONUS_MAX_ATTR, 0);
+      // Same Tactical Destroyer Sharpshooter Mode handling as the
+      // confirmed-charge path above.
+      const tdSharpshooterMult = (tdBonus && tacticalMode === 'sharpshooter' && tdBonus.sharpshooter.cat === category) ? 1 + tdBonus.sharpshooter.damagePct / 100 : 1;
+
+      matches.forEach(a => {
+        const ammoDogma = a.type.dogma_attributes || [];
+        const hullDmgMult = hullDamageMultFor(catMod.hullDamageBonuses, ammoDogma);
+        const dmgSkillMult = (isMissile ? MAX_MISSILE_DAMAGE_MULT : MAX_TURRET_DAMAGE_MULT * turretSpecMult) * catMod.dmgMult * hullDmgMult * tdSharpshooterMult;
+        const perShot = DMG.reduce((sum, d) => sum + attrVal(ammoDogma, DAMAGE_DEALT_ATTR[d], 0), 0) * multiplier * dmgSkillMult * spoolupMult;
+        const dps = (perShot / effectiveCycleSec) * qty;
+        const existing = ammoContribution.get(a.id) || {name: a.type.name, dps: 0};
+        existing.dps += dps;
+        ammoContribution.set(a.id, existing);
+      });
+      cargoResolvedWeaponCount += qty;
+    });
+  }
+
+  const unmatchedWeaponCount = Math.max(0, variableWeaponCount - confirmedWeaponCount - cargoResolvedWeaponCount);
+  const baselineDps = droneDps + fixedHighSlotDps + confirmedDps;
+  const ammoEstimates = [...ammoContribution.values()]
+    .map(a => ({name: a.name, dps: Math.round(baselineDps + a.dps)}))
+    .sort((a, b) => a.dps - b.dps);
+  const confirmedAmmoBreakdown = [...confirmedAmmoDps.values()]
+    .map(a => ({name: a.name, dps: Math.round(a.dps)}))
+    .sort((a, b) => b.dps - a.dps);
+  const fixedWeaponDpsBreakdown = [...fixedWeaponDps.values()]
+    .map(a => ({name: a.name, dps: Math.round(a.dps)}))
+    .sort((a, b) => b.dps - a.dps);
+
+  return {
+    shieldHP: Math.round(shieldHP / avgShieldRes),
+    armorHP: Math.round(armorHP / avgArmorRes),
+    hullHP: Math.round(hullHP / avgHullRes),
+    totalHP: Math.round(effectiveHP),
+    rawHP: Math.round(shieldHP + armorHP + hullHP),
+    dpsFixed: Math.round(baselineDps),
+    droneDps: Math.round(droneDps),
+    droneCount: Math.round(droneCount),
+    droneBayCount: Math.round(droneBayCount),
+    droneDpsBreakdown,
+    fixedWeaponDps: Math.round(fixedHighSlotDps),
+    fixedWeaponDpsBreakdown,
+    ammoEstimates,
+    confirmedAmmoBreakdown,
+    confirmedWeaponCount: Math.round(confirmedWeaponCount),
+    cargoResolvedWeaponCount: Math.round(cargoResolvedWeaponCount),
+    unmatchedWeaponCount: Math.round(unmatchedWeaponCount),
+    variableWeaponCount: Math.round(variableWeaponCount),
+    weakest,
+    weaknessPct: Math.round(Math.min(1, weighted[weakest]) * 100),
+    weaknessRec,
+    drones
+  };
+}
+
+// Renders just the weakness/EHP/DPS block for one fit's estimate — used once
+// per tab, so every number on screen is derived from that tab's fit alone.
+// Takes the whole fit object (not just its estimate) so it can also render
+// the Tactical Destroyer Mode toggle when f.tacticalModes is present — see
+// TACTICAL_DESTROYER_MODE_BONUS above. f.estimate is always whichever mode
+// is currently active (defaults to Sharpshooter); f.activeMode names it.
+function renderFitSummaryHtml(f){
+  const estimate = f && f.estimate;
+  if(!estimate) return '';
+  const hasCargoGuess = estimate.ammoEstimates.length > 0;
+  const dpsDisplay = hasCargoGuess
+    ? `${estimate.ammoEstimates[0].dps.toLocaleString()}–${estimate.ammoEstimates[estimate.ammoEstimates.length-1].dps.toLocaleString()}`
+    : estimate.dpsFixed.toLocaleString();
+
+  // Every turret/launcher instance is accounted for one of three ways: its own
+  // loaded charge (exact, from the killmail itself), a category-matched guess
+  // from spare ammo in cargo (a range, since we can't know which type was
+  // actually cycling), or genuinely unaccounted for (no charge, no cargo ammo).
+  const subParts = [];
+  if(estimate.confirmedWeaponCount > 0){
+    subParts.push(`${estimate.confirmedWeaponCount} turret/launcher${estimate.confirmedWeaponCount > 1 ? 's' : ''} confirmed from ammo loaded at time of death`);
+  }
+  if(hasCargoGuess){
+    subParts.push(`${estimate.cargoResolvedWeaponCount} estimated from ${estimate.ammoEstimates.length} spare ammo type${estimate.ammoEstimates.length > 1 ? 's' : ''} in cargo`);
+  }
+  if(estimate.unmatchedWeaponCount > 0){
+    subParts.push(`${estimate.unmatchedWeaponCount} unaccounted for (no loaded charge or cargo ammo found)`);
+  }
+  const dpsSub = subParts.length ? subParts.join(' · ') : (estimate.variableWeaponCount > 0 ? '' : 'drones and fixed-damage weapons only');
+
+  const droneNote = estimate.droneBayCount === 0
+    ? null
+    : (estimate.droneCount === estimate.droneBayCount
+        ? `all ${estimate.droneCount} bay drone${estimate.droneCount > 1 ? 's' : ''} deployable at once`
+        : (estimate.droneCount > 0
+            ? `${estimate.droneCount} of ${estimate.droneBayCount} bay drones deployable at once (control/bandwidth limit)`
+            : `${estimate.droneBayCount} drone${estimate.droneBayCount > 1 ? 's' : ''} in bay, none launchable (control/bandwidth limit)`));
+
+  // Total DPS = every source that's CERTAIN for this fit (drones, fixed-damage
+  // modules, turrets/launchers confirmed from their own loaded ammo) summed
+  // into one number — exactly estimate.dpsFixed, so this list always adds up
+  // to the low end of the figure shown above without the user doing any math.
+  const breakdownRows = [];
+  for(const d of estimate.droneDpsBreakdown){
+    breakdownRows.push({name: `${d.name}${d.qty > 1 ? ' ×' + d.qty : ''} (drone)`, dps: d.dps});
+  }
+  for(const f of estimate.fixedWeaponDpsBreakdown){
+    breakdownRows.push({name: `${f.name} (fixed-damage weapon)`, dps: f.dps});
+  }
+  for(const a of estimate.confirmedAmmoBreakdown){
+    breakdownRows.push({name: `${a.name} (confirmed, loaded at death)`, dps: a.dps});
+  }
+  breakdownRows.sort((a, b) => b.dps - a.dps);
+
+  const breakdownListHtml = breakdownRows.length ? `
+    <div class="ammo-dps-list">
+      <div class="ammo-dps-label">DPS breakdown by source</div>
+      ${breakdownRows.map(r => `
+        <div class="ammo-dps-row">
+          <span>${escapeHtml(r.name)}</span>
+          <span class="ammo-dps-value">${r.dps.toLocaleString()}</span>
+        </div>`).join('')}
+      <div class="ammo-dps-row" style="font-weight:600; border-top:2px solid var(--line); margin-top:2px; padding-top:6px;">
+        <span>${hasCargoGuess ? 'Confirmed subtotal' : 'Total'}</span>
+        <span class="ammo-dps-value">${estimate.dpsFixed.toLocaleString()}</span>
+      </div>
+    </div>
+    ${droneNote ? `<div class="estimate-sub" style="margin:-6px 0 12px;">${droneNote}</div>` : ''}` : '';
+
+  // The remaining, unresolved turrets/launchers can't be added to the total above —
+  // each row here is a mutually exclusive "what if this ammo is what's cycling"
+  // scenario for the SAME guns, not an additional concurrent damage source.
+  const ammoListHtml = hasCargoGuess ? `
+    <div class="ammo-dps-list">
+      <div class="ammo-dps-label">Total DPS if the rest fired this cargo ammo instead</div>
+      ${estimate.ammoEstimates.map(a => `
+        <div class="ammo-dps-row">
+          <span>${escapeHtml(a.name)}</span>
+          <span class="ammo-dps-value">${a.dps.toLocaleString()}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  return `
+    <div class="fit-summary">
+      <div class="fit-summary-label">Combat effectiveness</div>
+
+      <div class="fit-subsection-label">Weakest damage type</div>
+      <div class="weakness-highlight">
+        <div class="weakness-badge-row">
+          <span class="dmg-badge lg ${estimate.weakest}">${DMG_FULL[estimate.weakest]}</span>
+          <span class="weak-sub">weakest damage type (${estimate.weaknessPct}%)</span>
+        </div>
+        <div class="rec-grid">
+          <div class="rec-stat">
+            <span class="rec-label">Drone</span>
+            <span class="rec-value">${estimate.drones.primary.name} (${estimate.drones.primary.size})</span>
+            ${estimate.drones.alt ? `<span class="rec-sub">or ${estimate.drones.alt.name} (${estimate.drones.alt.size}) if it won't sit still</span>` : ''}
+          </div>
+          <div class="rec-stat">
+            <span class="rec-label">Missile</span>
+            <span class="rec-value">${estimate.weaknessRec.missile}</span>
+          </div>
+          <div class="rec-stat">
+            <span class="rec-label">Turret</span>
+            <span class="rec-value">${estimate.weaknessRec.turret}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="fit-subsection-divider"></div>
+
+      <div class="fit-subsection-label">Estimated hit points &amp; DPS</div>
+      <div class="estimate-box">
+        <div class="estimate-stat">
+          <span class="estimate-label">Est. effective HP</span>
+          <span class="estimate-value">${f.tacticalModes ? `<span class="td-mode-badge">${tacticalModeIconSvg(f.activeMode)}</span>` : ''}${estimate.totalHP.toLocaleString()}</span>
+          <span class="estimate-sub">${estimate.shieldHP.toLocaleString()} shield / ${estimate.armorHP.toLocaleString()} armor / ${estimate.hullHP.toLocaleString()} structure — ${estimate.rawHP.toLocaleString()} raw before resists</span>
+        </div>
+        <div class="estimate-stat">
+          <span class="estimate-label">Total DPS</span>
+          <span class="estimate-value">${f.tacticalModes ? `<span class="td-mode-badge">${tacticalModeIconSvg(f.activeMode)}</span>` : ''}${dpsDisplay}</span>
+          <span class="estimate-sub">${dpsSub}</span>
+        </div>
+      </div>
+      ${f.tacticalModes ? `
+      <div class="td-mode-row">
+        <span class="td-mode-label">Mode:</span>
+        <div class="td-mode-icons">
+          ${['sharpshooter','defense','propulsion'].map(m => `
+            <button type="button" class="td-mode-btn ${m === f.activeMode ? 'active' : ''}" data-mode="${m}" title="${TACTICAL_MODE_LABEL[m]}">${tacticalModeIconSvg(m)}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="note" style="margin:6px 0 0;">This hull can switch Tactical Destroyer Mode in space — Defense/Propulsion/Sharpshooter, no more than once every 10s. Which mode was active at time of death can never be known from a killmail (it's a built-in ship ability, not a fitted item, so it leaves no trace) — toggle above to see all three. Sharpshooter is shown by default since it's the one that changes DPS; Defense changes the effective-HP numbers instead; Propulsion only affects speed/agility, which this tool doesn't track, so its numbers match whichever of the other two has no extra bonus applied.</div>
+      ` : ''}
+      ${breakdownListHtml}
+      ${ammoListHtml}
+      <div class="note" style="margin:10px 0 0; border-top:1px solid var(--line-soft); padding-top:10px;">Effective HP folds in Damage Control and hardener/amplifier resistance bonuses fitted on this loss, plus max-level (V) Shield and Armor Compensation skills, averaged across all four damage types with standard stacking penalties applied. Base HP is also boosted by fitted plates, shield extenders, and Reinforced Bulkheads/Nanofiber Internal Structure (flat HP or a straight multiplier, whichever that module uses), by Trimark Armor Pump and Core Defense Field Extender rigs, and by max-level (V) Shield Management, Hull Upgrades, and Mechanics skills — every capsuleer's baseline HP training, assumed maxed like everything else here. On a Strategic Cruiser (Tengu/Legion/Proteus/Loki), fitted subsystems are folded in the same way as any other module — flat shield/hull HP grants and any hardener-style resistance a Defensive subsystem carries. It still doesn't model Reactive Armor Hardeners, since their bonus depends on incoming damage history rather than the fit alone. DPS is calculated per turret/launcher: first from the exact charge that was loaded into that specific weapon at time of death (same killmail flag as the gun itself), falling back to a category-matched guess from spare ammo sitting in cargo only when a gun had no identifiable loaded charge — plus drones and any fixed-damage weapons. Drone DPS only counts however many of the bay's drones this hull can actually have in space at once (the lower of its max active drones and drone bandwidth), launching the hardest-hitting types first — not every drone sitting in the bay. All of it assumes max-level (V) damage and rate-of-fire skills for turrets, missiles, and drones alike (Surgical Strike/Rapid Firing or Warhead Upgrades/Rapid Launch plus the matching specialization skill, and Drone Interfacing plus drone specialization), on top of two more sources folded in the same way: fitted damage/rate-of-fire low-slot modules (Gyrostabilizer, Magnetic Field Stabilizer, Heat Sink, Ballistic Control System, Drone Damage Amplifier — stacking-penalized against others of their own kind, same as resistance mods above), and this hull's own intrinsic role/skill bonuses at max skill level (e.g. a Vexor's hybrid damage bonus or a Drake's kinetic missile bonus) — or, on a Strategic Cruiser, whichever fitted subsystem's own damage bonus applies, since T3 hulls get theirs from subsystems rather than a fixed hull trait. Treat every number here as a ceiling, not a guarantee — a less-trained pilot with fewer damage mods hits considerably softer.</div>
+    </div>
+  `;
+}
+
+// Renders the module list for one fit — no frequency fractions, since a
+// single loss has nothing to be frequent relative to.
+function renderModuleListHtml(tally, idToName){
+  const groupOrder = ['High slots','Mid slots','Low slots','Rigs','Subsystems','Drone bay','Cargo'];
+  let html = '';
+  for(const group of groupOrder){
+    if(!tally[group]) continue;
+    const entries = Object.entries(tally[group])
+      .map(([id,data]) => ({
+        name: idToName.get(Number(id)) || `type ${id}`,
+        qty: data.totalQty
+      }))
+      .sort((a,b) => a.name.localeCompare(b.name));
+    html += `<div class="fitgroup"><h3>${group}</h3>`;
+    for(const e of entries){
+      html += `<div class="fititem"><span>${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}</span></div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+function fitTabLabel(km, idx){
+  if(km.killmail_time){
+    const d = new Date(km.killmail_time);
+    if(!isNaN(d)) return d.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+  }
+  return `Loss ${idx + 1}`;
+}
+
+// One tab per recent loss. Each tab's weakness/EHP/DPS block and module list
+// come from that loss's `estimate`/`tally` alone — nothing is shared or
+// averaged across tabs.
+function renderFitTabs(pilotName, shipName, fits, idToName){
+  const el = document.getElementById('fitResults');
+  if(!fits.length){ el.innerHTML = ''; return; }
+
+  const tabsHtml = fits.map((f, i) => `
+    <button type="button" class="subtab-btn ${i===0 ? 'active' : ''}" data-idx="${i}">${escapeHtml(fitTabLabel(f.km, i))}</button>
+  `).join('');
+
+  const panelsHtml = fits.map((f, i) => `
+    <div class="subtab-panel" data-idx="${i}"${i===0 ? '' : ' style="display:none;"'}>
+      <div class="fit-summary-wrap" id="fit-summary-wrap-${i}">${renderFitSummaryHtml(f)}</div>
+      <div class="fit-detail-label">Fit</div>
+      ${renderModuleListHtml(f.tally, idToName)}
+      <div class="lossrow"><span>killmail ${f.killmailId}</span><a href="https://zkillboard.com/kill/${f.killmailId}/" target="_blank" rel="noopener">view on zKillboard</a></div>
+    </div>
+  `).join('');
+
+  el.innerHTML = `
+    <div style="margin-top:14px;">
+      <div class="cmeta" style="margin-bottom:10px;">${escapeHtml(pilotName)} — ${escapeHtml(shipName)} — ${fits.length} most recent loss${fits.length>1?'es':''}, each shown as its own fit</div>
+      <div class="subtabs">${tabsHtml}</div>
+      <div class="subtab-panels">${panelsHtml}</div>
+      <div class="note">Each tab is one specific loss — weakest damage type, effective HP, and DPS are all calculated from that fit by itself, never combined with modules from any other loss.</div>
+    </div>
+  `;
+
+  el.querySelectorAll('.subtab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = btn.dataset.idx;
+      el.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      el.querySelectorAll('.subtab-panel').forEach(p => {
+        p.style.display = (p.dataset.idx === idx) ? 'block' : 'none';
+      });
+    });
+  });
+
+  // Tactical Destroyer Mode toggle (see TACTICAL_DESTROYER_MODE_BONUS above):
+  // clicking a mode icon swaps which precomputed estimate is active for that
+  // ONE fit tab and re-renders just its summary block — every other tab's
+  // mode selection is independent. Re-wires its own buttons after each
+  // re-render since innerHTML replacement throws away the old listeners.
+  function wireTacticalModeButtons(i){
+    const wrap = el.querySelector(`#fit-summary-wrap-${i}`);
+    if(!wrap) return;
+    wrap.querySelectorAll('.td-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        fits[i].activeMode = mode;
+        fits[i].estimate = fits[i].tacticalModes[mode];
+        wrap.innerHTML = renderFitSummaryHtml(fits[i]);
+        wireTacticalModeButtons(i);
+      });
+    });
+  }
+  fits.forEach((f, i) => { if(f.tacticalModes) wireTacticalModeButtons(i); });
+}
+</script>
+
+</body>
+</html>

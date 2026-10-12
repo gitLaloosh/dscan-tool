@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Persistent ESI type/group cache (ARCH-3, Remediation Phase 3)</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+pre{padding:12px;overflow-x:auto}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Persistent ESI type/group cache (ARCH-3 fix) — Remediation Plan Phase 3</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, 28/28 regression PASS, byte-identical before/after diff, verified in real Chromium with real IndexedDB</span></p>
+
+<h2>What this fixes</h2>
+<p>ARCH-3 (logged 2026-10-09): <code>getType()</code>/<code>getGroup()</code> only cached ESI lookups in an in-memory <code>Map</code>, cleared on every page reload. Ship/module dogma data is close to static — it changes a few times a year via CCP balance patches — but was being re-fetched live from ESI on every single analysis, which is unnecessary latency and network-dependency for a tool meant for quick in-the-moment threat assessment.</p>
+
+<h2>The fix</h2>
+<p>Added an IndexedDB-backed persistent cache layer <i>in front of</i> the existing live ESI fetch inside <code>getType()</code>/<code>getGroup()</code>:</p>
+<ul>
+<li>A lookup first checks the existing in-memory <code>Map</code> (unchanged), then the new IndexedDB store. A hit still within a 7-day TTL returns straight from IndexedDB with zero network call.</li>
+<li>A miss or an expired entry falls through to the exact same live ESI fetch as before, then writes the fresh result back to IndexedDB for next time.</li>
+<li>A new "Refresh item data" button in the header (wired to a new <code>clearDscanCache()</code>) wipes both the IndexedDB store and the in-memory Maps outright — for immediate use right after a known balance patch, without waiting out the TTL.</li>
+</ul>
+<p>This only changes <i>where</i> the data comes from, never <i>what</i> comes back — <code>getType()</code>/<code>getGroup()</code> return the identical JSON shape either way, so it cannot touch any DPS/EHP math. Every persistent-cache operation is wrapped so a missing or broken IndexedDB (private browsing, an old browser, a quota error) silently degrades to the pre-Phase-3 behavior — live fetch every time, cache simply never populated — rather than breaking analysis.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 individual assertions) against the candidate file</td><td>ALL PASS</td></tr>
+<tr><td>Byte-for-byte diff of full regression suite output, pre-Phase-3 vs. post-Phase-3</td><td>IDENTICAL (diff exit code 0)</td></tr>
+<tr><td>Functional test of the real extracted cache code (Node <code>vm</code> + a hand-built fake IndexedDB): cold-cache fetch, warm-cache reload with no fetch, TTL expiry re-fetching, <code>clearDscanCache()</code> actually emptying the store, graceful no-op when <code>indexedDB</code> doesn't exist at all</td><td>12/12 checks PASS</td></tr>
+<tr><td><b>Real-browser check:</b> the actual file opened in real Chromium (Playwright) against real IndexedDB, across real separate page loads sharing one browser profile, plus a real click on the "Refresh item data" button</td><td>8/8 checks PASS, zero console/page errors</td></tr>
+</table>
+
+<p>The real-browser check is the strongest evidence here, per this project's standing rule to verify against primary sources rather than reasoning alone: it isn't a model of IndexedDB, it's the actual API, in the actual browser engine the tool runs in, reloading the actual page twice and clicking the actual button.</p>
+
+<h2>Why the regression suite is unaffected</h2>
+<p><code>run_regression.mjs</code> executes this whole script in a Node <code>vm</code> sandbox that has no <code>indexedDB</code> global at all. <code>typeof indexedDB === 'undefined'</code> is therefore true there, so <code>openDscanCacheDb()</code> resolves to <code>null</code> immediately and <code>getType()</code>/<code>getGroup()</code> fall straight through to the (mocked) live fetch — exactly the same code path as before this change. That's why the regression suite's console output is byte-identical before and after.</p>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li>New: <code>openDscanCacheDb()</code>, <code>dscanCacheGet()</code>, <code>dscanCacheSet()</code>, <code>clearDscanCache()</code> — declared near the existing <code>typeCache</code>/<code>groupCache</code> Maps.</li>
+<li><code>getType()</code> / <code>getGroup()</code> — each gained one persistent-cache check between the existing in-memory-Map check and the existing live fetch, and one fire-and-forget persistent-cache write after a successful fetch. No other logic touched.</li>
+<li>New header control: <code>#refreshCacheBtn</code> ("Refresh item data") + <code>#cacheStatus</code> status line, wired to <code>clearDscanCache()</code>.</li>
+</ul>
+
+<h2>Remaining remediation plan</h2>
+<p>Phase 4 (improve ESI fetch error messages: include the failing id/url, distinguish network/404/rate-limit, surface as a non-blocking UI warning) and Phase 5 (golden-fit scaffolder script, replacing manual ESI fetch-and-retype for new golden fits) are next up whenever wanted — independent of each other and of this phase.</p>
+</body>
+</html>

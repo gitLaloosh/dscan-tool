@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — DPS required to break an active-rep tank</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>DPS required to break an active-rep tank</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified via 28/28 regression PASS + an 11/11 direct unit test against hand-derived numbers + a real-Chromium render check</span></p>
+<p><b>Requested by Erik:</b> the natural follow-up to the Active Rep/Buffer Tank indicator — "how much DPS would be required to break their tanking threshold." Scoped over two short discussions: (1) a calculation-feasibility pass (verified live ESI attributes for repair amount/cycle time, and a real, non-obvious asymmetry: armor/hull reps get a verified level-V "Repair Systems" skill speed-up, Shield Boosters don't); (2) Ancillary Armor Repairers needed their own scoping call — Erik chose to show both the burst (charge-boosted) and sustained (unboosted) numbers, labeled, rather than picking just one.</p>
+
+<h2>The change</h2>
+<p>Each layer's active-rep badge (inside the existing Tank Type highlight box) now shows the DPS an attacker needs to sustain to out-repair it, instead of "coming in a later update." Shield: <code>shieldBonus / duration</code>, no skill multiplier (confirmed — Shield Operation only speeds up passive regen, not the booster itself). Armor/Hull: <code>repairAmount / (duration × 0.75)</code>, the 0.75 being max-level (V) "Repair Systems" (confirmed to cover both armor and hull reps, 5%/level cycle-time reduction). An Ancillary Armor Repairer additionally shows a separate burst figure using its own <code>chargedArmorDamageMultiplier</code> attribute (confirmed live — roughly 3x on a Large Ancillary Armor Repairer, matching its real "Boosted repair multiplier" stat) for while its loaded Nanite Repair Paste lasts; Ancillary Shield Boosters deliberately do NOT get this treatment, since their own live ESI dogma confirmed they have no equivalent attribute at all — their Cap Booster charges only change where the activation cost is drawn from, not the repair amount. A fit with more than one qualifying rep module (rare, but possible) sums them before computing the final HP/s. Zero new ESI calls — reuses the exact dogma already being fetched for the Active Rep/Buffer Tank badge.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS — purely additive new return-object fields, no existing calculation touched</td></tr>
+<tr><td>Direct unit test (11 checks) against a synthetic fit combining a plain Armor Repair Unit + an Ancillary Armor Repairer + a Shield Booster, using real captured ESI dogma for all three</td><td>11/11 PASS — sustained/burst figures match hand-derived values exactly (including the two-module-summed case), a plain (non-Ancillary) rep correctly shows no burst figure at all, and a buffer fit correctly shows no tank-style numbers</td></tr>
+<tr><td>Real-Chromium render check of the new text against the tool's actual CSS</td><td>Confirmed legible, correctly wrapped, the <code>&amp;gt;</code> entities render as <code>&gt;</code> correctly in both the active-rep and buffer-fit cases</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li>New constants: <code>SHIELD_BOOST_AMOUNT_ATTR</code> (68), <code>ARMOR_REPAIR_AMOUNT_ATTR</code> (84), <code>HULL_REPAIR_AMOUNT_ATTR</code> (83), <code>REP_CYCLE_DURATION_ATTR</code> (73), <code>ANCILLARY_ARMOR_BOOST_MULT_ATTR</code> (1886), <code>MAX_REPAIR_SYSTEMS_DURATION_MULT</code> (0.75).</li>
+<li><code>estimateHpAndDps()</code>'s existing <code>defensiveTypes</code> loop — alongside the existing presence-only <code>hasShieldRep</code>/<code>hasArmorRep</code>/<code>hasHullRep</code> flags, now also accumulates HP/s for each qualifying module.</li>
+<li><code>estimateHpAndDps()</code>'s return object — <code>tankStyle</code>'s shape changed from booleans to <code>null</code> or <code>{sustainedDps, burstDps}</code> per layer.</li>
+<li><code>tankStyleHtml()</code> — renders the new DPS-to-break numbers per layer.</li>
+<li>The "How effective HP and DPS are calculated" collapsible note — updated to document the new numbers and the Repair Systems/Shield Operation asymmetry, keeping that note accurate per this project's standing practice.</li>
+</ul>
+
+<h2>What's next</h2>
+<p>Weapon range/falloff (the other half of this task) is next, same session. Also still queued: tying the buffer-tank text more directly into the Tank Type badge, nav-speed/scan-res/sensor/cap-stability stats, Phase 5 scaffolder, a new "Fit Analyzer" tab (just floated, not yet scoped), and project-knowledge-base cleanup (the project doc store is at its size cap).</p>
+</body>
+</html>

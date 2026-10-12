@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Turret "No answer" tiles fall back to the 2nd-weakest damage type</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Turret "No answer" tiles fall back to the 2nd-weakest damage type</h1>
+<p class="small">2026-10-12 &middot; index.html &middot; backlog item, Erik 2026-10-12: "extend weakness info for weapon systems with 'No answer' to utilize the next weakest resist type to pick an ammo type (flagging that it cannot take advantage of the primary weakness). that way we're at least giving them something useful."</p>
+
+<h2>Change</h2>
+<p>A turret weapon system's ammo-recommendation tile previously dead-ended with "No answer" whenever <code>TURRET_RECS[weakest][system]</code> was <code>null</code> -- laser can never address Kinetic/Explosive, hybrid can never address EM/Explosive (projectile answers all four types directly and never hits this). New <code>secondWeakestOf()</code> reuses the fit's already-computed per-type <code>weighted</code> resist map (same source <code>weakest</code>/<code>weaknessPct</code> already come from) to find the runner-up damage type. New <code>buildTurretRecs()</code> tries the fit's actual weakest type first (unchanged behavior when it has an answer); when it doesn't, it tries the system's recommendation for the second-weakest type instead, and tags the result <code>fallbackFrom</code>/<code>fallbackTo</code> so the render layer can flag it. Both <code>turretRecTileHtml()</code> (Fit Analyzer's boxed tiles) and <code>turretRecText()</code> (D-Scan card's plain-text line) now render a fallback distinctly from a direct hit -- a thin amber left edge + an explicit "Fallback -- can't hit X, next-best is Y" line, never presented as equal to an unambiguous answer. If the second-weakest type <em>also</em> can't be addressed by that system (e.g. weakest=Kinetic, 2nd=Explosive for laser -- neither is EM), the tile correctly stays "No answer": the fallback is a single-level lookup, not a cascade through all four types, per the backlog item's own scope.</p>
+
+<h2>Verification</h2>
+<p>Logic exercised directly against all 6 weakest/second-weakest damage-type combinations in isolation (bypassing the DOM) -- every fallback-succeeds and fallback-still-fails case matched the TURRET_RECS table's own hand-verified combinations exactly. Also scanned all 79 existing golden fits: the overwhelming majority naturally hit a fallback on at least one system (laser and hybrid's null cases are common, not edge cases), confirming this was a far more frequent dead end than "No answer" suggested.</p>
+<p>This field (<code>turretRecs</code>) was never flattened/asserted in the regression suite before this fix (display-only, same situation <code>sensorStrength</code> was in before 2026-10-11). Added a flattening block to <code>run_regression.mjs</code> (<code>turret{Laser,Hybrid,Projectile}Name</code>/<code>...Fallback</code>) and pinned it on 3 real, already-existing fits rather than constructing a new one:</p>
+<ul>
+<li><code>curse_zkb139073592_ewar</code> (weakest Thermal) -- laser falls back Thermal&rarr;EM to "Radio", hybrid/projectile stay direct hits. The fallback-succeeds case.</li>
+<li><code>caracal_alyra</code> (weakest EM) -- hybrid falls back EM&rarr;Thermal to "Iridium or Thorium", laser/projectile stay direct hits. The complementary fallback-succeeds case (the other null-prone system).</li>
+<li><code>rifter_user</code> (weakest Thermal, 2nd-weakest neither Thermal nor EM) -- laser stays "No answer" even after the fallback attempt, hybrid/projectile unaffected. The genuinely-still-unaddressable negative control.</li>
+</ul>
+<p>Also Playwright-screenshot-verified all three cases rendered through the real <code>renderFitSummaryHtml()</code> against the real extracted CSS -- fallback tiles show the amber edge + caveat text, direct-hit tiles are pixel-identical to before, and the still-"No answer" tile is unchanged.</p>
+<p><strong>Full suite: 79/79 fits, ALL PASS. dscan_parse_tests.mjs: 280/280 PASS.</strong></p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 515,975 &rarr; 519,468 bytes</li>
+<li><code>golden_fits.json</code>: 79 fits (unchanged count, 3 existing fits extended), 4,172,294 &rarr; 4,175,199 bytes</li>
+<li><code>run_regression.mjs</code>: 31,839 &rarr; 33,080 bytes</li>
+</ul>
+
+</body>
+</html>

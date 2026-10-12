@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Weaknesses-card cap-drain gauge + Firepower ammo-list move</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.4rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.15rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f5f5f5}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+</style>
+</head>
+<body>
+
+<h1>Weaknesses card: cap-drain graphic (replaces the wordy sentence) + Firepower ammo-list move</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; two Weaknesses-card decluttering items, same session</p>
+
+<h2>1. Cap-drain gauge (backlog item, logged earlier the same day)</h2>
+<p>Erik: "would rather have a graphic of some sort with the duration in the middle so it's easy to see and read -- right now it's just too wordy." The old <code>capacitor.weak</code> row was a red "!" badge plus a full run-on sentence (margin GJ/s, neut/nos pressure clause, all in one line). Replaced with a small radial gauge (<code>capWeakGaugeHtml()</code>):</p>
+<ul>
+<li><b>Ring fill</b> = the capacitor's remaining stable headroom -- <code>stablePct</code> when it settles somewhere (always under <code>CAP_STABLE_WEAKNESS_PCT_THRESHOLD</code>=25 here, since this row only renders when already flagged weak), or 0 when it's genuinely unstable and draining to empty (a "near-empty tank" reading, not a 0%-looks-like-nothing's-wrong reading -- the track itself is tinted red, not neutral gray, so an empty ring still reads as "in danger").</li>
+<li><b>Centered figure</b> = exactly Erik's ask: the duration (time-to-empty, e.g. "21s"/"2m 1s"/"4h+") for the unstable case, or a rounded whole-percent (e.g. "18%") for the stable-but-thin case -- same split <code>capCardStateText()</code> already uses on the Capacitor card, just condensed to fit a 50px ring (whole-percent instead of 1-decimal; the exact figure is still in the hover tooltip).</li>
+<li><b>Caption</b>: a short 2-line label next to the ring instead of the old sentence -- a bold headline ("Capacitor drains dry" / "Thin cap margin") plus one short actionable line. The stable-but-thin case keeps its single most useful number inline (the GJ/s margin), since that's the one figure a player can actually act on.</li>
+<li><b>Full original sentence</b> (margin GJ/s, neut/nos pressure clause) isn't deleted -- it's a hover <code>title=</code> tooltip on the gauge, same convention the TD Mode buttons already use. Nothing lost, just decluttered.</li>
+<li>The old standalone "!" badge is dropped -- the ring's red color already carries that signal, and keeping both would be the exact kind of duplicate-signal Erik called out and removed earlier the same day (EWAR card's "Cap-lean target" badge, which restated the same capWeak signal a second time).</li>
+</ul>
+<p>Track color: <code>--danger</code> at 18% opacity (not the neutral <code>--line</code> the Resistance card's bars use), specifically so a 0%-fill ring still reads as "in danger" rather than "empty/unset control." Pure rendering change -- zero new calc, reuses <code>stable</code>/<code>stablePct</code>/<code>timeToEmptySec</code>/<code>timeToEmptyCapped</code>/<code>netRate</code>/<code>weakReason</code>, all already computed and regression-tested by the capacitor-stability-model work earlier this week.</p>
+
+<h2>2. "Total DPS if cargo ammo" list moved from Weaknesses to Firepower</h2>
+<p>Erik, reviewing the card: "the total dps info at the bottom should not be in the weaknesses card. isn't that firepower data?" Correct -- the per-ammo breakdown list was a leftover from the old lumped "Combat effectiveness" card (pre-2026-10-10 card split) that never got moved when everything else DPS-related was split out into its own Firepower card. It's also literally the detail view of the exact same uncertainty Firepower's own "Total DPS" tile already summarizes as a range (both read <code>estimate.ammoEstimates</code>/<code>hasCargoGuess</code>) -- so it belongs right below that tile, not in Weaknesses. Moved verbatim (same markup/CSS, <code>.ammo-dps-list</code>/<code>.ammo-dps-row</code> unchanged) into <code>firepowerCardHtml()</code>, directly below its existing weapon/drone breakdown strip. Pure placement change, no data/calc impact -- <code>hasCargoGuess</code> was already computed in that function for the Total/Weapon DPS tiles' own range display, just reused rather than duplicated.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Script syntax (full <code>&lt;script&gt;</code> block parsed via <code>new Function()</code>)</td><td>OK</td></tr>
+<tr><td>Regression suite</td><td><b>79/79 fits, ALL PASS</b> -- zero calc/data impact expected (pure rendering change) and confirmed</td></tr>
+<tr><td>Playwright screenshot, real extracted CSS + real <code>renderFitSummaryHtml()</code>/<code>firepowerCardHtml()</code> output</td><td>3 cases confirmed: fully-unstable gauge (0% fill, "21s"/"2m 1s" centered, real Curse/Abaddon golden fits), stable-but-thin gauge (partial fill, "18%" centered, synthetic cap object isolating this branch -- no golden fit currently has a stable-but-weak capacitor), and the ammo-DPS list rendering correctly inside the Firepower card (Abaddon fit, which has real cargo-ammo guesses) instead of Weaknesses</td></tr>
+</table>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 511,145 &rarr; 515,786 bytes</li>
+<li>No golden-fit/regression-harness changes needed (pure rendering change, no new calc fields)</li>
+<li><b>Full suite: 79/79 fits, ALL PASS</b></li>
+</ul>
+
+<div class="callout">
+Backlog item closed: "Weaknesses-card cap-drain text is too wordy, wants a graphic." Separately fixed, not previously backlogged: the ammo-DPS list's card placement (caught live during this session's review, not a pre-logged item).
+</div>
+
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — "Show other attackers" toggle bug fix</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+pre{padding:12px;overflow-x:auto}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>"Show other attackers" toggle bug fix</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Fixed, reproduced before and after in real Chromium, 28/28 regression PASS, byte-identical diff</span></p>
+<p><b>Reported by Erik:</b> "after clicking on the 'show other attackers' button for a pilot's last kill, then hiding the list again, any subsequent attempt to show the list fails. it just changes the button text but does not show the list."</p>
+
+<h2>Root cause</h2>
+<p>In <code>renderLastKill()</code>'s toggle handler, the "hide" branch did two things: remove the <code>attacker-list</code> CSS class, and clear <code>listEl.innerHTML</code>. But it never reset the <code>loaded</code> flag back to <code>false</code>. The "show" branch only re-renders the list when <code>!loaded</code> — so after the first hide, the handler believed the content was still cached (<code>loaded</code> stayed <code>true</code>) even though the actual DOM content had just been deleted. Every "show" after the first "hide" skipped re-rendering entirely, leaving an empty container while still flipping the button text to "Hide other attackers" — exactly the reported symptom.</p>
+
+<h2>Reproduction</h2>
+<p>Reproduced live in real Chromium (Playwright) against the pre-fix canonical file, with zKillboard/ESI mocked for a pilot with 2 other attackers on their last kill: show (1st click) correctly rendered 2 attacker rows; hide (2nd click) correctly cleared them; show again (3rd click) left the list empty while the button said "Hide other attackers" — byte-for-byte the reported bug.</p>
+
+<h2>The fix</h2>
+<p>Hide the list via <code>style.display = 'none'</code> instead of discarding its rendered content. <code>loaded</code> now stays accurate — true exactly when the DOM still actually has the content — so re-opening after a hide just toggles <code>display</code> back, instantly, with no re-fetch. The "show" branch's <code>if(!loaded)</code> guard and everything else is unchanged.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Real-browser repro against the pre-fix file (show → hide → show)</td><td>Bug reproduced: 3rd click left the list empty with "Hide other attackers" showing</td></tr>
+<tr><td>Same repro against the fixed file</td><td>3rd click correctly shows both attacker rows</td></tr>
+<tr><td>Extended real-browser check: 6 consecutive toggle clicks (3 full show/hide cycles)</td><td>All 6 correct — content visible on every "show," hidden via <code>display:none</code> on every "hide," never lost</td></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS</td></tr>
+<tr><td>Byte-for-byte diff of regression output, before vs. after</td><td>IDENTICAL (diff exit code 0) — this is a Pilot Analyzer DOM/UI fix only, nowhere near the DPS/EHP calculation code</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li><code>renderLastKill()</code>'s <code>attackerToggle</code> click handler — hide branch now sets <code>style.display = 'none'</code> instead of clearing <code>innerHTML</code>; show branch now also resets <code>style.display = ''</code> (needed since the element may have been hidden by a previous toggle).</li>
+</ul>
+</body>
+</html>

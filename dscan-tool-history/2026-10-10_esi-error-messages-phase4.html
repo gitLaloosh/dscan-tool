@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Richer ESI/zKillboard error messages (ARCH-4, Remediation Phase 4)</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+pre{padding:12px;overflow-x:auto}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Richer ESI/zKillboard error messages + visible failure warnings — Remediation Plan Phase 4</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, 28/28 regression PASS, byte-identical before/after diff, verified in real Chromium</span></p>
+
+<h2>What this fixes</h2>
+<p>ARCH-4 (logged 2026-10-09): ESI fetch failures threw bare, context-free messages — the canonical example was <code>getType()</code>'s <code>throw new Error('type fetch failed')</code>, which carries no type id and gives no way to tell "ESI doesn't recognize this id" (404) apart from "we're being rate-limited" (420/429, recoverable by waiting), "ESI itself is down" (5xx), or an actual network failure (no response at all). All four looked identical from the UI. Separately, a per-type lookup failure during a D-Scan analysis was silently dropped from the Contacts grid with zero indication anything had gone wrong — a contact that failed to resolve just vanished, indistinguishable from "this scan had fewer contacts."</p>
+
+<h2>The fix</h2>
+<ul>
+<li>New helper <code>describeEsiFailure(context, status, detail)</code> builds one consistent, readable message for every ESI/zKillboard fetch site: distinguishes network failure, 404, 420/429 rate-limit (with a "wait and retry" hint), 5xx server error, and any other rejected status — always including the failing id/context and, where available, the response body.</li>
+<li>Applied it to every ESI/zKillboard fetch site that previously hand-rolled a thin message: <code>getType()</code>, <code>getGroup()</code>, <code>resolveNamesToIds()</code>, <code>resolveIdsToNames()</code>, <code>fetchLossesStubs()</code>, <code>fetchKillmail()</code>, and the zKillboard fetch inside <code>renderLastKill()</code>.</li>
+<li><code>analyzeChunks()</code>'s per-item catch now keeps the original item (<code>{error, item}</code>) alongside the error message, instead of discarding which lookup actually failed — purely additive, every existing caller already only reads <code>.error</code> and ignores unknown fields.</li>
+<li><code>runAnalysis()</code> now collects any per-type lookup failures and appends a visible, non-blocking warning to the scan's status line (e.g. "⚠ 1 type(s) couldn't be fetched and are left out below: BrokenShip (Type 999999 fetch: not found (status 404))") instead of letting them disappear silently. The scan still completes and shows everything that resolved — this only makes the gap visible.</li>
+</ul>
+<p>This is purely a change to error <i>messages</i> and to what's shown on failure — it never changes when something throws vs. succeeds, so it cannot touch any DPS/EHP math.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions) against the candidate file</td><td>ALL PASS</td></tr>
+<tr><td>Byte-for-byte diff of full regression suite output, pre-Phase-4 vs. post-Phase-4</td><td>IDENTICAL (diff exit code 0) — none of the 28 fits ever exercises a non-2xx ESI response, so this path is untouched there either way</td></tr>
+<tr><td>Functional test of the real extracted code (Node <code>vm</code>, fabricated 404/429/network-failure responses): every <code>describeEsiFailure()</code> branch, <code>getType()</code>/<code>getGroup()</code> now including the failing id and the real cause, <code>analyzeChunks()</code> retaining the failed item</td><td>18/18 checks PASS</td></tr>
+<tr><td><b>Real-browser check:</b> an actual D-Scan analysis run in real Chromium with one ship's type-fetch mocked to return a genuine 404 — confirms the successful ship still renders AND the status line now visibly names the failed one, its type id, and the real reason, instead of silently vanishing</td><td>6/6 checks PASS, zero console/page errors</td></tr>
+</table>
+
+<h2>Example — before vs. after</h2>
+<p>Before (bare, no id, no cause, and dropped from the UI with zero trace):</p>
+<pre>Error: type fetch failed</pre>
+<p>After (same failure, real browser output):</p>
+<pre>Done — 2 type(s) recognized from 2 line(s). ⚠ 1 type(s) couldn't be fetched and are left out below: BrokenShip (Type 999999 fetch: not found (status 404) -- Not Found)</pre>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li>New: <code>describeEsiFailure()</code>, declared near the <code>ESI</code>/<code>ZKB</code> constants.</li>
+<li><code>getType()</code>, <code>getGroup()</code>, <code>resolveNamesToIds()</code>, <code>resolveIdsToNames()</code>, <code>fetchLossesStubs()</code>, <code>fetchKillmail()</code>, <code>renderLastKill()</code> — each fetch site now wraps the network call in try/catch and routes its failure message through <code>describeEsiFailure()</code>.</li>
+<li><code>analyzeChunks()</code> — per-item catch now also stores the original item.</li>
+<li><code>runAnalysis()</code> — status line now appends a visible warning for any per-type lookups that failed, instead of letting <code>renderResults()</code>'s existing <code>continue</code>-on-error silently drop them with no trace.</li>
+</ul>
+
+<h2>Deliberately NOT touched</h2>
+<p><code>getWeaponDamageInfo()</code>'s own internal try/catch (falls back to <code>{mode:'unknown', types:[]}</code> on any getType/getGroup failure) and <code>fetchKillmail()</code>'s already-graceful "no hash" short-circuit were left as deliberate, reasonable degradations for cosmetic weapon-badge/last-kill display — not the thin-error-message pattern ARCH-4 was about. <code>fetchKillmail()</code>'s own error message was still upgraded to use <code>describeEsiFailure()</code> for consistency, but its graceful-return-instead-of-throw contract is unchanged.</p>
+
+<h2>Remaining remediation plan</h2>
+<p>Phase 5 (golden-fit scaffolder script — given a killmail ID, auto-fetch every referenced type/group from ESI and emit a ready-to-paste golden_fits.json entry) is the last item on the original remediation plan, whenever wanted next.</p>
+</body>
+</html>
