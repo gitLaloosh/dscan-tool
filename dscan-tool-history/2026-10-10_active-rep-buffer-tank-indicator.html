@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Active Rep / Buffer Tank indicator</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+.warn{color:#9a6700;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Active Rep / Buffer Tank indicator</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified via 28/28 regression PASS + a 12-case classification unit test (including the real naming trap it was built to avoid) + real-Chromium render check</span></p>
+<p><b>Requested by the owner:</b> "another helpful indicator would be whether they are active rep or buffer fit" -- asked alongside two related follow-ups (effective range/falloff, and the DPS required to break a tank), with explicit instruction to build the rep/buffer badge first before tackling the other two.</p>
+
+<h2>Verification before writing code</h2>
+<p>This project's standing rule is to verify against primary sources, not assume naming symmetry -- which caught a real trap here. Checked everef.net live (this sandbox has no direct ESI/web access, so done through the linked desktop's own browser) for the actual ESI/SDE group names of every local (self) repair module and its remote (fleet-mate-repairing) counterpart: <b>Shield Booster</b> / <b>Remote Shield Booster</b>, <b>Armor Repair Unit</b> / <b>Remote Armor Repairer</b> (plus <b>Ancillary Armor Repairer</b> / <b>Ancillary Remote Armor Repairer</b>), and <b>Hull Repair Unit</b> / <b>Remote Hull Repairer</b>. The real finding: <code>Ancillary Remote Armor Repairer</code> does NOT start with the word "Remote" -- it starts with "Ancillary." A naive <code>startsWith('remote')</code> exclusion check would have silently misclassified a logistics ship's ancillary remote rep as a self active-armor-rep. Using a substring <code>.includes('remote')</code> check instead (same idiom already used throughout this file for group-name classification) catches it regardless of word position.</p>
+
+<h2>The change</h2>
+<p>Inside the same per-item classification loop that already flags Afterburner/MWD and resist mods (zero new ESI calls -- these items were already being fetched), each item's group name is now also checked against the verified local-repair group names, with the remote variants explicitly excluded. Produces a new <code>tankStyle: {shield, armor, hull}</code> field on the estimate -- presence only, same scope as the Propulsion badge, not yet a repair rate/amount. Rendered as a new line inside the existing Tank Type highlight box: an "ACTIVE REP" badge naming which layer(s) carry a repair module when one is fitted, or a quiet "buffer tank -- no active repair module fitted" line otherwise.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Live verification of real ESI/SDE group names (not assumed) via everef.net, including the remote variants</td><td>Confirmed 6 real group names; found and avoided the Ancillary Remote Armor Repairer naming trap before writing any code</td></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS -- purely additive, no existing calculation touched</td></tr>
+<tr><td>Direct classification unit test, 12 cases (all 6 real repair groups, their remote counterparts, the Ancillary Remote Armor Repairer trap case, and 3 non-repair groups that could plausibly false-positive: Armor Hardener, Capacitor Booster, Shield Hardener)</td><td>12/12 PASS</td></tr>
+<tr><td>Real-Chromium screenshot of the new badge in both scenarios (active-rep fit, buffer fit) against the tool's actual CSS</td><td>Confirmed correct, legible rendering in both cases</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li><code>estimateHpAndDps()</code>'s existing <code>defensiveTypes</code> loop -- added active-rep detection (verified group-name match, remote-variant exclusion).</li>
+<li><code>estimateHpAndDps()</code>'s return object -- added <code>tankStyle</code>.</li>
+<li>New <code>tankStyleHtml()</code> function; <code>tankTypeHtml()</code> now calls it and renders its output inside the Tank Type highlight box.</li>
+<li>New CSS: <code>.tank-style-row</code>, <code>.tank-style-badge</code>, <code>.tank-style-detail</code>, <code>.tank-style-none</code>.</li>
+</ul>
+
+<h2>What's next</h2>
+<p>Per the owner's requested order: next up is the calculation-feasibility pass on (1) the DPS required to break an active-rep fit's sustained tank (needs the repair module's own dogma attributes -- HP per cycle, cycle time -- verified live, same standard as this change), and (2) effective range/falloff for weapons and ammo (straightforward for turrets, genuinely harder for missiles since there's no single "range" number -- it depends on target signature/velocity vs. the missile's own explosion radius/velocity). Both were explicitly deferred until this badge shipped.</p>
+</body>
+</html>

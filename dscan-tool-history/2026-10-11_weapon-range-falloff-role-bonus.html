@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Tool-wide weapon range/falloff role-bonus gap</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Tool-wide weapon range/falloff role-bonus gap</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; "A hull's own intrinsic weapon-range or falloff role/skill bonus is never applied anywhere -- disclosed during the #11/#12 Triglavian/EDENCOM sweeps as affecting Vedmak/Drekavac/Kikimora/Draugur/Stormbringer, deliberately deferred at the time as a brand-new bonus-consumer mechanism rather than just data rows" (backlog item's own framing)</p>
+
+<h2>Confirming the scope before touching any code</h2>
+<p>This file already had an exhaustive, dated research dossier (the 2026-10-11 "#11 sweep" comment block above <code>SHIP_ROLE_BONUS</code>) covering all 14 published Triglavian/EDENCOM hulls, which had ALREADY identified and documented every one of these 5 hulls' exact range-bonus mechanism, magnitude, attribute id and effect id -- it just hadn't been wired into a consumer, since none existed. Rather than re-sweep from scratch, every number was independently RE-DERIVED fresh this session via live ESI (not trusted blindly from the old comment) and cross-checked against eveuniversity.org's wiki pages: all 5 matched the dossier's own figures exactly, confirming both the old research and this session's fresh work agree, and that these 5 hulls really are the complete, correct scope -- no 6th hull was missed.</p>
+
+<h2>The mechanism (live-ESI-verified)</h2>
+<table>
+<tr><th>Hull</th><th>Weapon category</th><th>Range bonus</th><th>Source</th></tr>
+<tr><td>Vedmak</td><td>precursor (Heavy Entropic Disintegrator)</td><td>+37.5% @ V</td><td>Skill-scaled: 7.5%/lvl "PC2" Type Bonus (effect 8074, attr2765), scaled by Precursor Cruiser skill's own "PreMulShipBonusPC2" effect (attribute 280 = trained level)</td></tr>
+<tr><td>Drekavac</td><td>precursor (Heavy Entropic Disintegrator)</td><td>+25% flat</td><td>Role bonus (effect 7162 "shipRoleDisintegratorMaxRangeCBC", attr2043=25) -- confirmed NOT touched by any Precursor-Battlecruiser-skill PreMul effect, unlike its own damage/resist bonuses which are</td></tr>
+<tr><td>Kikimora</td><td>precursor (Light Entropic Disintegrator)</td><td>+100% skill-scaled <strong>and</strong> +50% flat (2 independent sources, compound to 3.0x)</td><td>Skill-scaled "PD2" Type Bonus (effect 7157, attr2800=20/lvl x5) + flat role bonus (effect 7156 "smallDisintegratorMaxRangeBonus", attr351=50)</td></tr>
+<tr><td>Draugur</td><td>precursor (Light Entropic Disintegrator)</td><td>+150% @ V</td><td>Skill-scaled "PD2" Type Bonus only (effect 7157, attr2800=30/lvl x5) -- confirmed Draugur does NOT carry Kikimora's 2nd flat source at all</td></tr>
+<tr><td>Stormbringer</td><td>vorton (Medium Vorton Projector)</td><td>+37.5% @ V</td><td>Skill-scaled "UC1" Type Bonus (effect 8053, attr3043=7.5/lvl x5), scaled by EDENCOM Cruiser skill's own "PreMulShipBonusUC1UC2" effect</td></tr>
+</table>
+<div class="callout">
+<strong>The skill-scaled halves use the same "container attribute is only the per-level magnitude; a SEPARATE effect on the ship's own racial hull-skill item does the real scaling" trap already caught 3+ times elsewhere in this file</strong> (SUBSYSTEM_EWAR_BONUS, backlog #1's T3 Propulsion subsystem speed/agility). Re-confirmed fresh here, not assumed uniform across hulls: fetched Precursor Cruiser (47868), Precursor Battlecruiser (49743), Precursor Destroyer (49742), and EDENCOM Cruiser (55032)'s own <code>dogma_effects</code> live and found their explicit "...SkillLevelPreMulShipBonus..." effects (<code>ItemModifier</code>, domain <code>shipID</code>, operator 0, reading attribute 280). Drekavac's and Kikimora's FLAT 2nd sources are confirmed flat precisely because no such PreMul effect targets their attribute (2043, 351) on any of these 4 skill items -- not an assumption, a checked absence.
+</div>
+
+<h2>The fix</h2>
+<p>Added <code>'range'</code>/<code>'falloff'</code> as new <code>bKind</code> values alongside the existing <code>'damage'</code>/<code>'rof'</code> ones already used by <code>SHIP_ROLE_BONUS</code> -- no new table or lookup structure needed, the existing per-hull entry shape already fit. In the per-category <code>categoryMods</code> loop, these fold in unconditionally (same as <code>'rof'</code>, since range/falloff don't depend on the loaded ammo's damage type the way <code>'damage'</code> bonuses sometimes do) into new <code>rangeMult</code>/<code>falloffMult</code> fields, compounding multiplicatively across multiple same-category entries (Kikimora's two independent sources). <code>rangeByAmmo</code>'s turret branch (where <code>TURRET_OPTIMAL_RANGE_ATTR</code>/<code>TURRET_FALLOFF_ATTR</code> are read) now multiplies by <code>catMod.rangeMult</code>/<code>catMod.falloffMult</code> alongside the ammo's own range/falloff multiplier and the Sharpshooter/Trajectory Analysis skill multipliers -- an independent, non-stacking-penalized multiplicative layer, same convention as every other hull bonus in this file. A no-op (x1) for every hull without a 'range'/'falloff' entry.</p>
+
+<h2>Verification</h2>
+<p>Reused 4 existing golden fits that already had a relevant weapon+ammo pairing fitted, adding <code>rangeOptimalM</code>/<code>rangeFalloffM</code> assertions that didn't exist before (or correcting one that did):</p>
+<ul style="padding-left:1.2em">
+<li><code>vedmak_zkb138993362_precursor</code> and <code>vedmak_zkb139012125_precursor_role_bonus</code> (tally-format and real-killmail-format Vedmak fits, already used for the earlier damage-bonus fix): both pinned at <code>rangeOptimalM: 53831</code> (39150m base x 1.375).</li>
+<li><code>stormbringer_zkb138986635_vorton</code>: its existing <code>rangeOptimalM: 19200</code> assertion (added during an earlier comprehensive-skill-audit pass, before any hull-range-bonus mechanism existed) corrected to <code>26400</code> (19200 x 1.375) -- this fix is exactly what that stale assertion was waiting on.</li>
+<li><code>kikimora_constructed_precursor_damage_role_bonus</code>: added <code>rangeOptimalM: 15188</code> (5063m base x 3.0, the two-source compound case).</li>
+</ul>
+<p>Constructed 2 new minimal fits for the 2 hulls with no existing golden fit at all, each reusing an existing fit's already-verified weapon+ammo type/group data (Vedmak's Heavy Entropic Disintegrator II + Meson Exotic Plasma M for Drekavac; Kikimora's Light Entropic Disintegrator II + Occult L for Draugur) combined with each hull's own live-ESI-fetched dogma:</p>
+<ul style="padding-left:1.2em">
+<li><code>drekavac_constructed_weapon_range_role_bonus</code>: <code>rangeOptimalM: 48938</code> (39150m x 1.25, the flat-bonus case).</li>
+<li><code>draugur_constructed_weapon_range_role_bonus</code>: <code>rangeOptimalM: 12656</code> (5063m x 2.5) -- deliberately pins a DIFFERENT multiplier (2.5x) than Kikimora's (3.0x) despite both being Precursor Destroyer-skill hulls, to guard against collapsing the two into a single assumed value.</li>
+</ul>
+<p>Reverting the fix in a throwaway copy of the file (forcing <code>catMod.rangeMult</code>/<code>falloffMult</code> to 1 at the point of use) makes all 6 new/updated <code>rangeOptimalM</code> assertions fail with EXACTLY the pre-fix baseline values (39150, 19200, 39150, 5063, 39150, 5063) while every other assertion in the suite stays green -- confirms this coverage actually catches the bug class regressing, not just coincidentally matching.</p>
+<p>No change needed to <code>run_regression.mjs</code> -- its <code>rangeOptimalM</code>/<code>rangeFalloffM</code> flattening already existed from an earlier comprehensive-skill-audit pass (that's how <code>stormbringer_zkb138986635_vorton</code> already had a <code>rangeOptimalM</code> assertion waiting to be corrected).</p>
+<p><strong>Full suite: 70/70 fits, 333/333 assertions, ALL PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 431,208 &rarr; 436,562 bytes</li>
+<li><code>golden_fits.json</code>: 68 &rarr; 70 fits, 2,607,894 &rarr; 2,640,479 bytes</li>
+<li><code>run_regression.mjs</code>: unchanged, 22,050 bytes</li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">Tool-wide weapon range/falloff role-bonus gap closed. Continuing autonomously per standing instruction to the next backlog item (damage-application-efficiency / cyno-fit flagging) unless a genuine decision point comes up.</p>
+
+</body>
+</html>

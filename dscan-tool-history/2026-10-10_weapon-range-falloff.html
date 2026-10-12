@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Weapon effective range / falloff</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Weapon effective range / falloff</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified via 28/28 regression PASS + a 6/6 direct unit test against hand-derived numbers (real ESI dogma) + a real-Chromium render check</span></p>
+<p><b>Requested by the owner:</b> the second half of "#1" — effective weapon range alongside the DPS-to-break-tank figure. Scoped over a feasibility pass (verified live ESI attributes for turret optimal/falloff and missile velocity/flight-time) and a scoping call where the owner chose to defer the drone-range question — this feature covers turrets and missiles only; drone engagement range is left to the pilot, as scoped.</p>
+
+<h2>The change</h2>
+<p>Each turret or launcher with a charge confirmed loaded at time of death (i.e. already feeding into the "DPS breakdown by source" list, not a cargo-ammo guess) now also gets an effective-range figure in a new "Effective range (confirmed loadout)" block:</p>
+<ul>
+<li><b>Turrets:</b> optimal range and falloff, each the weapon's own base value scaled by whatever ammo was actually loaded — <code>optimal = maxRange × weaponRangeMultiplier</code>, <code>falloff = falloff × fallofMultiplier</code> (both multipliers default to 1.0 when the ammo doesn't modify that stat). Verified live against Neutron Blaster Cannon II (7200m/10000m bare) with Void L loaded (0.75/0.5 multipliers, matching Void's own in-game tooltip).</li>
+<li><b>Missiles:</b> a single max-travel-distance figure, <code>velocity × flight time</code>, both attributes living on the missile/ammo item itself rather than the launcher. Verified live against Scourge Heavy Missile (4300 m/s, 6500ms flight time → ~28km), matching the known real heavy-missile range.</li>
+</ul>
+<p>Deliberately <b>not</b> modeled: drone range (deferred by the owner), weapons only resolved via the cargo-ammo guess (no confirmed charge to compute from), and missile damage-application efficiency (explosion radius/velocity vs. a target's signature and speed) — that's a separate mechanic from travel distance and isn't conflated with it here. Zero new ESI calls — reuses the exact dogma already being fetched for DPS.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS — purely additive new return-object field, no existing calculation touched</td></tr>
+<tr><td>Direct unit test (6 checks) against a synthetic fit pairing a real Neutron Blaster Cannon II + Void L (turret) with a real Scourge Heavy Missile on a test-double launcher (missile), using real captured ESI dogma for the turret/ammo/missile</td><td>6/6 PASS — optimal/falloff and max-travel-distance match hand-derived values exactly (5400m/5000m and 27950m)</td></tr>
+<tr><td>Real-Chromium render check of the new block against the tool's actual CSS (calling the tool's own <code>rangeEstimatesHtml()</code>/<code>escapeHtml()</code> live in a browser, not a Node mock)</td><td>Confirmed legible, correctly formatted ("optimal 5.4 km · falloff 5.0 km", "max range ~27.9 km"), weapon/ammo names render correctly</td></tr>
+</table>
+<p style="font-size:0.85em;color:#666;">Note: the first verification pass ran this function inside a Node <code>vm</code> sandbox with a stubbed-out fake <code>document</code>, which doesn't replicate real DOM <code>innerHTML</code> behavior — that fake-DOM limitation made <code>escapeHtml()</code> print blank names in that one intermediate check. The underlying data was already confirmed correct via direct field assertions on the returned objects; the real-Chromium render check (above) then confirmed the actual HTML output is correct too, closing that gap.</p>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li>New constants: <code>TURRET_OPTIMAL_RANGE_ATTR</code> (54), <code>TURRET_FALLOFF_ATTR</code> (158), <code>AMMO_RANGE_MULT_ATTR</code> (120), <code>AMMO_FALLOFF_MULT_ATTR</code> (517), <code>MISSILE_VELOCITY_ATTR</code> (37), <code>MISSILE_FLIGHT_TIME_ATTR</code> (281).</li>
+<li><code>estimateHpAndDps()</code>'s confirmed-weapon loop — new <code>rangeByAmmo</code> Map computes range/falloff (turret) or travel distance (missile) per unique weapon+ammo pairing, once.</li>
+<li><code>estimateHpAndDps()</code>'s return object — new <code>rangeEstimates</code> array.</li>
+<li>New <code>rangeEstimatesHtml()</code> function, wired into <code>renderFitSummaryHtml()</code> right after the DPS breakdown list.</li>
+<li>The "How effective HP and DPS are calculated" collapsible note — updated to document the range figures, the missile damage-application-vs-travel-distance distinction, and the drone/cargo-guess exclusions.</li>
+</ul>
+
+<h2>What's next</h2>
+<p>Both halves of "#1" (DPS-to-break-tank and weapon range/falloff) are now delivered. Still queued, none started: drone range treatment (explicitly deferred), a "Fit Analyzer" tab (just floated, not yet scoped), tying the buffer-tank text more directly into the Tank Type badge, nav-speed/scan-res/sensor/cap-stability stats (floated, never authorized), Phase 5 scaffolder, and project-knowledge-base cleanup (the project doc store is at its size cap).</p>
+</body>
+</html>

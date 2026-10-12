@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Export fit to clipboard (EFT) -- context menu on the subtabs row</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+</style>
+</head>
+<body>
+
+<h1>Export fit to clipboard (EFT) -- context menu on the subtabs row</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; backlog item: "add a context menu right aligned to the same row that the most recent losses links are... as the first item in that context menu, add the ability to export the fit to clipboard"</p>
+
+<h2>What shipped</h2>
+<p>A small, right-aligned kebab (&#8942;) menu now sits on the same row as the Pilot Analyzer's "most recent losses" tab buttons. Its first (only) item, <strong>"Export fit to clipboard (EFT)"</strong>, copies the currently-active tab's fit to the clipboard in EFT text format -- the same format the existing Fit Analyzer's paste box already reads (pyfa, the EVE client's own Ctrl+A/Ctrl+C fitting-window copy, zKillboard "View as EFT", etc. all speak it). Clicking it briefly shows "Copied!" before the menu auto-closes.</p>
+
+<h2>Grounding</h2>
+<p>The exact EFT format (header line, slot-rack order and blank-line conventions, drone/fighter and cargo sections) was confirmed against pyfa's own real exporter source (<code>service/port/eft.py</code>, <code>exportEft()</code>, fetched live 2026-10-12) rather than assumed -- header <code>[Ship, Fit]</code>; one blank line between the header and the modules block and between slot racks; two blank lines between the modules block, the drones/fighters block, and the cargo block; each empty section skipped outright.</p>
+
+<h2>Implementation</h2>
+<p>New <code>fitToEftText(shipName, fitName, tally, idToName, highSlotByFlag)</code> serializes a fit's existing tally/highSlotByFlag (the same shapes <code>buildLossTally()</code> and <code>estimateHpAndDps()</code> already use -- no new data model). High-slot lines pair a module with its loaded charge using <code>classifyHighSlotItem()</code>, the <em>same</em> per-flag classifier the DPS estimator's own weapon loop already relies on, rather than assuming array order within a flag's item list (not guaranteed). <code>highSlotByFlag</code> is now also retained on each Pilot-Analyzer fit object (it was computed by <code>buildLossTally()</code> already, just previously discarded after the DPS estimate ran).</p>
+<p>The menu itself is a plain <code>&lt;details&gt;</code>/<code>&lt;summary&gt;</code>, matching this file's existing collapsible-panel convention -- not a custom JS dropdown with a <code>document</code>-level click-outside listener, since no such pattern exists anywhere else in this file and <code>renderFitTabs()</code> replaces its container's <code>innerHTML</code> wholesale on every Pilot Analyzer search, which would otherwise leak one orphaned listener per re-render.</p>
+
+<div class="callout">
+Caught during self-testing, not guessed at: the first module/charge split (treat whichever item <code>classifyHighSlotItem</code> calls <code>'ammo'</code> as the charge) silently <strong>dropped</strong> a Sisters Expanded Probe Launcher's loaded Scanner Probe from the export entirely -- a probe deals no damage, so it classifies as <code>'other'</code>, not <code>'ammo'</code>. Fixed: whichever item in a flag's pair <em>is</em> a weapon device (<code>variable-weapon</code>/<code>fixed-weapon</code>) is the module; the other slot in the pair is its charge/payload regardless of what classifyHighSlotItem calls that payload's own kind. Also added a defensive fallback (should never fire against real killmail/EFT-paste data, both of which always populate <code>highSlotByFlag</code> for every High-slot tally item) so a High-slot item with no flag pairing at all is still emitted as a plain line rather than silently dropped.
+</div>
+
+<h2>Known, deliberate scope limits</h2>
+<p>No <code>[Empty X slot]</code> placeholders -- a loss/pasted fit only ever tells us what <em>was</em> fitted, never a hull's total slot count. No Low/Mid-slot charge pairing beyond High slots -- mirrors the existing <code>parseEftFit()</code> parser's own documented scope (a Mid-slot Cap Booster's loaded charge round-trips as two unpaired Mid-slot lines, same as every other part of this tool already treats it; see the open capacitor-stats-research backlog item). No implants/boosters section -- this tool has never tracked that killmail flag range at all. A loaded High-slot charge's magazine quantity (e.g. "3285" missiles loaded) is lost on export by design, matching EFT format itself -- a fit definition states <em>what's</em> loaded, not how many rounds are in the chamber at a snapshot in time.</p>
+
+<h2>Verification</h2>
+<p>Round-trip self-consistency check (serialize a real fit &rarr; re-parse via the tool's own existing <code>parseEftFit()</code> &rarr; diff the resulting tally against the original): ran clean on three fits spanning the interesting cases -- <code>loki_zkb138935092</code> (real T3C loss: 5 missile launchers + loaded ammo, subsystems, cap drone-free utility highs including the probe-launcher pairing case above), <code>curse_zkb139073592_ewar</code> (real EWAR Recon loss: cap warfare highs with no charges, EWAR mids with scripts, rigs, drone bay, cargo), and <code>rifter_constructed_cyno_fitted</code> (the defensive-fallback case: a single High-slot module with no highSlotByFlag entry at all). <code>run_regression.mjs</code> gained a new derived field, <code>eftExportText</code>, computed the same way for every fit; <code>curse_zkb139073592_ewar</code>'s <code>expected</code> block now pins the exact full serialized string (chosen because it's the richest real-killmail fit already in this file -- exercises every rack, plus drones and cargo), so a future regression in the serializer or in its shared module/charge-pairing logic with <code>classifyHighSlotItem()</code> is caught exactly, not approximately.</p>
+<p><strong>Full suite: 74/74 fits, ALL PASS.</strong></p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 453,614 &rarr; 464,275 bytes</li>
+<li><code>run_regression.mjs</code>: 25,937 &rarr; 27,410 bytes</li>
+<li><code>golden_fits.json</code>: 74 fits (unchanged count, 1 existing fit extended) -- 6,465,146 &rarr; 3,940,000 bytes. The large size <em>drop</em> is a side effect of this edit being written back without the pretty-print indentation some earlier session's edit left in the file (plain <code>JSON.stringify</code>, no formatting change to the data itself, confirmed by the full 74/74 regression pass) -- not data loss.</li>
+</ul>
+
+</body>
+</html>

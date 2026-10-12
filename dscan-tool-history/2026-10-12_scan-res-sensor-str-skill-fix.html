@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Scan resolution / sensor strength universal-skill fix + T3D Sharpshooter Mode sensor bonus</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f5f5f5}
+</style>
+</head>
+<body>
+
+<h1>Scan resolution / sensor strength universal-skill fix + T3D Sharpshooter Mode sensor bonus</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; bug report: "log a bug that the scan resolution and sensor strength for the following fit differs in pyfa than it does in the tool" (real Svipul EFT fit)</p>
+
+<h2>The report</h2>
+<p>the owner pasted a real Svipul fit and a pyfa screenshot showing Scan res. 662mm / Sensor str. 13.2 / Range (targeting) 50km. The tool's own Navigation &amp; targeting card showed the hull's raw, unmultiplied base attributes instead.</p>
+
+<h2>Root cause #1 &mdash; universal skill multiplier entirely missing</h2>
+<p><code>scanResolution</code> and <code>sensorStrength</code> were read straight off ship dogma attributes 564 (scanResolution) and 208-211 (the 4 scan-strength types), with <strong>no skill multiplier at all</strong> &mdash; unlike targeting range, which already carries <code>MAX_LONG_RANGE_TARGETING_MULT=1.25</code>.</p>
+<p>Two earlier "exhaustively checked, nothing found" claims already in this file turned out to be wrong:</p>
+<table>
+<tr><th>Claim</th><th>Date</th><th>What it missed</th></tr>
+<tr><td>Phase-2 feasibility note (scan resolution)</td><td>original</td><td>Signature Analysis skill (type 3431)</td></tr>
+<tr><td>Loki sensor-strength "RESOLVED, not a bug"</td><td>2026-10-11</td><td>Sensor Compensation skill family</td></tr>
+</table>
+<p>Both missing skills live in ESI skill group 1213, named <strong>"Targeting"</strong> &mdash; the very group both prior checks claimed to have already covered. Confirmed live via each skill's own ESI description text (same evidentiary bar this file already uses for Long Range Targeting):</p>
+<ul style="margin:0 0 1em 1.2em;padding:0">
+<li><b>Signature Analysis</b> (3431): "5% improved targeting speed per skill level" &mdash; EVE's own targeting-speed formula has no input besides signature radius and scan resolution, so this is a scan-resolution multiplier in all but name.</li>
+<li><b>Ladar/Gravimetric/Magnetometric/Radar Sensor Compensation</b> (33001/33000/32999/33002): "Each skill level increases [X] Sensor strength by 4%" &mdash; type-specific to each of the 4 SCAN_STRENGTH_ATTRS.</li>
+</ul>
+<p>Fixed with the file's standing max-level-V convention: <code>MAX_SIGNATURE_ANALYSIS_MULT=1.25</code>, <code>MAX_SENSOR_COMPENSATION_MULT=1.20</code>.</p>
+
+<h2>Root cause #2 &mdash; T3D Sharpshooter Mode's sensor/targeting bonus, known but never wired up</h2>
+<p>All 4 Tactical Destroyer hulls (Confessor/Hecate/Jackdaw/Svipul) get <strong>+100% sensor strength and +100% targeting range</strong> in Sharpshooter Mode, confirmed via everef.net trait text back on 2026-10-08 when the T3D Mode mechanic was first built. Only the weapon-damage half of that bonus was ever actually applied in code (<code>tdSharpshooterMult</code>) &mdash; the sensor/targeting half sat in a code comment, never gated into any calculation. Since the tool defaults every T3D estimate to Sharpshooter Mode, this silently under-reported those two stats on all 4 hulls regardless of fit.</p>
+<p>Fixed: <code>TACTICAL_DESTROYER_SHARPSHOOTER_SENSOR_MULT=2.0</code>, gated on the identical condition the damage bonus already uses (<code>tdBonus &amp;&amp; tacticalMode==='sharpshooter'</code>). Confirmed via everef trait text that Sharpshooter Mode does <em>not</em> touch scan resolution &mdash; only sensor strength and targeting range &mdash; so the mode multiplier is applied to those two only.</p>
+
+<h2>Verification</h2>
+<p>Both fixes reproduce the owner's real pyfa figures exactly, sandbox-verified against the live post-fix code (not hand-derived):</p>
+<table>
+<tr><th>Mode</th><th>Scan res.</th><th>Sensor str.</th><th>Targeting range</th></tr>
+<tr><td>Defense/Propulsion (no T3D sensor bonus)</td><td>662.5mm</td><td>13.2 Ladar</td><td>50,000m</td></tr>
+<tr><td>Sharpshooter (tool default, stacks mode bonus)</td><td>662.5mm (unchanged)</td><td>26.4 Ladar</td><td>100,000m</td></tr>
+<tr><td>the owner's pyfa screenshot</td><td>662mm</td><td>13.2</td><td>50km</td></tr>
+</table>
+<p>The pyfa screenshot matches the non-Sharpshooter row exactly &mdash; consistent with pyfa not having that T3D mode selected in that screenshot. The tool's own default (Sharpshooter) view will correctly show the higher, mode-boosted numbers; toggling to Defense/Propulsion Mode in the UI reproduces pyfa's figures.</p>
+
+<div class="callout">
+A pre-existing golden fit (<code>loki_zkb138935092</code>, a real killmail) already had a pyfa-sourced sensor-strength figure on file: 20.4, vs. the tool's old raw 17. The 2026-10-11 investigation of that exact discrepancy reached the right number (17&times;1.20=20.4) but attributed it to the wrong mechanism &mdash; a hypothetical "Loki fitted with a different Core subsystem" theory, closed as "not a bug." That theory is now known to have been a coincidence: 1.20 is the universal Ladar Sensor Compensation multiplier, unrelated to which subsystem is fitted. This fit's pinned expectation is corrected in place (17&rarr;20.4) with the real explanation.
+</div>
+
+<h2>Scope</h2>
+<p>Not touched: hull-specific EWAR/recon dogma-effect bonuses to targeting range/scan resolution (still a separately-flagged v1 gap, unrelated mechanism); the T3D Sharpshooter Mode's weapon-optimal-range and sensor-linking/weapon-disruption-resistance portions (no existing stat for either to attach to).</p>
+
+<h2>Verification</h2>
+<p>2 new golden fits (bare Svipul hull, no sensor-affecting module fitted, dogma data live-fetched 2026-10-12 via everef.net and cross-checked against EVE University's own Svipul attribute table):</p>
+<ul style="margin:0 0 1em 1.2em;padding:0">
+<li><code>svipul_constructed_scan_res_sensor_str_universal_skill</code> &mdash; tacticalMode forced to 'defense', isolates the skill fix alone.</li>
+<li><code>svipul_constructed_sharpshooter_mode_sensor_targeting_bonus</code> &mdash; default (Sharpshooter) mode, isolates the T3D mode fix stacking on top.</li>
+</ul>
+<p><strong>Full suite: 76/76 fits, ALL PASS</strong> (74 pre-existing + 2 new; <code>loki_zkb138935092</code>'s corrected expectation included).</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 464,275 &rarr; 467,497 bytes</li>
+<li><code>golden_fits.json</code>: 3,940,000 &rarr; 4,015,877 bytes (2 new fits + corrected Loki note)</li>
+<li><code>run_regression.mjs</code>: unchanged, 27,410 bytes</li>
+</ul>
+
+</body>
+</html>

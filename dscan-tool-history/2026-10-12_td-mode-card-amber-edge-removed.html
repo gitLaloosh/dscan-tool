@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: TD Mode card -- amber left edge removed</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+</style>
+</head>
+<body>
+
+<h1>TD Mode card -- amber left edge removed</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; same-day follow-up to the TD Mode selector modular-card rework</p>
+
+<h2>The request</h2>
+<p>Immediately after delivering the modular <code>.td-mode-card</code> rework (info link moved into the icon row, click-to-expand preserved, wrapped in a <code>.fit-summary</code>-style container), the owner asked: "in this particular case, we dont need the amber edge on the left."</p>
+
+<h2>Why</h2>
+<p><code>.fit-summary</code>'s <code>border-left:3px solid var(--amber-dim)</code> is the shell every stat card (Firepower, Resistance, Navigation &amp; targeting, Capacitor, Weaknesses, EWAR, Fit) uses -- the amber bar marks "this is a stat card." The TD Mode selector isn't a stat card, it's a control (a mode switcher with an expandable explanation), so the accent no longer fit once it got its own container.</p>
+
+<h2>Fix</h2>
+<p>Added a single scoped override, placed right before the existing <code>.td-mode-row</code> rule:</p>
+<pre><code>.td-mode-card{border-left:1px solid var(--line);}</code></pre>
+<p>This flattens the TD Mode card's left edge to match its other three sides (all already <code>1px solid var(--line)</code> via the base <code>.fit-summary</code> rule) -- no change to any other <code>.fit-summary</code> card, which all keep the amber bar.</p>
+
+<h2>Verification</h2>
+<p>Playwright: rendered a reference <code>.fit-summary</code> card alongside the TD Mode card and read <code>getComputedStyle</code> on both.</p>
+<table style="border-collapse:collapse;width:100%;margin:1em 0">
+<tr><th style="border:1px solid #ddd;padding:6px 10px;text-align:left;background:#f5f5f5">Card</th><th style="border:1px solid #ddd;padding:6px 10px;text-align:left;background:#f5f5f5">border-left-color</th><th style="border:1px solid #ddd;padding:6px 10px;text-align:left;background:#f5f5f5">border-left-width</th></tr>
+<tr><td style="border:1px solid #ddd;padding:6px 10px">Other stat card (unchanged)</td><td style="border:1px solid #ddd;padding:6px 10px">rgb(138,101,41) -- amber-dim</td><td style="border:1px solid #ddd;padding:6px 10px">3px</td></tr>
+<tr><td style="border:1px solid #ddd;padding:6px 10px">TD Mode card (this fix)</td><td style="border:1px solid #ddd;padding:6px 10px">rgb(35,45,53) -- var(--line), matches its own top border</td><td style="border:1px solid #ddd;padding:6px 10px">1px</td></tr>
+</table>
+<p>Confirmed visually via screenshot: the reference card keeps its amber bar, the TD Mode card is now a plain, evenly-bordered box.</p>
+
+<h2>Scope</h2>
+<p>Pure CSS, one new rule, zero markup/JS changes, zero calculation impact.</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 473,384 &rarr; 473,813 bytes</li>
+<li><code>golden_fits.json</code>: unchanged (no new golden fit needed for a styling-only change)</li>
+<li><b>Full regression suite: 78/78 fits, ALL PASS</b></li>
+</ul>
+
+</body>
+</html>

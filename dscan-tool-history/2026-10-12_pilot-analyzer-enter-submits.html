@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Enter submits the active input, Pilot Analyzer tab</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Enter submits the active input -- Pilot Analyzer tab</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; backlog item "Enter submits the active form input" (Severity: Low | Scope: Moderate), scoped down to the Pilot Analyzer tab only per [stated]'s explicit instruction</p>
+
+<h2>Scope</h2>
+<p>The full backlog item covered D-Scan Analyzer, Pilot Analyzer, and Fit Analyzer. [stated] asked for the Pilot Analyzer tab only this round -- the other two tabs' inputs (<code>dscanInput</code>, <code>fitAnalyzerInput</code>) are untouched and still only insert a newline on Enter, as before.</p>
+
+<h2>Implementation</h2>
+<p>Pilot Analyzer has two relevant inputs, both single-line <code>&lt;input type="text"&gt;</code> (the third control, <code>shipSelect</code>, is a <code>&lt;select&gt;</code> and was left alone -- Enter on a dropdown has its own native/inconsistent behavior and wasn't part of the ask):</p>
+<ul>
+<li><code>#pilotName</code></li>
+<li><code>#manualShip</code></li>
+</ul>
+<p>A <code>keydown</code> listener on each calls <code>document.getElementById('fitBtn').click()</code> on Enter (after <code>preventDefault()</code>). Deliberately triggers the real button's <code>click()</code> rather than calling <code>runFitCheck()</code> directly: <code>runFitCheck</code> already sets <code>btn.disabled = true</code> while a pilot lookup is in flight, and a disabled <code>&lt;button&gt;</code> never dispatches a <code>click</code> event -- so this inherits the existing in-flight guard for free, no duplicate logic needed.</p>
+
+<h2>Verification</h2>
+<p>Playwright, against the live post-change code:</p>
+<ul>
+<li>Enter in <code>#pilotName</code> &rarr; <code>#fitBtn</code> click fires (1 call)</li>
+<li>Enter in <code>#manualShip</code> &rarr; <code>#fitBtn</code> click fires (1 call)</li>
+<li>Switched to D-Scan Analyzer tab, typed "line one", Enter, "line two" into <code>#dscanInput</code> &rarr; value is <code>"line one\nline two"</code> (newline preserved, unaffected)</li>
+<li>Switched to Fit Analyzer tab, same test on <code>#fitAnalyzerInput</code> &rarr; value is <code>"line one\nline two"</code> (newline preserved, unaffected)</li>
+</ul>
+
+<h2>Scope note / remaining backlog</h2>
+<p>D-Scan Analyzer's <code>dscanInput</code> and Fit Analyzer's <code>fitAnalyzerInput</code> are both multi-line textareas where Enter normally inserts a newline -- making Enter submit there (without breaking multi-line paste) needs a modifier key or a smarter heuristic, deliberately deferred; not attempted this round since [stated] scoped this pass to Pilot Analyzer only.</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 473,813 &rarr; 474,797 bytes</li>
+<li><code>golden_fits.json</code>: unchanged (pure UI/event-wiring change, no calculation touched)</li>
+<li><b>Full regression suite: 78/78 fits, ALL PASS</b></li>
+</ul>
+
+</body>
+</html>

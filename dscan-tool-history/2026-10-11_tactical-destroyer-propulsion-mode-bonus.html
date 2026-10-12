@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Tactical Destroyer Propulsion Mode bonus (speed/align time fix)</title></head>
+<body>
+<h1>Tactical Destroyer Propulsion Mode bonus — Speed/Align time fix (2026-10-11)</h1>
+
+<p>Bug report from the owner: on a Confessor/Hecate/Jackdaw/Svipul, picking "Propulsion Mode" in the UI left the Speed/Align time numbers completely unchanged — identical to Defense or Sharpshooter Mode. Root cause: <code>TACTICAL_DESTROYER_MODE_BONUS</code>'s <code>propulsion</code> entry has been deliberately empty since the Tactical Destroyer Mode mechanic first shipped (2026-10-08), on the stated theory that "Propulsion Mode only affects velocity/inertia, which this tool doesn't compute at all." That was true in 2026-10-08. It stopped being true once Speed/Align time was built in a later phase (F3) — nobody circled back to wire Propulsion Mode into it, and the in-app disclosure text kept repeating the stale claim.</p>
+
+<h2>A deeper correction, found while researching the fix</h2>
+<p>The original 2026-10-08 research also concluded "this is a BUILT-IN SHIP ABILITY with no fitted item/type backing it at all." That part was wrong. pyfa/eos's own source code (<code>eos/saveddata/ship.py</code>: <code>Ship.__getModeItems</code>/<code>Ship.modes</code> — "if we have items, then we are in a tactical destroyer and must have a mode"; <code>eos/item/stance.py</code>: "Stance is internal name for tech 3 destroyer tactical modes") shows each mode <i>is</i> a real, separate item type — just an <b>unpublished</b> one, in an ESI group called "Ship Modifiers", matched by eos via name-prefix against the hull's own name (e.g. "Confessor Propulsion Mode"). That's why it never turned up in ESI's <code>/universe/ids</code> search (published entities only) or in the hull's own <code>dogma_effects</code> — those are the two places the original research looked.</p>
+
+<p>Resolved the 12 type ids (4 hulls × 3 modes) via fuzzwork's typeid API (unpublished types aren't searchable by name there either, but fuzzwork's SDE-backed lookup still has them), then read each Propulsion Mode item's own dogma data directly via ESI by numeric id (unpublished types are still readable by direct id lookup, just not by name search). Confirmed dogma operator 5 = PostDiv (<code>final = base / modAttr</code>) by checking the arithmetic against everef.net's published per-hull Propulsion Mode percentages — exact match in all 7 cases:</p>
+
+<table border="1" cellpadding="4" cellspacing="0">
+<tr><th>Hull</th><th>Mode item</th><th>Mechanism (confirmed via ESI dogma_effects)</th><th>Result</th></tr>
+<tr><td>Confessor</td><td>34323</td><td>effect 6016 divides ship agility(70) by 1.5; effect 6801 divides a fitted AB/MWD's own speedFactor(attr20) by 0.6</td><td>+33.3% inertia, +66.7% prop-mod speed boost</td></tr>
+<tr><td>Hecate</td><td>35687</td><td>effect 6016 divides agility by 3; effect 6154 divides AB/MWD speedFactor by 0.6; effect 6153 divides the SAME AB/MWD's capacitorNeed(attr6) by 3</td><td>+66.7% inertia, +66.7% speed boost, −66.7% cap use (biggest of the 4 — matches EVE-Uni wiki calling Hecate "fastest in Propulsion")</td></tr>
+<tr><td>Jackdaw</td><td>35677</td><td>effect 6016 divides agility by 3; effect 6017 divides the SHIP's own base maxVelocity(37) directly by 0.75</td><td>+66.7% inertia, +33.3% max velocity (the only one of the 4 that boosts base speed directly instead of a fitted prop mod's boost%)</td></tr>
+<tr><td>Svipul</td><td>34566</td><td>identical attribute values to Confessor — effect 6016 (agility/1.5), effect 6801 (speedFactor/0.6)</td><td>+33.3% inertia, +66.7% speed boost</td></tr>
+</table>
+
+<h2>What changed in dscan-tool.html</h2>
+<ul>
+<li>New <code>TACTICAL_DESTROYER_PROPULSION_BONUS</code> constant (per-hull <code>inertiaBonusPct</code> / <code>propSpeedBoostBonusPct</code> / <code>maxVelocityBonusPct</code> / <code>propCapUseReductionPct</code>, per the table above).</li>
+<li><code>baseAgility</code> now folds in the inertia bonus unconditionally when Propulsion Mode is selected — both <code>baseAlignTimeSec</code> and <code>boostedAlignTimeSec</code> derive from it, so align time improves even with no prop mod fitted, matching everef's "while Propulsion Mode is enabled" wording (not conditional on a prop mod running).</li>
+<li><code>cruisingSpeed</code> folds in Jackdaw's direct max-velocity bonus.</li>
+<li>A fitted AB/MWD's own <code>speedFactor</code> (read in the per-module loop) is boosted for Confessor/Hecate/Svipul before it feeds into <code>boostedSpeed</code>.</li>
+<li>Hecate's cap-use cut is applied specifically to a fitted AB/MWD's own <code>capacitorNeed</code>, scoped to the "propulsion module" group only (never any other cap-using module), before it feeds <code>capDrainPerSec</code>.</li>
+<li>The stale "Propulsion only affects speed/agility, which this tool doesn't track" line in the in-app "How Tactical Destroyer Mode is handled" disclosure is corrected.</li>
+</ul>
+
+<h2>Verification</h2>
+<p>Ran the actual updated code (sandboxed) for all 4 hulls, with and without a 1MN Afterburner II fitted, in Sharpshooter vs. Propulsion mode. Every ratio matched the predicted bonus exactly: e.g. Confessor's boosted-speed gain over baseline grows by exactly 1.667× (the +66.7% speed-boost factor) going from Sharpshooter to Propulsion mode; Hecate's active cap drain drops to almost exactly 1/3 in Propulsion mode; Jackdaw's cruising speed (with no prop mod at all) goes 225→300 (exactly +33.3%) regardless of mode.</p>
+<p><b>Not yet pyfa-screenshot-confirmed</b> — unlike the EWAR effectiveness bonus work, this one is grounded in eos source code + everef.net's published percentages + internal arithmetic cross-checks, not a side-by-side pyfa comparison. If the owner wants the same screenshot gate used for prior calculation changes, a Confessor/Hecate/Jackdaw/Svipul fit with an AB or MWD, toggled to Propulsion Mode in pyfa, would confirm it.</p>
+
+<h2>Regression suite</h2>
+<p>golden_fits.json grows from 36 to 40 fits (4 new: <code>confessor_constructed_propulsion_mode_bonus</code>, <code>hecate_constructed_propulsion_mode_bonus</code>, <code>jackdaw_constructed_propulsion_mode_bonus</code>, <code>svipul_constructed_propulsion_mode_bonus</code>). run_regression.mjs gains a flattening block exposing <code>speedCruising</code>/<code>speedBoosted</code>/<code>alignTimeBase</code>/<code>alignTimeBoosted</code>/<code>capacitorActiveDrainPerSec</code> as top-level fields (needed because the generic checker can't assert on the nested <code>speed</code>/<code>alignTime</code>/<code>capacitor</code> objects directly — these 3 were never flattened before since no earlier golden fit needed to pin them). 40/40 PASS.</p>
+
+<h2>Other changes in this delivery</h2>
+<ul>
+<li>Small CSS fix: the EWAR card was missing the amber left-accent border every other card (<code>.fit-summary</code>) has — <code>.ewar-card</code>'s own separate CSS rule never had the <code>border-left</code> line. Added.</li>
+</ul>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (336,902 bytes), regression_suite/run_regression.mjs (19,242 bytes), regression_suite/golden_fits.json (2,985,812 bytes) — all byte-verified against this machine's copies after delivery.</p>
+</body>
+</html>

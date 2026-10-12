@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>EWAR effectiveness bonuses (closes F3's known gap)</title></head>
+<body>
+<h1>EWAR effectiveness bonuses — hull/subsystem/skill layer (2026-10-11)</h1>
+
+<p>Closes the "KNOWN GAP" explicitly flagged when the base EWAR capabilities card shipped on 2026-10-11 (same day): v1 of that card read each fitted ECM/Sensor Dampener/Target Painter/Tracking+Guidance Disruptor/Stasis Web/Warp Scrambler module's own stats only, with no account for Recon Ship hull bonuses, T3 subsystem bonuses, or the universal skills (Long Distance Jamming, Signal Dispersion, Signature Focusing) that boost these modules regardless of hull. This delivery adds that whole layer, after the owner's explicit pyfa-validation gate: six constructed/real fits (Curse, Huginn, Lachesis, Rook, Tengu, Proteus) were each predicted, then checked one at a time against real pyfa output before anything was delivered. Two real bugs were found and fixed <i>during</i> that validation — see below.</p>
+
+<h2>What changed in dscan-tool.html</h2>
+<ul>
+<li>New <code>falloffM</code> field on every <code>ewarModules</code> entry — the module's own falloff range (attribute 2044, meters), present on ECM/Sensor Dampener/Target Painter/Tracking+Guidance Disruptor (confirmed absent on Stasis Web/Warp Scrambler), boosted +50%@V by the universal Frequency Modulation skill. The EWAR card now shows it the same way pyfa does: <code>range+falloff km</code> (e.g. "54+135 km").</li>
+<li><code>EWAR_UNIVERSAL_SKILL_BONUS</code> — applies regardless of hull, all at assumed max skill level V: Long Distance Jamming +50% optimal range (ecm/damp/paint/trackingDisruptor/guidanceDisruptor); Frequency Modulation +50% falloff range (same 5 kinds); Signal Dispersion +25% ECM jam strength; Signature Focusing +25% Target Painter signature bonus; Signal Suppression +25% Sensor Dampener targeting-range/scan-res suppression; Weapon Destabilization +25% to all 7 Tracking/Guidance Disruptor magnitude attributes.</li>
+<li><code>SHIP_EWAR_BONUS</code> — per-hull Recon Ship bonuses, keyed by ship type id: Rook/Falcon +150% ECM jam strength; Huginn/Rapier +300% web range, +50% paint signature bonus; Lachesis/Arazu +100% scram range, +37.5% damp suppression; Curse/Pilgrim +37.5% to all 7 Tracking/Guidance Disruptor magnitude attributes.</li>
+<li><code>SUBSYSTEM_EWAR_BONUS</code> — T3 Core subsystem bonuses: Tengu Core - Obfuscation Manifold +50%@V ECM jam strength/range; Proteus Core - Friction Extension Processor +37.5%@V Warp Scrambler/Disruptor range.</li>
+<li><code>RIG_EWAR_BONUS</code> — Signal Distortion Amplifier I/II: +7%/+10% flat ECM jam strength and range.</li>
+<li>2 new Guidance Disruptor fields (explosionVelocityBonusPct/explosionRadiusBonusPct) added so the Curse/Pilgrim hull bonus visibly covers all 7 of its real targeted attributes, not 5.</li>
+<li>Fixed a latent regression-harness bug (<code>closeEnough()</code> in run_regression.mjs computed tolerance as unsigned <code>expected * tol</code>, always false for negative expected values) — found while adding the first negative-percentage assertions.</li>
+</ul>
+
+<h2>Two real bugs found during pyfa validation (not guessed — the owner's numbers caught both)</h2>
+<table border="1" cellpadding="4" cellspacing="0">
+<tr><th>Bug</th><th>Symptom</th><th>Root cause (grounded live via ESI)</th><th>Fix</th></tr>
+<tr><td>Missing universal skills</td><td>Curse's Tracking/Guidance Disruptor magnitude %s predicted 25% too low across the board (e.g. -23.6% vs. pyfa's real -29.5%)</td><td>Two previously undiscovered skills in the "Electronic Systems" skill group, each using the same per-level-attribute-plus-self-scaling-effect pattern as Signal Dispersion/Signature Focusing but under non-obvious names: <b>Weapon Destabilization</b> (+25%@V to all 7 Tracking/Guidance Disruptor attributes) and <b>Signal Suppression</b> (+25%@V to Sensor Dampener's 2 attributes) — both independent of, and stacking multiplicatively with, the hull bonuses</td><td>Added both to <code>EWAR_UNIVERSAL_SKILL_BONUS</code>. Curse now matches pyfa exactly (-29.545% vs. reported -29.5%; ∓20.625% vs. reported 20.6%)</td></tr>
+<tr><td>Wrong subsystem bonus magnitude</td><td>Tengu's ECM range/jam-strength predicted far too low (38.0km/3.575 vs. pyfa's real 51.8km/4.88)</td><td>The T3 Core subsystem's own effect list genuinely has no self-scaling effect on its own bonus attribute (1515/1519) — that part of the original research was correct. What was missed: the subsystem's own <i>required skill</i> ("Caldari Core Systems" / "Gallente Core Systems") carries a separate effect that scales the FITTED SUBSYSTEM's attribute by trained level, a different mechanism (external skill → item, not item → itself) than every other EWAR bonus in this file</td><td>Corrected 10%→50%@V (Tengu), 7.5%→37.5%@V (Proteus). Tengu now matches pyfa exactly (51840m/4.875 vs. reported 51.8km/4.88)</td></tr>
+</table>
+<p>Both bugs are logged in detail in <code>dscan-tool-architecture.md</code>, along with a flag that the second bug's exact failure mode (a bonus attribute that looks unscaled because the scaling effect lives on the item's <i>required skill</i>, not the item's own effects) could be hiding in other per-hull/subsystem tables in this file (SHIP_ROLE_BONUS, SHIP_RESIST_BONUS, SUBSYSTEM_ROLE_BONUS, TACTICAL_DESTROYER_MODE_BONUS) that were verified the same way. Queued as a backlog item for a comprehensive skill audit.</p>
+
+<h2>pyfa validation log (one fit at a time, per the owner's request)</h2>
+<table border="1" cellpadding="4" cellspacing="0">
+<tr><th>Fit</th><th>Predicted</th><th>pyfa reported</th><th>Result</th></tr>
+<tr><td>Curse: Warp Disruptor + Guidance Disruptor II + 2x Tracking Disruptor II</td><td>range 72000m; TD -23.6%; GD explosion ∓16.5%</td><td>range 72000m ✓; TD -29.5%; GD explosion 20.6%</td><td>Range matched first try. TD/GD mismatch → found Weapon Destabilization/Signal Suppression (see above) → corrected to -29.545%/∓20.625%, exact match</td></tr>
+<tr><td>Huginn: Stasis Webifier II + Target Painter II</td><td>web 40000m/-60%; paint 54000m/+56.25%</td><td>web 40km/-60% ✓; paint 54km+135km/+56.2%</td><td>Web/range/sig all matched. pyfa's "+135km" falloff figure wasn't tracked at all → added <code>falloffM</code> (module's own attribute 2044 x Frequency Modulation) → 90000x1.5=135000, exact match</td></tr>
+<tr><td>Lachesis: Warp Disruptor II + Remote Sensor Dampener II</td><td>scram 48000m/1; damp 45000m+90000m/-26.3%</td><td>48km/-1; 45km+90km/-26.3%</td><td>Exact match, no correction needed</td></tr>
+<tr><td>Rook: Multispectral ECM II</td><td>34560m+32400m, jamStrength 8.125</td><td>34.6km+32.4km, 8.12</td><td>Exact match (8.125→8.12 is pyfa display rounding)</td></tr>
+<tr><td>Tengu: Core-Obfuscation Manifold + Multispectral ECM II</td><td>38016m/32400m, jamStrength 3.575 (flat 10% subsystem)</td><td>51.8km+32.4km, 4.88</td><td>Falloff matched (confirming base dogma + FreqMod math), range/jamStrength didn't → found the subsystem-skill-scaling bug (see above) → corrected to 51840m/32400m/4.875, exact match</td></tr>
+<tr><td>Proteus: Core-Friction Extension Processor + Warp Disruptor II</td><td>33000m/1 (corrected 37.5% subsystem)</td><td>33km/-1</td><td>Exact match</td></tr>
+</table>
+
+<h2>Regression suite</h2>
+<p>golden_fits.json grows from 36 to 40 fits (2 new: <code>tengu_constructed_ewar_subsystem_bonus</code>, <code>proteus_constructed_ewar_subsystem_bonus</code>, both pyfa-confirmed) plus corrections to 3 existing ones (<code>curse_zkb139073592_ewar</code>, <code>huginn_constructed_ewar_hull_bonus</code>, <code>lachesis_constructed_ewar_hull_bonus</code>). run_regression.mjs grows a 2nd EWAR-field flattening block exposing per-kind <code>rangeM</code>/<code>falloffM</code>/magnitude fields. 40/40 PASS.</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (330,674 bytes), regression_suite/run_regression.mjs (18,250 bytes), regression_suite/golden_fits.json (2,932,598 bytes) — all byte-verified against this machine's copies after delivery.</p>
+</body>
+</html>

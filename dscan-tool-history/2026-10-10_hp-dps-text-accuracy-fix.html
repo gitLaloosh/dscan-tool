@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — "How effective HP and DPS are calculated" text accuracy fix</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>"How effective HP and DPS are calculated" text accuracy fix</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified via code audit + 28/28 regression PASS + byte-identical diff + real-Chromium render check</span></p>
+<p><b>Requested by the owner:</b> "is the text still accurate given all of the changes that have been made to the tool? would you change any of it?" — followed by "yes please" to authorize the rewrite.</p>
+
+<h2>Why the old text was stale</h2>
+<p>The methodology paragraph under the Pilot Analyzer's "How effective HP and DPS are calculated" panel hadn't been updated as later bug fixes added new calculation mechanisms. A code audit (grepping the live calculation functions directly, not relying on memory) found one outright false claim and several real omissions:</p>
+<table>
+<tr><th>Issue</th><th>What the code actually does</th></tr>
+<tr><td><b>False claim:</b> "doesn't model Reactive Armor Hardeners"</td><td>It is modeled — <code>simulateReactiveArmorHardener()</code> ports pyfa/eos's own donor/recipient resist-shifting logic, run against a flat 25%-per-type incoming-damage assumption (pyfa's own default) until the result converges or settles into a repeating cycle.</td></tr>
+<tr><td>Omission: hull-intrinsic resist skill bonus</td><td><code>SHIP_RESIST_BONUS</code> (e.g. a Nighthawk's Caldari Battlecruiser all-shield-resist skill) is a separate, non-stacking-penalized resistance layer alongside Damage Control and hardeners — not mentioned anywhere in the old text.</td></tr>
+<tr><td>Omission: Fighter Bay DPS</td><td>Fighters (carriers/supercarriers/FAXes) are counted the same way drones are — capped by launch tubes and per-class (light/support/heavy) limits, hardest-hitting squadrons first — with their own "Fighters" skill (damage only, no RoF counterpart). Added in the 2026-10-08 Fighter Bay fix, never folded into this text.</td></tr>
+<tr><td>Omission: Bastion/Siege/Triage/Industrial Core RoF doubling</td><td>These modules double turret/launcher RoF while active (assumed active whenever fitted) — added in the 2026-10-08 Bastion fix, never folded into this text.</td></tr>
+<tr><td>Omission: Fleet Hangar in the ammo-fallback guess</td><td>The cargo-ammo fallback guess also checks the Fleet Hangar (flag 155) — added in the bug #25 fix, never folded into this text.</td></tr>
+<tr><td>Omission: Vorton Projector's distinct skill tree</td><td>EDENCOM's Vorton Projector trains on its own 3-skill tree, separate from ordinary turret skills — never mentioned. (Precursor/Entropic Disintegrator weapons were confirmed to correctly reuse the normal turret skill tree, so no mention was needed there.)</td></tr>
+</table>
+<p>The Tactical Destroyer Mode explanatory text (the other collapsible panel) was separately audited and found still fully accurate — no change made there.</p>
+
+<h2>The fix</h2>
+<p>Rewrote the <code>&lt;div class="note"&gt;</code> inside the "How effective HP and DPS are calculated" panel to correct the RAH claim and fold in all five omissions above, in the same dense prose style as the rest of the text. No calculation code was touched — this is a pure explanatory-text change.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS</td></tr>
+<tr><td>Byte-for-byte diff of regression output, before vs. after</td><td>IDENTICAL (diff exit code 0) — confirms zero calculation-logic change</td></tr>
+<tr><td>Real-browser check (Chromium): rendered a Tactical Destroyer fit, opened the panel, asserted the new text contains every new claim (RAH donor/recipient simulation, pyfa, SHIP_RESIST_BONUS/Nighthawk example, Fighters/launch tubes, Fleet Hangar, Vorton's 3-skill tree, Bastion/Siege/Triage/Industrial Core RoF doubling) and that the old false RAH claim is gone</td><td>16/16 checks PASS, zero console errors</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li>The <code>&lt;div class="note"&gt;</code> text inside the "How effective HP and DPS are calculated" <code>&lt;details class="info-disclosure"&gt;</code> block (inside the fit-rendering template). No other code changed.</li>
+</ul>
+</body>
+</html>

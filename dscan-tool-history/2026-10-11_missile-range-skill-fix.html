@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Missile range skill fix (comprehensive skill audit, P1-D)</title></head>
+<body>
+<h1>Weapon Range/Falloff fix — missile velocity/flight-time skills added (comprehensive skill audit, P1-D)</h1>
+
+<p>Context: fourth item in the phased sub-backlog from the comprehensive skill audit (P1-A/B/C delivered earlier today). This closes the missile half of Finding C, and with it the long-standing F1 gap that's been on the open-gaps list since the Weapon Range/Falloff feature first shipped 2026-10-10.</p>
+
+<h2>What was wrong</h2>
+<p>Missile max-travel-distance (velocity × flight time) assumed no skill training at all. Two real skills were entirely unmodeled:</p>
+<ul>
+<li><b>Missile Projection</b> (12442): own ESI description "10% bonus to all missiles' maximum velocity per level" → +50%@V.</li>
+<li><b>Missile Bombardment</b> (12441): "10% bonus to all missiles' maximum flight time per level" → +50%@V.</li>
+</ul>
+<p>Both skills' effects are gated on the item requiring Missile Launcher Operation (type 3319) — confirmed live across 5 missile ammo families (Scourge Heavy Missile, Cruise Missile, Torpedo, Fury Light Missile, Rage Rocket) that this requirement is always present, but — same finding as the P1-C turret Gunnery check earlier today — <b>not always in the same reqSkill slot</b> (heavy/cruise/torpedo missiles carry it as reqSkill2/183; light missiles and rockets carry it as reqSkill3/184 instead). Unlike Sharpshooter/Trajectory Analysis (gated on the weapon), this pair is gated on the charge/ammo item itself — which is also where the velocity/flight-time attributes themselves already live, so the check reads the charge's own dogma, not the launcher's.</p>
+
+<h2>What changed in dscan-tool.html</h2>
+<ul>
+<li>New constants: <code>MISSILE_LAUNCHER_OPERATION_SKILL_ID = 3319</code>, <code>MAX_MISSILE_PROJECTION_VELOCITY_MULT = 1.50</code>, <code>MAX_MISSILE_BOMBARDMENT_FLIGHT_TIME_MULT = 1.50</code>.</li>
+<li>In the missile range branch: <code>missileSkillGated = REQUIRED_SKILL_ATTRS.some(attrId =&gt; attrVal(chargeDogma, attrId, 0) === MISSILE_LAUNCHER_OPERATION_SKILL_ID)</code>; when true (confirmed true for every missile checked, matching the skills' own "all missiles" description text), velocity and flight time are each multiplied by their respective skill constant before the travel-distance product.</li>
+<li>Updated the in-app methodology disclosure to mention Missile Projection/Bombardment are assumed max-level.</li>
+</ul>
+<p>Along the way, widened <code>run_regression.mjs</code>'s <code>rangeEstimates</code> flattening from "first entry overall" to "first entry per kind" (turret vs. missile) — a fit with both a turret and a launcher fitted (e.g. the existing Hawk golden fit) would otherwise have silently hidden whichever kind's weapon wasn't enumerated first from ever being assertable.</p>
+
+<h2>Magnitude</h2>
+<p>Example (Rapid Light Missile Launcher II + Mjolnir Fury Light Missile, the real Caracal golden fit): 3750 m/s × 3.75s flight time = 14063m travel distance before this fix → 5625 m/s × 5.625s = 31641m after (×1.5 on each factor compounds to ×2.25 overall). A substantial increase in every missile fit's displayed range — this was a complete gap, not a partial undercount.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>caracal_zkb136427798</code> (Rapid Light Missile Launcher II/Mjolnir Fury Light Missile): hand-derived 3750×1.5=5625 m/s, 3.75×1.5=5.625s, 5625×5.625=31640.625→31641m — sandbox produced 31641, exact match.</li>
+<li><code>hawk_user</code> (Rocket Launcher II/Mjolnir Rage Rocket, plus a 150mm Light AutoCannon II/Titanium Sabot S turret on the same fit): hand-derived 1875×1.5=2812.5 m/s, 2×1.5=3s, 2812.5×3=8437.5→8438m — sandbox produced 8438, exact match. This fit's mixed turret+missile loadout is what surfaced the run_regression.mjs flattening gap above; also picked up its turret's optimalM/falloffM (1350/5913) as a bonus P1-C assertion on a second, different weapon family (projectile) not previously covered.</li>
+<li><b>Not pyfa-cross-checked</b> — same bar as every other skill-audit fix today; grounded in each skill's own live ESI description text plus the reqSkill-slot verification across 5 missile families.</li>
+</ul>
+
+<h2>Regression suite</h2>
+<p>golden_fits.json unchanged in fit count (43), 2 fits (<code>caracal_zkb136427798</code>, <code>hawk_user</code>) gained new expected range fields. run_regression.mjs's range flattening widened to per-kind. <b>43/43 PASS.</b></p>
+
+<h2>Scope note</h2>
+<p>Fourth of the phased sub-backlog from the comprehensive skill audit (P1-D of P1) — this closes Finding C in full (both the turret and missile halves of Weapon Range/Falloff) and retires the long-open F1 gap. Still open: P1-E (lower-confidence niche items) and the pre-existing Loki sensor-strength re-open item. Separately, the owner raised a related but distinct question during this delivery: whether damage-application efficiency (a weapon's tracking speed vs. a target's angular velocity for turrets; a missile's own explosion velocity/radius vs. the target's signature radius and speed) should factor into the Weaknesses card's weapon/ammo recommendation, not just raw resistance-by-type. Confirmed this delivery does NOT touch that calculation (the "weakest damage type" logic is purely resistance-weighted, unrelated to range/velocity/skill multipliers) — see the chat for the scoping discussion on whether/how to pursue it as a new backlog item.</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (349,936 bytes), regression_suite/golden_fits.json (3,071,302 bytes), regression_suite/run_regression.mjs (20,306 bytes) — all three byte-verified against this machine's copies after delivery.</p>
+</body>
+</html>

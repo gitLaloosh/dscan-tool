@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Energy neut/nos tied into EWAR card + cap-lean neut-vulnerability alert</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.night{background:#eef2ff;border-left:4px solid #4a8fd1;padding:10px 14px;margin:1em 0}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f5f5f5}
+</style>
+</head>
+<body>
+
+<h1>Energy Neutralizer/Nosferatu &rarr; EWAR card, plus cap-lean neut-vulnerability alert</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; overnight follow-up, done autonomously while [stated] was asleep (see note below)</p>
+
+<div class="night">
+<b>Context:</b> this work was requested as an overnight follow-up right after the capacitor-stability model shipped: "If you finish this before I prompt you, can you follow this up with making sure that energy neuts and nosferatu are tied into the EWAR card? If you think it's realistic, maybe we can also add an alert to the ewar / misc card if a fit is so lean on cap space that we might be able to neut them out easily?" [stated] then went to sleep. Both parts are done; the "if you think it's realistic" judgment call for part 2 is documented below since there was no one to check in with mid-task.
+</div>
+
+<h2>Part 1: Energy Neutralizer/Nosferatu as EWAR</h2>
+<p>Grounded live via <code>ref-data.everef.net</code> and fuzzwork (not assumed): Energy Neutralizer is ESI group 71, Energy Nosferatu is group 68. Neutralizer magnitude is attribute 97 (<code>energyNeutralizerAmount</code>, GJ/cycle, unconditional). Nosferatu magnitude is attribute 90 (<code>powerTransferAmount</code>, GJ/cycle, but only actually transfers while the target has more cap than the attacking ship -- a mechanic this card's effect text now states explicitly rather than implying a guaranteed drain). Neither module carries a skill-scaled magnitude bonus (checked via each type's own dogma_effects for a modifying skill effect -- none found), unlike most of the other EWAR kinds already on this card.</p>
+<p>Both now register as a new <code>'drain'</code> EWAR category with their own badge letter ("C", for cap warfare) and color. <code>--cyan</code> was the first instinct (thematically "energy") but <b>failed</b> the dataviz skill's <code>validate_palette.js</code> against the existing <code>--tank-shield</code> disrupt-badge color (&Delta;E 12.6, below the 15 normal-vision floor -- too close to tell apart even with full color vision). Iterated to <code>#a66bd9</code> (violet), which passes every check as a 3-way categorical set with the existing tackle/disrupt badges on this tool's dark surface.</p>
+
+<h2>Part 1 data-completeness fix (found during verification)</h2>
+<p>Verifying the new fields against the one existing golden fit with a real fitted Nosferatu (<code>ishkur_constructed_dual_prop_mod</code>) surfaced two gaps in that fit's cached ESI stub, both predating this feature (the fit was built for dual-prop-mod/speed/sig testing, so its type snapshots only carried the attributes those tests needed):</p>
+<ul>
+<li>The Nosferatu's own type stub (13001) was missing attribute 90 entirely &rarr; computed capPerCycle/capPerSec as 0. Added the live-confirmed value (10 GJ per 2.5s cycle = 4 GJ/s, ref-data.everef.net/types/13001).</li>
+<li>The Ishkur hull's own type stub (12042) was missing attribute 55 (capacitor recharge time) entirely &rarr; this fit's <i>existing</i> capacitor-stability card (shipped earlier tonight) silently degraded to a meaningless "Stable at null%" display, caught via this fix's own Playwright screenshot. Added the live-confirmed value (187,500ms, ref-data.everef.net/types/12042) -- the card now correctly reads "Stable at 56.8%".</li>
+</ul>
+<p>Both were missing fixture data, not code bugs -- but leaving them would have meant knowingly shipping a confusing/wrong-looking real-fit screenshot, so fixed as part of this same delivery rather than filed separately.</p>
+
+<h2>Part 2: cap-lean neut-vulnerability alert</h2>
+<p><b>Judgment call (made solo, [stated] asleep):</b> yes, this is realistic to build honestly, because it needs <i>zero</i> new modeling. It's the exact same <code>capWeak</code>/<code>stablePct</code>/<code>netRate</code> signal the capacitor-stability model already computes and already surfaces on the Weaknesses card (shipped a few hours earlier tonight) -- this just re-surfaces it on the EWAR / Misc card with an offense-facing framing ("here's how to beat this fit") instead of the Weaknesses card's defense-facing one ("here's this fit's own flaw"), per the explicit request to put it there.</p>
+<p>Deliberately did <b>not</b> try to predict whether a specific neut/nos would actually break the target's cap -- that depends on the attacker's own fit, a two-ship interaction this tool doesn't model anywhere else (same documented exclusion as "Nosferatu net cap gain" in the capacitor-stability history doc from earlier tonight). Instead it states the target's own margin number only: <code>netRate</code> GJ/s of extra average drain needed to flip the capacitor negative when stable-but-weak, or the existing time-to-empty when already unstable. That's honest and already-grounded, not a guess about the opponent's loadout.</p>
+<p>Uses the same <code>CAP_STABLE_WEAKNESS_PCT_THRESHOLD</code> (25%) cutoff as the Weaknesses card flag, so the two stay consistent by construction -- a fit is never "weak" on one card and "fine" on the other.</p>
+
+<h2>Why a new badge color instead of reusing the red danger badge</h2>
+<p>The existing <code>.ewar-badge.danger</code> (red) already means "this fit threatens <i>you</i>" (currently used for the cyno-fitted flag). This new alert means the opposite -- "this fit is exploitable <i>by</i> you" -- so reusing red would misread as another threat warning. Tried green first (an intuitive "good news" color) but it <b>failed</b> <code>validate_palette.js</code> against the existing red danger badge (&Delta;E 4.9 deutan, below even the 6-8 floor -- classic red/green colorblind confusion, risky right next to an existing red badge in the same card). Settled on <code>#4a8fd1</code> (blue), which passes every check against the full existing badge set on this dark surface.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Fit</th><th>Check</th><th>Result</th></tr>
+<tr><td>curse_zkb139073592_ewar (real killmail, 5 fitted neuts)</td><td>Neuts now register as EWAR</td><td>ewarModuleCount 4&rarr;9, ewarTypeCount 3&rarr;5</td></tr>
+<tr><td>curse_zkb139073592_ewar</td><td>Neut magnitude (first-matching module)</td><td>5000m/2500m falloff, 55 GJ/6s cycle (9.17 GJ/s)</td></tr>
+<tr><td>curse_zkb139073592_ewar</td><td>Cap-lean alert (already cap-unstable)</td><td>fires: "Already draining its own capacitor dry in 21s unassisted..."</td></tr>
+<tr><td>ishkur_constructed_dual_prop_mod (real fitted Nosferatu)</td><td>Nos now registers as EWAR + magnitude</td><td>ewarModuleCount 0&rarr;2 (+Warp Scrambler), 5000m/0m falloff, 10 GJ/2.5s cycle (4 GJ/s)</td></tr>
+<tr><td>ishkur_constructed_dual_prop_mod</td><td>Capacitor stability (after the attribute-55 fixture fix)</td><td>Stable at 56.8% -- above threshold, alert correctly does NOT fire</td></tr>
+<tr><td>rifter_user (healthy fit, negative-path guard)</td><td>Cap-lean alert absence</td><td>correctly does NOT fire (stable at 72.6%)</td></tr>
+</table>
+<p>Playwright screenshot confirms the violet "C" drain badges (Curse: 2 distinct neut types; Ishkur: the Nosferatu) and the new blue "Cap-lean target" opportunity badge (Curse only) all render correctly and are visually distinct from the existing tackle/disrupt/danger badges.</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 484,234 &rarr; 492,101 bytes</li>
+<li><code>golden_fits.json</code>: 4,101,011 &rarr; 4,105,081 bytes (3 existing real-fit golden fits extended -- Curse, Rifter, Ishkur -- no new synthetic fits needed; 2 fixture data-completeness gaps fixed along the way)</li>
+<li><code>run_regression.mjs</code>: new flattened fields (ewarNeut*/ewarNos*, hasCapLeanAlert)</li>
+<li><b>Full suite: 78/78 fits, ALL PASS</b></li>
+</ul>
+
+<div class="callout">
+Both deliberately out-of-scope items from the capacitor-stability doc (ship-level cap role bonuses not yet hull-audited; Nosferatu net-cap-gain requiring two-ship modeling) remain open -- unchanged by tonight's work, not silently resolved.
+</div>
+
+</body>
+</html>

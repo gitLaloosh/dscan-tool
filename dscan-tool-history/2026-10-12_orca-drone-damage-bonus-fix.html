@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Orca drone-damage role-bonus magnitude fix</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f5f5f5}
+</style>
+</head>
+<body>
+
+<h1>Orca drone-damage role-bonus magnitude fix</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; KNOWN OPEN ITEM #5 in dscan-tool.md: "Orca's 2 drone-damage effects don't fit either convention"</p>
+
+<h2>The gap</h2>
+<p>The original 2026-10-08 ship-role-bonus audit flagged Orca as not fitting the usual "1 flat role bonus + 1 skill-scaled type bonus" pattern cleanly, and the table ended up with <code>[["drone","damage",50],["drone","damage",100]]</code> — neither number traceable to anything in Orca's own data. This session re-derived both numbers from scratch against live dogma.</p>
+
+<h2>Root cause, grounded</h2>
+<p>Fetched Orca's (type 28606) full raw <code>dogma_attributes</code> and <code>dogma_effects</code> live via ref-data.everef.net, then looked up the two relevant attributes/effects by name:</p>
+<table>
+<tr><th>Attribute</th><th>Name</th><th>Value</th><th>Effect</th><th>Source</th></tr>
+<tr><td>2580</td><td>industrialBonusDroneDamage</td><td>100.0</td><td>6789 (<code>industrialBonusDroneDamage</code>, modifies attr 64)</td><td>Flat role bonus, not skill-scaled (everef Traits <code>role_bonuses</code>: "+100% Drone damage")</td></tr>
+<tr><td>3203</td><td>industrialCommandBonusDroneDamage</td><td>15.0</td><td>8261 (modifies attr 64)</td><td>Per-level Industrial Command Ships skill (type 29637) bonus (everef Traits <code>types["29637"]</code>: "+15%/lvl Drone hitpoints and damage") &rarr; 75% at this file's standing max-skill-V convention</td></tr>
+</table>
+<p>Neither 50 nor 100 (the old entry's magnitudes) matches a real component here except coincidentally reusing the flat bonus's raw number in the wrong slot. The actual pair is <b>100 (flat) + 75 (skill@V)</b>, compounding multiplicatively exactly like every other multi-entry hull in this table (2.0 &times; 1.75 = 3.5x total), not 1.5 &times; 2.0 = 3.0x as the old entry gave.</p>
+
+<h2>Fix</h2>
+<p>Changed the table entry from <code>[["drone","damage",50],["drone","damage",100]]</code> to <code>[["drone","damage",100],["drone","damage",75]]</code>. No new mechanism needed — this hull always fit the tool's existing "flat + skill-scaled, compound multiplicatively" convention, it just had the wrong two numbers in it.</p>
+
+<h2>Verification</h2>
+<p>New golden fit <code>orca_constructed_industrial_command_drone_bonus_fix</code> (bare Orca hull + 10x Hobgoblin II in the drone bay, no other modules), sandbox-verified against the live post-fix code:</p>
+<table>
+<tr><th>Stat</th><th>Pre-fix (old entry)</th><th>Post-fix</th></tr>
+<tr><td>Drone DPS (5 deployed)</td><td>297</td><td>347</td></tr>
+</table>
+<p>Hand-derivation: dmgPerCycle = 20(thermal) &times; 1.92(Hobgoblin II's own multiplier) &times; 2.0625(Drone Interfacing &times; Light Drone Operation &times; Gallente Drone Specialization, all V) &times; 3.5(this fix) = 277.2; perDroneDps = 277.2/4s = 69.3; droneDps = 69.3 &times; 5 deployed = 346.5, rounds to 347 — exact match to sandbox output.</p>
+<div class="callout">
+Unlike the Griffin NI malus fix earlier today, this hull was being <b>undercounted</b> — the old wrong entry (3.0x) understated real drone DPS (3.5x) by about 14% (297 vs. the correct 347). Worth flagging since threat-assessment tools that undercount are arguably more dangerous than ones that overcount.
+</div>
+
+<h2>Scope</h2>
+<p>Only drone DAMAGE is covered by this fix — the same effect/skill combo also grants +15%/lvl Drone HITPOINTS (bundled into the same real-game bonus), but this tool has never tracked drone HP for any ship (confirmed via code search, zero references), so that half remains out of scope, same as it is for every other hull. Orca's many other role/skill bonuses (mining yield, ice harvesting, Command Burst range/strength, tractor beam, cargo/ore hold, jump fatigue) are all unrelated to threat-assessment DPS/EHP and were not touched.</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 469,427 bytes (unchanged size — "50"+"100" and "100"+"75" happen to be the same combined character count)</li>
+<li><code>golden_fits.json</code>: 4,057,372 &rarr; 4,099,895 bytes (1 new fit)</li>
+<li><code>run_regression.mjs</code>: unchanged</li>
+<li><b>Full suite: 78/78 fits, 372 checks, ALL PASS</b></li>
+</ul>
+
+</body>
+</html>

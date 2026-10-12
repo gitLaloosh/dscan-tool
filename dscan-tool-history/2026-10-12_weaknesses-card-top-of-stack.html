@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Weaknesses card moved to top of stack</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Weaknesses card moved to top of stack</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; UI layout only, requested after reviewing a card-order mockup</p>
+
+<h2>Change</h2>
+<p>Per the owner's request, the <strong>Weaknesses</strong> card now renders first in the per-fit card stack (directly below the Tactical Destroyer Mode selector, above EWAR). Previous order was EWAR &rarr; Firepower &rarr; Resistance &rarr; Weaknesses &rarr; Navigation &amp; targeting &rarr; Capacitor; new order is Weaknesses &rarr; EWAR &rarr; Firepower &rarr; Resistance &rarr; Navigation &amp; targeting &rarr; Capacitor. The Fit card (module list) is unaffected -- it's rendered separately in <code>renderFitTabs()</code>, always last.</p>
+<p>Pure template-literal reorder inside <code>renderFitSummaryHtml()</code>'s return statement -- no calculation logic touched, no markup/listener changes to any individual card.</p>
+
+<h2>Verification</h2>
+<p>Full regression suite re-run against the edited file: <strong>73/73 fits, ALL PASS.</strong> Expected -- this change only reorders which already-correct HTML strings get concatenated in which order; none of their own computed values changed.</p>
+
+<h2>Delivered</h2>
+<p><code>dscan-tool.html</code>: 448,477 &rarr; 448,876 bytes.</p>
+
+</body>
+</html>

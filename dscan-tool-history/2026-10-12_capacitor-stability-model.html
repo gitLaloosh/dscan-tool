@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Capacitor stability model (stable %/time-to-empty)</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f5f5f5}
+</style>
+</head>
+<body>
+
+<h1>Capacitor stability model -- stable %, time-to-empty, Weaknesses flag</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; feature backlog item #2: "we need to be able to accurately represent cap numbers for the fit, whether it's cap stable with modules activated or if it might be a weak spot that can be exploited"</p>
+
+<h2>What existed before this</h2>
+<p>The tool already computed <code>peakRechargeRate</code>, <code>activeDrainPerSec</code>, and <code>netRate</code> (= peak − drain), with a <code>stable</code> boolean (<code>netRate >= 0</code>) -- explicitly documented as a "simplified sustained approximation, not a full cap simulation." It never answered the two questions that actually matter for threat assessment: if stable, stable <i>at what %</i>? If not, drains dry <i>in how long</i>?</p>
+
+<h2>Grounding: pyfa's real source, not a guess</h2>
+<p>Cloned <code>pyfa-org/Pyfa</code> directly and read <code>eos/saveddata/fit.py</code> + <code>eos/capSim.py</code>. Two findings:</p>
+<ol>
+<li>This tool's existing <code>peakRechargeRate = 2.5 &times; capacity / rechargeTime</code> formula is already exactly right -- algebraically identical to pyfa's own recharge curve at its peak point (25% cap). No drift, nothing to fix there.</li>
+<li>Pyfa itself computes stability two different ways: a full event-driven simulator (<code>capSim.py</code> -- staggers multiple same-type modules, models cap-booster charges as reloadable "injectors") used for pyfa's own display, AND a much simpler closed-form shortcut pyfa's own code literally names <code>cap_stable_eve</code> ("the stability value as the EVE client computes it") -- solves for the stable % using just the <i>average</i> drain rate across active modules, no per-module timing. This second one is what the in-game capacitor readout itself shows (confirmed against [stated]'s own in-game screenshot: "Stable" badge + live Δ GJ/s).</li>
+</ol>
+
+<h2>Scope decision</h2>
+<p>Asked [stated] directly which to build, since it's a real fidelity/complexity tradeoff, not an accuracy one: port pyfa's full event simulator (exact match to pyfa in every case, substantially more code/new algorithmic subsystem) vs. the EVE-client closed form (matches the in-game readout exactly, much simpler, can diverge slightly from pyfa's own number when a fit has several of the same cap-cycling module). <b>[stated] chose the EVE-client closed form.</b></p>
+
+<h2>The math</h2>
+<p>Recharge rate as a function of current cap: <code>R(x) = (2&times;capacity/&tau;) &times; &radic;x &times; (1&minus;&radic;x)</code>, x = currentCap/capacity, &tau; = rechargeTimeSec/5. Setting <code>R(x) = avgDrain</code> and solving (s = &radic;x): <code>s&sup2; &minus; s + k = 0</code>, k = avgDrain&times;&tau;/(2&times;capacity) -- real solution exists only when k &le; 0.25, which is <i>exactly</i> the existing <code>netRate &ge; 0</code> condition (nice confirmation the old boolean was already testing the right thing, just not reporting the number). Physically meaningful (self-correcting) root: <code>s = (1+&radic;(1&minus;4k))/2</code>, <code>stablePct = s&sup2; &times; 100</code>. Re-derived independently, then matched character-for-character against pyfa's own <code>cap_stable_eve</code> formula.</p>
+<p>When unstable, no equilibrium exists -- time-to-empty is computed by RK4-integrating the same <code>R(x)</code> curve against the constant average drain, from a full capacitor down to zero.</p>
+
+<h2>Verification against pyfa's actual simulator</h2>
+<p>Ran pyfa's own <code>capSim.py</code> (same clone) side by side with this tool's new JS implementation on matching synthetic inputs:</p>
+<table>
+<tr><th>Scenario</th><th>This tool (closed-form/RK4)</th><th>pyfa's own cap_stable_eve</th><th>pyfa's full event sim</th></tr>
+<tr><td>Stable, single drain module (1000 GJ, 200s recharge, 5 GJ/s drain)</td><td>stablePct = 78.73%</td><td>78.7298% (exact match)</td><td>78.64% (0.09pp off)</td></tr>
+<tr><td>Unstable, realistic multi-module fit (1500 GJ, 400s recharge, 8 staggered modules averaging 80 GJ/s)</td><td>time-to-empty = 20.5s</td><td>n/a</td><td>20.0s (2% off)</td></tr>
+<tr><td>Unstable, deliberately extreme stress case (ONE module alone taking a 20%-of-capacity bite every cycle)</td><td>time-to-empty = 94.2s</td><td>n/a</td><td>80.0s (18% off)</td></tr>
+</table>
+<p>The stable-% closed form is an exact match to pyfa's own equivalent formula. Time-to-empty is a close approximation (~2%) for any normal multi-module fit, and a looser one (worst case measured: 18% long/optimistic) for a fit leaning on one slow, cap-hungry module relative to a small capacitor pool -- documented in-code rather than hidden, same standard as every other disclosed approximation in this file.</p>
+
+<h2>Implementation</h2>
+<ul>
+<li>New <code>simulateCapacitorStability(capacity, rechargeTimeSec, avgDrainPerSec)</code> + <code>capRechargeRateAt()</code> + <code>formatDurationShort()</code> (matches pyfa's own Xs/XmYs display convention).</li>
+<li><code>estimate.capacitor</code> gained <code>stablePct</code>, <code>timeToEmptySec</code>, <code>timeToEmptyCapped</code> (4h safety bound, for the rare near-exact-boundary case), <code>weak</code>, <code>weakReason</code>. <code>stable</code> is now the real simulation result rather than just the net-rate sign (the two always agree, by construction).</li>
+<li><code>CAP_STABLE_WEAKNESS_PCT_THRESHOLD = 25</code> -- a judgment-call cutoff (not a CCP mechanic), same "tunable constant" status as <code>TANK_TYPE_THRESHOLD</code>. A fit stabilizing under this % is flagged <code>weak</code>: thin margin, any extra drain (a hostile neut, overheat, one more module cycling) can push it negative.</li>
+<li>Capacitor card: new "Capacitor state" tile shows "Stable at X%" or "Drains dry in Xm Ys", colored red when weak.</li>
+<li>Weaknesses card: when <code>capacitor.weak</code>, a new red "!" badge row appears directly below the weakest-damage-type badge (reuses the existing <code>.ewar-badge.danger</code> styling already used for the cyno-fit misc-trait flag) -- "Capacitor drains dry in 21s with every cap-using module cycling at once" or "Only cap stable at N% -- thin margin...".</li>
+</ul>
+
+<h2>Deliberately out of scope (flagged, not silently dropped)</h2>
+<ul>
+<li><b>Ship-level intrinsic capacitor capacity/recharge role bonuses</b> (a SHIP_ROLE_BONUS-class gap, same shape as the resist/drone-damage sweeps already done elsewhere) -- not hull-audited this round. This affects the two INPUT numbers (capacity, peak recharge), not the stability math itself. Candidate for its own dedicated sweep later, same pattern as the 424-hull SHIP_RESIST_BONUS exhaustive sweep.</li>
+<li><b>Ancillary Shield Booster/Armor Repairer drawing from a loaded Cap Booster charge instead of ship capacitor</b> -- re-examined this session, NOT a bug: this tool's own existing HP-side convention already treats the "charge exhausted" state as the sustained baseline (same reasoning as the burst/sustained duality already modeled for Ancillary Armor Repairer HP output), so counting the module's base <code>capacitorNeed</code> as ship-cap drain is the internally-consistent choice, not an oversight.</li>
+<li><b>Nosferatu/energy-vampire net cap gain</b> -- depends on an opponent's own cap state, a two-ship interaction this tool doesn't model anywhere else. Deliberately excluded, same framing as drone engagement range (pilot-controlled, no honest single number).</li>
+</ul>
+
+<h2>Verification</h2>
+<p>New JS-vs-Python cross-check script confirms the formulas match pyfa's source exactly (table above). Two existing REAL-killmail golden fits extended with capacitor assertions (no synthetic fits needed): <code>curse_zkb139073592_ewar</code> (5 cap-warfare high slots, genuinely unstable: <code>capacitorStable=0</code>, <code>capacitorTimeToEmptySec=21.3</code>, <code>capacitorWeak=1</code>) and <code>rifter_user</code> (healthy: <code>capacitorStable=1</code>, <code>capacitorStablePct=72.6</code>, <code>capacitorWeak=0</code>). Playwright screenshot confirms both cards render correctly end to end (Weaknesses flag present/absent, Capacitor card colors/text) for both fits.</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 474,797 &rarr; 484,234 bytes</li>
+<li><code>golden_fits.json</code>: 4,099,895 &rarr; 4,101,011 bytes (2 existing fits extended, no new fit needed)</li>
+<li><code>run_regression.mjs</code>: new flattened fields (capacitorStable/capacitorStablePct/capacitorTimeToEmptySec/capacitorWeak)</li>
+<li><b>Full suite: 78/78 fits, ALL PASS</b></li>
+</ul>
+
+<div class="callout">
+Structured output (<code>estimate.capacitor.{stable,stablePct,timeToEmptySec,weak,weakReason}</code>), not just rendered text -- per [stated]'s stated forward direction, this feeds directly into a future "generate a fit to counter this one" feature without needing to re-derive cap state from display strings.
+</div>
+
+</body>
+</html>

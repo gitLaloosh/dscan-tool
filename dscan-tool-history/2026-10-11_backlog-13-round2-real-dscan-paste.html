@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Backlog #13 round 2 -- real D-scan paste exposed a 4th column the reference fixtures never showed</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Backlog #13, round 2: a real D-scan paste beats a reference library</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; follow-up to the earlier same-day #13 fix, after the owner supplied an actual D-Scan paste from his own client</p>
+
+<p>Round 1 of this item (same day, earlier) verified <code>parseDscan()</code> against the evepraisal/evepaste reference parser's test fixtures -- a solid primary source, but a third-party one, for an older/generic client paste shape (3 tab-separated fields: name, type, distance). the owner then supplied a real paste from his own client, and it immediately exposed something the reference fixtures never showed at all.</p>
+
+<h2>What the real paste looks like</h2>
+<pre>37604	Dvd Bane's	Apostle	64 km
+672	.	Caldari Shuttle	-
+606	Velator - Pexx	Velator	129 km</pre>
+<p><strong>Four tab-separated columns, not three</strong> -- a leading bare inventory-type-ID with no unit at all (confirmed: 606 is Velator's real ESI type_id, 644 is Typhoon's). This is additional information attached to the row that round 1's reference fixtures simply didn't have an example of.</p>
+
+<div class="fix">
+<strong>Real bug, confirmed immediately on every single row of the real paste.</strong> The distance-matching regex's trailing unit suffix was OPTIONAL (<code>(m|km|au|ly)?</code>), so a bare integer with no unit -- exactly what the leading type-ID column is -- matched it too. Since the row-parsing loop takes the FIRST part that looks like a distance, the type-ID column was winning that race on every row, and the REAL, unit-bearing distance ("64 km") was getting shoved into <code>candidates</code> as noise instead.
+</div>
+<p>Net effect on a real paste: <code>distance</code> was wrong (a type ID, not a distance) for every row. Ship-type detection itself mostly still worked by luck -- the real type name ("Apostle", "Velator") survived as one of the other candidates and still resolved fine via ESI -- but the distance field, the thing this whole function exists to extract alongside the name, was broken 100% of the time on real data.</p>
+<p>Fix: made the unit suffix REQUIRED (<code>(m|km|au|ly)</code>, no <code>?</code>). Every real distance across both rounds of fixtures carries a unit, or is the bare <code>"-"</code> case (handled by its own separate check) -- never a bare number alone. A bare type ID now correctly falls through to <code>candidates</code> as harmless noise, the same way pilot names and other placeholders already do, instead of stealing the distance slot.</p>
+
+<h2>Verification</h2>
+<p>Ran the owner's full real paste (28 contacts) through the fixed function directly: every row's real distance is now correctly identified (with unit, or "-"), and every row's actual ship-type name survives into <code>candidates</code>. Spot-checked a sample against known ESI type IDs for sanity (Velator=606, Typhoon=644) rather than assuming.</p>
+<p>Added all 28 rows as permanent regression coverage in <code>dscan_parse_tests.mjs</code> (5 new individual cases + a full-paste block check), plus re-ran the round-1 fixture suite and the full golden-fit suite to confirm nothing else moved. <strong>51/51 PASS</strong> (dscan parse suite); <strong>63/63 fits, 292/292 assertions, ALL PASS</strong> (golden-fit suite, untouched by this change but re-run for safety).</p>
+
+<h2>Lesson</h2>
+<p class="callout">A reputable third-party reference library's test fixtures are real primary-source data, but they're not necessarily <em>complete</em> primary-source data -- they reflect whatever client version/locale/UI state their author happened to sample. One real paste from the owner's own client surfaced a column shape that an entire established reference library's fixture set never once showed. Worth remembering for future "no live-ESI question, just needs real sample data" backlog items: a reference library is a strong starting point, not a substitute for the user's own real data when it's available.</p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 415,832 &rarr; 416,037 bytes</li>
+<li><code>dscan_parse_tests.mjs</code>: 6,267 &rarr; 10,956 bytes (23 individual cases + a 28-row real-paste block, 51 assertions total)</li>
+<li><code>golden_fits.json</code>, <code>run_regression.mjs</code>: unchanged</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>P1-E: Controlled Bursts, Resistance Phasing, Armor Layering fixes</title></head>
+<body>
+<h1>P1-E — niche skill audit items: 3 real fixes, 1 confirmed non-issue</h1>
+
+<p>Context: fifth and final phase of the comprehensive skill audit's phased sub-backlog (P1-A through P1-D delivered earlier today). P1-E covered 4 lower-confidence "Finding D" items that hadn't been traced through the actual code paths yet. Each got its own research pass per the project's standing grounded-verification rule; this closes P1-E in full.</p>
+
+<h2>1. Controlled Bursts (3316) — REAL gap, FIXED</h2>
+<p>Own ESI description: "5% reduction in capacitor need of weapon turrets per skill level" → -25%@V. Confirmed live via ESI that this skill has the exact same architecture as Sharpshooter/Trajectory Analysis (already fixed in P1-C): a <code>LocationRequiredSkillModifier</code> gated on the weapon requiring <b>Gunnery (3300)</b>, not on requiring Controlled Bursts itself (no turret anywhere requires that directly). Reused the existing <code>GUNNERY_SKILL_ID</code>/<code>REQUIRED_SKILL_ATTRS</code> generic check, applied to <code>capacitorNeed</code> in the cap-drain loop instead of a range attribute. Correctly excludes missile launchers (no Gunnery requirement) and the Vorton Projector (separate skill tree), same as P1-C.</p>
+
+<h2>2. Resistance Phasing (32797) — REAL gap (cap-need half), FIXED; cycle-time half confirmed moot</h2>
+<p>Own ESI description: reduces Reactive/Flex Armor/Flex Shield Hardener cycle time 10%/lvl and capacitor need 15%/lvl. The <b>cap-need half</b> (-75%@V) is a real, now-fixed gap: confirmed live via a <code>LocationGroupModifier</code> onto the RAH's own item group (not a skill match — RAH's required skill is Hull Upgrades/3394), applied here via the existing <code>isRAH</code> flag already computed elsewhere in the file. The <b>cycle-time half</b> is confirmed NOT a gap: <code>simulateReactiveArmorHardener()</code> iterates by cycle count, not real seconds — the per-cycle resist-shift percentage doesn't depend on cycle time, so a faster cycle only reaches the same converged average sooner, never changing the converged resistance values this tool displays. Traced through the actual simulation code to confirm, not assumed.</p>
+
+<h2>3. Armor Layering (33078) / Advanced Armor Layering (89689) — REAL gap, bigger than originally scoped, FIXED</h2>
+<p>The backlog item as originally scoped assumed the gap was just "the skill reduction isn't applied to the plate's mass penalty." Tracing it through the actual Speed/Align time code found something larger: <b>a fitted Armor Plate's mass contribution (attribute 796, Mass Addition, often several million kg) was not read anywhere in this tool at all</b> — not under-reduced, completely absent from <code>baseMass</code>. Only the propulsion-module branch (AB/MWD) ever read that attribute. Confirmed live that Armor Plates (ESI group 329, "Armor Plate") carry the same attribute 796 as AB/MWD, but as a <i>passive, always-on</i> contribution (no "assumed active" caveat needed, unlike a prop mod). Fixed by summing every fitted Armor Plate's own massAddition into <code>baseMass</code> itself — now affects base align time unconditionally and the boosted-prop-mod figures automatically (via <code>baseMass + propModMassAddition</code>). Armor Layering (5%/lvl) + Advanced Armor Layering (2%/lvl) stack additively to a confirmed-live 35%@V combined reduction, applied specifically to the plate's own group (not AB/MWD's differently-sourced mass).</p>
+
+<h2>4. Nanite Operation (28879) / Nanite Interfacing (28880) — CONFIRMED NOT APPLICABLE</h2>
+<p>Despite the name similarity to the Ancillary Armor Repairer's "Nanite Repair Paste" charge, these two skills are unrelated: both effects are scoped to domain <code>charID</code> (the character, not a fitted item) and target attributes <code>shipBrokenModuleRepairCostMultiplier</code>/<code>moduleRepairRate</code> — the out-of-combat "repair a malfunctioning module with paste" mechanic. The Ancillary Armor Repairer's burst multiplier (<code>chargedArmorDamageMultiplier</code>) is a fixed attribute on the module itself with no skill input at all, already correctly modeled with no skill dependency. No fix needed — confirmed rather than assumed, per this project's standing rule.</p>
+
+<h2>Verification</h2>
+<p>All 3 fixes hand-derived and cross-checked against the sandbox's own computed output (one hand-derivation error was caught mid-process: <code>MAX_EVASIVE_MANEUVERING_AGILITY_MULT</code> is 0.75, not 1.25 as initially mis-recalled — the sandbox's output was correct throughout; only the hand-check needed correcting, confirmed by adding temporary debug instrumentation, verifying the intermediate values, then removing it before delivery):</p>
+<ul>
+<li><code>rifter_constructed_controlled_bursts</code> (Rifter + Mega Pulse Laser II, confirmed Gunnery-gated): 36 × 0.75 / 7.875s = 3.4 GJ/s (was 4.6 pre-fix) — exact match.</li>
+<li><code>rifter_constructed_resistance_phasing</code> (Rifter + Reactive Armor Hardener): 42 × 0.25 / 10s = 1.1 GJ/s (was 4.2 pre-fix) — exact match.</li>
+<li><code>rifter_constructed_armor_layering</code> (Rifter + 1600mm Steel Plates II): baseMass 1,067,000 + (3,750,000 × 0.65) = 3,504,500kg; align time = -ln(0.25) × (3.2 × 0.75) × 3,504,500 / 1e6 = 11.7s (was 3.6s pre-fix, since the plate's mass was previously invisible to this calc) — exact match.</li>
+</ul>
+<p><b>Not pyfa-cross-checked</b> — same bar as every other skill-audit fix this session; grounded in each skill's own live ESI description text plus the mechanism verification above.</p>
+
+<h2>Regression suite</h2>
+<p>golden_fits.json grew from 43 to 46 fits (3 new constructed fits, one per real fix — this card had zero prior coverage for any of the three). run_regression.mjs unchanged (the needed fields — capacitorActiveDrainPerSec, alignTimeBase — were already flattened from earlier work). <b>46/46 PASS.</b></p>
+
+<h2>Scope note</h2>
+<p>This closes P1-E and, with it, the entire phased comprehensive-skill-audit backlog (P1-A through P1-E). Remaining open items: the damage-application-efficiency finding (captured, not yet sequenced), and the P2/P3 UI/feature backlog items.</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (358,424 bytes), regression_suite/golden_fits.json (3,102,612 bytes), regression_suite/run_regression.mjs (20,934 bytes, unchanged) — all byte-verified against this machine's copies after delivery.</p>
+</body>
+</html>

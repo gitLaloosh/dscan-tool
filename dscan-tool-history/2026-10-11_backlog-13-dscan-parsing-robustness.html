@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Backlog #13 -- D-scan name-parsing robustness, stress-tested against the real paste format</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Backlog #13: D-Scan name-parsing robustness</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; "<code>parseDscan()</code>'s tab/multi-space fallback parsing may have edge cases with unusual pilot/ship/system names (punctuation, non-Latin characters) not yet stress-tested -- needs a set of real adversarial D-scan pastes to validate against, not a live-ESI question" (backlog item's own framing)</p>
+
+<h2>Grounding the test, not guessing it</h2>
+<p>This backlog item explicitly isn't an ESI question -- there's no live API that tells you what a copy-pasted D-Scan window looks like. Neither this tool's own files nor the EVE University wiki documented the raw paste format (the wiki page only covers the Ctrl+A/Ctrl+C mechanic, not the resulting text). Rather than guess at adversarial test lines from memory, I found an authoritative primary source instead: <strong>evepraisal/evepaste</strong> (fetched via its <code>Nothing4You/eveparser</code> fork, <code>tests/parsers/dscan.py</code>) -- the reference D-scan parser used across the EVE 3rd-party tool ecosystem, whose own test fixtures are real sampled paste output. Those fixtures also settled a tension that came up mid-investigation: EVE University's page says the on-screen D-Scan list "does not show distance" -- true of the visible columns, but the fixtures confirm the <em>pasted text</em> is always three tab-separated fields, <code>&lt;name-or-placeholder&gt;\t&lt;type&gt;\t&lt;distance&gt;</code>, which matches what this tool has always assumed.</p>
+
+<h2>Two real misreads found, both fixed</h2>
+<div class="fix">
+<strong>1. Locale-formatted distances (space as the thousands separator) weren't recognized as distances at all.</strong> The old regex (<code>/^[\d,]+(\.\d+)?\s*(m|km|au|ly)?$/i</code>) only allowed a comma inside the number. A real fixture line -- <code>test\tNoctis\t3&nbsp;225&nbsp;m</code> -- showed the EVE client can format a distance with a space-grouped thousands separator (locale-dependent) instead of a comma. That token failed to match, so it fell through into <code>candidates</code> as a bogus ESI name-resolution target instead of being recognized as the distance.</p>
+<p>This is distinct from the NBSP-normalization fix already in the file from independent review finding #20: that fix only swaps the <em>character</em> (U+00A0 &rarr; regular space) before splitting -- it doesn't touch whether the distance-matching regex can read a number with an interior space at all. Confirmed directly: even after that normalization, <code>"3 225 m"</code> (now a perfectly ordinary ASCII space) still failed to match the old regex. Fixed by widening it to tolerate interior spaces/NBSP as digit-group separators: <code>/^\d[\d,\s ]*(\.\d+)?\s*(m|km|au|ly)?$/i</code>.</p>
+</div>
+<div class="fix">
+<strong>2. A bare "-" distance (same-grid / no distance read) wasn't recognized either.</strong> One of the evepraisal fixtures is exactly this case: <code>some dude's Stabber Fleet Issue\tStabber Fleet Issue\t-</code>. "-" doesn't look like a number, so it leaked into <code>candidates</code> too, and the row's <code>distance</code> came back empty instead of carrying the "-" through. Fixed with a small dedicated check (<code>/^-+$/</code>) alongside the main distance regex.</p>
+</div>
+<p class="small">Real-world severity of both: low. <code>distance</code> is only ever read in one place in the whole file -- the debug "Show parsed rows" panel (<code>candidates: ... &middot; distance: "..."</code>) -- so the only visible symptom before this fix was that panel showing an extra bogus candidate and a blank distance for these two cases. ESI itself already silently drops unresolvable candidates like <code>"-"</code> or <code>"3 225 m"</code> when resolving names, so neither leak ever reached actual ship/structure/pilot results. Still, both are real misreads of what <code>parseDscan()</code> is supposed to do, and cheap to fix correctly.</p>
+
+<h2>What was stress-tested and found to already be fine</h2>
+<p>The backlog item specifically flagged "unusual pilot/ship/system names (punctuation, non-Latin characters)" as untested. Ran all of the following through <code>parseDscan()</code> directly -- none exposed any bug, because JS's tab-split is character-set-agnostic and doesn't care about punctuation inside a field:</p>
+<table>
+<tr><th>Case</th><th>Example</th><th>Result</th></tr>
+<tr><td>Cyrillic pilot name</td><td><code>Иван Иванов\tAstrahus\t45 km</code></td><td>parsed cleanly</td></tr>
+<tr><td>Non-Latin structure name with punctuation («»)</td><td><code>ЕВЕ-Alliance's «Товарищество» Keepstar...</code></td><td>parsed cleanly</td></tr>
+<tr><td>CJK structure name</td><td><code>東京タワー Keepstar\tKeepstar\t999 km</code></td><td>parsed cleanly</td></tr>
+<tr><td>Apostrophes/possessives in both name columns</td><td><code>Bob's Revenge\tLegion\t500 m</code></td><td>parsed cleanly</td></tr>
+<tr><td>Empty name or distance column (leading/trailing tab)</td><td><code>\tRifter\t5,000 m</code></td><td>parsed cleanly (empty field just filtered out)</td></tr>
+<tr><td>Ragged doubled tab between columns</td><td><code>SomePilot\t\tRifter\t5,000 m</code></td><td>parsed cleanly</td></tr>
+</table>
+<p>Also specifically checked the new, widened distance regex for false positives against real EVE null-sec system/structure names that start with a digit (a common naming pattern -- <code>6VDT-H</code>, <code>4-07MU</code>, <code>9HYS-T</code>, <code>1DQ1-A</code>, <code>4HWWF</code>): none are mistaken for a distance, since they don't end in a unit or pure digit run.</p>
+
+<h2>Regression coverage added</h2>
+<p><code>parseDscan()</code> had no dedicated regression coverage before this (it's architecturally separate from the killmail-based <code>golden_fits.json</code>/<code>run_regression.mjs</code> suite -- it's consumed only by the D-Scan tab, not <code>estimateHpAndDps()</code>). Added a new standalone script, <code>dscan_parse_tests.mjs</code>, covering the 4 evepraisal reference fixtures plus 14 constructed adversarial cases (18 total) with exact expected <code>{candidates, distance}</code> output for each. <strong>18/18 PASS</strong> against the fixed code.</p>
+<p>Also re-ran the full existing golden-fit suite to confirm this change (confined entirely to <code>parseDscan()</code>, untouched by any fit/DPS logic) didn't disturb anything else: <strong>63/63 fits, 292/292 assertions, ALL PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 414,419 &rarr; 415,832 bytes</li>
+<li><code>dscan_parse_tests.mjs</code> (new): dedicated regression coverage for <code>parseDscan()</code>, 18 cases</li>
+<li><code>golden_fits.json</code>, <code>run_regression.mjs</code>: unchanged -- this item didn't touch the DPS/HP pipeline</li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">#13 closed. Remaining per the merged/prioritized backlog: #19 (cargo-ammo chargeGroup/size compatibility), #10 (MWD sig-bloom halving bonus), T3 subsystem speed/agility, #16 (T3 subsystem cap bonus), the tool-wide weapon range/falloff gap, P1 (damage-application-efficiency), P3 (cyno-fit flagging).</p>
+
+</body>
+</html>

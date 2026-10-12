@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Propulsion module badge + per-type resistance breakdown</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+.warn{color:#9a6700;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Propulsion module badge + per-type resistance breakdown</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified via real captured ESI data + 28/28 regression PASS + byte-identical diff + real-Chromium checks</span></p>
+<p><b>Requested by the owner:</b> as the first step toward adding navigation speed to the Pilot Analyzer results, a badge next to the HP/DPS numbers identifying whether a fit carries an Afterburner, a Microwarpdrive, both, or neither — plus, separately, surfacing the fit's actual per-damage-type resistances, styled less prominently than the main effective-HP figure.</p>
+
+<h2><span class="warn">Correction found before shipping</span></h2>
+<p>The original plan was to detect Afterburner vs. Microwarpdrive by ESI/SDE group name, the same way every other module classification in this tool works. Checking this project's own already-captured real ESI data (<code>golden_fits.json</code>'s <code>groups</code> cache, pulled from 13 distinct real AB/MWD item names across multiple golden fits) showed that premise was wrong: <b>both module types share the exact same ESI group — group_id 46, group name "Propulsion Module."</b> There is no group-name-based way to tell them apart.</p>
+<p>Fixed by gating on group name ("Propulsion Module") and then splitting by an item-name substring check — "afterburner" vs. "warpdrive"/"warp drive" — which held across all 13 real sampled item names (T1, T2, faction, and meta variants alike). This is exactly the kind of thing this project's "verify against primary sources, never guess" rule exists to catch, and it worked as intended here before any code shipped with the wrong assumption.</p>
+
+<h2>The changes</h2>
+<p><b>Propulsion badge:</b> the existing per-item classification loop that already scans every Mid/Low/Rig/Subsystem/High-slot item on a fit (for resist mods, Damage Controls, etc.) now also flags Afterburner/Microwarpdrive presence — zero new ESI calls, since those items were already being fetched. A new "Propulsion" stat block next to "Est. effective HP" and "Total DPS" shows "AB" / "MWD" / both / or "no afterburner/MWD fitted," with a note that this reflects what's physically fitted, not necessarily what was cycling at time of death (the same honest caveat as the Tactical Destroyer Mode badges) — the actual speed/align-time number is a separate follow-up phase, since it needs a new per-hull speed-bonus table (same complexity class as the existing SHIP_ROLE_BONUS/SHIP_RESIST_BONUS tables).</p>
+<p><b>Per-type resistance breakdown:</b> <code>estimateHpAndDps()</code> already computed each damage type's post-module/skill resistance internally (<code>adjShieldRes</code>/<code>adjArmorRes</code>/<code>adjHullRes</code>) to produce the averaged effective-HP figure, but never exposed the per-type values. Now surfaced as <code>shieldResPct</code>/<code>armorResPct</code>/<code>hullResPct</code> on the returned estimate (purely additive — no existing calculation touched) and rendered as a small, faded line under the existing shield/armor/structure HP breakdown, using the same damage-type badge styling already used elsewhere in the tool, deliberately smaller and lower-contrast than the main effective-HP number per your request. Only shown for a layer that actually has HP behind it (e.g. a pure shield tank's armor resists aren't shown, since 0 armor HP makes them meaningless).</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Real captured ESI data check (not a guess) for the Afterburner/MWD group-name premise</td><td>Found and corrected the "separate groups" assumption <i>before</i> writing any code — see correction above</td></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS</td></tr>
+<tr><td>Byte-for-byte diff of regression output, before vs. after</td><td>IDENTICAL (diff exit code 0) — both additions are new fields on the returned estimate object; nothing existing was changed</td></tr>
+<tr><td>Real-browser check (Chromium), 3 scenarios via route interception: a hull with BOTH an AB and MWD fitted, a hull with NEITHER, and a hull with ONLY an AB</td><td>9/9 PASS: badges correctly show "AB"+"MWD" together, correctly show the "no afterburner/MWD fitted" message when neither is present, and correctly show only "AB" (not "MWD") when only one is fitted — confirming the name-substring split actually works, not just the group-name gate; resistance breakdown correctly shows Shield/Armor/Structure resist lines with all 4 damage types each; zero console errors</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li><code>estimateHpAndDps()</code>'s existing <code>defensiveTypes</code> loop — added Afterburner/MWD detection (group-name-gated, name-substring-split).</li>
+<li><code>estimateHpAndDps()</code>'s return object — added <code>navModules</code>, <code>shieldResPct</code>, <code>armorResPct</code>, <code>hullResPct</code>.</li>
+<li>New <code>navBadgesHtml()</code> and <code>resistSummaryHtml()</code> functions, alongside the existing <code>damageBadgesHtml()</code>.</li>
+<li>New CSS: <code>.nav-badge</code>, <code>.nav-badge-none</code>, <code>.resist-line</code>, <code>.resist-line-label</code>.</li>
+<li><code>renderFitSummaryHtml()</code> — added a third "Propulsion" stat block and the resistance-breakdown line under the effective-HP block.</li>
+</ul>
+
+<h2>What's next</h2>
+<p>The actual navigation-speed number (max velocity, align time) is scoped as its own follow-up phase, since it needs a new per-hull speed/agility bonus table built from scratch — the same maintenance-heavy pattern already flagged as this tool's biggest architectural risk for the existing damage/resist tables.</p>
+</body>
+</html>

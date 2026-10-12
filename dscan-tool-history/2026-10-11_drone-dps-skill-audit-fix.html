@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Drone DPS skill-audit fix (comprehensive skill audit, P1-B)</title></head>
+<body>
+<h1>Drone DPS fix — fictional RoF skill removed, 2 real skills added (comprehensive skill audit, P1-B)</h1>
+
+<p>Context: second item in the phased sub-backlog from the comprehensive skill audit (P1-A, the Fighter DPS fix, was delivered earlier today). This pass re-checked every skill the tool's drone-DPS calculation claimed to model, live against ESI, the same way the Fighter fix did.</p>
+
+<h2>What was wrong</h2>
+<ul>
+<li><b>Fictional rate-of-fire skill.</b> The code applied <code>MAX_DRONE_ROF_MULT = 0.80</code> (a 20% cycle-time reduction) and attributed it to "[Race] Drone Specialization." Checking live: no such effect exists anywhere. Every type in the entire Drones skill group (ESI group 273, all 34 types) was checked — <b>there is no drone rate-of-fire skill at all</b>, unlike turrets and missiles, which do have real RoF skills (Gunnery/Missile Launcher Operation). This was a straightforward invented mechanic.</li>
+<li><b>Mislabeled racial skill.</b> "[Race] Drone Specialization" (Amarr 12484/Minmatar 12485/Gallente 12486/Caldari 12487) is real, but its actual effect (confirmed via its own ESI description text) is "+2% bonus to the damage of combat drones requiring [Race] Drone Specialization" per level (+10% at V) — a damage skill, not a cycle-time skill. Checking every T1/T2 combat drone pair live (Hobgoblin I/II, Garde I/II, Praetor I/II, etc.) confirmed this skill's reqSkill slot (dogma attribute 183) is present <i>only</i> on the T2 ("...II") tier — never on T1, not even as a different value — so it's T2-gated, same pattern as T2 turret Specialization.</li>
+<li><b>Missing weapon-size-class skill.</b> Every combat/sentry drone also carries a size-class skill in its reqSkill1 slot (attribute 182): Light Drone Operation (24241), Medium Drone Operation (33699), Heavy Drone Operation (3441), or Sentry Drone Interfacing (23594) — present on <i>every</i> drone, T1 and T2 alike. This skill's real effect is "+5% damage per level" (+25% at V) and was entirely unmodeled before this fix.</li>
+</ul>
+
+<h2>What changed in dscan-tool.html</h2>
+<ul>
+<li><code>MAX_DRONE_ROF_MULT</code> changed from 0.80 to <code>1.0</code> (no RoF skill exists).</li>
+<li>New constants: <code>MAX_DRONE_SIZE_CLASS_DAMAGE_MULT = 1.25</code> (universal), <code>DRONE_RACIAL_SPECIALIZATION_MULT = 1.10</code> (T2-gated), plus the two skill-id lookup arrays (<code>DRONE_SIZE_CLASS_SKILL_IDS</code>, <code>DRONE_RACIAL_SPECIALIZATION_SKILL_IDS</code>).</li>
+<li>Drone DPS loop now checks the drone's own reqSkill attribute values (182/183/184, the same <code>REQUIRED_SKILL_ATTRS</code> array already used for sentry-drone classification) against those id lists and conditionally applies each multiplier — the same generic reqSkill-membership-check architecture already used for T2 turret and fighter Specialization, no hardcoded per-type table.</li>
+<li>Corrected the in-code comment block and the in-app methodology disclosure note to state plainly that drones (like fighters) have no rate-of-fire skill at all, unlike turrets and missiles.</li>
+</ul>
+
+<h2>Magnitude</h2>
+<p>A T1 combat drone: old multiplier was 1.50 (damage) ÷ 0.80 (fictional RoF) = 1.875× equivalent DPS multiplier. New: 1.50 × 1.25 (size-class) = <b>1.875×</b> — coincidentally the same magnitude, since the old fictional RoF cut happened to roughly match the new real size-class skill. A T2 combat/sentry drone is where the fix actually changes output: old = 1.875× (the racial skill was wrongly modeled as RoF, already folded into the 0.80); new = 1.50 × 1.25 × 1.10 (racial spec, now correctly a damage bonus) = <b>2.0625×</b>, about 10% higher than before. Net effect: T1-drone DPS estimates are essentially unchanged, T2-drone (and T2 sentry) DPS estimates rise ~10%.</p>
+
+<h2>A second bug found along the way (data quality, not logic)</h2>
+<p>While re-verifying the regression suite against the new code, two pre-existing golden fits (<code>ishkur_constructed_dual_prop_mod</code>, <code>curse_zkb139073592_ewar</code>) showed a drone DPS <i>decrease</i> after the fix — which was immediately suspicious, since this fix should only raise or hold DPS steady. Root cause: those 2 fits' cached drone-type snapshots (4 type entries total: Hobgoblin II, Warrior II, Acolyte II, Infiltrator II) were saved earlier in the project's history with an incomplete <code>dogma_attributes</code> array that simply never included attributes 182/183/184 — because the code didn't read them yet at the time those snapshots were cached. The sandboxed regression harness never falls back to a live fetch for an id already in its cache, even an incomplete one, so it silently treated those 4 drone types as having no reqSkill data — understating their new multiplier. Confirmed this was a cache-staleness issue, not a code bug, by checking the same type id (Acolyte II, 2205) cached <i>fully</i> in a different fit (<code>ishtar_zkb137694046</code>), which behaved correctly. Fixed by re-fetching all 4 affected type ids live from ESI and overwriting the stale cache entries.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>6 pre-existing golden fits had their expected dpsFixed/droneDps values recomputed against the corrected formula (<code>ishtar_zkb137694046</code>, <code>dominix_navyissue_buffer</code>, <code>rokh_zkb138993491_rolebonus_audit</code>, <code>abaddon_zkb138966900_cargo_fallback</code>, <code>leshak_zkb139013625_precursor_battleship_role_bonus</code>, <code>curse_zkb139073592_ewar</code>), each with an explanatory note. Hand-verified at least 2 independently: <code>abaddon</code>'s Warrior II droneDps (4× thermDmg 20 × ownMult 1.56 × skillMult 2.0625 ÷ 4s cycle = 16.0875/drone ×4 = 64.35 ≈ 64) matched the sandbox output exactly.</li>
+<li>Added 1 new constructed fit, <code>ishtar_constructed_sentry_drone_specialization_bonus</code> (Ishtar + 5× Garde II), specifically to isolate the Sentry Drone Interfacing size-class skill and the Gallente Drone Specialization racial skill on an actual sentry drone — the 6 updated fits above all use Light/Medium Drone Operation combat drones, none exercised the sentry path for the new multiplier logic. Hand-derived 340.3125 DPS, sandbox produced 340 — exact match. All dogma data (Garde II explosive damage 64, own-multiplier 1.65, 4s cycle, reqSkill182=23594/reqSkill183=12486) live-ESI-verified via the linked browser 2026-10-11.</li>
+<li><b>Not pyfa-cross-checked</b> — same as the Fighter fix, this is grounded in each skill's own live ESI description text plus independent hand-arithmetic on every new/changed fit, not a pyfa screenshot (pyfa's own drone-DPS calc doesn't expose a skill-by-skill breakdown to compare against).</li>
+</ul>
+
+<h2>Regression suite</h2>
+<p>golden_fits.json grows from 42 to 43 fits. <b>43/43 PASS.</b> run_regression.mjs unchanged.</p>
+
+<h2>Scope note</h2>
+<p>Second of the phased sub-backlog from the comprehensive skill audit (P1-B of P1). Still open: P1-C (turret Sharpshooter/Trajectory Analysis range-falloff skills), P1-D (missile Projection/Bombardment velocity-flight-time skills, closes a long-standing F1 gap), P1-E (lower-confidence niche items — Controlled Bursts, Armor Layering, Resistance Phasing, Nanite Operation/Interfacing — need further tracing before deciding whether to fix), and the pre-existing Loki sensor-strength re-open item. A new backlog item was also added at the owner's request: have a separate/different model do an independent review pass over dscan-tool.html looking for further improvements or issues not yet caught.</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (345,362 bytes), regression_suite/golden_fits.json (3,068,414 bytes) — both byte-verified against this machine's copies after delivery. regression_suite/run_regression.mjs unchanged this delivery.</p>
+</body>
+</html>

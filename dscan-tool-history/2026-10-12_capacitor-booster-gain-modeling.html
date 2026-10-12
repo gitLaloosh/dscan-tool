@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Capacitor Booster gain modeling + boosted/unboosted dual display</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.4rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.15rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f5f5f5}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+</style>
+</head>
+<body>
+
+<h1>Capacitor Booster gain modeling, plus a boosted/unboosted dual display</h1>
+<p class="small">2026-10-12 &middot; dscan-tool.html &middot; direct follow-up to the capacitor-stability model</p>
+
+<p>the owner asked whether cap boosters (the module, or modules that use cap booster charges) were accounted for in the capacitor-stability numbers. They weren't -- the Capacitor Booster module was already correctly excluded from drain (it carries no <code>capacitorNeed</code> attribute), but its charge's cap <i>injection</i> was never modeled at all. the owner approved modeling it ("yes please"), then asked for an explicit UI indicator next to the stability figure, and finally asked to show both the boosted and unboosted values rather than burying the boosted number in a sentence.</p>
+
+<h2>Research, grounded live (ref-data.everef.net)</h2>
+<ul>
+<li>Capacitor Booster is ESI group 76. The module itself carries no <code>capacitorNeed</code> -- confirmed, consistent with this tool's existing comments.</li>
+<li>The GJ injected per use (attribute 67, <code>capacitorBonus</code>) lives on the <b>charge</b>, not the module -- e.g. Navy Cap Booster 800 (type 32014) carries 800 GJ.</li>
+<li>The module's own cycle time is attribute 73 (<code>REP_CYCLE_DURATION_ATTR</code>, already used elsewhere in this file for reppers) -- confirmed 12,750ms on a Medium F-RX Compact Capacitor Booster (type 4833).</li>
+<li>Capacitor Systems Operation (the module's required skill) is the ship-recharge-time skill already modeled elsewhere -- not a magnitude-boosting skill for the booster itself (checked its dogma_effects directly; no modifier found).</li>
+</ul>
+
+<h2>Module&harr;charge pairing, for free</h2>
+<p>EVE's killmail data preserves per-flag module+charge pairing for any slot, not just High slots -- confirmed by inspecting the Curse fit's real killmail items: the Medium F-RX Compact Capacitor Booster and a single Navy Cap Booster 800 charge share Mid-slot flag 19, with 4 spare charges sitting unpaired in Cargo. The existing <code>highSlotByFlag</code> mechanism was generalized into a parallel <code>midSlotByFlag</code> (in both <code>buildLossTally()</code> and <code>parseEftFit()</code>), which meant this feature could reuse an existing real golden fit with zero new fixture data.</p>
+
+<h2>Design: a separate "boosted" figure, never netted into the baseline</h2>
+<p>Same convention already used for the Ancillary Armor Repairer's sustained-vs-burst split: a charge-based boost is a finite, unknown-quantity consumable (this tool has no way to know how many charges a pilot is carrying), so the conservative no-booster baseline stays the number that feeds the Weaknesses-card flag. The booster's gain is computed as its own separate stability simulation (<code>capSimResultBoosted</code>), surfaced alongside, never replacing, the baseline.</p>
+
+<h2>UI: both values shown, boosted clearly labeled</h2>
+<p>Per the owner's two follow-up requests, the Capacitor card's "Capacitor state" tile now shows:</p>
+<ul>
+<li>The primary headline value: the conservative, no-booster baseline (unchanged position/styling from before -- still what the Weaknesses card reads).</li>
+<li>A new, clearly separated sub-line carrying a <b>BOOSTED</b> badge (reusing the existing cyan <code>.repairs-badge</code> pill style already used for "ACTIVE REP" in the Resistance card) plus the boosted stability figure, the charge name, and its GJ/s gain -- e.g. "Drains dry in 1m20s with a loaded Navy Cap Booster 800 actively cycling (+62.7 GJ/s)".</li>
+<li>When a Capacitor Booster is fitted but no loaded charge can be identified, an honest disclosure line instead of silently showing nothing or guessing a number.</li>
+</ul>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Fit</th><th>Scenario</th><th>Result</th></tr>
+<tr><td>curse_zkb139073592_ewar (real killmail)</td><td>Real Cap Booster + loaded Navy Cap Booster 800 (flag 19)</td><td>Boosted figure shown: +62.7 GJ/s, still unstable but drains dry in 1m20s instead of 21s unboosted</td></tr>
+<tr><td>ishkur_constructed_dual_prop_mod</td><td>Real Small Capacitor Booster II fitted, but no loaded charge in this fit's data</td><td>Honest "charge unidentified" disclosure line, no fabricated number</td></tr>
+<tr><td>rifter_user (negative-path guard)</td><td>No Capacitor Booster at all</td><td>Card unchanged -- complete no-op, confirmed via flattened <code>capacitorHasCapBooster=0</code></td></tr>
+</table>
+<p>Visual check via a Playwright screenshot render of the actual <code>capacitorCardHtml()</code> output (using the real CSS from this file) confirmed the layout, badge color, and wording all render as intended for both the boosted and the charge-unidentified cases.</p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 492,101 &rarr; 499,804 bytes (Mid-slot flag-pairing generalization, module&harr;charge matching, gain accumulator, separate boosted stability sim, extended <code>capacitor</code> return object, dual-value UI)</li>
+<li><code>golden_fits.json</code>: 4,106,000 &rarr; 4,108,774 bytes (new assertions on 3 existing real/constructed fits -- Curse, Ishkur, Rifter -- no new synthetic fits needed)</li>
+<li><code>run_regression.mjs</code>: new flattened fields (<code>capacitorHasCapBooster</code>, <code>capacitorChargeUnidentified</code>, <code>capacitorBoostedGainPerSec</code>, <code>capacitorBoostedStable</code>, <code>capacitorBoostedStablePct</code>, <code>capacitorBoostedTimeToEmptySec</code>), plus the <code>midSlotByFlag</code> plumbing needed to exercise this path at all</li>
+<li><b>Full suite: 78/78 fits, ALL PASS</b></li>
+</ul>
+
+<div class="callout">
+Unchanged open items: Ancillary Shield Booster/Armor Repairer's <code>capacitorNeed</code> is still counted as drain unconditionally even during a window a loaded Cap Booster charge would really be covering (a conservative, not incorrect, existing choice -- not addressed by this change). Ship-level cap role bonuses remain not yet hull-audited, same as before.
+</div>
+
+</body>
+</html>

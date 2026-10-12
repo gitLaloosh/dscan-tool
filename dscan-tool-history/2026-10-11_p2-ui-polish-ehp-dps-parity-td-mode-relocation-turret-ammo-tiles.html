@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>P2 UI polish: EHP/DPS size parity, TD Mode relocation, turret ammo 3-tile expansion</title></head>
+<body>
+<h1>P2 UI polish — 3 items, autonomous backlog pass</h1>
+
+<p>Context: per the owner's instruction ("when you're finished, just continue w/ any backlog items that you can without my input"), after closing the entire P1-A through P1-E comprehensive skill-audit backlog and the Loki sensor-strength re-investigation (both delivered earlier today), these 3 well-scoped P2 UI items were completed without needing further input. All 3 are cosmetic/presentational — <b>no calculation code changed</b> for any of them.</p>
+
+<h2>1. EHP/DPS estimate-value visual size parity (CSS only)</h2>
+<p>The Capacitor card's resistance-total figure rendered visually smaller than the Firepower card's equivalent number, even though both use the same role (a headline stat). Root cause: <code>.resistance-total</code> set <code>font-size:11.5px</code> on the wrapper only — its nested <code>&lt;b&gt;</code> element had no font-size of its own and simply inherited the wrapper's 11.5px, whereas Firepower's equivalent (<code>.estimate-value</code>) sets <code>font-size:20px</code> directly. Fixed by giving <code>.resistance-total b</code> its own explicit <code>font-size:20px; font-weight:600</code>, matching Firepower's figure exactly while leaving the wrapper's label/unit text at 11.5px.</p>
+
+<h2>2. Tactical Destroyer Mode selector relocated to top of page</h2>
+<p>The Mode selector (Sharpshooter/Defense/Propulsion icon row + its "how this is handled" disclosure) was previously inline inside the Weaknesses card's template, buried partway down the Fit Analyzer output. Extracted it out of <code>renderFitSummaryHtml()</code>'s inline markup into its own standalone function, <code>tacticalDestroyerModeSelectorHtml(f)</code>, and moved its call to the very top of the returned card stack — now the first thing rendered for any fit that has tactical modes at all, ahead of EWAR/Firepower/Resistance/Weaknesses/Nav/Capacitor. Also adjusted its CSS (<code>.td-mode-row</code> margin) since it's no longer nested inside a card's own padding.</p>
+
+<h2>3. Turret ammo recommendation: 1 lumped tile -&gt; 3 per-weapon-system tiles</h2>
+<p>The Weaknesses card's ammo-recommendation row previously gave the Missile tile a precise single-ammo answer (e.g. "Mjolnir (pure EM)") but lumped all 3 turret weapon systems into one vague sentence (e.g. "Laser crystals — Multifrequency/Radio lean EM-heavy"). Replaced the single "Turret" tile with 3 separate tiles — Laser, Hybrid, Projectile — each naming the single best charge for the target's weakest damage type, at the same precision as the Missile tile, or explicitly stating when that weapon system cannot address the type at all (rather than guessing a strained answer).</p>
+
+<p>Built from live ESI dogma on every named T1 charge tier at all 4 sizes (item groups 85 "Hybrid Charge", 86 "Frequency Crystal", 83 "Projectile Ammo"; damage attributes 114=em, 116=exp, 117=kin, 118=therm), per this project's standing grounded-verification rule:</p>
+<ul>
+<li><b>Frequency Crystal (laser)</b> carries only EM+Thermal damage, and on every one of the 8 named tiers (Radio/Microwave/Infrared/Standard/Ultraviolet/Xray/Gamma/Multifrequency) Thermal never exceeds EM — not even on Multifrequency, the most Thermal-leaning tier. Lasers can therefore never be the purest answer for a Thermal weakness, and can never address Kinetic or Explosive at all. Radio is the single purest EM crystal (100% EM, 0 Thermal) — the EM-weakness recommendation.</li>
+<li><b>Hybrid Charge</b> carries only Kinetic+Thermal damage, and Kinetic is majority on every one of the 8 named tiers (Iron through Antimatter), ratio roughly 1.33:1 to 1.5:1 — none is dramatically "purer" than another. Hybrids can never be purely Thermal, and can never address EM or Explosive at all. Antimatter is the standard high-damage Kinetic choice (Kinetic weakness); Iridium/Thorium lean slightly more Thermal-ward than the rest, the closest a hybrid gets to a Thermal answer (used for the Thermal-weakness recommendation, with a note that it's still Kinetic-majority).</li>
+<li><b>Projectile Ammo</b> is the only turret family spanning all 4 damage types: EMP (EM-heavy) for EM weakness, Fusion (pure Explosive) for Explosive weakness, Titanium Sabot (best available Kinetic lean via this weapon system) for Kinetic weakness, Phased Plasma (genuinely Thermal-dominant) for Thermal weakness.</li>
+</ul>
+<p>Implemented as a new <code>TURRET_RECS</code> table (damage type -&gt; {laser, hybrid, projectile}, each either <code>{name, note}</code> or <code>null</code> when that weapon system can't meaningfully address the type), with a new <code>turretRecTileHtml()</code> helper for the Fit Analyzer's boxed rec-grid tiles and a parallel <code>turretRecText()</code> helper reused by the simpler plain-text <code>.rec</code> block in the main D-Scan summary card (which had the exact same lumped-turret-string problem and needed the identical fix to avoid breaking when the old <code>RECS[...].turret</code> field was removed). <code>.rec-grid</code>/<code>.rec-stat</code> CSS updated to wrap (<code>flex-wrap:wrap</code>, <code>min-width:140px</code>) since the row now holds 5 tiles (Drone/Missile/Laser/Hybrid/Projectile) instead of 3.</p>
+
+<h2>Verification</h2>
+<p>All 3 items are presentational/content-only — no dogma attribute, skill multiplier, or calculation changed. Confirmed via full syntax check (extracted script block parsed cleanly with no errors) and the full regression suite. <b>46/46 PASS</b> (same 46 fits as the P1-E delivery earlier today — no new golden fits needed, since nothing here is calc-testable).</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (363,940 bytes) — only file that changed. regression_suite/golden_fits.json (3,102,612 bytes, unchanged) and regression_suite/run_regression.mjs (20,934 bytes, unchanged) confirmed identical to the already-delivered P1-E copies, not re-sent.</p>
+
+<h2>Scope note</h2>
+<p>This closes all 3 of the autonomously-actionable P2 UI items identified after P1-E. Next: an independent code-review pass over this now-stable dscan-tool.html (the owner's "have a different model do an independent review" request), then continuing to scan the remaining backlog for anything else genuinely actionable without his input. Still set aside, pending the owner's own scoping: the damage-application-efficiency finding (needs a decision on assumed engagement range), the EWAR "significant hull/subsystem bonus" visual-emphasis item (no threshold/design decided), and the P3 cyno-fit-flag feature (not scoped at all).</p>
+</body>
+</html>

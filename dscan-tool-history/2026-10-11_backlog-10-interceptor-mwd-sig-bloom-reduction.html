@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Backlog #10 -- Interceptor MWD signature-radius-bloom reduction</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Backlog #10: Interceptor MWD signature-radius-bloom reduction</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html &middot; "Some hulls have an intrinsic bonus that HALVES (or otherwise reduces) the MWD sig-radius-bloom penalty &mdash; not currently modeled; needs live-ESI identification of which hulls carry this and the exact mechanism" (backlog item's own framing)</p>
+
+<h2>What the real mechanism is (live-ESI-verified, not guessed)</h2>
+<p>Fetched live dogma data for all 10 published hulls in ESI group 831 "Interceptor" (Crow, Crusader, Ares, Taranis, Raptor, Malediction, Stiletto, Claw, plus the 2 pirate-faction variants Whiptail and Imp). Every one of the 10 carries:</p>
+<ul style="padding-left:1.2em">
+<li>Attribute 568 <code>eliteBonusInterceptor</code> = <strong>-15</strong> (uniform across all 10 hulls sampled).</li>
+<li>Effect 3766 <code>interceptorMWDSignatureRadiusBonus</code> &mdash; domain <code>shipID</code>, <code>LocationRequiredSkillModifier</code>, <code>modified_attribute_id: 554</code> (the same signatureRadiusBonus attribute a fitted MWD itself carries), <code>modifying_attribute_id: 568</code>, operator 6.</li>
+</ul>
+<p>The Interceptors skill (type 12092) itself carries effect 703, which scales ship attribute 568 by the skill's own trained level -- so 568's static value as given by ESI (-15) <em>is already the per-level magnitude</em>, same convention this file uses elsewhere for X%/lvl hull bonuses. Cross-checked against EVE University's Crow page: <strong>"15% reduction in Microwarpdrive signature radius penalty" per Interceptors skill level</strong> -- matches exactly. At this file's standing assumed-max-skill convention (Interceptors@V), total reduction = -15 &times; 5 = <strong>-75%</strong>.</p>
+<p>Critically, this reduction has to be applied to the <em>module's own</em> attribute 554, not pooled alongside the ship's other sig-radius percentage sources. Confirmed against pyfa's own <code>eos/effects.py</code> (Effect6730 <code>moduleBonusMicrowarpdrive</code>): the ship reads <code>module.getModifiedItemAttr('signatureRadiusBonus')</code> -- the fitted module's own 554 <em>after</em> any ship-side modifiers (like this one) have already reduced it -- and only then boosts the ship's own signatureRadius by that single number. So the fix multiplies the MWD's raw 554 value directly before it ever reaches the existing <code>mwdSigRadiusBonusPct</code>/stacking-pool code.</p>
+
+<h2>The bug this exposed</h2>
+<div class="fix">
+<strong>Interceptors showed the same MWD sig bloom as every other hull.</strong> With no group check at all, a Crow's boosted signature radius under a 5MN Y-T8 Compact Microwarpdrive (554 = +500%) computed as 35m base &times; 6.0 = <strong>210m</strong> &mdash; identical to a Rifter fit with the exact same MWD. The real, correct figure (confirmed via live ESI and the game's own documented mechanic) is 35m &times; 2.25 = <strong>79m</strong>, since the MWD's own 500% bonus gets cut to 125% (500 &times; 0.25) before it ever bloats the ship. That's roughly a <strong>2.7x overstatement</strong> of how exposed an MWD-tanking Interceptor actually is while cycling its MWD -- directly relevant to this tool's whole "how hittable is this target" purpose, and specific to exactly the kind of fast tackle ship a d-scan analysis most needs to get right.
+</div>
+
+<h2>The fix</h2>
+<p>Added <code>INTERCEPTOR_GROUP_ID</code> (831), <code>INTERCEPTOR_MWD_SIG_BONUS_ATTR</code> (568), and <code>MAX_INTERCEPTOR_SKILL_LEVEL</code> (5, this file's standing max-skill convention). Where a fitted MWD's own attribute 554 is read (inside the existing propulsion-module loop), the ship's own group_id is checked against 831; if it matches, that MWD's 554 is multiplied by <code>(1 + (568 &times; 5) / 100)</code> = 0.25&times; before feeding into the pre-existing <code>mwdSigRadiusBonusPct</code>/<code>applyStackingBonus()</code> pipeline. A no-op (multiplies by 1) on every other hull -- confirmed directly: the same MWD on a Rifter still gives the unreduced 210m boosted figure.</p>
+
+<h2>Verification</h2>
+<p>Constructed a Crow + 5MN Y-T8 Compact MWD fit, all live-ESI dogma data, run through the tool's own sandboxed <code>estimateHpAndDps()</code>. Result: <code>signatureRadius: {base:35, boosted:79}</code>, matching the hand-derived math exactly. The identical MWD on a non-Interceptor hull (Rifter) gives <code>boosted:210</code> -- unaffected, as expected. The pre-existing <code>ishkur_constructed_dual_prop_mod</code> fit (Assault Frigate, non-Interceptor, already has a real MWD fitted) was also re-run and its new <code>signatureRadiusBase</code>/<code>signatureRadiusBoosted</code> figures (39/234) pinned as a 2nd non-Interceptor control. Reverting the fix in a throwaway copy of the file makes the new Crow golden fit correctly fail (<code>signatureRadiusBoosted: got 210, expected 79</code>) while disturbing nothing else in the 66-fit suite -- confirms this coverage would actually catch the bug class regressing, not just look like it does.</p>
+<p>Also added a <code>signatureRadiusBoosted</code> flattening field to <code>run_regression.mjs</code> -- the MWD-active figure had no regression coverage at all before now (only <code>signatureRadiusBase</code> was flattened, from the independent-review pass).</p>
+<p><strong>Full suite: 66/66 fits, 309/309 assertions, ALL PASS.</strong></p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 418,318 &rarr; 421,243 bytes</li>
+<li><code>golden_fits.json</code>: 65 &rarr; 66 fits, 3,374,262 &rarr; 3,388,702 bytes</li>
+<li><code>run_regression.mjs</code>: 21,322 &rarr; 21,707 bytes (new <code>signatureRadiusBoosted</code> flattening field)</li>
+</ul>
+
+<h2>Backlog status</h2>
+<p class="small">#10 closed. Remaining per the merged/prioritized backlog: T3 subsystem speed/agility, #16 (T3 subsystem cap bonus), the tool-wide weapon range/falloff gap, P1 (damage-application-efficiency), P3 (cyno-fit flagging).</p>
+
+</body>
+</html>

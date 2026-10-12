@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-10 — Collapsible "how this is calculated" info panels</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.5;color:#222}
+h1{font-size:1.4em}
+h2{font-size:1.15em;margin-top:2em;border-bottom:1px solid #ddd;padding-bottom:4px}
+code,pre{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:0.92em}
+.ok{color:#1a7f37;font-weight:600}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:0.92em}
+th{background:#f4f4f4}
+</style>
+</head>
+<body>
+<h1>Collapsible "how this is calculated" info panels</h1>
+<p><b>Date:</b> 2026-10-10 &nbsp; <b>Status:</b> <span class="ok">Delivered, verified in real Chromium, 28/28 regression PASS, byte-identical diff</span></p>
+<p><b>Requested by the owner:</b> the long explanatory paragraphs under a Pilot Analyzer fit result — how effective HP and DPS are calculated, and how Tactical Destroyer Mode is handled — should be tucked into a collapsible panel that defaults to collapsed, with a small "i" info icon, instead of always taking up space.</p>
+
+<h2>The change</h2>
+<p>Both explanatory blocks are now wrapped in a native <code>&lt;details class="info-disclosure"&gt;</code> element with a <code>&lt;summary&gt;</code> row (a small circled-"i" icon + a one-line label: "How effective HP and DPS are calculated" / "How Tactical Destroyer Mode is handled"). Collapsed is the default — no <code>open</code> attribute in the markup — and clicking the summary row expands it in place. Using the browser's native <code>&lt;details&gt;</code> means no JavaScript/state wiring was needed at all, and it degrades gracefully (stays readable, just not collapsible) in the unlikely case a browser ignores it.</p>
+<p>The actual numbers (effective HP, total DPS, the HP breakdown, the Mode icon buttons) are untouched and still always visible — only the long prose explaining the methodology is now tucked away.</p>
+
+<h2>Verification</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Full regression suite (28 golden fits, 118 assertions)</td><td>ALL PASS</td></tr>
+<tr><td>Byte-for-byte diff of regression output, before vs. after</td><td>IDENTICAL (diff exit code 0) — this only changes rendered HTML/CSS, never any calculation code</td></tr>
+<tr><td>Real-browser check (Chromium): ran an actual Pilot Analyzer fit for a Tactical Destroyer (so both panels render) and confirmed both start collapsed, both carry the info icon, the always-visible controls (HP/DPS numbers, Mode buttons) are unaffected, and clicking a summary expands it</td><td>9/9 checks PASS, zero console errors</td></tr>
+<tr><td>Visual screenshots (collapsed and expanded states)</td><td>Confirmed readable and correctly styled in both states</td></tr>
+</table>
+
+<h2>Files/functions changed</h2>
+<ul>
+<li>New CSS: <code>details.info-disclosure</code> and its <code>summary</code>/<code>.info-icon</code>/<code>.note</code> rules.</li>
+<li>New function <code>infoIconSvg()</code>, alongside the existing <code>tacticalModeIconSvg()</code>.</li>
+<li>The Tactical Destroyer Mode explanation and the Effective HP/DPS methodology paragraph (inside the fit-rendering template) are each now wrapped in <code>&lt;details class="info-disclosure"&gt;&lt;summary&gt;...&lt;/summary&gt;&lt;div class="note"&gt;...&lt;/div&gt;&lt;/details&gt;</code> instead of a bare always-visible <code>.note</code> div.</li>
+</ul>
+</body>
+</html>

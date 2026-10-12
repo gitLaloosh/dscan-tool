@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Turret range/falloff skill fix (comprehensive skill audit, P1-C)</title></head>
+<body>
+<h1>Weapon Range/Falloff fix — 2 missing turret range skills (comprehensive skill audit, P1-C)</h1>
+
+<p>Context: third item in the phased sub-backlog from the comprehensive skill audit (P1-A Fighters and P1-B Drones were delivered earlier today). This closes out the turret half of Finding C — the Weapon Range/Falloff feature (shipped 2026-10-10) assumed max-level damage/RoF skills everywhere else in this tool but never checked whether any skill touched optimal range or falloff at all.</p>
+
+<h2>What was wrong</h2>
+<p>Two real skills were entirely unmodeled in the turret optimal-range/falloff calculation:</p>
+<ul>
+<li><b>Sharpshooter</b> (3311): own ESI description "5% bonus to weapon optimal range per skill level" → +25%@V.</li>
+<li><b>Trajectory Analysis</b> (3317): "5% bonus per skill level to weapon turret accuracy falloff" → +25%@V.</li>
+</ul>
+<p>Both skills' own dogma effects are gated on the weapon requiring Gunnery (type 3300) — but confirmed live this is <b>not always the same reqSkill slot</b>: a plain energy/hybrid/projectile turret (checked Neutron Blaster Cannon II, 650mm Artillery Cannon II, Mega Pulse Laser II) carries Gunnery as reqSkill2 (attribute 183), while the Triglavian Entropic Disintegrator carries it as reqSkill1 (attribute 182) instead. So the check has to test all 3 reqSkill slots generically (reusing the existing <code>REQUIRED_SKILL_ATTRS=[182,183,184]</code> array already in the file for sentry/drone-skill classification), not assume a fixed slot.</p>
+<p>Also confirmed live that EDENCOM's Vorton Projector does <b>not</b> require Gunnery at all — it carries its own unrelated skill-tree ids (55033/55035/54828) in those same 3 slots, consistent with the comment already on file describing Vorton's separate 3-skill tree (Vorton Projector Operation/[size] Vorton Projector/[size] Vorton Specialization). So Sharpshooter/Trajectory Analysis correctly do <b>not</b> apply to Vorton weapons — confirmed by checking the real Stormbringer golden fit's Medium Vorton Projector II, unaffected by this change.</p>
+
+<h2>What changed in dscan-tool.html</h2>
+<ul>
+<li>New constants: <code>GUNNERY_SKILL_ID = 3300</code>, <code>MAX_SHARPSHOOTER_RANGE_MULT = 1.25</code>, <code>MAX_TRAJECTORY_ANALYSIS_FALLOFF_MULT = 1.25</code>.</li>
+<li>In the confirmed-loaded-charge turret range branch: <code>gunneryGated = REQUIRED_SKILL_ATTRS.some(attrId =&gt; attrVal(weaponDogma, attrId, 0) === GUNNERY_SKILL_ID)</code>; when true, <code>optimalM</code> and <code>falloffM</code> are each additionally multiplied by their respective skill constant before rounding.</li>
+<li>Updated the in-app methodology disclosure note to mention Sharpshooter/Trajectory Analysis are assumed max-level, except on Vorton weapons which don't train on them.</li>
+</ul>
+
+<h2>Magnitude</h2>
+<p>Example (Neutron Blaster Cannon II + Void L, the real owner's Megathron golden fit): base 7200m optimal/10000m falloff × Void L's own 0.75/0.5 ammo multiplier = 5400m/5000m before this fix → 6750m/6250m after (×1.25/×1.25). A ~25% increase in both displayed numbers for every Gunnery-trained turret fit. Vorton Projector fits are completely unaffected (19200m/0m, unchanged).</p>
+
+<h2>Verification</h2>
+<ul>
+<li>The Weapon Range/Falloff feature had <b>zero regression coverage at all</b> before this fix (confirmed — no golden fit asserted on <code>optimalM</code>/<code>falloffM</code>/<code>travelDistanceM</code>, and <code>run_regression.mjs</code> had no flattening for <code>rangeEstimates</code>). Added both: a new flattening block (<code>rangeOptimalM</code>/<code>rangeFalloffM</code>/<code>rangeTravelDistanceM</code>, first-match idiom) and expected-value assertions on the 2 real fits that happen to already carry a confirmed-loaded turret.</li>
+<li><code>megathron_owner</code> (Neutron Blaster Cannon II/Void L, Gunnery-gated): hand-derived 7200×0.75×1.25=6750m optimal, 10000×0.5×1.25=6250m falloff — sandbox produced 6750/6250, exact match.</li>
+<li><code>stormbringer_zkb138986635_vorton</code> (Medium Vorton Projector II, confirmed not Gunnery-gated): hand-derived 38400×0.5=19200m optimal (no falloff attribute exists on this weapon at all) — sandbox produced 19200/0, exact match, confirming the skill correctly does NOT apply.</li>
+<li><b>Not pyfa-cross-checked</b> — pyfa doesn't expose a skill-by-skill breakdown of its own range calculation to diff against; grounded in each skill's own live ESI description text plus the reqSkill-slot verification above instead, same bar as every other skill-audit fix this session.</li>
+</ul>
+
+<h2>Regression suite</h2>
+<p>golden_fits.json unchanged in fit count (43), 2 existing fits gained new expected fields. run_regression.mjs gained the <code>rangeEstimates</code> flattening block (new). <b>43/43 PASS.</b></p>
+
+<h2>Scope note</h2>
+<p>Third of the phased sub-backlog from the comprehensive skill audit (P1-C of P1). This closes the turret half of Finding C. Still open: P1-D (missile Projection/Bombardment velocity-flight-time skills, closes the long-standing F1 gap — natural next item, same card), P1-E (lower-confidence niche items), and the pre-existing Loki sensor-strength re-open item.</p>
+
+<h2>Delivered files</h2>
+<p>dscan-tool.html (347,563 bytes), regression_suite/golden_fits.json (3,070,243 bytes), regression_suite/run_regression.mjs (20,040 bytes) — all three byte-verified against this machine's copies after delivery.</p>
+</body>
+</html>

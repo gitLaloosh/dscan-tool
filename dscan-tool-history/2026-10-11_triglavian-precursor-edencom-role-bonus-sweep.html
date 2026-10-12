@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-11: Triglavian/Precursor + EDENCOM hull SHIP_ROLE_BONUS sweep (finding #11)</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+pre{background:#f6f6f6;padding:12px;border-radius:6px;overflow-x:auto;font-size:0.85em}
+table{border-collapse:collapse;width:100%;margin:1em 0}
+th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:0.9em}
+th{background:#eee}
+.callout{background:#fff8e1;border-left:4px solid #f5a623;padding:10px 14px;margin:1em 0}
+.fix{background:#e8f5e9;border-left:4px solid #43a047;padding:10px 14px;margin:1em 0}
+.nogap{background:#e3f2fd;border-left:4px solid #1e88e5;padding:10px 14px;margin:1em 0}
+.oos{background:#fafafa;border-left:4px solid #999;padding:10px 14px;margin:1em 0}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Triglavian/Precursor + EDENCOM hull SHIP_ROLE_BONUS sweep (independent review finding #11)</h1>
+<p class="small">2026-10-11 &middot; dscan-tool.html</p>
+
+<h2>The problem</h2>
+<p>SHIP_ROLE_BONUS (turret/missile/drone damage+rate-of-fire hull bonuses) had only ever been built for the Triglavian/Precursor weapon family reactively, hull-by-hull, across separate historical bug-fix sessions: Vedmak and Leshak (2026-10-09), Drekavac (an earlier pass). It was never run as a full exhaustive sweep the way SHIP_EWAR_BONUS's non-Recon pass and SHIP_RESIST_BONUS's generic pass both were on 2026-10-11 earlier today. This finding closes that gap by running the identical methodology against the full Triglavian/EDENCOM hull roster.</p>
+
+<h2>Method</h2>
+<ol>
+<li>Live ESI sweep: <code>/universe/categories/6</code> &rarr; all 50 ship groups &rarr; all 424 published hull types &rarr; all 1,350 unique <code>dogma_effects</code>, filtered for any <code>shipID</code>-domain effect targeting attribute 64 (damageMultiplier) or 51 (rate of fire).</li>
+<li>Cross-validated every hit against everef.net's Traits JSON: a bonus listed under <code>role_bonuses</code> is flat/unscaled; one listed under <code>types[skillId]</code> is per-level, multiplied by 5 at this project's assumed skill-V convention.</li>
+<li>Confirmed the complete 14-hull Triglavian/EDENCOM roster by direct name lookup against the 424-hull set: Damavik, Draugur, Drekavac, Ikitursa, Kikimora, Leshak, Nergal, Rodiva, Skybreaker, Stormbringer, Tiamat, Vedmak, Zarmazd, Zirnitra.</li>
+<li>For every candidate, read the hull's own live <code>dogma_attributes</code> directly (never assumed from a sister hull) to get the exact per-level magnitude.</li>
+<li>Built isolating golden fits for each new magnitude/category, verified against the tool's own sandboxed <code>estimateHpAndDps()</code> output before locking in expected values.</li>
+</ol>
+
+<h2>What was added to SHIP_ROLE_BONUS</h2>
+<table>
+<tr><th>Hull</th><th>Class</th><th>Bonus added</th><th>Source</th></tr>
+<tr><td>Damavik (47269)</td><td>Frigate</td><td>+25% precursor damage</td><td>effect 7088, attr2762=5, skill 47867 (Precursor Frigate) &rarr; 5%/lvl &times;5</td></tr>
+<tr><td>Nergal (52250)</td><td>Assault Frigate</td><td>+25% precursor damage</td><td>effect 7088, attr2762=5, same skill family as Damavik</td></tr>
+<tr><td>Ikitursa (52252)</td><td>Heavy Assault Cruiser</td><td>+25% precursor damage</td><td>effect 7085, attr2764=5, skill 47868 (Precursor Cruiser)</td></tr>
+<tr><td>Kikimora (49710)</td><td>Destroyer</td><td>+125% precursor damage</td><td>effect 7154, attr2799=25, skill 49742 (Precursor Destroyer)</td></tr>
+<tr><td>Draugur (52254)</td><td>Command Destroyer</td><td>+100% precursor damage</td><td>effect 7154, attr2799=20, same skill as Kikimora</td></tr>
+<tr><td>Tiamat (48635)</td><td>Force Recon Ship</td><td>+37.5% precursor damage</td><td>effect 7085, attr2764=7.5, skill 47868</td></tr>
+<tr><td>Zirnitra (52907)</td><td>Dreadnought</td><td>+25% precursor damage, +15% rof</td><td>effects 7238/7240, attr2830=5 / attr2831=-3, skill 52997</td></tr>
+<tr><td>Skybreaker (54731)</td><td>Frigate</td><td>+25% vorton damage</td><td>effect 8048, attr3042=5, skill 55031 (EDENCOM Frigate)</td></tr>
+</table>
+
+<div class="callout">
+<strong>Kikimora's 125% damage bonus looks implausibly large for a T1 destroyer</strong> &mdash; it was re-derived directly off the hull's own live <code>dogma_attributes</code> (not assumed from a sister hull) and is independently corroborated by Kikimora's well-known real-world reputation for anomalously high DPS among T1 destroyers. Trusted over the gut-check, per this project's grounded-verification standard.
+</div>
+
+<div class="fix">
+<strong>Re-verified every pre-existing resist entry for this family while here</strong> (Damavik, Nergal, Drekavac, Zirnitra, Stormbringer, Skybreaker) against live ESI &mdash; all six were already correct. An earlier internal note suggested Skybreaker's shield resist might be wrong (20% instead of 30%); direct re-check confirmed the file's current value (30%) is the correct one, so no change was needed there.
+</div>
+
+<h2>Confirmed non-gaps</h2>
+<div class="nogap">
+<strong>Rodiva (49712)</strong> &mdash; the Collective's own predecessor support-cruiser to Zarmazd (per its in-game description). Its full <code>dogma_effects</code> list is 100% Mutadaptive Remote Armor Repairer / Remote Capacitor Transfer / cap-need-reduction related &mdash; no disintegrator or vorton weapon effect, no resist effect, at all. Correctly gets no entry in either table, same class of finding as Zarmazd (already confirmed in finding #5).
+</div>
+<div class="nogap">
+<strong>Vedmak, Drekavac, Leshak</strong> &mdash; already correct from earlier sessions; re-verified unchanged.
+</div>
+
+<h2>Explicitly out of scope (not modeled anywhere in this tool, not unique to Triglavian hulls)</h2>
+<div class="oos">
+<strong>Hull-level weapon range/falloff role bonuses.</strong> Vedmak's and Drekavac's 2nd Type Bonus (optimal range), Kikimora's and Draugur's range-only role+skill bonuses, and Stormbringer's Vorton range bonus are all real, live-ESI-confirmed bonuses &mdash; but this tool has <strong>no hull-weapon-range-bonus mechanic for any hull in any faction</strong> (confirmed: grepped the whole file for a hull-level turret/launcher range-bonus consumer and found none). This is a pre-existing, tool-wide gap, not something unique to the Triglavian line, so it's left for a future dedicated finding rather than bolted on here as a one-off.
+</div>
+<div class="oos">
+<strong>Tiamat's turret tracking-speed self-buff</strong> (effect 7086, +25% at V) &mdash; no turret-tracking-vs-target-speed simulation exists in this tool at all.
+</div>
+<div class="oos">
+<strong>Tiamat's Recon-ship-specific "additional bonus to damage multiplier per cycle"</strong> (effect 7119, a runtime stacking mechanic that ramps damage the longer the weapon stays on target) &mdash; a pure runtime ship-state mechanic with no fitted item to leave a trace on a D-scan/killmail snapshot, same class as the Tactical Destroyer Mode mechanic already documented elsewhere in this file.
+</div>
+<div class="oos">
+<strong>Nergal's and Ikitursa's generic Assault-Frigate/HAC-class skill bonus</strong> (range + "maximum damage multiplier bonus" tied to the Assault Damage Control module's cap) &mdash; a universal class-level mechanic shared by every faction's assault frigate/HAC, not Triglavian-specific, and not modeled for any hull (no ADC-cap simulation exists).
+</div>
+
+<h2>Verification</h2>
+<p>Four new golden fits (killmail-format, using <code>buildLossTally()</code> directly) added to isolate the new magnitudes and both weapon categories:</p>
+<table>
+<tr><th>Fit</th><th>Check</th><th>Result</th></tr>
+<tr><td>damavik_constructed_precursor_damage_role_bonus</td><td>dpsFixed, 2029&rarr;2537 (&times;1.25)</td><td>PASS</td></tr>
+<tr><td>kikimora_constructed_precursor_damage_role_bonus</td><td>dpsFixed, 2029&rarr;4566 (&times;2.25)</td><td>PASS</td></tr>
+<tr><td>zirnitra_constructed_precursor_damage_and_rof_role_bonus</td><td>dpsFixed, 1040&rarr;1529 (&times;1.4706 combined)</td><td>PASS</td></tr>
+<tr><td>skybreaker_constructed_vorton_damage_role_bonus</td><td>dpsFixed, 41&rarr;51 (&times;1.25, small-int rounding)</td><td>PASS</td></tr>
+</table>
+<p>Every ratio was cross-checked by diffing the tool's own sandboxed output with and without each new table entry present (not hand-derived from the full weapon damage formula, since that formula is already covered by the pre-existing Vedmak regression guard). Nergal, Ikitursa, Draugur, and Tiamat were also spot-verified the same way (ratios 1.2504, 1.2502, 2.0005, 1.3757 &mdash; all matching expectations) but were not given dedicated golden fits, since they exercise the identical code path already locked in by the Damavik/Kikimora fits.</p>
+<p><strong>Full regression suite: 62/62 PASS</strong> (58 pre-existing + 4 new).</p>
+
+<h2>Delivered files</h2>
+<ul>
+<li><code>dscan-tool.html</code>: 401,848 &rarr; 409,774 bytes</li>
+<li><code>golden_fits.json</code>: 58 fits, 3,261,821 bytes &rarr; 62 fits, 3,324,137 bytes</li>
+<li><code>run_regression.mjs</code>: unchanged (21,322 bytes) &mdash; no new flattening fields needed, all new fits check the existing <code>dpsFixed</code> field</li>
+</ul>
+
+<h2>Not addressed here</h2>
+<p class="small">Remaining backlog: #7 (smartbombs never counted), #9 (TD Sharpshooter/Defense Mode bonuses may be display-only), #10 (MWD sig-bloom hull-bonus halving not modeled), #13 (D-scan name-parsing robustness), #15 (cap drain may ignore effective vs. raw cycle time), #16 (T3 subsystem capacitor bonus not modeled), #19 (cargo-ammo-fallback ignoring chargeGroup/size compatibility), plus the standing hull-weapon-range-bonus gap newly surfaced in this finding. Also untouched: P1 (damage-application-efficiency), P3 (cyno-fit flagging).</p>
+
+</body>
+</html>

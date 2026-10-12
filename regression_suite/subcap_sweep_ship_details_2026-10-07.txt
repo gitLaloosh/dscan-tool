@@ -1,0 +1,96 @@
+## Hecate — shipTypeId 35683 — killmail 138985442 ( 2026-10-07T21:38:31Z )
+zkillboard: https://zkillboard.com/kill/138985442/
+  High slots: Light Neutron Blaster II x5, Null S x370, Nanite Repair Paste x8, Small Ancillary Remote Armor Repairer
+  Mid slots: Warp Scrambler II, Fleeting Compact Stasis Webifier, 5MN Y-T8 Compact Microwarpdrive, Alumel-Wired Enduring Sensor Booster, Scan Resolution Script
+  Low slots: Damage Control II, Magnetic Field Stabilizer II x3
+  Rigs: Small Transverse Bulkhead II x3
+  -> HP: shield 1548 / armor 1861 / hull 3109 = total 6518 (raw 2938)
+  -> DPS: fixed/confirmed 296 + drone 0 | weakest em 54%
+
+## Sabre — shipTypeId 22456 — killmail 138985791 ( 2026-10-07T21:55:43Z )
+zkillboard: https://zkillboard.com/kill/138985791/
+  High slots: 150mm Light AutoCannon II x7, Republic Fleet EMP S x1092, Warp Disrupt Probe x3, Interdiction Sphere Launcher I
+  Mid slots: 5MN Microwarpdrive II, Warp Scrambler II, Stasis Webifier II, Medium Shield Extender II
+  Low slots: Damage Control II, Nanofiber Internal Structure II
+  Rigs: Small Projectile Burst Aerator I, Small Projectile Collision Accelerator I
+  -> HP: shield 4805 / armor 1636 / hull 1555 = total 7996 (raw 3750)
+  -> DPS: fixed/confirmed 285 + drone 0 | weakest kin 53%
+
+## Loki — shipTypeId 29990 — killmail 138985490 ( 2026-10-07T21:41:18Z )
+zkillboard: https://zkillboard.com/kill/138985490/
+  High slots: Expanded Probe Launcher II, Covert Ops Cloaking Device II, Caldari Navy Inferno Heavy Assault Missile x120, Republic Fleet Heavy Assault Missile Launcher x5, Sisters Combat Scanner Probe x8, Interdiction Nullifier II
+  Mid slots: Multispectrum Shield Hardener II, Navy Cap Booster 400 x9, X-Large Ancillary Shield Booster, 50MN Abyssal Microwarpdrive, Abyssal Stasis Webifier x2
+  Low slots: Nanofiber Internal Structure II, 'Radical' Damage Control, Abyssal Ballistic Control System x2
+  Rigs: Medium Ancillary Current Router II, Medium Rocket Fuel Cache Partition I, Medium Rocket Fuel Cache Partition II
+  Subsystems: Loki Defensive - Covert Reconfiguration, Loki Offensive - Launcher Efficiency Configuration, Loki Propulsion - Intercalated Nanofibers, Loki Core - Immobility Drivers
+  -> HP: shield 9620 / armor 6291 / hull 4975 = total 20886 (raw 8250)
+  -> DPS: fixed/confirmed 185 + drone 0 | weakest exp 50%
+
+## Gila — shipTypeId 17715 — killmail 138983011 ( 2026-10-07T19:51:40Z )
+zkillboard: https://zkillboard.com/kill/138983011/
+  High slots: Rapid Light Missile Launcher II x4, Core Probe Launcher II, Scourge Fury Light Missile x80, Core Scanner Probe I x8
+  Mid slots: 10MN Afterburner II, Dread Guristas Thermal Shield Hardener, Dread Guristas Shield Boost Amplifier x2, Pithum B-Type Medium Shield Booster, Gist X-Type Kinetic Shield Hardener
+  Low slots: Capacitor Power Relay II, Drone Damage Amplifier II x2
+  Rigs: Medium Semiconductor Memory Cell I x3
+  Drone bay: Caldari Navy Vespa x2
+  -> HP: shield 7705 / armor 4074 / hull 4646 = total 16424 (raw 9863)
+  -> DPS: fixed/confirmed 683 + drone 460 | weakest em 76%
+
+## Orthrus — shipTypeId 33818 — killmail 138984898 ( 2026-10-07T21:11:24Z )
+zkillboard: https://zkillboard.com/kill/138984898/
+  High slots: Expanded Probe Launcher II, Dread Guristas Rapid Light Missile Launcher x5, Scourge Fury Light Missile x105, Sisters Combat Scanner Probe x8
+  Mid slots: Dark Blood Warp Disruptor, 'Executive' Remote Sensor Dampener x2, Targeting Range Dampening Script x2, 50MN Quad LiF Restrained Microwarpdrive, Republic Fleet Large Cap Battery
+  Low slots: Overdrive Injector System II, Damage Control II, Caldari Navy Ballistic Control System x2
+  Rigs: Medium Processor Overclocking Unit I, Medium Auxiliary Thrusters II, Medium EM Shield Reinforcer I
+  Drone bay: Skimmer TP-300-I x3, Stigmella SD-300-I x2
+  -> HP: shield 6484 / armor 4967 / hull 6530 = total 17981 (raw 9163)
+  -> DPS: fixed/confirmed 641 + drone 70 | weakest therm 54%
+
+## Stabber — shipTypeId 622 — killmail 138985003 ( 2026-10-07T21:15:56Z )
+zkillboard: https://zkillboard.com/kill/138985003/
+  High slots: Rapid Light Missile Launcher II x2, 220mm Vulcan AutoCannon II x4, Hail M x540, Nova Fury Light Missile x18
+  Mid slots: Large Ancillary Shield Booster x2, Compact Multispectrum Shield Hardener, Navy Cap Booster 150 x9, 10MN Y-S8 Compact Afterburner
+  Low slots: Gyrostabilizer II x2, Damage Control II, Co-Processor II
+  Rigs: Medium EM Shield Reinforcer I, Medium Kinetic Shield Reinforcer I, Medium Thermal Shield Reinforcer I
+  -> HP: shield 5673 / armor 2832 / hull 4042 = total 12548 (raw 5250)
+  -> DPS: fixed/confirmed 517 + drone 0 | weakest exp 48%
+
+## Malediction — shipTypeId 11186 — killmail 138985538 ( 2026-10-07T21:44:15Z )
+zkillboard: https://zkillboard.com/kill/138985538/
+  High slots: Small Ghoul Compact Energy Nosferatu, Arbalest Compact Light Missile Launcher x2, Caldari Navy Inferno Light Missile x10
+  Mid slots: Warp Scrambler II, Warp Disruptor II, 5MN Cold-Gas Enduring Microwarpdrive
+  Low slots: Overdrive Injector System II, Multispectrum Coating II, Damage Control II, Nanite Repair Paste x8, Small Ancillary Armor Repairer
+  Rigs: Small Polycarbon Engine Housing II x2
+  -> HP: shield 663 / armor 1795 / hull 1322 = total 3780 (raw 1625)
+  -> DPS: fixed/confirmed 37 + drone 0 | weakest em 47%
+
+## Scimitar — shipTypeId 11978 — killmail 138985080 ( 2026-10-07T21:19:38Z )
+zkillboard: https://zkillboard.com/kill/138985080/
+  High slots: Medium Murky Compact Remote Shield Booster x2, Large Murky Compact Remote Shield Booster x2
+  Mid slots: Multispectrum Shield Hardener II, Republic Fleet Large Shield Extender x2, 50MN Quad LiF Restrained Microwarpdrive, Thukker Large Cap Battery
+  Low slots: Power Diagnostic System II x2, Damage Control II, Dark Blood Power Diagnostic System
+  Rigs: Medium Core Defense Field Extender II x2
+  Drone bay: Warrior II x4
+  -> HP: shield 49584 / armor 4765 / hull 4459 = total 58808 (raw 16706)
+  -> DPS: fixed/confirmed 59 + drone 59 | weakest kin 40%
+
+## Vargur — shipTypeId 28665 — killmail 138983121 ( 2026-10-07T19:56:04Z )
+zkillboard: https://zkillboard.com/kill/138983121/
+  High slots: 800mm Repeating Cannon II x4, Heavy Energy Neutralizer II x2, Hail L x376, Bastion Module I
+  Mid slots: Multispectrum Shield Hardener II, Dark Blood Heavy Capacitor Booster, Dread Guristas Warp Scrambler, Pith X-Type X-Large Shield Booster, 500MN Y-T8 Compact Microwarpdrive, Heavy Stasis Grappler II, Navy Cap Booster 3200
+  Low slots: Tracking Enhancer II x2, Damage Control II, Domination Gyrostabilizer x3
+  Rigs: Large Processor Overclocking Unit I, Large EM Shield Reinforcer II
+  Drone bay: Warrior II x5, Hornet EC-300 x5
+  -> HP: shield 28483 / armor 18216 / hull 21455 = total 68155 (raw 28125)
+  -> DPS: fixed/confirmed 1305 + drone 73 | weakest exp 49%
+
+## Machariel — shipTypeId 17738 — killmail 138983888 ( 2026-10-07T20:28:20Z )
+zkillboard: https://zkillboard.com/kill/138983888/
+  High slots: 800mm Repeating Cannon II x7, Heavy Energy Neutralizer II, Hail L x343
+  Mid slots: Stasis Webifier II, Sensor Booster II, Tracking Computer II, Medium Capacitor Booster II, Warp Disruptor II, Optimal Range Script, Navy Cap Booster 800, 500MN Quad LiF Restrained Microwarpdrive, ECCM Script
+  Low slots: Coreli A-Type Multispectrum Coating, Centus X-Type Explosive Armor Hardener, Corpus X-Type Thermal Armor Hardener, Core X-Type Kinetic Armor Hardener, Imperial Navy 1600mm Steel Plates x2
+  Rigs: Large Trimark Armor Pump II x3
+  Drone bay: Warrior II x5
+  -> HP: shield 17676 / armor 266713 / hull 16951 = total 301341 (raw 80171)
+  -> DPS: fixed/confirmed 819 + drone 73 | weakest em 43%
+
