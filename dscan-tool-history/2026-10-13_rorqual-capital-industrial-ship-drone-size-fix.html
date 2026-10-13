@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-13: Rorqual (Capital Industrial Ship) light-drone misclassification fix</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px}
+.warn{background:#fff3cd;border:1px solid #d99a3c;border-radius:4px;padding:10px 14px;margin:12px 0}
+</style>
+</head>
+<body>
+
+<h1>Rorqual (Capital Industrial Ship) light-drone misclassification fix</h1>
+<p class="small">2026-10-13 &middot; index.html</p>
+
+<h2>The bug report</h2>
+<p>the owner, pasting a fully-fit Rorqual (<code>[Rorqual, QuadFeed]</code>, capital shield tank, mixed combat/mining drone bay including Acolyte/Warrior/Valkyrie/Berserker/Praetor/Bouncer/Curator/Warden plus Mining Drones and Maintenance Bots): "the tool is recommending warrior light drones to attack it. this is a capital ship (XL in size) huge sig radius and the tool is recommending light drones. how are we coming to this conclusion when i've seen plenty of other fits that recommend larger drones to attack them?"</p>
+
+<h2>Root cause</h2>
+<p>Drone size recommendation runs through two steps: <code>sizeClassFromGroup(shipGroup.name)</code> picks a size tier (light/medium/bc/bs/capital/industrial) from the ship's ESI group name via a lookup table (<code>GROUP_TIER</code>), then that tier's <code>droneSizes</code> array feeds <code>droneRecommendation()</code>, which only picks the drone RACE (from the target's weakest damage type) -- it has no sig-radius or EHP awareness of its own, it just trusts whatever size tier it's handed.</p>
+<p>The Rorqual's real ESI group name is <code>"Capital Industrial Ship"</code> -- verified live against everef.net (a public EVE static-data mirror; direct ESI access was blocked from this session by network policy, so everef.net's own SDE-derived data was used instead, same grounded-verification standard, different primary source). <code>GROUP_TIER</code> previously mapped that exact string to the <code>'industrial'</code> tier (<code>droneSizes:['light']</code>) -- the same bucket as Freighters, Mining Barges, Exhumers, and Transport Ships -- apparently because its group name contains the word "industrial," not because of its actual size. Its real signature radius is <strong>11,500m</strong> (also verified live against everef.net) -- comparable to or larger than most Carriers/Dreadnoughts, nowhere near an Exhumer or Freighter's profile. The <code>'capital'</code> tier (Carrier/Dreadnought/Titan/Supercarrier/Force Auxiliary, <code>droneSizes:['sentry','heavy']</code>) is where a hull with that signature radius belongs, and is also where every other genuinely capital-sized hull in this table already sits.</p>
+
+<table>
+<tr><th>Group name</th><th>Before</th><th>After</th><th>Sig radius</th></tr>
+<tr><td>Capital Industrial Ship (Rorqual)</td><td>Industrial hull &rarr; light</td><td><strong>Capital hull &rarr; sentry/heavy</strong></td><td>11,500m</td></tr>
+<tr><td>Dreadnought</td><td>Capital hull &rarr; sentry/heavy</td><td>Capital hull &rarr; sentry/heavy (unchanged)</td><td>&mdash;</td></tr>
+<tr><td>Freighter / Exhumer</td><td>Industrial hull &rarr; light</td><td>Industrial hull &rarr; light (unchanged)</td><td>&mdash;</td></tr>
+</table>
+
+<h2>Fix</h2>
+<p>Moved the <code>'capital industrial ship'</code> key in <code>GROUP_TIER</code> out of the <code>'industrial'</code> group and into the <code>'capital'</code> group, alongside Carrier/Dreadnought/Titan/Supercarrier/Force Auxiliary. This is the same lookup that also drives the on-page size-class label shown next to the ship's group name in the Pilot Analyzer results (<code>.cmeta</code>), so a scanned Rorqual now reads "Capital hull (fighters also apply, not covered here)" instead of "Industrial hull" there too -- not just the drone pick.</p>
+
+<div class="warn"><strong>Flagged:</strong> this is a genuinely new area for the regression suite -- there is currently no golden-fit coverage at all for <code>droneRecommendation()</code>/<code>sizeClassFromGroup()</code> (confirmed via grep: zero existing assertions on drone-size-tier or drone-recommendation output anywhere in <code>run_regression.mjs</code>/<code>golden_fits.json</code>). A proper golden fit needs the Rorqual's full dogma_attributes payload, which this session couldn't pull from live ESI (network policy blocked <code>esi.evetech.net</code> directly; everef.net was used instead for the two specific facts needed here -- group name and signature radius -- but isn't a practical source for a full golden-fit fixture). Verified instead via direct function-level calls (<code>sizeClassFromGroup('Capital Industrial Ship')</code> / <code>droneRecommendation()</code>) confirming the corrected output, plus confirming Dreadnought/Freighter/Exhumer are unaffected. Worth adding real golden-fit coverage for this function family next time live ESI is reachable.</div>
+
+<h2>Verification</h2>
+<ul>
+<li>Live-data confirmation: Rorqual's ESI group name ("Capital Industrial Ship") and signature radius (11,500m) both verified against everef.net/type/28352.</li>
+<li>Direct function calls in a headless render: <code>sizeClassFromGroup('Capital Industrial Ship')</code> now returns <code>{label:'Capital hull', droneSizes:['sentry','heavy'], note:'...'}</code>, matching <code>sizeClassFromGroup('Dreadnought')</code> exactly. <code>droneRecommendation('exp', [...])</code> on the corrected tier returns <code>Bouncer</code> (sentry) primary / <code>Berserker</code> (heavy) alt instead of the old <code>Warrior</code> (light) call. Freighter and Exhumer re-checked, still correctly return <code>{label:'Industrial hull', droneSizes:['light']}</code> -- unaffected.</li>
+<li><code>node --check</code> on the extracted inline script -- clean.</li>
+<li>Full regression suite: <strong>94/94 fits PASS</strong>, <code>dscan_parse_tests.mjs</code>: <strong>280/280 PASS</strong> -- no existing fixture used the old Rorqual classification (confirmed via grep, no Rorqual/Capital-Industrial-Ship fixture existed before this fix), so nothing regressed.</li>
+</ul>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 575,966 &rarr; 577,137 bytes</li>
+</ul>
+
+<h2>Backlog</h2>
+<p>New from this pass: add golden-fit regression coverage for <code>droneRecommendation()</code>/<code>sizeClassFromGroup()</code> (a Rorqual fixture specifically, plus ideally one per size tier) next time live ESI access is available from this session -- currently untested by the regression suite entirely, this fix included.</p>
+
+</body>
+</html>

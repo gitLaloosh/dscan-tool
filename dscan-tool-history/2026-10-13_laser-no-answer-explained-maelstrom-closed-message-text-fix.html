@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-13: "No answer" for Laser explained (Rorqual + Maelstrom), message text fixed</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px}
+.warn{background:#fff3cd;border:1px solid #d99a3c;border-radius:4px;padding:10px 14px;margin:12px 0}
+.correction{background:#fde8e8;border:1px solid #c0392b;border-radius:4px;padding:10px 14px;margin:12px 0}
+</style>
+</head>
+<body>
+
+<h1>"No answer" for Laser explained (Rorqual + Maelstrom), message text fixed</h1>
+<p class="small">2026-10-13 &middot; index.html</p>
+
+<h2>The report</h2>
+<p>the owner, re-pasting the same <code>[Rorqual, QuadFeed]</code> fit (shield-tanked, Pith X-Type EM Shield Hardener + 2x Pithum C-Type Multispectrum Shield Hardener): "as with an earlier build, we have a fit that the tool is not recommending a laser ammunition for." The "earlier build" he's referring to is the still-open 2026-10-12 backlog item: a Maelstrom fit (EM/Multispectrum/Thermal Shield Hardener II, no dedicated Kinetic hardener) that also got no laser recommendation, never investigated at the time.</p>
+
+<h2>Rorqual: verified, not a bug (with a correction)</h2>
+<p>Pulled the Rorqual's real base shield resistances and both hardeners' real resist-bonus magnitudes live (direct ESI blocked this session by org network policy, same as earlier Rorqual work today -- everef.net used as the grounded alternate source): Pith X-Type EM Shield Hardener gives -63.5% EM resist only; Pithum C-Type Multispectrum Shield Hardener (x2 fitted) gives -36.56% to all four types each.</p>
+<div class="correction"><strong>Self-caught correction:</strong> the first pass at this (relayed to the owner in chat) read the Rorqual's raw ESI attribute dump directly and asked a small model to guess which attribute_id was which damage type -- it swapped Thermal (274) and Explosive (272), giving a wrong base resist read (Thermal 50%/Explosive 20%) and leading to a wrong specific answer (stated weakest=Explosive, 2nd=Kinetic). Cross-checking against this tool's OWN already-verified <code>SHIELD_ATTR</code> mapping (<code>{em:271, exp:272, kin:273, therm:274}</code> -- tested across 94 golden fits, authoritative) and independently re-fetching the Maelstrom's resists from everef's own rendered page (not a raw attribute guess) both point to the real universal shield baseline: <strong>EM 0%, Thermal 20%, Kinetic 40%, Explosive 50%</strong> -- the opposite of what was first reported for Explosive/Thermal. Redone with the correct baseline, the Rorqual's actual post-hardener weakest pair is <strong>Thermal (&asymp;65%) and Kinetic (&asymp;74%)</strong>, not Explosive/Kinetic. The bottom-line conclusion doesn't change -- neither Thermal nor Kinetic is a damage type lasers can produce, so "No answer" is still correct -- but the specific numbers given to the owner in chat were wrong and are corrected here for the record.</div>
+<table>
+<tr><th>Type</th><th>Base resist</th><th>After hardeners (approx.)</th></tr>
+<tr><td>EM</td><td>0%</td><td>&asymp;80% (strongest -- gets the dedicated hardener + EM Shield Compensation skill)</td></tr>
+<tr><td>Explosive</td><td>50%</td><td>&asymp;78%</td></tr>
+<tr><td>Kinetic</td><td>40%</td><td>&asymp;74% (2nd-weakest)</td></tr>
+<tr><td>Thermal</td><td>20%</td><td>&asymp;65% (weakest)</td></tr>
+</table>
+<p>Lasers (Frequency Crystals) can only ever deal EM and Thermal damage in EVE, and per <code>TURRET_RECS</code>'s own live-verified data, laser is never the PUREST answer for Thermal even when Thermal is the target (Multifrequency, the most Thermal-leaning named tier, is still EM-majority) -- so Thermal lands as <code>null</code> in that table, same as Kinetic and Explosive. With this fit's weakest+2nd-weakest both outside EM, <code>buildTurretRecs()</code> correctly returns no laser answer at all.</p>
+
+<h2>Maelstrom backlog item: verified, closed</h2>
+<p>Same methodology, fresh verification (not reusing the Rorqual numbers): Maelstrom base shield resist EM 0%/Thermal 20%/Kinetic 40%/Explosive 50% (live-verified, matches the corrected universal baseline above). Fitted: EM Shield Hardener II (-55% EM only), Thermal Shield Hardener II (-55% Thermal only), Multispectrum Shield Hardener II (-32.5% all four) -- all three real resist-bonus values live-verified.</p>
+<table>
+<tr><th>Type</th><th>Base resist</th><th>After hardeners + Compensation skill (approx.)</th></tr>
+<tr><td>Thermal</td><td>20%</td><td>&asymp;79% (dedicated hardener + Thermal Shield Compensation)</td></tr>
+<tr><td>EM</td><td>0%</td><td>&asymp;74% (dedicated hardener + EM Shield Compensation)</td></tr>
+<tr><td>Explosive</td><td>50%</td><td>&asymp;66% (2nd-weakest -- Multispectrum only, no dedicated hardener or Compensation skill)</td></tr>
+<tr><td>Kinetic</td><td>40%</td><td>&asymp;60% (weakest -- Multispectrum only)</td></tr>
+</table>
+<p>Weakest=Kinetic, 2nd-weakest=Explosive -- neither is a damage type lasers can produce, so "No answer" is correct here too, for the same underlying reason: this fit dedicated hardeners to EM and Thermal (the two types lasers CAN address) and left Kinetic/Explosive covered only by the weaker, non-Compensation-skill-eligible Multispectrum module. <strong>Backlog item closed</strong> -- not a bug, confirmed via live data, same root cause as the Rorqual.</p>
+
+<h2>Message text fix</h2>
+<p>the owner: "yes to the message text change." Both render paths (<code>turretRecText()</code> for the D-Scan plain-text block, <code>turretRecTileHtml()</code> for the Fit Analyzer's boxed tiles) now name the fit's actual weakest/2nd-weakest damage types in the "no answer" message, instead of just saying it "can't meaningfully address this damage type" with no way to tell what the real weakness was without opening the resistance bars. <code>weakest</code>/<code>secondWeakest</code> are threaded in from each call site purely for this text; <code>buildTurretRecs()</code>'s own <code>null</code> return is unchanged, so the existing <code>rifter_user</code> golden fit's <code>turretLaserName:'(no answer)'</code> assertion is unaffected.</p>
+<p>New text, e.g.: <code>"no answer — this target's weakest resists (Thermal/Kinetic) aren't damage types this weapon system can produce"</code>.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>Direct function calls confirming the new message text for both the Rorqual-shaped (Thermal/Kinetic) and Maelstrom-shaped (Kinetic/Explosive) cases, plus confirming a normal non-null case (laser answering EM) is untouched.</li>
+<li><code>node --check</code> clean.</li>
+<li>Full regression suite: <strong>94/94 fits PASS</strong> (including <code>rifter_user</code>'s pre-existing <code>turretLaserName:'(no answer)'</code> assertion, confirmed still passing since <code>buildTurretRecs()</code>'s return shape wasn't touched), <code>dscan_parse_tests.mjs</code>: <strong>280/280 PASS</strong>.</li>
+</ul>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 587,079 &rarr; 588,597 bytes, version tag v2026.10.13.3&rarr;.4</li>
+</ul>
+
+</body>
+</html>
