@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Capacitor module backlog + Sensor Booster/Signal Amplifier fix</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px}
+</style>
+</head>
+<body>
+
+<h1>Capacitor module backlog + Sensor Booster/Signal Amplifier fix</h1>
+<p class="small">2026-10-12 &middot; index.html &middot; from the full module-dogma-audit, KNOWN OPEN ITEMS #1&ndash;#5 &middot; Erik: "work on the bug list"</p>
+
+<p>Four of the five remaining real bugs from the module-dogma audit, all re-verified directly against the local pyfa SDE cache (primary source, not the audit's own notes) before fixing. The fifth (Golem torpedo Bastion RoF ratio) has no new avenue since its last investigation and was left open.</p>
+
+<h2>#1: Power Diagnostic System / Shield Power Relay not gated into the capacitor fix</h2>
+<p>Both carry attribute 144 (<code>capacitorRechargeRateMultiplier</code>), the same attribute the existing Capacitor Power Relay/Flux Coil/Recharger fix already pools &mdash; but neither module's group name was in that gate. Power Diagnostic System II (attr144=0.915, a reduction &mdash; slots into the existing pool) also carries attr147=1.05, an <em>increase</em> to capacitor capacity, the opposite direction from Capacitor Flux Coil's own attr147 (a cut) &mdash; needed its own bonus-direction pool (<code>capCapacityBonusFractions</code>). Shield Power Relay II carries attr144=1.35, a cap-recharge <em>penalty</em> &mdash; also the opposite direction from every existing module in that group, needing its own penalty pool (<code>capRechargeTimePenaltyFractions</code>). Both modules' real shield-side attributes (134/146/338) are left unmodeled, since passive shield recharge isn't tracked anywhere in this file yet (separate open feature-backlog item).</p>
+
+<h2>#2 / #5: Shield Boost Amplifier / Capacitor Power Relay shieldBoostMultiplier</h2>
+<p>Both carry attribute 548 (<code>shieldBoostMultiplier</code>) &mdash; Shield Boost Amplifier II as a +36% bonus, Capacitor Power Relay II as an -11% penalty (its own real tradeoff for the recharge-rate gain already modeled). Neither was ever read. Applied as one ship-wide multiplier on the aggregate <code>shieldRepHpPerSec</code> total after the module loop, stacking-penalized by direction (bonus pool vs. penalty pool, same split convention as #1 above).</p>
+<p><strong>Caught a real regression on delivery:</strong> <code>golem_zkb138991664_bastion</code> (a real killmail) carries a Republic Fleet Shield Boost Amplifier + Gist A-Type X-Large Shield Booster. Its pinned <code>shieldRepSustainedDps</code> was 171 &mdash; the bare Shield Booster rate (682 HP / 4s = 170.5), with the Amplifier's +36% silently dropped. Hand-verified the fix's new output (232 = 170.5 &times; 1.36) against the module's own real dogma attributes and corrected the golden fit's expectation in place, same pattern as the earlier Caracal "22% high" correction.</p>
+
+<h2>#4: Capacitor Battery's energyWarfareResistanceBonus unmodeled</h2>
+<p>Capacitor Battery II carries attr2267=-25 (25% resistance to incoming Energy Neutralizer/Nosferatu). This is a <em>defensive</em> stat about the ship being analyzed &mdash; not applied to that ship's own outgoing neut/nos figures in the EWAR card, which stay unresisted by design (a broader, disclosed scope limit unrelated to this fix). Surfaced as a new <code>capacitor.warfareResistPct</code> field and a new line in the Capacitor card, shown only when a Capacitor Battery is actually fitted.</p>
+
+<h2>#3: Sensor Booster/Signal Amplifier/Remote Sensor Booster bonus not folded into sensorStrength</h2>
+<p>All three carry the same 4 racial scan-strength attributes (1027&ndash;1030, e.g. +48% on Sensor Booster II/Signal Amplifier II). Checking each module's real dogma <em>effect</em> (not just its attributes) turned up a methodology correction to the original audit item, which had lumped all three together:</p>
+<table>
+<tr><th>Module</th><th>Real effect</th><th>Treatment</th></tr>
+<tr><td>Signal Amplifier</td><td><code>scanStrengthBonusPercentOnline</code></td><td>Genuinely passive &mdash; applies whenever fit+online. Fixed, applied unconditionally.</td></tr>
+<tr><td>Sensor Booster</td><td><code>sensorBoosterActivePercentage</code></td><td>Requires activation. Fixed, assumed active whenever fitted &mdash; same standing convention this file already uses for Bastion/Siege Module/MWD.</td></tr>
+<tr><td>Remote Sensor Booster</td><td><code>remoteSensorBoostFalloff</code> (isAssistance:1)</td><td>Buffs a <em>locked target</em>, not the fitting ship's own sensor strength. <strong>Deliberately excluded</strong> &mdash; including it would have been a straightforward false positive, not a fix.</td></tr>
+</table>
+<p>Fixed by folding Sensor Booster's/Signal Amplifier's own bonus into the existing per-type scan-strength pool, stacking-penalized against each other and layered on top of (not combined with) the existing Sensor Compensation skill multiplier.</p>
+
+<h2>Verification</h2>
+<p>7 new constructed golden fits (bare Rifter, each isolating one mechanism &mdash; no real killmail in this golden set exercises any of these), all hand-verified against each module's real dogma attributes before being pinned:</p>
+<table>
+<tr><th>Fit</th><th>Check</th><th>Hand-verified result</th></tr>
+<tr><td><code>rifter_constructed_power_diagnostic_system</code></td><td>capacity / peak recharge rate</td><td>312.5&rarr;328.1 GJ, 8.3&rarr;9.6 GJ/s (both up)</td></tr>
+<tr><td><code>rifter_constructed_shield_power_relay_penalty</code></td><td>capacity / peak recharge rate</td><td>313 GJ (unchanged), 8.3&rarr;6.2 GJ/s (down &mdash; a real penalty)</td></tr>
+<tr><td><code>rifter_constructed_shield_boost_amplifier_and_cap_power_relay_penalty</code></td><td>shield rep rate</td><td>17.5&rarr;15.575&rarr;16 HP/s (-11% applied)</td></tr>
+<tr><td><code>rifter_constructed_capacitor_battery_ewar_resist</code></td><td>capacity / drain resist</td><td>500 GJ, 25% resist</td></tr>
+<tr><td><code>rifter_constructed_sensor_booster_sensor_strength</code></td><td>sensor strength</td><td>9.6&rarr;14.2 (Sensor Booster, assumed active)</td></tr>
+<tr><td><code>rifter_constructed_signal_amplifier_sensor_strength</code></td><td>sensor strength</td><td>9.6&rarr;14.2 (Signal Amplifier, genuinely passive)</td></tr>
+<tr><td><code>rifter_constructed_remote_sensor_booster_no_effect</code></td><td>sensor strength (negative control)</td><td>9.6, unchanged &mdash; confirms the exclusion</td></tr>
+</table>
+<p>Also extended <code>run_regression.mjs</code> with 3 new flattened assertion fields that didn't exist before (<code>capacitorPeakRechargeRate</code>, <code>capacitorNetRate</code>, <code>capacitorWarfareResistPct</code>), needed to pin #1 and #4 above.</p>
+<p><strong>Full suite: 88/88 fits, ALL PASS (81 existing + 7 new, 1 corrected). dscan_parse_tests.mjs: 280/280 PASS.</strong></p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 529,578 &rarr; 541,251 bytes</li>
+<li><code>regression_suite/golden_fits.json</code>: 81 &rarr; 88 fits, 4,253,069 &rarr; 4,506,103 bytes</li>
+<li><code>regression_suite/run_regression.mjs</code>: 33,080 &rarr; 33,924 bytes (new assertion fields)</li>
+</ul>
+
+<h2>Still open</h2>
+<p>KNOWN OPEN ITEM #6 (Golem torpedo Bastion RoF ~4.8% low vs. pyfa) &mdash; untouched, no new avenue since its last investigation. Items #7&ndash;#12 are cosmetic, unverifiable, deliberate scope gaps, or already-closed records, not actionable bugs.</p>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Dreadnought Siege Module fix</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px}
+</style>
+</head>
+<body>
+
+<h1>Dreadnought Siege Module now modeled correctly</h1>
+<p class="small">2026-10-12 &middot; index.html &middot; from the full module-dogma-attribute audit (<code>2026-10-12_full-module-dogma-audit-findings.html</code>), KNOWN OPEN ITEM #1 &middot; Erik: "ok you can start with the dreadnought siege module"</p>
+
+<h2>Finding</h2>
+<p>All four capital "siege-class" modules &mdash; Bastion Module (Marauders), the real Dreadnought Siege Module, Triage Module (Carriers), and Industrial Core (Rorquals) &mdash; share the identical ESI/SDE group_id 515 group name "Siege Module." The tool's existing code (<code>SIEGE_ROF_BONUS_ATTR_A/B</code>, attrs 3108/3109) only recognized the Bastion Module's own turret/launcher rate-of-fire-doubling attributes and applied that same doubling to any module in the group &mdash; including the real Siege Module II. The user-facing methodology text went further, stating all four module types "doubled turret/launcher rate of fire while active."</p>
+<p>Verified directly against the local pyfa SDE cache (first-party CCP data) and dogmaunits id 105 = "Percentage": the real Dreadnought Siege Module (type 4292/20280/88266) carries none of the Bastion attributes. Instead it carries:</p>
+<table>
+<tr><th>Attribute</th><th>Meaning</th><th>Applies to</th><th>Example value (Siege Module II)</th></tr>
+<tr><td>2307 <code>siegeTurretDamageBonus</code></td><td>% turret damage bonus, no RoF change</td><td>Energy/Hybrid/Projectile</td><td>+840%</td></tr>
+<tr><td>2306 <code>siegeMissileDamageBonus</code></td><td>% missile damage bonus</td><td>Missile</td><td>+200%</td></tr>
+<tr><td>2305 <code>siegeLauncherROFBonus</code></td><td>% missile RoF bonus (negative = faster)</td><td>Missile</td><td>&minus;80%</td></tr>
+<tr><td>2821 <code>siegeHAWMissileROFBonus</code></td><td>same effect, Rapid/XL-class launcher variant</td><td>Missile (HAW)</td><td>&minus;80%</td></tr>
+</table>
+<p>So turrets get a large damage bonus and <em>no</em> RoF change under a real Dreadnought Siege Module &mdash; the opposite shape from Bastion, which doubles RoF and leaves damage alone. Triage Module and Industrial Core carry none of these weapon-affecting attributes at all (Triage instead boosts remote-repair amount; Industrial Core has no weapon effect), so the tool's prior zero-effect-for-those-two behavior was coincidentally correct, but for the wrong reason (same group name, not "no real effect").</p>
+
+<h2>Fix</h2>
+<p>Added four new dogma-attribute constants (<code>SIEGE_TURRET_DAMAGE_BONUS_ATTR</code>=2307, <code>SIEGE_MISSILE_DAMAGE_BONUS_ATTR</code>=2306, <code>SIEGE_LAUNCHER_ROF_BONUS_ATTR</code>=2305, <code>SIEGE_HAW_ROF_BONUS_ATTR</code>=2821) and detection in the existing per-module loop, reading whichever of these attributes a given fitted item's own dogma data actually carries &mdash; the same "read the item's own real attributes, not its group name" principle the Capacitor Recharger-group fix (2026-10-12, earlier same day) established. This means Bastion Module, real Siege Module, Triage Module, and Industrial Core are now distinguished purely by which attributes each one's own dogma carries, with no special-casing by type id or name string:</p>
+<ul>
+<li>Bastion Module: unchanged, still detected via 3108/3109 (RoF doubling only, no damage change)</li>
+<li>Siege Module (real): turret damage bonus folded into <code>hullBonusList</code> as <code>['energy'|'hybrid'|'projectile','damage',pct]</code>; missile damage and RoF folded in separately as <code>['missile','damage',pct]</code> and <code>['missile','rof',pct]</code></li>
+<li>Triage Module / Industrial Core: no matching attributes present &rarr; no weapon effect, as before, now for the correct reason</li>
+</ul>
+<p>Also corrected the user-facing methodology note that previously claimed uniform RoF-doubling across all four module types, and corrected the stale code comment above the Bastion-only attribute pair to cross-reference this fix.</p>
+
+<h2>Verification</h2>
+<p>No real killmail in the golden set carries the real Siege Module II item (type 4292) &mdash; exactly why this gap went uncaught for so long. New constructed fit <code>moros_constructed_dreadnought_siege_module</code> (bare Moros + 1x Ion Siege Blaster II loaded with Null XL + 1x Siege Module II, both High slots, real types pulled directly from the local SDE) isolates it:</p>
+<table>
+<tr><th></th><th>Without Siege Module</th><th>With Siege Module II</th><th>Ratio</th></tr>
+<tr><td>dpsFixed</td><td>197</td><td>1855</td><td>9.42x (expected 9.40x = 1+840/100; difference fully explained by independent rounding of two small integers)</td></tr>
+</table>
+<p><strong>Full suite: 81/81 fits, ALL PASS. dscan_parse_tests.mjs: 280/280 PASS.</strong></p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 524,510 &rarr; 529,578 bytes</li>
+<li><code>golden_fits.json</code>: 80 &rarr; 81 fits, 4,212,626 &rarr; 4,253,069 bytes</li>
+</ul>
+
+</body>
+</html>

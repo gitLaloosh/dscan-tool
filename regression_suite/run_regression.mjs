@@ -234,10 +234,27 @@ for (const [fitId, fit] of Object.entries(golden)) {
   // fields are only set when the corresponding layer is non-null (nothing
   // to pin otherwise).
   if (result && result.tankStyle) {
-    result.hasShieldRepFlag = result.tankStyle.shield ? 1 : 0;
+    // Passive shield recharge fix (2026-10-12): tankStyle.shield is now
+    // non-null whenever the hull has ANY shield HP at all (every ship
+    // regens passively, module or not -- see estimateHpAndDps()'s own
+    // comment on this), so hasShieldRepFlag/shieldRepSustainedDps below
+    // are kept pinned to their ORIGINAL meaning -- an ACTIVE Shield
+    // Booster specifically (tankStyle.shield.activeDps) -- rather than
+    // "shield entry exists at all", so every pre-existing golden fit's
+    // pinned 0/1 and exact DPS values (e.g. curse_zkb139073592_ewar's
+    // hasShieldRepFlag:0, hawk_user's shieldRepSustainedDps:97) keep
+    // meaning exactly what they always did. hasShieldPassiveRegenFlag/
+    // shieldPassiveRegenDps/shieldBreakPointDps are the new fields this
+    // fix actually exercises.
+    result.hasShieldRepFlag = result.tankStyle.shield && result.tankStyle.shield.activeDps ? 1 : 0;
     result.hasArmorRepFlag = result.tankStyle.armor ? 1 : 0;
     result.hasHullRepFlag = result.tankStyle.hull ? 1 : 0;
-    if (result.tankStyle.shield) result.shieldRepSustainedDps = result.tankStyle.shield.sustainedDps;
+    if (result.tankStyle.shield && result.tankStyle.shield.activeDps) result.shieldRepSustainedDps = result.tankStyle.shield.activeDps;
+    result.hasShieldPassiveRegenFlag = result.tankStyle.shield ? 1 : 0;
+    if (result.tankStyle.shield) {
+      result.shieldPassiveRegenDps = result.tankStyle.shield.passiveDps;
+      result.shieldBreakPointDps = result.tankStyle.shield.breakPointDps;
+    }
     if (result.tankStyle.armor) {
       result.armorRepSustainedDps = result.tankStyle.armor.sustainedDps;
       if (result.tankStyle.armor.burstDps) result.armorRepBurstDps = result.tankStyle.armor.burstDps;
@@ -286,6 +303,13 @@ for (const [fitId, fit] of Object.entries(golden)) {
     // subsystem flat capacitor-capacity-self-add fix (and to catch it
     // regressing for every other hull's un-boosted capacity too).
     result.capacitorCapacity = result.capacitor.capacity;
+    // KNOWN OPEN ITEM #1 fix (2026-10-12 follow-up): peakRechargeRate/
+    // netRate had no flattened assertion fields before now -- needed to
+    // pin the Power Diagnostic System/Shield Power Relay fix (both affect
+    // peakRechargeRate without necessarily changing capacity or the
+    // other already-pinned fields above).
+    result.capacitorPeakRechargeRate = result.capacitor.peakRechargeRate;
+    result.capacitorNetRate = result.capacitor.netRate;
     // Capacitor stability fix (backlog #2, 2026-10-12) -- stable/stablePct/
     // timeToEmptySec/weak had no flattened assertion fields before now.
     // Booleans flattened as 0/1 ints, same convention as hasEwar/
@@ -294,6 +318,11 @@ for (const [fitId, fit] of Object.entries(golden)) {
     if (result.capacitor.stablePct !== null) result.capacitorStablePct = result.capacitor.stablePct;
     if (result.capacitor.timeToEmptySec !== null) result.capacitorTimeToEmptySec = result.capacitor.timeToEmptySec;
     result.capacitorWeak = result.capacitor.weak ? 1 : 0;
+    // KNOWN OPEN ITEM #4 fix (2026-10-12 follow-up): warfareResistPct had
+    // no flattened assertion field before now -- only present (non-null)
+    // when a Capacitor Battery is fitted, same "only when not null"
+    // convention as boosted/range below.
+    if (result.capacitor.warfareResistPct !== null) result.capacitorWarfareResistPct = result.capacitor.warfareResistPct;
     // Capacitor Booster gain modeling (2026-10-12, Erik-approved follow-up to
     // the capacitor-stability fix above): hasCapBooster/chargeUnidentified
     // had no flattened assertion fields before now. boosted.* only flattened
@@ -387,6 +416,27 @@ for (const [fitId, fit] of Object.entries(golden)) {
   if (result && result.miscTraits) {
     result.miscTraitCount = result.miscTraits.reduce((sum, m) => sum + m.qty, 0);
     result.hasCynoFitted = result.miscTraits.some(m => m.name.toLowerCase().includes('cynosural')) ? 1 : 0;
+    // MJD/MJFG/Interdiction Nullifier misc flags (architecture backlog,
+    // 2026-10-12 -- Erik: "Micro Jump Drives and interdiction nullifiers
+    // can be flagged in the Misc category") -- same hasCynoFitted
+    // convention (always 0/1, so absence is assertable too). The note-text
+    // fields pin the EXACT resolved string, which is what actually exercises
+    // the new logic for MJD/MJFG: their note is a function(dogma) that reads
+    // the fitted item's own real attr973/attr73/attr2066/attr2067 live
+    // (varies by variant, e.g. the Xarasier MJD's 120% vs the mainline
+    // 150% -- see the MISC_TRAIT_GROUP_INFO comment in index.html), not a
+    // hardcoded string like cyno's -- a wrong attrVal read or a broken
+    // function-vs-string resolution at the push site would silently change
+    // this string without tripping any other assertion.
+    const mjdTrait = result.miscTraits.find(m => m.name.toLowerCase().includes('micro jump drive'));
+    result.hasMjdFitted = mjdTrait ? 1 : 0;
+    if (mjdTrait) result.mjdNoteText = mjdTrait.note;
+    const mjfgTrait = result.miscTraits.find(m => m.name.toLowerCase().includes('micro jump field generator'));
+    result.hasMjfgFitted = mjfgTrait ? 1 : 0;
+    if (mjfgTrait) result.mjfgNoteText = mjfgTrait.note;
+    const intNullTrait = result.miscTraits.find(m => m.name.toLowerCase().includes('interdiction nullifier'));
+    result.hasInterdictionNullifierFitted = intNullTrait ? 1 : 0;
+    if (intNullTrait) result.interdictionNullifierNoteText = intNullTrait.note;
   }
   // Tank Type classification -- NEVER flattened/asserted before now (the
   // TANK_TYPE_THRESHOLD lowering 60%->55%, 2026-10-12, is the first change

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Passive shield recharge + "Break Point" wording</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px}
+</style>
+</head>
+<body>
+
+<h1>Passive shield recharge modeled + "Break Point" wording</h1>
+<p class="small">2026-10-12 &middot; index.html &middot; from the architecture backlog ("Passive shield recharge has no equivalent to the capacitor-stability feature") &middot; Erik: "is passive shield recharge accounted for in our dps to break tank calculations?" -&gt; "ok, let's work on that next" -&gt; "rather than using the phrase 'needs &gt;X DPS' to just say 'Break Point: X'" -&gt; "do what you need to for the calculations then we can discuss the UI"</p>
+
+<h2>Finding</h2>
+<p>Passive shield recharge was entirely unmodeled -- the DPS-to-break-tank figure only ever counted an active Shield Booster's own output, silently understating every shield-tanked fit (and showing NOTHING at all for a pure-buffer shield fit with no booster, even though every ship regens shield passively). Confirmed the real EVE formula directly against pyfa's own source (<code>eos/saveddata/fit.py</code>, <code>calculateShieldRecharge()</code>): <code>rate(x) = 10&times;&radic;x&times;(1&minus;&radic;x)&times;capacity/rechargeTimeSec</code>, peaking at <strong>x=0.25</strong> (corrected after initially telling Erik 50%) where it collapses to <code>2.5&times;capacity/rechargeTimeSec</code> -- the same "2.5&times;" constant already used by this file's existing capacitor peak-recharge-rate formula, since it's the same universal mechanic applied to a different pool. Also confirmed via pyfa's GUI source (<code>gui/builtinStatsViews/rechargeViewFull.py</code>) that its own 2-row "Reinforced"/"Sustained" layout shows the SAME peak value in both rows for the passive-shield column (the "Reinforced" cell is coded to always stay blank) -- so a single peak number isn't even a simplification relative to what pyfa itself displays.</p>
+<p>Live-SDE audit of every module affecting shield recharge/capacity, cross-checked against the capacitor side's already-modeled equivalents:</p>
+<table>
+<tr><th>Module (real group)</th><th>Attributes (live-confirmed)</th></tr>
+<tr><td>Shield Recharger II (group 39)</td><td>attr134 shieldRechargeRateMultiplier=0.85 -- same unit as the capacitor side's attr144, recharge-time-only, no capacity side-effect.</td></tr>
+<tr><td>Shield Flux Coil II (group 770)</td><td>attr134=0.7 AND attr146 shieldCapacityMultiplier=0.85 -- a capacity/recharge tradeoff mirroring its capacitor-side twin exactly.</td></tr>
+<tr><td>Power Diagnostic System II (group 766)</td><td>attr134=0.915 AND attr146=1.05 -- a pure dual-buff with no downside on either side, matching its already-modeled capacitor-side attr144/147.</td></tr>
+<tr><td>Shield Power Relay II (group 57)</td><td>Carries NO attr134/146 at all. Its real shield-side bonus lives on a COMPLETELY DIFFERENT attribute, attr338 "rechargeratebonus"=-25 (effect 486, a plain Percentage unit) -- never read anywhere in this file before this fix, despite its capacitor-side attr144=1.35 penalty already being modeled.</td></tr>
+<tr><td>Shield Operation skill (type 3416, universal, required by Shield Booster)</td><td>ALSO carries attr338=-5/level (same effect 486 as Shield Power Relay above) -&gt; -25% at max level (V). Modeled as its own independent multiplicative stage (same convention as Capacitor Systems Operation on the cap side), never pooled with a fitted Shield Power Relay's own bonus.</td></tr>
+</table>
+
+<h2>Fix</h2>
+<p>New constants: <code>SHIELD_RECHARGE_TIME_ATTR</code>=479, <code>SHIELD_RECHARGE_RATE_MULT_ATTR</code>=134, <code>SHIELD_CAPACITY_MULT_ATTR</code>=146, <code>SHIELD_POWER_RELAY_RECHARGE_ATTR</code>=338, <code>MAX_SHIELD_OPERATION_MULT</code>=0.75. Four new stacking-penalized fraction pools mirror the capacitor side's own (<code>shieldRechargeTimePctFractions</code>, <code>shieldCapacityPctFractions</code>/<code>shieldCapacityBonusFractions</code> split by direction, <code>shieldPowerRelayRechargeFractions</code> kept separate since it's a different real attribute). <code>shieldHP</code>'s own finalize line now folds in the attr146 pools -- this is the ship's REAL effective capacity, used everywhere (EHP display, break-tank calcs), not a calc-only side number, so Flux Coil/PDS's capacity effect is now correctly visible in the Resistance card too. Peak passive regen: <code>peakShieldRechargeRate = 2.5 * shieldHP / shieldRechargeTimeSec</code>, where <code>shieldRechargeTimeSec</code> applies <code>MAX_SHIELD_OPERATION_MULT</code> (always, independent of any module) times the two module pools.</p>
+<p><code>tankStyle.shield</code> is now non-null whenever <code>shieldHP &gt; 0</code> (every ship, module or not) -- shape changed from <code>{sustainedDps}</code> to <code>{activeDps, passiveDps, breakPointDps}</code>, additively combining an active Shield Booster's output with the new passive ceiling. <code>resistanceCardHtml()</code>'s Repairs strip now always shows a Shield row for any fit with shield HP (armor/hull still only show with an active rep fitted, since neither has a passive mechanic). Wording changed per Erik, "needs &gt;X DPS sustained to break" -&gt; <strong>"Break Point: X DPS sustained"</strong>, everywhere (plain active rep, armor+Nanite-burst, and the new shield cases) -- each row got a new sub-line (<code>.repairs-subdetail</code>) breaking out the passive/active components, and a passive-only shield row gets a muted "PASSIVE" badge instead of "ACTIVE REP".</p>
+
+<h2>Verification</h2>
+<p>5 new/extended constructed golden fits (bare Rifter, isolating each mechanism):</p>
+<table>
+<tr><th>Fit</th><th>rawShieldHP</th><th>Peak passive (EHP/s)</th></tr>
+<tr><td>Baseline (nothing fitted)</td><td>563 (450&times;1.25 Shield Mgmt)</td><td>3 (exactly 3.0 -- 2.5&times;562.5/468.75)</td></tr>
+<tr><td>+ Shield Recharger II</td><td>563 (unchanged)</td><td>4 (3.53)</td></tr>
+<tr><td>+ Shield Flux Coil II</td><td>478 (down, real tradeoff)</td><td>4 (3.64, still up despite the cut)</td></tr>
+<tr><td>+ Power Diagnostic System II</td><td>591 (up)</td><td>3 (3.44 -- rounds down from baseline's 3.0, small-precision wash)</td></tr>
+<tr><td>+ Shield Power Relay II</td><td>563 (unchanged -- attr338 never touches capacity)</td><td>4 (exactly 4.0)</td></tr>
+</table>
+<p>Both the existing <code>rifter_constructed_shield_power_relay_penalty</code> and <code>rifter_constructed_power_diagnostic_system</code> fits were extended in place (their module's dogma was missing the newly-relevant attributes) rather than duplicated, directly proving each module's cap-side and shield-side effects come from different real attributes and never get miscombined. <code>run_regression.mjs</code>'s flattening keeps <code>hasShieldRepFlag</code>/<code>shieldRepSustainedDps</code> pinned to their ORIGINAL meaning (an active Shield Booster specifically), so all 20 pre-existing fits asserting on shield fields needed zero changes -- new <code>hasShieldPassiveRegenFlag</code>/<code>shieldPassiveRegenDps</code>/<code>shieldBreakPointDps</code> fields carry the new behavior. One pre-existing fit's range DID need widening: <code>rokh_zkb138993491_rolebonus_audit</code> (3x Power Diagnostic System II fitted) now correctly credits their shield-capacity bonus, raising shieldHP (EHP) ~12.7% (143496-&gt;161706, matching the predicted stacking-penalized 3-module ratio exactly) -- a genuine correctness improvement, not a regression; range widened with a note explaining why.</p>
+<p><strong>Full suite: 94/94 fits, ALL PASS. dscan_parse_tests.mjs: 280/280 PASS.</strong></p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 547,781 &rarr; 561,114 bytes</li>
+<li><code>regression_suite/golden_fits.json</code>: 91 &rarr; 94 fits (3 new + 2 extended)</li>
+<li><code>regression_suite/run_regression.mjs</code>: new flattened assertion fields, <code>hasShieldRepFlag</code> semantics preserved</li>
+</ul>
+
+<h2>Backlog</h2>
+<p>"Passive shield recharge has no equivalent to the capacitor-stability feature" is now CLOSED. Still open/deferred, raised by Erik but not yet addressed: whether icons/hover-text can shorten the Repairs strip's sub-line text (explicitly deferred for a follow-up UI discussion); Erik's own pyfa cross-check on 7 EFT test fits (not yet returned); and the unrelated "Weaknesses card yellow background/padding" + "cargo-ammo-fallback recommended nothing for Lasers on a Maelstrom fit" items filed separately this same session.</p>
+
+</body>
+</html>
