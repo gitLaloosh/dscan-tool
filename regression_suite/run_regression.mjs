@@ -168,9 +168,11 @@ for (const [fitId, fit] of Object.entries(golden)) {
   // doesn't set it.
   let result, error;
   try {
-    result = fit.tacticalMode
-      ? await sandbox.estimateHpAndDps(fit.shipTypeId, tally, cargoItemIds, highSlotByFlag, fit.tacticalMode, midSlotByFlag)
-      : await sandbox.estimateHpAndDps(fit.shipTypeId, tally, cargoItemIds, highSlotByFlag, 'sharpshooter', midSlotByFlag);
+    // Module states (v2026.10.13.20, module-state plan Phase 1): a golden
+    // fit can pin an optional "moduleStates" object ({typeId: 'offline' |
+    // 'online' | 'active'} or {typeId: {active, online, offline}}), the same
+    // way tacticalMode works. Fits without it run at the default states.
+    result = await sandbox.estimateHpAndDps(fit.shipTypeId, tally, cargoItemIds, highSlotByFlag, fit.tacticalMode || 'sharpshooter', midSlotByFlag, fit.moduleStates || null, fit.droneStates || null);
   } catch (e) {
     error = e;
   }
@@ -266,6 +268,35 @@ for (const [fitId, fit] of Object.entries(golden)) {
   // on a nested object, so pin the total (and the module/ship-bonus
   // components, when a golden fit specifically needs to catch one of those
   // paths regressing) as flat scalar fields.
+  // Resist profiles (added 2026-10-13, full-EFT Rorqual pyfa check) -- same
+  // flattening reason: pin each layer's per-damage-type resist % as flat
+  // scalars (shieldResEm, armorResExp, hullResKin, ...).
+  if (result) {
+    for (const layer of ['shield', 'armor', 'hull']) {
+      const r = result[layer + 'ResPct'];
+      if (!r) continue;
+      for (const [k, cap] of [['em', 'Em'], ['therm', 'Therm'], ['kin', 'Kin'], ['exp', 'Exp']]) {
+        if (typeof r[k] === 'number') result[layer + 'Res' + cap] = r[k];
+      }
+    }
+  }
+  // Module states (v2026.10.13.20): totals of copies per state and the
+  // number of refused requests, flattened for pinning.
+  if (result && result.moduleStates) {
+    const ms = result.moduleStates;
+    result.moduleStatesRefusedCount = ms.refused.length;
+    result.moduleStatesActiveCount = ms.items.reduce((s, x) => s + x.active, 0);
+    result.moduleStatesOnlineCount = ms.items.reduce((s, x) => s + x.online, 0);
+    result.moduleStatesOfflineCount = ms.items.reduce((s, x) => s + x.offline, 0);
+  }
+  // Drone states (v2026.10.13.23): drones in space, bandwidth used and
+  // refused requests, flattened for pinning. A fit may carry "droneStates"
+  // ({typeId: count in space}) as the engine's 8th argument.
+  if (result && result.droneStates) {
+    result.droneStatesActiveCount = result.droneStates.activeCount;
+    result.droneStatesBandwidthUsed = result.droneStates.bandwidthUsed;
+    result.droneStatesRefusedCount = result.droneStates.refused.length;
+  }
   if (result && result.droneControlRange) {
     result.droneControlRangeTotal = result.droneControlRange.total;
     result.droneControlRangeModuleBonus = result.droneControlRange.moduleBonus;
@@ -318,6 +349,12 @@ for (const [fitId, fit] of Object.entries(golden)) {
     if (result.capacitor.stablePct !== null) result.capacitorStablePct = result.capacitor.stablePct;
     if (result.capacitor.timeToEmptySec !== null) result.capacitorTimeToEmptySec = result.capacitor.timeToEmptySec;
     result.capacitorWeak = result.capacitor.weak ? 1 : 0;
+    // v2026.10.13.12: net rate of the confident boosted tier (loaded/inferred
+    // cap booster + ASB charges), the figure comparable to pyfa's capDelta.
+    if (result.capacitor.combinedConfident) result.capacitorCombinedConfidentNetRate = result.capacitor.combinedConfident.netRate;
+    // v2026.10.13.10: the Weaknesses-card ring's own time (best-case tier), so a
+    // golden fit can pin it to the boosted figure the caption describes.
+    if (result.capacitor.weakTimeToEmptySec !== undefined && result.capacitor.weakTimeToEmptySec !== null) result.capacitorWeakTimeToEmptySec = result.capacitor.weakTimeToEmptySec;
     // KNOWN OPEN ITEM #4 fix (2026-10-12 follow-up): warfareResistPct had
     // no flattened assertion field before now -- only present (non-null)
     // when a Capacitor Battery is fitted, same "only when not null"

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — In-game icons for repairs, capacitor and firepower</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>In-game icons for repairs, capacitor booster and firepower rows</h1>
+<p><span class="tag">UI</span> 2026-10-13 &middot; <code>v2026.10.13.23</code> &rarr; <code>v2026.10.13.24</code> &middot; Erik: "can you use this same logic to apply those to replace some of the custom built icons for things like boosted capacitor, passive shield regen, boosted shield regen, etc?" / "things like break point probably still need their own custom icon but if you can find a good in-game icon that fits, that works as well."</p>
+
+<h2>What changed</h2>
+<p>The new icons come from CCP's image server, the same source as the Fit card's module icons (<code>images.evetech.net/types/{typeId}/icon</code>).</p>
+<table>
+<tr><th>Where</th><th>Before</th><th>Now</th></tr>
+<tr><td>Repairs header: passive shield regen</td><td>circular-arrows glyph</td><td>Shield Recharger II (394)</td></tr>
+<tr><td>Repairs header: active shield boost</td><td>lightning bolt</td><td>Medium Shield Booster II (10850)</td></tr>
+<tr><td>Repairs header: armor repair</td><td>stacked plates</td><td>Medium Armor Repairer II (3530)</td></tr>
+<tr><td>Repairs header: hull repair</td><td>hexagon</td><td>Medium Hull Repairer II (3655)</td></tr>
+<tr><td>Capacitor: boosted toggle</td><td>lightning bolt</td><td>Cap Booster 800 (11289); greyed when the toggle is off</td></tr>
+<tr><td>Firepower rows</td><td>generic crosshair / drone glyph</td><td>the actual fitted weapon, drone or fighter type</td></tr>
+</table>
+<ul>
+<li><b>Layer colour kept.</b> The repair header icons keep a short underline in the layer's colour (shield cyan, armor amber, hull tan), so they still line up with the coloured layer rows. The armor and hull repairer icons look alike in game, so the colour and the hover text tell them apart.</li>
+<li><b>Hover text</b> sits on a plain HTML wrapper, so the native tooltip works.</li>
+<li><b>Fallback.</b> If an image can't load (offline, blocked), the old SVG glyph is shown instead.</li>
+<li><b>Kept custom:</b> the Break Point icon (no in-game item fits), the shield/armor/hull layer icons (their colours are the layer identity), the info icon and the Tactical Destroyer mode icons. Each mode is an in-game item with its own icon, so the mode icons could be switched later if wanted.</li>
+<li><b>Engine:</b> the DPS breakdown rows now carry their type ids (<code>typeId</code>, <code>weaponTypeId</code>), so the card can show the right icon. No numbers changed. The full output diff of every golden fit shows only those new id fields.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>143/143 regression fits and 280/280 parse tests pass.</li>
+<li>Playwright renders used the same icon art from pyfa's bundled icon set, because this sandbox can't reach the image server. Checks:
+  <ul>
+  <li>Repairs header</li>
+  <li>Capacitor toggle, on and off</li>
+  <li>Firepower rows</li>
+  <li>The SVG fallback when an icon is missing (drones in the test)</li>
+  <li>The drone and module-state click tests again</li>
+  </ul>
+  No console errors.</li>
+</ul>
+</body></html>

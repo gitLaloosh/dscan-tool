@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — EHP: hull, rig, coating and subsystem HP modifiers</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>EHP: hull, rig, coating and subsystem HP modifiers</h1>
+<p><span class="tag">Feature backlog</span><span class="tag">Audit batch 4</span> 2026-10-13 &middot; <code>v2026.10.13.13</code> &rarr; <code>v2026.10.13.14</code></p>
+
+<h2>What changed</h2>
+<p>The HP pools used to read a fixed set of item attributes. They are now driven by each item's real dogma effects, following every pyfa handler that changes the ship's <code>shieldCapacity</code>, <code>armorHP</code> or <code>hp</code>. That's the new <code>SHIP_HP_ATTR_EFFECTS</code> table, with values from CCP's SDE.</p>
+<p>None of these handlers is stacking-penalized in pyfa. Items with no effect data (old trimmed test records) fall back to the previous code path.</p>
+<table>
+<tr><th>Newly modeled</th><th>pyfa effect</th><th>Size</th></tr>
+<tr><td>Rig HP penalties: Navigation rigs (armor), Electronic Systems, Targeting and Scanning rigs (shield)</td><td>2712 drawbackArmorHP / 2718 drawbackShieldCapacity</td><td>&minus;10%, halved by the matching rigging skill at V (&minus;5% each)</td></tr>
+<tr><td>Layered Coatings, Layered Energized Membranes</td><td>63 armorHPMultiply</td><td>&times;1.07&ndash;1.09 / &times;1.11&ndash;1.16</td></tr>
+<tr><td>Transverse Bulkhead rigs</td><td>392 (hull HP +%)</td><td>+20 / +25%</td></tr>
+<tr><td>T3 Defensive subsystems (Augmented Plating, Supplemental Screening, Augmented Durability)</td><td>3982 / 3980 / 3979 / 3976</td><td>+% per Defensive Systems level (&times;5)</td></tr>
+<tr><td>Hull HP bonuses on 16 hulls: Damnation, Vulture, Monitor, Crow, Kirin, Deacon, Heretic, Flycatcher, Augoror/Coercer/Prophecy Navy Issue, Jump Freighters, mining barges</td><td>3331, 7042, 7043, 11431 &hellip;</td><td>per hull skill level</td></tr>
+<tr><td>Logistics Cruisers plate/extender bonus (Guardian etc.)</td><td>12278 / 12279</td><td>eliteBonusLogistics4 per level</td></tr>
+<tr><td>Battleship role bonus on Reinforced Bulkheads</td><td>8377</td><td>+0.05 on the module's own hull multiplier. The plate and extender part was already modeled.</td></tr>
+<tr><td>Titan/Supercarrier role bonus on plates and extenders</td><td>6614 + the Titan role effect</td><td>shipBonusRole2</td></tr>
+</table>
+
+<h2>Verification</h2>
+<p>Expected values come from an independent hand-coded Python derivation (<code>indep_hp.py</code>): pyfa rules and SDE values, not the tool's table. Both new constructed fits match exactly:</p>
+<ul>
+<li><b>Megathron</b> (plate, Layered Energized Membrane, Layered Coating, Reinforced Bulkheads, PDS, LSE; Trimark, Transverse Bulkhead and Polycarbon rigs): raw shield, armor and hull 15,921 / 25,855 / 16,758.</li>
+<li><b>Guardian</b> (plate with the logistics bonus, extender, Ionic Field Projector penalty): 2,559 / 10,886 / 2,505.</li>
+</ul>
+<p>Existing fits whose numbers changed, each checked by hand and pinned with a note:</p>
+<table>
+<tr><th>Fit</th><th>Change</th><th>Why</th></tr>
+<tr><td><b>Osprey Navy Issue (your pyfa-verified fit)</b></td><td>armor EHP 3,922 &rarr; <b>3,725</b>; total 18,816 &rarr; 18,620</td><td>Polycarbon rig penalty. pyfa shows 3.73k armor, now an exact match, and 18.7k total (0.4%). The old "~5% high armor" gap is closed.</td></tr>
+<tr><td>Legion (bug #2)</td><td>armor EHP 8,075 &rarr; 7,671</td><td>Polycarbon rig, &times;0.95. This is very likely the "armor 2&ndash;5% high" gap; a fresh pyfa number would confirm it.</td></tr>
+<tr><td>Vedmak</td><td>raw armor 4,125 &rarr; 3,723; armor share 58% &rarr; 55%</td><td>Two Navigation rigs. Still classed as an armor tank, now exactly on the 55% boundary.</td></tr>
+<tr><td>Confessor (3 fixtures)</td><td>armor &times;0.95</td><td>Low Friction Nozzle Joints rig</td></tr>
+<tr><td>Monitor (2 fixtures)</td><td>shield and armor +25%</td><td>Its own hull bonuses</td></tr>
+<tr><td>Crow (3 fixtures)</td><td>shield +50%</td><td>shipBonusShieldHpCF2</td></tr>
+<tr><td>Tengu (2 fixtures)</td><td>shield +25%</td><td>Supplemental Screening subsystem</td></tr>
+<tr><td>Caracal, Rifter constructed fits</td><td>&times;0.9025 shield / &times;0.857 armor</td><td>2 Electronic rigs / 3 Navigation rigs</td></tr>
+</table>
+<p>Knock-on effects: passive shield regen follows shield HP. The HP-weighted weakest damage type moved on the Legion, from Thermal to EM. Both damage types were close before; with less armor, the shield's EM hole now weighs more.</p>
+<p>Other checks:</p>
+<ul>
+<li><code>node --check</code> clean.</li>
+<li><b>109/109 PASS</b>, 280/280 parse tests. v.13 fails 15 checks against the updated set.</li>
+<li>Playwright render of the Megathron summary shows 85,275 EHP.</li>
+</ul>
+
+<h2>Still open</h2>
+<ul>
+<li>Osprey Navy Issue shield EHP is 9,671 against pyfa's 9.74k (0.7%). It's small, and on the resist side rather than HP.</li>
+<li>Siege, Bastion and Triage HP and resist effects remain under the module-toggle item.</li>
+</ul>
+</body></html>

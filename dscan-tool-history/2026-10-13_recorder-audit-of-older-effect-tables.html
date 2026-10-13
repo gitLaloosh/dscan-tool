@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Recorder audit of the older effect tables</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Recorder audit of the older effect tables</h1>
+<p><span class="tag">Audit</span><span class="tag">Bug fix</span> 2026-10-13 &middot; <code>v2026.10.13.18</code> &rarr; <code>v2026.10.13.19</code> &middot; Erik: "ok do it" (re-check the text-matched tables with the handler recorder)</p>
+
+<h2>What was done</h2>
+<p>The capacitor, HP, sensor, repair, shield-recharge and signature tables were first built by text-matching pyfa's <code>effects.py</code>. The weapon-range batch showed that text matching misses handlers.</p>
+<p>The new <code>tools/audit_effect_tables.py</code> runs every pyfa handler carried by a ship, module, rig, subsystem or skill. It then compares, row by row, with the tables in <code>index.html</code>. For each stat it checks:</p>
+<ul>
+<li>effects pyfa uses that the table lacks</li>
+<li>table rows pyfa doesn't use</li>
+<li>source-attribute, filter, stacking and skill-level differences</li>
+<li>the skill rows</li>
+</ul>
+
+<h2>What it found and fixed</h2>
+<table>
+<tr><th>Gap</th><th>Effect</th><th>Impact</th></tr>
+<tr><td>Triage Module's remote-repair half was missing (only its local rows were in)</td><td>6581: remote rep/boost/transfer cycle &minus;75% (attr 2344), cap need unchanged; remote amounts +450%</td><td><b>A FAX's remote-rep cap drain in triage is 4&times;</b> what the tool showed. Apostle with 2 Capital Remote Armor Repairer II: 146 &rarr; 585 GJ/s.</td></tr>
+<tr><td>Capital Industrial Core remote-shield half</td><td>4575: capital remote shield booster cycle and cap need &minus;75%</td><td>Rorquals with capital remote shield boosters</td></tr>
+<tr><td>Valravn / Naglfar Fleet Issue capital rep bonus</td><td>11373 shipBonusDreadnoughtM1</td><td>Valravn Capital Shield Booster II: 864 &rarr; 1,080 HP/s</td></tr>
+<tr><td>Small Remote Hull Repair Systems skill (only the capital one was listed)</td><td>2979</td><td>Remote hull repairer cap drain &times;0.75</td></tr>
+<tr><td>Bastion's +100% sensor strength</td><td>6658</td><td>Marauder sensor strength doubles: Paladin 25.2 &rarr; 50.4, Kronos 26.4 &rarr; 52.8, Golem 27.6 &rarr; 55.2, Vargur 24 &rarr; 48</td></tr>
+<tr><td>Doomsday Rapid Firing skill</td><td>6642</td><td>Titan doomsday cycle &minus;20%</td></tr>
+<tr><td>14 remote-repair amount hull bonuses (logistics frigates/cruisers, FAX, Nestor, Rodiva/Zarmazd)</td><td>5104&ndash;7173</td><td>None yet; the tool doesn't display remote rep output. Added so the tables match pyfa.</td></tr>
+</table>
+<p>After the fixes the audit runs clean. Deliberate exclusions are listed in the script's <code>KNOWN</code> list with reasons, for example:</p>
+<ul>
+<li>"while active" Capital Sensor Arrays, Entosis Links, MJD signature spikes and the Signature Suppressor's active burst, all for the module-toggle item</li>
+<li>Triage's +900,000,000% EWAR cap need, which is how the game blocks EWAR in triage</li>
+<li>a T3D HP effect whose value is 0 on every hull</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Independent derivation <code>tools/independent_checks/check_recorder_audit.py</code> reproduces every new value: 146.25 / 585 GJ/s, 1,080 HP/s, 30.5 GJ/s, and the four Bastion sensor strengths.</li>
+<li>Three new constructed golden fits (Apostle in triage, Valravn, Exequror) plus pins on the four Bastion fixtures. v.18 fails 7 checks.</li>
+<li>Full output diff v.18 &rarr; v.19 changed only the Bastion sensor strengths among existing fits.</li>
+<li><b>123/123 PASS</b>, 280/280 parse tests. <code>node --check</code> clean.</li>
+<li>Playwright render of the Paladin shows 50.4 with the updated note "includes a fitted Sensor Booster, Signal Amplifier or Bastion bonus".</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>The first audit run gave Triage's remote rows the wrong skill filter. pyfa builds filter lambdas in a loop, and the recorder evaluated them after the loop had finished, so every lambda saw the last skill. The recorder now evaluates filters at call time (<code>run(eid, ctx, evaluator)</code>). See <code>LESSONS_LEARNED.md</code> #16.</p>
+<p>Also: five fixtures had ship records without scan-strength attributes, so the Vargur showed 0 before and after the fix. They were back-filled from the SDE (#6).</p>
+
+<h2>Still not covered by the audit</h2>
+<ul>
+<li>Speed/agility/mass: still group-gated code rather than a table.</li>
+<li>Damage/rate of fire: <code>SHIP_ROLE_BONUS</code> is still hand-made.</li>
+<li>Drones and EWAR.</li>
+</ul>
+<p>These are the next candidates for the same treatment.</p>
+</body></html>

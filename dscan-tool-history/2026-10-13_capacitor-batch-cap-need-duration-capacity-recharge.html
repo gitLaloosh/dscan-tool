@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Capacitor batch: cap use, cycle times, capacity and recharge</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Capacitor batch: cap use, cycle times, capacity and recharge</h1>
+<p><span class="tag">Bug fix</span><span class="tag">Audit batch 2</span> 2026-10-13 &middot; <code>v2026.10.13.10</code> &rarr; <code>v2026.10.13.11</code> &middot; Erik: "proceed with what you think should be next"</p>
+
+<h2>Why this batch</h2>
+<p>The module-effect audit listed three capacitor gaps:</p>
+<ul>
+<li>MWD capacity penalty (High)</li>
+<li>Cap-need skills and rigs (Med)</li>
+<li>Cap capacity and recharge rigs, plus the T3 Core per-level bonus (Med)</li>
+</ul>
+<p>All three feed the same capacitor numbers, so they were done together. This also brings the Rorqual capacitor comparison as close as it can get without knowing pyfa's module states.</p>
+
+<h2>Method</h2>
+<p>I parsed every pyfa <code>eos/effects.py</code> handler that changes one of four things: a fitted module's <code>capacitorNeed</code> or <code>duration</code>, or the ship's <code>capacitorCapacity</code> or <code>rechargeRate</code>. For each one I recorded:</p>
+<ul>
+<li>its filter: a required skill, or a group name</li>
+<li>its source attribute</li>
+<li>whether it scales with a hull or subsystem skill</li>
+<li>whether it is stacking-penalized</li>
+</ul>
+<p>The values come from CCP's SDE (pyfa staticdata, build 3579973). The result is three data tables in <code>index.html</code>, replacing hand-picked constants:</p>
+<table>
+<tr><th>Table</th><th>What it holds</th></tr>
+<tr><td><code>SKILL_MODULE_ATTR_MODS_AT_V</code></td><td>35 skill rows at level V. Examples: Afterburner and Fuel Conservation (AB cap &times;0.25, duration &times;0.75), High Speed Maneuvering, Propulsion Jamming, Weapon Disruption, Sensor Linking, Target Painting, Electronic Warfare, the Emission Systems skills, Shield Compensation, Capital Shield Operation, Repair Systems and Capital Repair Systems (duration), Resistance Phasing (cap and duration), Controlled Bursts, Energy Pulse Weapons, MJD Operation.</td></tr>
+<tr><td><code>MODULE_ATTR_MOD_EFFECTS</code></td><td>107 effect IDs that hulls, rigs and subsystems use to change other modules' cap need or duration. Examples: Amarr laser hulls, logistics hulls, tackle-frigate &minus;80% Propulsion Jamming cost, Discharge Elutriation, Dynamic Fuel Valve, Core Defense Capacitor Safeguard and Operational Solidifier, Nanobot Accelerator, Engine Thermal Shielding, T3 offensive and propulsion subsystems. Each item's own value is read live from its attributes.</td></tr>
+<tr><td><code>SHIP_CAP_ATTR_EFFECTS</code></td><td>12 effect IDs that change the ship's capacity or recharge. These include the real effects behind the Power Relay, Recharger, Flux Coil and PDS group gates (51 and 58), Semiconductor Memory Cell and Capacitor Control Circuit rigs, T3 Core per-level bonuses, and the Kitsune, Sentinel, Vengeance and Apocalypse Imperial Issue hull bonuses.</td></tr>
+</table>
+<p>pyfa rules applied:</p>
+<ul>
+<li>No stacking penalty on any of these.</li>
+<li>A required skill matches only the module's own direct requirements.</li>
+<li>Skill effects carried by a rig apply at level 1.</li>
+<li>Bonuses passed with a hull or subsystem skill scale &times;5.</li>
+<li>Siege-family modules (group 515) and the Capital Sensor Arrays are deliberately excluded. They're "while active" modules and belong to the module-toggle item.</li>
+</ul>
+<p>Loaded charges are handled too. A charge's <code>capNeedBonus</code> (pyfa <code>ammoInfluenceCapNeed</code>) is paired per High-slot flag and applied to the turret's cap use. Examples: Standard and Imperial Navy Standard crystals &minus;45%, Conflagration, Void and ElectroPunch +25%, Lead &minus;50%.</p>
+<p>The local-rep HP/s calculation now uses the same cycle-time multiplier as the cap drain, so the two can't drift apart. It replaces the old flat &times;0.75 for Repair Systems.</p>
+
+<h2>Real bugs this fixed</h2>
+<ul>
+<li><b>MWD capacity penalty.</b> A fitted MWD's attr147 (e.g. 5MN MWD II &times;0.8) was excluded as a "collision" in the 2026-10-12 work. In pyfa it is <code>capacitorCapacityMultiply</code>, applied to every MWD. Loki capacity: 1,875 &rarr; 1,406 GJ.</li>
+<li><b>Afterburner cap use was 4&times; too high, and its cycle 33% too long.</b> Both the Afterburner skill and Fuel Conservation carry &minus;10%/lvl cap need, and the Afterburner skill also carries &minus;5%/lvl duration.</li>
+<li><b>No EWAR, tackle, neut or remote-rep skill</b> reduced cap need. These are now &times;0.75 at V, plus hull bonuses.</li>
+<li><b>Reactive Armor Hardener drain was half of real.</b> Resistance Phasing also cuts its cycle time &times;0.5. That's moot for the resist values but not for cap.</li>
+<li><b>Armor repairer cap drain used the unskilled cycle.</b> The cycle cut was applied to HP/s only.</li>
+<li><b>Shield rigs were ignored.</b> Core Defense Capacitor Safeguard (&minus;15% booster cap) and Operational Solidifier (&minus;15% booster cycle) did nothing. Cerberus booster: 63 &rarr; 74 HP/s.</li>
+<li><b>T3 Core per-level capacity and recharge bonuses</b> were unmodeled; only the flat +50 GJ was applied.</li>
+</ul>
+
+<h2>Verification</h2>
+<p>Expected values come from an <b>independent hand-coded Python derivation</b>: pyfa handler rules typed by hand and SDE values, without using the generated tables or the tool. The scripts are <code>indep_drain.py</code>, <code>indep_exe.py</code> and <code>indep_tengu.py</code> in the session scratch.</p>
+<table>
+<tr><th>Fit</th><th>Tool</th><th>Independent</th></tr>
+<tr><td>Rifter (user, pyfa-verified fit), active drain</td><td>2.2 GJ/s</td><td>2.233</td></tr>
+<tr><td>Curse (real killmail), active drain</td><td>70.1</td><td>70.119</td></tr>
+<tr><td>Loki (real killmail), drain / capacity</td><td>29.2 / 1,406</td><td>29.175 / 1,875&times;0.75</td></tr>
+<tr><td>Ishkur (Erik's fit), drain</td><td>18.3</td><td>18.32</td></tr>
+<tr><td>RAH Rifter, drain</td><td>2.1</td><td>2.1</td></tr>
+<tr><td>New: Executioner lasers (hull, rig, charges, MWD, tackle role bonus), capacity / peak / drain / armor rep</td><td>432 / 10.0 / 13.4 / 20</td><td>432 / 10.0 / 13.37 / 20.44</td></tr>
+<tr><td>New: Tengu T3 core + shield rigs, capacity / peak / drain / booster</td><td>1,813 / 28.3 / 39.9 / 81</td><td>1,812.5 / 28.3 / 39.9 / 81.2</td></tr>
+<tr><td>Rorqual full EFT, all-active drain</td><td>2,392.3</td><td>2,392.3</td></tr>
+</table>
+<ul>
+<li><code>node --check</code> clean.</li>
+<li><b>103/103 PASS</b>, 280/280 parse tests. The v.10 build fails 24 checks against the updated set.</li>
+<li>Playwright render of the Executioner summary is fine.</li>
+</ul>
+<p><b>Golden-fit data fixes.</b> These were needed so the tests exercise the new skill gates the way live ESI data would:</p>
+<ul>
+<li><code>dogma_effects</code> was back-filled from the SDE into 270 trimmed type records (effects only).</li>
+<li>Missing <code>requiredSkill</code> attributes were back-filled from the SDE into 38 stub records.</li>
+<li>The Small Hull Repairer II stub and the whole Ishkur fixture were replaced with full SDE records. The stubs had hidden real cap costs, e.g. the armor rep and Assault DC II carried no <code>capacitorNeed</code>.</li>
+<li>Every changed pin carries an explanatory note in <code>golden_fits.json</code>. Examples: Ishkur's align 6.0&ndash;6.2 &rarr; 5.8 (the v.9 Nano Pump fix, now visible with effects present), Curse is now cap-stable with its booster, and the TD Propulsion-mode fits' AB drain.</li>
+</ul>
+
+<h2>Rorqual vs pyfa</h2>
+<p>With everything active and its charges loaded, the tool now shows 592.3 GJ/s used, 533.3 GJ/s injected by the two Capacitor Boosters, and 94.4 GJ/s peak recharge. That makes the fit <b>stable</b>, where it used to be "weak".</p>
+<p>pyfa's <code>capDelta</code> (natural peak recharge + booster injection &minus; module use, read from <code>eos/saveddata/fit.py</code>) showed &minus;5.98 GJ/s for Erik's session. That implies about 51 GJ/s more net use than all-active here. It can only be reconciled by knowing which modules were on in that pyfa session (and whether reload was factored in), so it is left as an open question for Erik rather than guessed at.</p>
+
+<h2>Still open</h2>
+<ul>
+<li>The Siege, Triage and Bastion local-rep cycle and cap changes are in the module-toggle and repairs work.</li>
+<li>Shield-side capacity and recharge modules are still group-gated. They work, but could move to effect gating the same way.</li>
+<li>Golden-fit hygiene: many older fixtures are trimmed stubs. Effects and required skills are back-filled now, but other attributes may still be missing. A full refresh from the SDE would make every fixture faithful.</li>
+</ul>
+</body></html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Lessons-learned catalog and verification tools in the repo</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Lessons-learned catalog and verification tools in the repo</h1>
+<p><span class="tag">Process</span> 2026-10-13 &middot; <code>v2026.10.13.17</code> &rarr; <code>v2026.10.13.18</code> (comments only, no calculation change) &middot; Erik: "can you leave notes for less sophisticated models to help them identify where they made these mistakes?"</p>
+
+<h2>What was added</h2>
+<table>
+<tr><th>File</th><th>Purpose</th></tr>
+<tr><td><code>LESSONS_LEARNED.md</code></td><td>A checklist that defines "done" for a calculation change, plus 15 mistakes this project actually made. Each entry gives what happened, how it was caught, and the method that works.</td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>Short entry point that AI coding tools read automatically: read the lessons, use the tools, run the suite, bump the version.</td></tr>
+<tr><td><code>tools/pyfa_effects.py</code></td><td>Runs pyfa's real effect handlers against a recording mock. This is the method that found the handlers text matching missed.</td></tr>
+<tr><td><code>tools/gen_weapon_range_table.py</code></td><td>Regenerates the weapon-range table and diffs it against <code>index.html</code>. It's the template for future tables. Re-run after a pyfa or SDE update.</td></tr>
+<tr><td><code>tools/independent_checks/</code></td><td>The hand-coded pyfa-rule derivations behind the expected values of the capacitor, targeting, HP, repairs, signature and weapon-range golden fits. They were scratch files, lost at the end of each session; now they're portable (set <code>PYFA_SRC</code>) and each one reproduces its pinned numbers.</td></tr>
+<tr><td><code>index.html</code></td><td><code>// LESSON #n</code> comments at the tables where mistakes happened or are likely. They mark the older text-matched tables as not yet re-verified.</td></tr>
+</table>
+
+<h2>Verification</h2>
+<ul>
+<li>Every check script runs clean against pyfa v2.69.2 and prints the same values that are pinned in <code>golden_fits.json</code>.</li>
+<li>While porting, the capacitor check was missing the Executioner's scram role bonus; that value had lived only in the golden-fit note. Fixed, and logged as a lesson.</li>
+<li><code>gen_weapon_range_table.py</code> reports the embedded table up to date.</li>
+<li>Full output diff v.17 &rarr; v.18: no changes. 120/120 PASS, 280/280 parse tests.</li>
+</ul>
+
+<h2>Going forward</h2>
+<p>Every fix adds a lesson entry when a new kind of mistake is found, a "Lesson for future models" section in its history doc, and a <code>// LESSON #n</code> comment at the code site.</p>
+</body></html>

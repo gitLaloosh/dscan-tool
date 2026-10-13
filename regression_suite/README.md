@@ -1,5 +1,7 @@
 # dscan-tool regression suite
 
+> Before changing a calculation, read `../LESSONS_LEARNED.md`, the catalog of mistakes made in this project and the method that works for each. Expected values for golden fits come from `../tools/independent_checks/`, never from the tool's own output.
+
 ## Why this exists
 
 On 2026-09-10 we found that THREE previously-found, previously-validated
@@ -493,3 +495,19 @@ this is now closed with the same evidentiary bar as the other pinned fits.
 
 Don't mistake any of these checks passing for "fully correct" — see
 `dscan-tool.md` in memory for the full picture of what's still open.
+
+
+## Module states (v2026.10.13.20)
+
+A golden fit can carry an optional `moduleStates` object, passed to
+`estimateHpAndDps()` as its 7th argument, the same way `tacticalMode` works:
+`{"<typeId>": "offline" | "online" | "active"}` for all copies of a type, or
+`{"<typeId>": {"active": n, "online": n, "offline": n}}` for copy counts.
+Fits without it run at the default states (see `resolveModuleStates()` in
+`index.html`). The runner flattens `moduleStatesRefusedCount` and
+`moduleStatesActiveCount` / `OnlineCount` / `OfflineCount` for pinning.
+
+A fit can also carry `droneStates` (`{"<typeId>": count in space}`), the
+engine's 8th argument (v2026.10.13.23). The runner flattens
+`droneStatesActiveCount`, `droneStatesBandwidthUsed` and
+`droneStatesRefusedCount`.

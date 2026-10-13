@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Full Rorqual EFT vs pyfa, unpenalized cap/shield modules</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Full Rorqual EFT vs pyfa, and unpenalized cap/shield modules</h1>
+<p><span class="tag">Verification</span><span class="tag">Bug fix</span><span class="tag">Requested by Erik</span> 2026-10-13 &middot; <code>v2026.10.13.9</code> &rarr; <code>v2026.10.13.10</code></p>
+
+<h2>Result of the check</h2>
+<p>Erik's full <code>[Rorqual, QuadFeed]</code> EFT was run through the tool's real <code>parseEftFit()</code> and compared with his pyfa screenshot. Every stat the tool models matches pyfa, except three. Those three differ only because of the Genolution "Core Augmentation" CA-1 to CA-4 implant set, which pyfa applies and the tool doesn't model.</p>
+<table>
+<tr><th>Stat</th><th>Tool</th><th>pyfa</th><th>Explanation</th></tr>
+<tr><td>Resists (shield / armor / hull)</td><td>84/73/80/83 &middot; 57/45/45/24 &middot; 60</td><td>same</td><td>Exact</td></tr>
+<tr><td>DPS / volley</td><td>882 / 3,701</td><td>882 / 3,701</td><td>Exact</td></tr>
+<tr><td>Targeting / scan res / sensor / speed / drone range</td><td>250 km / 206.3 mm / 138 / 0 / 60 km</td><td>same</td><td>Exact</td></tr>
+<tr><td>Align time</td><td>294.8 s</td><td>280 s</td><td>CA-4 agility &minus;1.5% &times; set multiplier 3.276 = &minus;4.914% &rarr; 280.3 s</td></tr>
+<tr><td>Capacitor capacity</td><td>97,675 GJ</td><td>102k</td><td>CA-1 capacity +4.914% &rarr; 102,475 GJ</td></tr>
+<tr><td>EHP</td><td>1,735,654</td><td>1.78M</td><td>CA-3 shield HP and CA-4 armor HP, +4.914% each &rarr; about 1,775,000</td></tr>
+<tr><td>Capacitor drain</td><td>see below</td><td>&minus;5.98 GJ/s</td><td>Not comparable yet</td></tr>
+</table>
+<p><b>How the set bonus works (from CCP's SDE):</b> each CA implant has a base bonus of 1.5% and an <code>implantSetChristmas</code> multiplier: 1.5, 1.4, 1.3 and 1.2. With all four plugged in, every implant's bonus is multiplied by the product of the four, which is 3.276. So 1.5% &times; 3.276 = 4.914%.</p>
+<p>This closes the "Rorqual align ~5% off" item left open in v.9. It was the implant, not a missing module.</p>
+
+<h2>Bug found and fixed: cap/shield modules were stacking-penalized</h2>
+<p>The capacitor-capacity check turned up a real bug. The 2026-10-12 work stacking-penalized the cap and shield capacity and recharge multipliers. pyfa's handlers for these modules don't pass a <code>stackingPenalties</code> flag, so in pyfa (and in EVE) they stack at full strength:</p>
+<ul>
+<li><code>capacitorCapacityMultiply</code></li>
+<li><code>shieldCapacityMultiply</code></li>
+<li><code>modifyPowerRechargeRate</code></li>
+<li><code>modifyShieldRechargeRate</code></li>
+<li><code>shieldOperationRechargeratebonusPostPercentOnline</code></li>
+</ul>
+<p>The affected modules are Power Diagnostic System, Capacitor Power Relay, Capacitor Flux Coil, Capacitor Recharger, Shield Flux Coil, Shield Power Relay and Shield Recharger.</p>
+<p>The fix adds two small helpers, <code>unpenalizedReduction()</code> and <code>unpenalizedBonus()</code>. They replace the stacking calls in four places: shield HP, shield recharge time, capacitor capacity and capacitor recharge time.</p>
+<ul>
+<li><b>Rorqual:</b> 3&times; Caldari Navy PDS gives capacity 84,375 &times; 1.05&sup3; = 97,675 GJ (it was 95,082). EHP is now 1,735,654 (it was 1,714,471).</li>
+<li><b>Ishtar (Alyra):</b> capacity is now 2,576 GJ (it was 2,660). pyfa's own figure for that fit is 2,580, so the long-standing "~3% off" capacity gap is closed.</li>
+<li><b>Rokh (3&times; PDS II):</b> shield HP 161,706 &rarr; 166,114.</li>
+</ul>
+
+<h2>Display bug fixed: Weaknesses ring time</h2>
+<p>On this fit, the Weaknesses-card ring showed <b>38s</b> while its own caption said "even at best case assuming its Capacitor Booster has charges". The Capacitor card said <b>37m10s</b> for the same thing. The ring was reading the no-booster time instead of the best-case time its caption describes.</p>
+<p>The fix adds <code>capacitor.weakTimeToEmptySec</code> / <code>weakTimeToEmptyCapped</code> and makes the ring use them. The ring now reads 37m10s. This was confirmed in a Playwright render.</p>
+
+<h2>Still open: capacitor drain</h2>
+<p>pyfa's &minus;5.98 GJ/s can't be reproduced yet, for two reasons:</p>
+<ul>
+<li>It depends on which modules were switched on in pyfa: bursts, smartbomb, both boosters, hardeners.</li>
+<li>The cap-need skills and rigs are still unmodeled. On this fit that means the Capital Core Defense Capacitor Safeguard rig and Capital Shield Operation. These are in the next audit batch, "cap drain".</li>
+</ul>
+<p>Pulse Activated Nexus Invulnerability Core has no dogma effect in pyfa's data and is correctly ignored for stats. It could be a candidate for a Misc flag.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>node --check</code> clean.</li>
+<li>Regression: <b>101/101 PASS</b>. Parse tests: 280/280.</li>
+<li>The pre-fix build fails exactly the 5 changed pins (Ishtar capacity, Rokh shield and total HP, Rorqual EHP and capacity), as expected.</li>
+<li>New golden fit <code>rorqual_eft_full_quadfeed_pyfa</code>: the whole EFT (every module, rig and drone, 56 types) parsed by the real parser. It pins all 12 resist values, DPS, volley, EHP, capacity, align, targeting, scan res, sensor, speed and drone range at their implant-free values. The note explains each implant delta.
+  <ul><li>It also pins the ring time, 2,229.8 s, as a consistency guard. That isn't a pyfa pin.</li></ul></li>
+<li><code>run_regression.mjs</code> now flattens <code>shieldResPct</code>/<code>armorResPct</code>/<code>hullResPct</code> into scalar fields (<code>shieldResEm</code>, &hellip;) and exposes <code>capacitorWeakTimeToEmptySec</code>.</li>
+<li>Ishtar and Rokh expectations were updated deliberately, with notes in <code>golden_fits.json</code>.</li>
+<li>Playwright render of the full Rorqual summary checked: every card renders.</li>
+</ul>
+
+<h2>Suggested backlog</h2>
+<ul>
+<li>Fit Analyzer: apply implants and boosters from an EFT paste. They're currently dropped as unresolved lines, and pyfa's numbers include them.</li>
+<li>PANIC module Misc flag.</li>
+</ul>
+</body></html>
