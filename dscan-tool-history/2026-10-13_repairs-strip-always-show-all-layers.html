@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-13: Repairs strip always shows all three layers</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Repairs strip always shows all three layers</h1>
+<p class="small">2026-10-13 &middot; index.html</p>
+
+<h2>What changed</h2>
+<p>the owner, looking at a buffer-armor fit (144,624 armor EHP of 183,933 total, dominant layer): "looking at this buffer armor fit and the repairs section shows the row for shields instead of armor. is that because only the passive regen has a value to be noted?" -- correct diagnosis. The Repairs strip previously only rendered a row for a layer when <code>tankStyle[layer]</code> was non-null, and Armor/Hull only get populated there when an active repairer module is actually fitted (no passive regen mechanic exists for either, unlike Shield, which regens passively on every hull whether or not a Shield Booster is fitted -- see the 2026-10-12 passive-shield-recharge fix). So a pure buffer-armor fit (plates/extenders, no armor repairer) showed only a Shield row, with the dominant Armor layer -- and Hull -- simply absent from the section entirely, even though Resistance directly above it always shows all 3 layers.</p>
+
+<p>Floated an alternative (keep Armor/Hull as their own rows, same per-layer Break Point column, just render dashes when there's nothing to show) rather than merging everything into one combined row -- the owner confirmed merging wouldn't work anyway since Break Point is inherently per-layer, not a single fit-wide number. Then: "i think it's beneficial to show all three layers because the dashes in and of themselves both indicate that something isn't missing in the data, and that there is, in fact, no repair value. further highlighting if something is a buffer fit for example."</p>
+
+<h2>Implementation</h2>
+<p>The Repairs strip now iterates the same <code>layers</code> list Resistance uses (any layer with raw HP &gt; 0) instead of filtering to <code>layers.filter(l =&gt; l.rep)</code> first. A layer with no rep module (<code>l.rep</code> null) still gets its own row: all 4 value cells render as <code>&mdash;</code> (reusing the existing <code>.repairs-cell.empty</code> styling), and the Break Point cell does too -- <code>bpDps</code> stays explicitly <code>null</code> rather than being coerced to <code>0</code>, because <code>0 dps</code> would misleadingly read as "unbreakable"; the honest statement is "no sustained regen exists on this layer to race against at all, it's pure buffer." New <code>.repairs-bp.empty</code> CSS rule mutes that dash to <code>--text-faint</code> instead of leaving it in Break Point's red. The dash still carries hover text (<code>"No repair module fitted on this layer — pure buffer, no sustained regen to race against"</code>) via the same <code>title=""</code>-on-a-wrapping-element pattern the rest of the card uses (the <code>.repairs-bp</code> span is a real HTML <code>&lt;span&gt;</code>, not an <code>&lt;svg&gt;</code>, so the plain <code>title=""</code> attribute is correct here -- no SVG <code>&lt;title&gt;</code> child needed, unlike the icon fix earlier today). The strip's own footer note gained a trailing sentence explaining the dash convention.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>Rendered the real <code>resistanceCardHtml()</code> with the owner's exact screenshot numbers (shield 13,655 EHP/12 dps passive-only, armor 144,624 EHP/no rep, hull 25,653 EHP/no rep) -- all 3 rows now render, Shield shows its real passive number, Armor and Hull both show 4 dashes + a dashed, muted Break Point with the explanatory hover text. Screenshot matches the intended layout exactly.</li>
+<li>Re-rendered the pre-existing fully-repped scenario (all 3 layers with real rep data, armor burst figure) to confirm zero visual regression -- byte-identical layout to before this change.</li>
+<li>Full regression suite: <strong>94/94 fits PASS</strong>, <code>dscan_parse_tests.mjs</code>: <strong>280/280 PASS</strong> (no calc-side change, run anyway per standing habit).</li>
+<li><code>node --check</code> on the extracted inline script -- clean.</li>
+</ul>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 572,891 &rarr; 574,331 bytes</li>
+</ul>
+
+</body>
+</html>

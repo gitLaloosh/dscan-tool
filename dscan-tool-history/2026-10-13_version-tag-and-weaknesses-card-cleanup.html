@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-13: Version tag + Weaknesses card background/alignment cleanup</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+</style>
+</head>
+<body>
+
+<h1>Version tag + Weaknesses card background/alignment cleanup</h1>
+<p class="small">2026-10-13 &middot; index.html &middot; the owner: "let's start including an actual version number on the page so we're always clear about which version of the tool we're talking about when troubleshooting or testing something. and get rid of that yellow background in the weaknesses card, doing so should also fix the alignment difference between weaknesses and the other cards."</p>
+
+<h2>1. Version tag</h2>
+<p>New small <code>v2026.10.13.1</code> label in the top-right corner of the page header (inside <code>header.hero</code>, which was already <code>position:relative</code> -- the tag is absolutely positioned off that, no layout changes elsewhere). Format is <code>YYYY.MM.DD.N</code>: N is a same-day sequence number, starting at 1 on a new calendar date -- this project has repeatedly shipped 3-5 separate same-day changes in one sitting (today included), so a bare date alone wouldn't disambiguate between those. Hardcoded directly into the static HTML (not JS-rendered), so it's visible immediately in view-source or DevTools with zero dependency on script execution succeeding. Carries hover text explaining its purpose. Convention going forward: bump this literal string by hand on every future delivery that changes <code>index.html</code> -- same day, increment N; new day, reset to <code>.1</code>. No version existed before this; the count starts fresh from here (not retroactively applied to earlier same-day fixes, which had no on-page tag to increment from).</p>
+
+<h2>2. Weaknesses card background/alignment</h2>
+<p>Long-filed backlog item, closed. <code>.weakness-highlight</code> (the div wrapping the weakest-damage-type badge, capacitor gauge, and drone/turret rec grid inside the Weaknesses card) previously carried its own <code>background:rgba(217,154,60,0.06)</code> amber tint, a <code>var(--amber-dim)</code> border, and <code>padding:12px 14px</code> -- on top of the outer <code>.fit-summary</code> card's own <code>16px 18px</code> padding. No other card (EWAR/Misc, Firepower, Resistance, Navigation&amp;targeting, Capacitor) nests anything with its own extra padding inside <code>.fit-summary</code>, so Weaknesses' content sat visibly inset relative to every card stacked below it. Dropped the background/border/padding entirely; kept the <code>display:flex; flex-direction:column; gap:12px; margin-bottom:12px;</code> rules, since those are internal layout (spacing between the badge row/gauge/rec-grid), not the box look.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>Rendered the real header via a full page load -- version tag shows cleanly top-right, doesn't crowd the title or the scanline animation.</li>
+<li>Built a side-by-side mock using the real loaded CSS (a <code>.weakness-highlight</code> block next to a plain <code>.fit-summary</code> card) and measured both cards' content left edge via <code>getBoundingClientRect()</code> -- both now sit at the same x-offset (previously the Weaknesses content was indented an extra ~14px by its own padding). Computed style confirms <code>background-color: rgba(0,0,0,0)</code> and <code>padding: 0px</code> on <code>.weakness-highlight</code> now.</li>
+<li><code>node --check</code> on the extracted inline script -- clean (both changes are CSS/static-HTML only, no JS touched).</li>
+<li>Full regression suite: <strong>94/94 fits PASS</strong>, <code>dscan_parse_tests.mjs</code>: <strong>280/280 PASS</strong> (no calc-side change, run anyway per standing habit).</li>
+</ul>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 574,331 &rarr; 575,966 bytes</li>
+</ul>
+
+</body>
+</html>
