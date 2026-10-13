@@ -116,6 +116,22 @@
     animation:sweep 5s linear infinite;
     opacity:0.7;
   }
+  /* Version tag (2026-10-13, Erik: "let's start including an actual version
+     number on the page so we're always clear about which version of the
+     tool we're talking about when troubleshooting or testing something").
+     Format: YYYY.MM.DD.N -- N is a same-day sequence number, starting at 1
+     each new calendar date (so same-day fixes stay disambiguable, which
+     matters here -- several days this project has shipped 3-5 separate
+     changes in one sitting) and reset to 1 the first delivery of a new day.
+     Hardcoded directly in the static HTML (not JS-rendered) so it's visible
+     immediately in view-source/DevTools with zero dependency on script
+     execution -- bump this literal string by hand on every future delivery
+     that changes index.html, per this convention.  */
+  .build-tag{
+    position:absolute; top:10px; right:0;
+    font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
+    letter-spacing:0.3px; cursor:default;
+  }
   @keyframes sweep{
     0%{transform:translateY(0); opacity:0;}
     10%{opacity:0.8;}
@@ -457,11 +473,16 @@
   .ammo-dps-row:last-child{border-bottom:none;}
   .ammo-dps-value{font-family:var(--mono); font-weight:600; color:var(--heading);}
 
+  /* 2026-10-13 (Erik, long-filed backlog item): dropped the amber
+     background/border/padding this block used to carry -- besides being an
+     unwanted color tint, that extra 12px/14px padding was ALSO why this
+     card's contents sat visibly inset compared to every other .fit-summary
+     card (EWAR/Misc, Firepower, Resistance, etc.), which rely solely on
+     .fit-summary's own 16px/18px padding with nothing nested inside adding
+     more. Kept the flex/gap/margin rules -- those are layout, not the box
+     look, and still needed for the badge-row/cap-gauge/rec-grid stack. */
   .weakness-highlight{
-    display:flex; flex-direction:column; gap:12px;
-    background:rgba(217,154,60,0.06);
-    border:1px solid var(--amber-dim);
-    border-radius:4px; padding:12px 14px; margin-bottom:12px;
+    display:flex; flex-direction:column; gap:12px; margin-bottom:12px;
   }
   .weakness-badge-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
   .dmg-badge.lg{font-size:16px; padding:6px 14px; font-weight:700;}
@@ -731,6 +752,7 @@
   .repairs-cell.empty{color:var(--text-faint); font-weight:400;}
   .repairs-bp{display:flex; flex-direction:column; align-items:flex-end; line-height:1.25; cursor:default;}
   .repairs-bp-val{font-family:var(--mono); font-weight:700; color:var(--break-point); font-size:14px;}
+  .repairs-bp.empty .repairs-bp-val{color:var(--text-faint); font-weight:400;}
   .repairs-bp-unit{font-size:9px; color:var(--text-dim); font-weight:500; margin-left:3px;}
   .repairs-bp-burst{color:var(--text-faint); font-weight:400; font-size:9.5px; margin-top:1px;}
   .repairs-note{font-size:10.5px; color:var(--text-faint); line-height:1.4; margin-top:10px;}
@@ -849,6 +871,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.13.1</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -5084,17 +5107,34 @@ function resistanceCardHtml(f, estimate){
   // hull's -- so those cells keep a fixed c-shield/c-shield/c-armor/c-hull
   // color regardless of which row they're in, same logic as the column
   // headers above them never changing color row to row.
-  const repLayers = layers.filter(l => l.rep);
-  const repairsHtml = repLayers.length ? `
+  //
+  // ALL-THREE-LAYERS-ALWAYS-SHOWN (2026-10-13, Erik: on a buffer-armor fit
+  // the strip only showed a Shield row -- Armor/Hull vanished entirely
+  // since neither has a rep module fitted. Erik: "i think it's beneficial
+  // to show all three layers because the dashes in and of themselves both
+  // indicate that something isn't missing in the data, and that there is,
+  // in fact, no repair value. further highlighting if something is a
+  // buffer fit"). Previously this iterated `layers.filter(l => l.rep)`, so
+  // a layer with no rep module (null tankStyle entry) just didn't get a
+  // row at all -- indistinguishable from "not calculated" at a glance, and
+  // inconsistent with Resistance above it, which always shows all 3 layers.
+  // Now iterates the full `layers` list (same set Resistance uses) and
+  // renders an all-dashes row, including the Break Point column, for a
+  // layer with no rep module -- bpDps stays null rather than 0 (0 DPS
+  // would wrongly imply "unbreakable"; the honest statement is "no
+  // sustained regen exists to race against, it's pure buffer").
+  const repairsHtml = `
       <div class="repairs-strip">
         <div class="repairs-head">
           <span class="repairs-section-label">Repairs</span>
           <div class="repairs-icons">${repairsHeaderIconsHtml()}</div>
           ${breakPointIconSvg('Break Point — sustained DPS an attacker needs to out-race this layer’s repair/regen')}
         </div>
-        ${repLayers.map(l => {
-          let passiveVal = '', boostedVal = '', armorVal = '', hullVal = '', bpDps, bpTitle = '', burstDps = null;
-          if(l.key === 'shield'){
+        ${layers.map(l => {
+          let passiveVal = '', boostedVal = '', armorVal = '', hullVal = '', bpDps = null, bpTitle = '', burstDps = null;
+          if(!l.rep){
+            bpTitle = `No repair module fitted on this layer — pure buffer, no sustained regen to race against`;
+          } else if(l.key === 'shield'){
             passiveVal = l.rep.passiveDps.toLocaleString();
             if(l.rep.activeDps){
               boostedVal = l.rep.activeDps.toLocaleString();
@@ -5125,14 +5165,14 @@ function resistanceCardHtml(f, estimate){
             <span class="repairs-cell c-armor${armorVal ? '' : ' empty'}">${armorVal || '—'}</span>
             <span class="repairs-cell c-hull${hullVal ? '' : ' empty'}">${hullVal || '—'}</span>
           </div>
-          <span class="repairs-bp"${bpTitle ? ` title="${escapeHtml(bpTitle)}"` : ''}>
-            <span><span class="repairs-bp-val">${bpDps.toLocaleString()}</span><span class="repairs-bp-unit">dps</span></span>
+          <span class="repairs-bp${bpDps === null ? ' empty' : ''}"${bpTitle ? ` title="${escapeHtml(bpTitle)}"` : ''}>
+            <span><span class="repairs-bp-val">${bpDps === null ? '—' : bpDps.toLocaleString()}</span>${bpDps === null ? '' : '<span class="repairs-bp-unit">dps</span>'}</span>
             ${burstDps ? `<span class="repairs-bp-burst">${burstDps.toLocaleString()} burst</span>` : ''}
           </span>
         </div>`;
         }).join('')}
-        <div class="repairs-note">Break Point = DPS sustained to outpace repair/regen (hover a value for its breakdown). Assumes max-trained Repair Systems (armor/hull active reps) and max-trained Shield Operation (shield passive regen) — a Shield Booster's own output doesn't train up at all.</div>
-      </div>` : '';
+        <div class="repairs-note">Break Point = DPS sustained to outpace repair/regen (hover a value for its breakdown). Assumes max-trained Repair Systems (armor/hull active reps) and max-trained Shield Operation (shield passive regen) — a Shield Booster's own output doesn't train up at all. A dash means that layer has no repair module fitted at all (pure buffer), not a missing calculation.</div>
+      </div>`;
 
   return `
     <div class="fit-summary">
