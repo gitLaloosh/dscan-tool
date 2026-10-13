@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-13: Drone recommendation now driven by real calculated stats, not name buckets</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px}
+.warn{background:#fff3cd;border:1px solid #d99a3c;border-radius:4px;padding:10px 14px;margin:12px 0}
+</style>
+</head>
+<body>
+
+<h1>Drone recommendation now driven by real calculated stats, not name buckets</h1>
+<p class="small">2026-10-13 &middot; index.html &middot; follow-up to the Rorqual fix (same day, earlier doc)</p>
+
+<h2>The question that triggered this</h2>
+<p>After the Rorqual fix, Erik asked whether the "Industrial hull" label was an ESI/pyfa concept or something the tool invented, and whether the bug was "widespread." Then a sharper follow-up: "what data points would most accurately tell you which drones to use against it... accounting for every bit of work we do to determine speed, agility, sig radius, resistances, etc. do we determine weaknesses AFTER we run calculations for the fit or are we making assumptions based on potentially arbitrary names or classes we bundle them into?"</p>
+
+<h2>What was found</h2>
+<p>Mixed answer. Damage-TYPE selection (which race of drone) was already done right &mdash; computed from the real, post-module/post-skill resistance numbers on the Pilot/Fit Analyzer path (base-hull-only on the plain D-Scan path, which never sees modules at all &mdash; a data-availability limit, not a shortcut). Drone SIZE selection was exactly the arbitrary-name-bucket problem: <code>sizeClassFromGroup()</code> mapped the ESI group-name STRING straight to a size tier via the hand-written <code>GROUP_TIER</code> table, never touching the real calculated signature radius, speed, or agility the tool was already computing a few hundred lines later in the very same function for the Navigation &amp; Targeting card.</p>
+<p>Checking the rest of that old 'industrial' bucket against real class-average signature radii (EVE University's "rough guide" table, live-verified) confirmed the "widespread" suspicion: Freighters (&asymp;10,515m) and Jump Freighters (&asymp;9,840m) are both still in the exact same ballpark as Carriers (9,960m)/Dreadnoughts (11,200m) &mdash; i.e. the identical bug to the Rorqual, just not yet fixed. Mining Barges/Exhumers (&asymp;200m) and Blockade Runners (105m, live-verified) are genuinely small, no bug there &mdash; but their 195-200m sig radius is actually bigger than a Cruiser's 120m, which already got medium drones under the old table, while Mining Barges/Exhumers themselves were still stuck on light. A smaller instance of the same root bug.</p>
+
+<h2>Redesign</h2>
+<p>Replaced the ESI-group-name-driven pick with one driven by this hull's own real signature radius (the dominant real factor in whether a drone's own tracking speed can land hits), with the ship's real cruising speed as a secondary override on the Pilot/Fit Analyzer path (speed determines whether a drone can even keep pace with a target over a sustained engagement, independent of whether it can track it at all).</p>
+
+<p><b>Explicit design decision (Erik):</b> "when calculating sig radius, never assume that MWD will be active for drone selection. assume that pilots are aware that activating their MWD will blow up their sig radius and they'll take a lot of damage. go with the smaller sig radius resulting from an inactive MWD." Implemented literally: the new logic is fed <code>baseSignatureRadius</code> (hull + flat module add-ons + rig drawbacks), never <code>boostedSignatureRadius</code> (which folds in the MWD's sig-bloom bonus) &mdash; both values the tool already computes, just previously unused for this purpose. The same "assume no prop mod active" reasoning was extended to the speed component (<code>cruisingSpeed</code>, not the boosted figure) for consistency, since an MWD inflates both numbers from the same activation &mdash; flagged as an extension of Erik's instruction rather than something he separately asked for, in case he'd rather treat an Afterburner (which doesn't bloom sig radius the way an MWD does) differently later.</p>
+
+<h2>New size-tier thresholds</h2>
+<p>A judgment call, not a verified game constant (flagged as such, same category as <code>TANK_TYPE_THRESHOLD</code>) &mdash; anchored against EVE University's own "rough guide" hull-class signature-radius table (<code>wiki.eveuniversity.org/Signature_radius</code>, live-verified), with breakpoints at the midpoint between adjacent real classes:</p>
+<table>
+<tr><th>Sig radius</th><th>Tier</th><th>Drone sizes</th><th>Covers</th></tr>
+<tr><td>&le;90m</td><td>Small hull</td><td>Light</td><td>Frigate (38m), Destroyer (65m)</td></tr>
+<tr><td>90&ndash;200m</td><td>Medium hull</td><td>Medium</td><td>Cruiser (120m), Industrial/Mining Barge (195-200m)</td></tr>
+<tr><td>200&ndash;335m</td><td>Medium-large hull</td><td>Medium, Heavy</td><td>Battlecruiser (270m)</td></tr>
+<tr><td>335&ndash;5,000m</td><td>Large hull</td><td>Sentry, Heavy</td><td>Battleship (400m)</td></tr>
+<tr><td>&gt;5,000m</td><td>Capital hull</td><td>Sentry, Heavy</td><td>Jump Freighter/Carrier/Freighter/Dreadnought/Rorqual/Supercarrier/Titan (9,840m&ndash;23,397m)</td></tr>
+</table>
+<p>New <code>sizeClassFromSignature(sigRadius, groupName)</code> implements this, falling back to the old name-bucket <code>sizeClassFromGroup()</code> only when <code>sigRadius</code> is missing/zero (defensive, shouldn't happen for a real ship). <code>GROUP_TIER</code>/<code>sizeClassFromGroup()</code> stay in the file, demoted to fallback-only, since their historical fix comments (the Rorqual writeup) remain an accurate record.</p>
+
+<h2>Speed override (Pilot/Fit Analyzer only)</h2>
+<p><code>droneRecommendation()</code> gained an optional third <code>targetSpeed</code> parameter. When provided (real, unboosted <code>cruisingSpeed</code>), it compares the sig-radius-picked drone's own real max velocity &mdash; live-verified via everef.net: Light &asymp;2,800 m/s (Hobgoblin I), Medium 2,016 m/s (Hammerhead II), Heavy 1,200 m/s (Ogre II), Sentry &asymp;0 m/s (stationary, confirmed via Bouncer II) &mdash; against the target's real speed, and steps toward a faster drone class if the target would outrun it. This generalizes the old hardcoded "sentry primary always gets a chase-alt" rule into a real speed comparison: a sentry's own speed is ~0, so it's still always overridden by any nonzero target speed (same observable behavior as before), but a genuinely fast heavy-tier target now also gets caught by the same check. The plain D-Scan path has no fit/skill context to compute a real cruising speed from, so <code>targetSpeed</code> is always <code>undefined</code> there and the function falls through to the original, simpler sentry-only caveat &mdash; unchanged behavior on that path aside from the sig-radius-driven tier pick itself.</p>
+
+<div class="warn"><strong>Still flagged, not modeled:</strong> real drone tracking (hit chance) is a function of angular velocity at an assumed engagement range/transversal, which the tool has no honest source for from a kill or d-scan snapshot &mdash; same category of gap as the already-backlogged turret-side damage-application-efficiency item. Signature radius + speed is a strong, now real-data-driven heuristic, not a guarantee, and that caveat is worth surfacing in the UI at some point rather than only living in this doc.</div>
+
+<h2>Verification</h2>
+<ul>
+<li>Direct function-level calls (Playwright, real <code>index.html</code>) against <code>sizeClassFromSignature()</code> for every real hull class's live-verified sig radius (Frigate 38 &rarr; Small/Light ... Titan 23,397 &rarr; Capital/Sentry+Heavy) &mdash; all correct, including the Mining Barge/Exhumer (200m) now correctly landing on Medium instead of Light.</li>
+<li><code>droneRecommendation()</code> speed-override cases: a typical slow Battleship (120 m/s) still gets the sentry+heavy pairing; an artificially fast Battleship-sig target (1,500 m/s) correctly escalates the alt to Medium; a fast no-MWD interceptor-sig frigate (550 m/s) needs no override (Light's own 2,800 m/s comfortably covers it); the D-Scan path (no speed arg) reproduces its original sentry-only behavior exactly.</li>
+<li><code>node --check</code> on the extracted inline script &mdash; clean.</li>
+<li>Full regression suite: <strong>94/94 fits PASS</strong>, <code>dscan_parse_tests.mjs</code>: <strong>280/280 PASS</strong> (no existing fixture asserts on drone-size-tier/drone-recommendation output at all &mdash; this whole function family remains uncovered by the regression harness, see Backlog).</li>
+</ul>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 577,137 &rarr; 585,939 bytes</li>
+</ul>
+
+<h2>Backlog</h2>
+<p>Unchanged from the Rorqual fix's own backlog item: no golden-fit regression coverage exists for this function family at all. Also newly worth tracking: Freighters/Jump Freighters are still sitting in the old <code>GROUP_TIER</code> fallback's 'industrial' tier, but that table is now fallback-only and the real sig-radius path (confirmed above) already recommends correctly for them &mdash; so this is resolved as a side effect of this change, not a separate open item. Deep Space Transport's real signature radius was never directly verified this session (time/scope) &mdash; low risk given its design intent, but flagged rather than assumed.</p>
+
+<h2>Addendum (same day): Afterburner-aware speed</h2>
+<p>Erik, immediately after this fix: "as you said, ABs don't bloom sig radius so if using speeds with AB active is helpful (or would change which drone is recommended) to deal with the higher speeds, go ahead and make the change as you see fit."</p>
+<p>The speed fed into <code>droneRecommendation()</code>'s <code>targetSpeed</code> parameter is now a new <code>droneSpeedBasis</code> value, computed right after the dual-prop-mod block (so both <code>boostedSpeed</code> and <code>secondaryBoostedSpeed</code> are available): if an Afterburner is fitted, use whichever of those two figures actually belongs to the AB (<code>propModType</code>/<code>secondaryPropModType</code> already tag which real module each one came from, from the existing 2026-10-11 dual-prop-mod fix); otherwise (MWD-only or no prop mod at all) fall back to the plain unboosted <code>cruisingSpeed</code>, exactly as before. An MWD's own boosted speed is still never used for this purpose, for the same sig-bloom reason as the base fix above &mdash; this only ever substitutes in the AB's number, never the MWD's, including on a dual-prop fit where the MWD happens to be the "primary" (higher speedFactor) prop mod.</p>
+<p><b>Verification:</b> isolated <code>droneSpeedBasis</code>'s exact expression and ran it against 5 scenarios (no prop mod, AB only, MWD only, both with AB as the higher-speedFactor "primary", both with MWD as primary) &mdash; all 5 produced the intended value, including both dual-prop-mod cases correctly picking the AB's own boosted speed rather than the MWD's, regardless of which one the existing "primary" bookkeeping considers the winner. <code>node --check</code> clean. Regression suite re-run: <strong>94/94 fits PASS</strong>, <strong>280/280 parse tests PASS</strong> (pure refinement of an already-uncovered function family -- no existing fixture asserts on drone output). Version tag bumped v2026.10.13.2&rarr;.3. <code>index.html</code>: 585,939&rarr;587,079 bytes.</p>
+
+</body>
+</html>

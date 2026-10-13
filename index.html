@@ -86,6 +86,25 @@
        danger badge, parse-error highlighting), so retuning it for one of
        those would unintentionally recolor Break Point too. */
     --break-point:var(--danger);
+    /* Capacitor ring status scale (2026-10-13 addendum, Erik: "use colors
+       that would indicate positive vs negative status... transition from
+       green to red as it approaches 0%" with explicit bucket boundaries:
+       50-100%=good, 10-49%=caution, >0%-<10%=warn, unstable=critical). Not
+       reused from any existing token -- deliberately distinct from
+       --cyan/--amber (the boost-toggle's own "confident"/"assumed" colors,
+       which sit right next to this ring and must stay tellable apart from
+       it) and from --amber-dim/--therm/--exp (nearby hue-family colors used
+       elsewhere). critical reuses --danger directly (already this file's
+       one "unstable/weak" color everywhere else -- cap-gauge, EWAR danger
+       badge -- no reason for a second red). All 4 contrast-checked >=3:1
+       against this ring's actual render surface (--line-soft #1a2126, the
+       .estimate-stat background it sits on), not just the generic dark
+       surface: good 5.59:1, caution 7.99:1, warn 5.27:1, critical(--danger)
+       3.88:1. */
+    --cap-good:#1fae4a;
+    --cap-caution:#d9b13c;
+    --cap-warn:#d97a3c;
+    --cap-critical:var(--danger);
     --heading:#eef2f4;
     --label-size:10.5px;
     --label-tracking:0.6px;
@@ -519,6 +538,60 @@
   .cap-gauge-caption{display:flex; flex-direction:column; gap:1px; min-width:0;}
   .cap-gauge-caption .weak-sub:first-child{color:var(--heading); font-weight:600; font-size:11.5px;}
 
+  /* Capacitor-card ring + boost toggle (2026-10-13) -- same ring convention
+     as .cap-gauge above (track + rounded fill, rotated -90deg so it starts
+     at 12 o'clock), sized up for the card's own headline value instead of
+     a compact Weaknesses-card tile, plus a small toggle fixture (same
+     circular-button shape as .td-mode-btn) that switches the ring between
+     unboosted/boosted readings. See capacitorCardHtml()/capRingHtml(). */
+  .cap-ring-wrap{position:relative; width:64px; height:64px; flex:none;}
+  .cap-ring-wrap svg{width:100%; height:100%; transform:rotate(-90deg);}
+  .cap-ring-track{fill:none; stroke:rgba(79,195,217,0.15); stroke-width:6;}
+  .cap-ring-fill{fill:none; stroke-width:6; stroke-linecap:round;}
+  /* Status-scale fill color (2026-10-13 addendum) -- see the --cap-good/
+     --cap-caution/--cap-warn/--cap-critical comment in :root for the
+     bucket boundaries and contrast validation. Replaces the old plain
+     cyan-always-except-weak-is-red scheme. */
+  .cap-ring-fill.is-good{stroke:var(--cap-good);}
+  .cap-ring-fill.is-caution{stroke:var(--cap-caution);}
+  .cap-ring-fill.is-warn{stroke:var(--cap-warn);}
+  .cap-ring-fill.is-critical{stroke:var(--cap-critical);}
+  .cap-ring-value{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:11.5px; font-weight:700; color:var(--heading);
+    text-align:center; line-height:1.1; padding:0 4px;
+  }
+  .cap-boost-toggle{
+    position:absolute; right:-5px; bottom:-5px; width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex:none;
+    background:var(--panel); border:1px solid var(--line); color:var(--text-dim);
+    cursor:pointer; padding:0;
+    transition:background-color 0.12s, border-color 0.12s, color 0.12s, transform 0.12s;
+  }
+  .cap-boost-toggle svg{width:13px; height:13px;}
+  /* 2026-10-13 addendum (Erik: "when boost is toggled on, the boost icon
+     mouseover doesn't do anything visually to indicate that it's a
+     button... the border color does change when it's toggled off and you
+     mouseover though") -- root cause: .active/.assumed-mode below are
+     2-class selectors, same specificity as the plain :hover rule that used
+     to live here and later in source order, so they silently won outright
+     regardless of hover state; the only visible change on the OFF state
+     was the generic button:hover rule elsewhere in this file bleeding
+     through by coincidence (lower specificity, so it only painted
+     properties .cap-boost-toggle:hover left untouched), never a
+     deliberate hover design, and that same bleed-through was fully
+     shadowed once .active/.assumed-mode's own higher-specificity
+     background/border-color applied. Fixed with an explicit, equally
+     deliberate hover rule PER state (off/confident/assumed) so all three
+     visibly brighten + scale up slightly on hover, none of them relying on
+     the generic button:hover fallback. */
+  .cap-boost-toggle:hover{color:var(--text); border-color:var(--text-dim); background:var(--line-soft); transform:scale(1.08);}
+  .cap-boost-toggle.active{border-color:var(--cyan); color:var(--cyan); background:rgba(79,195,217,0.12);}
+  .cap-boost-toggle.active:hover{background:rgba(79,195,217,0.26); transform:scale(1.08);}
+  .cap-boost-toggle.assumed-mode{border-color:var(--amber); color:var(--amber); background:rgba(217,154,60,0.12);}
+  .cap-boost-toggle.assumed-mode:hover{background:rgba(217,154,60,0.26); transform:scale(1.08);}
+  .cap-ring-row{display:flex; align-items:center; gap:12px;}
+
   .rec-grid{
     display:flex; gap:12px; flex-wrap:wrap;
   }
@@ -871,7 +944,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.13.1</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.13.7</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -3943,12 +4016,28 @@ function buildTurretRecs(weakest, secondWeakest){
   return out;
 }
 
-function turretRecTileHtml(label, rec){
+// Erik, 2026-10-13 (after confirming the Rorqual/Maelstrom "no laser
+// answer" reports were both correct, not bugs -- buildTurretRecs() returns
+// null for a weapon system only when NEITHER the fit's weakest NOR its
+// second-weakest damage type is one that system can ever produce, e.g. a
+// laser boat facing a target whose top two weaknesses are Thermal and
+// Kinetic): "yes to the message text change." Previously this just said
+// "can't meaningfully address this damage type" with no way to tell WHAT
+// the actual weakness was without opening the resistance bars yourself --
+// which is exactly why this correct-but-opaque case kept getting reported
+// as a bug. Both render paths now name the fit's actual weakest/2nd-
+// weakest damage types directly in the message, so the real reason is
+// visible without a round-trip. weakest/secondWeakest are threaded in
+// from each call site purely for this text -- buildTurretRecs()'s own
+// null return is unchanged (still a plain null, so existing regression
+// assertions like rifter_user's turretLaserName:'(no answer)' are
+// unaffected).
+function turretRecTileHtml(label, rec, weakest, secondWeakest){
   if (!rec) {
     return `
           <div class="rec-stat">
             <span class="rec-label">${label}</span>
-            <span class="rec-value">No answer</span><span class="rec-sub">this weapon system can't meaningfully address this damage type</span>
+            <span class="rec-value">No answer</span><span class="rec-sub">this target's weakest resists (${DMG_FULL[weakest]}/${DMG_FULL[secondWeakest]}) aren't damage types this weapon system can produce</span>
           </div>`;
   }
   return `
@@ -3961,8 +4050,8 @@ function turretRecTileHtml(label, rec){
 
 // Shared with the simpler D-Scan summary card's plain-text `.rec` block
 // (turretRecTileHtml above is for the Fit Analyzer's boxed rec-grid tiles).
-function turretRecText(rec){
-  if (!rec) return `no answer — can't meaningfully address this damage type`;
+function turretRecText(rec, weakest, secondWeakest){
+  if (!rec) return `no answer — this target's weakest resists (${DMG_FULL[weakest]}/${DMG_FULL[secondWeakest]}) aren't damage types this weapon system can produce`;
   return rec.fallbackTo
     ? `${rec.name} — ${rec.note} (fallback: can't hit ${DMG_FULL[rec.fallbackFrom]}, next-best is ${DMG_FULL[rec.fallbackTo]})`
     : `${rec.name} — ${rec.note}`;
@@ -4105,11 +4194,56 @@ const DRONES_BY_RACE = {
   Minmatar: {light:'Warrior',   medium:'Valkyrie',     heavy:'Berserker', sentry:'Bouncer'}
 };
 
-function droneRecommendation(weakest, droneSizes){
+// Real T2-drone max velocity (m/s), live-verified 2026-10-13 via everef.net
+// -- Hobgoblin I (2,800 m/s, type 2454) used as the light-tier stand-in
+// since T1/T2 light drones don't meaningfully differ in TRAVEL speed, only
+// tracking/damage; Hammerhead II (2,016 m/s, type 2185); Ogre II (1,200
+// m/s, type 2446); Bouncer II (0.00001 m/s, type 28215 -- a sentry drone
+// is stationary once deployed, confirmed effectively zero). Used below to
+// decide whether a target's own real speed can outrun the drone size that
+// signature radius alone would otherwise recommend.
+const DRONE_SPEED_MS = {light:2800, medium:2016, heavy:1200, sentry:0};
+const DRONE_SPEED_ORDER = ['sentry','heavy','medium','light']; // slowest travel speed -> fastest
+
+function droneRecommendation(weakest, droneSizes, targetSpeed){
   const race = DMG_TO_RACE[weakest];
   const line = DRONES_BY_RACE[race];
   const entries = droneSizes.map(sz => ({size: sz, name: line[sz]}));
   const primary = entries[0];
+
+  // Erik, 2026-10-13 follow-up to the Rorqual fix: "what data points would
+  // most accurately tell you which drones to use... accounting for every
+  // bit of work we do to determine speed, agility, sig radius..." --
+  // targetSpeed (see the call site's own "droneSpeedBasis" comment for the
+  // full derivation) is the fit's own real, calculated speed, with an
+  // Afterburner assumed active if one is fitted (an AB carries none of an
+  // MWD's sig-bloom tradeoff -- Erik, same day: "ABs don't bloom sig
+  // radius so if using speeds with AB active is helpful... go ahead") but
+  // an MWD NEVER assumed active for this purpose (same explicit
+  // instruction as baseSignatureRadius below -- an MWD blooms sig radius
+  // AND speed from the same activation, so never assuming it's on applies
+  // to both). Only ever passed from the Pilot/Fit Analyzer path, which has
+  // full fit+skill context to compute this from -- the plain D-Scan path
+  // (no module visibility at all) leaves this undefined and falls through
+  // to the simpler, original sentry-only caveat below.
+  if(typeof targetSpeed === 'number' && targetSpeed > 0){
+    if(targetSpeed > DRONE_SPEED_MS[primary.size]){
+      // The sig-radius-driven pick can't keep pace with this target even
+      // without a prop mod active -- step toward faster (smaller) drone
+      // classes until one can, falling back to light (the fastest class
+      // that exists) if even that can't fully keep up.
+      const faster = DRONE_SPEED_ORDER
+        .slice(DRONE_SPEED_ORDER.indexOf(primary.size) + 1)
+        .find(sz => targetSpeed <= DRONE_SPEED_MS[sz]) || 'light';
+      return { primary, alt: {size: faster, name: line[faster]} };
+    }
+    return { primary, alt: null };
+  }
+
+  // D-Scan path (targetSpeed undefined, no fit/skill context available):
+  // preserve the original, simpler caveat -- a sentry is always
+  // stationary, so a sentry primary pick always gets a "won't sit still"
+  // alt regardless of the (unknown, here) target speed.
   let alt = entries.find(e => e.size !== 'sentry');
   if(primary.size === 'sentry' && !alt){
     alt = {size:'heavy', name: line.heavy};
@@ -4427,6 +4561,13 @@ const SIZE_TIERS = {
   industrial: {label:'Industrial hull',  droneSizes:['light']}
 };
 
+// DEMOTED TO FALLBACK-ONLY, 2026-10-13 (see sizeClassFromSignature() just
+// below sizeClassFromGroup() -- that function, not this table, now drives
+// the actual drone-size recommendation for any ship whose real signature
+// radius is known). This table/sizeClassFromGroup() stays in place only
+// for (a) the rare case ESI hands back a missing/zero signature radius,
+// and (b) GROUP_TIER's historical fix comments below, which remain
+// accurate accounts of what was wrong and stay as the record of it.
 const GROUP_TIER = {
   'frigate':'light', 'rookie ship':'light', 'shuttle':'light', 'corvette':'light',
   'assault frigate':'light', 'covert ops':'light', 'interceptor':'light',
@@ -4444,12 +4585,28 @@ const GROUP_TIER = {
 
   'battleship':'bs', 'elite battleship':'bs', 'marauder':'bs', 'black ops':'bs',
 
+  // 'capital industrial ship' (the Rorqual's real ESI group name, verified
+  // live 2026-10-13 against everef.net/type/28352) moved OUT of the
+  // 'industrial' tier and into 'capital' here, per Erik's bug report: "the
+  // tool is recommending warrior light drones to attack [a Rorqual]. this
+  // is a capital ship (XL in size) huge sig radius... how are we coming to
+  // this conclusion when i've seen plenty of other fits that recommend
+  // larger drones to attack them?" Root cause: this lookup table previously
+  // put 'capital industrial ship' in with Freighters/Mining Barges/
+  // Exhumers/Transport Ships (droneSizes:['light']) purely because its ESI
+  // group name contains the word "industrial" -- but the Rorqual's real
+  // signature radius is 11,500m (also verified live against everef.net),
+  // dwarfing every other hull in that bucket and comparable to or larger
+  // than Carriers/Dreadnoughts (droneSizes:['sentry','heavy']), which is
+  // where it belongs. This size-class lookup also drives the on-page
+  // "Industrial hull"/"Capital hull" label shown next to the ship's group
+  // name, so that label is corrected too, not just the drone pick.
   'carrier':'capital', 'dreadnought':'capital', 'titan':'capital',
-  'supercarrier':'capital', 'force auxiliary':'capital',
+  'supercarrier':'capital', 'force auxiliary':'capital', 'capital industrial ship':'capital',
 
   'industrial':'industrial', 'freighter':'industrial', 'transport ship':'industrial',
   'deep space transport':'industrial', 'blockade runner':'industrial',
-  'mining barge':'industrial', 'exhumer':'industrial', 'capital industrial ship':'industrial'
+  'mining barge':'industrial', 'exhumer':'industrial'
 };
 
 function sizeClassFromGroup(groupName){
@@ -4465,6 +4622,77 @@ function sizeClassFromGroup(groupName){
   if(/industrial|freighter|hauler|barge|exhumer|transport/.test(g)) return SIZE_TIERS.industrial;
 
   return {label: groupName, droneSizes:['medium']};
+}
+
+// Erik, 2026-10-13, following the Rorqual fix: "what data points would
+// most accurately tell you which drones to use against it... do we
+// determine weaknesses AFTER we run calculations for the fit or are we
+// making assumptions based on potentially arbitrary names or classes we
+// bundle them into?" Correct diagnosis -- GROUP_TIER above (and the
+// on-page "Industrial hull"/"Capital hull" label it drove) was exactly
+// that: an ESI-group-NAME bucket, blind to the real signature radius the
+// tool was already computing a few hundred lines later in the very same
+// function (baseSignatureRadius, Navigation & Targeting card) for every
+// Pilot/Fit Analyzer result, and blind to it ENTIRELY on the plain D-Scan
+// path (which never even read the ship's own signature-radius attribute,
+// despite it sitting right there in the already-fetched dogma). Signature
+// radius is the real, dominant factor in whether a drone's own tracking
+// speed can land hits at all -- it's the actual reason light/medium/
+// heavy/sentry exist as separate drone classes in EVE, not a name on an
+// ESI group.
+//
+// Thresholds below are a judgment call, not a verified game constant
+// (flagged as such, same as e.g. TANK_TYPE_THRESHOLD) -- anchored against
+// EVE University's own "rough guide" hull-class signature-radius table
+// (wiki.eveuniversity.org/Signature_radius, live-verified 2026-10-13):
+// Frigate 38m, Destroyer 65m, Cruiser 120m, Industrial 195m, Mining Barge
+// 200m, Battlecruiser 270m, Battleship 400m -- then a large real gap up to
+// Jump Freighter 9,840m / Carrier 9,960m / Freighter 10,515m / Dreadnought
+// 11,200m / Rorqual 11,500m (live-verified against everef.net, see
+// GROUP_TIER's own comment above) / Supercarrier 18,940m / Titan 23,397m.
+// Each breakpoint sits at the midpoint between the two real classes it
+// separates.
+//
+// REAL BEHAVIOR CHANGE worth flagging: Mining Barges/Exhumers (~195-200m
+// sig) now land in the 'medium' drone band instead of 'light'. They were
+// a smaller-magnitude instance of the exact same name-bucket bug the
+// Rorqual had -- GROUP_TIER put them in the 'industrial' tier (light
+// drones) purely because of their ESI group name, even though their real
+// sig radius (195-200m) is already bigger than a Cruiser's (120m), which
+// has always correctly gotten medium drones. Freighters/Jump Freighters
+// (~9,840-10,515m) now correctly land in the same capital-scale band as
+// the Rorqual, for the identical reason -- see the dscan-tool-architecture
+// memory file's backlog for the writeup flagging this before it was fixed.
+const SIG_DRONE_TIERS = [
+  {max: 90,       ...SIZE_TIERS.light},    // Frigate/Destroyer-scale (38-65m)
+  {max: 200,      ...SIZE_TIERS.medium},   // Cruiser/Industrial/Mining-Barge-scale (120-200m)
+  {max: 335,      ...SIZE_TIERS.bc},       // Battlecruiser-scale (~270m)
+  {max: 5000,     ...SIZE_TIERS.bs},       // Battleship-scale (~400m)
+  {max: Infinity, ...SIZE_TIERS.capital}   // Capital-and-up (9,800m+)
+];
+
+// sigRadius should be the REAL, calculated, UNBOOSTED signature radius
+// (hull + flat module add-ons + rig drawbacks only -- see the comment on
+// baseSignatureRadius in the Pilot/Fit Analyzer function for the full
+// formula). Explicit design decision, Erik's own words: "when calculating
+// sig radius, never assume that MWD will be active for drone selection...
+// assume that pilots are aware that activating their MWD will blow up
+// their sig radius and they'll take a lot of damage. go with the smaller
+// sig radius resulting from an inactive MWD." So this is deliberately fed
+// baseSignatureRadius, never boostedSignatureRadius, on the Pilot/Fit
+// Analyzer path. On the plain D-Scan path it's the ship's raw base
+// signature-radius attribute (no fit visibility exists there at all to
+// compute a boosted figure from in the first place).
+function sizeClassFromSignature(sigRadius, groupName){
+  if(sigRadius > 0){
+    const tier = SIG_DRONE_TIERS.find(t => sigRadius <= t.max);
+    return {label: tier.label, droneSizes: tier.droneSizes, note: tier.note};
+  }
+  // Defensive fallback only -- every real ship (category_id 6) should
+  // have a positive signature radius. If ESI ever hands back a missing/
+  // zero value, fall back to the old name-bucket guess rather than
+  // silently defaulting to light drones.
+  return sizeClassFromGroup(groupName);
 }
 
 async function analyzeChunks(items, worker, concurrency){
@@ -4652,7 +4880,12 @@ function renderResults(typeResults, typeCounts, unresolvedCounts, celestialCount
     }
     const weakest = DMG.reduce((a,b) => weighted[b] > weighted[a] ? b : a, DMG[0]);
     const secondWeakest = secondWeakestOf(weighted, weakest);
-    const sizeInfo = sizeClassFromGroup(group.name);
+    // Drone size now driven by this hull's real (raw base, D-Scan reveals
+    // no fit) signature radius rather than its ESI group name -- see
+    // sizeClassFromSignature()'s comment above. No speed data exists on
+    // this path (D-Scan never reveals a fit), so droneRecommendation()
+    // falls back to its simpler sentry-only caveat, same as before.
+    const sizeInfo = sizeClassFromSignature(attrVal(dogma, SIGNATURE_RADIUS_ATTR, 0), group.name);
     const rec = RECS[weakest];
     const turretRecs = buildTurretRecs(weakest, secondWeakest);
     const drones = droneRecommendation(weakest, sizeInfo.droneSizes);
@@ -4686,9 +4919,9 @@ function renderResults(typeResults, typeCounts, unresolvedCounts, celestialCount
       </div>` : ''}
       <div class="rec">
         <b>Missile:</b> ${rec.missile}<br>
-        <b>Laser:</b> ${turretRecText(turretRecs.laser)}<br>
-        <b>Hybrid:</b> ${turretRecText(turretRecs.hybrid)}<br>
-        <b>Projectile:</b> ${turretRecText(turretRecs.projectile)}
+        <b>Laser:</b> ${turretRecText(turretRecs.laser, weakest, secondWeakest)}<br>
+        <b>Hybrid:</b> ${turretRecText(turretRecs.hybrid, weakest, secondWeakest)}<br>
+        <b>Projectile:</b> ${turretRecText(turretRecs.projectile, weakest, secondWeakest)}
       </div>
     `;
     grid.appendChild(card);
@@ -5542,66 +5775,143 @@ function navCardHtml(f, estimate){
 function capCardStateText(result){
   return result.stable
     ? `Stable at ${result.stablePct}%`
-    : (result.timeToEmptyCapped ? 'Drains dry eventually (4h+)' : `Drains dry in ${formatDurationShort(result.timeToEmptySec)}`);
+    : (result.timeToEmptyCapped ? 'Drains eventually (4h+)' : `Drains in ${formatDurationShort(result.timeToEmptySec)}`);
+}
+// Capacitor-card ring (2026-10-13, Erik: "I just dont feel like we're
+// realistically representing cap integrity for fits that utilize cap
+// boosters or charge fed boosters and repair modules... change any 'Drains
+// dry in' output to simply be a visual representation of a capacitor's
+// inner ring, similar to the game's representation but a simple solution
+// similar to the way you drew the icons"). Sized up for this card's own
+// headline value; status-colored (see capRingColorClass()) instead of the
+// Weaknesses card's permanently-red danger theme.
+//
+// 2026-10-13 addendum (Erik: "can we have it look like it drains in a
+// clockwise manner?" + clarified "unstable would be a 'full' red ring").
+// Two behavior changes from the original build:
+//  1. DIRECTION: a naive dashoffset=C*(1-fraction) fill (the original code,
+//     and the still-current approach on the Weaknesses-card .cap-gauge,
+//     which is fine there since it's always one fixed state) makes the
+//     filled arc START at 12 o'clock and grow clockwise as fraction rises
+//     -- which means as it DRAINS (fraction falling), the fill's far edge
+//     recedes COUNTERclockwise back toward 12. Confirmed empirically via a
+//     side-by-side Playwright render before landing on the fix: making the
+//     fill the TRAILING segment of the dash pattern instead (dasharray=
+//     "fillLen gapLen", offset by -gapLen) puts the GAP (drained/consumed
+//     wedge) at 12 o'clock growing clockwise as fraction falls, with the
+//     remaining fill always ending back at 12 from the counterclockwise
+//     side -- i.e. the filled/empty boundary sweeps clockwise as the ring
+//     drains, same reading as a kitchen-timer pie.
+//  2. UNSTABLE STATE: was 0-fill (reads as "empty"); Erik clarified
+//     unstable should render as a FULL ring instead (full red, not empty),
+//     with time-to-empty still the centered figure.
+function capRingHtml(result){
+  const r = 24, circumference = Math.round(2 * Math.PI * r * 100) / 100;
+  const fillFraction = result.stable ? Math.min(1, Math.max(0, (result.stablePct || 0) / 100)) : 1;
+  const fillLen = Math.round(circumference * fillFraction * 100) / 100;
+  const gapLen = Math.round((circumference - fillLen) * 100) / 100;
+  const centerText = result.stable
+    ? `${Math.round(result.stablePct)}%`
+    : (result.timeToEmptyCapped ? '4h+' : formatDurationShort(result.timeToEmptySec).replace('m', 'm '));
+  return `
+            <svg viewBox="0 0 64 64">
+              <circle class="cap-ring-track" cx="32" cy="32" r="${r}"/>
+              <circle class="cap-ring-fill ${capRingColorClass(result)}" cx="32" cy="32" r="${r}" stroke-dasharray="${fillLen} ${gapLen}" stroke-dashoffset="${-gapLen}"/>
+            </svg>
+            <span class="cap-ring-value">${escapeHtml(centerText)}</span>`;
+}
+// Status-scale color bucket (2026-10-13 addendum, Erik: "use colors that
+// would indicate positive vs negative status... transition from green to
+// red as it approaches 0%", exact boundaries as given: 50-100%=good,
+// 11-49%=caution, >0%-<10%=warn -- the file treats the undefined 10%
+// boundary itself as caution (>=10), so the two ranges meet with no gap.
+// Unstable (even assuming boosters active, see capWeak's own definition)
+// is always critical regardless of its underlying %, per Erik's follow-up
+// clarification that unstable should read as a full red ring, not a
+// percentage-driven one.
+function capRingColorClass(result){
+  if(!result.stable) return 'is-critical';
+  const pct = result.stablePct || 0;
+  if(pct >= 50) return 'is-good';
+  if(pct >= 10) return 'is-caution';
+  if(pct > 0) return 'is-warn';
+  return 'is-critical';
+}
+// Small bolt icon for the boost toggle fixture -- same house convention as
+// every other icon in this file: a transparent hit-rect first (stroke-only
+// glyphs otherwise have a near-untriggerable hover/click target, see the
+// 2026-10-13 Repairs-strip icon hover-text fix) and a real SVG <title>
+// child, not just a title="" attribute (Chrome's native tooltip needs the
+// child element on an <svg> root, confirmed the hard way on that same fix).
+function capBoostToggleIconSvg(label){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><title>${escapeHtml(label)}</title><rect width="24" height="24" fill="transparent"/><path d="M13 2 L5 14 H11 L10 22 L19 9 H12 L13 2 Z"/></svg>`;
 }
 function capacitorCardHtml(f, estimate){
   const cap = estimate.capacitor;
-  const stateValue = capCardStateText(cap);
-  let stateSub = cap.stable
-    ? 'with every cap-using module cycling at once — the % of total capacity it settles at, not a fixed point'
-    : 'starting from a full capacitor, with every cap-using module cycling at once — see the sub-note below for this estimate\'s accuracy range';
-  // Capacitor Booster follow-up (2026-10-12, Erik: "let's have an indicator
-  // next to the stability indicator showing that it's boosted. maybe show
-  // both boosted and unboosted values?" then "add the cargo-inference
-  // fallback and use a bounded range for the no-data case") -- reuses the
-  // existing .repairs-badge pill (same cyan "ACTIVE REP" styling already
-  // used in the Resistance card for an active/conditional module) rather
-  // than inventing a new color, since the meaning is the same shape: "this
-  // number assumes a module is actively cycling." The PRIMARY state value
-  // (headline) stays the conservative no-booster baseline (same
-  // "sustained, not a finite consumable" posture as every other
-  // charge-based boost in this file, and the figure the Weaknesses-card
-  // flag actually uses) -- the boosted figure (or, lacking any identified
-  // charge, a grounded range) is its own clearly-labeled sub-line with its
-  // own badge, so both numbers are visible at a glance rather than one
-  // being buried inside a sentence.
-  let boostedLine = '';
-  if(cap.boosted){
-    const boostedValue = capCardStateText(cap.boosted);
-    // fromCargo (cargo-inference fallback, 2026-10-12): the charge wasn't
-    // actually confirmed loaded, just inferred from matching spare stock
-    // sitting in Cargo/Fleet hangar -- same module, almost certainly the
-    // same charge the pilot intends to use, but worth being honest that
-    // it's inferred rather than confirmed.
-    const sourceText = cap.boosted.fromCargo ? 'a spare' : 'a loaded';
-    const confidenceNote = cap.boosted.fromCargo ? ' (inferred from spare charges in cargo, not confirmed loaded)' : '';
-    boostedLine = `<span class="estimate-sub"><span class="repairs-badge" style="margin-right:6px;">BOOSTED</span>${boostedValue} with ${sourceText} ${escapeHtml(cap.boosted.chargeName)} actively cycling (+${cap.boosted.gainPerSec.toLocaleString()} GJ/s)${confidenceNote} — only while charges last, so the baseline above (no booster) stays the conservative figure used for the Weaknesses-card flag</span>`;
-  }else if(cap.range){
-    // No charge identified anywhere (neither flag-paired nor in cargo) --
-    // see CAP_BOOSTER_CHARGE_CATALOG comment in estimateHpAndDps for the
-    // grounding. Shows the honest envelope (smallest vs. largest charge
-    // that physically fits the module's own charge-bay capacity) rather
-    // than a single invented number or just staying silent.
-    const minValue = capCardStateText(cap.range.min);
-    const maxValue = capCardStateText(cap.range.max);
-    boostedLine = `<span class="estimate-sub"><span class="repairs-badge" style="margin-right:6px;">BOOSTED?</span>Capacitor Booster fitted, no charge identified — if loaded, gain could range ${cap.range.minGainPerSec.toLocaleString()}–${cap.range.maxGainPerSec.toLocaleString()} GJ/s depending on charge size (smallest fitting charge: ${minValue.toLowerCase()}; largest fitting charge: ${maxValue.toLowerCase()})</span>`;
-  }else if(cap.chargeUnidentified){
-    boostedLine = '<span class="estimate-sub">Capacitor Booster fitted, but no loaded charge could be identified, so its cap injection isn\'t counted here.</span>';
+  // f.capBoostOn persists across re-renders of this same fit object (the
+  // mode-toggle/tab-switch pattern elsewhere in this file re-renders the
+  // whole card stack from the same f, see wireTacticalModeButtons) --
+  // default ON only when a CONFIDENT boosted number exists (confirmed or
+  // cargo/fleet-hangar-inferred charge); default OFF when only the
+  // best-case ASSUMED tier is available, or when no boost mechanism is
+  // fitted at all (the toggle then simply isn't shown).
+  if(f.capBoostOn === undefined) f.capBoostOn = !!cap.combinedConfident;
+  const activeTier = f.capBoostOn ? (cap.combinedConfident || cap.combinedAssumed) : null;
+  const usingAssumedTier = f.capBoostOn && !cap.combinedConfident && !!cap.combinedAssumed;
+  const displayResult = activeTier || cap; // cap itself carries the baseline stable/stablePct/timeToEmptySec/timeToEmptyCapped fields
+  const displayNetRate = activeTier ? activeTier.netRate : cap.netRate;
+  const displayActiveDrain = activeTier ? activeTier.activeDrainPerSec : cap.activeDrainPerSec;
+
+  // Caption under the ring: names what's driving the number currently shown.
+  let captionHtml;
+  if(usingAssumedTier){
+    const parts = [];
+    if(cap.hasCapBooster && !cap.boosted) parts.push(`its Capacitor Booster assumed loaded with the largest compatible charge (+${cap.range ? cap.range.maxGainPerSec.toLocaleString() : '?'} GJ/s)`);
+    if(cap.hasAncillaryShieldBooster && !(cap.asb && cap.asb.confirmed)) parts.push('its Ancillary Shield Booster assumed to have a compatible charge loaded');
+    captionHtml = `<span class="estimate-sub"><span class="repairs-badge" style="margin-right:6px; color:var(--amber); border-color:rgba(217,154,60,0.35); background:rgba(217,154,60,0.1);">BOOSTED (ASSUMED)</span>Best-case snap — no charge was actually found in the fit's modules, cargo, or fleet hangar, so this assumes ${parts.join(' and ')}. Toggle off for the no-charge baseline.</span>`;
+  }else if(activeTier){
+    const parts = [];
+    if(cap.boosted) parts.push(`${cap.boosted.fromCargo ? 'a spare' : 'a loaded'} ${escapeHtml(cap.boosted.chargeName)} actively cycling (+${cap.boosted.gainPerSec.toLocaleString()} GJ/s)${cap.boosted.fromCargo ? ' — inferred from cargo/fleet hangar, not confirmed loaded' : ''}`);
+    if(cap.hasAncillaryShieldBooster && cap.asb && cap.asb.confirmed) parts.push(`its Ancillary Shield Booster drawing from ${cap.asb.fromCargo ? 'a spare' : 'a loaded'} ${escapeHtml(cap.asb.chargeName)} instead of ship capacitor${cap.asb.fromCargo ? ' — inferred from cargo/fleet hangar, not confirmed loaded' : ''}`);
+    captionHtml = `<span class="estimate-sub"><span class="repairs-badge" style="margin-right:6px;">BOOSTED</span>${parts.join('; also ')} — only while charges last, so the baseline (toggle off) stays the conservative figure</span>`;
+  }else if(cap.boostAvailable){
+    captionHtml = `<span class="estimate-sub">Off — no compatible charge found in this fit's modules, cargo, or fleet hangar. Toggling on assumes the best case (largest compatible charge/an available Ancillary Shield Booster charge).</span>`;
+  }else if(displayResult.stable){
+    captionHtml = `<span class="estimate-sub">with every cap-using module cycling at once — the % of total capacity it settles at, not a fixed point</span>`;
+  }else{
+    // 2026-10-13 addendum -- Erik's screenshot caught this: the caption above
+    // ("the % of total capacity it settles at") is nonsensical next to a
+    // DRAINING ring (it doesn't settle at a %, it empties on a timer), and
+    // this fit has no boost mechanism (cap.boostAvailable false) to explain
+    // via the other two branches either. Give the draining case its own
+    // text instead of silently reusing the stable one.
+    captionHtml = `<span class="estimate-sub">with every cap-using module cycling at once — no fitted booster to offset the drain</span>`;
   }
+
+  const toggleHtml = cap.boostAvailable ? `
+            <button type="button" class="cap-boost-toggle${f.capBoostOn ? (usingAssumedTier ? ' assumed-mode' : ' active') : ''}" data-cap-boost-toggle="1" title="${f.capBoostOn ? 'Showing boosted — click for the no-charge baseline' : 'Showing baseline — click to assume boosted'}">${capBoostToggleIconSvg('Toggle boosted/unboosted capacitor')}</button>` : '';
+
   return `
     <div class="fit-summary">
       <div class="fit-subsection-label">Capacitor</div>
       <div class="estimate-box">
         <div class="estimate-stat">
           <span class="estimate-label">Capacitor state</span>
-          <span class="estimate-value" style="${cap.weak ? 'color:#ff8a8a' : ''}">${stateValue}</span>
-          <span class="estimate-sub">${stateSub}</span>
-          ${boostedLine}
+          <div class="cap-ring-row">
+            <div class="cap-ring-wrap">
+              ${capRingHtml(displayResult)}
+              ${toggleHtml}
+            </div>
+            <div class="cap-gauge-caption">
+              <span class="weak-sub" style="color:var(--heading); font-weight:600; font-size:12.5px;">${escapeHtml(capCardStateText(displayResult))}</span>
+              ${captionHtml}
+            </div>
+          </div>
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Net cap rate</span>
-          <span class="estimate-value" style="${cap.stable ? '' : 'color:#ff8a8a'}">${cap.netRate >= 0 ? '+' : ''}${cap.netRate.toLocaleString()} GJ/s</span>
-          <span class="estimate-sub">${cap.peakRechargeRate.toLocaleString()} GJ/s peak recharge − ${cap.activeDrainPerSec.toLocaleString()} GJ/s active drain — the inputs behind the state above, a simplified sustained-average model (see comment on simulateCapacitorStability), not a full pyfa-style discrete-event simulation</span>
+          <span class="estimate-value" style="${displayResult.stable ? '' : 'color:#ff8a8a'}">${displayNetRate >= 0 ? '+' : ''}${displayNetRate.toLocaleString()} GJ/s</span>
+          <span class="estimate-sub">${cap.peakRechargeRate.toLocaleString()} GJ/s peak recharge − ${displayActiveDrain.toLocaleString()} GJ/s active drain — the inputs behind the state above, a simplified sustained-average model (see comment on simulateCapacitorStability), not a full pyfa-style discrete-event simulation</span>
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Capacitor capacity</span>
@@ -6222,10 +6532,35 @@ function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved){
         f.estimate = f.tacticalModes[mode];
         wrap.innerHTML = renderFitSummaryHtml(f);
         wireTacticalModeButtons();
+        wireCapBoostToggle();
+      });
+    });
+  }
+  // 2026-10-13: capacitor-ring boosted/unboosted toggle. Wired unconditionally
+  // (unlike the TD-mode buttons above, which only exist for a handful of T3
+  // destroyer hulls) because any fit with a Capacitor Booster or Ancillary
+  // Shield Booster fitted gets this toggle on its Capacitor card. Mirrors the
+  // same "mutate state on f -> full re-render -> re-wire everything" pattern
+  // as wireTacticalModeButtons, since renderFitSummaryHtml(f) rebuilds the
+  // entire card stack (both the TD-mode row and the Capacitor card) in one
+  // innerHTML replacement -- so both wiring functions must be re-run together
+  // after EITHER one triggers a re-render, regardless of which one fired.
+  function wireCapBoostToggle(){
+    const wrap = el.querySelector('#fit-analyzer-summary-wrap');
+    if(!wrap) return;
+    wrap.querySelectorAll('.cap-boost-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        f.capBoostOn = !f.capBoostOn;
+        wrap.innerHTML = renderFitSummaryHtml(f);
+        wireTacticalModeButtons();
+        wireCapBoostToggle();
       });
     });
   }
   if(f.tacticalModes) wireTacticalModeButtons();
+  wireCapBoostToggle();
 }
 
 document.getElementById('fitAnalyzerBtn').addEventListener('click', runFitAnalyzer);
@@ -6455,6 +6790,12 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // model this tool's data shape doesn't support.
   const CAPACITOR_BOOSTER_GROUP_NAME = 'capacitor booster';
   const CAP_BOOSTER_BONUS_ATTR = 67; // capacitorBonus, GJ injected per charge used
+  // ANCILLARY_SHIELD_BOOSTER_GROUP_NAME (2026-10-13): hoisted up here (ahead
+  // of its own explanatory comment block and sibling let-declarations further
+  // below) because the flag-pairing loop just below needs it immediately --
+  // declaring it down with the rest of its group would put the usage before
+  // the declaration in execution order and throw a TDZ error, same scope.
+  const ANCILLARY_SHIELD_BOOSTER_GROUP_NAME = 'ancillary shield booster';
   // Cargo-inference + bounded-range follow-up (2026-10-12). Capacitor
   // Booster Charge is ESI group 87, confirmed live via
   // ref-data.everef.net/groups/87 -- exactly 18 real types exist (no more,
@@ -6488,16 +6829,22 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   ];
   const typeAndGroupById = new Map(defensiveTypes.filter(dt => dt && !dt.error).map(dt => [dt.id, dt]));
   const capBoosterChargeIdByModuleId = new Map();
+  // asbChargeIdByModuleId (2026-10-13): same flag-sharing mechanic, extended
+  // to also catch an Ancillary Shield Booster's own loaded Cap Booster
+  // charge -- see ANCILLARY_SHIELD_BOOSTER_GROUP_NAME comment above.
+  const asbChargeIdByModuleId = new Map();
   for(const flag of (midSlotByFlag ? midSlotByFlag.keys() : [])){
     const flagItems = midSlotByFlag.get(flag);
-    let moduleEntry = null, chargeEntry = null;
+    let moduleEntry = null, asbModuleEntry = null, chargeEntry = null;
     for(const it of flagItems){
       const dt = typeAndGroupById.get(it.id);
       if(!dt) continue;
       if(dt.group && dt.group.category_id === CHARGE_CATEGORY_ID) chargeEntry = it;
       else if((dt.group.name || '').toLowerCase() === CAPACITOR_BOOSTER_GROUP_NAME) moduleEntry = it;
+      else if((dt.group.name || '').toLowerCase() === ANCILLARY_SHIELD_BOOSTER_GROUP_NAME) asbModuleEntry = it;
     }
     if(moduleEntry && chargeEntry) capBoosterChargeIdByModuleId.set(moduleEntry.id, chargeEntry.id);
+    if(asbModuleEntry && chargeEntry) asbChargeIdByModuleId.set(asbModuleEntry.id, chargeEntry.id);
   }
 
   // Real fitted quantity per item id (e.g. 3x Heat Sink II) — a fit with
@@ -6631,6 +6978,37 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   let capBoosterGainPerSec = 0;
   let hasCapBooster = false;
   let capBoosterChargeName = null;
+  // Ancillary Shield Booster capacitor-ring feature (2026-10-13, Erik:
+  // "I just dont feel like we're realistically representing cap integrity
+  // for fits that utilize cap boosters or charge fed boosters and repair
+  // modules"). Live-verified (everef.net type 41504, Capital Ancillary
+  // Shield Booster, group 1156 "Ancillary Shield Booster"): capacitorNeed
+  // (attr 6) = 4,000 GJ/5s = 800 GJ/s -- a real, large, unconditional
+  // contribution to capDrainPerSec above (same "charges exhausted" baseline
+  // convention every other cap-using module gets). chargeGroup (605) points
+  // to Capacitor Booster Charge (group 87, same charge family the dedicated
+  // Capacitor Booster module uses) with a chargeSize(128)="x-large" gate the
+  // Capacitor Booster module itself does NOT have. While an actual charge is
+  // loaded, the real game mechanic pays this module's activation cost from
+  // the charge instead of ship capacitor -- it does NOT inject GJ (that's
+  // the separate Capacitor Booster module's job) and its injected amount
+  // does not vary by charge size the way Capacitor Booster's does, so
+  // "boosted" for this module is simply "exclude this module's own
+  // capacitorNeed from the drain," never a range. Cross-checked against
+  // Large Ancillary Armor Repairer (type 33103) for comparison: its
+  // capacitorNeed is a normal 400GJ and its chargeGroup is Nanite Repair
+  // Paste, confirming (per this file's own existing methodology text) that
+  // AAR's charge changes repair AMOUNT, not where the cap cost is drawn
+  // from -- so AAR deliberately stays OUT of this mechanism, already
+  // correctly handled by ANCILLARY_ARMOR_BOOST_MULT_ATTR elsewhere.
+  // (ANCILLARY_SHIELD_BOOSTER_GROUP_NAME itself is declared earlier, above
+  // the flag-pairing loop that needs it first -- see the comment there.)
+  let ancillaryShieldBoosterCapDrainPerSec = 0; // tracked SEPARATELY from capDrainPerSec (which still includes it, conservative baseline) so the boosted sim can subtract it back out
+  let hasAncillaryShieldBooster = false;
+  let asbChargeName = null;
+  let asbChargeConfirmed = false; // flag-paired (confirmed loaded) or cargo/fleet-hangar-inferred -- either counts as "confirmed" for this binary (charge present or not) mechanism, unlike Capacitor Booster's GJ-size range
+  let asbChargeFromCargo = false; // true only for the cargo/fleet-hangar-inferred case, for the same "inferred, not confirmed loaded" caveat text the Capacitor Booster module already gets
+  const unresolvedAsbInstances = []; // ASB instances with no flag-paired charge -- queued for the same cargo/fleet-hangar inference pass as Capacitor Booster below
   // Cargo-inference + bounded-range follow-up (2026-10-12, Erik: "if the
   // fit has a module that uses boosters but doesn't have charges loaded,
   // account for the possibility... add the cargo-inference fallback and
@@ -6886,9 +7264,31 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     const capNeed = (groupName === 'propulsion module' && tdPropulsion && tdPropulsion.propCapUseReductionPct)
       ? capNeedAfterSkills * (1 - tdPropulsion.propCapUseReductionPct / 100)
       : capNeedAfterSkills;
+    let thisItemCycleSec = 0;
     if(capNeed > 0){
       const cycleMs = attrVal(dogma, RATE_OF_FIRE_ATTR, 0) || attrVal(dogma, REP_CYCLE_DURATION_ATTR, 0);
-      if(cycleMs > 0) capDrainPerSec += qty * (capNeed / (cycleMs / 1000));
+      if(cycleMs > 0){
+        thisItemCycleSec = cycleMs / 1000;
+        capDrainPerSec += qty * (capNeed / thisItemCycleSec);
+      }
+    }
+    // Ancillary Shield Booster capacitor-ring feature (2026-10-13) -- see
+    // ANCILLARY_SHIELD_BOOSTER_GROUP_NAME comment above. Tracks this
+    // module's own already-counted capDrainPerSec contribution separately
+    // (never subtracted here -- the baseline stays conservative) so the
+    // boosted sim further below can remove it when a charge is confirmed,
+    // cargo/fleet-hangar-inferred, or assumed.
+    if(groupName === ANCILLARY_SHIELD_BOOSTER_GROUP_NAME && capNeed > 0 && thisItemCycleSec > 0){
+      hasAncillaryShieldBooster = true;
+      ancillaryShieldBoosterCapDrainPerSec += qty * (capNeed / thisItemCycleSec);
+      const chargeId = asbChargeIdByModuleId.get(dt.id);
+      const chargeDt = chargeId !== undefined ? typeAndGroupById.get(chargeId) : null;
+      if(chargeDt && !chargeDt.error){
+        asbChargeName = chargeDt.type.name;
+        asbChargeConfirmed = true;
+      }else{
+        unresolvedAsbInstances.push({qty});
+      }
     }
     // Capacitor Booster follow-up (2026-10-12) -- see capBoosterGainPerSec
     // comment above + capBoosterChargeIdByModuleId comment further above for
@@ -7593,8 +7993,10 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   }
   const weakest = DMG.reduce((a,b) => weighted[b] > weighted[a] ? b : a, DMG[0]);
   const secondWeakest = secondWeakestOf(weighted, weakest);
-  const sizeInfo = sizeClassFromGroup(shipGroup.name);
-  const drones = droneRecommendation(weakest, sizeInfo.droneSizes);
+  // Drone-size recommendation (sizeInfo/drones) moved further down this
+  // function, after baseSignatureRadius/cruisingSpeed are both computed --
+  // see that block's comment for why (Erik, 2026-10-13: drive this off
+  // the fit's own real calculated numbers, not the ESI group name).
   const weaknessRec = RECS[weakest];
   const turretRecs = buildTurretRecs(weakest, secondWeakest);
 
@@ -8030,13 +8432,44 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // see CAP_BOOSTER_CHARGE_CATALOG comment above for the group-87
   // grounding), not a hardcoded id list, so any future new charge type is
   // picked up automatically.
-  if(unresolvedCapBoosterInstances.length && cargoIds.length){
+  // 2026-10-13 addition: an Ancillary Shield Booster with no flag-paired
+  // charge rides the exact same cargo/fleet-hangar scan -- it needs no GJ
+  // amount (see ANCILLARY_SHIELD_BOOSTER_GROUP_NAME comment above, its
+  // drain-exclusion is binary, not size-dependent), just confirmation that
+  // SOME real Capacitor Booster Charge-group item sits in cargo/fleet
+  // hangar. Reuses candidateCharges below rather than a second network
+  // fetch, so broadening this condition costs nothing extra when only
+  // Capacitor Booster instances are unresolved.
+  if((unresolvedCapBoosterInstances.length || unresolvedAsbInstances.length) && cargoIds.length){
     const cargoBoosterMeta = await analyzeChunks(cargoIds, async (id) => {
       const type = await getType(id);
       const group = await getGroup(type.group_id);
       return {id, type, group};
     }, 5);
     const candidateCharges = cargoBoosterMeta.filter(c => c && !c.error && c.group && (c.group.name || '').toLowerCase() === CAP_BOOSTER_CHARGE_GROUP_NAME);
+    if(candidateCharges.length && unresolvedAsbInstances.length){
+      // Any real Cap Booster-family charge sitting in cargo/fleet hangar is
+      // enough -- pick the same "most copies, largest GJ as tiebreak"
+      // winner purely for a sensible display name, not because the GJ
+      // value itself matters for ASB.
+      const asbCargoQtyById = new Map();
+      for(const g of ['Cargo', 'Fleet hangar']){
+        for(const [idStr, data] of Object.entries(tally[g] || {})){
+          const id = Number(idStr);
+          const q = (data.totalQty || 1) / (data.lossCount || 1);
+          asbCargoQtyById.set(id, (asbCargoQtyById.get(id) || 0) + q);
+        }
+      }
+      const asbBest = candidateCharges.slice().sort((a, b) => {
+        const qtyDiff = (asbCargoQtyById.get(b.id) || 0) - (asbCargoQtyById.get(a.id) || 0);
+        if(qtyDiff !== 0) return qtyDiff;
+        return attrVal(b.type.dogma_attributes || [], CAP_BOOSTER_BONUS_ATTR, 0) - attrVal(a.type.dogma_attributes || [], CAP_BOOSTER_BONUS_ATTR, 0);
+      })[0];
+      asbChargeName = asbBest.type.name;
+      asbChargeConfirmed = true; // inferred, not flag-confirmed -- the Capacitor-card UI distinguishes this via asbChargeFromCargo below
+      asbChargeFromCargo = true;
+      unresolvedAsbInstances.length = 0;
+    }
     if(candidateCharges.length){
       // Multiple distinct charge TYPES sitting in cargo at once (mixed
       // reload stock): prefer whichever type has the most copies on hand
@@ -8220,6 +8653,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // see the table's comment for the deliberately-excluded ids).
   const baseAgility = attrVal(shipDogma, SHIP_AGILITY_ATTR, 0) * MAX_EVASIVE_MANEUVERING_AGILITY_MULT * applyStackingBonus(agilityRigDrawbackFractions) * (1 - ((tdPropulsion && tdPropulsion.inertiaBonusPct) || 0) / 100) * (1 + subsystemSpeedAgilityBonus.agilityPct / 100);
   const cruisingSpeed = attrVal(shipDogma, SHIP_MAX_VELOCITY_ATTR, 0) * MAX_NAVIGATION_MULT * (1 + ((tdPropulsion && tdPropulsion.maxVelocityBonusPct) || 0) / 100) * (1 + subsystemSpeedAgilityBonus.maxVelocityPct / 100);
+
   const baseAlignTimeSec = -Math.log(0.25) * baseAgility * baseMass / 1000000;
   let boostedSpeed = null, boostedAlignTimeSec = null;
   if((hasMWD || hasAfterburner) && propModSpeedFactor > 0){
@@ -8255,6 +8689,33 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       secondaryBoostedAlignTimeSec = -Math.log(0.25) * baseAgility * altMassWithPropMod / 1000000;
     }
   }
+
+  // Drone-size recommendation, driven by this fit's own REAL calculated
+  // numbers rather than the ESI group name -- see sizeClassFromSignature()/
+  // droneRecommendation()'s comments above for the full reasoning (Erik,
+  // 2026-10-13). baseSignatureRadius is deliberately the UNBOOSTED figure
+  // (never boostedSignatureRadius) -- Erik's explicit instruction is to
+  // never assume an MWD is active for THIS purpose, on the assumption a
+  // pilot knows activating it blooms their own sig radius and invites a
+  // lot more incoming damage.
+  //
+  // Speed is more nuanced, per Erik's same-day follow-up: "ABs don't
+  // bloom sig radius so if using speeds with AB active is helpful (or
+  // would change which drone is recommended) to deal with the higher
+  // speeds, go ahead." An Afterburner carries none of the MWD's sig-bloom
+  // tradeoff, so it's safe to assume ONE is running here (an MWD still
+  // never is). droneSpeedBasis picks whichever of boostedSpeed/
+  // secondaryBoostedSpeed actually belongs to the fitted Afterburner --
+  // propModType/secondaryPropModType above tag which real module each
+  // figure came from, same dual-prop-mod bookkeeping the Speed/Align time
+  // card already uses -- and falls back to the plain unboosted
+  // cruisingSpeed whenever no Afterburner is fitted at all (MWD-only or
+  // no prop mod), unchanged from the original instruction.
+  const droneSpeedBasis = (hasAfterburner
+    ? (propModType === 'afterburner' ? boostedSpeed : secondaryBoostedSpeed)
+    : null) ?? cruisingSpeed;
+  const sizeInfo = sizeClassFromSignature(baseSignatureRadius, shipGroup.name);
+  const drones = droneRecommendation(weakest, sizeInfo.droneSizes, droneSpeedBasis);
 
   // Missile damage-application efficiency against THIS target (Erik,
   // 2026-10-11, metric corrected 2026-10-12 -- see missileAppliedFraction()/
@@ -8330,55 +8791,66 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // 2026-10-12 (Erik backlog #2): stable%/time-to-empty, see
   // simulateCapacitorStability() above for the full grounding/derivation.
   const capSimResult = simulateCapacitorStability(baseCapacitorCapacity, capacitorRechargeTimeSec, capDrainPerSec);
-  const capWeak = !capSimResult.stable || (capSimResult.stablePct !== null && capSimResult.stablePct < CAP_STABLE_WEAKNESS_PCT_THRESHOLD);
-  // 2026-10-12 (Erik overnight follow-up, cap warfare backlog): this single
-  // flag/reason pair is now the ONLY surfacing of the capWeak signal -- an
-  // earlier pass of this same evening also pushed a second, offense-worded
-  // copy of it ("Cap-lean target") onto the EWAR/Misc card, but Erik caught
-  // that it was the exact same capWeak/stablePct/netRate signal stated
-  // twice in two places and asked to have it removed rather than moved --
-  // the wording below folds in a short offense-facing clause instead (his
-  // call: "you can choose the wording for now").
-  const capWeakReason = !capSimResult.stable
-    ? (capSimResult.timeToEmptyCapped
-        ? 'Capacitor drains dry eventually with every cap-using module cycling at once (past the 4h simulation horizon) -- already unstable without any outside help, and any neut/nos pressure speeds up the bleed-out'
-        : `Capacitor drains dry in ${formatDurationShort(capSimResult.timeToEmptySec)} with every cap-using module cycling at once -- already unstable without any outside help, and any neut/nos pressure speeds up the bleed-out`)
-    : (capWeak ? `Only cap stable at ${capSimResult.stablePct}% -- thin margin, as little as ${Math.round(netCapRate * 10) / 10} GJ/s of extra average drain (a hostile neut/nos, overheat, one more module cycling) can push it negative` : null);
 
-  // Capacitor Booster follow-up (2026-10-12, Erik: "is a cap booster
-  // accounted for in these calculations?"). Answer was: the module itself
-  // was already correctly excluded from the drain sum, but its charge's
-  // cap INJECTION was a known, disclosed gap -- not modeled at all. Fixed
-  // here as a SEPARATE "boosted" stability result (never netted into
-  // capSimResult/netCapRate/capWeakReason above), computed only when a
-  // charge was actually identified (capBoosterGainPerSec > 0) -- same
-  // "disclose, don't guess" posture as the rest of this file: a fitted
-  // Capacitor Booster with no identifiable loaded charge contributes
-  // nothing rather than assuming a size/charge.  Deliberately kept
-  // separate rather than folded into the default/sustained figure for the
-  // same reason this file already treats a charge-based boost (Ancillary
-  // Armor Repairer's 3x multiplier) as a secondary, not primary, number:
-  // a Cap Booster charge is a finite consumable (this tool has no way to
-  // know how many are loaded/carried), so the conservative baseline stays
-  // the one used for capWeak/the Weaknesses-card flag -- this boosted
-  // figure is purely an additional, clearly-labeled "while it's actively
-  // cycling" data point.
-  const capBoosterGainIdentified = capBoosterGainPerSec > 0;
-  const capSimResultBoosted = capBoosterGainIdentified
-    ? simulateCapacitorStability(baseCapacitorCapacity, capacitorRechargeTimeSec, capDrainPerSec - capBoosterGainPerSec)
+  // Capacitor Booster / Ancillary Shield Booster follow-up (2026-10-12
+  // Capacitor Booster gain model, extended 2026-10-13 to also cover
+  // Ancillary Shield Booster -- see ANCILLARY_SHIELD_BOOSTER_GROUP_NAME
+  // comment above). Two independent charge-fed mechanisms, combined into
+  // one CONFIDENT tier (only flag-paired/cargo-inferred charges -- never
+  // guessed) and one ASSUMED tier (snaps to the best case when a
+  // boost-capable module is fitted but no charge was found anywhere, per
+  // Erik: "assume the opponent is at their best rather than underestimating").
+  const capBoosterGainIdentified = capBoosterGainPerSec > 0; // confirmed/cargo-inferred Capacitor Booster injection
+  const capBoosterRangeIdentified = capBoosterRangeMaxPerSec > 0; // no charge found anywhere, but a real grounded min-max envelope exists (module capacity bounds it)
+  const asbDrainIfConfirmed = (hasAncillaryShieldBooster && asbChargeConfirmed) ? ancillaryShieldBoosterCapDrainPerSec : 0;
+  const asbDrainIfAssumed = hasAncillaryShieldBooster ? ancillaryShieldBoosterCapDrainPerSec : 0; // assumed tier excludes it regardless of whether a charge was actually seen
+  const capBoostConfidentReduction = capBoosterGainPerSec + asbDrainIfConfirmed;
+  const capBoostAssumedReduction = (capBoosterGainIdentified ? capBoosterGainPerSec : (capBoosterRangeIdentified ? capBoosterRangeMaxPerSec : 0)) + asbDrainIfAssumed;
+  const capBoostAvailable = hasCapBooster || hasAncillaryShieldBooster; // toggle/ring-alt shown at all
+  const capBoostConfident = capBoosterGainIdentified || asbDrainIfConfirmed > 0; // a real, non-guessed boosted number exists
+  // True only when the assumed tier differs from the confident tier (there's
+  // an actual unconfirmed piece) -- lets the UI skip a redundant "(assumed)"
+  // badge when everything fitted is already confirmed/inferred.
+  const capBoostHasUnconfirmedPortion = (hasCapBooster && !capBoosterGainIdentified && capBoosterRangeIdentified) || (hasAncillaryShieldBooster && !asbChargeConfirmed);
+  const capSimResultBoosted = capBoostConfident
+    ? simulateCapacitorStability(baseCapacitorCapacity, capacitorRechargeTimeSec, capDrainPerSec - capBoostConfidentReduction)
     : null;
-  // Bounded-range follow-up (2026-10-12) -- see capBoosterRangeMinPerSec/
-  // MaxPerSec + CAP_BOOSTER_CHARGE_CATALOG comments above. Only populated
-  // when a Capacitor Booster is fitted but no charge was identified by
-  // EITHER the flag-pairing OR cargo-inference passes above -- same
-  // "disclose a real grounded range, never a single invented number"
-  // posture. Two full stability sims (min/max), not just raw GJ/s, so this
-  // reads the same way as the confirmed-charge `boosted` case above.
-  const capBoosterRangeIdentified = capBoosterRangeMaxPerSec > 0;
-  const capSimResultRangeMin = capBoosterRangeIdentified
+  const capSimResultAssumed = (capBoostAvailable && capBoostHasUnconfirmedPortion)
+    ? simulateCapacitorStability(baseCapacitorCapacity, capacitorRechargeTimeSec, capDrainPerSec - capBoostAssumedReduction)
+    : null;
+
+  // 2026-10-13 (Erik): drop the thin-margin trigger from the Weaknesses-card
+  // flag entirely -- flag only on an actual drain. And evaluate against the
+  // best-case ASSUMED tier whenever a boost-capable module is fitted at
+  // all, never gated on whether a charge was actually visible this time:
+  // "if the fit is capable of running them, we should assume it will have
+  // them the next time we encounter the fit. maybe it used all of the
+  // charges and that's why it was destroyed in it's last fight." (a
+  // killmail/d-scan snapshot only shows inventory at time of death/scan,
+  // per Erik's own follow-up: "zkillboard shows us what was in the ship's
+  // modules and cargo when it was destroyed" -- an empty hold proves
+  // nothing about what the pilot normally carries.) If no boost-capable
+  // module is fitted at all, this is identical to capSimResult (baseline).
+  const capWeakSimResult = capBoostAvailable
+    ? simulateCapacitorStability(baseCapacitorCapacity, capacitorRechargeTimeSec, capDrainPerSec - capBoostAssumedReduction)
+    : capSimResult;
+  const capWeak = !capWeakSimResult.stable;
+  const capWeakReason = capWeak
+    ? (capWeakSimResult.timeToEmptyCapped
+        ? `Capacitor would drain eventually with every cap-using module cycling at once (past the 4h simulation horizon)${capBoostAvailable ? ', even assuming its fitted Capacitor Booster/Ancillary Shield Booster has charges available' : ''} -- already unstable without any outside help, and any neut/nos pressure speeds up the bleed-out`
+        : `Capacitor would drain in ${formatDurationShort(capWeakSimResult.timeToEmptySec)} with every cap-using module cycling at once${capBoostAvailable ? ', even assuming its fitted Capacitor Booster/Ancillary Shield Booster has charges available' : ''} -- already unstable without any outside help, and any neut/nos pressure speeds up the bleed-out`)
+    : null;
+
+  // Bounded-range follow-up (2026-10-12), kept for its own disclosed-range
+  // sub-line text on the Capacitor card (distinct purpose from the
+  // assumed-best-case tier above, which exists purely to drive the ring
+  // toggle/Weaknesses flag with ONE number) -- see CAP_BOOSTER_CHARGE_CATALOG
+  // comment above.
+  const capBoosterRangeIdentifiedForDisplay = capBoosterRangeIdentified && !capBoosterGainIdentified;
+  const capSimResultRangeMin = capBoosterRangeIdentifiedForDisplay
     ? simulateCapacitorStability(baseCapacitorCapacity, capacitorRechargeTimeSec, capDrainPerSec - capBoosterRangeMinPerSec)
     : null;
-  const capSimResultRangeMax = capBoosterRangeIdentified
+  const capSimResultRangeMax = capBoosterRangeIdentifiedForDisplay
     ? simulateCapacitorStability(baseCapacitorCapacity, capacitorRechargeTimeSec, capDrainPerSec - capBoosterRangeMaxPerSec)
     : null;
 
@@ -8412,6 +8884,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     unmatchedWeaponCount: Math.round(unmatchedWeaponCount),
     variableWeaponCount: Math.round(variableWeaponCount),
     weakest,
+    secondWeakest,
     weaknessPct: Math.round(Math.min(1, weighted[weakest]) * 100),
     weaknessRec,
     turretRecs,
@@ -8592,7 +9065,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         timeToEmptySec: capSimResultBoosted.timeToEmptySec,
         timeToEmptyCapped: capSimResultBoosted.timeToEmptyCapped
       } : null,
-      range: capBoosterRangeIdentified ? {
+      range: capBoosterRangeIdentifiedForDisplay ? {
         minGainPerSec: Math.round(capBoosterRangeMinPerSec * 10) / 10,
         maxGainPerSec: Math.round(capBoosterRangeMaxPerSec * 10) / 10,
         min: {
@@ -8607,6 +9080,43 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
           timeToEmptySec: capSimResultRangeMax.timeToEmptySec,
           timeToEmptyCapped: capSimResultRangeMax.timeToEmptyCapped
         }
+      } : null,
+      // Ring + toggle feature (2026-10-13) -- unified across BOTH charge-fed
+      // mechanisms (Capacitor Booster injection + Ancillary Shield Booster
+      // drain-exclusion), each capped at the right confidence tier. See the
+      // capBoostConfident/capBoostHasUnconfirmedPortion comments above.
+      hasAncillaryShieldBooster,
+      asb: hasAncillaryShieldBooster ? {
+        chargeName: asbChargeName,
+        confirmed: asbChargeConfirmed,
+        fromCargo: asbChargeFromCargo
+      } : null,
+      boostAvailable: capBoostAvailable,
+      // "confident": only flag-paired/cargo-inferred charges, never guessed.
+      // Net cap rate/active drain are recomputed for this tier too, so
+      // toggling the ring updates every drain-dependent figure on the card
+      // together, not just the headline (Erik: "if being boosted changes
+      // any of the values that drive those numbers, they should reflect
+      // that accordingly when toggled").
+      combinedConfident: capBoostConfident ? {
+        stable: capSimResultBoosted.stable,
+        stablePct: capSimResultBoosted.stablePct,
+        timeToEmptySec: capSimResultBoosted.timeToEmptySec,
+        timeToEmptyCapped: capSimResultBoosted.timeToEmptyCapped,
+        activeDrainPerSec: Math.round((capDrainPerSec - capBoostConfidentReduction) * 10) / 10,
+        netRate: Math.round((peakCapRechargeRate - (capDrainPerSec - capBoostConfidentReduction)) * 10) / 10
+      } : null,
+      // "assumed": best-case snap (largest compatible Capacitor Booster
+      // charge + Ancillary Shield Booster excluded) for when a boost-capable
+      // module is fitted but nothing was confirmed anywhere -- only
+      // populated when it would actually differ from the confident tier.
+      combinedAssumed: (capBoostAvailable && capBoostHasUnconfirmedPortion) ? {
+        stable: capSimResultAssumed.stable,
+        stablePct: capSimResultAssumed.stablePct,
+        timeToEmptySec: capSimResultAssumed.timeToEmptySec,
+        timeToEmptyCapped: capSimResultAssumed.timeToEmptyCapped,
+        activeDrainPerSec: Math.round((capDrainPerSec - capBoostAssumedReduction) * 10) / 10,
+        netRate: Math.round((peakCapRechargeRate - (capDrainPerSec - capBoostAssumedReduction)) * 10) / 10
       } : null
     }
   };
@@ -8621,28 +9131,25 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
 // CAP_STABLE_WEAKNESS_PCT_THRESHOLD.
 function capWeakGaugeHtml(cap){
   const r = 20, circumference = Math.round(2 * Math.PI * r * 100) / 100;
-  // Ring fill = remaining stable headroom. Unstable (genuinely draining to
-  // empty, no settling %) reads as an empty tank -- 0 fill -- with the
-  // time-to-empty as the centered figure instead, per [stated]'s own
-  // "duration in the middle" ask.
-  const fillFraction = cap.stable ? Math.min(1, Math.max(0, (cap.stablePct || 0) / 100)) : 0;
-  const dashoffset = Math.round(circumference * (1 - fillFraction) * 100) / 100;
-  let centerText, headline, sub;
-  if(!cap.stable){
-    // formatDurationShort() returns compact "1m20s"-style text -- a space
-    // after the "m" lets it wrap onto 2 lines inside the 50px ring instead
-    // of overflowing/shrinking past readable.
-    centerText = cap.timeToEmptyCapped ? '4h+' : formatDurationShort(cap.timeToEmptySec).replace('m', 'm ');
-    headline = 'Capacitor drains dry';
-    sub = 'under full module cycling — unstable with no outside help';
-  }else{
-    // Rounded to a whole percent for the ring (vs. the Capacitor card's own
-    // 1-decimal figure) -- purely a space constraint inside a 50px circle;
-    // the exact 1-decimal value is still in the hover title below.
-    centerText = `${Math.round(cap.stablePct)}%`;
-    headline = 'Thin cap margin';
-    sub = `as little as ${cap.netRate.toLocaleString()} GJ/s more average drain tips it negative`;
-  }
+  // 2026-10-13 (Erik: "let's drop the thin margin trigger for now") -- this
+  // is now only ever called when genuinely draining even at best-case
+  // (capWeak === !capWeakSimResult.stable, the thin-but-stable branch
+  // removed entirely), so the ring always shows the same unstable/critical
+  // state with time-to-drain as the centered figure. No more "stable but
+  // thin" case. Addendum (same day, Erik: "unstable would be a 'full' red
+  // ring"): was rendered as 0-fill (reads as empty); now rendered solid
+  // (full ring, already --danger red via .cap-gauge-fill), matching the
+  // same "unstable = full red" convention capRingHtml() uses on the
+  // Capacitor card's own ring.
+  const dashoffset = 0;
+  // formatDurationShort() returns compact "1m20s"-style text -- a space
+  // after the "m" lets it wrap onto 2 lines inside the 50px ring instead of
+  // overflowing/shrinking past readable.
+  const centerText = cap.timeToEmptyCapped ? '4h+' : formatDurationShort(cap.timeToEmptySec).replace('m', 'm ');
+  const headline = 'Capacitor drains';
+  const sub = cap.boostAvailable
+    ? 'even at best case assuming its fitted Capacitor Booster/Ancillary Shield Booster has charges — unstable with no outside help'
+    : 'under full module cycling — unstable with no outside help';
   return `
         <div class="weakness-badge-row cap-weak-row" style="margin-top:8px;">
           <div class="cap-gauge" title="${escapeHtml(cap.weakReason)}">
@@ -8700,9 +9207,9 @@ function renderFitSummaryHtml(f){
             ${estimate.drones.alt ? `<span class="rec-sub">or ${estimate.drones.alt.name} (${estimate.drones.alt.size}) if it won't sit still</span>` : ''}
           </div>
           ${missileRecTileHtml(estimate.missileApplication)}
-          ${turretRecTileHtml('Laser', estimate.turretRecs.laser)}
-          ${turretRecTileHtml('Hybrid', estimate.turretRecs.hybrid)}
-          ${turretRecTileHtml('Projectile', estimate.turretRecs.projectile)}
+          ${turretRecTileHtml('Laser', estimate.turretRecs.laser, estimate.weakest, estimate.secondWeakest)}
+          ${turretRecTileHtml('Hybrid', estimate.turretRecs.hybrid, estimate.weakest, estimate.secondWeakest)}
+          ${turretRecTileHtml('Projectile', estimate.turretRecs.projectile, estimate.weakest, estimate.secondWeakest)}
         </div>
       </div>
     </div>`;
@@ -9066,10 +9573,34 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
         fits[i].estimate = fits[i].tacticalModes[mode];
         wrap.innerHTML = renderFitSummaryHtml(fits[i]);
         wireTacticalModeButtons(i);
+        wireCapBoostToggle(i);
       });
     });
   }
-  fits.forEach((f, i) => { if(f.tacticalModes) wireTacticalModeButtons(i); });
+  // 2026-10-13: see the matching comment in the Fit Analyzer's own
+  // wireCapBoostToggle() above -- wired unconditionally per-tab (unlike the
+  // TD-mode buttons, gated on f.tacticalModes), since any fit with a
+  // Capacitor Booster/Ancillary Shield Booster gets the ring toggle on its
+  // Capacitor card regardless of hull. Each tab's fit (fits[i]) keeps its own
+  // independent capBoostOn state, same as its own independent activeMode.
+  function wireCapBoostToggle(i){
+    const wrap = el.querySelector(`#fit-summary-wrap-${i}`);
+    if(!wrap) return;
+    wrap.querySelectorAll('.cap-boost-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fits[i].capBoostOn = !fits[i].capBoostOn;
+        wrap.innerHTML = renderFitSummaryHtml(fits[i]);
+        wireTacticalModeButtons(i);
+        wireCapBoostToggle(i);
+      });
+    });
+  }
+  fits.forEach((f, i) => {
+    if(f.tacticalModes) wireTacticalModeButtons(i);
+    wireCapBoostToggle(i);
+  });
 }
 </script>
 

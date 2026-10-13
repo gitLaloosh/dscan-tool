@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Capacitor ring: direction, status color, hover polish</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:800px; margin:40px auto; padding:0 20px; line-height:1.6; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:32px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 10px; text-align:left; font-size:13px;}
+</style>
+</head>
+<body>
+<h1>Capacitor ring: drain direction, status color, hover polish</h1>
+<p><span class="tag">Polish</span><span class="tag">Requested by Erik</span> 2026-10-13, same-day follow-up to the capacitor ring/boost-toggle build</p>
+
+<h2>Request</h2>
+<p>Three refinements to the new Capacitor-card ring:</p>
+<ol>
+<li>Have the ring visually drain in a clockwise manner (it didn't look right as originally built).</li>
+<li>Fix the boost toggle's hover state: with boost toggled ON, hovering the icon gave no visual feedback that it's a button, while toggled OFF the border color did change on hover.</li>
+<li>Use status colors instead of a single color: green→yellow→orange→red as the ring approaches 0%, with specific bucket boundaries (50-100%=green, 11-49%=yellow, &gt;0%-&lt;10%=orange, red when unstable). Mid-turn clarification: unstable should render as a <em>full</em> red ring, not an empty one.</li>
+</ol>
+
+<h2>Investigation and design</h2>
+<p><strong>Direction.</strong> The original ring used the standard "progress ring" trick (<code>stroke-dasharray=circumference</code>, <code>stroke-dashoffset=circumference×(1-fraction)</code>, SVG rotated -90° so the path start sits at 12 o'clock). Worked through the geometry and confirmed empirically with a side-by-side Playwright render before touching the real file: that formula makes the filled arc <em>start</em> at 12 and grow clockwise as the fraction rises — so as it drains (fraction falling), the fill's far edge recedes <em>counter</em>clockwise back toward 12. Not what "drains clockwise" should look like. Fixed by making the fill the trailing segment of the dash pattern instead (<code>stroke-dasharray="fillLen gapLen"</code>, offset by <code>-gapLen</code>): now the <em>gap</em> (consumed/drained wedge) is what starts at 12 and grows clockwise as the fraction falls, with the remaining fill always ending back at 12 from the counterclockwise side — the boundary between filled and empty sweeps clockwise as the ring drains, same reading as a kitchen-timer pie. Verified both via a standalone geometry test (four fractions rendered side by side) and the real card in context (cropped/zoomed screenshot of the 35% state) before shipping.</p>
+<p><strong>Hover.</strong> Root cause: <code>.cap-boost-toggle.active</code>/<code>.assumed-mode</code> are both 2-class selectors — the same specificity as the plain <code>:hover</code> rule and later in source order, so they silently won outright regardless of hover state once toggled on. The only visible hover change on the OFF state was a generic <code>button:hover</code> rule elsewhere in the file (lower specificity, amber-tinted) bleeding through by coincidence on the properties the toggle's own <code>:hover</code> rule left untouched — never a deliberate design, and fully shadowed once <code>.active</code>/<code>.assumed-mode</code>'s own higher-specificity background/border-color applied. Fixed with an explicit, equally deliberate hover rule per state (off/confident/assumed), each brightening its background and scaling up slightly (1.08×) on hover, with a short transition — none relying on the generic button fallback anymore.</p>
+<p><strong>Color.</strong> Added four new status-scale tokens (<code>--cap-good</code>/<code>--cap-caution</code>/<code>--cap-warn</code>/<code>--cap-critical</code>), picked from the dataviz skill's fixed status-palette family (good/warning/serious/critical) and contrast-checked against this ring's actual render surface — the <code>--line-soft</code> <code>.estimate-stat</code> background it sits on (<code>#1a2126</code>), not just a generic dark surface — all four clearing 3:1+ (5.59/7.99/5.27/3.88). <code>--cap-critical</code> reuses the existing <code>--danger</code> token directly rather than introducing a second red, consistent with how the rest of the file already uses it for "unstable/weak" everywhere else. The 10% boundary Erik's bucket list left undefined (yellow stated as 11-49%, orange as &gt;0%-&lt;10%) was resolved by treating ≥10% as caution/yellow, so the ranges meet with no gap. Per the mid-turn clarification, unstable is always <code>is-critical</code> regardless of its underlying stability %, and renders as a full ring (<code>gapLen=0</code>) rather than empty — matching the fuel-gauge-style convention of the stable states (full=healthy reads naturally as full=critical-and-draining too, just in red). The Weaknesses-card's own small cap-weak gauge (always shown only when unstable) got the same full-not-empty fix for consistency, since it's really the same underlying state as the Capacitor card's new critical ring.</p>
+
+<h2>Implementation</h2>
+<p><code>capRingHtml()</code>: rewrote the dasharray/dashoffset math per the direction fix above, added a new <code>capRingColorClass(result)</code> helper implementing the bucket logic, and changed the unstable fraction from 0 to 1 (full ring). <code>capWeakGaugeHtml()</code>: changed its hardcoded <code>dashoffset</code> from <code>circumference</code> (always empty) to <code>0</code> (always full) — it's always-red already via its existing <code>.cap-gauge-fill</code> rule, no color-class change needed there. CSS: added the four new <code>:root</code> tokens with their contrast numbers documented inline; replaced the old single <code>.cap-ring-fill.is-weak</code> rule with four bucket classes; added explicit <code>.cap-boost-toggle:hover</code>/<code>.active:hover</code>/<code>.assumed-mode:hover</code> rules with a <code>transition</code> for smoothness.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>node --check</code> on the extracted script: clean.</li>
+<li>Full regression suite: <strong>94/94 PASS</strong>. Parse tests: <strong>280/280 PASS</strong> (pure ring-rendering/CSS change, no calculation logic touched).</li>
+<li>Function-level checks (Node <code>vm</code> sandbox) against <code>capRingHtml()</code>/<code>capWeakGaugeHtml()</code> directly: every color-bucket boundary (90/50/49/10/9/0.5% and unstable), confirmed correct <code>dasharray</code>/<code>dashoffset</code> values for the new trailing-fill direction formula at a mid-range fraction, and confirmed the Weaknesses-card gauge's dashoffset is now 0 (full) not full-circumference (empty). All passed.</li>
+<li>Playwright visual render of 6 states (90%/35%/6%/unstable/confident-boosted/assumed-off) in a real browser: correct color per bucket, correct full-red ring on unstable, correct clockwise-drain geometry (confirmed via a cropped/zoomed screenshot of the 35% ring showing the gap positioned starting at 12 o'clock and sweeping clockwise, fill trailing). Before/after hover screenshots on both an active (cyan) and an off toggle confirmed a clearly visible change in both cases, fixing the reported dead-hover bug.</li>
+</ul>
+
+<h2>Delivered</h2>
+<p><code>index.html</code>, version tag bumped <code>v2026.10.13.5</code> → <code>v2026.10.13.6</code>.</p>
+</body>
+</html>

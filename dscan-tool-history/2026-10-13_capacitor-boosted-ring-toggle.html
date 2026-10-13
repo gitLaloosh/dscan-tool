@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Capacitor ring gauge + boosted/unboosted toggle</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:800px; margin:40px auto; padding:0 20px; line-height:1.6; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:32px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+pre{background:#f7f7f7; border:1px solid #ddd; border-radius:5px; padding:12px; overflow-x:auto; font-size:13px;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 10px; text-align:left; font-size:13px;}
+</style>
+</head>
+<body>
+<h1>Capacitor ring gauge + boosted/unboosted toggle</h1>
+<p><span class="tag">New feature</span><span class="tag">Requested by Erik</span> 2026-10-13</p>
+
+<h2>Request</h2>
+<p>Erik felt the Capacitor card wasn't realistically representing cap integrity for fits that use a Capacitor Booster, an Ancillary Shield Booster, or similar charge-fed boost modules: the plain "Drains dry in X" text treated every cap-draining fit the same, whether or not it actually had a way to replenish. He asked for a visual ring (similar to the in-game capacitor gauge) in place of that text, with a small toggle fixture that flips the reading between unboosted and boosted, defaulting ON in the Capacitor card. In the Weaknesses card, the existing cap-weak flag should keep its ring visual but only fire when the fit is unstable even with boosters assumed on &mdash; he explicitly didn't want a module flagged as a weakness just because a killmail/D-scan snapshot didn't happen to show a charge loaded (a fit may have simply used up all its charges in the fight that killed it). Design settled across a short back-and-forth:</p>
+<ul>
+<li>Toggle snaps to the best-case assumption when no charge is confirmed anywhere in the fit (module, cargo, fleet hangar) &mdash; "assume the opponent is at their best rather than underestimating."</li>
+<li>Toggle defaults OFF only when there's no confirmed charge, and the card says plainly that it's defaulting off because no charge was found.</li>
+<li>Cargo-inference was asked to also check Fleet Hangar, not just Cargo &mdash; turned out to already be the case for the existing Capacitor Booster fallback, so this was free to extend to the new mechanism.</li>
+<li>Dropped the old "stable but thin margin" trigger entirely for the Weaknesses-card flag &mdash; it was a separate, more conservative threshold layered on top of real instability, and Erik wanted it gone for now.</li>
+<li>Wording: never "drain dry" or "drain-dry" &mdash; "drain" or "drained" only.</li>
+<li>Whatever numbers the ring/toggle reflects (net cap rate, active drain) must themselves change when toggled, not just the headline stability text.</li>
+<li>A genuinely distinct question was raised and deliberately deferred rather than folded in here: should the <em>Fit Analyzer</em> (EFT paste, evaluating a fit directly rather than a killmail snapshot) flag a cap-booster-capable module with no charges found as an actual weakness, since there's no "it probably had charges when it died" alibi for a fit someone is designing right now? Logged as its own backlog item (dscan-tool.md #2) rather than implemented &mdash; this build applies the uniform "assume best case" logic to both the killmail and EFT-paste paths.</li>
+</ul>
+
+<h2>Research</h2>
+<p>Live-verified via everef.net that the mechanism genuinely differs between two module types that both "boost" the capacitor:</p>
+<table>
+<tr><th>Module</th><th>Mechanism</th><th>Notes</th></tr>
+<tr><td>Capacitor Booster</td><td>Injects GJ per charge cycle (<code>capacitorBonus</code>, attr 67)</td><td>Own <code>capacitorNeed</code> is 0 by construction. No <code>chargeSize</code> gate on the module &mdash; only bounded by the module's own charge-bay capacity (attr 38) vs. the charge's volume. Gain genuinely varies by which of 18 real charge types (9 GJ tiers &times; 2 name variants) is loaded, so the no-data fallback needs a real min/max <strong>range</strong>, not a single assumed value.</td></tr>
+<tr><td>Ancillary Shield Booster</td><td>Pays its own activation cost from the loaded charge instead of ship capacitor</td><td>Its own <code>capacitorNeed</code> is a real, large, always-counted baseline drain (Capital ASB: 4,000&nbsp;GJ/5s = 800&nbsp;GJ/s) that was previously counted against the ship with no way to exclude it. Loads the same Capacitor Booster Charge group (87) as the dedicated module, but gated by <code>chargeSize</code> (attr 128) &mdash; and its exclusion amount is binary (charge present or not), not size-dependent, since a bigger charge just lasts longer rather than excluding more GJ/s.</td></tr>
+</table>
+<p>Cross-checked the Large Ancillary Armor Repairer for comparison (type 33103): its charge mechanism changes repair <em>amount</em> (&times;3), not where the cap cost is drawn from &mdash; confirming AAR correctly stays outside this new mechanism, already covered by the existing armor-repair logic.</p>
+
+<h2>Implementation</h2>
+<p>Added a confidence-tiered model inside <code>estimateHpAndDps()</code>: <strong>confirmed</strong> (a charge flag-paired to the module, i.e. actually loaded on the snapshot), <strong>inferred</strong> (a matching spare charge found in Cargo or Fleet Hangar &mdash; reused the Capacitor Booster fallback's existing <code>['Cargo', 'Fleet hangar']</code> scan rather than writing a new one, since it already covered both buckets), and <strong>assumed</strong> (best-case snap when a boost-capable module is fitted but nothing is found anywhere). The two mechanisms are combined into one pair of numbers per tier &mdash; <code>combinedConfident</code> (confirmed + inferred charges) and <code>combinedAssumed</code> (best case) &mdash; each re-running <code>simulateCapacitorStability()</code> with the relevant drain subtracted back out, so the ring and the Weaknesses-card flag share the same underlying computation.</p>
+<p>Capacitor card: <code>capacitorCardHtml()</code> now tracks persisted per-fit state (<code>f.capBoostOn</code>, defaulting ON only when a confident tier exists), renders a 64px ring (<code>capRingHtml()</code>, stablePct as fill when stable, time-to-empty as centered text when not) with a small bolt-icon toggle fixture anchored to its corner (cyan when confidently boosted, amber when assumed, plain when off), and a caption explaining what's driving the number currently shown. "Net cap rate" and the active-drain figure both swap to the active tier's values when toggled, per Erik's explicit requirement.</p>
+<p>Weaknesses card: dropped the old thin-margin trigger (<code>stablePct &lt; 25%</code>) entirely. The flag now fires only when the fit is unstable even assuming every available boost mechanism is active at best case &mdash; so a fit that merely looks thin but is actually stable no longer gets flagged, and a fit that's genuinely draining gets a caveat noting the figure already assumes any fitted booster has charges. Wording fixed throughout ("drains"/"drained", never "drains dry").</p>
+<p>Icons follow the file's existing accessibility convention (a <code>&lt;title&gt;</code> child element, not a <code>title=""</code> attribute, plus a transparent hit-rect for stroke-only glyphs). The toggle's click handler mirrors the pre-existing <code>wireTacticalModeButtons()</code> pattern (mutate state on the fit object &rarr; full <code>innerHTML</code> re-render of the card stack via <code>renderFitSummaryHtml()</code> &rarr; re-wire both the TD-mode buttons and the cap-boost toggle, regardless of which one triggered the re-render, since the whole card stack gets replaced either way) &mdash; wired at both existing call sites, the Fit Analyzer's single-fit render and the Pilot Analyzer's multi-loss tabs (each tab keeps its own independent toggle state, same as its own independent TD-mode selection).</p>
+
+<h2>Verification</h2>
+<ul>
+<li>Syntax check (<code>node --check</code> on the extracted script): OK. One real bug caught and fixed along the way &mdash; the new <code>ANCILLARY_SHIELD_BOOSTER_GROUP_NAME</code> constant was declared further down the function than its first use in the charge flag-pairing loop, throwing a temporal-dead-zone error at runtime; moved the declaration up above its first use.</li>
+<li>Full regression suite: <strong>94/94 PASS</strong> (confirms the new confidence-tier computation and the dropped thin-margin trigger didn't shift any existing golden fit's baseline capacitor fields).</li>
+<li>Parse tests: <strong>280/280 PASS</strong>.</li>
+<li>Function-level checks (Node <code>vm</code> sandbox, loading the live script and calling <code>capacitorCardHtml()</code>/<code>capWeakGaugeHtml()</code> directly against synthetic capacitor states, since this sandbox has no live ESI network access): no-boost-fitted (toggle hidden), confident-boosted via Capacitor Booster (toggle defaults ON, cyan, correct charge name in caption, net rate reflects the boosted figure), assumed-only tier both OFF (default, baseline figures, "toggling on assumes the best case" caption) and ON (amber "BOOSTED (ASSUMED)" badge, "Best-case snap" caption, figures swap to the assumed tier), Ancillary Shield Booster confirmed via cargo/fleet-hangar inference (caption correctly notes "inferred ... not confirmed loaded"), and the Weaknesses-card gauge (no "drain dry" wording anywhere, correct best-case caveat, correct time-to-empty). All passed.</li>
+<li>Playwright visual render of all 5 states in the actual browser (real DOM, real CSS): ring fill/time-to-empty text, toggle color states (cyan/amber/muted), and caption copy all confirmed correct by screenshot.</li>
+</ul>
+
+<h2>Delivered</h2>
+<p><code>index.html</code>, version tag bumped <code>v2026.10.13.4</code> &rarr; <code>v2026.10.13.5</code>.</p>
+
+<h2>Next up</h2>
+<p>Erik's explicitly deferred follow-up, logged as dscan-tool.md backlog item #2: design and implement a Fit-Analyzer-specific distinction &mdash; a pasted EFT fit with a boost-capable module and no charges found should probably be flagged as an actual weakness (since there's no "used them all up before dying" alibi for a fit being actively designed), unlike the killmail-path "assume best case" logic this build applies uniformly today.</p>
+</body>
+</html>
