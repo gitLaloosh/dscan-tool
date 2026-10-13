@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Industrial Core fix + effect-level module audit</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:32px; border-bottom:1px solid #ddd; padding-bottom:4px;} h3{font-size:15px; margin-top:22px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;}
+th{background:#f6f6f6;}
+.hi{color:#8a1c12; font-weight:700;} .med{color:#7a5c00; font-weight:700;} .lo{color:#555; font-weight:700;}
+.fixed{color:#1d6b2a; font-weight:700;}
+</style>
+</head>
+<body>
+<h1>Industrial Core fix + effect-level module audit</h1>
+<p><span class="tag">Bug fix</span><span class="tag">Audit</span><span class="tag">Requested by the owner</span> 2026-10-13 &middot; version <code>v2026.10.13.7</code> &rarr; <code>v2026.10.13.8</code></p>
+
+<h2>Request</h2>
+<p>Work bug-list #1: the tool's DPS for the owner's <code>[Rorqual, QuadFeed]</code> fit didn't match his pyfa screenshot (Weapon 50 + Drone 832 = 882 DPS, Volley 3701), suspected Capital Industrial Core II not being accounted for. Resolve the damage gap, then do a thorough research pass for other modules that are missing or not properly evaluated, and add a backlog item for toggling stat-changing modules (like the core) on and off, similar to the T3 Destroyer mode selector.</p>
+
+<h2>Part 1 &mdash; Rorqual: both pyfa numbers now match exactly</h2>
+<p>Two independent gaps, both confirmed against pyfa's own source (<code>eos/effects.py</code>) and CCP's SDE data in pyfa's local static-data cache (client build 3579973). That cache was cross-checked against the 370 unique types this project has already captured from live ESI. Every attribute matched except Hawk's known patch-24.01 change.</p>
+<table>
+<tr><th>Piece</th><th>pyfa</th><th>Tool before</th><th>Tool after</th><th>Root cause</th></tr>
+<tr><td>Drone DPS (5x Praetor II)</td><td>832</td><td>416</td><td class="fixed">832</td><td>Capital Industrial Core II carries <code>industrialCoreBonusDroneDamageHP</code> (attr 2583) = <b>+100%</b> drone damage while active (pyfa <code>industrialCoreEffect2</code>, stacking-penalized with Drone Damage Amplifiers). The tool never read it. 64 &times; 1.68 &times; 2.0625 skills &times; 1.5 Rorqual hull &times; 2.0 core / 4s = 166.3 per drone.</td></tr>
+<tr><td>Smartbomb DPS (Imperial Navy Large EMP)</td><td>50</td><td>38</td><td class="fixed">50</td><td>The <b>Energy Pulse Weapons</b> skill (3421, pyfa Effect590) cuts smartbomb cycle time 5%/level, so 10s becomes 7.5s at V. This was never modeled; the code even had a comment claiming no skill applies to smartbombs. 375 EM / 7.5s = 50.0.</td></tr>
+<tr><td>Total / Volley</td><td>882 / 3701</td><td>453 / 2038</td><td class="fixed">882 / 3701</td><td>3326.4 drone volley + 375 smartbomb = 3701.4</td></tr>
+<tr><td>Scan resolution</td><td>206 mm</td><td>94</td><td class="fixed">206.3</td><td>Core's <code>scanResolutionMultiplier</code> (attr 565) &times;2.2</td></tr>
+<tr><td>Speed</td><td>0 m/s</td><td>75</td><td class="fixed">0</td><td><code>speedFactor</code> &minus;100 on every Siege-group module (Bastion/Siege/Triage/Industrial Core)</td></tr>
+<tr><td>Align time</td><td>280 s</td><td>58 s</td><td>582 s</td><td>Core's &times;10 mass (attr 1471) is now applied. The remaining gap is a <b>separate, logged</b> issue: three agility skills are unmodeled (Spaceship Command, Capital Ships, Advanced Spaceship Command). See Part 3.</td></tr>
+</table>
+<p><b>Other Industrial Core effects now modeled</b> (all "assumed active whenever fitted", same convention as Bastion/Siege):</p>
+<ul>
+<li>Local shield booster amount gets +75% (stacking-pooled with Shield Boost Amplifiers) and duration &minus;60%.</li>
+<li>The skill gate is <i>Capital Shield Operation</i> for the Capital cores (effect 4575) and <i>Shield Operation</i> for the Large/Medium cores on the Orca/Porpoise (effect 8119).</li>
+<li>Because pyfa doesn't reduce these boosters' capacitorNeed, the shorter cycle also raises their cap drain.</li>
+<li>Large/Medium cores carry the same drone damage bonus at +50%/+30%.</li>
+</ul>
+
+<h3>Bonus: closes bug-list "Golem torpedo Bastion RoF ratio" (#15b)</h3>
+<p>The smartbomb fix makes the Golem golden fit an <b>exact</b> pyfa match: 1574 torpedo + 2 &times; 300 / 7.5s = 80 smartbomb = 1654. The "4.8% low" figure came from comparing torpedo-only DPS against pyfa's total, which includes the smartbombs. Before this fix the real residual was 20 DPS, entirely the missing skill. Torpedoes and Bastion were always correct.</p>
+
+<h2>Part 2 &mdash; Why the 2026-10-12 full-module audit missed this</h2>
+<ol>
+<li><b>Wrong data on the one row that mattered.</b> The 10-12 audit reported Industrial Cores as carrying "2351 (ewar resistance) only." The real item carries about 20 bonus attributes, including drone damage. That session's re-verification only checked group 515 for the Siege/Bastion <i>weapon</i> attribute IDs, never the full attribute list.</li>
+<li><b>One sample per group.</b> The research pass sampled a single representative item per group. Group 515 alone holds four completely different mechanisms. Group 779 "Rig Launcher" holds a RoF rig, a damage rig and four range/application rigs.</li>
+<li><b>"Is this attribute ID referenced anywhere?" hides gaps.</b> An attribute used for one module can mask the same attribute on another. Examples: attr 548 is read only for Shield Boost Amplifiers but Bastion also carries it; attr 147 is read for Flux Coils, and the MWD's real cap penalty on the same attribute was dismissed as "unrelated"; attrs 309/566 are read only as <i>incoming</i> EWAR.</li>
+<li><b>Skills weren't covered.</b> Energy Pulse Weapons lives on the skill, not the module.</li>
+</ol>
+<p><b>New method used today:</b></p>
+<ul>
+<li>Every <i>published</i> module and subsystem (category 7/32), every effect on each item, and the actual pyfa handler for that effect, parsed for which ship/module/drone/charge attribute it changes and with what. That gave 5,317 item&times;effect&times;attribute rows.</li>
+<li>The same pass over every published skill.</li>
+<li>A stat-centric cross-check: for each number the tool displays, the module groups that change it in pyfa, compared against what the tool's formula actually consumes (read from the code, not inferred).</li>
+<li>Every finding below was confirmed both ways: the real effect exists in pyfa/SDE, and the tool's formula for that stat doesn't include it.</li>
+</ul>
+
+<h2>Part 3 &mdash; Findings</h2>
+<h3>Fixed in this build (damage)</h3>
+<table>
+<tr><th>Item</th><th>Effect</th><th>Verification</th></tr>
+<tr><td>Industrial Cores (all sizes)</td><td>Drone damage, local shield boosting, scan res, immobile, &times;10 mass</td><td>New golden fit <code>rorqual_constructed_industrial_core_pyfa</code>: 882/3701/832/50/206.3 mm/0 m/s/138/250 km, exact pyfa</td></tr>
+<tr><td>Energy Pulse Weapons skill</td><td>Smartbomb cycle &times;0.75 (DPS and cap drain)</td><td>Golem now exact pyfa (1654); Rokh/Rifter smartbomb expectations updated with hand-derivation</td></tr>
+<tr><td>Bay Loading Accelerator rig</td><td>Missile launcher RoF &minus;10/&minus;15% (pooled with BCS)</td><td>New <code>caracal_constructed_missile_rigs</code>: ratio 1.4631 vs 1.4635 hand-derived</td></tr>
+<tr><td>Warhead Calefaction Catalyst rig</td><td>Missile damage +10/+15% (pooled with BCS)</td><td>Same fit</td></tr>
+<tr><td>Sentry Damage Augmentor rig</td><td>Sentry damage +10/+15% (pooled with DDA, sentries only)</td><td>New <code>ishtar_constructed_sentry_damage_rig</code>: ratio 1.2268 vs 1.2271</td></tr>
+<tr><td>Siege group (all 4)</td><td>Speed &rarr; 0; Siege/Triage/Core mass &times;10; Triage scan res &times;10</td><td>Read from each item's own attributes</td></tr>
+</table>
+
+<h3>Still open, by the stat they make wrong</h3>
+<table>
+<tr><th>Sev.</th><th>Stat</th><th>Missing</th><th>Source</th></tr>
+<tr><td class="hi">High</td><td>Align time (every ship)</td><td><b>Spaceship Command</b> skill (&minus;2%/lvl agility, all ships, &times;0.9) is unmodeled. On capitals, <b>Capital Ships</b> (&minus;5%/lvl) and <b>Advanced Spaceship Command</b> (&minus;5%/lvl via the hull's own effect 1615) are also missing. Every align time reads about 11% slow; capitals read about 2&times; slow. With all three, the cored Rorqual comes to about 295 s vs pyfa's 280 s. The rest is likely unknown parts of the owner's full fit.</td><td>pyfa effects <code>evasiveManeuveringAgilityBonusPostPercentAgilityShip</code>, <code>skillCapitalShipsAdvancedAgility</code>, <code>shipAdvancedSpaceshipCommandAgilityBonus</code></td></tr>
+<tr><td class="hi">High</td><td>Speed / align</td><td>No speed or agility module is applied: Overdrive Injector, Nanofiber (velocity and agility), Inertial Stabilizer, Reinforced Bulkhead and Expanded Cargohold penalties, Polycarbon/Auxiliary Thrusters/Low Friction Nozzle rigs, Higgs Anchor. Kiting and nano fits read much slower than they are.</td><td>attrs 1076, 169, 306, 315, 151, 1131</td></tr>
+<tr><td class="hi">High</td><td>Capacitor capacity</td><td>A fitted <b>MWD's</b> own capacitor penalty (attr 147, &times;0.75&ndash;0.8, always on) was dismissed as "unrelated" in the 10-12 fix. pyfa applies it (<code>capacitorCapacityMultiply</code>). Every MWD fit's cap stability is optimistic.</td><td>MWD dogma + pyfa handler</td></tr>
+<tr><td class="hi">High</td><td>Targeting range / scan res</td><td>Formula is hull &times; skills only. Missing: Sensor Booster's own range/scan-res bonus (only its sensor-strength half is read), Signal Amplifier, Ionic Field Projector/Targeting System Subcontroller rigs, T3 Core subsystem bonuses, and the Warp Core Stabilizer/Interdiction Nullifier &minus;50% penalties.</td><td>attrs 309, 566, 237, 1509/2681/1525/2687</td></tr>
+<tr><td class="med">Med</td><td>Capacitor (drain)</td><td>Cap-need skills: Fuel Conservation (AB &times;0.5), High Speed Maneuvering (MWD &times;0.75), Shield Compensation / Capital Shield Operation (boosters &times;0.9), Propulsion Jamming (scram/web &times;0.75), Capacitor/Shield/Remote Armor Emission. Cap-need rigs: Egress Port, Discharge Elutriation, Dynamic Fuel Valve, Core Defense Capacitor Safeguard, Remote Repair Augmentor. Armor reps' cap drain also uses the <i>unskilled</i> cycle time (the Repair Systems &minus;25% is applied to HP/s but not to cap/s).</td><td>skill effects listed; attr 317/851</td></tr>
+<tr><td class="med">Med</td><td>Capacitor (capacity/recharge)</td><td>Capacitor Control Circuit and Semiconductor Memory Cell rigs. T3 "Reactor" Core subsystems' per-level capacity (+25% at V) and recharge (&minus;25% at V); only their flat +50 GJ is modeled.</td><td>attrs 314, 1079, 1431/1441/1436/1446</td></tr>
+<tr><td class="med">Med</td><td>EHP</td><td><b>Layered</b> Coating / Layered Energized Membrane armor HP (&times;1.07&ndash;1.16, attr 148). Rig drawbacks: Navigation rigs reduce armor HP and Electronics/Scanning/Targeting rigs reduce shield HP (&minus;5% each after Rigging). The code comment says those drawbacks are "CPU/PG". T3 Defensive subsystem HP bonuses (Augmented Plating/Supplemental Screening/Augmented Durability, +25% at V).</td><td>attrs 148, 1138, 1433/1443/1438/1448</td></tr>
+<tr><td class="med">Med</td><td>Repairs / Break Point</td><td>Siege Module and Triage local-rep bonuses (+100&ndash;120% amount, &minus;50% duration). Bastion's +60% armor-rep / +60% shield-boost amount and &minus;20% duration. Auxiliary Nano Pump rig (+15&ndash;20% armor rep). T3 Defensive rep subsystems (+37.5%/+50% at V). Core Defense Field Purger rig (shield regen) and Processor Overclocking Unit drawback (regen penalty).</td><td>attrs 2346/2347, 548/895/5964/5965, 806, 134</td></tr>
+<tr><td class="med">Med</td><td>Signature radius</td><td>Signature Suppressor (&times;0.85&ndash;0.9) and Inertial Stabilizer (+5&ndash;10% sig).</td><td>attrs 3113, 554</td></tr>
+<tr><td class="med">Med</td><td>Weapon range</td><td>Turret optimal/falloff ignores Tracking Enhancer/Computer and Locus rigs. Missile range ignores Missile Guidance Enhancer/Computer, Hydraulic Bay Thrusters and Rocket Fuel Cache Partition rigs. Bastion's +25% range and missile velocity also missing.</td><td>attrs 351, 349, 547, 596, 20 (rig), 557</td></tr>
+<tr><td class="lo">Low</td><td>Sensor strength</td><td>Bastion +100%; T3 Core "Dissolution Sequencer / Electronic Efficiency Gate" +75% at V.</td><td>attrs 1027&ndash;1030, 1431&hellip;</td></tr>
+<tr><td class="lo">Low</td><td>EWAR card ranges</td><td>Signal Distortion Amplifier ECM range bonus; Particle Dispersion Projector rig (EWAR range).</td><td>attrs 1536, 294</td></tr>
+<tr><td class="lo">Low</td><td>New / unrepresented modules</td><td>Zero-Point Mass Entangler (mass/velocity/prop-mod effects, needs its own investigation); Networked/Integrated Sensor Array (capital targeting/scan-res modules, &times;12 targeting range, +500% scan res); Burst Projectors (same deferred batch as Burst Jammer).</td><td>groups Mass Entanglers, Capital Sensor Array, Burst Projectors</td></tr>
+<tr><td class="lo">Low</td><td>Missile DPS (capital)</td><td>XL Torpedo/XL Cruise Missile Specialization are missing from <code>MISSILE_SPECIALIZATION_SKILL_IDS</code>. This only matters if a T2 XL launcher exists that requires them.</td><td>skill effects</td></tr>
+</table>
+<p><b>Checked and not gaps:</b></p>
+<ul>
+<li>Turret/drone tracking and application modules. Application is out of scope by design.</li>
+<li>Overheating attributes. Not modeled anywhere, consistently.</li>
+<li>Jump/portal/cyno/clone-vat/doomsday "speed &minus;100" effects. These apply only during that activity.</li>
+<li>Drone speed/durability/range rigs and skills. They don't feed any shown number.</li>
+<li>Fighter Support Unit. Already logged as deliberately out of scope.</li>
+<li>Max-locked-targets modules. The tool doesn't display that stat.</li>
+<li>Capacitor Systems Operation, Repair Systems, Capital Repair Systems duration skills. Already modeled.</li>
+<li>Reactor Control Unit. Its cap/shield attributes are all 1.0.</li>
+</ul>
+
+<h2>Part 4 &mdash; Backlog item added: module on/off toggles</h2>
+<p>Add per-fit toggles for modules that drastically change a fit's stats depending on whether they're running, modeled on the T3 Destroyer mode selector and the capacitor boost toggle.</p>
+<ul>
+<li>Candidates: Industrial Core, Siege, Bastion, Triage; MWD/AB (boosted vs cruising, already partially split); MJD/MJFG sig bloom; Sensor Booster scripts; cloak.</li>
+<li>Default stays "active", matching today's behavior.</li>
+<li>Natural home for implementing the remaining Siege/Triage/Bastion "while active" effects above.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><code>node --check</code> on the extracted script: clean.</li>
+<li>Regression suite: <b>97/97 PASS</b>. That is the 94 existing fits plus 3 new constructed fits. Each new fit was confirmed to <i>fail</i> against the v2026.10.13.7 build and pass on v.8.</li>
+<li>Deliberately updated expectations, each with a note:
+  <ul>
+  <li><code>rifter_constructed_smartbomb_fixed_weapon</code>: 5&rarr;7 DPS, 3&rarr;4 GJ/s.</li>
+  <li><code>rokh_zkb138993491_rolebonus_audit</code>: 369&rarr;449, eight smartbombs.</li>
+  <li><code>golem_zkb138991664_bastion</code>: tightened to exact pyfa 1654.</li>
+  </ul></li>
+<li>Parse tests: <b>280/280 PASS</b>.</li>
+<li>Playwright render of the Rorqual's full card stack: 882 total / 50 weapon / 832 drone / 3,701 volley, 0 m/s, 206.3 mm, 4,266 HP/s shield rep, all rendering correctly.</li>
+<li>User-facing methodology text updated: Industrial Core, immobilization, smartbomb skill and the new rigs.</li>
+</ul>
+</body>
+</html>

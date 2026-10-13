@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Rorqual capacitor reconciled with pyfa; cap booster reload</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Rorqual capacitor reconciled with pyfa; cap booster reload</h1>
+<p><span class="tag">Bug fix</span><span class="tag">Verification</span> 2026-10-13 &middot; <code>v2026.10.13.11</code> &rarr; <code>v2026.10.13.12</code> &middot; from the owner's pyfa screenshot of [Rorqual, QuadFeed] showing per-module cap use and active states</p>
+
+<h2>pyfa's &minus;5.98 GJ/s, reproduced exactly</h2>
+<p>pyfa's capacitor delta, from <code>eos/saveddata/fit.py</code>, is natural peak recharge + cap booster injection &minus; module use. The screenshot showed which modules were active: everything except the Capital Asteroid Ore Compressor, which was online only.</p>
+<table>
+<tr><th>Module</th><th>pyfa</th><th>This tool</th></tr>
+<tr><td>4&times; Mining Foreman Burst II</td><td>&minus;0.417 each</td><td>&minus;0.417 each</td></tr>
+<tr><td>Imperial Navy Large EMP Smartbomb</td><td>&minus;17.3</td><td>&minus;17.33</td></tr>
+<tr><td>Pith X-Type EM Shield Hardener</td><td>&minus;1.67</td><td>&minus;1.67</td></tr>
+<tr><td>2&times; Pithum C-Type Multispectrum Shield Hardener</td><td>&minus;3.33 each</td><td>&minus;3.33 each</td></tr>
+<tr><td>CONCORD Capital Shield Booster</td><td>&minus;540</td><td>&minus;540.0 (v.11 batch: Capital Shield Operation, Capacitor Safeguard, Operational Solidifier)</td></tr>
+<tr><td>2&times; Capital Capacitor Booster II</td><td><b>+229 each</b></td><td>+266.7 each &rarr; <b>+228.6 each</b> after this fix</td></tr>
+<tr><td>Capital Ancillary Shield Booster</td><td>0 (charges)</td><td>excluded while charged</td></tr>
+</table>
+<p>Total use is 567.33 GJ/s and injection is 457.14 GJ/s.</p>
+<p>Natural peak recharge is 94.45 GJ/s without implants, giving <b>&minus;15.74</b>. Applying the owner's Genolution CA-1 (+4.914% capacity) and CA-2 (&minus;4.914% recharge time) raises it to 104.21, giving <b>&minus;5.98 GJ/s, pyfa's exact figure</b>.</p>
+<p>The tool's implant-free result is now pinned in a new golden fit, <code>rorqual_eft_pyfa_active_state</code>, which is the full EFT without the compressor.</p>
+
+<h2>Bug fixed: cap booster reload</h2>
+<p>pyfa's capacitor sim always applies an injector's reload, even when reload factoring is off. In <code>eos/capSim.py</code>, the clip size is set to infinite when reloads are disabled, except for injectors.</p>
+<ul>
+<li>Clip size = floor(module capacity / charge volume). The Capital Capacitor Booster II holds 640 m&sup3;, and a Cap Booster 3200 is 128 m&sup3;, so 5 charges fit. Reload time (attr 1795) is 10 s.</li>
+<li>Average injection = n &times; GJ / (n &times; cycle + reload) = 16,000 / 70 = 228.6 GJ/s. pyfa shows "16k / 60s (+10s)" and +229.</li>
+</ul>
+<p>The new <code>capBoosterAvgGainPerSec()</code> applies this to all three paths: a flag-paired charge, a cargo-inferred charge, and the no-charge range. In the range path, each candidate charge gets its own clip size. If the volume or reload attribute is missing, it falls back to the old no-reload rate.</p>
+<p>Biggest effect is on small and medium boosters, which often hold just one large charge. The Curse loss's Medium F-RX Compact holds a single Navy Cap Booster 800, so it injects 800 / 22.75 s = 35.2 GJ/s, not 62.7. That fit is cap-unstable again even with its booster running.</p>
+
+<h2>Shield rep: the difference is boosters (drugs), not a bug</h2>
+<p>pyfa shows 85,426.6 EHP/s of shield repair. Under the uniform damage profile that is about 17,030 HP/s raw. The tool shows 12,018 HP/s raw.</p>
+<p>The ratio is 1.417, which is exactly the owner's two boosters: Strong Blue Pill (+30% shield boost amount) &times; Agency 'Hardshell' TB9 Dose IV (+9%) = 1.30 &times; 1.09. Both use pyfa effect <code>shieldBoostAmplifierPassiveBooster</code>.</p>
+<p>This tool models neither implants nor boosters. That's already logged as the Fit Analyzer implants/boosters backlog item, now extended to cover boosters too.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>node --check</code> clean.</li>
+<li><b>104/104 PASS</b>, 280/280 parse tests.</li>
+<li>A build without reload fails 13 checks against the updated set. A full output diff confirms only capacitor fields changed.</li>
+<li>Updated pins, each with a note:
+  <ul>
+  <li>Curse (both fixtures): booster gain 35.2, unstable again.</li>
+  <li>Ishkur: no-charge range 2.0&ndash;18.2.</li>
+  <li>Rorqual all-active: injection 457.1. It's unstable because the compressor is counted.</li>
+  </ul></li>
+<li><code>run_regression.mjs</code> now exposes <code>capacitorCombinedConfidentNetRate</code>, the figure that compares to pyfa's delta.</li>
+</ul>
+</body></html>

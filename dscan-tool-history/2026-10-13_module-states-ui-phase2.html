@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Module states: module list UI (plan Phase 2)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Module states: module list with on/off controls (plan Phase 2)</h1>
+<p><span class="tag">Feature</span> 2026-10-13 &middot; <code>v2026.10.13.21</code> &rarr; <code>v2026.10.13.22</code> &middot; the owner: "ok make the fix and then move on to phase 2"</p>
+
+<h2>What changed</h2>
+<p>The Fit card now lists every fitted module copy with a state button: <b>Active</b> (filled dot), <b>Online</b> (hollow dot) or <b>Offline</b> (dashed dot, row dimmed). The state is always written out, so colour is never the only cue.</p>
+<ul>
+<li><b>Click to change.</b> A click moves that copy to the next state, in pyfa's order: offline &rarr; online &rarr; active &rarr; offline. States the game wouldn't allow are skipped, and the button's hover text says why. For example, on the Vargur's MJD: "Can't be active: Bastion Module I blocks activation while it runs." Hover also shows why a module starts online ("Assumed online: micro jump drive").</li>
+<li><b>Everything recalculates.</b> The engine runs again with the new states, so every card updates. On Tactical Destroyers all three modes are recalculated, so switching mode keeps the chosen module states.</li>
+<li><b>Reset to best case</b> appears once any state has been changed. The header otherwise reads "Module states assumed: best case".</li>
+<li><b>Refused changes are explained.</b> If a later change makes an earlier one impossible (switching Bastion on while the MJD is running), the engine refuses it. The card then says why, and the MJD shows as online.</li>
+<li><b>Where it appears (the owner's D1):</b>
+  <ul>
+  <li>Fit Analyzer: always open.</li>
+  <li>Each Pilot Analyzer loss: collapsed by default ("show modules and states"). Each loss keeps its own states.</li>
+  </ul></li>
+<li><b>Rows:</b> rigs and subsystems show a fixed "Online" tag. Charges, drones and cargo stay plain rows. Module icons come from CCP's image server (<code>images.evetech.net/types/{id}/icon</code>). The row you click is the row that changes; copies of one type are interchangeable to the engine.</li>
+<li><b>Text:</b> the methodology note now mentions the Fit card controls.</li>
+</ul>
+
+<h2>Verification</h2>
+<p>Playwright, against the real page, with ESI answered from the SDE:</p>
+<ul>
+<li><b>Rifter with dual prop.</b> Drain 11.9 at default. Clicking the AB skips "active", because only one propulsion module can be active, and goes to offline.
+  <ul>
+  <li>MWD off: drain 8.9, capacity 313 (the MWD's capacity penalty is gone).</li>
+  <li>AB on: drain 9.6.</li>
+  <li>Reset: back to 11.9 / 250.</li>
+  </ul>
+  These match <code>check_module_states.py</code>.</li>
+<li><b>Vargur.</b> The MJD can't go active while Bastion runs. With Bastion off and the MJD active, drain is 123.3. Switching Bastion back on refuses the MJD with the reason shown.</li>
+<li><b>Pilot Analyzer.</b> Collapsed by default, stays open after a change, and each loss tab recalculates on its own.</li>
+<li><b>Hecate.</b> A blaster switched off stays off across Defense/Sharpshooter mode switches: DPS 127 &rarr; 63, and 63 again after returning to Sharpshooter.</li>
+<li>No console errors. 139/139 regression fits and 280/280 parse tests pass; the engine is unchanged apart from where a hover note is attached.</li>
+</ul>
+
+<h2>Next</h2>
+<p>Phase 3: fold the remaining special cases into module states:</p>
+<ul>
+<li>the capacitor-booster ring toggle</li>
+<li>siege/triage items marked as assumed to be running</li>
+<li>Capital Sensor Arrays and the Entosis Link</li>
+</ul>
+<p>Backlog: capacitor advice (D4) and overheat (D5).</p>
+</body></html>

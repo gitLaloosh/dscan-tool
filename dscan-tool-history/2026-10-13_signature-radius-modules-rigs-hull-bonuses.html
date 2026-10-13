@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Signature radius: modules, rig drawbacks, hull and MWD bloom bonuses</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Signature radius: modules, rig drawbacks, hull and MWD bloom bonuses</h1>
+<p><span class="tag">Feature backlog</span><span class="tag">Audit batch 6</span> 2026-10-13 &middot; <code>v2026.10.13.15</code> &rarr; <code>v2026.10.13.16</code> &middot; the owner: "please continue"</p>
+
+<h2>What was missing</h2>
+<p>Signature radius used the hull, flat adds (shield extenders, T3 subsystems), shield rig drawbacks and the MWD bloom. Only Interceptors' MWD bonus was modeled. I parsed every pyfa <code>eos/effects.py</code> handler that changes the ship's <code>signatureRadius</code> or a fitted MWD's own <code>signatureRadiusBonus</code>. Values come from CCP's SDE.</p>
+<table>
+<tr><th>Source</th><th>pyfa effect</th><th>Applies</th></tr>
+<tr><td><b>Heavy Assault Cruisers, Assault Frigates, Command Destroyers</b> (27 hulls)</td><td>4902 MWDSignatureRadiusRoleBonus</td><td>MWD bloom &minus;50% (flat role bonus). The biggest change: a HAC's MWD sig was shown almost twice as large as real.</td></tr>
+<tr><td>Interdictors, Talwar, Thrasher Fleet Issue</td><td>5723, 5321, 11400</td><td>MWD bloom &minus;50% / &minus;75% / &minus;75% at V</td></tr>
+<tr><td>Legion / Loki Propulsion &ndash; Wake Limiter</td><td>3872 / 3869</td><td>MWD bloom &minus;50% at V</td></tr>
+<tr><td>Interceptors</td><td>3766</td><td>Unchanged (&minus;75%), now effect-driven</td></tr>
+<tr><td>Rig drawbacks on <b>Navigation rigs</b> (Hyperspatial Velocity Optimizer, Warp Core Optimizer)</td><td>2716 drawbackSigRad</td><td>+10%, halved by Astronautics Rigging V, stacking-penalized. Only shield rigs were counted before.</td></tr>
+<tr><td>Inertial Stabilizers</td><td>2644</td><td>+5&ndash;11% each, stacking-penalized</td></tr>
+<tr><td>Signature Radius Suppressor</td><td>8108 (online)</td><td>&times;0.9, in pyfa's separate postMul group</td></tr>
+<tr><td>Hull sig bonuses: Hyena, Monitor, Prospect, Thalia/Scalpel, Cyclone Fleet Issue</td><td>3374, 7045, 5853, 6381, 11358</td><td>&minus;15 to &minus;25% at V, unpenalized</td></tr>
+<tr><td>T3D Defense Mode: Confessor, Jackdaw</td><td>6014</td><td>Ship sig &divide;1.5</td></tr>
+<tr><td>T3D Defense Mode: Svipul</td><td>6040</td><td>MWD bloom &divide;3</td></tr>
+</table>
+<p>Stacking follows pyfa's groups: rig drawbacks, Inertial Stabilizers and the MWD share one penalized group; the Suppressor and Defense Mode each sit in their own. Items without effect data fall back to the old shield-rig gate.</p>
+
+<h2>Verification</h2>
+<p>Expected values come from an independent hand-coded Python derivation (<code>indep_sig.py</code>). All four new constructed fits match:</p>
+<table>
+<tr><th>Fit</th><th>Base</th><th>MWD on</th></tr>
+<tr><td>Vagabond: 2 Inertial Stabilizers, Suppressor, 2 Hyperspatial rigs, Core Defense Field Extender, 50MN MWD II</td><td>132 m</td><td>415 m</td></tr>
+<tr><td>Hyena: Warp Core Optimizer + EM Shield Reinforcer, 5MN MWD II</td><td>36</td><td>205</td></tr>
+<tr><td>Svipul in Defense Mode, 5MN MWD II</td><td>60</td><td>155 (345 in Sharpshooter)</td></tr>
+<tr><td>Legion with Wake Limiter, 50MN MWD II</td><td>184</td><td>616</td></tr>
+</table>
+<p>A full output diff of v.15 against v.16 changed only signature fields. Each change matches its hand-computed value and is pinned with a note:</p>
+<table>
+<tr><th>Fit</th><th>Change</th><th>Why</th></tr>
+<tr><td><b>Legion (your pyfa fit)</b></td><td>175 &rarr; 184; MWD 1,006 &rarr; <b>1,050</b></td><td>Hyperspatial rig. 1,050 is the value your pyfa's 1.1k becomes with current MWD data.</td></tr>
+<tr><td><b>Ishkur (your fit)</b></td><td>MWD 234 &rarr; 137</td><td>Assault Frigate role bonus</td></tr>
+<tr><td>Sacrilege</td><td>MWD 810 &rarr; 473</td><td>HAC role bonus</td></tr>
+<tr><td>Confessor (Defense Mode)</td><td>65 &rarr; 43</td><td>Defense Mode &divide;1.5</td></tr>
+<tr><td>Monitor (2 fixtures)</td><td>40 &rarr; 30</td><td>Hull bonus</td></tr>
+<tr><td>Rifter penalty-chain fit</td><td>35 &rarr; 39</td><td>Inertial Stabilizers II</td></tr>
+</table>
+<p>Signature feeds the missile-ammo ranking and the drone size choice, so those follow the corrected values.</p>
+<ul>
+<li><code>node --check</code> clean.</li>
+<li><b>116/116 PASS</b>, 280/280 parse tests. v.15 fails 15 checks against the updated set.</li>
+<li>Playwright render of the Vagabond summary shows 132 m / 415 m.</li>
+</ul>
+
+<h2>Left out, and new findings</h2>
+<ul>
+<li>The Signature Suppressor's active burst (&times;0.3) and the MJD's sig spike are short "while active" effects. They belong to the module-toggle item.</li>
+<li>Found while reading the Defense Mode items: other Defense Mode effects aren't modeled yet. Hecate armor rep cycle &divide;1.5, Jackdaw/Skua shield recharge, Confessor/Svipul remote rep. The Skua isn't in the T3D mode table at all.</li>
+<li>Implant sig effects (Halo set, etc.) are part of the implants item.</li>
+</ul>
+<h2>Lesson for future models</h2>
+<p>Two mistakes were behind this batch.</p>
+<ul>
+<li>The sig drawback was gated on the Rig Shield group, but the same effect sits on 16 Navigation rigs. Gate on the effect, not the group (<code>LESSONS_LEARNED.md</code> #2).</li>
+<li>Only Interceptors' MWD bloom bonus was entered by hand, while 27 more hulls carry one (#4).</li>
+</ul>
+<p>Checks for this batch live in <code>tools/independent_checks/check_signature.py</code>.</p>
+</body></html>

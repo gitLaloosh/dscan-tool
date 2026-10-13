@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Required skills 4–6 and turret Specialization gate</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Required skills 4–6 and the turret Specialization gate</h1>
+<p><span class="tag">Bug fix</span> 2026-10-13 &middot; <code>v2026.10.13.20</code> &rarr; <code>v2026.10.13.21</code> &middot; the owner: "ok make the fix and then move on to phase 2"</p>
+
+<h2>What was wrong</h2>
+<p>pyfa decides whether a skill bonus applies to an item with <code>requiresSkill()</code>. That reads the item's direct required skills from the SDE table <code>requiredskillsfortypes</code>. For every published type, that table matches attributes requiredSkill1&ndash;6 exactly (checked: 0 mismatches). The tool read only requiredSkill1&ndash;3. Three things were wrong as a result:</p>
+<table>
+<tr><th>Problem</th><th>Who</th><th>Effect</th></tr>
+<tr><td>Gunnery is in slot 4, so Gunnery-gated bonuses were skipped: Sharpshooter, Trajectory Analysis, Controlled Bursts, Tracking Enhancers/Computers</td><td>Quad Mega Pulse Laser II, Triple Neutron Blaster Cannon II, Quad 800mm Repeating Cannon II</td><td>Revelation, 2&times; QMPL II + TE II: optimal 18,150 &rarr; <b>24,956 m</b>, falloff 16,000 &rarr; <b>24,000 m</b>, weapon drain 41.7 &rarr; <b>31.2 GJ/s</b></td></tr>
+<tr><td>Turret Specialization (+10% damage) was gated on "has a requiredSkill3", used as a stand-in for "is T2"</td><td>19 T1/meta/faction capital short-range turrets, whose slot 3 is Gunnery or Motion Prediction</td><td>Revelation, 2&times; QMPL I: DPS 101 &rarr; <b>92</b> (the stand-in gave +10% that doesn't exist)</td></tr>
+<tr><td>Only one racial Drone Specialization was counted</td><td>Aralez (requires Gallente <i>and</i> Caldari Drone Specialization)</td><td>2&times; Aralez: drone DPS 99 &rarr; <b>109</b> (pyfa Effect1730 applies each skill to drones requiring it)</td></tr>
+</table>
+
+<h2>Fix</h2>
+<ul>
+<li><code>REQUIRED_SKILL_ATTRS</code> = <code>[182, 183, 184, 1285, 1289, 1290]</code>.</li>
+<li>New <code>requiredSkillMatchCount()</code> helper. A bonus now applies once per matching required skill, as in pyfa.</li>
+<li>New <code>TURRET_SPECIALIZATION_SKILL_IDS</code>: all 31 turret Specialization skills, each +2%/level in the SDE. It replaces the requiredSkill3 stand-in on both turret DPS paths.</li>
+<li>The fighter Specialization check still uses requiredSkill3. It was checked against the SDE and matches the real rule for every published fighter.</li>
+<li>Other items with skills in slots 4&ndash;6 are covered by the same change: the four T3 cruisers, four dreadnoughts and seven covert/recon/black-ops-type hulls, plus EWAR, mining and salvage drones. None changed any existing fit.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Expected values come first, from <code>tools/independent_checks/check_required_skills.py</code>.</li>
+<li>Three new constructed golden fits. v.20 fails 5 checks on them; v.21 passes <b>139/139</b>, and the parse tests pass 280/280.</li>
+<li>A full output diff of every golden fit, v.20 &rarr; v.21, changed only the three new fits.</li>
+<li>The weapon-range and module-state generators and the table audit all still run clean.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>#18:</b> "does the item require skill X" must check all six slots. Never use an attribute's presence as a stand-in for a category (T2, size, race); check any such gate against the SDE for every published item it could touch.</li>
+<li><b>#19:</b> found while doing this. Some pyfa skill handlers filter on <i>the skill itself</i> (<code>requiresSkill(skill)</code>), and the recorder returned no hits for them without any error. <code>run()</code> now takes <code>carrier=</code>, records <code>skill?</code> when it's missing, and the audit prints a warning. None of the existing tables were affected.</li>
+</ul>
+</body></html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Speed and align time: missing skills and modules</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Speed and align time: missing skills and modules</h1>
+<p><span class="tag">Bug fix</span><span class="tag">Requested by the owner</span> 2026-10-13 &middot; <code>v2026.10.13.8</code> &rarr; <code>v2026.10.13.9</code> &middot; first batch from the effect-level module audit</p>
+
+<h2>What changed</h2>
+<p>Everything here is grounded in pyfa's own effect handlers (<code>eos/effects.py</code>) and its stacking rules (<code>eos/modifiedAttributeDict.py</code>), using CCP's SDE values from pyfa's local static-data cache. pyfa's rule is that, per attribute, all stacking-penalized multipliers share one penalty group, split into a "bigger than 1" chain and a "smaller than 1" chain that are penalized independently. Skills are never penalized.</p>
+<table>
+<tr><th>Piece</th><th>Effect</th><th>Who it hits</th></tr>
+<tr><td>Spaceship Command skill</td><td>&minus;2%/lvl agility, &times;0.90 at V</td><td><b>Every ship.</b> Every align time in the tool was about 11% too slow.</td></tr>
+<tr><td>Capital Ships skill</td><td>&minus;5%/lvl agility, &times;0.75</td><td>The 46 hulls that directly require it: dreads, carriers, FAX, supers, titans, Rorqual</td></tr>
+<tr><td>Advanced Spaceship Command</td><td>&minus;5%/lvl agility, &times;0.75, via the hull's own effect 1615</td><td>The same 46 hulls plus freighters and jump freighters (56 total)</td></tr>
+<tr><td>Overdrive Injector, Nanofiber, Polycarbon rig, Auxiliary Thrusters rig</td><td>+% max velocity (penalized, &gt;1 chain)</td><td>Speed</td></tr>
+<tr><td>Expanded Cargohold, Higgs Anchor</td><td>&times;0.8x / &minus;75% velocity (penalized, &lt;1 chain)</td><td>Speed</td></tr>
+<tr><td>Inertial Stabilizer, Nanofiber, Polycarbon, Low Friction Nozzle, Higgs Anchor</td><td>&minus;% agility (penalized, &lt;1 chain)</td><td>Align</td></tr>
+<tr><td>Reinforced Bulkhead; armor-rig and Salvage Tackle drawbacks</td><td>+% agility (penalized, &gt;1 chain)</td><td>Align</td></tr>
+<tr><td>Higgs Anchor</td><td>+100% mass</td><td>Align, and prop-mod boost</td></tr>
+</table>
+<p><b>Bug fixed along the way.</b> The armor-rig agility drawback used to be gated on the whole "Rig Armor" group. That wrongly applied +5% agility for each Auxiliary Nano Pump and Nanobot Accelerator, whose drawback attribute is actually a powergrid penalty. The gate is now the rig's own <code>drawbackAgility</code> effect (2717). The Muninn golden fit carried two Nano Pumps and was reading 7.2 s instead of 5.9 s.</p>
+<p><b>Mass ordering now matches pyfa.</b> Plates and an active prop mod's mass are added first, then multipliers (Higgs, siege/core &times;10) apply to the total. An active prop mod's own speed boost stays a separate multiplier, because pyfa puts it in its own <code>postMul</code> penalty group, not the module chain.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>node --check</code> clean.</li>
+<li>Regression: <b>100/100 PASS</b>, made up of 97 existing fits and 3 new constructed fits. The previous build fails 27 checks against the updated set, as expected. Parse tests: 280/280.</li>
+<li>The new fits' expected values come from an <b>independent Python re-implementation</b> of pyfa's stacking math, not from the tool's own output:
+  <ul>
+  <li>Rifter with 2 Overdrives, a Nanofiber and 3 navigation rigs: 619 / 1,619 m/s, 2.2 / 3.3 s.</li>
+  <li>Rifter with 2 Cargoholds, a Bulkhead, an Inertial Stabilizer and a Higgs: 86 m/s, 2.5 s.</li>
+  <li>Bare Charon, which gets Advanced Spaceship Command but not Capital Ships: 42.1 s.</li>
+  </ul></li>
+<li>Every other changed align time across all 97 existing fits was diffed between v.8 and v.9. Each moved by exactly &times;0.90 (rounding aside), or &times;0.506 on capitals, unless a speed or agility module was fitted. Every module-driven change was hand-checked: Rifter, Osprey Navy Issue, Vedmak, Confessor, Muninn.</li>
+<li>Expectations updated deliberately, each with a note in <code>golden_fits.json</code>:
+  <ul>
+  <li>Align pins on 11 fits, each at &times;0.9.</li>
+  <li>Thanatos align pinned at 25.0 s (capital skills).</li>
+  <li>Muninn align pinned at 5.9 s as a guard for the Nano Pump bug.</li>
+  <li>Legion speed and align.</li>
+  </ul></li>
+<li>The Legion golden fit's two rig types turned out to be trimmed stubs with no attributes, which hid its real Polycarbon Engine Housing from every calculation. Both stubs were replaced with full SDE data: speed 289 &rarr; 308, align 5.9 &rarr; 4.7.</li>
+<li>Playwright render of the nav card: AB 1,619 m/s, 619 m/s with prop off, 2.2 s align. Renders correctly.</li>
+</ul>
+
+<h2>Still open</h2>
+<ul>
+<li><b>Rorqual align:</b> 294.8 s here vs 280 s in the owner's pyfa screenshot, about 5% apart. The full EFT of that fit wasn't preserved, so the remaining difference can't be pinned down. It's most likely an agility module or rig in the fit that isn't in the constructed test fit.</li>
+<li><b>Legion "armor HP 2&ndash;5% high" (bug list):</b> the Polycarbon rig also carries a &minus;10% armor HP drawback (&minus;5% after Astronautics Rigging). The tool doesn't model rig HP drawbacks yet; they're in the EHP batch. This is a strong candidate for the Legion gap.</li>
+<li>Remaining audit batches: MWD capacitor penalty, targeting range/scan res modules, cap-need skills and rigs, EHP (layered coatings, rig drawbacks), repairs, signature radius, weapon range.</li>
+</ul>
+</body></html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Local repairs: hull, rig, amplifier and Bastion/Siege bonuses</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Local repairs: hull, rig, amplifier and Bastion/Siege bonuses</h1>
+<p><span class="tag">Feature backlog</span><span class="tag">Audit batch 5</span> 2026-10-13 &middot; <code>v2026.10.13.14</code> &rarr; <code>v2026.10.13.15</code> &middot; the owner: "when you're done w/ this, go ahead and start on the next item"</p>
+
+<h2>What was missing</h2>
+<p>The Repairs strip and Break Point used each repairer's base amount. Its cycle time was already right (v.11). No hull bonus changed the amount, nor did any rig. Shield Boost Amplifiers were applied through a group gate. Bastion, Siege and Triage local-rep effects weren't modeled at all.</p>
+<p>I parsed every pyfa <code>eos/effects.py</code> handler that changes a fitted module's <code>shieldBonus</code>, <code>armorDamageAmount</code> or <code>structureDamageAmount</code>, or the ship's <code>shieldRechargeRate</code>. Values come from CCP's SDE. The rows were added to the existing <code>MODULE_ATTR_MOD_EFFECTS</code> table, with a new flag for stacking-penalized entries.</p>
+<table>
+<tr><th>Source</th><th>pyfa effect</th><th>Applies</th></tr>
+<tr><td>Hull rep bonuses: battleships (Hyperion, Maelstrom &hellip;), Marauders, Assault Frigates, Heavy Assault Cruisers, T3 Defensive subsystems and others (48 rows)</td><td>e.g. 5367, 4950, 5365, 4974, 11702, 999, 11414, 11432</td><td>Per hull skill level (&times;5), unpenalized</td></tr>
+<tr><td>Auxiliary Nano Pump rigs</td><td>1281 / 2868 structuralAnalysisEffect</td><td>Armor rep amount, <b>stacking-penalized</b> (it's a rig, not a skill or implant)</td></tr>
+<tr><td>Shield Boost Amplifier</td><td>1720</td><td>Booster amount, penalized. Now effect-driven; the group gate is a fallback for items without effect data.</td></tr>
+<tr><td>Bastion Module</td><td>6658 moduleBonusBastionModule</td><td>Rep amount +60% (penalized, in the same group as amplifiers); booster/repairer duration and cap need &minus;20%</td></tr>
+<tr><td>Siege Module, Triage Module</td><td>6582 / 6581</td><td>Rep duration and amount from the module's own attrs 2346 / 2347</td></tr>
+<tr><td>Capital Industrial Cores</td><td>4575 / 8119</td><td>Rep duration and amount from attrs 2606 / 2607. Replaces the old post-loop fractions.</td></tr>
+<tr><td>Shield regen modules and rigs</td><td>50, 4911 (multiply attr 134); 486, 5461 (boost attr 338)</td><td>Ship <code>shieldRechargeRate</code>. Shield Rechargers, Purger rigs, and the Processor Overclocking Unit drawback. Replaces the old group gate (kept as fallback).</td></tr>
+</table>
+<p>Bastion leaves cap drain unchanged on purpose: cap need and cycle time both drop &times;0.8, so GJ/s is the same. The cap loop now uses the same effect-derived cycle multiplier as the HP/s figure.</p>
+
+<h2>Verification</h2>
+<p>Expected values come from an independent hand-coded Python derivation (<code>indep_rep.py</code>): pyfa rules typed by hand and SDE values, not the tool's table. Both new constructed fits match exactly:</p>
+<ul>
+<li><b>Hyperion</b>, 2&times; Large Armor Repairer II, 2&times; Large Auxiliary Nano Pump II: <b>317 HP/s</b> (316.8), cap 71.1 GJ/s.</li>
+<li><b>Maelstrom</b>, X-Large Shield Booster II, 2&times; Shield Boost Amplifier II, Purger and Processor Overclocking rigs: booster <b>370 HP/s</b> (369.6), passive regen 19 (18.6), cap 72 GJ/s.</li>
+</ul>
+<p>A full output diff of v.14 against v.15 over every golden fit changed only repair fields. Each change matches its hand-computed ratio and is pinned with a note:</p>
+<table>
+<tr><th>Fit</th><th>Rep HP/s</th><th>Why</th></tr>
+<tr><td>Vargur (Bastion)</td><td>231 &rarr; 578</td><td>Marauders +25% &times; Bastion +60% / 0.8 cycle</td></tr>
+<tr><td>Paladin (Bastion)</td><td>82 &rarr; 225</td><td>Marauders +37.5% &times; Bastion</td></tr>
+<tr><td>Kronos (Bastion)</td><td>129 &rarr; 354</td><td>Same as Paladin</td></tr>
+<tr><td>Golem (Bastion)</td><td>232 &rarr; 616</td><td>Marauders +37.5%. Bastion's +60% stacks penalized with the fitted amplifier: 1.6 &amp; 1.36 &rarr; 2.10</td></tr>
+<tr><td>Hawk (your pyfa fit)</td><td>97 &rarr; 134</td><td>Assault Frigates booster bonus +37.5%</td></tr>
+<tr><td>Cerberus</td><td>74 &rarr; 102</td><td>Heavy Assault Cruisers booster bonus +37.5%</td></tr>
+<tr><td>Muninn</td><td>82 &rarr; 106</td><td>2 Auxiliary Nano Pump I rigs, penalized: &times;1.30</td></tr>
+<tr><td>Ishkur (your fit)</td><td>27 &rarr; 44</td><td>Assault Frigates armor rep bonus +37.5% &times; Nano Pump II +20%. Newly pinned.</td></tr>
+</table>
+<p>Other checks:</p>
+<ul>
+<li><code>node --check</code> clean.</li>
+<li><b>112/112 PASS</b>, 280/280 parse tests. v.14 fails 10 checks against the updated set.</li>
+<li>Playwright render of the Hyperion summary shows 317 dps armor Break Point and &minus;51.1 GJ/s net cap.</li>
+</ul>
+
+<h2>Also closed: Legion bug #2, confirmed in pyfa</h2>
+<p>the owner ran the owner Legion EFT through pyfa. These all match the tool: EHP 19.9k, armor 7.67k (the v.14 Polycarbon rig fix), all resists, DPS 686, speed 1,819 m/s, targeting 185 km, scan res 745 mm, sensor strength 76.9, cap 2.1k GJ. Bug #2 ("armor 2&ndash;5% high") is closed. The fit is pinned as <code>legion_owner_eft_pyfa_verified</code>.</p>
+<p>The only differences were the MWD's cap and signature numbers. They're a data difference, not math. the owner's pyfa is v2.66.3 with data build 3326071 (April). In that data the 50MN Microwarpdrive II uses 200 GJ per cycle with a +500% signature bloom; the current SDE and live ESI have 160 GJ and +475%. <b>Updating pyfa</b> will make future screenshots line up.</p>
+
+<h2>Still open</h2>
+<ul>
+<li>Remote reps and boosters (drugs) are out of scope here. Boosters are part of the implants item.</li>
+<li>Signature radius doesn't include rig sig drawbacks yet. With current data the Legion should be 1,050 m. That's the next item.</li>
+</ul>
+</body></html>

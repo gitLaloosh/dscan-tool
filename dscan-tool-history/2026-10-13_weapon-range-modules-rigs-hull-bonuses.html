@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Weapon range: modules, scripts, rigs, Bastion and hull bonuses</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Weapon range: modules, scripts, rigs, Bastion and hull bonuses</h1>
+<p><span class="tag">Feature backlog</span><span class="tag">Audit batch 7</span> 2026-10-13 &middot; <code>v2026.10.13.16</code> &rarr; <code>v2026.10.13.17</code> &middot; the owner: "keep going"</p>
+
+<h2>What was missing</h2>
+<p>Turret optimal/falloff and missile travel distance used the weapon, the loaded ammo and the range skills. A hand-made table added hull range bonuses for five hulls only. No module, rig or script changed range, and missiles got no hull bonus at all.</p>
+
+<h2>How the new table was built</h2>
+<p>Earlier batches parsed pyfa's handlers with text matching. That misses handlers that loop over attribute names or pick values by context (dozens of the range handlers, including the Raven's and the Tracking Computer's). This time each real pyfa handler was <b>executed</b> against a recording stand-in for the fit. That captured exactly which attribute it changes, by what source attribute, with which skill scaling and stacking group. Each handler's filter was then evaluated against every published turret (642) and missile charge (200) in CCP's SDE.</p>
+<p>Result: <code>WEAPON_RANGE_MOD_EFFECTS</code>, 153 effects carried by ships, modules, rigs and subsystems:</p>
+<table>
+<tr><th>Source</th><th>Applies</th></tr>
+<tr><td>Tracking Enhancer, Tracking Computer</td><td>Optimal and falloff, penalized. A loaded <b>Optimal Range Script</b> doubles the Computer's bonuses; a <b>Tracking Speed Script</b> zeroes them. Scripts pair per module by mid slot.</td></tr>
+<tr><td>Locus Coordinator / Ambit Extension rigs</td><td>Optimal / falloff, penalized</td></tr>
+<tr><td>Missile Guidance Enhancer, Missile Guidance Computer (+ Range / Precision scripts)</td><td>Missile velocity and flight time, penalized</td></tr>
+<tr><td>Hydraulic Bay Thrusters, Rocket Fuel Cache Partition rigs</td><td>Missile velocity / flight time, penalized</td></tr>
+<tr><td>Bastion Module</td><td>+25% optimal and falloff on large turrets, +25% missile velocity</td></tr>
+<tr><td>Siege Module</td><td>Torpedo velocity</td></tr>
+<tr><td>T3 Offensive subsystems</td><td>Range bonuses ×5 Offensive Systems</td></tr>
+<tr><td>120+ hulls</td><td>Optimal, falloff and missile velocity/flight time bonuses. Examples: Rokh, Eagle, Naga, Paladin, Kronos, Hawk, Caracal, Raven, Golem, Sacrilege. These replace the five hand-entered hulls.</td></tr>
+<tr><td>T3D Sharpshooter Mode</td><td>Confessor and Hecate optimal ×1.67; Jackdaw missile velocity ×1.67</td></tr>
+<tr><td>Vorton Arc Extension skill</td><td>Vorton Projector optimal +25% at V</td></tr>
+</table>
+<p>Stacking follows pyfa: hull and subsystem bonuses unpenalized; all modules, rigs and Bastion in one penalized chain; Sharpshooter Mode in its own group.</p>
+
+<h2>Verification</h2>
+<p>Expected values come from an independent hand-coded Python derivation (<code>indep_range.py</code>). All four new constructed fits match exactly:</p>
+<table>
+<tr><th>Fit</th><th>Result</th></tr>
+<tr><td>Rokh: 3 TE II, TC II + Optimal Range Script, unscripted TC II, 2 Locus II + Ambit II, 425mm Railgun II / Spike L</td><td>279.0 km optimal, 49.8 km falloff (seven-module penalized chain)</td></tr>
+<tr><td>Raven: 2 MGE II, MGC II + Missile Range Script, Hydraulic + Rocket Fuel rigs, Scourge Cruise</td><td>424.6 km</td></tr>
+<tr><td>Hecate, Sharpshooter Mode, Light Neutron Blaster II / Null S</td><td>5.25 km (3.15 km in Defense)</td></tr>
+<tr><td>Jackdaw, Sharpshooter Mode, Scourge Light Missile</td><td>70.3 km</td></tr>
+</table>
+<p>A full output diff of v.16 against v.17 changed only range fields. Each was hand-checked and pinned:</p>
+<table>
+<tr><th>Fit</th><th>Change</th></tr>
+<tr><td><b>Legion (your pyfa fit)</b></td><td>optimal 8.25 &rarr; 16.8 km, falloff 10.0 &rarr; 13.6 km (subsystem, TE, TC, Locus rig)</td></tr>
+<tr><td><b>Hawk (your fit)</b></td><td>rockets 8.4 &rarr; 12.7 km (hull missile velocity)</td></tr>
+<tr><td><b>Rifter (your fit)</b></td><td>falloff 6.45 &rarr; 9.68 km (hull)</td></tr>
+<tr><td>Paladin / Kronos (Bastion)</td><td>15.8 &rarr; 27.8 km / 32.4 &rarr; 46.1 km optimal</td></tr>
+<tr><td>Golem (Bastion)</td><td>torpedoes 43.7 &rarr; 82.0 km</td></tr>
+<tr><td>Caracal, Sacrilege, two Lokis</td><td>missile velocity hull/subsystem bonuses</td></tr>
+<tr><td>Confessor (Sharpshooter)</td><td>3.9 &rarr; 6.6 km</td></tr>
+<tr><td>Stormbringer, Skybreaker</td><td>&times;1.25 Vorton Arc Extension</td></tr>
+</table>
+<p>Three older fixtures (Paladin, Kronos, Muninn) had scripts but no slot pairing, so pairing was added from their fitted types. The Muninn's Missile Precision Script correctly cancels its Guidance Computer's range bonus.</p>
+<ul>
+<li><code>node --check</code> clean. <b>120/120 PASS</b>, 280/280 parse tests. v.16 fails 19 checks against the updated set.</li>
+<li>Playwright render of the Rokh summary shows 279.0 km / 49.8 km on the Firepower card.</li>
+</ul>
+
+<h2>Not included</h2>
+<ul>
+<li>Remote Tracking Computers, gang boosts and Tracking/Guidance Disruptors are projected effects, out of scope.</li>
+<li>Drone and fighter range, implants and boosters (Deadeye, Blue Pill, Crash) are separate items.</li>
+<li>Overheating isn't modeled anywhere.</li>
+</ul>
+<h2>Lesson for future models</h2>
+<p>The earlier batches found pyfa's bonus code by text matching <code>eos/effects.py</code>, and that misses handlers that loop over attribute names or pick values by context. Run the real handlers with <code>tools/pyfa_effects.py</code> instead, and regenerate this table with <code>tools/gen_weapon_range_table.py</code>. See <code>LESSONS_LEARNED.md</code> #1 and #4.</p>
+</body></html>

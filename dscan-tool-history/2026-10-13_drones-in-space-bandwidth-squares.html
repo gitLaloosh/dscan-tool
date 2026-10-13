@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Drones in space: bandwidth squares</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Drones in space: bandwidth squares in the Fit card</h1>
+<p><span class="tag">Feature</span> 2026-10-13 &middot; <code>v2026.10.13.22</code> &rarr; <code>v2026.10.13.23</code> &middot; the owner: "only the bay but rather than a number that they toggle, perhaps give a visual representation in each drone's row that represents the limit based on the fit's drone bandwidth that the user can activate and deactivate... like pyfa"</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Drone bay header.</b> The drone bay in the Fit card shows the budget ("Bandwidth 60 / 75 Mbit/s &middot; 5 / 5 in space") and a bandwidth bar.</li>
+<li><b>One square per drone.</b> Each drone type has a square for every drone of that type in the bay; filled means in space. The row also shows count in space, bandwidth each and DPS each.</li>
+<li><b>Click to change.</b> Clicking square <i>k</i> puts <i>k</i> of that type in space. Clicking the last filled square takes one back.</li>
+<li><b>Limits, as in pyfa.</b> Squares the free bandwidth or the 5-drone limit won't allow are dashed and do nothing. Hovering says why, e.g. "needs 10 Mbit/s each, 0 of 75 Mbit/s free — take other drones back first". Other drones have to come back before new ones can go out.</li>
+<li><b>Non-combat drones count.</b> EWAR and logistics drones use bandwidth and a drone slot, with no DPS.</li>
+<li><b>Default unchanged.</b> With no drone selection, the engine still assumes the best case: hardest-hitting combat drones first. The full output diff of every existing golden fit was empty.</li>
+<li><b>Reset to best case</b> clears drones and module states together.</li>
+<li><b>Engine:</b> <code>estimateHpAndDps()</code> takes an 8th argument, <code>droneStates</code> (<code>{typeId: count in space}</code>), and returns <code>result.droneStates</code>. That gives each drone type with its count in space, bandwidth used against the total, drones in space against the maximum, and refused requests. A request over a limit is granted in DPS order, and the rest is refused with the reason.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Expected values come from <code>tools/independent_checks/check_drone_states.py</code>. Per drone: Ogre II 63.36 DPS, Hammerhead II 31.68 DPS.</li>
+<li>Four new constructed golden fits, all on an Abaddon with 3 Ogre II, 5 Hammerhead II and 2 Hornet EC-300:
+  <ul>
+  <li>default: 3 Ogre II, 190.1 DPS, 75/75 Mbit/s</li>
+  <li>1 Ogre II + 3 Hammerhead II + 1 EC-300: 158.4 DPS, 60 Mbit/s, 5 in space</li>
+  <li>over bandwidth: the Hammerhead II is refused</li>
+  <li>over the 5-drone limit: the EC-300s are refused</li>
+  </ul>
+  v.22 fails 2 checks on them; v.23 passes <b>143/143</b>, and the parse tests pass 280/280.</li>
+<li>Playwright click-through on the real Fit Analyzer page:
+  <ul>
+  <li>Locked squares don't respond.</li>
+  <li>With two Ogres taken back, exactly 4 Hammerhead squares unlock: there is bandwidth for 5, but only 4 drone slots are free.</li>
+  <li>DPS goes 190 &rarr; 127 &rarr; 63 &rarr; 158, and Reset brings back 190.</li>
+  <li>No console errors.</li>
+  </ul></li>
+</ul>
+<p>Fighters still use the automatic best case (launch tubes, per-class limits); they're in the backlog for the same treatment.</p>
+</body></html>

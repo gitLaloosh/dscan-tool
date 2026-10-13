@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Targeting range, scan resolution and sensor strength modules</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Targeting range, scan resolution and sensor strength modules</h1>
+<p><span class="tag">Feature backlog</span><span class="tag">Audit batch 3</span> 2026-10-13 &middot; <code>v2026.10.13.12</code> &rarr; <code>v2026.10.13.13</code> &middot; the owner: "start on the feature backlog starting with highest severity"</p>
+
+<h2>What was missing</h2>
+<p>Targeting range and scan resolution were calculated from the hull and skills only. No fitted module, rig or subsystem changed them. Sensor strength did include Sensor Boosters and Signal Amplifiers, but ignored scripts.</p>
+<p>I parsed every pyfa <code>eos/effects.py</code> handler that changes the ship's <code>maxTargetRange</code>, <code>scanResolution</code> or <code>scan*Strength</code>, plus the handlers that change those modules' own bonuses (scripts and the interceptor role bonus). Values come from CCP's SDE.</p>
+<table>
+<tr><th>Source</th><th>pyfa effect</th><th>Applies to</th></tr>
+<tr><td>Sensor Booster (active)</td><td>2670 sensorBoosterActivePercentage</td><td>Range and scan res (penalized), strength (penalized). <b>Scripts</b> boost the module's own bonuses: Targeting Range Script range +100%, scan res and strength &minus;100%. Scan Resolution Script the reverse. ECCM Script doubles strength.</td></tr>
+<tr><td>Signal Amplifier</td><td>3659 / 3657 / 2232</td><td>Range, scan res, strength (all penalized)</td></tr>
+<tr><td>Ionic Field Projector rig</td><td>5081</td><td>Range (penalized)</td></tr>
+<tr><td>Targeting System Subcontroller rig</td><td>699</td><td>Scan res. It's the same handler as the Signature Analysis skill, but penalized when it comes from a rig.</td></tr>
+<tr><td>Warp Core Stabilizer, Interdiction Nullifier</td><td>2646 / 2645</td><td>&minus;40% / &minus;50% range (penalized, default group). Scan res &times;0.6 / &times;0.5 in pyfa's separate <code>PostMul</code> group.</td></tr>
+<tr><td>Cloaking Device</td><td>854 (an "offline" effect: applies whenever fitted)</td><td>Scan res &times;0.6 (PostMul)</td></tr>
+<tr><td>Interceptor role bonus</td><td>8120 interceptorNullificationRoleBonus</td><td>A fitted Nullifier's penalties scaled by role bonuses &minus;80% / +80%. The result is &minus;10% range and &times;0.9 scan res.</td></tr>
+<tr><td>T3 Core subsystems</td><td>4343/4271/4272/4342, 4269/4270, 3900/3893/3895/3897</td><td>Range, scan res and racial strength per Core Systems level (&times;5), unpenalized</td></tr>
+<tr><td>Interdiction Nullifier propulsion subsystems</td><td>3807 maxTargetRangeAddPassive</td><td>Flat range add, before multipliers (&minus;20,000 m on the Tengu's)</td></tr>
+<tr><td>Capital Industrial Core, Triage Module</td><td>4575 / 6581</td><td>Scan-res multiplier. It is now penalized in the default group, as in pyfa; it used to be applied unpenalized.</td></tr>
+</table>
+<p>Stacking follows pyfa's <code>modifiedAttributeDict</code>:</p>
+<ul>
+<li>Each penalty group is penalized on its own.</li>
+<li>Bonuses and penalties form separate chains, largest first.</li>
+<li>Each step is 1 + (m &minus; 1) &times; exp(&minus;i&sup2;/7.1289).</li>
+</ul>
+<p>Scripts are paired per instance by mid-slot flag, so two copies of the same booster with different scripts are handled correctly.</p>
+
+<h2>Verification</h2>
+<p>Expected values come from an independent hand-coded Python derivation (<code>indep_tgt.py</code>): pyfa's stacking formula and SDE values, not the tool's tables. All three new constructed fits match exactly:</p>
+<table>
+<tr><th>Fit</th><th>Range</th><th>Scan res</th><th>Strength</th></tr>
+<tr><td>Caracal: 3 Sensor Boosters (Targeting Range script, Scan Resolution script, unscripted), Signal Amp, WCS, both rigs</td><td>110,530 m</td><td>486.6 mm</td><td>40.3</td></tr>
+<tr><td>Crow: Nullifier + Sensor Booster (interceptor role bonus)</td><td>47,531 m</td><td>1,257.8 mm</td><td>21.3</td></tr>
+<tr><td>Tengu: Electronic Efficiency Gate core, Nullifier propulsion, Improved Cloak</td><td>85,938 m</td><td>157.5 mm</td><td>42.0</td></tr>
+</table>
+<p>A full output diff of v.12 against v.13 over every golden fit changed exactly three existing fits. Each is now pinned with a note:</p>
+<ul>
+<li>Golem: scan res 175 &rarr; 105 (its Improved Cloaking Device II).</li>
+<li>Leshak: sensor strength 49.7 &rarr; 65.9. Its Sensor Booster carries an ECCM Script, which doubles the booster's strength bonus.</li>
+<li>Interdiction Nullifier Rifter: range 28,125 &rarr; 14,063 m, scan res 825 &rarr; 412.5 mm.</li>
+</ul>
+<p>Other checks:</p>
+<ul>
+<li><code>node --check</code> clean.</li>
+<li><b>107/107 PASS</b>, 280/280 parse tests. v.12 fails 12 checks against the updated set.</li>
+<li>Playwright render of the Caracal summary shows 110.5 km, 486.6 mm and 40.3 on the Navigation card.</li>
+</ul>
+
+<h2>Left out on purpose</h2>
+<ul>
+<li>Integrated and Networked Sensor Arrays, plus the Bastion and Siege sensor effects, are "while active" capital modules. They belong to the module-toggle item.</li>
+<li>Remote boosts and dampening from other ships are projected effects, out of scope.</li>
+<li>Implants such as Long Range Targeting and Signature Analysis hardwirings are covered by the implants backlog item.</li>
+</ul>
+</body></html>

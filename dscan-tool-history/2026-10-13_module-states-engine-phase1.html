@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Module states: engine (plan Phase 1)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Module states: engine (plan Phase 1)</h1>
+<p><span class="tag">Feature</span><span class="tag">Bug fix</span> 2026-10-13 &middot; <code>v2026.10.13.19</code> &rarr; <code>v2026.10.13.20</code> &middot; the owner: "D1: both D2: yes D3: yes D4: Later (when we've learned enough to make a recommendation) D5: not now but make sure it's in the backlog."</p>
+
+<h2>What changed</h2>
+<p>Every fitted module now has a state, as in pyfa: <b>offline</b>, <b>online</b> or <b>active</b>. Overheating isn't modeled (D5, in the backlog). A module's bonuses apply only in the state that turns them on, and only active modules use capacitor. There's no UI for changing states yet; that's Phase 2. The engine already accepts states (a new optional 7th argument to <code>estimateHpAndDps()</code>), and the regression suite uses them.</p>
+<ul>
+<li><b>pyfa's rules</b> (<code>eos/saveddata/module.py</code>):
+  <ul>
+  <li>An <code>offline</code> effect always applies, a <code>passive</code> one when online or active, and an <code>active</code> one only when active. A loaded charge's effects follow its module's state.</li>
+  <li>A module can be active only if it has an active effect and nothing blocks it. Bastion blocks MJDs, a Networked Sensor Array blocks capital MJDs, a Zero-Point Mass Entangler blocks MWDs, and a Disruptive Lance blocks cloaks.</li>
+  <li>Group limits: <code>maxGroupActive</code> / <code>maxGroupOnline</code>. One propulsion module active at a time. One Command Burst online and active, plus <code>maxGangModules</code> on command ships and with a Command Processor. A FAX can have only one Capacitor Booster online.</li>
+  <li>Subsystems are always online. Rigs are too in this tool (they can't be offlined in EVE; pyfa lets you).</li>
+  </ul></li>
+<li><b>Generated tables</b> (<code>tools/gen_module_state_tables.py</code>, which runs pyfa's handlers):
+  <ul>
+  <li><code>EFFECT_STATE_TYPE</code>: 122 effects (99 active, 4 offline, 19 overheat)</li>
+  <li><code>GROUP_LIMIT_MOD_EFFECTS</code>: 8 effects</li>
+  <li><code>ACTIVATION_BLOCK_EFFECTS</code>: 4 effects</li>
+  </ul></li>
+<li><b>Default states</b> (killmails, d-scan, EFT pastes): the best case the game allows. Every module that can run is active, within the group limits; for propulsion, the fastest one is active. The siege family defaults to active (D2). These default to online:
+  <ul>
+  <li>cloaks, MJD/MJFG, the Signature Suppressor burst and Entosis Links (D3)</li>
+  <li><b>my call, kept as before:</b> Capital Sensor Arrays and the Assault Damage Control burst. The tool already treated their active effects as not running, and the ADC burst is short with a long reactivation delay, the same reasoning as D3. The ADC's passive Damage Control resists still apply when online.</li>
+  </ul></li>
+<li><b>New engine behavior:</b> the Assault Damage Control's active burst (pyfa Effect7012: all its resonances forced to 0.25) is now modeled when a state sets it active.</li>
+<li><b>State format:</b> <code>{typeId: 'offline'|'online'|'active'}</code> or copy counts <code>{typeId: {active, online, offline}}</code>. Copies of one type are interchangeable. Weapons hand their active copies to High slots in flag order. A request that breaks a rule is refused with a reason, which the Phase 2 UI will show on hover.</li>
+<li><b>Result:</b> <code>result.moduleStates = {items, refused, assumed}</code>, giving each fitted type's copies per state, the reasons for any defaults or demotions, and any refusals.</li>
+<li><b>Text:</b> the methodology note explains the assumed states. Capacitor captions now say "every <i>running</i> module".</li>
+</ul>
+
+<h2>Effect on existing fits (output diff of every golden fit, v.19 &rarr; v.20)</h2>
+<p>Only capacitor drain changed on existing fits, in 6 of the 123:</p>
+<table>
+<tr><th>Fit</th><th>Drain GJ/s</th><th>Why (verified per module)</th></tr>
+<tr><td>Kronos (Bastion), Rokh</td><td>183.3&rarr;96.0, 335.6&rarr;248.3</td><td>Large MJD online: 786 / (12 s &times;0.75) = 87.3</td></tr>
+<tr><td>Vedmak</td><td>57.0&rarr;54.0</td><td>second prop mod (10MN AB II, 3.0) online</td></tr>
+<tr><td>Sacrilege</td><td>20.7&rarr;14.6</td><td>second prop (Y-S8 AB, 2.67) + ADC (3.46) online</td></tr>
+<tr><td>Ishkur (dual prop)</td><td>18.3&rarr;14.1</td><td>1MN AB II (0.73) + ADC (3.46) online</td></tr>
+<tr><td>Ishtar (a pilot)</td><td>8.7&rarr;5.2</td><td>ADC online (3.46); stable 94.8% &rarr; 96.9%</td></tr>
+</table>
+<p>The per-module drains come from <code>tools/independent_checks/check_capacitor.py</code>. The Ishtar and Ishkur pins were updated with notes.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>Expected values came first, from <code>tools/independent_checks/check_module_states.py</code> (hand-typed pyfa rules, SDE values).</li>
+<li>13 new constructed golden fits were built through the real EFT parser:
+  <ul>
+  <li><b>Vargur</b>, three ways:
+    <ul>
+    <li>default: sensor 48, LSB 226.5 HP/s, drain 36</li>
+    <li>Bastion online + MJD active: 24, 117.3, 123.3</li>
+    <li>MJD requested active with Bastion running: refused</li>
+    </ul></li>
+  <li><b>Rifter, dual prop</b>, four ways:
+    <ul>
+    <li>default: drain 11.9, unstable</li>
+    <li>AB active + MWD online: 9.6, capacity still 250 because of the online MWD's passive penalty</li>
+    <li>second prop requested active: refused</li>
+    <li>rep offline: 3.0, stable</li>
+    </ul></li>
+  <li><b>Rifter, ADC + EM Armor Hardener</b>, four ways (armor EM resist):
+    <ul>
+    <li>default: 84%</li>
+    <li>hardener offline: 64%</li>
+    <li>ADC active: 96%, hull 83%</li>
+    <li>ADC offline: 82%, hull 33%</li>
+    </ul></li>
+  <li><b>Command Burst limits:</b> Prophecy with 2 bursts gives 1 active + 1 offline; Damnation with 3 gives 2 active + 1 offline.</li>
+  </ul></li>
+<li>v.19 fails 23 checks on the new set. v.20 passes <b>136/136</b>; parse tests 280/280; <code>node --check</code> clean.</li>
+<li>Resolver unit checks:
+  <ul>
+  <li>fractional multi-loss quantities</li>
+  <li>a Command Processor raising the burst limit</li>
+  <li>FAX capacitor boosters</li>
+  <li>rig offline refused</li>
+  <li>passive module "active" refused</li>
+  <li>copy counts</li>
+  <li>the Mass Entangler blocking an MWD</li>
+  </ul></li>
+<li>End-to-end Playwright runs of the real page's Fit Analyzer (EFT paste, ESI answered from the SDE): no console errors, and the version tag reads v2026.10.13.20.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>A module-state gate that counts each module once ("active copies if it can be activated, else online copies") is wrong for modules that carry both a passive and an active effect. Examples are the Assault Damage Control, Signature Suppressor, Interdiction Nullifier, Warp Core Stabilizer, Entosis Link and the MWD's capacity penalty. A Signature Suppressor left online would lose its passive &minus;10% signature. This was found before coding by listing every module with mixed handler types. The code now counts per effect (<code>effQty(dt, effectId)</code>). See <code>LESSONS_LEARNED.md</code> #17.</p>
+
+<h2>Found along the way (not changed)</h2>
+<p><code>REQUIRED_SKILL_ATTRS</code> in <code>index.html</code> lists <code>requiredSkill1–3</code> only, while pyfa's <code>requiresSkill()</code> checks 1–6 (LESSONS #15). In the SDE, four capital T2 weapons carry their Gunnery / Missile Launcher Operation requirement in slot 4:</p>
+<ul>
+<li>Quad Mega Pulse Laser II</li>
+<li>Triple Neutron Blaster Cannon II</li>
+<li>Quad 800mm Repeating Cannon II</li>
+<li>Rapid Torpedo Launcher II</li>
+</ul>
+<p>So Gunnery-gated bonuses (e.g. Controlled Bursts) may be missing on those weapons. This is logged in the backlog for a check.</p>
+
+<h2>Next</h2>
+<p>Phase 2: the module list with click-to-change state, on the Fit Analyzer and on Pilot Analyzer losses (D1).</p>
+</body></html>
