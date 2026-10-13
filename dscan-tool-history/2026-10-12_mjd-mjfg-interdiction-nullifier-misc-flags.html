@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: MJD/MJFG + Interdiction Nullifier Misc flags</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.2rem;margin-top:2em;color:#222}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px}
+</style>
+</head>
+<body>
+
+<h1>Micro Jump Drive / Field Generator + Interdiction Nullifier now flagged in EWAR / Misc</h1>
+<p class="small">2026-10-12 &middot; index.html &middot; from the architecture backlog (2026-10-12 full-module-dogma-audit) &middot; the owner: "Micro Jump Drives and interdiction nullifiers can be flagged in the Misc category of the ewar card. Any disagreement there?" -&gt; "Go ahead"</p>
+
+<h2>Finding</h2>
+<p>Both backlog items ("Interdiction Nullifier module has zero representation" / "Micro Jump Drive / Micro Jump Field Generator have zero representation") were agreed as presence-only flags, same mechanism as the existing cyno flag (<code>MISC_TRAIT_GROUP_INFO</code>). Re-verified all three real ESI groups directly against the local pyfa SDE cache before implementing, surfacing a few corrections to the backlog's original notes:</p>
+<table>
+<tr><th>Group</th><th>Real types</th><th>Key attributes (live-confirmed)</th></tr>
+<tr><td>Micro Jump Drive (1189)</td><td>Large/Medium MJD + 2 Xarasier event variants</td><td>attr973 signatureRadiusBonusPercent &mdash; mainline 150%, but the Xarasier variants carry only <strong>120%</strong> (not uniform &mdash; backlog note didn't catch this). No jump-range attribute present on this item's own dogma at all.</td></tr>
+<tr><td>Micro Jump Field Generators (1533)</td><td>1 real type (Command Destroyer-only)</td><td>Same attr973=150%, but duration (attr73) is <strong>9s</strong>, not MJD's 12s. ALSO carries attr2066 mjdJumpRange=100km and attr2067 mjfgRadius=6km (both absent from plain MJD) &mdash; confirms it jumps the pilot's fleetmates within that 6km bubble too, not just itself.</td></tr>
+<tr><td>Interdiction Nullifier (4117)</td><td>I/Compact/Enduring/II, uniform across all 4</td><td>attr3120 warpBubbleImmuneBonus=1 (the flag) + THREE tradeoffs the backlog note only mentioned one of: attr309 maxTargetRangeBonus=-50%, attr565 scanResolutionMultiplier=0.5 (-50%), attr3124 droneBandwidthPercentage=-50%. All 3 effects are non-"Active" (no activation cycle attribute present) &mdash; genuinely passive while fit, unlike Sensor Booster/MJD/Bastion's assumed-active convention.</td></tr>
+</table>
+
+<h2>Fix</h2>
+<p>Extended <code>MISC_TRAIT_GROUP_INFO</code> with 3 new entries, keyed by each real lowercased ESI group name. Interdiction Nullifier's note is a plain static string (its tradeoff % is uniform across every real type). MJD's and MJFG's notes are instead <code>function(dogma)</code> &mdash; the sig-bonus%/duration genuinely vary by variant, so hardcoding "150%/12s" would have been silently wrong for the Xarasier MJD. The push site (<code>defensiveTypesFiltered</code> loop) now resolves <code>typeof miscInfo.note === 'function' ? miscInfo.note(dogma) : miscInfo.note</code> before pushing, so <code>ewarCardHtml()</code> always receives a plain string either way &mdash; no render-side change needed.</p>
+<p>New attribute constants: <code>MJD_SIG_RADIUS_BONUS_ATTR</code>=973, <code>MJFG_JUMP_RANGE_ATTR</code>=2066, <code>MJFG_FLEET_RADIUS_ATTR</code>=2067, <code>INTERDICTION_NULLIFIER_SCAN_RES_ATTR</code>=565, <code>INTERDICTION_NULLIFIER_DRONE_BW_ATTR</code>=3124. Interdiction Nullifier's targeting-range tradeoff reuses the EXISTING <code>EWAR_TARGETING_RANGE_BONUS_ATTR</code>=309 (same real attribute Sensor Dampener already reads) rather than a duplicate constant &mdash; safe since it's gated to a different group name, same collision-avoidance principle as every other fix in this file.</p>
+
+<h2>Verification</h2>
+<p>3 new constructed golden fits (bare Rifter, each isolating one group):</p>
+<table>
+<tr><th>Fit</th><th>Check</th><th>Hand-verified result</th></tr>
+<tr><td><code>rifter_constructed_micro_jump_drive</code></td><td>flag + note text</td><td>"...signature radius spikes +150% for the 12s activation..." (live-read, mainline MJD)</td></tr>
+<tr><td><code>rifter_constructed_micro_jump_field_generator</code></td><td>flag + note text</td><td>"...jump itself AND any fleetmate within 6 km 100 km away...Signature radius spikes +150% for the 9s activation" (live-read, confirms the 9s/100km/6km distinction from plain MJD)</td></tr>
+<tr><td><code>rifter_constructed_interdiction_nullifier</code></td><td>flag + note text</td><td>"...immune to warp-disruption bubbles...Tradeoff: -50% targeting range, -50% scan resolution, -50% drone bandwidth" (static, all 3 tradeoffs)</td></tr>
+</table>
+<p>Each fit also asserts the OTHER two flags are 0, confirming the three new group-name keys don't cross-match each other. <code>run_regression.mjs</code> extended with <code>hasMjdFitted</code>/<code>hasMjfgFitted</code>/<code>hasInterdictionNullifierFitted</code> (always 0/1, same "assert absence too" convention as <code>hasCynoFitted</code> &mdash; now also set on all 88 pre-existing fits, serving as a blanket false-positive guard) plus the 3 exact-match note-text fields, which is what actually exercises the new MJD/MJFG live-attribute-read logic (not just the group-name gate).</p>
+<p><strong>Full suite: 91/91 fits, ALL PASS (88 existing + 3 new, 471 total assertions). dscan_parse_tests.mjs: 280/280 PASS.</strong></p>
+
+<h2>Delivered</h2>
+<ul>
+<li><code>index.html</code>: 541,251 &rarr; 547,781 bytes</li>
+<li><code>regression_suite/golden_fits.json</code>: 88 &rarr; 91 fits</li>
+<li><code>regression_suite/run_regression.mjs</code>: new flattened assertion fields</li>
+</ul>
+
+<h2>Backlog</h2>
+<p>Both architecture-backlog items ("Interdiction Nullifier module has zero representation" / "Micro Jump Drive / Micro Jump Field Generator have zero representation") are now closed.</p>
+
+</body>
+</html>

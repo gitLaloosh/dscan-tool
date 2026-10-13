@@ -64,6 +64,28 @@
        still-fine. */
     --tank-shield:#1f9ab3;
     --tank-armor:#b9812f;
+    /* Resistance/Repairs layer identity colors (2026-10-13, the owner's mockup
+       review across several rounds) -- reuse existing palette tokens rather
+       than new hex literals: Shield=--cyan (already this card's own
+       accent), Armor=--amber, Hull=--kin (same tan as the Kinetic resist
+       column, chosen specifically so Hull doesn't collide with the Break
+       Point value's --danger red). NOTE: validate_palette.js FAILS this
+       trio as a 3-slot categorical set on the dark surface -- lightness
+       band (shield/armor read too light), chroma floor (hull reads
+       near-gray), and critically the normal-vision floor on armor<->hull
+       (ΔE 11.0, below the 15 floor -- hard to tell apart even with full
+       color vision, not just CVD). Shipped anyway per the owner's explicit
+       mockup approval, flagged to him rather than silently shipped; revisit
+       if he wants the trio re-picked to actually pass. */
+    --layer-shield:var(--cyan);
+    --layer-armor:var(--amber);
+    --layer-hull:var(--kin);
+    /* Break Point's own semantic color, aliased to --danger rather than
+       referenced directly -- --danger is shared with several unrelated
+       error/warning contexts (status errors, cap-gauge low reading, EWAR
+       danger badge, parse-error highlighting), so retuning it for one of
+       those would unintentionally recolor Break Point too. */
+    --break-point:var(--danger);
     --heading:#eef2f4;
     --label-size:10.5px;
     --label-tracking:0.6px;
@@ -631,7 +653,7 @@
 
   .resistance-collabels{display:grid; grid-template-columns:18px 44px 1fr 58px; column-gap:10px; align-items:center; margin-bottom:6px;}
   .resistance-collabels-cells{display:grid; grid-template-columns:repeat(4,1fr); column-gap:8px;}
-  .resistance-collabel{font-family:var(--sans); font-size:9.5px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; text-align:center;}
+  .resistance-collabel{font-family:var(--sans); font-size:9.5px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; text-align:center; color:var(--text-faint);}
 
   .resistance-row{display:grid; grid-template-columns:18px 44px 1fr 58px; column-gap:10px; align-items:center; padding:7px 0; border-top:1px solid var(--line-soft); position:relative; color:var(--text-dim);}
   .resistance-row:first-of-type{border-top:none;}
@@ -644,35 +666,81 @@
   .resistance-cell-pct{font-family:var(--mono); font-size:9.5px; color:var(--text-faint);}
   .resistance-row-ehp{text-align:right; font-family:var(--mono); font-size:12px; font-weight:600; color:var(--heading);}
 
-  /* Tank-type emphasis -- "option B" from the mockup review: an amber tick
-     flush with the card's own left-border accent, plus bold label/icon.
-     Only ever on one row (TANK_TYPE_THRESHOLD, 55% of raw HP share as of
-     2026-10-12, was 60%) -- never shown on a genuinely Mixed fit. */
-  .resistance-row.is-dominant{color:var(--amber);}
-  .resistance-row.is-dominant .resistance-row-label{color:var(--heading); font-weight:700;}
+  /* Per-layer identity colors (2026-10-13) -- applied directly to each
+     row's icon + label via c-shield/c-armor/c-hull (see resistanceLayerIconSvg's
+     extraClass param), not via the row-level cascade the old is-dominant
+     rule used. Also used inside the Repairs strip below so a glance at
+     color alone tells you which layer a number belongs to. */
+  .c-shield{color:var(--layer-shield);}
+  .c-armor{color:var(--layer-armor);}
+  .c-hull{color:var(--layer-hull);}
+
+  /* Tank-type emphasis -- "option B" from the 2026-10-10 mockup review: an
+     amber tick flush with the card's own left-border accent, plus a bold
+     label. Only ever on one row (TANK_TYPE_THRESHOLD, 55% of raw HP share
+     as of 2026-10-12, was 60%) -- never shown on a genuinely Mixed fit.
+     UPDATE (2026-10-13): dropped the old row-level `color:var(--amber)`
+     cascade (which recolored the icon+label amber on the dominant row) now
+     that every row has its own permanent layer color -- it was a CSS
+     specificity bug waiting to happen (a more-specific dominant-row rule
+     silently beating the layer-color class on the same element is exactly
+     what happened to "Shield" during mockup review) and amber-on-dominant
+     fought the new always-on layer colors anyway. Dominance now reads via
+     the tick + bold weight alone. */
+  .resistance-row.is-dominant .resistance-row-label{font-weight:700;}
   .resistance-row.is-dominant::before{
     content:""; position:absolute; left:-18px; top:4px; bottom:4px; width:3px;
     background:var(--amber); border-radius:2px;
   }
 
-  /* Active-rep "Repairs" strip -- direction 2 from the mockup review, kept
-     as its own block below the resist rows (closer to the reference
-     screenshot's separate Repairs section than folding a tag into the
-     resist rows themselves). Only rendered when at least one shield/armor/
-     hull repair module was detected (hasShieldRep/hasArmorRep/hasHullRep
-     in estimateHpAndDps) -- a pure buffer fit shows nothing here. */
-  .repairs-strip{margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);}
-  .repairs-row{display:flex; align-items:center; gap:10px; color:var(--cyan); margin-bottom:6px;}
-  .repairs-row:last-of-type{margin-bottom:0;}
-  .repairs-row .layer-icon{width:16px; height:16px;}
-  .repairs-label{font-size:11.5px; font-weight:600; color:var(--heading);}
+  /* "Repairs" strip -- REBUILT 2026-10-13 (several mockup rounds with the owner)
+     to share the Resistance rows' exact 4-column grid (icon / name / 4-up
+     values / right column) instead of its own layout, so the two sections'
+     columns line up top to bottom. Each row's 4-up area is itself a nested
+     4-column grid (passive regen / active boost / armor rep / hull rep),
+     mirroring how .resistance-bars nests inside the same slot above it; the
+     right column (Break Point) mirrors .resistance-row-ehp exactly. This
+     replaces the badge+subdetail layout (ACTIVE REP/PASSIVE pills, prose
+     breakdown lines) from the 2026-10-10 redesign -- the owner: "I dont really
+     like all of the subline text for that implementation... let's try to
+     put the emphasis on the numbers" once passive shield regen made every
+     fit show a Shield row (2026-10-12). The old prose explanations (passive
+     curve peaking near 25% HP, the active+passive split, the burst figure)
+     now live in title="" hover text instead of always-visible subtext --
+     see breakPointIconSvg's header title and the per-row .repairs-bp title
+     in resistanceCardHtml(). */
+  .repairs-strip{margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);}
+  .repairs-head{display:grid; grid-template-columns:18px 44px 1fr 58px; column-gap:10px; align-items:center; padding-bottom:7px; border-bottom:1px solid var(--line-soft); margin-bottom:2px;}
+  .repairs-head .repairs-section-label{grid-column:1 / 3; font-family:var(--sans); font-size:13px; font-weight:600; color:var(--heading); margin:0;}
+  .repairs-icons{display:grid; grid-template-columns:repeat(4,1fr); column-gap:8px;}
+  .repairs-icons svg, .repairs-head .bp-head-icon{width:15px; height:15px; margin:0 auto; display:block;}
+  /* FIX (2026-10-13, the owner: "break point icon is white in the tool"): this
+     icon uses fill="currentColor" (see breakPointIconSvg()) with no color
+     of its own, so it was inheriting whatever ambient text color its
+     context had (--heading, via .repairs-head) instead of red. Every other
+     header icon gets its color from an explicit c-shield/c-armor/c-hull
+     class; this one needs the same treatment since --danger isn't one of
+     those reusable layer classes. */
+  .bp-head-icon{color:var(--break-point);}
+  .repairs-row{display:grid; grid-template-columns:18px 44px 1fr 58px; column-gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line-soft);}
+  .repairs-row:first-of-type{border-top:none;}
+  .repairs-row .layer-icon{width:18px; height:18px;}
+  .repairs-layer-name{font-size:11.5px; font-weight:600;}
+  .repairs-values{display:grid; grid-template-columns:repeat(4,1fr); column-gap:8px;}
+  .repairs-cell{font-family:var(--mono); font-size:12.5px; font-weight:700; text-align:center;}
+  .repairs-cell.empty{color:var(--text-faint); font-weight:400;}
+  .repairs-bp{display:flex; flex-direction:column; align-items:flex-end; line-height:1.25; cursor:default;}
+  .repairs-bp-val{font-family:var(--mono); font-weight:700; color:var(--break-point); font-size:14px;}
+  .repairs-bp-unit{font-size:9px; color:var(--text-dim); font-weight:500; margin-left:3px;}
+  .repairs-bp-burst{color:var(--text-faint); font-weight:400; font-size:9.5px; margin-top:1px;}
+  .repairs-note{font-size:10.5px; color:var(--text-faint); line-height:1.4; margin-top:10px;}
+
+  /* .repairs-badge -- NOT used by the Repairs strip itself anymore as of
+     the 2026-10-13 rebuild above (it used to be the ACTIVE REP/PASSIVE
+     pill here); kept because the Capacitor card's "BOOSTED"/"BOOSTED?"
+     tags (search capacitorCardHtml) still borrow this same cyan-pill
+     styling. Removing it would silently break those. */
   .repairs-badge{font-family:var(--sans); font-size:9px; font-weight:700; letter-spacing:0.3px; color:var(--cyan); background:rgba(79,195,217,0.1); border:1px solid rgba(79,195,217,0.35); border-radius:3px; padding:2px 6px; flex:none;}
-  /* Bumped 2026-10-10 per the owner: the break-DPS figure is the single most
-     actionable number in this strip and was reading as a footnote at
-     text-faint/11px. Now text/12.5px/600 so it carries real weight
-     without matching the ACTIVE REP badge's own cyan emphasis. */
-  .repairs-detail{font-size:12.5px; font-weight:600; color:var(--text); margin-left:auto; text-align:right;}
-  .repairs-note{font-size:10.5px; color:var(--text-faint); line-height:1.4; margin-top:4px;}
 
   /* Firepower card — standalone section (its own .fit-summary), same
      pattern as the Resistance card above: 4 stat tiles (reusing the
@@ -2153,6 +2221,37 @@ const RESIST_SHIFT_AMOUNT_ATTR = 1849;
 // assumed to mean turrets and missiles get different Bastion RoF bonuses.
 const SIEGE_ROF_BONUS_ATTR_A = 3108;
 const SIEGE_ROF_BONUS_ATTR_B = 3109;
+
+// CORRECTION 2026-10-12 (full-module-dogma-audit, the owner: "Would it be worth
+// doing a deep dive into all modules..."): the comment above is WRONG for 3
+// of the 4 module types it names. Independently re-pulled every published
+// item in group_id 515 "Siege Module" directly from pyfa's local SDE cache
+// (not just the research pass's report) -- Bastion Module I/Navy variants
+// (33400/93999/94008-94010, Marauder-only) are the ONLY items that carry
+// 3108/3109 at all. The real Dreadnought Siege Module (20280/4292/88266)
+// carries NEITHER attribute -- so a sieged Dreadnought got ZERO bonus from
+// this file until now, despite the comment above claiming otherwise.
+// Instead it carries an entirely different, much larger attribute set
+// (all confirmed live, dogmaunits id 105 = Percentage, so e.g. 840 really
+// does mean +840%, not 8.40%):
+const SIEGE_TURRET_DAMAGE_BONUS_ATTR = 2307;   // siegeTurretDamageBonus -- e.g. +840 on Siege Module II. Applies to all 3 turret categories alike; turrets get NO RoF change under this module (unlike Bastion), confirmed live -- all of the RoF-shaped attributes below are missile-only.
+const SIEGE_MISSILE_DAMAGE_BONUS_ATTR = 2306;  // siegeMissileDamageBonus -- e.g. +200
+const SIEGE_LAUNCHER_ROF_BONUS_ATTR = 2305;    // siegeLauncherROFBonus -- e.g. -80 (negative = faster cycle, same sign convention as SIEGE_ROF_BONUS_ATTR_A/B)
+const SIEGE_HAW_ROF_BONUS_ATTR = 2821;         // siegeHAWMissileROFBonus -- Rapid/XL-class launcher variant of the same real effect (same magnitude observed on Siege Module II); max()'d with the attribute above, same convention as Bastion's A/B pair
+// Triage Module (Carriers, 4294/27951) and Industrial Core (Rorquals/
+// capitals, 28583/42890/58945/58950/62590/62591) also share group_id 515
+// but carry NONE of 3108/3109/2305-2307/2821 on any real item -- they
+// already correctly get zero weapon bonus, just not for the reason the old
+// comment above claimed (Triage boosts remote-rep amount instead; Industrial
+// Core has no weapon effect at all). Nothing to change for those two.
+// All 4 module types share the identical ESI/SDE group name "Siege Module"
+// (group_id 515), so group name alone can never tell them apart -- which
+// attributes a given fitted item's own dogma data actually carries is the
+// correct, and only, discriminator (same principle as the attr144/147
+// group-name gate elsewhere in this file, just the inverse: there, same
+// attribute id meant different things across different group names; here,
+// the same group name covers items that carry entirely different attribute
+// sets).
 const RAH_SIM_ORDER = ['em','exp','kin','therm']; // mirrors pyfa's res_attr_ids tie-break order exactly
 function simulateReactiveArmorHardener(startReso, otherMult, shiftAmt){
   let rahRes = {...startReso};
@@ -2356,11 +2455,87 @@ const FIGHTER_IS_HEAVY_ATTR = 2214;
 // capacitor need, never duration or amount) rather than assumed symmetry
 // with the armor/hull side.
 const SHIELD_BOOST_AMOUNT_ATTR = 68;
+// KNOWN OPEN ITEM #2/#5 fix (2026-10-12 follow-up, same audit): Shield
+// Boost Amplifier's own repair-amount bonus (and Capacitor Power Relay's
+// matching penalty) were never read -- confirmed live via the local pyfa
+// SDE cache: Shield Boost Amplifier II carries attr548=+36
+// (shieldBoostMultiplier, a plain Percentage unit -- NOT the <1/>1
+// direct-multiplier convention attrs 144/147 use above), Capacitor Power
+// Relay II carries attr548=-11 on the exact same attribute (its own real
+// tradeoff for the recharge-rate gain already modeled there). Pooled
+// together below, stacking-penalized by direction (the Amplifier's bonus
+// vs. the Relay's penalty, same split-pool convention as the
+// capacitor-recharge fix above), as ONE multiplier applied to the whole
+// shieldRepHpPerSec total after the module loop -- not per-module, since
+// the real attribute scales the ship's fitted Shield Booster's own repair
+// amount as a whole, not each contributing module's own figure.
+const SHIELD_BOOST_MULTIPLIER_ATTR = 548;
 const ARMOR_REPAIR_AMOUNT_ATTR = 84;
 const HULL_REPAIR_AMOUNT_ATTR = 83;
 const REP_CYCLE_DURATION_ATTR = 73;
 const ANCILLARY_ARMOR_BOOST_MULT_ATTR = 1886;
 const MAX_REPAIR_SYSTEMS_DURATION_MULT = 0.75;
+
+// Passive shield recharge fix (2026-10-12, the owner: "is passive shield
+// recharge accounted for in our dps to break tank calculations?" -- answer
+// was no, this is the fix). EVE's passive shield (and capacitor) regen
+// follows rate(x) = 10 * sqrt(x) * (1 - sqrt(x)) * capacity /
+// rechargeTimeSec, x = currentHP/maxHP -- confirmed directly against
+// pyfa's own eos/saveddata/fit.py (calculateShieldRecharge(), its own
+// PEAK_RECHARGE = 0.25 constant). The curve peaks at x=0.25 (NOT 0.5 --
+// corrected after an earlier, wrong guess), collapsing exactly to
+// 2.5 * capacity / rechargeTimeSec at that point -- the SAME "2.5x"
+// constant already used by this file's existing capacitor peak-recharge-
+// rate formula (see CAPACITOR_CAPACITY_ATTR's comment block above), since
+// it's literally the same universal EVE mechanic applied to a different
+// pool. We only ever surface this single PEAK number -- never pyfa's own
+// 2-row "Reinforced"/"Sustained" GUI split -- because this tool has no
+// user-adjustable "current HP%" input and always assumes a healthy/full-HP
+// target, so a ceiling number is the one honest figure to show. (Also
+// confirmed via pyfa's own gui/builtinStatsViews/rechargeViewFull.py that
+// its "Sustained" row is ALSO just this same peak value, not a
+// current-HP-dependent lower one, despite the 2-row layout -- so this
+// isn't even a simplification relative to what pyfa displays, just a
+// single-row presentation of the same number.)
+const SHIELD_RECHARGE_TIME_ATTR = 479; // shieldRechargeRate -- misleadingly named (it's a TIME in ms, not a rate) but confirmed live on every ship's own base dogma (Rifter: 625000ms = 625s).
+// Shield Recharger II / Shield Flux Coil II / Power Diagnostic System II
+// all carry attr134 (shieldRechargeRateMultiplier, same "Inversed Modifier
+// Percent" unit as the capacitor side's attr144, <1 = a straight cut to
+// shield recharge TIME) -- confirmed live via the local pyfa SDE cache.
+// Pooled into one stacking-penalized set below (shieldRechargeTimePctFractions),
+// same convention as CAPACITOR_RECHARGE_RATE_MULT_ATTR's own pool.
+const SHIELD_RECHARGE_RATE_MULT_ATTR = 134;
+// Shield Flux Coil II / Power Diagnostic System II also carry attr146
+// (shieldCapacityMultiplier, same unit as the capacitor side's attr147).
+// Flux Coil cuts capacity (<1, the real tradeoff for its recharge gain
+// above); PDS raises it (>1, a pure dual-buff with no downside, matching
+// its already-modeled capacitor-side attr147=1.05). Folded directly into
+// this ship's actual effective shieldHP below (not a recharge-calc-only
+// side number) -- same as every other capacity-affecting attribute in
+// this file, and the same split-pool-by-direction convention as the
+// capacitor side's capCapacityPctFractions/capCapacityBonusFractions.
+const SHIELD_CAPACITY_MULT_ATTR = 146;
+// Shield Power Relay II trades a cap-recharge PENALTY (attr144, already
+// modeled above) for a REAL shield-recharge bonus -- but on a totally
+// different attribute (338, "rechargeratebonus", a plain Percentage unit;
+// confirmed -25 on a Power Relay II) via effect 486
+// ("shieldOperationRechargeratebonusPostPercentRechargeRateLocationShipGroupShield"),
+// NOT attr134 above. Pooled separately from SHIELD_RECHARGE_RATE_MULT_ATTR
+// for that reason -- same "different real attribute gets its own pool"
+// convention this file already uses elsewhere (capRechargeTimePenaltyFractions
+// vs. capRechargeTimePctFractions). The universal "Shield Operation" skill
+// (required by every Shield Booster, assumed max level V per this file's
+// "always-trained" convention) carries this SAME attribute/effect pair
+// (confirmed live: -5 per level x5 = -25% at V). Modeled as its own
+// independent multiplicative stage below (MAX_SHIELD_OPERATION_MULT),
+// NEVER pooled together with a fitted Shield Power Relay's own bonus --
+// same "a universal skill bonus is a separate stage from module stacking"
+// principle this file already applies via MAX_SHIELD_MGMT_MULT/
+// MAX_CAPACITOR_SYSTEMS_OPERATION_MULT elsewhere (pooling them together
+// would stacking-penalize a skill everyone has against a fitted module,
+// which isn't how EVE actually computes it).
+const SHIELD_POWER_RELAY_RECHARGE_ATTR = 338;
+const MAX_SHIELD_OPERATION_MULT = 0.75;
 
 // Navigation & targeting stats (F3, phased — Phase 1: Signature radius +
 // Sensor strength). All confirmed live via ESI /dogma/attributes/{id} and
@@ -2515,6 +2690,26 @@ const SCAN_STRENGTH_ATTRS = {
 const SCAN_STRENGTH_LABEL = {
   radar: 'Radar', ladar: 'Ladar', magnetometric: 'Magnetometric', gravimetric: 'Gravimetric'
 };
+// KNOWN OPEN ITEM #3 fix (2026-10-12 follow-up, same audit): a fitted
+// Sensor Booster/Signal Amplifier carries its OWN scan-strength bonus on
+// the same 4 racial attributes as SCAN_STRENGTH_ATTRS above, confirmed
+// live via the local pyfa SDE cache (Sensor Booster II/Signal Amplifier
+// II: all 4 = +48%, a plain Percentage unit). Signal Amplifier's bonus is
+// genuinely passive (its real effect is "scanStrengthBonusPercentOnline"
+// -- applies merely by being fit+online, no activation needed); Sensor
+// Booster's is NOT passive (its real effect is "sensorBoosterActivePercentage"
+// -- requires actually turning the module on) -- assumed active whenever
+// fitted below, same standing convention this file already uses for
+// Bastion/Siege Module/MWD/etc. Remote Sensor Booster carries the SAME 4
+// attributes but is deliberately EXCLUDED here: confirmed live its real
+// effect ("remoteSensorBoostFalloff", isAssistance:1) is an assistance
+// effect that buffs a LOCKED TARGET, not the fitting ship's own sensor
+// strength -- including it would be a straightforward false positive,
+// not a fix. (This corrects the original KNOWN OPEN ITEM #3 wording,
+// which had lumped Remote Sensor Booster in with the 2 real self-buffing
+// modules without checking which effect each one's bonus actually rides
+// on.)
+const SENSOR_STRENGTH_BONUS_ATTRS = {gravimetric: 1027, ladar: 1028, magnetometric: 1029, radar: 1030};
 
 // Navigation & targeting, Phase 2 (F3): targeting range + scan resolution.
 // Both confirmed live via ESI during the F3 feasibility pass (see
@@ -2746,10 +2941,94 @@ const EWAR_NOS_TRANSFER_AMOUNT_ATTR = 90; // powerTransferAmount (GJ/cycle, cond
 // (bridging in capital reinforcements or Black Ops troops within seconds)
 // doesn't depend on which jump-drive class can see it, only on whether
 // one is fitted at all.
+// Misc flags #2/#3 (architecture backlog, 2026-10-12 full-module-dogma-audit
+// -- "Interdiction Nullifier module has zero representation" /
+// "Micro Jump Drive / Micro Jump Field Generator have zero representation"),
+// the owner: "Micro Jump Drives and interdiction nullifiers can be flagged in the
+// Misc category of the ewar card" -- agreed, same MISC_TRAIT_GROUP_INFO
+// mechanism as the cyno flag above. Confirmed live via the local SDE cache
+// (first-party CCP data), not the audit's own notes:
+//  - Micro Jump Drive (group 1189: Large/Medium/Xarasier-event-variant MJD)
+//    and Micro Jump Field Generators (group 1533: the single real type,
+//    fit on Command Destroyers) are TWO SEPARATE real ESI groups sharing
+//    the same mechanic shape (instant-teleport escape + a signature-radius
+//    spike while activating), not one group -- each gets its own
+//    MISC_TRAIT_GROUP_INFO entry so the flag text can say which kind.
+//    MJFG's real effect (microJumpPortalDrive) jumps the pilot's fleetmates
+//    within its own fleet-bubble radius too, not just itself -- a materially
+//    bigger threat ("pulls its whole gang out") than plain MJD's
+//    (microJumpDrive) self-only jump, confirmed via each type's own
+//    canFitShipGroup/durationHighisGood/attr2066-2067 data, not assumed from
+//    the similar name.
+//  - The signature-radius spike (attr973 signatureRadiusBonusPercent) and
+//    activation duration (attr73, REP_CYCLE_DURATION_ATTR -- same constant
+//    every other timed module in this file already uses) are READ LIVE per
+//    fitted item rather than hardcoded into the note text: confirmed the
+//    mainline Large/Medium MJD and the MJFG all carry 150%/12s or 150%/9s,
+//    but the Xarasier Large/Medium MJD (faction-event variant, types
+//    88710/88711) carries only 120% -- hardcoding "150%" would have been
+//    silently wrong for that variant.
+//  - MJFG's own jump range (attr2066 mjdJumpRange=100000, i.e. 100km) and
+//    fleet-bubble radius (attr2067 mjfgRadius=6000, i.e. 6km) ARE present
+//    on its own dogma and are cited directly. Plain MJD carries NEITHER
+//    attribute on its own dogma (confirmed: full attribute dump for types
+//    4383/33915 has no 2066/2067) -- the mechanic is presumably the same
+//    100km jump (it's the module's defining universal game behavior) but
+//    since that number isn't actually present in this item's own dogma
+//    data, the MJD note below deliberately doesn't state a jump distance,
+//    only "instantly reposition" -- same grounding discipline as every
+//    other fix in this file (no un-sourced numbers in a note that reads as
+//    a precise stat).
+//  - Interdiction Nullifier (group 4117, 4 real types: I/Compact/Enduring/
+//    II) carries THREE tradeoff attributes alongside its bubble-immunity
+//    flag (attr3120 warpBubbleImmuneBonus, effect 8117
+//    interdictionNullifierBonus) -- maxTargetRangeBonus (attr309, the SAME
+//    attribute EWAR_TARGETING_RANGE_BONUS_ATTR above already reads for
+//    Sensor Dampener, reused here since it's the same real dogma attribute/
+//    semantic, just gated to a different group name) = -50%,
+//    scanResolutionMultiplier (attr565, a distinct attribute from Sensor
+//    Dampener's own attr566 EWAR_SCAN_RESOLUTION_BONUS_ATTR -- no collision)
+//    = 0.5 (-50%), and droneBandwidthPercentage (attr3124) = -50%. Confirmed
+//    uniform across all 4 real types (I/Compact/Enduring/II all read
+//    -50/0.5/-50) -- unlike MJD's sig bonus, safe to state as a plain static
+//    number rather than reading live. All 3 effects (8117
+//    interdictionNullifierBonus, 2645 scanResolutionMultiplierOnline, 8123
+//    droneBandWidthPenaltyOnline) are non-"Active" effect names and carry no
+//    activation-cycle attribute (no REP_CYCLE_DURATION_ATTR present on any
+//    of the 4 types) -- genuinely passive while fit+online, same convention
+//    as Signal Amplifier above, NOT an assumed-active convention like
+//    Sensor Booster/MJD/Bastion.
+const MJD_SIG_RADIUS_BONUS_ATTR = 973;        // signatureRadiusBonusPercent (MJD/MJFG, varies by variant -- read live, see comment above)
+const MJFG_JUMP_RANGE_ATTR = 2066;            // mjdJumpRange, meters (MJFG only -- not present on plain MJD's own dogma)
+const MJFG_FLEET_RADIUS_ATTR = 2067;          // mjfgRadius, meters (MJFG only -- the fleet-bubble radius it also jumps)
+const INTERDICTION_NULLIFIER_SCAN_RES_ATTR = 565;  // scanResolutionMultiplier (distinct from Sensor Dampener's attr566)
+const INTERDICTION_NULLIFIER_DRONE_BW_ATTR = 3124; // droneBandwidthPercentage
 const MISC_TRAIT_GROUP_INFO = {
   'cynosural field generator': {
     note: `can bridge in capital ships, Black Ops, or jump freighters within seconds -- treat as a reinforcement threat independent of this ship's own stats`,
     severity: 'danger'
+  },
+  'micro jump drive': {
+    severity: 'danger',
+    note(dogma){
+      const sigPct = Math.round(attrVal(dogma, MJD_SIG_RADIUS_BONUS_ATTR, 150));
+      const durationSec = Math.round(attrVal(dogma, REP_CYCLE_DURATION_ATTR, 12000) / 1000);
+      return `can instantly reposition to disengage -- but signature radius spikes +${sigPct}% for the ${durationSec}s activation, making it far easier to hit right before the jump completes`;
+    }
+  },
+  'micro jump field generators': {
+    severity: 'danger',
+    note(dogma){
+      const sigPct = Math.round(attrVal(dogma, MJD_SIG_RADIUS_BONUS_ATTR, 150));
+      const durationSec = Math.round(attrVal(dogma, REP_CYCLE_DURATION_ATTR, 9000) / 1000);
+      const jumpKm = Math.round(attrVal(dogma, MJFG_JUMP_RANGE_ATTR, 100000) / 1000);
+      const bubbleKm = Math.round(attrVal(dogma, MJFG_FLEET_RADIUS_ATTR, 6000) / 1000);
+      return `can instantly jump itself AND any fleetmate within ${bubbleKm} km ${jumpKm} km away -- pulls its whole gang out at once, not just itself. Signature radius spikes +${sigPct}% for the ${durationSec}s activation`;
+    }
+  },
+  'interdiction nullifier': {
+    severity: 'danger',
+    note: `immune to warp-disruption bubbles (Interdiction Sphere Launchers/Mobile Warp Disruptors) -- can warp through them freely. Tradeoff while fitted: -50% targeting range, -50% scan resolution, -50% drone bandwidth`
   }
 };
 // EWAR effectiveness bonuses (skills/hull roles/T3 subsystems/rigs) -- v2,
@@ -3311,6 +3590,50 @@ const CAPACITOR_RECHARGE_TIME_ATTR = 55;
 const CAPACITOR_NEED_ATTR = 6;
 const MAX_CAPACITOR_MANAGEMENT_MULT = 1.25;
 const MAX_CAPACITOR_SYSTEMS_OPERATION_MULT = 0.75;
+// Capacitor Battery/Power Relay/Flux Coil/Cap Recharger fix (2026-10-12,
+// the owner: "are you accounting for cap batteries?"). Confirmed live via
+// everef.net dogma-attribute data, none of these 3 attributes were read
+// anywhere in this file before this fix -- every fitted module affecting
+// capacity/recharge besides a T3 subsystem's own self-add (see
+// SUBSYSTEM_CAPACITOR_CAPACITY_SELFADD_ATTR below) was silently ignored.
+// CAP_BOOSTER_BONUS_ATTR (67, declared near the Capacitor Booster charge
+// logic further down) is reused for Capacitor Battery, which carries the
+// exact same real dogma attribute -- just on a fitted LOW-slot module
+// instead of a consumed Mid-slot charge. The other two are new:
+const CAPACITOR_RECHARGE_RATE_MULT_ATTR = 144; // capacitorRechargeRateMultiplier -- Capacitor Power Relay, Capacitor Flux Coil, and Cap Recharger all carry this SAME attribute (confirmed live), so they pool into one stacking-penalized set below, same as e.g. shield/armor resist mods from different module groups already do. "Inversed Modifier Percent" unit -- stored as a direct <1 multiplier on rechargeTimeSec, lower is better.
+const CAPACITOR_CAPACITY_MULT_ATTR = 147; // capacitorCapacityMultiplier -- Capacitor Flux Coil only, as far as confirmed live. "Modifier Percent" unit, <1 = capacity cut (the real tradeoff for its recharge gain above).
+// KNOWN OPEN ITEM #1 fix (2026-10-12 follow-up, same audit): Power
+// Diagnostic System and Shield Power Relay were missing from
+// CAPACITOR_RECHARGE_MULT_GROUPS below even though both carry attribute
+// 144 that group already pools -- confirmed live via the local pyfa SDE
+// cache. Power Diagnostic System II: attr144=0.915 (a REDUCTION, same
+// direction as Power Relay/Flux Coil/Recharger -- slots straight into the
+// existing reduction pool) AND attr147=1.05 (capacitorCapacityMultiplier,
+// but >1 -- an INCREASE, the OPPOSITE direction from Capacitor Flux
+// Coil's own attr147 above, which is <1, a cut -- needs its own separate
+// increase pool, capCapacityBonusFractions below). Also carries attr134/
+// 146 (the matching shield-side recharge/capacity bonus) -- not acted on,
+// since passive shield recharge isn't modeled anywhere in this file yet
+// (see dscan-tool-architecture.md's open "passive shield recharge" item).
+// Shield Power Relay II: attr144=1.35 (>1, a cap-recharge PENALTY, the
+// real tradeoff for a genuine shield-recharge bonus via attr338=-25 --
+// same "shield side not actionable yet" scope note). The opposite
+// direction from every module already in CAPACITOR_RECHARGE_MULT_GROUPS,
+// so it needs its own penalty pool, capRechargeTimePenaltyFractions
+// below, rather than being folded into the existing reduction pool.
+// KNOWN OPEN ITEM #4 fix (2026-10-12 follow-up, same audit): Capacitor
+// Battery's own resistance to being neuted/nosed was never read --
+// confirmed live via the local pyfa SDE cache (Capacitor Battery II:
+// attr2267=-25, i.e. 25% resistance; T1 variants -20, faction variants
+// -27/-28, X-Large variants carry no such attribute at all). Negative =
+// resistance (reduces incoming Energy Neutralizer/Nosferatu effectiveness
+// AGAINST this ship) -- this is a DEFENSIVE stat about this ship being
+// analyzed, not applied to this ship's OWN outgoing neut/nos figures
+// elsewhere in the EWAR card, which stay unconditional/unresisted by
+// design (see that card's own "no target-side resistance modeled" scope
+// note -- this fix doesn't change that, it only surfaces this ship's own
+// resistance to incoming drain as a separate defensive data point).
+const CAPACITOR_BATTERY_EWAR_RESIST_ATTR = 2267;
 // P1-E skill audit (2026-10-11), Controlled Bursts(3316): own ESI
 // description "5% reduction in capacitor need of weapon turrets per skill
 // level" -> -25%@V. Confirmed live same architecture (and same
@@ -4634,10 +4957,82 @@ function damageBadgesHtml(info){
 // full history of this redesign. Icons reuse the tacticalModeIconSvg()
 // convention (stroke="currentColor" on the <svg> root); Shield's icon is
 // literally the same glyph as the Defense tactical-mode icon.
-function resistanceLayerIconSvg(layer){
-  if(layer === 'shield') return '<svg class="layer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>';
-  if(layer === 'armor') return '<svg class="layer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="16" width="16" height="4" rx="1"/></svg>';
-  return '<svg class="layer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5"/></svg>'; // hull
+// extraClass/titleText added 2026-10-13: extraClass carries the new
+// c-shield/c-armor/c-hull identity-color class (see .c-shield etc. in CSS),
+// titleText adds native hover text (house convention -- see cap-gauge's
+// title="" / td-mode-btn's title="" elsewhere in this file) so every layer
+// icon says what it is on hover, not just by shape/color.
+function resistanceLayerIconSvg(layer, extraClass, titleText){
+  const cls = extraClass ? `layer-icon ${extraClass}` : 'layer-icon';
+  const t = titleText ? ` title="${escapeHtml(titleText)}"` : '';
+  // HOVER-HIT-AREA FIX (2026-10-13, the owner: "icons in the column headers do
+  // not have hover text, they should"): title="" was already present on
+  // these <svg> roots, but several of the glyphs are stroke-only
+  // (fill="none") -- by default an SVG's pointer/hover hit-test
+  // (pointer-events:visiblePainted) only registers over PAINTED pixels, so
+  // for a stroke-only shape that's just the ~1.8px stroke line itself, not
+  // the icon's visual footprint. At 15-18px that's practically impossible
+  // to hover on purpose, which is why the title felt like it didn't exist.
+  // Fix: every icon now carries a fully transparent backing <rect> spanning
+  // the whole 24x24 viewBox as its first (bottom-most) child -- fill=
+  // "transparent" still counts as "painted" for hit-testing purposes (a
+  // real, specified fill value, just invisible), so the ENTIRE icon box
+  // becomes hoverable regardless of what's drawn on top. Zero visual
+  // change, confirmed via screenshot.
+  const hit = '<rect width="24" height="24" fill="transparent"/>';
+  // NATIVE-TOOLTIP FIX (2026-10-13, round 2 -- the owner, after confirming via
+  // DevTools that title="" WAS present on the <svg> and the fix above still
+  // didn't make the tooltip appear): the hit-area fix wasn't the whole
+  // story. A `title` HTML ATTRIBUTE on an <svg> root doesn't reliably
+  // trigger the browser's native hover tooltip the way it does on a plain
+  // HTML element -- Chrome (and most browsers) only honor an actual SVG
+  // <title> CHILD ELEMENT for that, which is also the correct SVG-native
+  // way to give it an accessible name (same thing screen readers read).
+  // Every other title="" in this file sits on a real HTML element (a div/
+  // button/summary), which is why that convention worked everywhere else
+  // and silently didn't here -- first place it landed directly on an
+  // <svg> root. Kept the title="" attribute too (harmless, and some tools
+  // still check it) but the <title> child is what actually does the job.
+  const titleEl = titleText ? `<title>${escapeHtml(titleText)}</title>` : '';
+  if(layer === 'shield') return `<svg class="${cls}"${t} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">${titleEl}${hit}<path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>`;
+  if(layer === 'armor') return `<svg class="${cls}"${t} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${titleEl}${hit}<rect x="4" y="4" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="16" width="16" height="4" rx="1"/></svg>`;
+  return `<svg class="${cls}"${t} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${titleEl}${hit}<polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5"/></svg>`; // hull
+}
+// Repairs-strip header icons (2026-10-13) -- the 4 rep-type column headers
+// (passive shield regen / active boost / armor rep / hull rep) plus the new
+// 5th Break Point column header. All carry title="" hover text per the owner's
+// request that every icon in this card have it. Shield/active-boost/
+// armor/hull glyphs match resistanceLayerIconSvg's own shapes where
+// applicable (the shield outline is reused for passive regen's backdrop
+// concept, armor/hull reuse their exact layer icons) so the header row and
+// the layer rows below it read as the same visual language.
+// Each carries the same transparent full-viewBox backing <rect> AND an SVG
+// <title> child element as resistanceLayerIconSvg above (see that
+// function's two comments) -- the backing rect makes the whole icon box
+// hoverable, the <title> child is what actually makes Chrome show a
+// tooltip on an SVG (the title="" attribute alone doesn't).
+function repairsHeaderIconsHtml(){
+  const hit = '<rect width="24" height="24" fill="transparent"/>';
+  const titleOf = s => `<title>${escapeHtml(s)}</title>`;
+  return `<svg class="c-shield" title="Passive shield regen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${titleOf('Passive shield regen')}${hit}<path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-15 6.7"/><polyline points="18 2 18 6 14 6"/><polyline points="6 22 6 18 10 18"/></svg><svg class="c-shield" title="Active boost (Shield Booster)" viewBox="0 0 24 24" fill="currentColor" stroke="none">${titleOf('Active boost (Shield Booster)')}${hit}<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg><svg class="c-armor" title="Armor repair" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${titleOf('Armor repair')}${hit}<rect x="4" y="4" width="16" height="4" rx="1"/><rect x="4" y="10" width="16" height="4" rx="1"/><rect x="4" y="16" width="16" height="4" rx="1"/></svg><svg class="c-hull" title="Hull repair" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${titleOf('Hull repair')}${hit}<polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5"/></svg>`;
+}
+// Break Point column header icon (2026-10-13) -- "Option A" from mockup
+// review: a solid arrow punching through a gap in a broken bar, sparks
+// flying off the exit side. Rendered/screenshotted at both the large
+// preview size and the actual 15px header size before the owner approved it --
+// legible big, more of an abstract red mark than a literal picture at 15px
+// (flagged to him explicitly; he approved anyway). Filled, not stroke-
+// outlined, like the Active Boost bolt above -- the only other filled icon
+// in this card. Already mostly hoverable (its shapes are filled, not
+// stroke-only), but gets the same transparent backing rect as its sibling
+// header icons so the hit area is the full box, not just the disjoint
+// painted shapes with gaps between them. Also gets an SVG <title> child
+// (see resistanceLayerIconSvg's comment) -- the title="" attribute alone
+// doesn't trigger Chrome's native tooltip on an <svg> root.
+function breakPointIconSvg(titleText){
+  const t = titleText ? ` title="${escapeHtml(titleText)}"` : '';
+  const titleEl = titleText ? `<title>${escapeHtml(titleText)}</title>` : '';
+  return `<svg class="bp-head-icon"${t} viewBox="0 0 24 24" fill="currentColor" stroke="none">${titleEl}<rect width="24" height="24" fill="transparent"/><rect x="2" y="10.5" width="9" height="3" rx="1.5"/><path d="M11 9.8 L17.5 12 L11 14.2 Z"/><rect x="14.5" y="2" width="3" height="6.5" rx="1"/><rect x="14.5" y="15.5" width="3" height="6.5" rx="1"/><polygon points="15,9.6 20,4 16.5,10"/><polygon points="15,14.4 20,20 16.5,14"/></svg>`;
 }
 function resistanceCardHtml(f, estimate){
   const t = estimate.tankType;
@@ -4654,55 +5049,103 @@ function resistanceCardHtml(f, estimate){
   ].filter(l => l.raw > 0);
   if(!layers.length) return '';
 
+  const LAYER_TITLE = {shield:'Shield', armor:'Armor', hull:'Hull'};
   const rowsHtml = layers.map(l => {
     const isDominant = t && t.type === l.key;
     const cells = DMG.map(d => `
         <div class="resistance-cell"><div class="resistance-cell-track"><div class="resistance-cell-fill" style="width:${l.resPct[d]}%; background:var(--${d});"></div></div><span class="resistance-cell-pct">${l.resPct[d]}%</span></div>`).join('');
     return `
       <div class="resistance-row${isDominant ? ' is-dominant' : ''}">
-        ${resistanceLayerIconSvg(l.key)}
-        <span class="resistance-row-label">${l.label}</span>
+        ${resistanceLayerIconSvg(l.key, 'c-' + l.key, LAYER_TITLE[l.key])}
+        <span class="resistance-row-label c-${l.key}">${l.label}</span>
         <div class="resistance-bars">${cells}
         </div>
         <span class="resistance-row-ehp">${l.hp.toLocaleString()}</span>
       </div>`;
   }).join('');
 
-  // Active-rep "Repairs" strip -- see hasShieldRep/hasArmorRep/hasHullRep in
+  // "Repairs" strip -- see hasShieldRep/hasArmorRep/hasHullRep in
   // estimateHpAndDps() for the verified group-name detection (and the
-  // Ancillary Remote Armor Repairer naming trap that avoids). Only appears
-  // when at least one layer has a rep module fitted; a pure buffer fit gets
-  // nothing extra here.
+  // Ancillary Remote Armor Repairer naming trap that avoids), plus the
+  // passive shield recharge fix (2026-10-12, the owner: "is passive shield
+  // recharge accounted for in our dps to break tank calculations?") for
+  // shield's own entry. Armor/hull still only appear with an active rep
+  // module fitted (no passive mechanic exists for either); shield now
+  // ALWAYS appears whenever this hull has any shield HP, module or not --
+  // see tankStyle.shield's own comment in estimateHpAndDps(). "Break Point"
+  // is the sustained DPS an attacker needs to clear to out-race this
+  // layer's own repair/regen -- now its own right-aligned column (mirrors
+  // .resistance-row-ehp) instead of inline text; see the big CSS comment
+  // above .repairs-strip for why (2026-10-13 rebuild).
+  //
+  // Each of the first 4 columns is tied to a specific rep TYPE, not to
+  // whichever layer the row happens to be -- passive/boosted are always
+  // shield-only metrics, armor-rep is always armor's, hull-rep is always
+  // hull's -- so those cells keep a fixed c-shield/c-shield/c-armor/c-hull
+  // color regardless of which row they're in, same logic as the column
+  // headers above them never changing color row to row.
   const repLayers = layers.filter(l => l.rep);
   const repairsHtml = repLayers.length ? `
       <div class="repairs-strip">
+        <div class="repairs-head">
+          <span class="repairs-section-label">Repairs</span>
+          <div class="repairs-icons">${repairsHeaderIconsHtml()}</div>
+          ${breakPointIconSvg('Break Point — sustained DPS an attacker needs to out-race this layer’s repair/regen')}
+        </div>
         ${repLayers.map(l => {
-          const detail = (l.key === 'armor' && l.rep.burstDps)
-            ? `needs &gt;${l.rep.sustainedDps} DPS sustained to break long-term (&gt;${l.rep.burstDps} DPS while its Nanite Repair Paste lasts)`
-            : `needs &gt;${l.rep.sustainedDps} DPS sustained to break`;
+          let passiveVal = '', boostedVal = '', armorVal = '', hullVal = '', bpDps, bpTitle = '', burstDps = null;
+          if(l.key === 'shield'){
+            passiveVal = l.rep.passiveDps.toLocaleString();
+            if(l.rep.activeDps){
+              boostedVal = l.rep.activeDps.toLocaleString();
+              bpDps = l.rep.breakPointDps;
+              bpTitle = `${l.rep.activeDps.toLocaleString()} DPS active (Shield Booster) + ${l.rep.passiveDps.toLocaleString()} DPS passive regen`;
+            } else {
+              bpDps = l.rep.passiveDps;
+              bpTitle = `Passive regen only (no Shield Booster fitted) — this is the curve's peak, reached only near 25% shield HP`;
+            }
+          } else if(l.key === 'armor'){
+            armorVal = l.rep.sustainedDps.toLocaleString();
+            bpDps = l.rep.sustainedDps;
+            if(l.rep.burstDps){
+              burstDps = l.rep.burstDps;
+              bpTitle = `${l.rep.burstDps.toLocaleString()} DPS during its Nanite Repair Paste burst`;
+            }
+          } else {
+            hullVal = l.rep.sustainedDps.toLocaleString();
+            bpDps = l.rep.sustainedDps;
+          }
           return `
         <div class="repairs-row">
-          ${resistanceLayerIconSvg(l.key)}
-          <span class="repairs-label">${l.label}</span>
-          <span class="repairs-badge">ACTIVE REP</span>
-          <span class="repairs-detail">${detail}</span>
+          ${resistanceLayerIconSvg(l.key, 'c-' + l.key, LAYER_TITLE[l.key])}
+          <span class="repairs-layer-name c-${l.key}">${l.label}</span>
+          <div class="repairs-values">
+            <span class="repairs-cell c-shield${passiveVal ? '' : ' empty'}">${passiveVal || '—'}</span>
+            <span class="repairs-cell c-shield${boostedVal ? '' : ' empty'}">${boostedVal || '—'}</span>
+            <span class="repairs-cell c-armor${armorVal ? '' : ' empty'}">${armorVal || '—'}</span>
+            <span class="repairs-cell c-hull${hullVal ? '' : ' empty'}">${hullVal || '—'}</span>
+          </div>
+          <span class="repairs-bp"${bpTitle ? ` title="${escapeHtml(bpTitle)}"` : ''}>
+            <span><span class="repairs-bp-val">${bpDps.toLocaleString()}</span><span class="repairs-bp-unit">dps</span></span>
+            ${burstDps ? `<span class="repairs-bp-burst">${burstDps.toLocaleString()} burst</span>` : ''}
+          </span>
         </div>`;
         }).join('')}
-        <div class="repairs-note">Assumes max-trained Repair Systems (armor/hull only — Shield Booster output doesn't train up).</div>
+        <div class="repairs-note">Break Point = DPS sustained to outpace repair/regen (hover a value for its breakdown). Assumes max-trained Repair Systems (armor/hull active reps) and max-trained Shield Operation (shield passive regen) — a Shield Booster's own output doesn't train up at all.</div>
       </div>` : '';
 
   return `
     <div class="fit-summary">
       <div class="resistance-head">
         <div class="fit-subsection-label" style="margin:0;">Resistance</div>
-        <span class="resistance-total">${f.tacticalModes ? `<span class="td-mode-badge">${tacticalModeIconSvg(f.activeMode)}</span> ` : ''}Total <b>${estimate.totalHP.toLocaleString()} ehp</b></span>
+        <span class="resistance-total">${f.tacticalModes ? `<span class="td-mode-badge" title="${TACTICAL_MODE_LABEL[f.activeMode]} active">${tacticalModeIconSvg(f.activeMode)}</span> ` : ''}Total <b>${estimate.totalHP.toLocaleString()} ehp</b></span>
       </div>
       <div class="resistance-collabels">
         <span></span><span></span>
         <div class="resistance-collabels-cells">
           ${DMG.map(d => `<span class="resistance-collabel" style="color:var(--${d});">${DMG_LABEL[d]}</span>`).join('')}
         </div>
-        <span></span>
+        <span class="resistance-collabel">EHP</span>
       </div>
       ${rowsHtml}
       ${repairsHtml}
@@ -4724,7 +5167,8 @@ function resistanceCardHtml(f, estimate){
 // Renamed "EWAR" -> "EWAR / Misc" 2026-10-12 (the owner's request): the card now
 // also surfaces estimate.miscTraits -- notable fitted modules that aren't
 // EWAR but materially change the threat picture (see MISC_TRAIT_GROUP_INFO
-// above; first/only entry today is a fitted Cynosural Field Generator).
+// above -- a fitted Cynosural Field Generator, Micro Jump Drive/Field
+// Generator, or Interdiction Nullifier).
 // Misc trait chips are rendered after the EWAR chips, each carrying its own
 // severity-colored badge ("!" for 'danger', reusing the existing --danger
 // color token already used for error states elsewhere in this file -- not
@@ -5037,7 +5481,7 @@ function navCardHtml(f, estimate){
         <div class="estimate-stat">
           <span class="estimate-label">Sensor strength</span>
           <span class="estimate-value">${estimate.sensorStrength.value}</span>
-          ${estimate.sensorStrength.type ? `<span class="estimate-sub">${estimate.sensorStrength.type}</span>` : ''}
+          ${estimate.sensorStrength.type ? `<span class="estimate-sub">${estimate.sensorStrength.type}${estimate.sensorStrength.moduleBoosted ? ' — includes a fitted Sensor Booster/Signal Amplifier bonus' : ''}</span>` : ''}
         </div>
       </div>
     </div>`;
@@ -5123,6 +5567,12 @@ function capacitorCardHtml(f, estimate){
           <span class="estimate-label">Capacitor capacity</span>
           <span class="estimate-value">${cap.capacity.toLocaleString()} GJ</span>
         </div>
+        ${cap.warfareResistPct ? `
+        <div class="estimate-stat">
+          <span class="estimate-label">Drain resistance</span>
+          <span class="estimate-value">${cap.warfareResistPct}%</span>
+          <span class="estimate-sub">Capacitor Battery fitted — cuts incoming Energy Neutralizer/Nosferatu effectiveness against this ship by this much (a defensive stat about this ship; not applied to its own outgoing neut/nos figures in the EWAR card, which assume an unresisted target)</span>
+        </div>` : ''}
       </div>
     </div>`;
 }
@@ -6038,6 +6488,36 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // Bulkhead/Nanofiber, Trimark Armor Pump, Core Defense Field Extender) —
   // verified via pyfa's effects.py (see constants above for exact formulas).
   let flatShieldHpAdd = 0, flatArmorHpAdd = 0, flatHullHpAdd = 0, flatCapacitorCapacityAdd = 0;
+  // Capacitor Battery/Power Relay/Flux Coil/Cap Recharger fix (2026-10-12)
+  // -- pooled stacking-penalized fraction sets, same convention as every
+  // other %-based module pool in this file (see CAPACITOR_RECHARGE_RATE_MULT_ATTR/
+  // CAPACITOR_CAPACITY_MULT_ATTR above).
+  const capRechargeTimePctFractions = [], capCapacityPctFractions = [];
+  // KNOWN OPEN ITEM #1 fix (2026-10-12 follow-up) -- see
+  // CAPACITOR_CAPACITY_MULT_ATTR's comment above for why these need their
+  // own pools (opposite direction from the 2 existing ones above).
+  const capCapacityBonusFractions = [], capRechargeTimePenaltyFractions = [];
+  // Passive shield recharge fix (2026-10-12) -- see SHIELD_RECHARGE_RATE_MULT_ATTR/
+  // SHIELD_CAPACITY_MULT_ATTR/SHIELD_POWER_RELAY_RECHARGE_ATTR above for the
+  // full grounding. Mirrors the capacitor pools immediately above: a
+  // reduction pool for attr134 (Shield Recharger/Flux Coil/PDS), a
+  // split-by-direction pair for attr146 (Flux Coil cuts capacity, PDS
+  // raises it), and Shield Power Relay's own attr338 bonus kept in its own
+  // separate reduction pool since it's a different real attribute from the
+  // other three's attr134.
+  const shieldRechargeTimePctFractions = [], shieldCapacityPctFractions = [];
+  const shieldCapacityBonusFractions = [], shieldPowerRelayRechargeFractions = [];
+  // KNOWN OPEN ITEM #2/#5 fix (2026-10-12 follow-up) -- see
+  // SHIELD_BOOST_MULTIPLIER_ATTR's comment below.
+  const shieldBoostAmpBonusFractions = [], shieldBoostAmpPenaltyFractions = [];
+  // KNOWN OPEN ITEM #3 fix (2026-10-12 follow-up) -- see
+  // SENSOR_STRENGTH_BONUS_ATTRS's comment above.
+  const sensorStrengthBonusFractions = {radar: [], ladar: [], magnetometric: [], gravimetric: []};
+  // KNOWN OPEN ITEM #4 fix (2026-10-12 follow-up) -- see
+  // CAPACITOR_BATTERY_EWAR_RESIST_ATTR's comment above. Math.max, not
+  // stacking-penalized, same "at most one normally fitted, defensively
+  // handle more" convention as siegeTurretDamageBonusPct etc. elsewhere.
+  let capWarfareResistPct = 0;
   const armorHpPctMults = [], shieldHpPctMults = [], hullHpMults = [];
   // Reactive Armor Hardener instances found on this fit — their own raw
   // 267-270 values are kept OUT of dcArmorMult (see below) and simulated
@@ -6047,10 +6527,13 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // Universal Battleship role bonus — see constants above. 1 (no-op) on any
   // hull that doesn't carry these attributes.
   const armorPlateBonusMult = 1 + attrVal(shipDogma, ARMOR_PLATE_ROLE_BONUS_ATTR, 0) / 100;
-  // Bastion/Siege/Triage/Industrial Core module RoF bonus — see
-  // SIEGE_ROF_BONUS_ATTR_A/B above. Percentage (e.g. 50), not yet applied;
-  // folded into hullBonusList once it's built, below.
+  // Bastion module RoF bonus — see SIEGE_ROF_BONUS_ATTR_A/B above.
+  // Percentage (e.g. 50), not yet applied; folded into hullBonusList once
+  // it's built, below.
   let siegeRofBonusPct = 0;
+  // Dreadnought Siege Module fix (2026-10-12) — see SIEGE_TURRET_DAMAGE_BONUS_ATTR
+  // and neighbors above. Same "not yet applied, folded in below" pattern.
+  let siegeTurretDamageBonusPct = 0, siegeMissileDamageBonusPct = 0, siegeMissileRofBonusPct = 0;
   const shieldExtBonusMult = 1 + attrVal(shipDogma, SHIELD_EXTENDER_ROLE_BONUS_ATTR, 0) / 100;
   // Afterburner/Microwarpdrive presence, for the Propulsion badge (identifies
   // WHICH prop mod is fitted, same spirit as the damage-type badges -- not
@@ -6304,10 +6787,17 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     }
     // Misc fit-trait flags -- see MISC_TRAIT_GROUP_INFO comment above.
     // Same per-item-array convention as ewarModules just above (one pushed
-    // entry per fitted item, qty carried as its own field).
+    // entry per fitted item, qty carried as its own field). note can be a
+    // plain string (cyno, Interdiction Nullifier -- uniform across every
+    // real type in the group) OR a function(dogma) (MJD/MJFG -- the sig-
+    // radius-bonus/duration magnitude genuinely varies by variant, see the
+    // MISC_TRAIT_GROUP_INFO comment above) -- resolved here so the spread
+    // below always ends up with a plain string, same shape ewarCardHtml()
+    // already expects.
     const miscInfo = MISC_TRAIT_GROUP_INFO[groupName];
     if(miscInfo){
-      miscTraits.push({name: dt.type.name, qty, ...miscInfo});
+      const note = typeof miscInfo.note === 'function' ? miscInfo.note(dogma) : miscInfo.note;
+      miscTraits.push({name: dt.type.name, qty, note, severity: miscInfo.severity});
     }
     // EWAR effectiveness rig: Signal Distortion Amplifier I/II -- see
     // RIG_EWAR_BONUS comment block above. Detected here (not keyed off
@@ -6497,11 +6987,22 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       }
     }
     const rahOwnReso = {};
-    // Bastion/Siege/Triage/Industrial Core module (group_id 515) -- see
+    // Bastion Module (group_id 515, Marauder-only item) -- see
     // SIEGE_ROF_BONUS_ATTR_A/B above. Assumed active whenever fitted, same
     // convention already used for its resist bonus (bug-class #14 fix).
     const siegeRof = Math.max(attrVal(dogma, SIEGE_ROF_BONUS_ATTR_A, 0), attrVal(dogma, SIEGE_ROF_BONUS_ATTR_B, 0));
     if(siegeRof < 0) siegeRofBonusPct = Math.max(siegeRofBonusPct, Math.abs(siegeRof));
+    // Dreadnought Siege Module fix (2026-10-12) -- same group_id 515, but a
+    // genuinely different real item/attribute set (see SIEGE_TURRET_DAMAGE_BONUS_ATTR
+    // and neighbors above for why group name alone can't distinguish these).
+    // Harmless no-op on a Bastion/Triage/Industrial Core item, which never
+    // carries any of these 4 attributes.
+    const siegeTurretDmg = attrVal(dogma, SIEGE_TURRET_DAMAGE_BONUS_ATTR, 0);
+    if(siegeTurretDmg > 0) siegeTurretDamageBonusPct = Math.max(siegeTurretDamageBonusPct, siegeTurretDmg);
+    const siegeMissileDmg = attrVal(dogma, SIEGE_MISSILE_DAMAGE_BONUS_ATTR, 0);
+    if(siegeMissileDmg > 0) siegeMissileDamageBonusPct = Math.max(siegeMissileDamageBonusPct, siegeMissileDmg);
+    const siegeLauncherRof = Math.max(Math.abs(attrVal(dogma, SIEGE_LAUNCHER_ROF_BONUS_ATTR, 0)), Math.abs(attrVal(dogma, SIEGE_HAW_ROF_BONUS_ATTR, 0)));
+    if(siegeLauncherRof > 0) siegeMissileRofBonusPct = Math.max(siegeMissileRofBonusPct, siegeLauncherRof);
     for(const d of DMG){
       // Damage Control carries its own copy of the ship's shield/armor
       // resonance attribute ids (271-274 / 267-270) whose value IS the
@@ -6607,6 +7108,145 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // bonus lives on a completely different attribute id, not this one).
     const subCapAdd = attrVal(dogma, SUBSYSTEM_CAPACITOR_CAPACITY_SELFADD_ATTR, 0);
     if(subCapAdd > 0) flatCapacitorCapacityAdd += subCapAdd;
+
+    // Capacitor Battery fix (2026-10-12): a real LOW-slot module, flat GJ
+    // add via the exact same CAP_BOOSTER_BONUS_ATTR (67) a Cap Booster
+    // CHARGE carries -- same attribute, different item category, confirmed
+    // live via everef.net. Gated to its own real group name (same lesson
+    // as the attr144/147 collision below -- this attribute id is not
+    // necessarily exclusive to this one module either) rather than read
+    // unconditionally. Flat add, no stacking penalty (EVE flat adds never
+    // stacking-penalize), same convention as flatShieldHpAdd/flatArmorHpAdd
+    // above.
+    if(dt.group.name === 'Capacitor Battery'){
+      const capBatteryAdd = attrVal(dogma, CAP_BOOSTER_BONUS_ATTR, 0);
+      if(capBatteryAdd > 0) flatCapacitorCapacityAdd += capBatteryAdd * qty;
+      // KNOWN OPEN ITEM #4 fix (2026-10-12 follow-up) -- see
+      // CAPACITOR_BATTERY_EWAR_RESIST_ATTR above.
+      const ewarResist = Math.abs(attrVal(dogma, CAPACITOR_BATTERY_EWAR_RESIST_ATTR, 0));
+      if(ewarResist > capWarfareResistPct) capWarfareResistPct = ewarResist;
+    }
+
+    // Capacitor Power Relay / Capacitor Flux Coil / Capacitor Recharger /
+    // Power Diagnostic System fix (2026-10-12, Power Diagnostic System
+    // added as the 2026-10-12 follow-up / KNOWN OPEN ITEM #1): all 4 share
+    // the SAME real dogma attribute (144, capacitorRechargeRateMultiplier)
+    // -- but unlike RESISTANCE_BONUS_ATTR above, attribute id 144/147 are
+    // NOT exclusive to these module groups (found live: a Microwarpdrive
+    // also carries a value on attribute 147, for something else entirely
+    // -- EVE reuses generic "Modifier Percent" attribute slots across
+    // unrelated effects). Caught by the regression suite
+    // (loki_zkb138935092's capacitorCapacity dropped 1875->1406 before
+    // this gate was added, its fitted MWD's own attr147=0.75 being
+    // misread as a capacitor-capacity cut). Gated to the real group names
+    // (confirmed live via everef.net / the local pyfa SDE cache: "Capacitor
+    // Battery" group_id 61, "Capacitor Flux Coil" group_id 768, "Power
+    // Diagnostic System" group_id 766) so only a genuine capacitor
+    // module's own value is ever read.
+    const CAPACITOR_RECHARGE_MULT_GROUPS = ['Capacitor Power Relay', 'Capacitor Flux Coil', 'Capacitor Recharger', 'Power Diagnostic System'];
+    if(CAPACITOR_RECHARGE_MULT_GROUPS.includes(dt.group.name)){
+      const rechargeMult = attrVal(dogma, CAPACITOR_RECHARGE_RATE_MULT_ATTR, 0);
+      if(rechargeMult > 0 && rechargeMult < 1) for(let n = 0; n < qty; n++) capRechargeTimePctFractions.push(1 - rechargeMult);
+    }
+
+    // Capacitor Flux Coil fix (2026-10-12): ALSO carries attr 147
+    // (capacitorCapacityMultiplier) trading capacity away for its recharge
+    // gain above -- confirmed live via everef.net. Same group-name gate as
+    // above, for the same reason (attr 147 is not exclusive to this group
+    // either -- see the MWD collision noted above).
+    if(dt.group.name === 'Capacitor Flux Coil'){
+      const capacityMult = attrVal(dogma, CAPACITOR_CAPACITY_MULT_ATTR, 0);
+      if(capacityMult > 0 && capacityMult < 1) for(let n = 0; n < qty; n++) capCapacityPctFractions.push(1 - capacityMult);
+    }
+
+    // KNOWN OPEN ITEM #1 fix (2026-10-12 follow-up): Power Diagnostic
+    // System ALSO carries attr147, but as a capacity INCREASE (>1) rather
+    // than Flux Coil's cut above -- confirmed live via the local pyfa SDE
+    // cache (Power Diagnostic System II: attr144=0.915, attr147=1.05).
+    // Pooled separately (capCapacityBonusFractions, applyStackingBonus
+    // below) so it can't be miscombined with Flux Coil's reduction pool.
+    if(dt.group.name === 'Power Diagnostic System'){
+      const capacityMult = attrVal(dogma, CAPACITOR_CAPACITY_MULT_ATTR, 0);
+      if(capacityMult > 1) for(let n = 0; n < qty; n++) capCapacityBonusFractions.push(capacityMult - 1);
+    }
+
+    // KNOWN OPEN ITEM #1 fix (2026-10-12 follow-up): Shield Power Relay
+    // trades a cap-recharge PENALTY (attr144 > 1) for a real shield-
+    // recharge bonus (attr338) -- confirmed live via the local pyfa SDE
+    // cache (Shield Power Relay II: attr144=1.35, attr338=-25). Pooled
+    // separately (capRechargeTimePenaltyFractions, applyStackingBonus
+    // below) since this is the opposite direction from every module in
+    // CAPACITOR_RECHARGE_MULT_GROUPS above. The shield-side half of this
+    // module (attr338) is read in the passive-shield-recharge block just
+    // below, now that that mechanic is modeled (see
+    // SHIELD_POWER_RELAY_RECHARGE_ATTR above).
+    if(dt.group.name === 'Shield Power Relay'){
+      const rechargePenalty = attrVal(dogma, CAPACITOR_RECHARGE_RATE_MULT_ATTR, 0);
+      if(rechargePenalty > 1) for(let n = 0; n < qty; n++) capRechargeTimePenaltyFractions.push(rechargePenalty - 1);
+    }
+
+    // Passive shield recharge fix (2026-10-12) -- see SHIELD_RECHARGE_RATE_MULT_ATTR
+    // above. Shield Recharger / Shield Flux Coil / Power Diagnostic System
+    // all carry attr134 as a straight recharge-time cut (<1), gated to
+    // their own real group names for the same "shared Modifier Percent
+    // attribute id, not exclusive to this group" reason as the capacitor
+    // side's own CAPACITOR_RECHARGE_MULT_GROUPS gate just above.
+    const SHIELD_RECHARGE_MULT_GROUPS = ['Shield Recharger', 'Shield Flux Coil', 'Power Diagnostic System'];
+    if(SHIELD_RECHARGE_MULT_GROUPS.includes(dt.group.name)){
+      const rechargeMult = attrVal(dogma, SHIELD_RECHARGE_RATE_MULT_ATTR, 0);
+      if(rechargeMult > 0 && rechargeMult < 1) for(let n = 0; n < qty; n++) shieldRechargeTimePctFractions.push(1 - rechargeMult);
+    }
+    // Shield Flux Coil also carries attr146 as a capacity CUT (<1) -- the
+    // real tradeoff for its recharge gain above, same shape as its
+    // capacitor-side twin's attr147 cut.
+    if(dt.group.name === 'Shield Flux Coil'){
+      const capacityMult = attrVal(dogma, SHIELD_CAPACITY_MULT_ATTR, 0);
+      if(capacityMult > 0 && capacityMult < 1) for(let n = 0; n < qty; n++) shieldCapacityPctFractions.push(1 - capacityMult);
+    }
+    // Power Diagnostic System also carries attr146 as a capacity INCREASE
+    // (>1) -- a pure dual-buff with no downside, matching its already-
+    // modeled capacitor-side attr147=1.05. Pooled separately
+    // (shieldCapacityBonusFractions, applyStackingBonus below) so it can't
+    // be miscombined with Flux Coil's reduction pool above.
+    if(dt.group.name === 'Power Diagnostic System'){
+      const capacityMult = attrVal(dogma, SHIELD_CAPACITY_MULT_ATTR, 0);
+      if(capacityMult > 1) for(let n = 0; n < qty; n++) shieldCapacityBonusFractions.push(capacityMult - 1);
+    }
+    // Shield Power Relay's own shield-side bonus (attr338, a plain
+    // Percentage unit, e.g. -25 on a Power Relay II) -- confirmed a
+    // REDUCTION to shield recharge time (good), unlike its attr144
+    // cap-recharge-time PENALTY above, so it goes in its own reduction
+    // pool (shieldPowerRelayRechargeFractions, applyStacking below), kept
+    // separate from shieldRechargeTimePctFractions since it's a different
+    // real attribute (see SHIELD_POWER_RELAY_RECHARGE_ATTR's comment
+    // above for why these aren't pooled together).
+    if(dt.group.name === 'Shield Power Relay'){
+      const rechargeBonusPct = attrVal(dogma, SHIELD_POWER_RELAY_RECHARGE_ATTR, 0);
+      if(rechargeBonusPct < 0) for(let n = 0; n < qty; n++) shieldPowerRelayRechargeFractions.push(Math.abs(rechargeBonusPct) / 100);
+    }
+
+    // KNOWN OPEN ITEM #2/#5 fix (2026-10-12 follow-up) -- see
+    // SHIELD_BOOST_MULTIPLIER_ATTR above. Capacitor Power Relay's penalty
+    // and Shield Boost Amplifier's bonus share attr548, gated to their own
+    // real group names like every other shared-attribute fix in this file.
+    if(dt.group.name === 'Shield Boost Amplifier'){
+      const boostBonus = attrVal(dogma, SHIELD_BOOST_MULTIPLIER_ATTR, 0);
+      if(boostBonus > 0) for(let n = 0; n < qty; n++) shieldBoostAmpBonusFractions.push(boostBonus / 100);
+    }
+    if(dt.group.name === 'Capacitor Power Relay'){
+      const boostPenalty = attrVal(dogma, SHIELD_BOOST_MULTIPLIER_ATTR, 0);
+      if(boostPenalty < 0) for(let n = 0; n < qty; n++) shieldBoostAmpPenaltyFractions.push(Math.abs(boostPenalty) / 100);
+    }
+
+    // KNOWN OPEN ITEM #3 fix (2026-10-12 follow-up) -- see
+    // SENSOR_STRENGTH_BONUS_ATTRS above. Remote Sensor Booster
+    // deliberately excluded (see that constant's comment).
+    if(dt.group.name === 'Sensor Booster' || dt.group.name === 'Signal Amplifier'){
+      for(const [type, attrId] of Object.entries(SENSOR_STRENGTH_BONUS_ATTRS)){
+        const bonus = attrVal(dogma, attrId, 0);
+        if(bonus > 0) for(let n = 0; n < qty; n++) sensorStrengthBonusFractions[type].push(bonus / 100);
+      }
+    }
   }
 
   // Compensation skills (max level, 20%) are now folded directly into each
@@ -6614,13 +7254,44 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // there. They are no longer pushed here as a second, independent
   // stacking-penalized entry (that double-counted them -- see above).
 
+  // KNOWN OPEN ITEM #2/#5 fix (2026-10-12 follow-up) -- see
+  // SHIELD_BOOST_MULTIPLIER_ATTR above. Applied once to the whole
+  // shieldRepHpPerSec total (not per-module), since the real attribute
+  // scales the ship's fitted Shield Booster's own repair amount as a
+  // whole, same convention as every other post-loop ship-wide multiplier
+  // in this section.
+  shieldRepHpPerSec *= applyStackingBonus(shieldBoostAmpBonusFractions) * applyStacking(shieldBoostAmpPenaltyFractions);
+
   // Apply flat HP adds first (pyfa applies "pre" increases before
   // multiplications), then the max-skill assumption plus any fitted rig/
   // module sharing that same bonus attribute, each layered as a plain
   // multiply (verified non-stacking-penalized — see constants above).
-  shieldHP = (shieldHP + flatShieldHpAdd) * MAX_SHIELD_MGMT_MULT * shieldHpPctMults.reduce((a,b) => a*b, 1);
+  // Passive shield recharge fix (2026-10-12): Shield Flux Coil/PDS's own
+  // attr146 capacity pools (shieldCapacityPctFractions/shieldCapacityBonusFractions,
+  // see SHIELD_CAPACITY_MULT_ATTR above) are folded in here, same position
+  // as the capacitor side's own capCapacityPctFractions/capCapacityBonusFractions
+  // below -- this is this ship's REAL effective shield HP, used everywhere
+  // (EHP display, break-tank calcs, the new passive-regen calc below), not
+  // a calc-only side number.
+  shieldHP = (shieldHP + flatShieldHpAdd) * MAX_SHIELD_MGMT_MULT * shieldHpPctMults.reduce((a,b) => a*b, 1) * applyStacking(shieldCapacityPctFractions) * applyStackingBonus(shieldCapacityBonusFractions);
   armorHP  = (armorHP + flatArmorHpAdd) * MAX_HULL_UPGRADES_MULT * armorHpPctMults.reduce((a,b) => a*b, 1);
   hullHP   = (hullHP + flatHullHpAdd) * MAX_MECHANICS_MULT * hullHpMults.reduce((a,b) => a*b, 1);
+
+  // Passive shield recharge fix (2026-10-12) -- see SHIELD_RECHARGE_TIME_ATTR's
+  // comment block above for the full formula derivation/grounding. Same
+  // "flat/skill/module-%" layering order as the capacitor side's own
+  // capacitorRechargeTimeSec/peakCapRechargeRate just below (there is no
+  // flat-add attribute on this side -- no module adds a flat recharge-time
+  // reduction in seconds, confirmed absent from every group read above).
+  // MAX_SHIELD_OPERATION_MULT is the universal Shield Operation skill's own
+  // stage (independent of any fitted module, see that constant's comment);
+  // shieldRechargeTimePctFractions is the attr134 module pool (Shield
+  // Recharger/Flux Coil/PDS); shieldPowerRelayRechargeFractions is Shield
+  // Power Relay's own separate attr338 pool. shieldHP above is already the
+  // ship's final effective capacity (flat adds + skill + attr146 pools
+  // already folded in), so this reuses it as-is rather than re-deriving it.
+  const shieldRechargeTimeSec = (attrVal(shipDogma, SHIELD_RECHARGE_TIME_ATTR, 0) * MAX_SHIELD_OPERATION_MULT * applyStacking(shieldRechargeTimePctFractions) * applyStacking(shieldPowerRelayRechargeFractions)) / 1000;
+  const peakShieldRechargeRate = shieldRechargeTimeSec > 0 ? (2.5 * shieldHP) / shieldRechargeTimeSec : 0;
 
   // Combine fitted-module bonuses (stacking-penalized among themselves) with
   // this hull's own intrinsic role/skill bonuses at max skill (each an
@@ -6676,13 +7347,25 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       if(bKind === m.kind && m[bField] !== undefined) m[bField] *= (1 + bPct / 100);
     }
   }
-  // Bastion/Siege/Triage/Industrial Core RoF bonus (see SIEGE_ROF_BONUS_ATTR_A/B
-  // above) applies to every turret AND launcher category alike -- confirmed
-  // 2026-10-08 via 3 independent pyfa-verified Marauder fits (bug-class #15).
+  // Bastion Module RoF bonus (see SIEGE_ROF_BONUS_ATTR_A/B above) applies to
+  // every turret AND launcher category alike -- confirmed 2026-10-08 via 3
+  // independent pyfa-verified Marauder fits (bug-class #15). CORRECTED
+  // 2026-10-12: this is Bastion-only, not shared with Siege/Triage/Industrial
+  // Core as the original comment claimed -- see dreadSiegeBonuses below.
   const siegeRofBonuses = siegeRofBonusPct > 0
     ? [['energy','rof',siegeRofBonusPct], ['hybrid','rof',siegeRofBonusPct], ['projectile','rof',siegeRofBonusPct], ['missile','rof',siegeRofBonusPct]]
     : [];
-  const hullBonusList = [...(SHIP_ROLE_BONUS[String(shipTypeId)] || []), ...subsystemRoleBonuses, ...siegeRofBonuses];
+  // Dreadnought Siege Module fix (2026-10-12) -- see SIEGE_TURRET_DAMAGE_BONUS_ATTR
+  // and neighbors above. Turret categories get only the (much larger) flat
+  // damage bonus, no RoF change; missile gets both its own damage AND RoF
+  // bonus -- confirmed live, these are genuinely different real attributes
+  // from Bastion's siegeRofBonuses above, not a re-derivation of them.
+  const dreadSiegeBonuses = [
+    ...(siegeTurretDamageBonusPct > 0 ? [['energy','damage',siegeTurretDamageBonusPct], ['hybrid','damage',siegeTurretDamageBonusPct], ['projectile','damage',siegeTurretDamageBonusPct]] : []),
+    ...(siegeMissileDamageBonusPct > 0 ? [['missile','damage',siegeMissileDamageBonusPct]] : []),
+    ...(siegeMissileRofBonusPct > 0 ? [['missile','rof',siegeMissileRofBonusPct]] : [])
+  ];
+  const hullBonusList = [...(SHIP_ROLE_BONUS[String(shipTypeId)] || []), ...subsystemRoleBonuses, ...siegeRofBonuses, ...dreadSiegeBonuses];
   // BUG FIXED 2026-10-11 (independent review pass, finding #3): a hull's own
   // "Drones" damage/HP bonus (confirmed live via Dominix's/Armageddon's own
   // Type Bonus text on everef, e.g. "10%/level bonus to Drones hitpoints and
@@ -7437,7 +8120,10 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     const v = attrVal(shipDogma, attrId, 0);
     if(v > sensorStrengthValue){ sensorStrengthValue = v; sensorStrengthType = k; }
   }
-  sensorStrengthValue = sensorStrengthValue * MAX_SENSOR_COMPENSATION_MULT * tdSharpshooterSensorMult;
+  // KNOWN OPEN ITEM #3 fix (2026-10-12 follow-up) -- see
+  // SENSOR_STRENGTH_BONUS_ATTRS/sensorStrengthBonusFractions above.
+  const sensorStrengthModuleMult = sensorStrengthType ? applyStackingBonus(sensorStrengthBonusFractions[sensorStrengthType]) : 1;
+  sensorStrengthValue = sensorStrengthValue * MAX_SENSOR_COMPENSATION_MULT * tdSharpshooterSensorMult * sensorStrengthModuleMult;
 
   // Navigation & targeting, Phase 2: targeting range + scan resolution --
   // see TARGETING_RANGE_ATTR/SCAN_RESOLUTION_ATTR/MAX_LONG_RANGE_TARGETING_MULT/
@@ -7580,12 +8266,25 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // the the owner-chosen simplified-approximation scope, and the 3 flagged gaps.
   // Backlog #16 fix (2026-10-11): flatCapacitorCapacityAdd (T3 Core
   // subsystem self-add, see SUBSYSTEM_CAPACITOR_CAPACITY_SELFADD_ATTR
-  // above) folds in here BEFORE the Capacitor Management skill multiplier,
-  // same "flat adds first, then the max-skill multiply" order already used
-  // for shieldHP/armorHP/hullHP above -- a no-op (0) on every non-T3 hull
-  // and on a T3 hull with a non-capacitor Core subsystem fitted.
-  const baseCapacitorCapacity = (attrVal(shipDogma, CAPACITOR_CAPACITY_ATTR, 0) + flatCapacitorCapacityAdd) * MAX_CAPACITOR_MANAGEMENT_MULT;
-  const capacitorRechargeTimeSec = (attrVal(shipDogma, CAPACITOR_RECHARGE_TIME_ATTR, 0) * MAX_CAPACITOR_SYSTEMS_OPERATION_MULT) / 1000;
+  // above, PLUS a fitted Capacitor Battery's own flat add since the
+  // 2026-10-12 fix below) folds in here BEFORE the Capacitor Management
+  // skill multiplier, same "flat adds first, then the max-skill multiply"
+  // order already used for shieldHP/armorHP/hullHP above.
+  // Capacitor Battery/Power Relay/Flux Coil/Cap Recharger fix (2026-10-12,
+  // the owner: "are you accounting for cap batteries?" -- answer was no, these
+  // module-driven pct pools are the fix): applied AFTER the flat add and
+  // skill multiplier, same "flat adds, then skill mult, then module %
+  // mults" order as shieldHP/armorHP's own shieldHpPctMults/armorHpPctMults
+  // above -- a no-op (empty array -> reduce default 1) on any fit without
+  // one of these 3 module groups fitted.
+  // KNOWN OPEN ITEM #1 fix (2026-10-12 follow-up): applyStackingBonus(capCapacityBonusFractions)
+  // folds in Power Diagnostic System's capacity INCREASE and
+  // applyStackingBonus(capRechargeTimePenaltyFractions) folds in Shield
+  // Power Relay's recharge-time PENALTY -- both opposite-direction pools
+  // from the 2 existing ones, see CAPACITOR_CAPACITY_MULT_ATTR's comment
+  // above.
+  const baseCapacitorCapacity = (attrVal(shipDogma, CAPACITOR_CAPACITY_ATTR, 0) + flatCapacitorCapacityAdd) * MAX_CAPACITOR_MANAGEMENT_MULT * applyStacking(capCapacityPctFractions) * applyStackingBonus(capCapacityBonusFractions);
+  const capacitorRechargeTimeSec = (attrVal(shipDogma, CAPACITOR_RECHARGE_TIME_ATTR, 0) * MAX_CAPACITOR_SYSTEMS_OPERATION_MULT * applyStacking(capRechargeTimePctFractions) * applyStackingBonus(capRechargeTimePenaltyFractions)) / 1000;
   const peakCapRechargeRate = capacitorRechargeTimeSec > 0 ? (2.5 * baseCapacitorCapacity) / capacitorRechargeTimeSec : 0;
   const netCapRate = peakCapRechargeRate - capDrainPerSec;
   // 2026-10-12 (the owner backlog #2): stable%/time-to-empty, see
@@ -7715,14 +8414,30 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // display by ewarCardHtml() (now titled "EWAR / Misc").
     miscTraits,
     // Active-rep vs. buffer indicator, now with the "DPS required to break
-    // this tank" rate -- see hasShieldRep/hasArmorRep/hasHullRep + the HP/s
-    // accumulators above. null when that layer has no local rep module;
-    // otherwise {sustainedDps, burstDps}. burstDps is only set (and only
-    // ever differs from sustainedDps) for armor, and only when an Ancillary
-    // Armor Repairer is actually fitted -- see ANCILLARY_ARMOR_BOOST_MULT_ATTR
-    // above for why shield has no burst/sustained split at all.
+    // this tank" (Break Point) rate -- see hasShieldRep/hasArmorRep/
+    // hasHullRep + the HP/s accumulators above. Armor/hull stay null when
+    // that layer has no local rep module (no passive regen mechanic exists
+    // for either -- confirmed absent from pyfa's own tank formulas), with
+    // {sustainedDps, burstDps}; burstDps is only ever set for armor, and
+    // only when an Ancillary Armor Repairer is actually fitted -- see
+    // ANCILLARY_ARMOR_BOOST_MULT_ATTR above.
+    // Shield is different: EVERY ship regens shield passively whether or
+    // not a Shield Booster is fitted (passive shield recharge fix,
+    // 2026-10-12 -- see SHIELD_RECHARGE_TIME_ATTR's comment block above),
+    // so shield.rep is non-null whenever this hull has any shield HP at
+    // all (shieldHP > 0), not just when hasShieldRep is true. activeDps is
+    // the existing Shield Booster figure (null when none is fitted);
+    // passiveDps is the new peak-passive-regen ceiling (always present,
+    // module or not); breakPointDps additively combines the two into the
+    // single number the UI leads with -- a genuine correctness improvement
+    // over the old shield-active-only figure, which silently ignored the
+    // passive floor underneath an active booster.
     tankStyle: {
-      shield: hasShieldRep ? {sustainedDps: Math.round(shieldRepHpPerSec)} : null,
+      shield: shieldHP > 0 ? {
+        activeDps: hasShieldRep ? Math.round(shieldRepHpPerSec) : null,
+        passiveDps: Math.round(peakShieldRechargeRate),
+        breakPointDps: Math.round(shieldRepHpPerSec + peakShieldRechargeRate)
+      } : null,
       armor: hasArmorRep ? {
         sustainedDps: Math.round(armorRepHpPerSec),
         burstDps: armorRepBurstHpPerSec > armorRepHpPerSec ? Math.round(armorRepBurstHpPerSec) : null
@@ -7744,7 +8459,11 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       base: Math.round(baseSignatureRadius),
       boosted: boostedSignatureRadius !== null ? Math.round(boostedSignatureRadius) : null
     },
-    sensorStrength: {value: Math.round(sensorStrengthValue * 10) / 10, type: sensorStrengthType ? SCAN_STRENGTH_LABEL[sensorStrengthType] : null},
+    // moduleBoosted (KNOWN OPEN ITEM #3 fix, 2026-10-12 follow-up): true
+    // when a fitted Sensor Booster/Signal Amplifier's own bonus (NOT
+    // Remote Sensor Booster, deliberately excluded -- see
+    // SENSOR_STRENGTH_BONUS_ATTRS above) contributed to the value above.
+    sensorStrength: {value: Math.round(sensorStrengthValue * 10) / 10, type: sensorStrengthType ? SCAN_STRENGTH_LABEL[sensorStrengthType] : null, moduleBoosted: sensorStrengthModuleMult > 1},
     targetingRange: Math.round(targetingRange),
     // Navigation & targeting, Phase 5 (closes F2's Drone Control Range half)
     // -- see DRONE_CONTROL_RANGE_BASE_ATTR comment above. Broken into
@@ -7803,6 +8522,11 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       timeToEmptyCapped: capSimResult.timeToEmptyCapped,
       weak: capWeak,
       weakReason: capWeakReason,
+      // KNOWN OPEN ITEM #4 fix (2026-10-12 follow-up) -- see
+      // CAPACITOR_BATTERY_EWAR_RESIST_ATTR above. null when no Capacitor
+      // Battery is fitted; a defensive stat, not applied to this ship's
+      // own outgoing neut/nos figures in the EWAR card.
+      warfareResistPct: capWarfareResistPct > 0 ? Math.round(capWarfareResistPct) : null,
       // Capacitor Booster follow-up (2026-10-12) -- see capBoosterGainPerSec/
       // capSimResultBoosted comments above. `boosted` is populated whenever
       // a charge was identified either by flag-pairing (fromCargo:false) OR
@@ -8027,7 +8751,7 @@ function hpDpsMethodologyHtml(){
   return `
       <details class="info-disclosure">
         <summary>${infoIconSvg()} How effective HP and DPS are calculated</summary>
-        <div class="note">Effective HP folds in Damage Control and hardener/amplifier resistance bonuses fitted on this loss, plus max-level (V) Shield and Armor Compensation skills, averaged across all four damage types with standard stacking penalties applied. A Reactive Armor Hardener fitted on this loss is modeled too, not skipped — since its actual resist split depends on the attacker's real incoming-damage history, which a killmail can never fully reveal, it's approximated by simulating the RAH's own donor/recipient shifting logic against a flat, even 25%-per-type incoming profile until the numbers settle into a repeating pattern, the same approach pyfa uses by default. On top of resistances, about 90 hulls carry their own intrinsic all-shield, all-armor, or (rarely) all-hull resistance bonus — e.g. a Drake's or Nighthawk's +4%/level shield resists, or a Heavy Interdictor's flat 20% role bonus — taken from an exhaustive sweep of every published hull's live game data, applied at max skill (V) where the bonus is skill-based. It's a separate layer from Damage Control and hardeners, and like the Compensation skills, it doesn't stacking-penalize against them. Base HP is also boosted by fitted plates, shield extenders, and Reinforced Bulkheads/Nanofiber Internal Structure (flat HP or a straight multiplier, whichever that module uses), by Trimark Armor Pump and Core Defense Field Extender rigs, and by max-level (V) Shield Management, Hull Upgrades, and Mechanics skills — every capsuleer's baseline HP training, assumed maxed like everything else here. On a Strategic Cruiser (Tengu/Legion/Proteus/Loki), fitted subsystems are folded in the same way as any other module — flat shield/hull HP grants and any hardener-style resistance a Defensive subsystem carries. DPS is calculated per turret/launcher: first from the exact charge that was loaded into that specific weapon at time of death (same killmail flag as the gun itself), falling back to a category-matched guess from spare ammo sitting in cargo or the fleet hangar only when a gun had no identifiable loaded charge — plus drones, fighters, and any fixed-damage weapons. EDENCOM's Vorton Projector trains on its own separate three-skill tree rather than the usual turret skills, and is scored against that instead. Drone DPS only counts however many of the bay's drones this hull can actually have in space at once (the lower of its max active drones and drone bandwidth), launching the hardest-hitting types first — not every drone sitting in the bay. Fighter DPS works the same way for carriers, supercarriers, and FAXes: only as many squadrons as the hull's launch tubes and per-class (light/support/heavy) limits allow are counted, picking the hardest-hitting squadrons in the fighter bay first. All of it assumes max-level (V) damage and rate-of-fire skills for turrets and missiles (Surgical Strike/Rapid Firing or Warhead Upgrades/Rapid Launch plus the matching weapon-size-class and T2 Specialization skills), max-level (V) damage-only skills for drones (Drone Interfacing, plus the weapon-size-class skill — Light/Medium/Heavy Drone Operation or Sentry Drone Interfacing — plus racial Drone Specialization on T2 drones), and max-level (V) damage-only skills for fighters (Fighters, Drone Interfacing's separate fighter-damage bonus, Heavy Fighters on heavy-class squadrons, and racial Fighter Specialization on T2 light-class squadrons) — drones and fighters have no rate-of-fire skill at all, unlike turrets and missiles — on top of two more sources folded in the same way: fitted damage/rate-of-fire low-slot modules (Gyrostabilizer, Magnetic Field Stabilizer, Heat Sink, Ballistic Control System, Drone Damage Amplifier — stacking-penalized against others of their own kind, same as resistance mods above), and this hull's own intrinsic role/skill bonuses at max skill level (e.g. a Vexor's hybrid damage bonus or a Drake's kinetic missile bonus) — or, on a Strategic Cruiser, whichever fitted subsystem's own damage bonus applies, since T3 hulls get theirs from subsystems rather than a fixed hull trait. A Bastion Module, Siege Module, Triage Module, or Industrial Core doubles turret/launcher rate of fire while active, and is assumed active whenever fitted. A fitted Shield Booster/Armor Repair Unit/Hull Repair Unit also gets a "DPS required to break this tank" figure, from that module's own repair-amount and cycle-time attributes — armor and hull assume max-level (V) Repair Systems (25% faster cycling), while Shield Booster gets no such skill bonus at all (its required skill, Shield Operation, only speeds up passive shield regen, not the booster itself) — a real asymmetry, not an oversight. An Ancillary Armor Repairer additionally shows a separate burst figure for while its loaded Nanite Repair Paste lasts, since its repair amount roughly triples during that window; Ancillary Shield Boosters don't get this treatment because, unlike the armor version, their Cap Booster charges change only where the activation cost is drawn from, not the repair amount. Each turret/launcher with a confirmed loaded charge also gets an effective-range figure: optimal range and falloff for turrets (scaled by whatever ammo was actually loaded, and assuming max-level (V) Sharpshooter/Trajectory Analysis — except on EDENCOM's Vorton Projector, which doesn't train on those skills at all), or a single max-travel-distance figure for missiles (velocity × flight time, each also assuming max-level (V) Missile Projection/Missile Bombardment) — this is how far it can reach, not how much of its damage lands on a given target at that range, which depends on the target's own signature radius and speed and isn't modeled. Range isn't shown for weapons only resolved via the cargo-ammo guess, or for drones, whose engagement range is entirely up to the pilot. Volley damage is the one-shot total across every one of those same certain sources firing simultaneously, exactly mirroring pyfa/eos's own Volley stat (confirmed via its real source: every damage-dealing item counts, drones and fighters included, not just turrets/missiles) — it's the instantaneous alpha, not a sustained rate, so it doesn't account for the different cycle times between weapon types. Treat every number here as a ceiling, not a guarantee — a less-trained pilot with fewer damage mods hits considerably softer.</div>
+        <div class="note">Effective HP folds in Damage Control and hardener/amplifier resistance bonuses fitted on this loss, plus max-level (V) Shield and Armor Compensation skills, averaged across all four damage types with standard stacking penalties applied. A Reactive Armor Hardener fitted on this loss is modeled too, not skipped — since its actual resist split depends on the attacker's real incoming-damage history, which a killmail can never fully reveal, it's approximated by simulating the RAH's own donor/recipient shifting logic against a flat, even 25%-per-type incoming profile until the numbers settle into a repeating pattern, the same approach pyfa uses by default. On top of resistances, about 90 hulls carry their own intrinsic all-shield, all-armor, or (rarely) all-hull resistance bonus — e.g. a Drake's or Nighthawk's +4%/level shield resists, or a Heavy Interdictor's flat 20% role bonus — taken from an exhaustive sweep of every published hull's live game data, applied at max skill (V) where the bonus is skill-based. It's a separate layer from Damage Control and hardeners, and like the Compensation skills, it doesn't stacking-penalize against them. Base HP is also boosted by fitted plates, shield extenders, and Reinforced Bulkheads/Nanofiber Internal Structure (flat HP or a straight multiplier, whichever that module uses), by Trimark Armor Pump and Core Defense Field Extender rigs, and by max-level (V) Shield Management, Hull Upgrades, and Mechanics skills — every capsuleer's baseline HP training, assumed maxed like everything else here. On a Strategic Cruiser (Tengu/Legion/Proteus/Loki), fitted subsystems are folded in the same way as any other module — flat shield/hull HP grants and any hardener-style resistance a Defensive subsystem carries. DPS is calculated per turret/launcher: first from the exact charge that was loaded into that specific weapon at time of death (same killmail flag as the gun itself), falling back to a category-matched guess from spare ammo sitting in cargo or the fleet hangar only when a gun had no identifiable loaded charge — plus drones, fighters, and any fixed-damage weapons. EDENCOM's Vorton Projector trains on its own separate three-skill tree rather than the usual turret skills, and is scored against that instead. Drone DPS only counts however many of the bay's drones this hull can actually have in space at once (the lower of its max active drones and drone bandwidth), launching the hardest-hitting types first — not every drone sitting in the bay. Fighter DPS works the same way for carriers, supercarriers, and FAXes: only as many squadrons as the hull's launch tubes and per-class (light/support/heavy) limits allow are counted, picking the hardest-hitting squadrons in the fighter bay first. All of it assumes max-level (V) damage and rate-of-fire skills for turrets and missiles (Surgical Strike/Rapid Firing or Warhead Upgrades/Rapid Launch plus the matching weapon-size-class and T2 Specialization skills), max-level (V) damage-only skills for drones (Drone Interfacing, plus the weapon-size-class skill — Light/Medium/Heavy Drone Operation or Sentry Drone Interfacing — plus racial Drone Specialization on T2 drones), and max-level (V) damage-only skills for fighters (Fighters, Drone Interfacing's separate fighter-damage bonus, Heavy Fighters on heavy-class squadrons, and racial Fighter Specialization on T2 light-class squadrons) — drones and fighters have no rate-of-fire skill at all, unlike turrets and missiles — on top of two more sources folded in the same way: fitted damage/rate-of-fire low-slot modules (Gyrostabilizer, Magnetic Field Stabilizer, Heat Sink, Ballistic Control System, Drone Damage Amplifier — stacking-penalized against others of their own kind, same as resistance mods above), and this hull's own intrinsic role/skill bonuses at max skill level (e.g. a Vexor's hybrid damage bonus or a Drake's kinetic missile bonus) — or, on a Strategic Cruiser, whichever fitted subsystem's own damage bonus applies, since T3 hulls get theirs from subsystems rather than a fixed hull trait. A Bastion Module (Marauders) doubles turret/launcher rate of fire while active, and is assumed active whenever fitted. A Dreadnought's own Siege Module gives a much larger flat damage bonus instead (turrets get damage only; missile launchers get both a damage and a rate-of-fire bonus), also assumed active whenever fitted. A Triage Module (Carriers) or Industrial Core (Rorquals) has no effect on weapon damage or rate of fire at all. A fitted Shield Booster/Armor Repair Unit/Hull Repair Unit also gets a "DPS required to break this tank" figure, from that module's own repair-amount and cycle-time attributes — armor and hull assume max-level (V) Repair Systems (25% faster cycling), while Shield Booster gets no such skill bonus at all (its required skill, Shield Operation, only speeds up passive shield regen, not the booster itself) — a real asymmetry, not an oversight. An Ancillary Armor Repairer additionally shows a separate burst figure for while its loaded Nanite Repair Paste lasts, since its repair amount roughly triples during that window; Ancillary Shield Boosters don't get this treatment because, unlike the armor version, their Cap Booster charges change only where the activation cost is drawn from, not the repair amount. Each turret/launcher with a confirmed loaded charge also gets an effective-range figure: optimal range and falloff for turrets (scaled by whatever ammo was actually loaded, and assuming max-level (V) Sharpshooter/Trajectory Analysis — except on EDENCOM's Vorton Projector, which doesn't train on those skills at all), or a single max-travel-distance figure for missiles (velocity × flight time, each also assuming max-level (V) Missile Projection/Missile Bombardment) — this is how far it can reach, not how much of its damage lands on a given target at that range, which depends on the target's own signature radius and speed and isn't modeled. Range isn't shown for weapons only resolved via the cargo-ammo guess, or for drones, whose engagement range is entirely up to the pilot. Volley damage is the one-shot total across every one of those same certain sources firing simultaneously, exactly mirroring pyfa/eos's own Volley stat (confirmed via its real source: every damage-dealing item counts, drones and fighters included, not just turrets/missiles) — it's the instantaneous alpha, not a sustained rate, so it doesn't account for the different cycle times between weapon types. Treat every number here as a ceiling, not a guarantee — a less-trained pilot with fewer damage mods hits considerably softer.</div>
       </details>`;
 }
 
