@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Firepower audit findings (hand-tables plan, Phase 1)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Firepower audit findings (hand-tables plan, Phase 1)</h1>
+<p><span class="tag">Findings only</span><span class="tag">Tooling</span> 2026-10-14 &middot; <code>index.html</code> unchanged (<code>v2026.10.14.1</code>) &middot; Erik: "ok go ahead"</p>
+
+<h2>What was done</h2>
+<ul>
+<li><b>New <code>tools/audit_firepower.py</code>.</b> It runs every pyfa handler that changes weapon, drone or fighter damage or rate of fire, on all 393 hulls that carry one (published or not), plus subsystems, modules, rigs and skills. It diffs the result against the tool's hand-built tables and records each bonus's real scope (weapon size, missile family, damage type). It also reports drone control range.</li>
+<li><b>Recorder change:</b> <code>tools/pyfa_effects.py</code> now records <code>fit.extraAttributes</code> (drone control range). <code>dump_effect_tables.mjs</code> takes an optional list of table names.</li>
+<li>Reference: pyfa v2.69.2 with game data 3579973, the same as Erik's pyfa. Full report: <code>Claude outputs/firepower_audit_2026-10-14.txt</code>.</li>
+</ul>
+
+<h2>Headline</h2>
+<p>Of the tool's 352 hand-typed hull entries, <b>333 match pyfa exactly</b> on value, kind and damage type. The skill constants (Gunnery, Rapid Firing, Surgical Strike, size skills, missile skills, drone and fighter skills) match too, with the exceptions below. The real problems:</p>
+
+<h3>Large DPS errors on specific hulls</h3>
+<table>
+<tr><th>Hull(s)</th><th>pyfa (current data)</th><th>Tool</th><th>Effect on shown DPS</th></tr>
+<tr><td>Leviathan, Komodo (titans)</td><td>XL missiles: +250% to one or two damage types, +200% to the others. Each type gets <i>one</i> bonus.</td><td>Both bonuses on every damage type</td><td><b>~3&ndash;3.5&times; too high</b></td></tr>
+<tr><td>Vigil Fleet Issue</td><td>+125% explosive, +100% the other three</td><td>Both on every type</td><td><b>~2&ndash;2.25&times; too high</b></td></tr>
+<tr><td>Anhinga</td><td>No rate-of-fire bonus. Its effects are fitting bonuses plus torpedo/cruise explosion radius and velocity.</td><td>Three missile RoF bonuses (25 / 50 / 25%)</td><td><b>~3.6&times; too high</b></td></tr>
+<tr><td>Akoman</td><td>+125% laser damage</td><td>Not in the table</td><td>2.25&times; too low</td></tr>
+<tr><td>Thunderchild</td><td>+25% Vorton damage, +25% Vorton RoF</td><td>Not in the table</td><td>~1.67&times; too low</td></tr>
+<tr><td>Hydra</td><td>+37.5% Disintegrator damage</td><td>Not in the table</td><td>1.375&times; too low</td></tr>
+</table>
+
+<h3>Damage-type and weapon-type coverage</h3>
+<ul>
+<li><b>Nemesis</b> (thermal torpedoes only), <b>Virtuoso</b> (thermal + explosive) and <b>Caiman</b> (kinetic + thermal): these bonuses are damage-type-restricted in pyfa, but the tool applies them to every type. Off-type ammo is overstated by 75% / 75% / 25%. The other three stealth bombers were already restricted correctly.</li>
+<li><b>Gnosis, Sunesis, Praxis, Metamorphosis:</b> the role bonus covers <i>all</i> turrets. The tool only covers hybrids and missiles, so lasers and projectiles miss +20% (Metamorphosis +80%).</li>
+<li><b>Caiman, Komodo:</b> +100% to fighters' turret-attack ability (role bonus) is missing.</li>
+</ul>
+
+<h3>Skills and modules</h3>
+<ul>
+<li><b>Vorton Power Amplification</b> (+3%/level damage to every Vorton Projector) is missing. The tool's comment describes a three-skill Vorton tree; current data has a fourth skill. All Vorton DPS is 13% low (&divide;1.15). This is the only finding that touches an existing golden fit (<code>stormbringer_zkb138986635_vorton</code>).</li>
+<li><b>Fighters get no fitted-module damage bonus.</b> In pyfa, Drone Damage Amplifiers (and the hybrid modules below) also boost fighters, but the tool never fills its fighter module pool. Carrier and supercarrier fighter DPS is low by the whole DDA stack.</li>
+<li><b>Faction and Abyssal damage modules with a drone bonus:</b> Imperial Navy 'Neophyte'/'Disciple' Heat Sinks, Federation Navy 'Argyreos'/'Khryseos' Magnetic Field Stabilizers, C3 'Hivaa Saitsuo' BCSs and the Abyssal versions all carry the Drone Damage Amplifier effect. The tool reads drone bonuses only from the "Drone Damage Modules" group, so these are ignored.</li>
+<li><b>Known items, now confirmed:</b>
+  <ul>
+  <li>XL Torpedo and XL Cruise Missile Specialization missing (2%/level RoF on T2 XL launchers)</li>
+  <li>Skua Sharpshooter Mode missing from the mode table (+33.3% missile damage)</li>
+  <li>Mutated Drone Specialization not in the racial drone list (niche)</li>
+  </ul></li>
+</ul>
+
+<h3>Scope (lower priority)</h3>
+<p>314 hulls have bonuses that pyfa limits to one weapon size or missile family. Examples: Megathron, Large Hybrid only; Caracal, heavy/HAM/rapid-light launchers only. The tool applies them to the whole weapon type. The 282 size-limited turret bonuses and 147 missile-family limits only matter for off-size or off-family fits, such as a Caracal with light missiles. The generated table will carry the scope, as the weapon-range table already does.</p>
+
+<h3>Matches worth noting</h3>
+<ul>
+<li>Drone control range: pyfa has exactly two hull sources, Ishtar +25 km and Griffin Navy Issue &times;0.5, and both match the tool.</li>
+<li>The Tactical Destroyer Sharpshooter modes (+33.3% damage) match for the four hulls in the table.</li>
+<li>The Griffin Navy Issue &minus;70% drone malus matches. pyfa applies it per damage type.</li>
+</ul>
+
+<h3>Not comparable</h3>
+<p>Seven special-edition hulls (Moros Interbus, Naglfar Justice, Phoenix Wiyrkomi, Revelation Sarum, the two Punisher editions, Rorqual ORE Development) carry no damage effects in the SDE, so pyfa gives them no bonus. The tool gives them the base hull's bonus (known open item #4). This stays a deliberate, disclosed deviation.</p>
+
+<h2>Recommended fix (next step)</h2>
+<ol>
+<li><b>Generate the hull/subsystem damage table from pyfa</b>, like the weapon-range table: effect &rarr; rows of [weapon category, damage or RoF, source attribute, per level, skills, groups, damage type]. Apply it per weapon instance, so scope and damage type are exact. Keep <code>SHIP_ROLE_BONUS</code> only as the fallback for hulls with no effects (the special editions). This fixes every hull finding above in one change.</li>
+<li><b>Modules:</b> read the drone bonus from the attribute on any module, not the group, and add DDA/hybrid-module bonuses to fighters.</li>
+<li><b>Skills:</b> add Vorton Power Amplification &times;1.15 and the XL missile specializations. <b>Modes:</b> add the Skua.</li>
+<li><b>Tests:</b> derive expected values first (independent check script), then add constructed golden fits that fail on today's build:
+  <ul>
+  <li>Leviathan</li>
+  <li>Anhinga</li>
+  <li>Akoman</li>
+  <li>Thunderchild</li>
+  <li>Nemesis with off-type ammo</li>
+  <li>Gnosis with lasers</li>
+  <li>Thanatos with DDAs</li>
+  <li>Dominix with a Neophyte Heat Sink</li>
+  <li>an off-size weapon (scope)</li>
+  </ul>
+  Plus the Stormbringer re-pin. Ask Erik for pyfa screenshots on two or three of them.</li>
+</ol>
+
+<h2>Lesson for future models</h2>
+<p>The first audit runs reported ~160 mismatching hulls. Most were the audit's own mistakes:</p>
+<ul>
+<li>a missing attribute read as 0 instead of its default, which invented a &minus;100% light-fighter penalty on every carrier</li>
+<li>one bonus split across four effects, or across launcher families</li>
+<li>charge filters that test the launcher</li>
+<li>drone damage-type boosts</li>
+<li>unpublished special-edition hulls</li>
+</ul>
+<p>Open a few mismatches by hand before trusting the list. See <code>LESSONS_LEARNED.md</code> #22.</p>
+</body></html>

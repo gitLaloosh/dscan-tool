@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Fighters: every ability pyfa counts, plus Fighter Support Units</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Fighters: every ability pyfa counts, plus Fighter Support Units</h1>
+<p><span class="tag">Bug fix</span><span class="tag">PYFA CORE</span> 2026-10-14 &middot; <code>v2026.10.14.3</code> &rarr; <code>v2026.10.14.4</code> &middot; Erik's pyfa check of the v.3 Thanatos fit, then "ok"</p>
+
+<h2>What Erik's screenshot showed</h2>
+<p>Leviathan (1,155) and Akoman (108) matched pyfa. The Thanatos with 3&times; Drone Damage Amplifier II and one Firbolg I squadron showed <b>831 DPS, volley 7,125</b> in pyfa; the tool gave 502 per squadron. Worked out from pyfa's source, the difference is exactly the second ability:</p>
+<table>
+<tr><th>Firbolg I, one squadron</th><th>Volley</th><th>DPS</th></tr>
+<tr><td>Attack Missile (pyfa "Turret Attack") &mdash; the only ability the tool counted</td><td>2,508.7</td><td>501.74</td></tr>
+<tr><td>Missiles (pyfa "Missile Attack"), 207 thermal &times; 6 every 14 s</td><td>4,616.0</td><td>329.72</td></tr>
+<tr><td><b>pyfa total</b></td><td><b>7,124.7</b></td><td><b>831.46</b></td></tr>
+</table>
+
+<h2>Root cause</h2>
+<ul>
+<li>The engine read one ability, the one ESI marks as default. pyfa (<code>eos/saveddata/fighter.py</code> <code>Fighter.__init__</code>) switches on Attack Missile <b>and every implemented ability before it</b>, except MWD and Evasive Maneuvers; <code>getDpsPerEffect</code> sums them. So:
+  <ul>
+  <li>light fighters fire Attack Missile and Missiles</li>
+  <li>superiority fighters (Equite, Locust, Satyr, Gram) fire Missiles only; the tool showed 0</li>
+  <li>long-range heavies (Cyclops, Malleus, Tyrfing, Mantis) fire both</li>
+  <li>heavy bombers (Ametat, Termite, Antaeus, Gungnir): Attack Missile only, because Launch Bomb comes after it and stays off</li>
+  </ul></li>
+<li>pyfa's DPS ignores rearm time unless "factor in reload time" is on, so the tool does too.</li>
+<li><b>Fighter Support Units</b> weren't applied at all. pyfa Effect6566 multiplies every ability's duration by 0.95 (T1) or 0.94 (T2), stacking-penalized in its own group.</li>
+<li>Why it lasted: three fighter goldens from 2026-10-08 and 10-11 said "pyfa has no fighter-DPS support at all" and were pinned to hand derivations of the same one-ability model.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Generator</b> (<code>gen_hull_damage_table.py</code>): hull rows for the Missiles ability (target <code>fighterMissiles</code>, 8 new rows on carriers, supercarriers and Caiman/Komodo). It also writes the new <code>FIGHTER_ABILITY_EFFECTS</code> table and asserts every damaging ability pyfa switches on by default is modeled. It checks that every fighter's effects are in effect-ID order, which is the order pyfa walks them.</li>
+<li><b>PYFA CORE <code>hull-damage</code></b>: <code>pyfaDefaultFighterAbilities()</code> replays pyfa's activation rule; <code>hullFighterMods</code> takes the ability. Re-verified and re-recorded with <code>--update</code>.</li>
+<li><b>Engine:</b> per squadron, volley and DPS are the sums over the active abilities. Fighter Support Units are collected by effect 6566 and applied with <code>pyfaPenalizedProduct</code>.</li>
+<li><b>Drone and fighter damage-module stacking</b> now uses pyfa's exact penalty. With the rounded table the screenshot fit showed 832 (831.51 vs 831.46). No drone fit moved.</li>
+<li><b>Correction to the v.3 doc:</b> the Caiman / Komodo +100% bonus was never missing. Its "turret attack" attribute isn't read by any pyfa ability, and the same effect's Attack Missile part was already applied. It now applies to Missiles too.</li>
+</ul>
+
+<h2>Effect on fits</h2>
+<p>A full output diff of all 177 golden fits, v.3 vs v.4, moved 9 fits, all of them fighter fits:</p>
+<table>
+<tr><th>Fit</th><th>v.3</th><th>v.4 (= pyfa)</th></tr>
+<tr><td>Thanatos + 3&times; DDA II, one Firbolg I squadron (Erik's pyfa)</td><td>502 / volley 2,509</td><td><b>831 / 7,125</b></td></tr>
+<tr><td>Same, three squadrons</td><td>1,505</td><td>2,494</td></tr>
+<tr><td>Thanatos + 2&times; Fighter Support Unit II, one Firbolg I squadron</td><td>316</td><td>588</td></tr>
+<tr><td>Thanatos, Satyr I / Satyr II (superiority)</td><td>0 / 0</td><td>338 / 407</td></tr>
+<tr><td>Nyx, Cyclops I (two pinned fits)</td><td>1,544</td><td>3,087</td></tr>
+<tr><td>Thanatos, Templar II</td><td>334</td><td>551</td></tr>
+<tr><td>Thanatos real loss 138975919, Templar I</td><td>274</td><td>454 (499 with the ship's 2 FSUs, which the fixture doesn't contain)</td></tr>
+<tr><td>Nyx, Ametat I (bomber guard)</td><td>667</td><td>667</td></tr>
+</table>
+
+<h2>Verification</h2>
+<ul>
+<li><b>Expected values first:</b> <code>check_firepower.py</code> types pyfa's activation rule and every damage handler by hand, with values from the SDE. It reproduces Erik's screenshot to the decimal (831.46 / 7,124.75). Five of the six new fits fail on v.3, and the bomber guard passes on both.</li>
+<li><b>Chain</b> (<code>pyfa_update_check.py --run</code>): all 9 checks OK.
+  <ul>
+  <li>core lock, 13 sections</li>
+  <li>golden data complete</li>
+  <li>all generators up to date</li>
+  <li>capacitor simulation: 531 sims, 0 mismatches</li>
+  <li>suite ALL PASS on 177 fits</li>
+  <li>fallback audit 0</li>
+  </ul>
+  Parse tests 280/280.</li>
+<li><b>Real page</b> (Playwright, Fit Analyzer, ESI served from the SDE), tag v2026.10.14.4, no script errors:
+  <ul>
+  <li>Erik's Thanatos EFT: 831 DPS, volley 7,125. The page's EHP 380,177, speed 100, align 25.0 s, signature 9,960, sensor 91.2 and cap 68,750 GJ +54.6 GJ/s also match his screenshot.</li>
+  <li>Three squadrons: 2,494</li>
+  <li>Satyr I: 338</li>
+  <li>Leviathan: 1,155</li>
+  </ul></li>
+</ul>
+
+<h2>Not changed</h2>
+<ul>
+<li>An EFT line <code>Firbolg I x18</code> means 18 fighters in the bay to the tool, launched as three squadrons; pyfa loads one squadron of 6. This is an input choice, listed in <code>DEVIATIONS.md</code>.</li>
+<li>Bombs: off by default in pyfa too.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When an item has several abilities or effects, read the pyfa code that decides which are on and the method that adds them up, not just the "default" one. A note saying "pyfa doesn't do X" is a claim about the source: open the source. See <code>LESSONS_LEARNED.md</code> #24 (and #5, #20).</p>
+</body></html>

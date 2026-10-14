@@ -511,3 +511,274 @@ A fit can also carry `droneStates` (`{"<typeId>": count in space}`), the
 engine's 8th argument (v2026.10.13.23). The runner flattens
 `droneStatesActiveCount`, `droneStatesBandwidthUsed` and
 `droneStatesRefusedCount`.
+
+## Capacitor best case and missing-field checks (v2026.10.13.27)
+
+- The capacitor ring toggle is gone. `capacitorActiveDrainPerSec`, `capacitorNetRate`,
+  `capacitorStable`, `capacitorStablePct` and `capacitorTimeToEmptySec` are now the
+  **best case of the running modules**: active Capacitor Boosters inject, and active
+  Ancillary Shield Boosters have charges, so they use no capacitor (pyfa's "use"
+  column).
+- New flattened fields:
+  - `capacitorInjectionPerSec`
+  - `capacitorNoBoost*` (no injection, ASBs on capacitor; the old primary)
+  - `capacitorAsbDry*` (ASBs out of charges, the clickable ASB icon)
+  - each of `capacitorNoBoost*` / `capacitorAsbDry*` covers `ActiveDrainPerSec`,
+    `NetRate`, `Stable`, `StablePct` and `TimeToEmptySec`
+- `capacitorCombinedConfidentNetRate` was removed; its pin moved to
+  `capacitorNetRate`.
+- **A pinned field that is missing from the result now FAILS** (`<field> (not in
+  result)`). It used to be skipped silently, which would have turned the removed
+  field's pins into no-ops. Keys ending in `_approx` are informational and never
+  checked.
+
+## pyfa capacitor simulation (v2026.10.14.1)
+
+- **Simulation:** capacitor stability and time to empty come from `capSimPyfa()`,
+  a port of pyfa's `eos/capSim.py`.
+- **Comparison:** `PYFA_SRC=/path/to/Pyfa node regression_suite/compare_cap_sim.mjs index.html`
+  runs every golden fit's three simulations (best case, ASB out of charges,
+  without boosts) through pyfa's own simulator (`tools/cap_sim_oracle.py`).
+  It must report 0 mismatches. Run it alongside `run_regression.mjs` whenever
+  capacitor code changes.
+- **Reactivation delay:** cap drain now averages over the active cycle plus
+  `moduleReactivationDelay`, as pyfa does.
+
+
+## Fixture completeness check (2026-10-14)
+
+The checker now fails any fitted item, drone or fighter whose **type or
+group record** is missing from its fixture:
+
+    FAIL  fixture: Mid slots X-Large C5-L Compact Shield Booster (no group record 40)
+
+Cargo and fleet hangar items are exempt, since a missing cargo record only
+hides unused cargo.
+
+The first catch was `ishtar_alyra`. Its fixture lacked the Shield Booster
+group, so the engine dropped the booster. The capacitor was pinned at stable
+96.9% for months while the real page and Erik's pyfa both gave 40.5%. With
+the group added, it matches pyfa exactly: stable 40.5%, net +7.1 GJ/s,
+drain 77.2 GJ/s. It also gains a 119 HP/s shield repair. See
+`LESSONS_LEARNED.md` #6 and
+`tools/independent_checks/check_cap_sim.py` (Ishtar case).
+
+## Fixture refresh from the SDE (2026-10-14)
+
+Every golden fit's type and group records were refreshed from CCP's SDE as
+pyfa ships it (client build 3579973, the same data as Erik's pyfa v2.69.2) with
+`tools/refresh_golden_fixtures.py --write`. The merge kept 282 attributes that
+only the live-ESI captures had, plus one effect. Totals:
+
+- 1,925 attributes filled on 194 trimmed records
+- 33 missing types added
+- 2,470 group records added
+- 19 effects added (all on cargo items)
+- 1 value changed: the Hawk's pre-patch `shipBonusCF` 10 → 7.5
+
+15 fits' outputs moved; only `legion_popejoy`'s capacitor pin failed (300 →
+2,100). After the refresh, that killmail copy gives exactly the numbers of its
+pyfa-verified twin `legion_popejoy_eft_pyfa_verified` on every moved field.
+New pins with notes, all failing on the old trimmed data:
+
+- Legion: 11 fields
+- Rifter armor layering: raw armor 6,563
+- Vedmak: neut 15 GJ/s
+- Vargur: capacitor 5,813
+
+The other moved outputs were not pinned. They are listed in
+`dscan-tool-history/2026-10-14_golden-fit-data-refresh.html` and get
+re-derived as each stat's hand-table phase reaches them.
+
+Before adding a golden fit, run `refresh_golden_fixtures.py` in report mode. It
+must print `0 of N fits change`.
+
+## PYFA CORE lock (2026-10-14)
+
+`run_regression.mjs` runs `tools/check_pyfa_core.mjs` before any fit. If a
+`PYFA CORE` section of `index.html` changed since it was verified against
+pyfa, the suite fails with the section name and its re-verify commands. See
+`PYFA_CORE.md`.
+
+## Firepower from pyfa's handlers (v2026.10.14.3)
+
+Ten constructed fits, each expected value derived first by
+`tools/independent_checks/check_firepower.py`. All ten failed on
+v2026.10.14.2 by exactly the predicted error, and all pass now:
+
+- `leviathan_constructed_xl_torpedo_kinetic` and `_em`
+- `anhinga_constructed_cruise_no_rof_bonus`
+- `akoman_constructed_large_pulse_role_bonus`
+- `thunderchild_constructed_vorton_hull_bonus`
+- `nemesis_constructed_em_torpedo_no_thermal_bonus`
+- `gnosis_constructed_medium_pulse_role_bonus`
+- `caracal_constructed_light_launcher_out_of_scope`
+- `dominix_constructed_neophyte_heat_sink_drones`
+- `thanatos_constructed_dda_fighters`
+
+Re-pinned for Vorton Power Amplification:
+
+- Stormbringer 263 → 302
+- Skybreaker 51 → 58
+
+`audit_role_bonus_drift.mjs` is obsolete: `SHIP_ROLE_BONUS` is now only the
+special-edition fallback. Use `tools/gen_hull_damage_table.py`.
+
+## Fighter abilities (v2026.10.14.4)
+
+pyfa sums every fighter ability it switches on by default (LESSON #24). Expected
+values from `tools/independent_checks/check_firepower.py`; the first is Erik's
+pyfa screenshot (831 DPS, volley 7,125, tolerance 0.1%). Six new constructed
+fits, five failing on v2026.10.14.3 and one guard:
+
+- `thanatos_constructed_one_squadron_firbolg_pyfa` (pyfa-verified)
+- `thanatos_constructed_fsu_firbolg` (Fighter Support Unit II x2)
+- `thanatos_constructed_satyr_superiority` and `_satyr2_specialization` (Missiles only; were 0)
+- `nyx_constructed_cyclops_heavy` (Missiles + Attack Missile)
+- `nyx_constructed_ametat_bomber` (guard: bombs stay off, unchanged)
+
+Re-pinned, Attack Missile only before: `thanatos_constructed_dda_fighters`
+1,505 → 2,494; `thanatos_zkb138975919_fighter_bay` 274 → 453.5 (its 2 Fighter
+Support Units aren't in the fixture; 499 with them);
+`nyx_constructed_heavy_fighter_specialization_bonus` 1,544 → 3,087;
+`thanatos_constructed_t2_light_fighter_specialization_bonus` 334 → 551. Their
+labels' claim that pyfa has no fighter DPS was wrong; each note says so.
+
+## Resistances from pyfa's handlers (v2026.10.14.5)
+
+Expected values from `tools/independent_checks/check_resists.py` (pyfa's own
+handlers via `tools/pyfa_fit_oracle.py`). All six failed on v2026.10.14.4:
+
+- `moa_constructed_shield_compensation_dc` (Compensation skills 25%, not 20%)
+- `paladin_constructed_bastion_dc_membranes` (Bastion + Damage Control share the 'preMul' stacking group)
+- `megathron_constructed_rah_dc_membranes` (pyfa's Reactive Armor Hardener algorithm)
+- `rifter_constructed_polarized_weapon` (0% resists)
+- `punisher_kador_edition_constructed_resist` (special-edition hull bonus)
+- `phoenix_constructed_flex_script` (hardener script)
+
+`dominix_navyissue_buffer` is now pinned to the user's pyfa screenshot (armor
+75/71/71/71, Armor 260k, EHP 318k); `nighthawk_zkb138992462_rolebonus_audit`
+shield EHP re-derived. `dump_results.mjs` runs every fit and writes chosen result
+fields to JSON (used by `tools/independent_checks/compare_resists.py`).
+
+## Ship modes from pyfa's handlers (v2026.10.14.6)
+
+Expected values from `tools/independent_checks/compare_modes.py` (pyfa's own
+handlers via `tools/pyfa_fit_oracle.py`, with the mode item pyfa uses). All seven
+failed on v2026.10.14.5:
+
+- `anhinga_constructed_secondary_mode` (launcher rate of fire x0.5: 65 DPS)
+- `anhinga_constructed_tertiary_mode_mjd` (x0.75 rate of fire, agility, MJD reactivation x0.1; MJD pinned active)
+- `skua_constructed_sharpshooter_rockets` (rocket damage x1.333, velocity x3.5, targeting / gravimetric x2)
+- `skua_constructed_defense_shield` (signature, shield recharge, resistances)
+- `skua_constructed_propulsion_ab` (afterburner speed factor, agility)
+- `hecate_constructed_defense_armor_repairer` (repair cycle x1/1.5)
+- `confessor_constructed_defense_remote_armor_repairer` (remote repairer cap need x1/1.5)
+
+Re-pinned: `anhinga_constructed_cruise_no_rof_bonus` 33 → 43 DPS (pyfa's default
+Primary Mode); `hecate_constructed_propulsion_mode_bonus` boosted speed 837 → 592
+and cap drain 0.2 → 0.7 (pyfa's Hecate Propulsion Mode boosts microwarpdrives only,
+not this afterburner). `dump_results.mjs` takes `[mode] [fitIds]` to run one mode.
+
+PYFA-VERIFIED after delivery (Erik's pyfa v2.69.2): `anhinga_constructed_cruise_no_rof_bonus`
+(Primary: 43.4 DPS, 1086 km, 300 km, EHP 19.5k) and `skua_constructed_sharpshooter_rockets`
+(41.7 DPS, 35.4 km, 138 km, EHP 4.38k) gained full pins. New `skua_pyfa_rockets_defense_mode` = the same
+EFT in Defense Mode, pyfa's default for the Skua (31.3 DPS, sig 46.7, EHP 5.33k). Layer-EHP pins cover
+pyfa's whole 3-significant-figure bin plus the rounding edge (pyfa 1.91k → tool 1905-1915).
+
+## Missile range from pyfa (v2026.10.14.7)
+
+Expected values from `tools/independent_checks/check_missile_range.py` (pyfa's own
+`Module.missileMaxRangeData`). `run_regression.mjs` now also flattens `rangeTravelLowerM`,
+`rangeTravelHigherM` and `rangeTravelHigherChancePct` (pyfa's range tooltip). New
+`raven_constructed_fof_cruise_range_cap` (auto-targeting cruise missile capped at 200 km minus the
+Raven's 250 m radius: 199,750 m; v.6 showed 222,075 m). Re-pinned exactly: hawk_user, golem bastion,
+sacrilege, muninn, both Skua mode fits (a few metres to 66 m). Split pins added on the three Anhinga
+fits, both Skua fits, Golem, Nighthawk and Leviathan XL torpedo (58,725 → 58,145 m: acceleration).
+
+## Speed / agility / mass from pyfa (v2026.10.14.8, hand-tables P3)
+
+Expected values from `tools/independent_checks/compare_speed.py` (pyfa's own handlers). New
+constructed fits, both failing on v2026.10.14.7: `helios_constructed_cloaked_velocity` (cloak active:
+cloaked-only velocity bonus, 413 → 516 m/s) and `rifter_constructed_cyno_active` (cyno active:
+0 m/s). Cyno now defaults online (input choice, DEVIATIONS.md); `rifter_constructed_cyno_fitted`
+pins 456 m/s. Re-pinned with causes in their notes: Loki (Wake Limiter AB bonus, 1217 → 1709), Charon
+(freighter velocity bonus, 75 → 94), both Monitors (agility bonus, align 9.0 → 6.7), Tengu
+(Interdiction Nullifier +0.1 agility, 7.0 → 8.4), Rifter plate (Advanced Armor Layering, 10.5 → 10.8),
+Leshak, both Curses, Guardian (exact stacking / plate mass).
+
+
+## D-Scan fit paste and PANIC state (v2026.10.14.9, bug list #1 and #2)
+
+`dscan_parse_tests.mjs` gained fit-paste detection: 11 cases (EFT headers from the client and
+pyfa, with and without a fit name, Windows line endings; single ship names, `[Empty High slot]`,
+module-only lines and tabbed rows that must NOT count as a fit) plus both real pastes tested from
+every one of their 257 starting rows, and a check of the "never in space" categories. 293 cases;
+v2026.10.14.8 fails them. New constructed fits from `tools/independent_checks/check_panic.py`, both
+failing on v2026.10.14.8: `rorqual_constructed_panic_default_online` (PANIC defaults online, Misc
+flag) and `rorqual_constructed_panic_requested_active` (ACTIVE accepted, flag says RUNNING, every
+other output field identical to the online twin). `run_regression.mjs` flattens `hasPanicFitted`
+and `panicNoteText`.
+
+**Update v2026.10.14.10:** the PANIC follows pyfa again (online at most; Erik: an Active state that
+changes nothing looks broken). `rorqual_constructed_panic_requested_active` now pins the refusal
+(refused 1, online 1), and both PANIC fits pin the flag's 6-minute duration (pyfa's buffDuration at
+All V after the Invulnerability Core Operation skill; v.9 said 4). Both fail on v.9 and v.8.
+
+## EWAR from pyfa (v2026.10.14.11, hand-tables P4)
+
+Expected values from `tools/independent_checks/compare_ewar.py` (pyfa's own handlers on the whole
+fit, loaded scripts included). `run_regression.mjs` now also flattens every EWAR entry as
+`ewar:<module name>:<script or ->:<field>` (copies of one type with different scripts are separate
+entries since v.11). New constructed fits, all failing on v2026.10.14.10:
+`lachesis_constructed_damp_scripts_per_copy` (two dampener scripts), `arbitrator_constructed_td_scripts_gd_neut`
+(two disruptor scripts, unscripted guidance disruptor, neutralizer), `rook_constructed_ecm_signal_amps_stacking`
+(exact stacking of two Signal Distortion Amplifiers, tolerance 1e-6) and `bhaalgorn_constructed_neuts_nos_webs`
+(hull neutralizer / nosferatu amount and web range bonuses). Re-pinned with causes in their notes: both
+Curse fits (scripts; Recon neutralizer bonuses), the Monitor painter (-99%, not -99.9%), the Crucifier
+disruptor (its range bonus is on the module's range, not the disruption strength), both Lokis (web
+subsystem).
+
+## Implants and boosters (v2026.10.14.12)
+
+A fit's tally may carry `Implants` and `Boosters` groups (a pasted EFT fit). The engine applies them
+through PYFA CORE `implant-calc`. A killmail fixture's flag-89 items are applied only when
+`PILOT_ANALYZER_APPLY_IMPLANTS` is on (it is off). Expected values come from
+`tools/independent_checks/compare_implants.py` (pyfa's handlers with the implants, unrounded,
+1e-6), `compare_speed.py` and `compare_resists.py`; every pin was computed before the tool's numbers
+were read, rounded the JavaScript way (half up; Python's `round` is half-even and gave 562 for
+562.5 at first). The nine fits with applied implants fail on v2026.10.14.11; the last one guards the
+Pilot Analyzer switch and passes on both:
+
+- `rorqual_eft_full_quadfeed_implants_boosters_pyfa` and `rorqual_eft_pyfa_active_state_implants_boosters`:
+  Erik's Rorqual with its Genolution CA-1..4 set and two boosters, pinned to his pyfa screenshot
+  (EHP 1.78M, capacitor 102k, align 280 s, shield repair 17,030 HP/s raw, capacitor delta -5.98 GJ/s).
+- `abaddon_constructed_armor_implants_boosters` (Amulet set, repair / hull / structure hardwirings,
+  Exile and Halcyon Y boosters), `drake_constructed_shield_implants_boosters` (Crystal set, shield
+  hardwirings, capacitor hardwiring, Blue Pill and Halcyon B), `rifter_constructed_nav_implants_boosters`
+  (Snake set, acceleration control, evasive maneuvering, long range targeting, X-Instinct),
+  `rifter_constructed_halo_set_signature`, `merlin_constructed_talon_set_sensor_strength` (the only
+  implants that ADD to a ship attribute), `merlin_constructed_high_grade_talon_set` (Effect2298, gated on
+  the implant having the attribute), `punisher_constructed_cap_use_implants` (repairer and smartbomb
+  cycle, afterburner cap need).
+- `rifter_constructed_killmail_implants_switch_off`: a killmail listing a Snake set at flag 89; the
+  pins are the implant-free numbers, so turning `PILOT_ANALYZER_APPLY_IMPLANTS` on fails it on
+  purpose.
+
+**Phase 2 (v2026.10.14.13): weapons, drones.** Expected values from the extended `compare_implants.py`
+(weapon / smartbomb / drone DPS, ranges, drone control range), all failing on v2026.10.14.12:
+`rupture_constructed_projectile_implants_boosters` (turret damage, rate of fire, falloff hardwirings;
+Pyrolancea, Frentix, Strokar boosters), `caracal_constructed_missile_implants_boosters` (light missile
+damage, rapid launch, projection; Halcyon B-5, Pyrolancea), `vexor_constructed_drone_implants_boosters`
+(drone tuner, Hardpoint booster, Halcyon Y-5 +20 km drone control range), `vedmak_constructed_mimesis_set_spool`
+(Mimesis set on the maximum spool-up). Re-pinned: `punisher_constructed_cap_use_implants` (smartbomb DPS
+9 -> 10 with Energy Pulse Weapons EP-706), `abaddon_constructed_armor_implants_boosters` (drone control
+range 60 -> 76 km, Halcyon Y-4), and `rangeFalloffM` 0 -> 1 on six Precursor / Vorton fits (a missing
+falloff attribute is its SDE default, 1 m, as in pyfa; LESSON #22).
+
+**v2026.10.14.14: expired boosters.** `rupture_constructed_projectile_implants_boosters` is PYFA-VERIFIED from
+Erik's screenshot (284 DPS, 1,048 volley, 1.8 + 14.4 km, EHP 8.72k, speed 262, align 5.71 s, sig 125,
+targeting 62.5 km, scan res 362 mm, sensor 18, capacitor 1.59k GJ). pyfa dropped its Strokar Booster VI (an
+event booster whose last injection date is before pyfa's data dump; `db_update.py` deletes those). The fixture
+keeps the booster in its tally, so the pins also guard the engine's skip of `PYFA_REMOVED_IMPLANT_IDS`;
+`compare_implants.py` and the oracle drop the same boosters (`pyfa_sde.pyfa_removed_types`).

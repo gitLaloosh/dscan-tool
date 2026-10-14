@@ -297,7 +297,7 @@ function damageTypesFromText(fragment) {
 // Bonuses text -- see splitTraitsSections above), and flags ones that look
 // mode-conditional (T3 Destroyer-style "while Sharpshooter Mode is enabled"
 // lines, which the original human audit confirmed must be EXCLUDED -- those
-// are modeled separately via TACTICAL_DESTROYER_MODE_BONUS, not
+// are modeled separately via MODE_EFFECT_ROWS (index.html), not
 // SHIP_ROLE_BONUS). Per-level scaling is NOT decided here -- it's decided by
 // the caller based on which block this text came from (see fetchShipTraitsTuples).
 // CONFIRMED LIVE 2026-10-09: the first draft's trailing-context group

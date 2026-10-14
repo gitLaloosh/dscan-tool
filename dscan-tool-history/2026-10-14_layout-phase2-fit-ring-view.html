@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-14 — Layout Phase 2: the fit ring and the Ring / List switch</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Layout Phase 2: the fit ring and the Ring / List switch</h1>
+<p><span class="tag">Layout</span><span class="tag">Feature</span> 2026-10-14 &middot; <code>v2026.10.14.15</code> &rarr; <code>v2026.10.14.16</code> &middot; Erik: "both with a switch like workbench", then "ok next" after Phase 1.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Ring view</b> (<code>fitRingHtml()</code>), modelled on EVE Workbench's radial view and the EVE client's fitting window: the ship's render from CCP's image server in the middle, high slots on the top arc, mid slots on the right, low slots at the bottom, rigs then subsystems on the left. One tile per fitted module copy, showing the module's icon (its initials if the image doesn't load).</li>
+<li><b>A tile is the same state button as a list row</b> (<code>button.ms-state</code> with the same <code>data-type-id / data-copy / data-from / data-to</code>, built by <code>moduleStateTileHtml()</code> from the same <code>moduleCopyStates()</code> / <code>nextModuleState()</code>), so <code>wireModuleStateControls()</code> drives both views: a click moves that copy to the next allowed state, hover gives the name, state and any reason a state is skipped. Rigs and subsystems are fixed, as in the list.</li>
+<li><b>State on a tile:</b> cyan border and glow = active, grey = online, dashed and greyed icon = off, rigs and subsystems amber; plus the list's state dot in the corner (filled / hollow / dashed), so colour is never the only cue.</li>
+<li>Charges and scripts in the racks are listed under the ring ("Loaded Gleam M ×6"); drones, fighters, implants, boosters and cargo stay as lists below it (<code>moduleListWithStatesHtml(f, idToName, {skipSlots: true})</code>).</li>
+<li><b>Ring / List switch</b> at the top of the Fit card (both analyzers). The choice is remembered in this browser (<code>localStorage</code> key <code>dscanFitView</code>, kept in memory if storage is blocked). With no choice yet, screens 600 px and wider start on the ring and phones on the list, as Workbench advises.</li>
+<li><b>Tile size</b> (<code>fitRingGeometry()</code>): one angular step for the whole fit from its fullest arc (at most 70&deg; per arc, 13&deg; between tiles) and the largest tile that doesn't touch its neighbour. A full eight-slot rack gives ~6% tiles (29 px on a 480 px ring), frigate racks the 8.4% maximum. Everything is a percentage of the ring, so it scales with its column.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Full output diff v.15 &rarr; v.16: <b>0 of 214 fits differ</b> (presentation only). Suite ALL PASS, parse tests 293/293, update-check chain all OK.</li>
+<li><code>tools/page_checks/layout_check.py</code> extended, at 1440 / 1100 / 375 px: default view (ring, ring, list); a Legion with full 8/8/8 racks, 3 rigs and 4 subsystems gives 31 tiles, <b>0 overlapping</b>, all inside the ring; loaded charges listed; no sideways scrolling; a tile click recalculates (Hecate 755 &rarr; 604 DPS) and the state carries over to the list; the list shows the same number of module rows as the ring has tiles; the List and Ring choices both survive a reload; no page errors. <b>FAILURES: 0</b> (Phase 1 checks included); v.15 fails it (no switch).</li>
+<li>Screenshots with pyfa's own icon and render files standing in for CCP's image server (not reachable from the sandbox) looked at for the Legion stress fit and a Hecate at 1440, 1100 and 375 px.</li>
+</ul>
+
+<h2>Found on the way</h2>
+<ul>
+<li>The first spacing put eight tiles 8.4% apart along each 80&deg; arc with 7.6% tiles. That is enough along the arc, but upright square tiles near the diagonals overlap unless they are a full tile apart on the worse axis: the full-rack fit had 10 overlapping pairs. Fixed by sizing from <code>chord &times; cos(half-span)</code> and narrowing the arcs to 70&deg;.</li>
+</ul>
+
+<h2>Next</h2>
+<ul><li>Phase 3 (v.17): collapsible cards with one-line summaries, collapsed by default on phones.</li></ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #33</b> (extended): anything placed by formula is checked at its worst case (here a full-rack fit, every pair of tile rectangles tested), not just on the fit you happen to be looking at.</li>
+<li>Reuse the existing control markup and wiring for a new view of the same data (here the tile is the list's state button), so both views can never disagree on what a click does.</li>
+</ul>
+</body>
+</html>

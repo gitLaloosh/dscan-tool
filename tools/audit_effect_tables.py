@@ -40,14 +40,8 @@ KNOWN = {
     25:    'Capacitor Battery flat capacity add -- handled by the flat-add code path (attr67), not a table row',
     3811:  'T3 subsystem flat capacity add -- handled by the flat-add code path (subsystem attr482), not a table row',
     12924: 'T3D proximityDbuffEffectTacticalDestroyerHP -- value is 0 on every hull in this SDE; nothing to model yet',
-    6063:  'Entosis Link -- "while active" sovereignty module; module-toggle item',
-    6567:  'Networked Sensor Array -- "while active" Capital Sensor Array; module-toggle item',
-    12597: 'Integrated Sensor Array -- "while active" Capital Sensor Array; module-toggle item',
-    4921:  'MJD signature spike -- short burst during activation; shown as a Misc flag, module-toggle item',
-    6208:  'MJFG signature spike -- as MJD',
-    12126: 'Capital MJFG signature spike -- as MJD',
-    8109:  'Signature Suppressor ACTIVE burst (x0.3) -- module-toggle item; the passive x0.9 (8108) is modeled',
-    6581:  "Triage ewCapacitorNeedBonus (+900,000,000%) -- the game's way of blocking EWAR in triage, not a real drain",
+    6567:  'Networked Sensor Array ewCapacitorNeedBonus (+9,999,900%) on EWAR -- modeled as a lockout (EW_LOCKOUT_EFFECTS), not as drain; its other rows are in the tables (v.26)',
+    6581:  "Triage ewCapacitorNeedBonus (+900,000,000%) on EWAR -- modeled as a lockout (EW_LOCKOUT_EFFECTS), not as drain (v.26)",
     6642:  'Doomsday Rapid Firing -- in SKILL_MODULE_ATTR_MODS_AT_V (skill rows are matched separately)',
 }
 found = collections.defaultdict(list)   # (target) -> rows
@@ -97,7 +91,8 @@ for eid, rows in T['SHIP_SENSOR_ATTR_EFFECTS'].items():
 for eid in T['SENSOR_STRENGTH_PERCENT_EFFECT_IDS']:
     for k in ('Radar', 'Ladar', 'Magnetometric', 'Gravimetric'): have[f'ship.scan{k}Strength'].setdefault(int(eid), []).append(('SENSOR_STRENGTH_PERCENT_EFFECT_IDS', None))
 for eid, r in T['SHIP_SHIELD_RECHARGE_EFFECTS'].items(): have['ship.shieldRechargeRate'].setdefault(int(eid), []).append(('SHIP_SHIELD_RECHARGE_EFFECTS', r))
-for eid in list(T['SHIP_SIG_HULL_BONUS_EFFECTS']) + ['2716', '2644', '8108', '6730', '3808', '2029']:
+# v.26: + the active bursts 4921 / 6208 / 12126 / 8109 (SIG_MJD_ACTIVE_EFFECT_ID etc., hand-coded in the signature loop)
+for eid in list(T['SHIP_SIG_HULL_BONUS_EFFECTS']) + ['2716', '2644', '8108', '6730', '3808', '2029', '4921', '6208', '12126', '8109']:
     have['ship.signatureRadius'].setdefault(int(eid), []).append(('signature constants', None))
 # Skill rows are keyed by skill, not effect: compare by (target, skill typeId).
 skillRows = collections.defaultdict(list)

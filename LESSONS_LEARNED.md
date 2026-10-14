@@ -29,14 +29,24 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 
 **Phase 1 — Find every source (before writing any code)**
 
+0. Run `tools/pyfa_update_check.py` (pyfa version, data build, full chain with
+   `--run`). Decide whether the change belongs inside a `PYFA CORE` section
+   (calculation) or outside it (inputs/presentation) — `PYFA_CORE.md`.
+   → #10, #23
 1. List every pyfa handler that touches the stat by **running** them with
    `tools/pyfa_effects.py`. For a table that already exists, run
    `tools/audit_effect_tables.py`. Never use grep or regex for this.
-   → #1, #16, #19
+   Firepower: `tools/audit_firepower.py`. Read every handler error the
+   recorder reports (#28).
+   → #1, #16, #19, #22, #28
 2. For each source, note which **effect** carries it and which **attribute of
    the carrying item** holds the value. Never take a value from memory, trait
-   text or a hand-made table.
-   → #2, #4, #8, #11, #18
+   text or a hand-made table. Then read the stat's SDE attribute record
+   (max/min attribute, default) and follow the value through pyfa to the code
+   that **consumes** it (e.g. `Module.rawCycleTime` → `getCycleParameters()`
+   → `capUse` / `Fit.__generateDrain`; for fighters `Fighter.__init__` →
+   `getDpsPerEffect`), not just to where it is modified.
+   → #2, #4, #8, #11, #18, #20, #24, #26, #29, #31, #32
 3. Treat earlier "fully checked, nothing found" claims as unproven until you
    have re-run the search yourself.
    → #5
@@ -45,8 +55,11 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 
 4. Write or extend a script in `tools/independent_checks/`. Use pyfa's rules
    typed by hand and SDE values only. The script alone must produce every
-   expected number.
-   → #3
+   expected number. When a pyfa piece runs on its own (`eos/capSim.py`),
+   import it unmodified as the reference instead of re-deriving it.
+   `tools/pyfa_fit_oracle.py` runs pyfa's own handlers on a whole fit; check it
+   has no `oracleGaps` for your fits.
+   → #3, #27
 5. Build a constructed golden fit from full SDE records, through the real EFT
    parser, with slot pairing for charges and scripts. Run the suite and
    confirm the fit **fails** on the current build.
@@ -63,7 +76,7 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 7. Gate on dogma effect IDs and read the value from the item's own
    attribute. Keep group names only as a fallback for records without effects.
    When a count depends on module state, count per **effect**, not per item.
-   → #2, #17
+   → #2, #17, #30
 8. Copy `stackingPenalties` and `penaltyGroup` from the recorded handler
    call. Apply one `pyfaPenalizedProduct()` per penalty group.
    → #7, #15
@@ -74,16 +87,22 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 **Phase 4 — Verify and deliver**
 
 10. Run `node --check`, the regression suite (ALL PASS, parse tests too) and a
-    Playwright render of one affected fit.
-    → #12
+    Playwright render of one affected fit. A layout change: also
+    `tools/page_checks/layout_check.py` (desktop, tablet and a real phone width).
+    → #12, #33
 11. Diff the full output of the old and new builds over every golden fit
     (`diffall`). Explain and pin every change with a note. Re-run any table
-    generator or audit script; it must be clean.
-    → #1, #6
-12. Bump the version tag. After writing to the user's machine, byte-verify
+    generator or audit script; it must be clean. Renamed or removed a result
+    field? Move its pins (the checker fails a missing pinned field).
+    → #1, #6, #21
+12. A changed PYFA CORE section: run its `verify` commands
+    (`tools/pyfa_core_manifest.json`), then `check_pyfa_core.mjs --update`. A new
+    difference from pyfa: add it to `DEVIATIONS.md`.
+    → #23, #25
+13. Bump the version tag. After writing to the user's machine, byte-verify
     every file.
     → #13
-13. Record the lesson:
+14. Record the lesson:
     - Add an entry here if the mistake is a new kind.
     - Add a "Lesson for future models" section to the history doc.
     - Add a `// LESSON #n` comment at the code site.
@@ -191,9 +210,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     flat −50% (effect 4902), so HAC MWD sig showed about 2× real.
   - **Earlier:** 12 hulls wrongly thought to lack role bonuses; missing
     Precursor hulls; resist bonuses on 90 hulls that were absent.
+  - **Firepower (`SHIP_ROLE_BONUS`, ~340 hulls), replaced v2026.10.14.3:**
+    - the Leviathan, Komodo and Vigil Fleet Issue got both of their
+      damage-type bonuses on every type (2-3.5x DPS)
+    - the Anhinga got three rate-of-fire bonuses it doesn't have (~3.6x)
+    - the Akoman, Thunderchild and Hydra were missing
+    - no entry knew weapon size or missile family scope
+
+    The generated `SHIP_DAMAGE_MOD_EFFECTS` replaced it; the hand table is
+    now only the fallback for 7 special editions with no SDE effects.
 - **Do this instead:** generate hull bonus tables from the hull's
   `dogma_effects` (#1). If a hull record has effects, don't also apply the old
-  hand table, or the bonus gets counted twice. See `weaponRangeViaEffects`.
+  hand table, or the bonus gets counted twice. See `weaponRangeViaEffects`
+  and `hullHasDamageEffects`.
 
 ## 11. Assuming a hull bonus from memory or trait text
 
@@ -247,6 +276,219 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   race). Gate on the real skill IDs, and check the gate against the SDE for
   every published item it could touch.
 
+## 20. The stat isn't only its modifiers: caps, alternate attributes, and the code that consumes it
+
+- **What happened (fixed v.26):**
+  - Targeting range was never capped. pyfa caps an attribute at the value of
+    its `maxAttributeID` (`modifiedAttributeDict.__calculateValue`);
+    maxTargetRange's is maximumRangeCap (797), default 300,000 m. A Rokh with
+    three scripted Sensor Boosters showed 441 km, titans 312.5 km.
+  - Capacitor drain read a module's cycle from `speed` or `duration` only.
+    pyfa's `Module.rawCycleTime` is the largest of seven attributes
+    (durationHighisGood, four Burst Projector durations). Interdiction
+    Nullifiers (active by default), Signature Suppressor bursts and Burst
+    Projectors used no capacitor.
+- **How it was caught:** modelling the Integrated Sensor Array, whose handler
+  *forces* maximumRangeCap. Following that attribute into pyfa's code led to
+  the cap; asking "what cycle time does pyfa use" for the Suppressor led to
+  `rawCycleTime`.
+- **Do this instead:** for every stat, also read the SDE attribute record
+  (`minAttributeID` / `maxAttributeID`, `defaultValue`) and the pyfa property
+  that reads it (`Module.rawCycleTime`, `Fit.maxSpeed`, ...), not only the
+  effects that modify it.
+- **It happened again one day later (fixed v2026.10.14.1):** the v.26 cycle-time
+  fix read `rawCycleTime` but not the next property pyfa uses,
+  `getCycleParameters()`. Its average cycle is active time + `moduleReactivationDelay`
+  (attr 669), so MJDs, Signature Suppressors, Nullifiers, Assault Damage
+  Controls, Warp Core Stabilizers and Defender Launchers drew roughly 11-25x
+  their real average (2x for an Interceptor's Nullifier, whose role bonus cuts
+  the delay). Four hand derivations in the independent checks had the same gap,
+  so they agreed with the bug (`check_module_states.py`: MJD, ADC;
+  `check_phase3.py`: Suppressor, Nullifier; corrected 2026-10-14). Follow the value all the way to where pyfa CONSUMES it
+  (`capUse`, `Fit.__generateDrain`), not just to where it is computed. Also
+  see #3: pyfa's capacitor simulator is now run directly as the reference.
+- **A third time (fixed v2026.10.14.7): missile range.** The v.17 weapon-range batch
+  followed every handler on missile `maxVelocity` and `explosionDelay`, but not the
+  property that turns them into a range. pyfa's `Module.missileMaxRangeData`:
+  - adds the ship's radius to the flight time
+  - flies whole seconds (two outcomes and the chance of the longer)
+  - counts acceleration at half speed and measures from the ship's surface
+  - caps auto-targeting missiles at `maxFOFTargetRange`
+  The tool used velocity x flight time: up to 580 m long on XL torpedoes, and
+  22 km long on an auto-targeting cruise missile. The reference is now pyfa's
+  own function, lifted unmodified from `module.py` by
+  `tools/independent_checks/check_missile_range.py`. When a pyfa property is
+  self-contained like this, run it instead of re-deriving it (#3).
+
+## 24. "The default ability" vs everything pyfa switches on
+
+- **What happened (fixed v2026.10.14.4):** fighter DPS read one ability, the
+  one ESI marks `is_default` (Attack Missile, pyfa's "Turret Attack"). pyfa's
+  `Fighter.__init__` switches on Attack Missile **and every implemented ability
+  before it** except MWD / Evasive Maneuvers, and `getDpsPerEffect` sums them.
+  Light fighters fire a rocket salvo ("Missile Attack") as well: the tool
+  showed ~40% too little for them, 0 for superiority fighters (Missiles only)
+  and half for long-range heavies. Fighter Support Units weren't applied at all.
+- **How it was caught:** Erik's pyfa screenshot of a constructed Thanatos fit:
+  831 DPS vs the tool's 502. The difference was exactly the Missiles ability
+  (329.7), reproduced to the decimal from pyfa's source.
+- **Why it lasted:** three older fighter goldens (2026-10-08 / 10-11) said
+  "pyfa has no fighter-DPS support at all" and were pinned to hand derivations
+  of the same one-ability model. Nobody opened `eos/saveddata/fighter.py`. A
+  claim about what pyfa does or doesn't do is a source claim (#5): check it in
+  the source.
+- **Do this instead:** for any item with several abilities or effects, read the
+  pyfa class that decides which ones are on (`Fighter.__init__`,
+  `Module` default states) and the method that aggregates them
+  (`getDpsPerEffect`, `getVolley`). The generator now asserts that every
+  damaging ability pyfa switches on by default is modeled.
+
+## 26. Every carrier pyfa runs, not only hulls and modules
+
+- **What happened (found v2026.10.14.5):** the firepower audit (P1) ran pyfa's
+  handlers for hulls and subsystems and concluded "the Anhinga has no rate-of-fire
+  bonus". pyfa also runs the ship's **mode** item (`Fit.mode`, `Ship.__getModeItems`):
+  Tactical Destroyers and the Anhinga always have one, pyfa defaults to the first,
+  and the Anhinga's Primary Mode cuts cruise / torpedo / rapid heavy launcher cycle
+  time to 0.75. The resist audit found it because mode items carry resistance
+  effects too.
+- **Do this instead:** list the carriers pyfa's `Fit.calculateModifiedAttributes`
+  runs (character skills, ship, drones, fighters, boosters, implants, modules with
+  their charges, then the mode) and decide for each one whether it's modelled.
+  `tools/pyfa_fit_oracle.py` runs them all.
+- **Again in v2026.10.14.11 (EWAR, P4):** scripts are carriers too. A Tracking
+  Disruptor's or Sensor Dampener's script modifies its own module (`'self'` rows
+  in `gen_ewar_table.py`): it doubles one strength and zeroes the others. The
+  hand EWAR tables ignored them.
+
+## 28. A recorder error is a handler you didn't record
+
+- **What happened (v2026.10.14.8, speed phase):** the first speed survey ran every pyfa handler
+  through `tools/pyfa_effects.py` and listed 18 "unrelated handler errors". Several of them were not
+  unrelated:
+  - all three cloak effects (`fit.extraAttributes['cloaked'] = True` failed on the stand-in), so
+    the cloak speed penalty was missing
+  - the Helios / Cheetah cloaked-only velocity bonuses (they read `extraAttributes['cloaked']`)
+  - the Triage Module: its EWAR filter couldn't be expressed, and the assertion aborted the whole
+    handler, its speed and mass rows too
+  - Advanced Spaceship Command on capitals and the Capital Ships skill, which read
+    `fit.character.getSkill(...)` and `fit.ship.item.requiresSkill(...)`
+
+  A second bug in the same run: filters are tested on one representative module per
+  (skills, group) signature, but the "does this row reach a module we read" check compared
+  type ids, so it silently dropped every rigging-skill drawback reduction.
+- **Do this instead:**
+  - After any recorder run, read every handler error and decide for each one whether it touches
+    your stat. An error is a dropped handler, not noise.
+  - `run(..., rich=True)` records `fit.character.getSkill`, `fit.ship.item.requiresSkill` and
+    `fit.extraAttributes` reads/writes as values and conditions. Use it, or extend it, instead of
+    letting the handler throw.
+  - Never let one failing filter abort a handler: record the failure and raise only if a row you
+    keep depends on it.
+  - A filter can also fail *silently*: `ProbeItem` had no `getAttribute`, so a filter like
+    Effect2982's `requiresSkill(...) and mod.item.getAttribute('duration')` was always false and
+    looked like "no hits". Since v2026.10.14.11 it returns the item's real base value and records
+    `('hasattr', name)`; `gen_ewar_table.py` fails if such a test matters for the modules it reads.
+  - Compare filter hits by signature when the pool is one type per signature.
+  - The carrier itself can gate a handler silently too (v2026.10.14.12): Effect2298 (Halcyon B /
+    Federation Electronics boosters, high-grade Talon / Grail / Jackal / Spur sets) boosts each scan
+    strength only `if sensorBoost in implant.item.attributes`. The recorder's source item was a plain
+    `Any()`, so `in` was always False and the handler recorded nothing -- no error, just no rows.
+    `compare_implants.py` caught it (a Drake with Halcyon B-4: tool 22.8, pyfa 24.6). `Src.item.attributes`
+    now answers True and records `('cond', 'srcHas', name)`; the generator then requires the gated
+    value's SDE default to be neutral (a carrier without the attribute changes nothing, as in pyfa).
+
+## 31. Find where the input really comes from, and size the job by running it
+
+- **What happened (v2026.10.14.12, implants and boosters):** the backlog item said "Moderate" scope
+  and "killmails carry implants too (zKill flag 89)". Neither was checked when it was written.
+  - Real killmails (zKillboard API in the built-in browser, 2026-10-14) showed a SHIP loss never
+    lists implants: a shuttle loss at 08:07:44 had none, the same pilot's pod 9 s later listed 10, all
+    at flag 89. Boosters appeared on none of ~1,000 pod losses. Designing "apply killmail implants"
+    would have built a Pilot Analyzer path with no data behind it; Erik decided to keep it off
+    (`PILOT_ANALYZER_APPLY_IMPLANTS`).
+  - Running every implant and booster effect through the recorder found ~350 handlers touching nearly
+    every stat (HP, resists, capacitor, speed, sig, sensors, reps, cap use, weapons, drones, warp...).
+    That is a Broad item; it shipped in phases, with the Fit card saying which stats include them.
+- **Do this instead:**
+  - Before designing around an input, look at real data from the source the tool will read (a real
+    killmail, a real paste) and confirm the field is there.
+  - Before sizing a mechanic, run the recorder over every carrier of it and count the stats it reaches.
+  - When a feature ships in phases, say on the page which numbers include it (`IMPLANT_SCOPE_NOTE`),
+    and list the rest in `DEVIATIONS.md`.
+
+## 32. pyfa's database is not the SDE
+
+- **What happened (v2026.10.14.13 → .14):** a Rupture check fit pasted into pyfa showed Boosters (2) for three
+  booster lines, and 284 DPS / 14.4 km falloff where the tool and the oracle said 301 / 15.2 km. pyfa had
+  silently dropped Strokar Booster VI: `db_update.py`, which builds pyfa's database from the SDE, DELETES
+  every booster whose `boosterLastInjectionDatetime` is before the data dump (expired event boosters; 130 of
+  them), and unpublishes items named like abyssal / mutated / _PLACEHOLDER. pyfa's EFT import
+  (`service/port/shared.py fetchItem`) then finds nothing and skips the line without a message. The oracle
+  reads the SDE directly, so it had the booster too; only Erik's real pyfa showed the gap.
+- **Do this instead:**
+  - Treat `db_update.py` as part of pyfa: it filters, renames and patches the SDE (also the T3C subsystem
+    slot count, forced publish flags in `service/market.py`). `pyfa_sde.pyfa_removed_types()` mirrors the
+    removals; the generator, the oracle and the tool all use it (`PYFA_REMOVED_IMPLANT_IDS`).
+  - A count in pyfa's UI that differs from the paste (Boosters (2) for three lines) is a finding, even when
+    every stat on screen looks plausible.
+
+## 33. Check a layout at a real phone width, with mobile emulation
+
+- **What happened (v2026.10.14.15):** Erik reported the tool was "difficult to see and read on mobile". Every
+  earlier page check was a desktop screenshot, so nobody had seen that `index.html` had **no viewport meta tag**:
+  a phone drew it as a ~980 px desktop page shrunk to fit, with the browser's text inflation enlarging some text
+  and not other text. Adding `<meta name="viewport" content="width=device-width, initial-scale=1">` alone made
+  it readable; the only real overflow left was a drone row's numbers (`.ds-meta{flex:none}`).
+- **How it was caught:** loading the page in Chromium at 375 px with `is_mobile=True` (Playwright) and
+  listing every element whose right edge passes the viewport.
+- **Do this instead:**
+  - Any change to page layout runs `tools/page_checks/layout_check.py` (1440 / 1100 / 375 px, mobile
+    emulation at 375): no sideways scrolling, the expected columns, every control still wired.
+  - A plain narrow desktop window is not a phone: without `is_mobile` the viewport tag, text inflation
+    and touch sizes are never exercised.
+  - When markup moves, every control that re-renders it moves too. v.15 put the summary cards and the Fit
+    card in one container, so each control (mode, ASB charges, module states, drones) now rebuilds that
+    container and re-wires all of them; the check clicks each one at each width.
+  - Anything placed by formula is checked at its worst case. v.16's ring first spaced eight tiles per
+    arc by their distance along the arc (8.4% apart, tiles 7.6%), but upright square tiles near the
+    diagonals overlap unless they are a tile apart on the worse AXIS: a full 8/8/8 fit had 10 overlapping
+    pairs. The check now builds a full-rack fit and tests every pair of tile rectangles.
+  - Test with the longest real strings (v.17, Erik: "test how large strings will affect layout"): the
+    longest SDE names per category, a long fit name with and without spaces, an unrecognized line, a
+    37-character pilot name. Two things only that showed: (1) **one long word** doesn't grow its element's
+    box, it runs out of it, so an element-bounds check passes while the text spills -- check the text runs
+    (`Range.getClientRects()`); on a phone that one word made the browser zoom the whole page out to ~980px.
+    (2) a **flex or grid item** keeps its min-content width, so `overflow-wrap:break-word` doesn't help it:
+    it needs `min-width:0` and `overflow-wrap:anywhere`; and a fixed-width side column (the 130px range
+    column) squeezes the name next to it to a few letters per line, which no overflow check catches --
+    look at the screenshot.
+  - An ellipsis is hidden information, not a fix (v.18): the collapsed cards' one-line summaries were
+    first cut with `text-overflow:ellipsis`; on a phone the Navigation summary lost its last numbers.
+    The text-run check flags clipped text too; summaries now wrap.
+
+## 29. pyfa's gaps are not the game's rules, and a control must change something
+
+- **What happened (v2026.10.14.9 → .10, bug list #2):** the PANIC on a Rorqual offered only offline
+  and online. That matched pyfa exactly: pyfa has no `Effect6719` handler class, so
+  `Item.isType('active')` is false and `Module.isValidState` refuses ACTIVE. CCP's data does make
+  it an activated module, so v.9 allowed ACTIVE as an input deviation. But pyfa computes nothing
+  for it, so ACTIVE changed no number on any card, and Erik pointed out that a user who sets it
+  and sees nothing change will think the tool is broken. v.10 took the option back out and kept
+  the description on the EWAR / Misc card. The same flag also quoted the base 4-minute duration;
+  pyfa applies the Invulnerability Core Operation skill (Effect6807, +10%/level), so at All V it
+  is 6 minutes.
+- **Do this instead:**
+  - When a player says something exists in game and pyfa disagrees, check CCP's data (the SDE
+    effect's category and duration attribute, the item description).
+  - If pyfa doesn't model it, don't add a control that changes nothing. Describe the mechanic in
+    words where it matters (a Misc flag) and say the stats don't include it. Ask before adding an
+    input whose only effect is a label.
+  - Any number a flag quotes goes through pyfa's handlers at All V like every other stat
+    (`tools/pyfa_fit_oracle.py`), not straight from the item's base attribute (#20).
+  - Keep the scan (`check_panic.py`) in the update check so a pyfa handler appearing, or a new
+    module like this, is caught.
+
 # Phase 2 — Deriving the expected values
 
 ## 3. Checking the tool against itself
@@ -264,6 +506,12 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   - The script must reproduce the pinned value **by itself**. A manual
     adjustment in a golden-fit note (the Executioner scram role bonus) means
     the script is incomplete.
+  - When a piece of pyfa runs without the rest of pyfa, run it instead of
+    re-deriving it. `eos/capSim.py` is pure Python: `tools/cap_sim_oracle.py`
+    imports it unmodified, and `regression_suite/compare_cap_sim.mjs` checks
+    the JS port against it on every golden fit (v2026.10.14.1). Compare after
+    rounding pyfa's raw values the JS way; Python's `round()` rounds halves
+    to even.
 
 ## 6. Trimmed golden-fit records hid effects
 
@@ -277,8 +525,23 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   - The Vargur fixture's ship record had no scan-strength attributes, so the
     Bastion sensor fix showed 0 → 0 there. That was also true of 4 others
     (Legion, two Curses, Skybreaker).
+  - The `ishtar_alyra` fixture had no **group** record for its X-Large
+    Shield Booster, so the engine dropped the module entirely. For months
+    the pin said capacitor stable 96.9% while the real page and Erik's pyfa
+    screenshot both said 40.5%. The gap was blamed on the capacitor model
+    (a closed form, then a simulator) until v2026.10.14.1 made the
+    simulator match pyfa exactly, which left the inputs as the only
+    remaining cause (fixed 2026-10-14).
 - **How it was caught:** a fix changed a number you'd expect to change, or
-  failed to change one you'd expect to.
+  failed to change one you'd expect to. The Ishtar was caught by running the
+  same fit as an EFT paste (full SDE records) and comparing it with the
+  fixture.
+- **Guard:** `run_regression.mjs` now fails any fitted item, drone or
+  fighter whose type or group record is missing from its fixture (cargo and
+  fleet hangar are exempt).
+  `tools/refresh_golden_fixtures.py` refreshes every record from the SDE;
+  in report mode it must print `0 of N fits change` (all 161 refreshed
+  2026-10-14).
 - **Do this instead:** build fixtures from full SDE records, through the real
   `parseEftFit()` (`run_eft.mjs`) or a real killmail. Add slot pairing
   (`midSlotByFlag`, `highSlotByFlag`) whenever charges or scripts are fitted.
@@ -294,7 +557,14 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     pyfa.
   - **Rorqual shield rep:** the gap was the pilot's boosters (drugs), not a
     bug.
-- **Do this instead:** break pyfa's number into its parts first. Ask for the
+  - **Curse disruptors (found v2026.10.14.11):** the 2026-10-11 pyfa check
+    (-29.5% on all three Tracking Disruptor values) was made on a fit with no
+    scripts. The golden fit is the killmail, whose disruptors carry Optimal
+    Range Disruption Scripts: pyfa gives -59.1% / -59.1% / 0% for it. The pin
+    said "pyfa-verified" for a fit pyfa never saw.
+- **Do this instead:** break pyfa's number into its parts first. A pyfa number
+  verifies only the exact fit pyfa was given (modules, charges, scripts,
+  states); write that fit next to the pin. Ask for the
   per-module values or a screenshot of module states before calling it a bug.
 
 ## 10. Different game data versions
@@ -306,7 +576,106 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Do this instead:** check pyfa's data build (Help → About, or `eve.db`)
   before diagnosing a small difference on a specific module.
 
+## 22. Auditing pyfa: missing attributes, split bonuses, unpublished hulls
+
+- **What happened (firepower audit, 2026-10-14):** the first runs of
+  `tools/audit_firepower.py` reported about 160 mismatching hulls. Most were
+  the audit's own mistakes:
+  - **A missing attribute was read as 0.** pyfa's `getModifiedItemAttr`
+    returns the attribute's **default** when an item lacks it.
+    `fighterLightDamageMultiplier` defaults to 1, so reading 0 invented a −100%
+    light-fighter penalty on every carrier.
+  - **One bonus, many effects.** pyfa splits one bonus by damage type (Kestrel:
+    four effects, one per type) or by launcher family (Raven: cruise, torpedo,
+    rapid heavy). Counting rows one by one made matching bonuses look like
+    duplicates.
+  - **Charge filters that test the launcher.** Some missile bonuses check the
+    fitted launcher, not the charge. Test charges against every launcher group.
+  - **Damage-type boosts on drones.** The Griffin Navy Issue's −70% drone
+    malus is applied to em/thermal/kinetic/explosive damage, not
+    `damageMultiplier`.
+  - **Unpublished hulls.** Special-edition hulls are unpublished but still
+    fly and appear on killmails. Audit every hull, not only published ones.
+- **Do this instead:** before trusting an audit's mismatch list, open three
+  or four mismatches by hand (pyfa source + SDE values). If they share a
+  cause, fix the audit first. Read absent attributes as their SDE
+  `defaultValue`.
+
+- **Both directions (v2026.10.14.13):** the tool read a Precursor or Vorton weapon's missing `falloff` as 0;
+  pyfa reads the SDE default 1 (shown as 1 m, 1.25 after Trajectory Analysis). And the reverse trap, in a
+  check: `damageMultiplierBonusMax` defaults to 0.5 on EVERY item, so a DPS check that multiplied by
+  `1 + damageMultiplierBonusMax` gave every turret +50% (the Rifter came out 288 against pyfa's verified 192).
+  pyfa's `calculateSpoolup` returns 0 unless the per-cycle value is set too. Read the defaults, then read
+  the code that consumes the value: pyfa often guards a defaulted attribute there.
+
+## 27. A reference that swallows errors like pyfa hides its own gaps
+
+- **What happened (v2026.10.14.6):** the new mode comparison found every laser
+  cap need 25% higher in the tool than in `pyfa_fit_oracle.py` (2.081 vs 1.665 GJ
+  for Small Focused Pulse Laser II with Conflagration). The **oracle** was wrong.
+  pyfa's crystal effect (`ammoInfluenceCapNeed`) calls `module.item.getAttribute`,
+  which the oracle's stand-in item didn't have. The `AttributeError` was swallowed,
+  as pyfa swallows them in effect handlers, so the handler silently did nothing.
+  The same check found two more oracle gaps:
+  - ships had no `mass` (pyfa's `db_update.py` copies mass / capacity / volume /
+    radius from the type row into the attributes), so align time came out 0 and
+    propulsion speed huge
+  - a slot listing its charge before its module lost the pairing, so two of four
+    lasers had no crystal and the charges ran as modules
+  `compare_resists.py` had passed on all 183 fits, because none of these touch a
+  resistance.
+- **Do this instead:**
+  - When the tool and the reference disagree, debug **both** sides. A reference
+    is code too.
+  - The oracle records every `AttributeError` that names one of its own
+    stand-in classes in `fit.oracleGaps`. Over every golden fit there must be
+    none. Scan for `_Any` fallbacks too (`Item` / `OracleFit.__getattr__`), and
+    implement any that a handler really uses.
+  - Compare on more stats than the one being changed. The capacitor drains in
+    `compare_modes.py` caught the crystal gap, which had nothing to do with modes.
+  - A stand-in can also *hang* (v2026.10.14.12): Effect2589 tests `attr in booster.itemModifiedAttributes`.
+    The oracle's `Attrs` had `__getitem__` but no `__contains__`, so Python fell back to calling
+    `__getitem__(0)`, `(1)`, ... forever. pyfa's `ModifiedAttributeDict` defines `__contains__` /
+    `__iter__`; the stand-in now does too. A check that never finishes is a stand-in gap.
+  - A check that **re-builds** the reference fit must carry every input of the original.
+    `compare_speed.py` and `compare_modes.py` rebuilt `OracleFit` from `oracle_for()`'s modules and
+    dropped its implants: the Rorqual's align came out 294.8 s in the "reference" against the tool's
+    280.3 s, which is Erik's pyfa number. The check was wrong, not the tool.
+
 # Phase 3 — Implementing
+
+## 23. pyfa math and tool choices mixed together
+
+- **What happened:** the engine was one 3,300-line function in which pyfa
+  formulas sat next to the tool's own choices (assumed charges, drone
+  selection, EWAR lockout). Hand tables drifted from pyfa unnoticed (Leviathan,
+  Anhinga), the stacking helpers used a rounded penalty table, and nothing
+  told a later edit "this line is pyfa — don't adapt it for the tool".
+- **Do this instead (2026-10-14):** pyfa-replicating code lives inside
+  fingerprint-locked `PYFA CORE` sections (`PYFA_CORE.md`); the suite fails
+  if one changes without re-verification. Tool behaviour changes the inputs
+  or the presentation, never the core. Deliberate differences go in
+  `DEVIATIONS.md`. Start every session with `tools/pyfa_update_check.py`.
+
+## 25. A locked "port" that wasn't, and pooling that lost three rules
+
+- **What happened (fixed v2026.10.14.5):** the resistance code pooled modules its
+  own way: hardeners in one penalized list, Damage Control, Bastion and the Reactive
+  Armor Hardener each as a separate unpenalized layer, Compensation skills at 20%.
+  pyfa (and the game) put Damage Control, Bastion and the RAH in one `preMul`
+  stacking group, and the Compensation skills give 5%/level. The RAH simulation was
+  fenced as a PYFA CORE "port", but it wasn't pyfa's Effect4928: no 50-cycle limit,
+  no 1e-6 loop tolerance, no 3-decimal rounding, run before other modifiers. The
+  lock only proves a section hasn't changed since someone said it was right.
+- **How it was caught:** `tools/pyfa_fit_oracle.py` runs pyfa's own handlers on a
+  whole fit with a hand port of `__calculateValue`. Run over every golden fit, it
+  matched Erik's pyfa screenshots and differed from the tool on 18 fits.
+- **Do this instead:** don't reimplement pyfa's attribute bookkeeping per module
+  type. Generate the handler rows (target, operation, source attribute, stacking
+  group) and compute the attribute the way `modifiedAttributeDict` does: forced >
+  base x unpenalized x each penalty group on its own, capped. Before locking a
+  "port", compare it line by line with the pyfa function, and run it against the
+  oracle on every golden fit (`compare_resists.py`).
 
 ## 7. Wrong stacking penalties
 
@@ -373,6 +742,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   keyed by effect. Use the per-item `itemQty(dt)` only for code keyed by
   group/attribute, and check that list of mixed modules for each such branch.
 
+## 30. A name that resolves is an item, not necessarily the right kind of item
+
+- **What happened (v2026.10.14.9, bug list #1):** an EFT fit pasted into the D-Scan box was
+  "analyzed": every module line resolved to a real type id through ESI, so modules were listed
+  as contacts. Resolution only proves the name exists.
+- **Do this instead:**
+  - Check the input's shape first (an EFT header is never a D-Scan row) and say plainly what
+    it is and where it belongs.
+  - After resolving, check the category is one that can actually appear there (no module,
+    skill, implant or subsystem is ever an object in space).
+  - Test a new input check against every real paste in the parse tests, starting at every row,
+    so it can't misread a real scan.
+
 # Phase 4 — Verifying and delivering
 
 ## 12. `node --check` passes, the page still breaks
@@ -386,5 +768,25 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 
 - **What happened:** a commit reported success but the file never reached the
   user's disk (2026-10-08).
-- **Do this instead:** after every write to the user's machine, list the file
-  and compare its size and mtime with the source.
+  It happened again on 2026-10-14: CLAUDE.md was edited and committed from the
+  same `stagedPath` used for an earlier commit; the bridge wrote the EARLIER
+  content (new mtime, old size), and a listing glance didn't catch it.
+- **Do this instead:** after every write to the user's machine, stage the file
+  back and byte-compare it (`cmp`) with the source; at minimum compare the
+  size, not just the mtime. Commit each revision from a fresh path (or a new
+  SendUserFile `file_uuid`), never re-use a `stagedPath` already committed.
+
+## 21. A renamed result field silently turned its pins into no-ops
+
+- **What happened (fixed v.27):** the regression checker skipped any pinned
+  field missing from the result. Removing the capacitor's `combinedConfident`
+  tier would have turned the Rorqual's pyfa capDelta pin into a no-op, with
+  the suite still printing ALL PASS. Moving a "time to empty" pin from a
+  newly stable fit would have done the same.
+- **How it was caught:** re-pinning by hand after the change, and noticing that
+  v.26 failed only 10 checks against the new goldens because the new fields
+  didn't exist there.
+- **Do this instead:** the checker now FAILS a pinned field that isn't in the
+  result. When you rename or remove a result field, grep `golden_fits.json`
+  for its flattened name and move every pin.
+

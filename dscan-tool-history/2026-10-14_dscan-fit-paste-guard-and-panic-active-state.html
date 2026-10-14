@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — D-Scan fit-paste guard and PANIC active state</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>D-Scan fit-paste guard and PANIC active state</h1>
+<p><span class="tag">Bug fix</span><span class="tag">UI</span><span class="tag">Deviation</span> 2026-10-14 &middot; <code>v2026.10.14.8</code> &rarr; <code>v2026.10.14.9</code> &middot; Erik's bug reports from the new <code>todo-inbox\new-bugs.txt</code> (bug list #1 and #2); Erik: "yes" to fixing both</p>
+
+<p style="background:#fff3cd;padding:8px 12px;border-radius:3px;"><b>Superseded in part by v2026.10.14.10</b> (<code>2026-10-14_panic-active-option-removed-and-duration-fix.html</code>): the PANIC's Active option was taken back out (it changed no number), and the flag's duration corrected from 4 to 6 minutes. The D-Scan fix below stands.</p>
+<h2>Bug #1: an EFT fit pasted into the D-Scan box</h2>
+<p><b>Report:</b> pasting an EFT fit into the D-Scan Analyzer and submitting it listed several modules as contacts, instead of saying the paste wasn't a scan.</p>
+<p><b>Reproduced</b> on the real page (Playwright, ESI served from the SDE) with a Rifter EFT: "Done — 7 type(s) recognized", with Damage Control II, 400mm Steel Plates II, the MWD, scram, web and rigs each shown as a "not a ship" contact card.</p>
+<p><b>Cause:</b> the D-Scan tab sends every line's text to ESI's name resolver. Every module name is a real item, so every one resolved. Nothing checked what kind of item it was.</p>
+<p><b>Fix (presentation and input handling only, no calculation):</b></p>
+<ul>
+<li><code>detectFitPaste()</code>: if the first non-empty line is an EFT header (<code>[Ship, Fit name]</code>, the same regex <code>parseEftFit()</code> uses, now the shared constant <code>EFT_HEADER_RE</code>) and has no tab, the tab stops before any lookup. It shows "That's a ship fit (EFT format, Rifter), not D-Scan results" and a button, <b>Analyze it in the Fit Analyzer</b>, that moves the paste to the Fit Analyzer and runs it. A real D-Scan row is tab-separated, so it can't match.</li>
+<li><code>NOT_IN_SPACE_CATEGORY_IDS</code>: lines that resolve to a category that can never be an object in space are set aside as "Fitting items" instead of contacts, with a hint pointing to the Fit Analyzer. Categories from the SDE (<code>categories.0.json</code>): Module 7, Blueprint 9, Skill 16, Implant 20, Apparel 30, Subsystem 32, Structure Module 66, SKINs 91, Expert Systems 2100. Charges (8) are deliberately not listed, because scanner probes and bombs are charges and do appear on D-Scan. This covers a module list pasted without its header.</li>
+<li>The status line now counts contact types, and fitting-item lines separately.</li>
+</ul>
+
+<h2>Bug #2: the PANIC has no Active state</h2>
+<p><b>Report:</b> on the Fit card, a Pulse Activated Nexus Invulnerability Core offered only offline and online; it should also offer active.</p>
+<p><b>Finding:</b> the tool matched pyfa exactly. pyfa has no <code>Effect6719</code> handler class (<code>eos/effects.py</code>), so its <code>Item.isType('active')</code> is false and <code>Module.isValidState</code> refuses ACTIVE. CCP's data disagrees: effect 6719 <code>moduleBonusIndustrialInvulnerability</code> is an activation effect (effectCategory 1) with a duration attribute (2788 <code>panicDuration</code>, 240 s), and the item description says it makes the Rorqual and its fleet's subcapital mining and hauling ships nearly invulnerable for a short time. Erik is right about the game.</p>
+<p><code>tools/independent_checks/check_panic.py</code> (new, in the update-check chain) scanned every published module for this pattern: <b>the PANIC is the only one</b>. It also ran pyfa's handlers on a Rorqual with no PANIC, PANIC online and PANIC active: identical attributes in all three, because pyfa computes nothing for it.</p>
+<p><b>Fix:</b></p>
+<ul>
+<li><code>ACTIVATABLE_WITHOUT_PYFA_HANDLER_EFFECTS = {6719}</code> lets <code>moduleCanBeActive()</code> accept it. This is an <b>input</b> deviation (listed in <code>DEVIATIONS.md</code>); setting it active changes no number.</li>
+<li>It defaults <b>online</b> (added to <code>MODULE_DEFAULT_ONLINE_EFFECTS</code>): a one-use, 4-minute emergency button, the same reasoning as Erik's D3 for MJDs and cloaks. The golden oracle's default list matches.</li>
+<li>New <code>MISC_TRAIT_EFFECT_INFO</code>, keyed by effect id (the PANIC's group, "Super Weapon", is shared with doomsdays, so the group-name table couldn't be used). The EWAR / Misc card now flags a fitted PANIC: what it does within its range (attr 54, 200 km) for its duration (attr 2788, 4 min), both read from the item; that the ships can't deal damage, warp, dock, cloak or jump while it runs; one use, then it burns out; and that the stats don't include it. Set active, the flag reads "RUNNING". This also closes the architecture backlog item "PANIC Misc flag".</li>
+</ul>
+<p>Real page: the PANIC button cycles online &rarr; active &rarr; offline &rarr; online; the flag switches to RUNNING when active and disappears when offline.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>Expected values written before the code: the parse-test cases and <code>check_panic.py</code> (0 problems).</li>
+<li><code>dscan_parse_tests.mjs</code>: 293/293 (was 280). New: 11 fit-detection cases, both real pastes tested from every one of their 257 starting rows (0 misread as a fit), and the category check. v.8 fails them.</li>
+<li>Two constructed golden fits (196 total), both failing on v.8: <code>rorqual_constructed_panic_default_online</code> and <code>rorqual_constructed_panic_requested_active</code>. All 218 output fields of the two are identical except the PANIC's state and the flag wording; speed 75 m/s = pyfa.</li>
+<li>Full output diff v.8 &rarr; v.9 over every golden fit: 4 fits differ, all PANIC fits (the two new ones and Erik's two Rorqual pyfa fits, which gain the flag and the active option). No stat changed.</li>
+<li>Regression suite ALL PASS; update-check chain 17/17 OK (new step: PANIC check); PYFA CORE lock unchanged (16 sections; the v.8 history doc said 17 by mistake and was corrected).</li>
+<li>Real page (Playwright): EFT, module list, a real D-Scan sample and a single ship name in the D-Scan box; the Fit Analyzer hand-off button; the PANIC toggle and flag.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #29, pyfa's gaps are not the game's rules.</b> "Matches pyfa" was true and still wrong. When a player says something exists in game and pyfa disagrees, check CCP's data. If pyfa simply doesn't model it, change the input, never invent numbers, describe the mechanic in words, list the deviation, and keep a scan in the update check.</li>
+<li><b>LESSONS_LEARNED #30, a name that resolves is an item, not necessarily the right kind of item.</b> Check the input's shape first, check the resolved category belongs there, and test a new input check against every real paste from every starting row.</li>
+</ul>
+</body>
+</html>

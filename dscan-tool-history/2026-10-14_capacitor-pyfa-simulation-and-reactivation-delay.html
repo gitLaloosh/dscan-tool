@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Capacitor: pyfa's simulation + reactivation delay</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Capacitor: pyfa's simulation + reactivation delay</h1>
+<p><span class="tag">Bug fix</span><span class="tag">Feature</span> 2026-10-14 &middot; <code>v2026.10.13.27</code> &rarr; <code>v2026.10.14.1</code> &middot; Erik: "go ahead with both"</p>
+
+<h2>1. Reactivation delay (bug fix)</h2>
+<p><b>The bug.</b> pyfa averages a module's cap use over its active cycle <i>plus</i> its reactivation delay (<code>moduleReactivationDelay</code>, attribute 669). The tool divided by the active cycle only.</p>
+<p><b>pyfa source.</b></p>
+<ul>
+<li><code>eos/saveddata/module.py</code> <code>getCycleParameters()</code>: <code>averageTime = activeTime + inactiveTime</code>.</li>
+<li><code>capUse</code> divides cap need by that average time.</li>
+<li><code>Fit.__generateDrain()</code> feeds <code>fullCycleTime = cycleTime + reactivationTime</code> to the simulator.</li>
+</ul>
+<p><b>Modifiers of the delay</b> (from the recorder):</p>
+<ul>
+<li>Interceptor role 8120: &minus;80% on Interdiction Nullifiers.</li>
+<li>Command Destroyer roles 6845 / 7210: on Defender Launchers.</li>
+</ul>
+<table>
+<tr><th>Module</th><th>Before</th><th>After</th></tr>
+<tr><td>Large MJD (active)</td><td>87.3 GJ/s</td><td>4.16 (786 / (9 s + 180 s))</td></tr>
+<tr><td>Signature Radius Suppressor I burst</td><td>44.0</td><td>4.0 (660 / (15 s + 150 s))</td></tr>
+<tr><td>Interdiction Nullifier II, Crow</td><td>1.67</td><td>0.83 (50 / (30 s + 30 s))</td></tr>
+<tr><td>Assault Damage Control II burst</td><td>3.46</td><td>0.22</td></tr>
+<tr><td>Warp Core Stabilizer II (active by default)</td><td>5.33</td><td>0.48</td></tr>
+</table>
+<p><b>Re-pinned:</b></p>
+<ul>
+<li>Vargur Bastion online + MJD active: 123.3 &rarr; 40.2</li>
+<li>Rifter ADC active: 5.0 &rarr; 1.7</li>
+<li>Raven Suppressor: 44 &rarr; 4.0</li>
+<li>Raven Suppressor + MJD: 8.2</li>
+<li>Crow Nullifier: 1.7 &rarr; 0.8</li>
+<li>Crow role-bonus fit: 2.9 &rarr; 2.0</li>
+<li>Caracal with WCS: 8.9 &rarr; 4.1</li>
+</ul>
+<p>Independent check: <code>tools/independent_checks/check_reactivation_delay.py</code>.</p>
+
+<h2>2. pyfa's capacitor simulation (replaces the averaged model)</h2>
+<p><b>What it does.</b> The stable % and time to empty now come from <code>capSimPyfa()</code>, a line-by-line port of pyfa's <code>eos/capSim.py</code>, run the way <code>Fit.__runCapSim()</code> runs it:</p>
+<ul>
+<li>identical modules are staggered (turrets are not);</li>
+<li>Capacitor Boosters inject only when the capacitor needs it, with clip and reload;</li>
+<li>reload is off for everything else (pyfa's default);</li>
+<li>the run lasts 6 hours, starting full.</li>
+</ul>
+<p>The displayed value is pyfa's (lowest level + level before activations) / 2. When the capacitor goes negative, it shows the time of that activation instead.</p>
+<p><b>Inputs.</b> The engine builds a per-module drain list for each case it shows (best case, ASB out of charges, without boosts, confirmed charges, charge range). Each entry has cycle + reactivation delay, cap need after skills (weapons: after rate-of-fire skills and the loaded charge), turret yes/no, and the Capacitor Booster injectors. These lists are exposed as <code>capacitor.simInputs</code>. Identical lists are simulated once.</p>
+<p><b>The old formula is kept on hover.</b> pyfa calls it "EVE's stability value" (computed, never displayed). Hovering the ring shows it for anyone comparing with the in-game fitting window.</p>
+<p><b>One deliberate difference from pyfa.</b> pyfa's injector code takes <code>max()</code> of an empty list in one branch, which would crash. The port uses the evident intent: the injector that gives the most. This branch never ran in 1,683 comparisons.</p>
+
+<h2>Effect on existing fits (v.27 &rarr; v2026.10.14.1)</h2>
+<ul>
+<li>83 of 161 fits changed stable % or time to empty. None flipped between stable and unstable, and no Weaknesses flag changed.</li>
+<li>The biggest moves are fits whose Capacitor Booster used to count as a steady trickle:
+  <ul>
+  <li>Vexor (Cap Booster 800): 84.3% &rarr; 49.4%</li>
+  <li>Megathron (popejoy): 100% &rarr; 56.8%</li>
+  <li>Dominix Navy Issue: 100% &rarr; 39.9%</li>
+  <li>Ishkur: now stable at 0.1%, with its largest compatible charge assumed &mdash; the injector fires only when an activation would otherwise fail</li>
+  <li>Curse: empties at 54 s instead of 86.3 s (its neutralizers' big activations land early)</li>
+  </ul></li>
+<li>Many plain fits moved by tenths of a percent.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b>pyfa's own simulator as the reference.</b> <code>tools/cap_sim_oracle.py</code> imports pyfa's unmodified <code>eos/capSim.py</code>. Every comparison below had <b>0 mismatches</b>:
+  <ul>
+  <li><code>regression_suite/compare_cap_sim.mjs</code> runs every golden fit's three cases through both: 483 simulations, 109 of them unstable.</li>
+  <li>Two randomized batches of 600 drain lists each, with and without injectors and clips, mostly unstable and mostly stable.</li>
+  </ul>
+  Values are compared after rounding pyfa's raw numbers the JavaScript way (Python's <code>round()</code> rounds halves to even).</li>
+<li><b>Hand-built drain lists run through pyfa's simulator</b> (<code>tools/independent_checks/check_cap_sim.py</code>, which reads nothing from index.html):
+  <ul>
+  <li>Curse: 54.0 s with its booster, 30.0 s without.</li>
+  <li>Hawk ASB: stable 95.9% charged, 9.0 s out of charges.</li>
+  </ul>
+  Pinned, with notes.</li>
+<li><b>Suites:</b> 161/161 fits pass; v.27 fails 16 checks of the new set. Parse tests 280/280; <code>node --check</code> clean.</li>
+<li><b>Speed:</b> the full suite runs in 1.6 s. The heaviest single simulation (a stable fit with an injector, which can't use pyfa's repeat shortcut) takes about 50 ms.</li>
+<li><b>Playwright, real page:</b> capacitor card on Vexor, Hawk (ASB click) and the no-charge Vexor; Fit Analyzer, Pilot Analyzer, module states, drones and tactical modes. No console errors.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSONS #20 happened again, one day later. The v.26 fix followed the cycle time to <code>rawCycleTime</code> but stopped there. The next pyfa property, <code>getCycleParameters()</code>, adds the reactivation delay, and four hand derivations in the independent checks had the same gap (<code>check_module_states.py</code>: MJD, ADC; <code>check_phase3.py</code>: Suppressor, Nullifier), so they agreed with the bug. They were corrected afterwards, and the lesson was added to the checklist (steps 2 and 4) and to #3. Follow a value to where pyfa <i>consumes</i> it (<code>capUse</code>, <code>Fit.__generateDrain</code>), not just to where it is computed. When pyfa has a standalone piece like <code>capSim.py</code>, run it as the reference instead of re-deriving it by hand.</p>
+
+<h2>Not changed</h2>
+<ul>
+<li>The Ishtar (Alyr'a) fit still shows about 97% where Erik's older pyfa screenshot said 40.5%. The simulator isn't the cause, since it matches pyfa exactly on the same inputs. Most likely the inputs differ: which modules pyfa had active, or the older game data.</li>
+<li>The "Net cap rate" line still shows the simple average (recharge &minus; drain + injection), with text saying the state above comes from the simulation.</li>
+</ul>
+</body></html>

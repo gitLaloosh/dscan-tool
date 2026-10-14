@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — PYFA CORE lock, deviations list, pyfa update check</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>PYFA CORE lock, deviations list, pyfa update check</h1>
+<p><span class="tag">Process</span><span class="tag">Tooling</span> 2026-10-14 &middot; <code>v2026.10.14.1</code> &rarr; <code>v2026.10.14.2</code> (no calculation change)</p>
+<p>Erik: "does the code have any mechanism for walling off code that is meant to directly replicate calculations being performed by pyfa that should NOT be changed directly for the purpose of being used by the tool differently?" He suggested: "1. wall off pyfa code from changes outside of pyfa version changes. 2. determine process for identifying and handling pyfa updates". Then: "yes".</p>
+
+<h2>What was there before</h2>
+<p>Nothing walled the pyfa code off. <code>estimateHpAndDps()</code> is one 3,300-line function in which pyfa formulas sit next to the tool's own choices. Generated tables had diff scripts, and the capacitor had pyfa's simulator as a reference, but the formulas were protected only by tests. Deliberate differences from pyfa were scattered through comments.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>The rule</b> (<code>PYFA_CORE.md</code>): the tool may change what goes <i>into</i> the pyfa calculation (module states, assumed charges, drones, the EWAR lockout) or how results are <i>shown</i>. It never changes how the calculation works.</li>
+<li><b>12 fenced sections</b> in <code>index.html</code> (<code>// ==== PYFA CORE BEGIN/END &lt;id&gt; ====</code>):
+  <ul>
+  <li><b>ports:</b> stacking penalty, capacitor simulation, Reactive Armor Hardener, module cycle time</li>
+  <li><b>generated tables:</b> weapon range, module states</li>
+  <li><b>audited tables:</b> signature, capacitor/repair, sensor, sensor strength, HP, cycle-time modifiers</li>
+  </ul></li>
+<li><b>The lock:</b> <code>tools/pyfa_core_manifest.json</code> holds each section's SHA-256, what it mirrors in pyfa, and its verify commands. It also records the pyfa version it was verified against: v2.69.2, commit 3b9ce39, data 3579973, the same as Erik's pyfa. <code>tools/check_pyfa_core.mjs</code> checks it, and the regression suite runs it first, so <b>a changed section fails the suite</b> until it is re-verified and recorded with <code>--update</code>. Windows line endings don't count as a change.</li>
+<li><b><code>DEVIATIONS.md</code>:</b> one list of every deliberate difference from pyfa, the inputs the tool chooses, what it shows beyond pyfa's fit stats, and known gaps. "A difference that isn't listed is a bug."</li>
+<li><b><code>tools/pyfa_update_check.py</code></b>, to run at the start of work. It compares the verified pyfa with the local checkout and with GitHub (latest release and master). <code>--run</code> runs the whole chain:
+  <ul>
+  <li>the core lock</li>
+  <li>golden-fit data vs SDE</li>
+  <li>both table generators</li>
+  <li>the effect-table audit</li>
+  <li>pyfa's capacitor simulator comparison</li>
+  <li>the regression suite</li>
+  </ul>
+  Today: everything up to date and all 7 checks OK.</li>
+<li><b>Instructions for future models:</b>
+  <ul>
+  <li><code>CLAUDE.md</code> now leads with the update check and the rule</li>
+  <li>the lessons checklist gained step 0 (update check; core or not?) and step 12 (verify and <code>--update</code> a changed section; list new deviations)</li>
+  <li>new <code>LESSONS_LEARNED.md</code> #23</li>
+  </ul></li>
+<li>Rides along: the reactivation-delay comment's "10-40x" corrected to "roughly 11-25x (2x for an Interceptor's Nullifier)".</li>
+</ul>
+
+<h2>Found while doing it</h2>
+<ul>
+<li>The general stacking helpers <code>applyStacking</code> / <code>applyStackingBonus</code> use a penalty table rounded to 3 decimals (0.869, 0.571, ...). pyfa uses the exact formula (0.86912, 0.57058, ...). They're used for resists, damage modules, shield-boost amplifiers, speed, mass and sensors, and the effect is a fraction of a percent. Listed in <code>DEVIATIONS.md</code>. They stay outside the core until each area is moved onto <code>pyfaPenalizedProduct</code> (already in the core) during the hand-table phases.</li>
+<li>CCP's game data and pyfa's code change independently. The live page sees new ESI values at once, but tables built from pyfa or the SDE go stale; that is how the Akoman, Thunderchild and Hydra came to be missing. The update check covers both.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Full-output diff of all 161 golden fits, v2026.10.14.1 vs v2026.10.14.2: <b>0 differences</b>. Besides the markers, the only changes are the version tag and one comment.</li>
+<li>Lock tests:
+  <ul>
+  <li>changing one constant inside <code>stacking-penalty</code> (7.1289 &rarr; 7.128) fails both <code>check_pyfa_core.mjs</code> and the regression suite, naming the section and its verify commands;</li>
+  <li>converting the file to Windows line endings still passes.</li>
+  </ul></li>
+<li>Suite 161/161 (with the new lock line); parse tests 280/280; <code>node --check</code> clean; Playwright: page loads with tag v2026.10.14.2 and no console errors.</li>
+<li><code>pyfa_update_check.py --run</code>: all 7 checks OK.</li>
+</ul>
+
+<h2>Next</h2>
+<p>The firepower fix (hand-tables Phase 1) builds its generated table inside a new PYFA CORE section. <code>SHIP_ROLE_BONUS</code> stays outside the core as the fallback for special-edition hulls, which is listed in <code>DEVIATIONS.md</code>.</p>
+
+<h2>Lesson for future models</h2>
+<p>Before editing a calculation, find out whether it's inside a <code>PYFA CORE</code> section. If it is, the only valid reason to change it is to match pyfa, and the suite will tell you to re-verify. If you want the tool to behave differently from pyfa, change its inputs or its presentation, and add the difference to <code>DEVIATIONS.md</code>. See <code>LESSONS_LEARNED.md</code> #23.</p>
+</body></html>

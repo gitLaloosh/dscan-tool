@@ -1,1 +1,0 @@
-Build a fit to counter the provided fit - this would be a button displayed on each fit from the pilot analyzer or fit analyzer that would evaluate the current fit and then construct a fit to most effectively counter it. (show a "time to kill" value when comparing the two based on dps vs tank, reps, passive regen, etc)

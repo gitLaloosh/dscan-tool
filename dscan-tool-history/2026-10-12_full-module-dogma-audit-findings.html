@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>2026-10-12: Full module dogma-attribute audit — findings (Accuracy / Usefulness / Not Relevant)</title>
+<style>
+body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:960px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1a1a1a}
+h1{font-size:1.5rem;border-bottom:2px solid #333;padding-bottom:8px}
+h2{font-size:1.25rem;margin-top:2em;color:#222}
+h3{font-size:1.05rem;margin-top:1.5em;color:#333}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:0.9em}
+.small{color:#666;font-size:0.9em}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px;vertical-align:top}
+.tag-acc{background:#fde2e1;color:#8a1c12;padding:2px 8px;border-radius:3px;font-weight:600;font-size:12px}
+.tag-use{background:#e1f0fd;color:#0b4a7a;padding:2px 8px;border-radius:3px;font-weight:600;font-size:12px}
+.tag-skip{background:#eee;color:#555;padding:2px 8px;border-radius:3px;font-weight:600;font-size:12px}
+.tag-check{background:#fff3cd;color:#7a5c00;padding:2px 8px;border-radius:3px;font-weight:600;font-size:12px}
+</style>
+</head>
+<body>
+
+<h1>Full module dogma-attribute audit — findings</h1>
+<p class="small">2026-10-12 &middot; findings only, no code changes made yet &middot; prompted by Erik: "Would it be worth you doing a deep dive into all modules that exist in esi so we dont keep discovering things that are invisible to the tool?"</p>
+
+<h2>Method (grounded, not scoped by assumption)</h2>
+<p>Per Erik's explicit correction mid-investigation ("i wouldn't make any assumptions about accuracy candidates. see what is out there and then determine what the candidates are based on their attributes and how they're used"), this audit did NOT pre-filter by module category or by what the tool currently displays. A research pass enumerated every ESI/SDE "Module" category (category_id 7) group &mdash; 158 total, 151 with at least one currently-obtainable item &mdash; and pulled the FULL real dogma-attribute list for one representative item per group directly from pyfa's local cache of CCP's actual Static Data Export (everef.net/ESI/github/fuzzwork/hoboleaks were all network-blocked this session; the pyfa SDE cache is the same first-party CCP data those sites redistribute, and is what pyfa itself calculates against). 309 distinct attribute IDs were encountered; none were filtered as "irrelevant" at collection time. Several specific findings below (the Siege Module family, in particular) were then independently re-verified directly against the same SDE files in this session, not just taken from the research pass's report.</p>
+<p>Every finding below is tied to (1) a real attribute, on a real item, with its real value, and (2) a direct read of <code>index.html</code> confirming whether that attribute is currently referenced anywhere. Nothing here is asserted from memory of EVE mechanics or recollection of the code.</p>
+
+<h2>Bucket 1 &mdash; Accuracy (affects a stat the tool already computes)</h2>
+
+<h3><span class="tag-acc">ACCURACY</span> Dreadnought Siege Module gets no bonus at all &mdash; Bastion/Siege/Triage/Industrial Core are NOT one mechanism</h3>
+<p>The current code (<code>SIEGE_ROF_BONUS_ATTR_A/B</code> = attrs 3108/3109) treats all of group_id 515 ("Siege Module") as one generic RoF-doubling mechanism shared by Bastion Module (Marauders), Siege Module (Dreadnoughts), Triage Module (Carriers), and Industrial Core (Rorquals/capitals). Directly re-pulling every published item in group 515 from the SDE shows this is wrong:</p>
+<table>
+<tr><th>Item</th><th>Ship class</th><th>Real attributes carried</th><th>Has attr 3108/3109?</th></tr>
+<tr><td>Bastion Module I/Navy variants (33400, 93999, 94008-94010)</td><td>Marauder</td><td>3108 (bastionMissileROFBonus -50), 3109 (bastionTurretROFBonus -50 to -60)</td><td>YES &mdash; tool models this correctly</td></tr>
+<tr><td>Siege Module I/II (20280, 4292), Abyssal variant (88266)</td><td>Dreadnought</td><td>2305 (siegeLauncherROFBonus &minus;80), 2306 (siegeMissileDamageBonus +165 to +210), 2307 (siegeTurretDamageBonus +700 to +880), 2304 (siegeTorpedoVelocityBonus +150), 2351/2353 (sensor dampener/weapon disruption resistance &minus;60 to &minus;75)</td><td><strong>NO</strong> &mdash; tool applies ZERO bonus to a sieged Dreadnought today</td></tr>
+<tr><td>Triage Module I/II (27951, 4294)</td><td>Carrier</td><td>2347 (siegeLocalLogisticsAmountBonus, boosts remote-rep amount, not weapons), 2351 (ewar resistance)</td><td>NO &mdash; correctly gets 0 weapon bonus, but not for the reason the code's own comment claims</td></tr>
+<tr><td>Capital/Large/Medium Industrial Core (28583, 42890, 58945, 58950, 62590, 62591)</td><td>Rorqual/capital industrial</td><td>2351 (ewar resistance) only &mdash; no weapon or mining attribute in this dump at all</td><td>NO &mdash; same as Triage, correctly 0 but for the wrong stated reason</td></tr>
+</table>
+<p>Net effect: a Dreadnought in Siege Mode is the one real miss here &mdash; the tool's own comment ("A Bastion Module, Siege Module, Triage Module, or Industrial Core doubles turret/launcher rate of fire while active") is simply incorrect for 3 of these 4 module types, and for Siege Module specifically the tool isn't just missing a RoF change, it's missing a roughly 7-9x turret damage multiplier and 1.65-2.1x missile damage multiplier entirely &mdash; a dreadnought's sieged DPS is almost certainly reported far too low right now. No golden fit in the regression suite exercises the real Siege Module II item (type 4292) at all, which is why this was never caught.</p>
+
+<h3><span class="tag-acc">ACCURACY</span> Power Diagnostic System and Shield Power Relay carry the SAME capacitor attributes as this morning's fix, but aren't gated in</h3>
+<p>Today's fix added Capacitor Battery/Power Relay/Flux Coil/Recharger. Two more real, common low-slot modules carry the identical attributes (144 <code>capacitorRechargeRateMultiplier</code> / 147 <code>capacitorCapacityMultiplier</code>) and are not in <code>CAPACITOR_RECHARGE_MULT_GROUPS</code>:</p>
+<table>
+<tr><th>Module</th><th>Real attributes</th><th>Effect</th></tr>
+<tr><td>Power Diagnostic System II (group 766)</td><td>attr134=0.915 (shield recharge), attr144=0.915 (cap recharge), attr146=1.05 (shield capacity), attr147=1.05 (cap capacity)</td><td>A real, simultaneous boost to BOTH capacitor and shield capacity/recharge &mdash; currently entirely unmodeled</td></tr>
+<tr><td>Shield Power Relay II (group 57)</td><td>attr144=1.35 (cap recharge, WORSE &mdash; a real tradeoff), attr338 (rechargeratebonus, shield recharge, &minus;25, better)</td><td>Trades capacitor recharge for shield recharge &mdash; currently entirely unmodeled</td></tr>
+</table>
+<p>(Reactor Control Unit II also carries attrs 144/146/147 but all at value 1 &mdash; i.e. no actual effect on cap/shield in the live data; it only boosts attr145 powerOutputMultiplier, powergrid, which this tool doesn't track. Not a live bug.)</p>
+
+<h3><span class="tag-acc">ACCURACY</span> Capacitor Battery and Capacitor Power Relay each have a second, un-modeled real effect</h3>
+<p>Already surfaced during today's capacitor fix, not yet acted on:</p>
+<table>
+<tr><th>Module</th><th>Second attribute</th><th>Effect</th></tr>
+<tr><td>Capacitor Battery (group 61)</td><td>attr 2267 <code>energyWarfareResistanceBonus</code> = &minus;25</td><td>25% resistance to being neuted/nosed &mdash; affects the EWAR card's neut-effectiveness figure against this target</td></tr>
+<tr><td>Capacitor Power Relay (group 767)</td><td>attr 548 <code>shieldBoostMultiplier</code> = &minus;11</td><td>Penalizes this ship's own Shield Booster repair amount by 11% &mdash; affects "DPS required to break this tank"</td></tr>
+</table>
+
+<h3><span class="tag-acc">ACCURACY</span> Shield Boost Amplifier is entirely unhandled &mdash; the positive counterpart to the Power Relay penalty above</h3>
+<p>Shield Boost Amplifier II (group 338) carries attr 548 <code>shieldBoostMultiplier</code> = +36 &mdash; a real, common low-slot module for active-shield-tank ships that boosts the fitted Shield Booster's repair amount by 36%. Attribute 548 is not referenced anywhere in <code>index.html</code>. Both the penalty (Power Relay) and the bonus (Boost Amplifier) sides of this same attribute are missing, which means any active-shield-tank fit's "DPS required to break this tank" figure is currently wrong whenever either module is fitted.</p>
+
+<h3><span class="tag-acc">ACCURACY</span> Fitted Sensor Booster/Signal Amplifier/Remote Sensor Booster's own sensor-strength bonus isn't folded into the displayed sensor strength</h3>
+<p>The 2026-10-12 sensor-strength fix (<code>MAX_SENSOR_COMPENSATION_MULT</code>) correctly applies the universal Sensor Compensation skill (+20%@V), reading the ship's own base <code>SCAN_STRENGTH_ATTRS</code> (208-211). But a fitted Sensor Booster II / Signal Amplifier II / Remote Sensor Booster carries its own real <code>scanGravimetricStrengthPercent</code>/<code>scanLadarStrengthPercent</code>/<code>scanMagnetometricStrengthPercent</code>/<code>scanRadarStrengthPercent</code> bonus (attrs 1027-1030, e.g. +48% on Sensor Booster II) that boosts the SAME stat &mdash; and that module-level contribution is never read anywhere in the file. This directly affects "can I ECM this target" &mdash; a core use case given the tool's purpose.</p>
+
+<h2>Bucket 2 &mdash; Usefulness (real mechanic, zero current representation)</h2>
+
+<h3><span class="tag-use">USEFULNESS</span> Passive shield recharge has no equivalent to the capacitor-stability feature</h3>
+<p>Capacitor has a full stability card (capacity, recharge time, net rate, stable%). Shield has nothing equivalent, even though the exact same kind of real modules exist for it: Shield Recharger (group 39, attr134), Shield Flux Coil (group 770, attr134+146, a capacity/recharge tradeoff exactly like the Capacitor Flux Coil fixed today), Shield Power Relay, and Power Diagnostic System (both above). For a shield-buffer-vs-shield-regen-tanked ship, passive shield regen rate is as relevant to sustained-engagement threat assessment as capacitor stability already is.</p>
+
+<h3><span class="tag-use">USEFULNESS</span> Command Burst modules (gang/warfare links) &mdash; zero representation</h3>
+<p>Group 1770 "Command Burst", e.g. Armor Command Burst II: real attrs include <code>warfareBuff1ID/Value</code> through <code>warfareBuff4ID/Value</code>, <code>maxRange</code>=15000, <code>capacitorNeed</code>=25, <code>duration</code>. A fitted Command Burst module identifies a fleet-support/boosting pilot rather than a pure damage/tackle threat &mdash; a real, useful threat-assessment signal this tool currently has no way to surface at all (confirmed: zero hits for "Command Burst" or "warfareBuff" anywhere in <code>index.html</code>).</p>
+
+<h3><span class="tag-use">USEFULNESS</span> Interdiction Nullifier module &mdash; zero representation</h3>
+<p>Group 4117 (the actual fittable mid-slot module, e.g. Interdiction Nullifier II &mdash; distinct from the similarly-named T3 Strategic Cruiser propulsion subsystem already covered elsewhere in the file). Real effect: warp bubble immunity (attr 3120 <code>warpBubbleImmuneBonus</code>) plus a targeting-range penalty (attr 309 = &minus;50%). Directly relevant to "how to effectively defeat them" &mdash; you cannot bubble this ship.</p>
+
+<h3><span class="tag-use">USEFULNESS</span> Micro Jump Drive / Micro Jump Field Generator &mdash; zero representation</h3>
+<p>Groups 1189/1533: a large, real signature-radius spike while active (attr 973 <code>signatureRadiusBonusPercent</code> = +150%) plus an escape/repositioning teleport. Not referenced anywhere in the file. Relevant to predicting whether a target can disengage.</p>
+
+<h2>Bucket 3 &mdash; Not relevant (checked against real data or the tool's own already-documented scope, not assumed)</h2>
+
+<h3><span class="tag-check">NEEDS ERIK</span> Cloaking Device &mdash; real data contradicts what was said earlier in this conversation</h3>
+<p>Erik's earlier statement was that cloaking devices use capacitor, as a reason the module sweep shouldn't be pre-filtered by category. The real SDE data for the representative item (Improved Cloaking Device II, type 11577) carries NO <code>capacitorNeed</code> attribute (attr 6) at all &mdash; its full attribute list is hp/power/cpu/requiredSkill/<code>maxVelocityModifier</code>/<code>cloakingTargetingDelay</code>/<code>scanResolutionMultiplier</code>/techLevel/<code>moduleReactivationDelay</code>/<code>stabilizeCloakDuration</code>. This matches current EVE mechanics (cloaks had their capacitor cost removed in a past rebalance) as far as this data shows. Flagging rather than asserting: if a different cloak variant or an older mechanic was meant, happy to pull that specific typeID directly from the same local SDE cache.</p>
+
+<h3><span class="tag-skip">NOT RELEVANT</span> Drone Tracking Enhancer/Modules, turret <code>optimalSigRadius</code> (attr 620)</h3>
+<p>These only affect weapon-vs-target tracking/hit-chance. The tool's own documented methodology already states this is out of scope for every weapon type, deliberately: "this is how far it can reach, not how much of its damage lands on a given target at that range, which depends on the target's own signature radius and speed and isn't modeled." Consistent with an existing, disclosed design decision &mdash; not a gap.</p>
+
+<h3><span class="tag-skip">NOT RELEVANT</span> Remainder of the 241 unhandled attribute IDs</h3>
+<p>The bulk of what the sweep turned up and isn't listed above is: the module's own hp/power/cpu/techLevel/metaLevel/requiredSkillXLevel/<code>canFitShipGroupXX</code>/<code>reloadTime</code>/<code>chargeRate</code>/color-scheme/disallow-* flags (fitting metadata, not combat-relevant since the tool already assumes a valid, max-skill fit); every <code>overload*</code> attribute (heat/overheating isn't modeled anywhere in this file, consistently); jump drive/portal/cyno/clone vat bay/compression/entosis/scanning-for-exploration/mining-and-gas-harvesting attributes (industry/traversal mechanics, not ship-vs-ship combat); and capital-only doomsday/ECM-burst-projector/titan-phenomena attributes (true supercapital-only mechanics, far outside a d-scan threat assessment of normal fleets). None of these bear on assessing a ship/pilot's combat threat level.</p>
+
+<h2>Open, not yet checked</h2>
+<ul>
+<li>Whether faction/deadspace meta variants of Capacitor Battery/Flux Coil/Shield Boost Amplifier etc. carry additional attributes beyond the Tech2 representative sampled here (the research pass's own stated caveat).</li>
+<li>Whether the EWAR card's neut/nos-effectiveness figure (if it exists) would need the new Capacitor Battery resistance (2267) folded in, or whether that's a separate display decision.</li>
+</ul>
+
+<h2>Not yet done</h2>
+<p>No code changes have been made from this audit. Six concrete items are ready to act on (listed in Bucket 1 and 2 above) once Erik says which to prioritize &mdash; the Dreadnought Siege Module gap is probably the highest-value fix (it's a flat-out wrong DPS number for an entire ship class), followed by Power Diagnostic System/Shield Power Relay (same bug class as this morning, two more real modules silently ignored).</p>
+
+</body>
+</html>
