@@ -683,11 +683,6 @@
   button.ds-pip:hover:not(.locked){border-color:var(--cyan); box-shadow:0 0 0 2px rgba(79,195,217,0.18);}
   button.ds-pip.locked{border-style:dashed; border-color:var(--text-faint); opacity:0.6; cursor:not-allowed;}
   .ds-row.ds-none .ms-name, .ds-row.ds-none .ms-icon{opacity:0.45;}
-  details.fit-card-details > summary{cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;}
-  details.fit-card-details > summary::-webkit-details-marker{display:none;}
-  details.fit-card-details > summary .fit-subsection-label{margin-bottom:0;}
-  details.fit-card-details > summary .ms-expand{font-size:11px; color:var(--cyan);}
-  details.fit-card-details[open] > summary{margin-bottom:10px;}
 
   .lossrow{
     display:flex; justify-content:space-between; font-size:12px;
@@ -1066,7 +1061,16 @@
      the square ring, so it scales with its column. Tile state: border (cyan active, grey online, dashed
      faint off), dimmed icon when off, and the same dot as the list's state buttons in the corner, so
      colour is never the only cue. */
-  .fit-view-row{display:flex; justify-content:flex-end; margin:-2px 0 6px;}
+  .fit-card-head{align-items:center; margin-bottom:10px;}
+  .fit-card-head button.cc-toggle{margin:0;}
+  .fit-view-controls{display:flex; align-items:center; gap:6px;}
+  button.ms-reset.fit-reset-btn{width:30px; height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:4px; background:transparent; color:var(--text-faint);}
+  button.ms-reset.fit-reset-btn svg{width:15px; height:15px; display:block;}
+  button.ms-reset.fit-reset-btn.is-custom{color:var(--cyan); border-color:rgba(79,195,217,0.45);}
+  button.ms-reset.fit-reset-btn.is-custom:hover{background:rgba(79,195,217,0.08); border-color:var(--cyan);}
+  button.ms-reset.fit-reset-btn:disabled{opacity:0.45;}
+  /* v.21: collapsed Fit card shows the fit's name in the stat-label style ("TOTAL DPS"), per the owner */
+  .cc-row.cc-fit .cc-sum{font-family:var(--sans); font-size:var(--label-size); font-weight:600; text-transform:uppercase; letter-spacing:var(--label-tracking); color:var(--text-dim);}
   .fit-view-switch{display:inline-flex; border:1px solid var(--line); border-radius:4px; padding:2px; background:var(--bg);}
   button.fit-view-btn{padding:4px 12px; font-size:11.5px; border:0; border-radius:3px; background:transparent; color:var(--text-dim); cursor:pointer;}
   button.fit-view-btn.on{background:var(--line); color:var(--heading);}
@@ -1129,7 +1133,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.20</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.21</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -7825,6 +7829,7 @@ async function runFitAnalyzer(){
 // and no multi-loss subtabs (a pasted fit is exactly one fit, not a sample
 // of several recent losses).
 function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, implantsNotApplied){
+  f.fitTitle = fitName ? `${shipName} — ${fitName}` : shipName; // v.21: shown on the collapsed Fit card
   const el = document.getElementById('fitAnalyzerResults');
   const clashes = (implantsNotApplied || []).filter(x => !x.removed), removedImpl = (implantsNotApplied || []).filter(x => x.removed);
   const slotClashHtml = (clashes.length ? `
@@ -12016,8 +12021,8 @@ function cardIsOpen(f, key){
 function cardLabelHtml(key, title, cls = 'fit-subsection-label', style = ''){
   return `<button type="button" class="cc-toggle ${cls}" data-card="${key}" aria-expanded="true" title="Collapse"${style ? ` style="${style}"` : ''}>${CC_CHEV}${escapeHtml(title)}</button>`;
 }
-function collapsedCardHtml(key, title, summary, shell = 'fit-summary'){
-  return `<div class="${shell} cc-closed"><button type="button" class="cc-toggle cc-row" data-card="${key}" aria-expanded="false" title="Expand">${CC_CHEV}<span class="cc-title">${escapeHtml(title)}</span><span class="cc-sum">${escapeHtml(summary)}</span></button></div>`;
+function collapsedCardHtml(key, title, summary, shell = 'fit-summary', extraCls = ''){
+  return `<div class="${shell} cc-closed"><button type="button" class="cc-toggle cc-row${extraCls ? ' ' + extraCls : ''}" data-card="${key}" aria-expanded="false" title="Expand">${CC_CHEV}<span class="cc-title">${escapeHtml(title)}</span><span class="cc-sum">${escapeHtml(summary)}</span></button></div>`;
 }
 // Wires every card toggle inside `wrap`; rerender() rebuilds the layout (and re-wires). Focus returns to
 // the same toggle so a keyboard user stays in place.
@@ -12614,9 +12619,10 @@ function fitRingHtml(f, idToName){
   const loadedHtml = loaded.length ? `<div class="fit-ring-loaded"><span>Loaded</span> ${loaded.map(e => `${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}`).join(' · ')}</div>` : '';
   return `<div class="fit-ring" style="--tile:${geo.tile.toFixed(2)}%"><div class="fit-ring-ship">${ship}</div>${tiles}</div>${loadedHtml}`;
 }
+const FIT_RESET_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 8.2a5.2 5.2 0 1 1-1.6-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path><path d="M12.2 1.9v2.9h-2.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
 function fitViewSwitchHtml(view){
   const b = (v, label) => `<button type="button" class="fit-view-btn${view === v ? ' on' : ''}" data-view="${v}" aria-pressed="${view === v}">${label}</button>`;
-  return `<div class="fit-view-row"><div class="fit-view-switch" role="group" aria-label="Fit view">${b('ring', 'Ring')}${b('list', 'List')}</div></div>`;
+  return `<div class="fit-view-switch" role="group" aria-label="Fit view">${b('ring', 'Ring')}${b('list', 'List')}</div>`;
 }
 // COLLAPSIBLE BAYS (v2026.10.14.19, the owner: "can we please make any bays in the fit collapsible as well?
 // drone bay, cargo bay, etc."): the drone bay, fighter bay, fleet hangar and cargo headings in the Fit card
@@ -12634,45 +12640,51 @@ function bayContentsSummary(tally, group){
   const n = entries.reduce((t, d) => t + (d.totalQty || 0), 0);
   return `${entries.length} type${entries.length === 1 ? '' : 's'} · ${n.toLocaleString()} item${n === 1 ? '' : 's'}`;
 }
-// opts.collapsible: Pilot Analyzer losses (closed until opened; f.fitCardOpen remembers).
+// v2026.10.14.21 (the owner: "fit card doesn't have an expand/collapse arrow. why do we have the 'hide' link? i'd
+// remove the 'Module states assumed' text as well as the hide link"): the Fit card collapses like every other
+// card -- its title is the toggle (cardIsOpen key 'fit', open by default; the Pilot Analyzer opens it from
+// 900px up and closes it on a phone, as before) -- and its header holds only the Ring / List switch, plus
+// a small reset (reload) button beside it, active once a state has been changed. The old <details> with its
+// "hide" / "show modules and states" text and the "Module states assumed: best case" label are gone (what
+// is assumed is in "How effective HP and DPS are calculated").
 function fitCardHtml(f, idToName, opts = {}){
   const hasStates = !!(f.estimate && f.estimate.moduleStates && f.input);
+  const tally = f.tally || {};
+  const moduleCount = MODULE_STATE_SLOT_GROUPS.reduce((t, g) => t + Object.values(tally[g] || {}).reduce((u, d) => u + (d.totalQty || 0), 0), 0);
+  const custom = hasStates && (!!(f.moduleStates && Object.keys(f.moduleStates).length) || !!f.droneStates);
+  if(!cardIsOpen(f, 'fit')){
+    // the owner: "'Fit' header row should show the name of the fit when collapsed. Similar font as 'Total DPS'":
+    // f.fitTitle (ship — fit name, or ship — loss date in the Pilot Analyzer), in the stat-label style (.cc-fit).
+    return collapsedCardHtml('fit', 'Fit', f.fitTitle || `${moduleCount} module${moduleCount === 1 ? '' : 's'}`, 'fit-summary', 'cc-fit');
+  }
   if(!hasStates){
     return `
     <div class="fit-summary">
-      <div class="fit-subsection-label">Fit</div>
+      ${cardLabelHtml('fit', 'Fit')}
       ${renderModuleListHtml(f.tally, idToName)}
     </div>`;
   }
-  const custom = !!(f.moduleStates && Object.keys(f.moduleStates).length) || !!f.droneStates;
-  const right = custom
-    ? `<span class="ms-custom">Custom states</span><button type="button" class="ms-reset">Reset to best case</button>`
-    : `<span title="A killmail or fit doesn't say what was running, so every module is assumed running where the game allows it, except the situational ones listed on hover">Module states assumed: best case</span>`;
+  const view = fitViewPref(); // v.16: Ring / List
+  // the owner: "i assume we need an input to reset to the default load state. just do a little reload icon/button
+  // next to the Ring/List toggle": always there, active (cyan) once a module or drone state was changed,
+  // disabled while everything is in its default state. Same .ms-reset wiring as the old text button.
+  const resetTip = custom ? 'Reset every module and drone to its default state' : 'Every module and drone is in its default state';
+  const resetBtn = `<button type="button" class="ms-reset fit-reset-btn${custom ? ' is-custom' : ''}" title="${resetTip}" aria-label="${resetTip}"${custom ? '' : ' disabled'}>${FIT_RESET_SVG}</button>`;
+  const right = `<div class="fit-view-controls">${resetBtn}${fitViewSwitchHtml(view)}</div>`;
   const msg = f.moduleStateMessage ? `<div class="ms-msg">${escapeHtml(f.moduleStateMessage)}</div>` : '';
   const busy = f.moduleStateBusy ? ' fit-card-busy' : '';
-  const view = fitViewPref(); // v.16: Ring / List
   const modulesHtml = view === 'ring'
     ? fitRingHtml(f, idToName) + moduleListWithStatesHtml(f, idToName, {skipSlots: true})
     : moduleListWithStatesHtml(f, idToName);
   const legend = view === 'ring'
     ? `Click a module to switch it off, online or active (filled dot = active, hollow = online, dashed = off; hover for its name), and a drone square to put drones in space or take them back; every card recalculates.`
     : `Click a module's state to switch it off, online or active, and a drone square to put drones in space or take them back; every card recalculates.`;
-  const body = `
-      ${fitViewSwitchHtml(view)}
-      ${msg}
-      ${modulesHtml}
-      <div class="ms-legend">${legend} ${f.moduleStateBusy ? 'Recalculating…' : ''}</div>`;
-  if(opts.collapsible){
-    return `
-    <details class="fit-summary fit-card-details${busy}"${f.fitCardOpen ? ' open' : ''}>
-      <summary><span class="fit-subsection-label">Fit</span><span class="ms-head-right">${right}<span class="ms-expand">${f.fitCardOpen ? 'hide' : 'show modules and states'}</span></span></summary>
-      ${body}
-    </details>`;
-  }
   return `
     <div class="fit-summary${busy}">
-      <div class="fit-card-head"><div class="fit-subsection-label">Fit</div><div class="ms-head-right">${right}</div></div>
-      ${body}
+      <div class="fit-card-head">${cardLabelHtml('fit', 'Fit')}<div class="ms-head-right">${right}</div></div>
+      ${msg}
+      ${modulesHtml}
+      <div class="ms-legend">${legend} ${f.moduleStateBusy ? 'Recalculating…' : ''}</div>
     </div>`;
 }
 // Recalculate a fit with its current f.moduleStates (all three Tactical
@@ -12731,7 +12743,6 @@ function wireModuleStateControls(container, f, rerender){
       const order = moduleCopyStates(item, (f.moduleCopyOrder || {})[id]);
       order[Number(btn.dataset.copy) || 0] = to;
       f.moduleCopyOrder = {...(f.moduleCopyOrder || {}), [id]: order};
-      f.fitCardOpen = true;
       run();
     });
   });
@@ -12743,7 +12754,6 @@ function wireModuleStateControls(container, f, rerender){
       const map = f.droneStates ? {...f.droneStates} : Object.fromEntries(ds.items.map(it => [it.typeId, it.active]));
       map[Number(pip.dataset.typeId)] = Number(pip.dataset.target);
       f.droneStates = map;
-      f.fitCardOpen = true;
       run();
     });
   });
@@ -12757,12 +12767,6 @@ function wireModuleStateControls(container, f, rerender){
   });
   const reset = container.querySelector('button.ms-reset');
   if(reset) reset.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if(f.moduleStateBusy) return; f.moduleStates = null; f.moduleCopyOrder = null; f.droneStates = null; run(); });
-  const det = container.querySelector('details.fit-card-details');
-  if(det) det.addEventListener('toggle', () => {
-    f.fitCardOpen = det.open;
-    const hint = det.querySelector('.ms-expand');
-    if(hint) hint.textContent = det.open ? 'hide' : 'show modules and states';
-  });
 }
 
 function fitTabLabel(km, idx){
@@ -12788,7 +12792,8 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   // killmail never says what was running, the owner's D1), but starts open where it has its own column (900px
   // and up), so the middle column isn't an empty header; on a phone it starts closed as before.
   const wideScreen = !!(window.matchMedia && window.matchMedia('(min-width: 900px)').matches);
-  for(const f of fits) if(f.fitCardOpen === undefined) f.fitCardOpen = wideScreen;
+  for(const f of fits) if(!f.cardOpen || f.cardOpen.fit === undefined) f.cardOpen = {...(f.cardOpen || {}), fit: wideScreen}; // v.21: Fit card toggle (was f.fitCardOpen / <details>)
+  fits.forEach((f, i) => { f.fitTitle = `${shipName} — ${fitTabLabel(f.km, i)} loss`; }); // v.21: shown on the collapsed Fit card
   const panelsHtml = fits.map((f, i) => `
     <div class="subtab-panel" data-idx="${i}"${i===0 ? '' : ' style="display:none;"'}>
       <div class="fit-layout-wrap" id="fit-layout-wrap-${i}">${fitLayoutHtml(f, idToName, {collapsible: true})}</div>
