@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-14 — Collapsible bays in the Fit card</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Collapsible bays in the Fit card</h1>
+<p><span class="tag">Layout</span> 2026-10-14 &middot; <code>v2026.10.14.18</code> &rarr; <code>v2026.10.14.19</code> &middot; the owner: "can we please make any bays in the fit collapsible as well? drone bay, cargo bay, etc."</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The Fit card's <b>Drone bay, Fighter bay, Fleet hangar and Cargo</b> headings are now toggles, like the card titles since v.18 (chevron before the heading). A closed bay is one row with what it holds:
+<ul>
+<li>Drone bay: drones in space and what's in the bay, e.g. "5 / 5 in space · 5 types · 12 items".</li>
+<li>Other bays: "2 types · 60 items".</li>
+</ul></li>
+<li>Same mechanism as the cards: <code>cardIsOpen()</code> / <code>f.cardOpen</code> (keys <code>bay:drone</code>, <code>bay:fighter</code>, <code>bay:fleet</code>, <code>bay:cargo</code>) and <code>wireCardToggles()</code>, so a bay's open/closed state survives mode, module-state and drone changes, is kept per fit (each Pilot Analyzer loss separately), and focus stays on the toggle.</li>
+<li><b>Defaults:</b> all open on desktop and tablet; on a phone the cargo and fleet hangar start closed (long lists, rarely needed for a fight) and the drone and fighter bays open.</li>
+<li>Works in both the Ring and List views (the bays are listed under either). Implants and Boosters are not bays and stay as they are. Presentation only.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Full output diff v.18 &rarr; v.19: <b>0 of 214 fits differ</b>. Suite ALL PASS, parse tests 293/293, update-check chain all OK.</li>
+<li><code>tools/page_checks/layout_check.py</code> adds, at 1440 and 375 px:
+<ul>
+<li>Bay defaults per width (cargo starts closed on the phone).</li>
+<li>Collapsed summaries: "5 / 5 in space · 5 types · 12 items" and "2 types · 60 items".</li>
+<li>A collapsed drone bay hides its squares; bays stay collapsed through a module-state change.</li>
+<li>The drone bay reopens with its squares and focus kept; no sideways scrolling; no page errors.</li>
+</ul>
+The card checks now ignore bay toggles. <b>FAILURES: 0</b>; v.18 fails it (no bay toggles).</li>
+<li>Screenshot of the Fit card with the cargo collapsed looked at.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>Reuse the existing toggle mechanism for a new collapsible section rather than adding a second one; then every re-render path already keeps its state. When a check counts "all toggles", narrow it when a new kind of toggle is added (here the card checks had to exclude the bay toggles).</li></ul>
+</body>
+</html>
