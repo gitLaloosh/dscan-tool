@@ -4,7 +4,10 @@ Status: **APPROVED** (2026-10-13). Decisions recorded in section 4.
 **Phase 1 (engine) DONE in v2026.10.13.20** — see
 `dscan-tool-history/2026-10-13_module-states-engine-phase1.html`.
 **Phase 2 (module list UI) DONE in v2026.10.13.22** — see
-`dscan-tool-history/2026-10-13_module-states-ui-phase2.html`. Next: Phase 3 (fold in the special cases).
+`dscan-tool-history/2026-10-13_module-states-ui-phase2.html`.
+**Phase 3 (special cases) DONE in v2026.10.13.26** — see
+`dscan-tool-history/2026-10-13_module-states-phase3-special-cases.html`.
+Next: Phase 4 is optional (D4 capacitor advice, D5 overheat, both in the backlog).
 Backlog item: "Module on/off toggles for stat-transforming modules" (Medium).
 This plan widens it from "siege-type modules" to every fitted module.
 
@@ -138,6 +141,33 @@ These become ordinary module states:
 
 Remove the scattered flags (`hasMWD` assumptions, "assumed active whenever
 fitted" branches) once each one is driven by state.
+
+**Done (v.26).**
+
+- The siege family was already state-driven since Phase 1. v.26 pinned it
+  (Siege Module online = no-siege numbers) and fixed Triage drone damage (×0).
+- Now modeled when set active:
+  - MJD/MJFG and Signature Suppressor signature bursts
+  - Entosis Link sensor strength
+  - Networked and Integrated Sensor Array sensors, scan resolution and
+    targeting range, plus capital rep cycle and cap need
+- Triage / Networked Sensor Array EWAR lockout: the affected modules are
+  blocked while it runs. They default online, and a request to activate them
+  is refused with the reason.
+- The capacitor booster: whether it runs is its row in the module list (only
+  an active booster injects).
+  - v.26 kept the ring toggle as a "charges" toggle.
+  - **v.27 (the owner) removed it.** The capacitor figures are the best case of the
+    running modules: active Capacitor Boosters inject, and active ASBs have
+    charges.
+  - Each boost counted shows its in-game icon next to the ring. The ASB icon
+    is clickable for "out of charges".
+- MWD/AB: the speed card keeps its cruising and boosted figures side by side,
+  with an online prop mod shown as the "if switched on" figure (v.20).
+- Found along the way and fixed:
+  - Targeting range is now capped at maximumRangeCap.
+  - Module cycle time now follows pyfa's `rawCycleTime`, so Nullifiers,
+    Suppressors and Burst Projectors now use capacitor (LESSONS #20).
 
 ### Optional (Phase 4)
 

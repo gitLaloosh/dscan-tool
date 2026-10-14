@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Expired event boosters dropped, as pyfa does</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Expired event boosters dropped, as pyfa does</h1>
+<p><span class="tag">Bug fix</span><span class="tag">PYFA CORE</span><span class="tag">Verification</span> 2026-10-14 &middot; <code>v2026.10.14.13</code> &rarr; <code>v2026.10.14.14</code> &middot; from the owner's pyfa screenshot of the Rupture check fit</p>
+
+<h2>Problem</h2>
+<p>For the Rupture check fit pyfa showed Weapon 284 DPS, volley 1,048 and 1.8 km + 14.4 km; the tool (and the reference oracle) said 301 / 1,111 / 15.2 km. pyfa's Additions tab read <b>Boosters (2)</b> for three booster lines. The difference is exactly Strokar Booster VI (+6% projectile damage, +6% falloff): the oracle without it gives 283.9 DPS, 1,048 volley, 14,358 m.</p>
+
+<h2>Root cause</h2>
+<p>pyfa's database is built from the SDE by <code>db_update.py</code>, which <b>deletes</b> every booster whose <code>boosterLastInjectionDatetime</code> is before the data dump ("Remove boosters which were expired at the time data dump was generated"). Strokar Booster VI could be injected until 2026-08-26; pyfa's data is from 2026-10-06. pyfa's EFT import (<code>service/port/shared.py fetchItem</code>) then finds no such item and skips the line without a message (the owner's pyfa log for today shows the Pyrolancea and Frentix effects loading and none of Strokar's). 130 published boosters are affected. The same step also unpublishes items named like abyssal / mutated / _PLACEHOLDER.</p>
+
+<h2>Fix</h2>
+<ul>
+<li><code>tools/pyfa_sde.py pyfa_removed_types()</code> mirrors those removals (dump time from <code>staticdata/phobos/metadata.0.json</code>).</li>
+<li><code>gen_implant_table.py</code> leaves them out and writes <code>PYFA_REMOVED_IMPLANT_IDS</code> (130 ids) into PYFA CORE <code>implant-calc</code> (re-locked; <code>IMPLANT_EFFECTS</code> now 303 effects).</li>
+<li><code>parseEftFit()</code> leaves them out of the fit and says so: "Not applied, no longer available: Strokar Booster VI (an event booster that could be injected until 2026-08-26)..."; the engine skips them for any other source too.</li>
+<li>The oracle (<code>pyfa_fit_oracle.py</code>) can't load them either (<code>fit.notLoaded</code>), as pyfa can't; <code>compare_implants.py</code> expects them not applied.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><code>rupture_constructed_projectile_implants_boosters</code> is now PYFA-VERIFIED against the owner's screenshot: 284 DPS, volley 1,048, 1.8 km + 14.4 km (14,358 m), EHP 8.72k (8,718), speed 262 m/s, align 5.71 s, signature 125, targeting 62.5 km, scan resolution 362 mm, sensor strength 18, capacitor 1.59k GJ. Its tally keeps the booster, so the pins also guard the engine's skip.</li>
+<li>Speed: pyfa 262 m/s, page 263 m/s. Both are exactly 262.5 m/s; as with the Drake's 81.25 km targeting, pyfa's formatting rounds an exact tie to even.</li>
+<li>Full output diff v.13 &rarr; v.14: only this fit changes. Update-check chain 21/21, suite ALL PASS, parse tests 293/293, <code>compare_implants.py</code> 0 of 13. Real page: 284 DPS, 1,048 volley, the note, and two boosters on the Fit card.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #32</b> (new): pyfa's database is not the SDE. <code>db_update.py</code> deletes, unpublishes and patches items, and a reference built straight from the SDE inherits none of that. A count in pyfa's UI that differs from the paste is a finding.</li>
+</ul>
+</body>
+</html>

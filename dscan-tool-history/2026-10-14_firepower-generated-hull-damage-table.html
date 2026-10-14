@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Firepower: hull bonuses generated from pyfa (hand-tables Phase 1)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+pre{background:#f6f6f6; padding:10px; border-radius:4px; font-size:13px;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Firepower: hull bonuses generated from pyfa (hand-tables Phase 1)</h1>
+<p><span class="tag">Bug fix</span><span class="tag">PYFA CORE</span> 2026-10-14 &middot; <code>v2026.10.14.2</code> &rarr; <code>v2026.10.14.3</code> &middot; the owner: "ok start on the firepower fix"</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Generated table, new core section <code>hull-damage</code>.</b> <code>SHIP_DAMAGE_MOD_EFFECTS</code> holds 340 hull and subsystem effects as 458 rows, written by the new <code>tools/gen_hull_damage_table.py</code> from pyfa's handlers. Each row carries:
+  <ul>
+  <li>the target (weapon, the loaded charge, drone, or fighter Attack Missile)</li>
+  <li>damage or rate of fire</li>
+  <li>the source attribute and per-level scaling</li>
+  <li>pyfa's exact filter: skills and groups, checked on the weapon or on the charge</li>
+  <li>the damage type</li>
+  </ul>
+  The generator verifies that every filter reproduces pyfa on all charge &times; weapon pairings. One row is stacking-penalized (Claw); it joins the Gyrostabilizer pool, as in pyfa.</li>
+<li><b>Applied per weapon instance.</b> Missiles get each damage type's own bonus, which replaces the "dominant damage type" approximation. Rate of fire is per weapon, including the capacitor-drain loop. Drones and fighters get their rows too.</li>
+<li><b><code>SHIP_ROLE_BONUS</code></b> (~340 hand-typed hulls) is now only the fallback for 7 special-edition hulls with no SDE damage effects. <b><code>SUBSYSTEM_ROLE_BONUS</code></b> is retired: subsystems are carriers in the generated table.</li>
+<li><b>Modules:</b> the Drone Damage Amplifier effect (6556) is now gated by effect, not group. That gives the bonus to the faction and Abyssal Heat Sinks, Magnetic Field Stabilizers and BCSs that carry it, and applies DDA bonuses to <b>fighters</b> as well as drones, as pyfa does.</li>
+<li><b>Skills:</b>
+  <ul>
+  <li>Vorton Power Amplification &times;1.15 on all Vorton damage</li>
+  <li>XL Torpedo and XL Cruise Missile Specialization (T2 XL launchers)</li>
+  <li>Mutated Drone Specialization</li>
+  </ul></li>
+<li>Tooling: the update-check chain includes the new generator and the fallback audit; <code>audit_firepower.py</code> now checks the fallback list.</li>
+</ul>
+
+<h2>Effect on fits</h2>
+<p>A full output diff of all 171 golden fits (v.2 &rarr; v.3) moved 14 fits.</p>
+<table>
+<tr><th>Fit</th><th>Before</th><th>After</th><th>Why</th></tr>
+<tr><td>Leviathan, Scourge XL Torpedo (kinetic)</td><td>3,465</td><td>1,155</td><td>+250% kinetic only (C1); both bonuses used to apply to every type</td></tr>
+<tr><td>Leviathan, Mjolnir XL Torpedo (EM)</td><td>3,465</td><td>990</td><td>+200% (C5) only</td></tr>
+<tr><td>Anhinga, Inferno cruise</td><td>116</td><td>33</td><td>No rate-of-fire bonus exists in pyfa</td></tr>
+<tr><td>Akoman, Mega Pulse Laser II</td><td>48</td><td>108</td><td>+125% Large Energy Turret role bonus (was missing)</td></tr>
+<tr><td>Thunderchild, Large Vorton I</td><td>91</td><td>175</td><td>+25% damage, +25% RoF, plus Vorton Power Amplification (capacitor drain rose with the faster cycle)</td></tr>
+<tr><td>Nemesis, Mjolnir torpedo</td><td>79</td><td>45</td><td>+75% is thermal only</td></tr>
+<tr><td>Gnosis, Heavy Pulse Laser I</td><td>27</td><td>33</td><td>Role +20% covers lasers</td></tr>
+<tr><td>Caracal, Light Missile Launcher I</td><td>12</td><td>9</td><td>RoF bonus is Heavy / HAM / Rapid Light only</td></tr>
+<tr><td>Dominix + 'Neophyte' Heat Sink, 5 Hammerhead II</td><td>238</td><td>261</td><td>The heat sink's drone bonus</td></tr>
+<tr><td>Thanatos + 3&times; DDA II, 3 Firbolg I squadrons</td><td>949</td><td>1,505</td><td>DDAs boost fighters</td></tr>
+<tr><td>Stormbringer (real loss)</td><td>263</td><td>302</td><td>Vorton Power Amplification</td></tr>
+<tr><td>Skybreaker</td><td>51</td><td>58</td><td>Vorton Power Amplification</td></tr>
+<tr><td>Vexor 10&times; Hobgoblin II / Dominix sentry volley</td><td>149 / 1,634</td><td>148 / 1,633</td><td>Rounding tie: the exact value is x.5 (Vexor 99 &times; 1.5 = 148.5). Multiplying per damage type lands just below .5 instead of just above. Not a change in the math.</td></tr>
+</table>
+<p>Every other golden fit is unchanged, including all the real killmails with hull bonuses: Golem, Cerberus, Hawk, Muninn, Sacrilege, Vargur, Kronos, Paladin, Legion, Ishtar and the rest. The hand table was right for the hulls they use.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><b>Expected values first:</b> <code>tools/independent_checks/check_firepower.py</code> types the rules by hand from the handler source and reads every value from the SDE. It covers the 10 constructed fits plus the Stormbringer and Skybreaker. All 12 checks failed on v2026.10.14.2 by exactly the predicted error (Leviathan 3,465 = 1,155 &times; 3; Nemesis 79 = 45 &times; 1.75; ...), and all 12 pass now.</li>
+<li><b>Chain</b> (<code>pyfa_update_check.py --run</code>): all OK.
+  <ul>
+  <li>core lock: 13 sections; only <code>hull-damage</code> is new, and the other 12 fingerprints are unchanged</li>
+  <li>golden data complete</li>
+  <li>all three table generators up to date</li>
+  <li>effect audit clean</li>
+  <li>capacitor simulation: 513 sims, 0 mismatches against pyfa</li>
+  <li>suite 171/171</li>
+  <li>firepower fallback audit 0</li>
+  </ul>
+  Parse tests 280/280.</li>
+<li><b>Playwright, real page</b> (Fit Analyzer): the Leviathan paste shows 1,155 DPS and volley 28,322; the Thanatos with DDAs shows 1,505. Tag v2026.10.14.3, no console errors.</li>
+</ul>
+
+<h2>For the owner: pyfa screenshots</h2>
+<p>Same pyfa version and data. These three EFTs confirm the biggest changes against pyfa itself:</p>
+<pre>[Leviathan, check]
+XL Torpedo Launcher I, Scourge XL Torpedo
+
+[Akoman, check]
+Mega Pulse Laser II, Multifrequency L
+
+[Thanatos, check]
+Drone Damage Amplifier II
+Drone Damage Amplifier II
+Drone Damage Amplifier II
+
+
+Firbolg I x18</pre>
+<p>Expected: <b>1,155 / 108 / 1,505 DPS</b>. For the Thanatos, launch three squadrons.</p>
+
+<h2>Not changed (now listed in DEVIATIONS.md)</h2>
+<ul>
+<li>Fighter abilities other than Attack Missile aren't modeled, including the Caiman / Komodo +100% fighter turret-attack role bonus. The generator lists them as skipped.</li>
+<li>Alliance Tournament hulls whose bonus scales with pilot security status (Sidewinder).</li>
+<li>The Skua is still missing from the Tactical Destroyer mode table (P2/P3, with the mode tables).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>A charge bonus may test the <i>weapon's</i> skill rather than the charge's. A Legion subsystem filters on the launcher needing Missile Launcher Operation, so a test against one launcher matched plain projectile ammo. Generate filters against every charge &times; weapon pairing and record which side each test applies to.</li>
+<li>When a diff moves a value by exactly 1 on an x.5 number, check for a rounding tie before hunting a bug.</li>
+</ul>
+<p>See <code>LESSONS_LEARNED.md</code> #4 and #22.</p>
+</body></html>

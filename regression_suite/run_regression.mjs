@@ -36,6 +36,7 @@ import fs from 'fs';
 import path from 'path';
 import vm from 'vm';
 import { fileURLToPath } from 'url';
+import { checkPyfaCore } from '../tools/check_pyfa_core.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -69,6 +70,15 @@ console.log(`Testing: ${path.resolve(htmlPath)}`);
 console.log(`Against: ${path.resolve(goldenPath)} (${Object.keys(golden).length} fits)\n`);
 
 let anyFail = false;
+
+// PYFA CORE lock (2026-10-14, PYFA_CORE.md): code fenced as PYFA CORE in index.html
+// must match the fingerprints in tools/pyfa_core_manifest.json. A changed section
+// fails the suite until it is re-verified against pyfa and the manifest updated.
+{
+  const core = checkPyfaCore(html);
+  if (core.ok) console.log(`PYFA CORE: ${Object.keys(core.sections).length} sections match the manifest`);
+  else { console.log('*** PYFA CORE LOCK:\n  ' + core.problems.join('\n  ')); anyFail = true; }
+}
 
 for (const [fitId, fit] of Object.entries(golden)) {
   const TYPES = fit.types;
@@ -226,8 +236,8 @@ for (const [fitId, fit] of Object.entries(golden)) {
   // checker below either -- same shape problem ammoEstimates had above, same
   // fix (flatten to named scalar fields a golden fit's `expected` can pin).
   // `has*RepFlag` is ALWAYS set (0 or 1), specifically so a fit can assert
-  // ABSENCE of a self-rep (the generic checker silently skips any key whose
-  // result is undefined, so there has to be a real 0/1 to assert against) --
+  // ABSENCE of a self-rep (the generic checker used to skip any key whose
+  // result is undefined -- since v.27 it FAILS instead -- so there has to be a real 0/1 to assert against) --
   // this is what actually catches a REMOTE Armor/Shield/Hull Repairer ever
   // being miscounted as a self-rep (groupName.includes('remote') exclusion
   // regressing): see leshak_zkb139013625_precursor_battleship_role_bonus
@@ -351,7 +361,20 @@ for (const [fitId, fit] of Object.entries(golden)) {
     result.capacitorWeak = result.capacitor.weak ? 1 : 0;
     // v2026.10.13.12: net rate of the confident boosted tier (loaded/inferred
     // cap booster + ASB charges), the figure comparable to pyfa's capDelta.
-    if (result.capacitor.combinedConfident) result.capacitorCombinedConfidentNetRate = result.capacitor.combinedConfident.netRate;
+    // v2026.10.13.27: the primary capacitor fields ARE the best case of the
+    // running modules now (no ring toggle). The old combinedConfident tier is
+    // gone; its pins moved to capacitorNetRate. withoutBoosts (no Capacitor
+    // Booster injection, ASBs on capacitor) and asbDry (ASBs out of charges)
+    // are flattened for pinning, only when present.
+    if (typeof result.capacitor.injectionPerSec === 'number') result.capacitorInjectionPerSec = result.capacitor.injectionPerSec;
+    for (const [obj, pre] of [[result.capacitor.withoutBoosts, 'capacitorNoBoost'], [result.capacitor.asbDry, 'capacitorAsbDry']]) {
+      if (!obj) continue;
+      result[pre + 'ActiveDrainPerSec'] = obj.activeDrainPerSec;
+      result[pre + 'NetRate'] = obj.netRate;
+      result[pre + 'Stable'] = obj.stable ? 1 : 0;
+      if (obj.stablePct !== null) result[pre + 'StablePct'] = obj.stablePct;
+      if (obj.timeToEmptySec !== null) result[pre + 'TimeToEmptySec'] = obj.timeToEmptySec;
+    }
     // v2026.10.13.10: the Weaknesses-card ring's own time (best-case tier), so a
     // golden fit can pin it to the boosted figure the caption describes.
     if (result.capacitor.weakTimeToEmptySec !== undefined && result.capacitor.weakTimeToEmptySec !== null) result.capacitorWeakTimeToEmptySec = result.capacitor.weakTimeToEmptySec;
@@ -423,6 +446,12 @@ for (const [fitId, fit] of Object.entries(golden)) {
     result.ewarTypeCount = new Set(result.ewarModules.map(m => m.name)).size;
     result.hasEwar = result.ewarModules.length > 0 ? 1 : 0;
     result.ewarLongestRangeM = result.ewarModules.length > 0 ? Math.max(...result.ewarModules.map(m => m.rangeM)) : 0;
+    // v2026.10.14.11 (hand-tables P4): every entry's numbers, keyed by module name and loaded script
+    // ('-' when none), e.g. "ewar:Tracking Disruptor II:Optimal Range Disruption Script:opticalBonusPct" --
+    // copies of one type with different scripts are separate entries since v.11.
+    for (const m of result.ewarModules) {
+      for (const [f, v] of Object.entries(m)) if (typeof v === 'number') result[`ewar:${m.name}:${m.script || '-'}:${f}`] = v;
+    }
     // EWAR effectiveness bonuses (skills/hull/subsystem/rig, added
     // 2026-10-11) -- flattened per-kind so a golden fit can pin the EXACT
     // boosted magnitude of whichever EWAR kind(s) it carries (every golden
@@ -474,6 +503,11 @@ for (const [fitId, fit] of Object.entries(golden)) {
     const intNullTrait = result.miscTraits.find(m => m.name.toLowerCase().includes('interdiction nullifier'));
     result.hasInterdictionNullifierFitted = intNullTrait ? 1 : 0;
     if (intNullTrait) result.interdictionNullifierNoteText = intNullTrait.note;
+    // PANIC (bug list #2, v2026.10.14.9): flag keyed by effect 6719, note
+    // wording depends on the module's state (emergency button vs RUNNING).
+    const panicTrait = result.miscTraits.find(m => m.name === 'Pulse Activated Nexus Invulnerability Core');
+    result.hasPanicFitted = panicTrait ? 1 : 0;
+    if (panicTrait) result.panicNoteText = panicTrait.note;
   }
   // Tank Type classification -- NEVER flattened/asserted before now (the
   // TANK_TYPE_THRESHOLD lowering 60%->55%, 2026-10-12, is the first change
@@ -502,7 +536,7 @@ for (const [fitId, fit] of Object.entries(golden)) {
     const rTurret = result.rangeEstimates.find(r => r.kind === 'turret');
     const rMissile = result.rangeEstimates.find(r => r.kind === 'missile');
     if (rTurret) { result.rangeOptimalM = rTurret.optimalM; result.rangeFalloffM = rTurret.falloffM; }
-    if (rMissile) { result.rangeTravelDistanceM = rMissile.travelDistanceM; }
+    if (rMissile) { result.rangeTravelDistanceM = rMissile.travelDistanceM; result.rangeTravelLowerM = rMissile.travelLowerM; result.rangeTravelHigherM = rMissile.travelHigherM; result.rangeTravelHigherChancePct = rMissile.travelHigherChancePct; } // v2026.10.14.7: pyfa's two whole-second outcomes (missile-range core)
   }
   // Sensor strength (F3) -- never flattened/asserted before now; added
   // 2026-10-11 when the Loki sensor-strength "open gap" (pyfa 20.4 vs. this
@@ -574,6 +608,19 @@ for (const [fitId, fit] of Object.entries(golden)) {
   const exp = fit.expected || {};
   const checks = [];
   const tol = (exp.tolerancePct || 1) / 100;
+  // 2026-10-14 (LESSONS #6): every FITTED item (and drone/fighter) needs its
+  // type record AND its group record in the fixture. A missing group made the
+  // engine drop ishtar_zkb137694046's X-Large Shield Booster silently for months
+  // (cap pinned 96.9% while the real page and pyfa both give 40.5%). Cargo and
+  // fleet hangar are exempt: missing cargo records only hide unused cargo.
+  for (const [slotGroup, items] of Object.entries(tally || {})) {
+    if (slotGroup === 'Cargo' || slotGroup === 'Fleet hangar') continue;
+    for (const id of Object.keys(items)) {
+      const t = TYPES[id];
+      const why = !t ? 'no type record' : (!GROUPS[String(t.group_id)] ? `no group record ${t.group_id}` : null);
+      if (why) checks.push([`fixture: ${slotGroup} ${t ? t.name : id} (${why})`, undefined, undefined, false]);
+    }
+  }
   // Latent bug fixed 2026-10-11: this was `expected * tol` (unsigned), which
   // is always FALSE for a negative `expected` (e.g. a debuff percentage
   // like -23.63625) since a non-negative absolute difference can never be
@@ -598,7 +645,11 @@ for (const [fitId, fit] of Object.entries(golden)) {
   const reserved = new Set(['note', 'tolerancePct']);
   for (const key of Object.keys(exp)) {
     if (reserved.has(key) || key.endsWith('_min') || key.endsWith('_max')) continue;
-    if (result[key] === undefined) continue;
+    if (key.endsWith('_approx')) continue; // informational only (legion_owner's old resist notes), never checked
+    // v2026.10.13.27: a pinned field missing from the result FAILS. It used to
+    // be skipped silently, so a renamed/removed field (e.g. the old
+    // capacitorCombinedConfidentNetRate) would have turned its pins into no-ops.
+    if (result[key] === undefined) { checks.push([key + ' (not in result)', undefined, exp[key], false]); continue; }
     checks.push([key, result[key], exp[key], closeEnough(result[key], exp[key])]);
   }
   // Range fields: <field>_min / <field>_max, either or both.
@@ -608,7 +659,7 @@ for (const [fitId, fit] of Object.entries(golden)) {
     if (key.endsWith('_max')) fields.add(key.slice(0, -4));
   }
   for (const field of fields) {
-    if (result[field] === undefined) continue;
+    if (result[field] === undefined) { checks.push([field + ' (not in result)', undefined, undefined, false]); continue; }
     const min = exp[field + '_min'], max = exp[field + '_max'];
     let pass = true, label = field;
     if (min !== undefined) { pass = pass && result[field] >= min; label += ` >= ${min}`; }

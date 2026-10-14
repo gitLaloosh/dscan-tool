@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Ishtar capacitor gap was a test-fixture defect</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Ishtar capacitor gap was a test-fixture defect</h1>
+<p><span class="tag">Test suite</span><span class="tag">Closed gap</span> 2026-10-14 &middot; <code>index.html</code> unchanged (still <code>v2026.10.14.1</code>) &middot; the owner: "did you still need a screen shot from the ishtar fit? if so, send me the eft"</p>
+
+<h2>What was wrong</h2>
+<p>The <code>ishtar_zkb137694046</code> golden fit (a pilot's real loss, zKill 137694046) said capacitor stable 96.9%. the owner's pyfa screenshot of the same fit said 40.5%. The gap had been blamed on the capacitor model: first the closed form, then on inputs once v2026.10.14.1 made the simulator match pyfa exactly.</p>
+<p>Preparing the EFT for a fresh screenshot, I ran the fit as an EFT paste, which loads full game-data records. That run gave <b>stable 40.5%</b>, exactly pyfa.</p>
+<p>The cause was the fixture: it had no <b>group record</b> (40, Shield Booster) for the X-Large C5-L Compact Shield Booster. Without it, the engine dropped the booster entirely, so the pinned drain was only the two hardeners (5.2 GJ/s). The live page fetches the group from ESI, so <b>the tool itself was already right</b>. Only the test was wrong.</p>
+
+<h2>Fix</h2>
+<ul>
+<li>Added the real group record to the fixture: one text insertion, the rest of <code>golden_fits.json</code> is byte-identical.</li>
+<li><b>New guard in <code>run_regression.mjs</code>:</b> any fitted item, drone or fighter whose type or group record is missing from its fixture now fails the suite. Cargo and fleet hangar items are exempt. Of all 161 fits, only this one had a fitted-item gap. The Leshak killmail is missing cargo records only.</li>
+<li>Re-pinned:</li>
+</ul>
+<table>
+<tr><th>Field</th><th>Before</th><th>After</th><th>the owner's pyfa</th></tr>
+<tr><td>Capacitor stable %</td><td>96.9</td><td>40.5</td><td>40.5</td></tr>
+<tr><td>Net cap rate</td><td>+79.1</td><td>+7.1</td><td>+7.12</td></tr>
+<tr><td>Active drain</td><td>5.2 GJ/s</td><td>77.2 GJ/s</td><td>&mdash;</td></tr>
+<tr><td>Shield repair (booster)</td><td>none</td><td>119 HP/s</td><td>&mdash;</td></tr>
+</table>
+<p>Nothing else in this fit's output changed (full-output diff). Capacity 2,576, HP and DPS are as before.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><b>Independent:</b> <code>tools/independent_checks/check_cap_sim.py</code> gained an Ishtar case. It builds the fit by hand from SDE values and runs pyfa's own <code>capSim.py</code>: capacity 2,576, drain 77.20, net +7.12, stable 40.5%, booster 119.2 HP/s.
+  <ul>
+  <li>Drain = booster 400 GJ &times; 0.9 (Shield Compensation V) / 5 s + hardeners 3.2 + 2.0.</li>
+  <li>Capacity = (1,400 + battery) &times; Capacitor Management &times; both Flux Coils, unpenalized.</li>
+  </ul></li>
+<li><b>Fail-then-pass:</b> the old fixture fails the new pins and the new completeness check; the fixed fixture passes.</li>
+<li><b>Suites:</b> 161/161 pass; parse tests 280/280; <code>compare_cap_sim.mjs</code> 483 simulations, 0 mismatches against pyfa.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When the tool disagrees with pyfa on one fixture, run the same fit as an EFT paste, which loads full records, before blaming the model. A trimmed fixture can drop a whole module silently, and a missing <i>group</i> record does that just as surely as a missing type. Two changes to the capacitor model were weighed partly against this fit's gap, which was never the model's. See <code>LESSONS_LEARNED.md</code> #6.</p>
+
+<h2>Screenshot no longer needed</h2>
+<p>The fit now matches the owner's existing pyfa screenshot on every capacitor figure, so no new screenshot is required.</p>
+</body></html>

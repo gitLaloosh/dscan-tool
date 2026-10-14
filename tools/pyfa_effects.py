@@ -74,7 +74,7 @@ CALLS = []
 class Src:
     """The item carrying the effect (ship/module/skill). Self-modifications
     such as module.boostItemAttr(...) (scripts, ammo) are recorded as 'self'."""
-    def __init__(s, ctx, carrier=None): s.ctx = ctx; s.level = Sym('LVL'); s.item = Any(); s.carrier = carrier
+    def __init__(s, ctx, carrier=None): s.ctx = ctx; s.level = Sym('LVL'); s.item = SrcItem(); s.carrier = carrier
     def getModifiedItemAttr(s, n, *a, **k): return Sym('a:' + n)
     getModifiedChargeAttr = getModifiedItemAttr
     def __getattr__(s, k):
@@ -82,6 +82,18 @@ class Src:
             def f(*a, **kw): CALLS.append(('self', k, a, kw))
             return f
         return Any()
+
+class SrcAttrs:
+    """src.item.attributes. v2026.10.14.12: Effect2298 (implants / boosters) boosts each scan strength
+    only `if sensorBoost in implant.item.attributes` -- with a plain Any() that test was always False and the
+    handler recorded NOTHING (LESSON #28: a silent filter failure looks like "no rows"). Now the test is
+    True and recorded as ('cond', 'srcHas', (name,)): the rows are kept, and a caller must check that the
+    value's default is neutral (a carrier without the attribute then changes nothing, as in pyfa)."""
+    def __contains__(s, k): CALLS.append(('cond', 'srcHas', (k,), {})); return True
+    def __getattr__(s, k): return Any()
+class SrcItem:
+    def __init__(s): s.attributes = SrcAttrs()
+    def __getattr__(s, k): return Any()
 
 EVALUATOR = None
 class Coll:
@@ -101,9 +113,35 @@ class Coll:
     def __iter__(s): return iter([])
 
 class Fit:
-    def __init__(s):
-        for c in ('modules', 'ship', 'drones', 'fighters', 'character', 'appliedImplants'): setattr(s, c, Coll(c))
+    def __init__(s, rich=False):
+        # extraAttributes: fit-level values such as droneControlRange (added 2026-10-14
+        # for the firepower/drone audit; other tools ignore collections they don't read).
+        for c in ('modules', 'ship', 'drones', 'fighters', 'character', 'appliedImplants', 'extraAttributes'): setattr(s, c, Coll(c))
+        if rich:   # run(..., rich=True): see RichShipItem / RichCharacter (v2026.10.14.8, speed generator)
+            s.ship.item = RichShipItem(); s.character = RichCharacter(); s.extraAttributes = RichExtra()
     def __getattr__(s, k): return Any()
+
+class RichShipItem:
+    """fit.ship.item for handlers that test the HULL (Effect1616 Capital Ships:
+    `if fit.ship.item.requiresSkill('Capital Ships')`). Records ('shipSkill', name) and returns True,
+    so the caller turns the check into a condition on the hull's required skills."""
+    def requiresSkill(s, n, *a): CALLS.append(('cond', 'shipSkill', (n,), {})); return True
+    def __getattr__(s, k): return Any()
+class RichExtra:
+    """fit.extraAttributes: writes are recorded ('extra', 'set', (key, value)); a read records a
+    condition ('cond', 'extra', (key,)) and is True (e.g. Effect8129: only while cloaked)."""
+    def __setitem__(s, k, v): CALLS.append(('extra', 'set', (k, v), {}))
+    def __getitem__(s, k): CALLS.append(('cond', 'extra', (k,), {})); return True
+    def __getattr__(s, k):
+        def f(*a, **kw): CALLS.append(('extraAttributes', k, a, kw))
+        return f
+class RichSkill:
+    def __init__(s, n): s.n = n; s.level = Sym('LVL')
+    def getModifiedItemAttr(s, a, *x, **k): return Sym(f'k:{s.n}:{a}')
+class RichCharacter:
+    """fit.character.getSkill(name) (Effect1615 Advanced Spaceship Command on capital hulls): the value
+    comes from the SKILL item, recorded as 'k:<skill name>:<attribute>'."""
+    def getSkill(s, n): return RichSkill(n)
 
 REC = []
 class RecStr(str):
@@ -113,6 +151,13 @@ class ProbeGroup:
     def __init__(s, t): s.name = RecStr(gname(t)); s.ID = types[str(t)]['groupID']
 class ProbeItem:
     def __init__(s, t): s.t = t; s.group = ProbeGroup(t); s.name = name(t); s.typeID = t; s.ID = t
+    def getAttribute(s, n, *a):
+        # v2026.10.14.11 (EWAR generator): filters such as Effect2982's
+        # `requiresSkill(...) and mod.item.getAttribute('duration')` test the item's BASE
+        # attribute (pyfa Item.getAttribute). Returns the real SDE value and records
+        # ('hasattr', n) so a caller can see the filter depends on it.
+        REC.append(('hasattr', n))
+        return {aname(x['attributeID']): x['value'] for x in td.get(str(s.t), {}).get('dogmaAttributes', [])}.get(n)
     def requiresSkill(s, n, *a):
         # LESSON #19: some skill handlers filter on the skill ITSELF
         # (`requiresSkill(skill)`, e.g. Effect1730 drone damage, 1851 launcher
@@ -129,7 +174,7 @@ class Probe:
     def __init__(s, t, chargeT=None):
         s.item = ProbeItem(t); s.charge = ProbeItem(chargeT) if chargeT else None
 
-def run(eid, ctx, evaluator=None, carrier=None):
+def run(eid, ctx, evaluator=None, carrier=None, rich=False):
     """Execute pyfa handler `eid` in context ctx; returns (calls, error).
     evaluator(collection, method, args) -> anything: called immediately for
     every call whose first argument is a filter lambda (see Coll).
@@ -138,7 +183,7 @@ def run(eid, ctx, evaluator=None, carrier=None):
     global EVALUATOR
     CALLS.clear(); EVALUATOR = evaluator
     try:
-        EFFECTS[eid].handler(Fit(), Src(ctx, carrier), (ctx,), None)
+        EFFECTS[eid].handler(Fit(rich), Src(ctx, carrier), (ctx,), None)
     except Exception as ex:
         return None, repr(ex)[:160]
     finally:

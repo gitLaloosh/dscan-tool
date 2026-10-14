@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Missile range from pyfa's own function</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Missile range from pyfa's own function</h1>
+<p><span class="tag">Bug fix</span><span class="tag">PYFA CORE</span><span class="tag">UI</span><span class="tag">Tooling</span> 2026-10-14 &middot; <code>v2026.10.14.6</code> &rarr; <code>v2026.10.14.7</code> &middot; the owner: "should we make a change to missile range to reflect that of pyfa? if you think so, let's go ahead and do it"</p>
+
+<h2>Problem</h2>
+<p>The tool showed a missile's range as velocity &times; flight time. pyfa's range column comes from <code>Module.missileMaxRangeData</code> (<code>eos/saveddata/module.py</code>), which:</p>
+<ul>
+<li>adds the ship's radius to the flight time (pyfa issue #2083), cleaned with <code>floatUnerr</code></li>
+<li>flies whole seconds: it computes the range for the second below and the second above, plus the chance of the longer one (pyfa's tooltip), and shows their weighted average (<code>Module.maxRange</code>)</li>
+<li>counts the first mass &times; agility / 10<sup>6</sup> seconds at half speed (acceleration)</li>
+<li>caps auto-targeting (FoF) missiles at <code>maxFOFTargetRange</code></li>
+<li>measures from the ship's surface (subtracts the radius)</li>
+</ul>
+<p>The weighted average is usually within metres of velocity &times; flight time, because the radius is added and then subtracted. It differs where acceleration matters (heavy assault missiles &minus;66 m, XL torpedoes &minus;580 m) and a lot for FoF missiles (Raven auto-targeting cruise missile 222.1 &rarr; 199.8 km). This is the third time LESSON #20 applied: the v.17 range batch followed every handler on velocity and flight time, but not the property that turns them into a range.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>New PYFA CORE section <code>missile-range</code></b>: <code>pyfaFloatUnerr</code> and <code>pyfaMissileMaxRangeData</code>, ported line for line. Its inputs are the tool's modified velocity and flight time, the ship's radius (attr 162), the charge's mass and agility (no pyfa handler modifies these), and the FoF cap when the charge has effect 104. The SDE default of 200 km applies when the cap attribute is absent.</li>
+<li><b>Result:</b> <code>travelDistanceM</code> is now pyfa's displayed range. New fields <code>travelLowerM</code>, <code>travelHigherM</code> and <code>travelHigherChancePct</code> hold the two whole-second outcomes.</li>
+<li><b>UI:</b> hovering the missile range in the Firepower card shows pyfa's tooltip, e.g. "92% chance to fly 1085.4 km, 8% chance to fly 1090.1 km". The methodology note was updated.</li>
+<li><b>Tooling:</b>
+  <ul>
+  <li><code>tools/independent_checks/check_missile_range.py</code> (new) lifts pyfa's function <i>unmodified</i> from <code>module.py</code> (ast) and runs it with pyfa's own <code>floatUnerr</code> on oracle attributes. It is in the chain, which now has 14 steps.</li>
+  <li><code>compare_modes.py</code> uses the same function.</li>
+  <li><code>golden_oracle.py</code> now defaults the Anhinga to its first mode, as the tool does.</li>
+  <li><code>run_regression.mjs</code> flattens the split fields.</li>
+  </ul></li>
+<li>DEVIATIONS.md: the missile-range entry is removed.</li>
+</ul>
+
+<h2>Effect on fits</h2>
+<p>A full diff of 191 fits (v.6 &rarr; v.7) changed 23. Only missile range fields moved: 14 displayed ranges, plus the new split fields everywhere.</p>
+<table>
+<tr><th>Fit</th><th>v.6</th><th>v.7 (= pyfa)</th></tr>
+<tr><td>Leviathan XL torpedo &times;2</td><td>58,725 m</td><td>58,145 m (acceleration)</td></tr>
+<tr><td>Nighthawk / Muninn HAMs</td><td>16,875</td><td>16,809</td></tr>
+<tr><td>Loki HAMs</td><td>21,094</td><td>21,011</td></tr>
+<tr><td>Golem Javelin torpedo</td><td>82,013</td><td>81,983</td></tr>
+<tr><td>Sacrilege HAMs, Nemesis torpedo</td><td>27,844 / 76,545</td><td>27,832 / 76,527</td></tr>
+<tr><td>Hawk, Osprey NI, Rifter, Caracal, both Skua fits</td><td colspan="2">&minus;1 to &minus;3 m</td></tr>
+</table>
+<p>New constructed fit <code>raven_constructed_fof_cruise_range_cap</code>: Raven + Cruise Missile Launcher II / Scourge Auto-Targeting Cruise Missile I gives 199,750 m (v.6: 222,075). Split pins were added to the three Anhinga fits, both Skua fits, the Golem, the Nighthawk and the Leviathan. All of them fail on v.6.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><b>Expected values first:</b> <code>check_missile_range.py</code> reported 24 mismatches on v.6. On v.7 it reports <b>0 mismatches over 25 missile estimates</b>. the owner's pyfa screenshots agree: Anhinga 1086 km, Skua 35.4 km (Sharpshooter) and 10.1 km (Defense).</li>
+<li><b>Chain:</b> all 14 checks OK.
+  <ul>
+  <li>core lock: 15 sections, <code>missile-range</code> new</li>
+  <li>all generators up to date</li>
+  <li>capacitor simulation: 576 sims, 0 mismatches</li>
+  <li>suite ALL PASS on 192 fits</li>
+  <li>resists 0 of 192, missile range 0, modes 0</li>
+  <li>firepower fallback audit 0</li>
+  </ul>
+  Parse tests 280/280.</li>
+<li><b>Real page</b> (Playwright, tag v2026.10.14.7, no script errors): Anhinga ~1085.8 km (92% / 8% tooltip), Raven FoF ~199.8 km, Skua ~35.4 km (99% 35.3 km / 1% 47.1 km).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #20, third time: following every handler on an attribute is not enough. Read the pyfa property that consumes it (<code>missileMaxRangeData</code>, <code>rawCycleTime</code>, <code>getCycleParameters</code>).</li>
+<li>When a pyfa function is self-contained, lift it out of pyfa's source and run it as the reference (<code>ast</code> + its own helpers) rather than re-deriving it (LESSON #3).</li>
+</ul>
+</body></html>

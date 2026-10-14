@@ -23,7 +23,9 @@ from indep_common import *
 
 def stable(capacity, rechargeSec, drain):
     """EVE-client closed form (pyfa cap_stable_eve): stable when 4k <= 1,
-    k = drain * tau / (2 * capacity), tau = rechargeTime / 5."""
+    k = drain * tau / (2 * capacity), tau = rechargeTime / 5.
+    This is the EVE closed form (pyfa cap_stable_eve). Since v2026.10.14.1 the tool shows
+    pyfa's simulation instead (check_cap_sim.py); this value is the ring-hover figure."""
     tau = rechargeSec / 5
     k = drain * tau / (2 * capacity)
     return (1 - 4 * k) >= 0
@@ -41,7 +43,8 @@ def vargur(bastionActive, mjdActive):
     cd = b(bas['bastionModeShieldBoosterCapDurationBonus']) if bastionActive else 1
     cyc = lsb['duration'] / 1000 * cd
     drain = lsb['capacitorNeed'] * SK('Shield Compensation', 'shieldBoostCapacitorBonus') * cd / cyc
-    if mjdActive: drain += mjd['capacitorNeed'] / (mjd['duration'] / 1000 * SK('Micro Jump Drive Operation', 'durationBonus'))
+    # v2026.10.14.1 (LESSON #20): pyfa averages over active cycle + moduleReactivationDelay (attr 669)
+    if mjdActive: drain += mjd['capacitorNeed'] / (mjd['duration'] / 1000 * SK('Micro Jump Drive Operation', 'durationBonus') + mjd['moduleReactivationDelay'] / 1000)
     return round(sens, 2), round(amt / cyc, 1), round(drain, 3)
 print('A Vargur default (Bastion active, MJD online): sensor, LSB HP/s, drain', vargur(True, False))
 print('A Vargur {Bastion online, MJD active}:          ', vargur(False, True))
@@ -77,7 +80,7 @@ print('C Rifter armor EM resist %: default (ADC online, hardener active)', armor
 print('   {EM Armor Hardener II: offline}', armorEm('online', False))
 print('   {Assault Damage Control II: active}', armorEm('active', True), 'hull EM', hullEm('active'))
 print('   {Assault Damage Control II: offline}', armorEm('offline', True), 'hull EM', hullEm('offline'))
-dH, dA = hard['capacitorNeed'] / (hard['duration'] / 1000), adc['capacitorNeed'] / (adc['duration'] / 1000)
+dH, dA = hard['capacitorNeed'] / (hard['duration'] / 1000), adc['capacitorNeed'] / ((adc['duration'] + adc['moduleReactivationDelay']) / 1000)  # + reactivation delay, LESSON #20
 print('   drain: default (hardener only)', round(dH, 3), '| ADC active', round(dH + dA, 3), '| hardener offline 0')
 
 # ---- D/E: Command Burst group limits

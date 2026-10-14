@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — PANIC: Active option removed, flag duration fixed</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>PANIC: Active option removed, flag duration fixed</h1>
+<p><span class="tag">UI</span><span class="tag">Bug fix</span> 2026-10-14 &middot; <code>v2026.10.14.9</code> &rarr; <code>v2026.10.14.10</code> &middot; follow-up to bug list #2</p>
+
+<h2>Why</h2>
+<p>v.9 let the PANIC be set active on the Fit card, as the owner's bug report asked. the owner then asked whether the option should exist at all, since he had assumed activating it would change the cards' numbers. It didn't: pyfa has no handler for the PANIC's effect (6719), so pyfa computes nothing for it, and CCP's buff values for it aren't in pyfa's data. the owner: "if a user sets it to active and sees nothing change they may think that the tool isn't working properly." Agreed: a control that changes nothing looks broken.</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The PANIC follows pyfa again: offline or online, no Active state (hover: "Can't be active: has no active function"). <code>ACTIVATABLE_WITHOUT_PYFA_HANDLER_EFFECTS</code> and the PANIC's entry in <code>MODULE_DEFAULT_ONLINE_EFFECTS</code> were removed; the <code>DEVIATIONS.md</code> row is gone. Module states are now exactly what v.8 produced.</li>
+<li>The EWAR / Misc flag stays and always reads the same: "can activate to make this Rorqual and its fleet's subcapital mining and hauling ships within 200 km nearly invulnerable for 6 min, but none of them can deal damage, warp, dock, cloak or jump while it runs. One use, then it burns out. Not reflected in the stats (pyfa doesn't model it)".</li>
+<li><b>Duration fixed, 4 &rarr; 6 minutes.</b> v.9 quoted the item's base value. The Invulnerability Core Operation skill (44067; "10% increase per level to the effect duration") is applied by pyfa's Effect6807 to <code>buffDuration</code> (attr 2535): at All V, 240 s &times; 1.5 = 360 s. The flag now reads <code>buffDuration</code> &times; <code>MAX_INVULNERABILITY_CORE_OPERATION_MULT</code> (1.5).</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><code>tools/independent_checks/check_panic.py</code> rewritten first: pyfa can't activate the PANIC; it is still the only published module of its kind; pyfa's handlers at All V give buffDuration 360,000 ms and range 200 km; a PANIC online changes no Rorqual attribute. 0 problems.</li>
+<li>Both PANIC goldens re-pinned before the code (6-minute wording; the "requested active" fit now pins the refusal). Both fail on v.9 and on v.8.</li>
+<li>Full output diff v.8 &rarr; v.10: the same 4 PANIC fits differ, and only by the new flag.</li>
+<li>Regression suite ALL PASS, parse tests 293/293, update-check chain 17/17 OK.</li>
+<li>Real page: the PANIC button cycles online &harr; offline; the flag shows when online and disappears when offline.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p><b>LESSONS_LEARNED #29</b> (revised): if pyfa doesn't model something, don't add a control that changes nothing. Describe it in words where it matters and say the stats don't include it, and ask before adding an input whose only effect is a label. Any number a flag quotes goes through pyfa's handlers at All V like every other stat, not straight from the item's base attribute (#20).</p>
+</body>
+</html>

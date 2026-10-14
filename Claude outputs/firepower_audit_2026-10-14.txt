@@ -1,0 +1,274 @@
+HULLS: 393 with damage/RoF/drone-range effects; 322 with findings; handler errors 81
+  value/coverage mismatches: 28; scope-only notes: 294
+  Gnosis (Combat Battlecruiser, 3756)
+     MISSING in tool: ('energy', 'damage', 20.0, None)
+     MISSING in tool: ('projectile', 'damage', 20.0, None)
+     scope narrower in pyfa: ('energy', 'damage', 'skill Medium Energy Turret')
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Medium Hybrid Turret')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Heavy Assault Missiles')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Heavy Missiles')
+     scope narrower in pyfa: ('projectile', 'damage', 'skill Medium Projectile Turret')
+  Leviathan (Titan, 3764)
+     MISSING in tool: ('missile', 'damage', 250.0, 'kin')
+     MISSING in tool: ('missile', 'damage', 200.0, 'exp')
+     MISSING in tool: ('missile', 'damage', 200.0, 'therm')
+     MISSING in tool: ('missile', 'damage', 200.0, 'em')
+     EXTRA in tool:   ('missile', 'damage', 250.0, None)
+     EXTRA in tool:   ('missile', 'damage', 200.0, None)
+     scope narrower in pyfa: ('missile', 'damage', 'skill XL Cruise Missiles')
+     scope narrower in pyfa: ('missile', 'damage', 'skill XL Torpedoes')
+     scope narrower in pyfa: ('missile', 'rof', 'group Missile Launcher XL Cruise')
+     scope narrower in pyfa: ('missile', 'rof', 'group Missile Launcher XL Torpedo')
+  Blade (Assault Frigate, 11373)
+     MISSING in tool: ('projectile', 'damage', 30.0, None)
+     scope narrower in pyfa: ('projectile', 'damage', 'skill Small Projectile Turret')
+  Erinye (Assault Frigate, 11375)
+     MISSING in tool: ('hybrid', 'damage', 30.0, None)
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Small Hybrid Turret')
+  Nemesis (Stealth Bomber, 11377)
+     MISSING in tool: ('missile', 'damage', 75.0, 'therm')
+     EXTRA in tool:   ('missile', 'damage', 75.0, None)
+     scope narrower in pyfa: ('missile', 'damage', 'skill Torpedoes')
+  Kishar (Assault Frigate, 11389)
+     MISSING in tool: ('hybrid', 'damage', 30.0, None)
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Small Hybrid Turret')
+  Punisher Kador Edition (Frigate, 33655)
+     EXTRA in tool:   ('energy', 'damage', 25.0, None)
+  Punisher Tash-Murkon Edition (Frigate, 33657)
+     EXTRA in tool:   ('energy', 'damage', 25.0, None)
+  Rorqual ORE Development Edition (Capital Industrial Ship, 33687)
+     EXTRA in tool:   ('drone', 'damage', 100.0, None)
+  Moros Interbus Edition (Dreadnought, 34339)
+     EXTRA in tool:   ('hybrid', 'damage', 25.0, None)
+     EXTRA in tool:   ('hybrid', 'rof', 25.0, None)
+  Naglfar Justice Edition (Dreadnought, 34341)
+     EXTRA in tool:   ('projectile', 'damage', 25.0, None)
+     EXTRA in tool:   ('projectile', 'rof', 25.0, None)
+  Phoenix Wiyrkomi Edition (Dreadnought, 34343)
+     EXTRA in tool:   ('missile', 'damage', 25.0, None)
+  Revelation Sarum Edition (Dreadnought, 34345)
+     EXTRA in tool:   ('energy', 'damage', 25.0, None)
+  Vigil Fleet Issue (Frigate, 37454)
+     MISSING in tool: ('missile', 'damage', 100.0, 'em')
+     MISSING in tool: ('missile', 'damage', 100.0, 'therm')
+     MISSING in tool: ('missile', 'damage', 100.0, 'kin')
+     MISSING in tool: ('missile', 'damage', 125.0, 'exp')
+     EXTRA in tool:   ('missile', 'damage', 125.0, None)
+     EXTRA in tool:   ('missile', 'damage', 100.0, None)
+     scope narrower in pyfa: ('missile', 'damage', 'skill Rockets')
+  Sunesis (Destroyer, 42685)
+     MISSING in tool: ('projectile', 'damage', 20.0, None)
+     MISSING in tool: ('energy', 'damage', 20.0, None)
+     scope narrower in pyfa: ('energy', 'damage', 'skill Small Energy Turret')
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Small Hybrid Turret')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Light Missiles/Rockets')
+     scope narrower in pyfa: ('projectile', 'damage', 'skill Small Projectile Turret')
+  Virtuoso (Stealth Bomber, 45530)
+     MISSING in tool: ('missile', 'damage', 75.0, 'therm')
+     MISSING in tool: ('missile', 'damage', 75.0, 'exp')
+     EXTRA in tool:   ('missile', 'damage', 75.0, None)
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Small Hybrid Turret')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Torpedoes')
+     scope narrower in pyfa: ('missile', 'rof', 'group Missile Launcher Torpedo')
+  Caiman (Dreadnought, 45647)
+     MISSING in tool: ('fighter', 'damage', 100.0, None)
+     MISSING in tool: ('missile', 'damage', 25.0, 'kin')
+     MISSING in tool: ('missile', 'damage', 25.0, 'therm')
+     EXTRA in tool:   ('missile', 'damage', 25.0, None)
+     scope narrower in pyfa: ('fighter', 'damage', 'skill Fighters')
+  Komodo (Titan, 45649)
+     MISSING in tool: ('missile', 'damage', 250.0, 'therm')
+     MISSING in tool: ('missile', 'damage', 250.0, 'kin')
+     MISSING in tool: ('missile', 'damage', 200.0, 'em')
+     MISSING in tool: ('missile', 'damage', 200.0, 'exp')
+     MISSING in tool: ('fighter', 'damage', 100.0, None)
+     EXTRA in tool:   ('missile', 'damage', 250.0, None)
+     EXTRA in tool:   ('missile', 'damage', 200.0, None)
+     scope narrower in pyfa: ('fighter', 'damage', 'skill Fighters')
+     scope narrower in pyfa: ('missile', 'rof', 'group Missile Launcher XL Cruise')
+     scope narrower in pyfa: ('missile', 'rof', 'group Missile Launcher XL Torpedo')
+  Praxis (Battleship, 47466)
+     MISSING in tool: ('projectile', 'damage', 20.0, None)
+     MISSING in tool: ('energy', 'damage', 20.0, None)
+     scope narrower in pyfa: ('energy', 'damage', 'skill Large Energy Turret')
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Large Hybrid Turret')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Cruise Missiles')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Heavy Missiles')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Torpedoes')
+     scope narrower in pyfa: ('projectile', 'damage', 'skill Large Projectile Turret')
+  GFX Test Vargur 1/2 (Marauder, 47727)
+     MISSING in tool: ('projectile', 'rof', 25.0, None)
+     MISSING in tool: ('projectile', 'damage', 100.0, None)
+     scope narrower in pyfa: ('projectile', 'damage', 'skill Large Projectile Turret')
+     scope narrower in pyfa: ('projectile', 'rof', 'skill Large Projectile Turret')
+  GFX Test Vargur 2/2 (Marauder, 47728)
+     MISSING in tool: ('projectile', 'rof', 25.0, None)
+     MISSING in tool: ('projectile', 'damage', 100.0, None)
+     scope narrower in pyfa: ('projectile', 'damage', 'skill Large Projectile Turret')
+     scope narrower in pyfa: ('projectile', 'rof', 'skill Large Projectile Turret')
+  Hydra (Covert Ops, 48636)
+     MISSING in tool: ('precursor', 'damage', 37.5, None)
+     scope narrower in pyfa: ('precursor', 'damage', 'skill Small Precursor Weapon')
+  Test Site Maller (Cruiser, 52267)
+     MISSING in tool: ('energy', 'damage', 25.0, None)
+     scope narrower in pyfa: ('energy', 'damage', 'skill Medium Energy Turret')
+  Thunderchild (Battleship, 54733)
+     MISSING in tool: ('vorton', 'damage', 25.0, None)
+     MISSING in tool: ('vorton', 'rof', 25.0, None)
+     scope narrower in pyfa: ('vorton', 'damage', 'skill Large Vorton Projector')
+     scope narrower in pyfa: ('vorton', 'rof', 'skill Large Vorton Projector')
+  AIR Civilian Astero (Frigate, 58745)
+     MISSING in tool: ('energy', 'damage', 10.0, None)
+     scope narrower in pyfa: ('energy', 'damage', 'skill Small Energy Turret')
+  Metamorphosis (Frigate, 77114)
+     MISSING in tool: ('projectile', 'damage', 80.0, None)
+     MISSING in tool: ('energy', 'damage', 80.0, None)
+     scope narrower in pyfa: ('energy', 'damage', 'skill Small Energy Turret')
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Small Hybrid Turret')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Light Missiles/Rockets')
+     scope narrower in pyfa: ('projectile', 'damage', 'skill Small Projectile Turret')
+  Anhinga (Attack Battlecruiser, 89807)
+     EXTRA in tool:   ('missile', 'rof', 25.0, None)
+     EXTRA in tool:   ('missile', 'rof', 25.0, None)
+     EXTRA in tool:   ('missile', 'rof', 50.0, None)
+  Akoman (Attack Battlecruiser, 95741)
+     MISSING in tool: ('energy', 'damage', 125.0, None)
+     scope narrower in pyfa: ('energy', 'damage', 'skill Large Energy Turret')
+
+SUBSYSTEMS: 7 with findings
+  Legion Offensive - Liquid Crystal Magnifiers (Offensive Subsystem, 45598)
+     scope narrower in pyfa: ('energy', 'damage', 'skill Medium Energy Turret')
+  Legion Offensive - Assault Optimization (Offensive Subsystem, 45599)
+     scope narrower in pyfa: ('missile', 'rof', 'group Missile Launcher Heavy/Missile Launcher Heavy Assault/Missile Launcher Rapid Light')
+  Tengu Offensive - Accelerated Ejection Bay (Offensive Subsystem, 45601)
+     scope narrower in pyfa: ('missile', 'damage', 'skill Heavy Assault Missiles')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Heavy Missiles')
+     scope narrower in pyfa: ('missile', 'damage', 'skill Light Missiles')
+     scope narrower in pyfa: ('missile', 'rof', 'group Missile Launcher Heavy/Missile Launcher Heavy Assault/Missile Launcher Rapid Light')
+  Tengu Offensive - Magnetic Infusion Basin (Offensive Subsystem, 45602)
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Medium Hybrid Turret')
+  Proteus Offensive - Hybrid Encoding Platform (Offensive Subsystem, 45604)
+     scope narrower in pyfa: ('hybrid', 'damage', 'skill Medium Hybrid Turret')
+  Loki Offensive - Projectile Scoping Array (Offensive Subsystem, 45607)
+     scope narrower in pyfa: ('projectile', 'damage', 'skill Medium Projectile Turret')
+  Loki Offensive - Launcher Efficiency Configuration (Offensive Subsystem, 45608)
+     scope narrower in pyfa: ('missile', 'rof', 'group Missile Launcher Heavy/Missile Launcher Heavy Assault/Missile Launcher Rapid Light')
+
+MODULE GROUPS with damage/RoF effects (pyfa categories vs MODULE_DAMAGE_GROUP_CATEGORY):
+  Ballistic Control System: pyfa ['drone', 'fighter', 'missile'] | tool missile
+  Drone Damage Modules: pyfa ['drone', 'fighter'] | tool None
+  Entropic Radiation Sink: pyfa ['precursor'] | tool precursor
+  Fighter Support Unit: pyfa ['fighter'] | tool None
+  Gyrostabilizer: pyfa ['projectile'] | tool projectile
+  Heat Sink: pyfa ['drone', 'energy', 'fighter'] | tool energy
+  Magnetic Field Stabilizer: pyfa ['drone', 'fighter', 'hybrid'] | tool hybrid
+  Rig Drones: pyfa ['dronesentry'] | tool None
+  Rig Energy Weapon: pyfa ['energy'] | tool energy
+  Rig Hybrid Weapon: pyfa ['hybrid'] | tool hybrid
+  Rig Launcher: pyfa ['missile'] | tool missile
+  Rig Projectile Weapon: pyfa ['projectile'] | tool projectile
+  Siege Module: pyfa ['drone', 'energy', 'hybrid', 'missile', 'precursor', 'projectile'] | tool None
+  Vorton Projector Upgrade: pyfa ['vorton'] | tool vorton
+
+SKILLS with damage/RoF effects:
+  Advanced Drone Avionics: droneControlRange increase 15000 [fit]
+  Amarr Drone Specialization: drone damage 10 [skill Amarr Drone Specialization]
+  Amarr Fighter Specialization: fighter damage 10 [skill Amarr Fighter Specialization]
+  Auto-Targeting Missiles: missile damage 25 em [skill Auto-Targeting Missiles]; missile damage 25 exp [skill Auto-Targeting Missiles]; missile damage 25 therm [skill Auto-Targeting Missiles]; missile damage 25 kin [skill Auto-Targeting Missiles]
+  Caldari Drone Specialization: drone damage 10 [skill Caldari Drone Specialization]
+  Caldari Fighter Specialization: fighter damage 10 [skill Caldari Fighter Specialization]
+  Capital Artillery Specialization: projectile damage 10 [skill Capital Artillery Specialization]
+  Capital Autocannon Specialization: projectile damage 10 [skill Capital Autocannon Specialization]
+  Capital Beam Laser Specialization: energy damage 10 [skill Capital Beam Laser Specialization]
+  Capital Blaster Specialization: hybrid damage 10 [skill Capital Blaster Specialization]
+  Capital Disintegrator Specialization: precursor damage 10 [skill Capital Disintegrator Specialization]
+  Capital Energy Turret: energy damage 25 [skill Capital Energy Turret]
+  Capital Hybrid Turret: hybrid damage 25 [skill Capital Hybrid Turret]
+  Capital Precursor Weapon: precursor damage 25 [skill Capital Precursor Weapon]
+  Capital Projectile Turret: projectile damage 25 [skill Capital Projectile Turret]
+  Capital Pulse Laser Specialization: energy damage 10 [skill Capital Pulse Laser Specialization]
+  Capital Railgun Specialization: hybrid damage 10 [skill Capital Railgun Specialization]
+  Cruise Missile Specialization: missile rof 10 [skill Cruise Missile Specialization]
+  Cruise Missiles: missile damage 25 em [skill Cruise Missiles]; missile damage 25 exp [skill Cruise Missiles]; missile damage 25 therm [skill Cruise Missiles]; missile damage 25 kin [skill Cruise Missiles]
+  Drone Avionics: droneControlRange increase 25000 [fit]
+  Drone Interfacing: drone damage 50 [all]; fighter damage 50 [skill Fighters]
+  Fighters: fighter damage 25 [skill Fighters]
+  Gallente Drone Specialization: drone damage 10 [skill Gallente Drone Specialization]
+  Gallente Fighter Specialization: fighter damage 10 [skill Gallente Fighter Specialization]
+  Gunnery: energy rof 10 [skill Gunnery]; hybrid rof 10 [all]; precursor rof 10 [all]; projectile rof 10 [all]
+  Heavy Assault Missile Specialization: missile rof 10 [skill Heavy Assault Missile Specialization]
+  Heavy Assault Missiles: missile damage 25 em [skill Heavy Assault Missiles]; missile damage 25 exp [skill Heavy Assault Missiles]; missile damage 25 therm [skill Heavy Assault Missiles]; missile damage 25 kin [skill Heavy Assault Missiles]
+  Heavy Drone Operation: drone damage 25 [skill Heavy Drone Operation]
+  Heavy Fighters: fighter damage 25 [skill Heavy Fighters]
+  Heavy Missile Specialization: missile rof 10 [skill Heavy Missile Specialization]
+  Heavy Missiles: missile damage 25 em [skill Heavy Missiles]; missile damage 25 exp [skill Heavy Missiles]; missile damage 25 therm [skill Heavy Missiles]; missile damage 25 kin [skill Heavy Missiles]
+  Hybrid Drone Specialization: drone damage 15 [skill Advanced Drone Avionics]
+  Large Artillery Specialization: projectile damage 10 [skill Large Artillery Specialization]
+  Large Autocannon Specialization: projectile damage 10 [skill Large Autocannon Specialization]
+  Large Beam Laser Specialization: energy damage 10 [skill Large Beam Laser Specialization]
+  Large Blaster Specialization: hybrid damage 10 [skill Large Blaster Specialization]
+  Large Disintegrator Specialization: precursor damage 10 [skill Large Disintegrator Specialization]
+  Large Energy Turret: energy damage 25 [skill Large Energy Turret]
+  Large Hybrid Turret: hybrid damage 25 [skill Large Hybrid Turret]
+  Large Precursor Weapon: precursor damage 25 [skill Large Precursor Weapon]
+  Large Projectile Turret: projectile damage 25 [skill Large Projectile Turret]
+  Large Pulse Laser Specialization: energy damage 10 [skill Large Pulse Laser Specialization]
+  Large Railgun Specialization: hybrid damage 10 [skill Large Railgun Specialization]
+  Large Vorton Projector: vorton damage 25 [skill Large Vorton Projector]
+  Large Vorton Specialization: vorton damage 10 [skill Large Vorton Specialization]
+  Light Drone Operation: drone damage 25 [skill Light Drone Operation]
+  Light Missile Specialization: missile rof 10 [skill Light Missile Specialization]
+  Light Missiles: missile damage 25 em [skill Light Missiles]; missile damage 25 exp [skill Light Missiles]; missile damage 25 therm [skill Light Missiles]; missile damage 25 kin [skill Light Missiles]
+  Medium Artillery Specialization: projectile damage 10 [skill Medium Artillery Specialization]
+  Medium Autocannon Specialization: projectile damage 10 [skill Medium Autocannon Specialization]
+  Medium Beam Laser Specialization: energy damage 10 [skill Medium Beam Laser Specialization]
+  Medium Blaster Specialization: hybrid damage 10 [skill Medium Blaster Specialization]
+  Medium Disintegrator Specialization: precursor damage 10 [skill Medium Disintegrator Specialization]
+  Medium Drone Operation: drone damage 25 [skill Medium Drone Operation]
+  Medium Energy Turret: energy damage 25 [skill Medium Energy Turret]
+  Medium Hybrid Turret: hybrid damage 25 [skill Medium Hybrid Turret]
+  Medium Precursor Weapon: precursor damage 25 [skill Medium Precursor Weapon]
+  Medium Projectile Turret: projectile damage 25 [skill Medium Projectile Turret]
+  Medium Pulse Laser Specialization: energy damage 10 [skill Medium Pulse Laser Specialization]
+  Medium Railgun Specialization: hybrid damage 10 [skill Medium Railgun Specialization]
+  Medium Vorton Projector: vorton damage 25 [skill Medium Vorton Projector]
+  Medium Vorton Specialization: vorton damage 10 [skill Medium Vorton Specialization]
+  Minmatar Drone Specialization: drone damage 10 [skill Minmatar Drone Specialization]
+  Minmatar Fighter Specialization: fighter damage 10 [skill Minmatar Fighter Specialization]
+  Missile Launcher Operation: missile rof 10 [skill Missile Launcher Operation]
+  Mutated Drone Specialization: drone damage 10 [skill Mutated Drone Specialization]
+  Rapid Firing: energy rof 20 [skill Gunnery]; hybrid rof 20 [all]; precursor rof 20 [all]; projectile rof 20 [all]
+  Rapid Launch: missile rof 15 [skill Missile Launcher Operation]
+  Rocket Specialization: missile rof 10 [skill Rocket Specialization]
+  Rockets: missile damage 25 em [skill Rockets]; missile damage 25 exp [skill Rockets]; missile damage 25 therm [skill Rockets]; missile damage 25 kin [skill Rockets]
+  Sentry Drone Interfacing: dronesentry damage 25 [all]
+  Small Artillery Specialization: projectile damage 10 [skill Small Artillery Specialization]
+  Small Autocannon Specialization: projectile damage 10 [skill Small Autocannon Specialization]
+  Small Beam Laser Specialization: energy damage 10 [skill Small Beam Laser Specialization]
+  Small Blaster Specialization: hybrid damage 10 [skill Small Blaster Specialization]
+  Small Disintegrator Specialization: precursor damage 10 [skill Small Disintegrator Specialization]
+  Small Energy Turret: energy damage 25 [skill Small Energy Turret]
+  Small Hybrid Turret: hybrid damage 25 [skill Small Hybrid Turret]
+  Small Precursor Weapon: precursor damage 25 [skill Small Precursor Weapon]
+  Small Projectile Turret: projectile damage 25 [skill Small Projectile Turret]
+  Small Pulse Laser Specialization: energy damage 10 [skill Small Pulse Laser Specialization]
+  Small Railgun Specialization: hybrid damage 10 [skill Small Railgun Specialization]
+  Small Vorton Projector: vorton damage 25 [skill Small Vorton Projector]
+  Small Vorton Specialization: vorton damage 10 [skill Small Vorton Specialization]
+  Surgical Strike: energy damage 15 [all]; projectile damage 15 [all]; hybrid damage 15 [all]; precursor damage 15 [all]
+  Torpedo Specialization: missile rof 10 [skill Torpedo Specialization]
+  Torpedoes: missile damage 25 em [skill Torpedoes]; missile damage 25 exp [skill Torpedoes]; missile damage 25 therm [skill Torpedoes]; missile damage 25 kin [skill Torpedoes]
+  Vorton Power Amplification: vorton damage 15 [all]
+  Vorton Projector Operation: vorton rof 10 [all]
+  Warhead Upgrades: missile damage 10 em [all]; missile damage 10 exp [all]; missile damage 10 kin [all]; missile damage 10 therm [all]
+  XL Cruise Missile Specialization: missile rof 10 [skill XL Cruise Missile Specialization]
+  XL Cruise Missiles: missile damage 25 em [skill XL Cruise Missiles]; missile damage 25 exp [skill XL Cruise Missiles]; missile damage 25 kin [skill XL Cruise Missiles]; missile damage 25 therm [skill XL Cruise Missiles]
+  XL Torpedo Specialization: missile rof 10 [skill XL Torpedo Specialization]
+  XL Torpedoes: missile damage 25 kin [skill XL Torpedoes]; missile damage 25 em [skill XL Torpedoes]; missile damage 25 exp [skill XL Torpedoes]; missile damage 25 therm [skill XL Torpedoes]
+
+DRONE CONTROL RANGE (hulls):
+  Ishtar 12005: [('increase', 25000.0)] | tool bonus 25000 penalty None
+  伊什塔级YC117年特别版 34479: [('increase', 25000.0)] | tool bonus None penalty None
+  Griffin Navy Issue 37455: [('boost', -50.0)] | tool bonus None penalty 0.5
+
+wrote /tmp/claude-0/scratch/fp_audit.json

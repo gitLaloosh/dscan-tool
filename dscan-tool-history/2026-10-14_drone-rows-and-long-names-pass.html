@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-14 — Drone rows lined up, and a long-names layout pass</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Drone rows lined up, and a long-names layout pass</h1>
+<p><span class="tag">Layout</span><span class="tag">Bug fix</span> 2026-10-14 &middot; <code>v2026.10.14.16</code> &rarr; <code>v2026.10.14.17</code> &middot; the owner's screenshot of a drone bay in the new Fit column (squares beside the numbers on some rows, on their own line under the name on others), then: "might want to do a quick pass to test how large strings will affect layout".</p>
+
+<h2>What was wrong</h2>
+<ul>
+<li><b>Drone rows</b> were one wrapping flex line (icon, name, numbers, squares). In the narrower Fit column, whether the squares fitted beside the numbers depended on each row's text length, so rows wrapped differently. Reproduced with the owner's drones (<code>'Augmented' Hammerhead</code>, <code>'Excavator' Ice Harvesting Drone</code>, Berserkers, Valkyries, Vespa).</li>
+<li>The long-names pass (below) found, at phone width:
+<ul>
+<li>An unrecognized pasted line with no spaces ran out of the "Not recognized" note, and a fit name with no spaces ran out of the status line. On a phone that made the browser <b>zoom the whole page out</b> to ~980&ndash;1040 px, which shrank everything again.</li>
+<li>The Firepower card's ammo / drone rows kept a fixed 130 px range column, squeezing long names such as Imperial Navy Multifrequency M to a few letters per line.</li>
+<li>Drone squares wrapped onto a second line, because their box was sized for the 14 px desktop squares, not the 22 px phone ones.</li>
+</ul></li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Drone rows:</b> every row is the same two-line grid: icon | name | squares on the first line (squares right-aligned in one fixed-width column, so all rows line up), the numbers under the name. Square column width is <code>--pips</code> squares &times; 18 px (26 px on a phone).</li>
+<li><b>Long words:</b> <code>body{overflow-wrap:break-word}</code>, so a word longer than its box breaks at the box's edge. <code>break-word</code> rather than <code>anywhere</code> leaves min-content sizing alone, so grid and flex columns don't squeeze names. The status line, which sits in a flex row, gets <code>min-width:0; overflow-wrap:anywhere</code>.</li>
+<li><b>Firepower rows in a narrow card</b> (a container query on <code>.firepower-strip</code>, under 380 px): the range moves under the name instead of a fixed column beside it.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Full output diff v.16 &rarr; v.17: <b>0 of 214 fits differ</b>. Suite ALL PASS, parse tests 293/293, update-check chain all OK.</li>
+<li><code>tools/page_checks/layout_check.py</code> gains a long-strings pass at 1440 / 1100 / 375 px:
+<ul>
+<li><b>The test fit:</b> a Stratios Emergency Responder carrying the longest real SDE name in each category, e.g. "Unit P-343554's Modified Omnidirectional Tracking Enhancer", "Legion Scourge Auto-Targeting Heavy Missile", "Mutated 'Excavator' Ice Harvesting Drone", "Inherent Implants 'Squire' Capacitor Systems Operation EO-606".</li>
+<li><b>Other long strings:</b> a 120-character unrecognized line, and a long fit name both with and without spaces, each tested in ring and list view.</li>
+<li><b>Other tabs:</b> the Pilot Analyzer with a 37-character pilot name (EVE's maximum), and D-scan contacts with long names.</li>
+<li><b>What it checks:</b> every element and every text run stays inside its column or card, with no sideways scrolling; drone squares sit right-aligned on the name line in every row.</li>
+<li><b>Results:</b> v.16 fails it 7 times (drone rows at all three widths; the phone page zoomed out to 976 / 1039 px); v.17 passes with <b>FAILURES: 0</b>.</li>
+</ul></li>
+<li>Phone screenshots of the long-names fit looked at by eye for squeezing that no bounds check can see (that is how the Firepower range column was found).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #33</b> (extended): test layout with the longest real strings. A single long word overflows without growing its element's box, so also check text runs. A flex or grid item needs <code>min-width:0</code> plus <code>overflow-wrap:anywhere</code> before it can wrap. A fixed-width neighbour can squeeze text without overflowing anything, so look at the screenshot.</li>
+<li>When a check finds a page that "can't be clicked" at phone width, look for an overflow first: the page may have been zoomed out.</li>
+</ul>
+</body>
+</html>

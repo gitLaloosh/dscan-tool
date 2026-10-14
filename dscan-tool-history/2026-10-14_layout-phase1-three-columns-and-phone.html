@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-14 — Layout Phase 1: three columns on desktop, one on phones</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Layout Phase 1: three columns on desktop, one on phones</h1>
+<p><span class="tag">Layout</span><span class="tag">Mobile</span><span class="tag">Bug fix</span> 2026-10-14 &middot; <code>v2026.10.14.14</code> &rarr; <code>v2026.10.14.15</code> &middot; Backlog "Mobile-friendly layout" (via todo-inbox: "it is difficult to see and read on mobile"), "Fit view you can see and change without scrolling", bug list #1 "Changing a module's state makes the page jump". the owner: "i really think something similar to eveworkbench's layout would be a good point of reference", then "both with a switch like workbench" for the fit view.</p>
+
+<h2>What was checked first</h2>
+<ul>
+<li><b>EVE Workbench's fit page</b> (built-in browser): desktop = info column | the fit (a ring of modules around the ship render) | a narrow column of compact stat panels (Firepower, Resource usage, Resistance, Capacitor, Repairs, Targeting &amp; misc). On first visit it asks for a view: Radial "best for Desktop and Tablet users" or List "best for Smartphone users". Phones stack everything in one column.</li>
+<li><b>Why the tool was hard to read on a phone:</b> loading the page in Chromium at 375 px with mobile emulation showed <code>index.html</code> had <b>no viewport meta tag</b>, so a phone drew it as a ~980 px desktop page shrunk to fit (with uneven text inflation), and there were no phone styles. With the tag added, the only real overflow was a drone row's numbers (<code>.ds-meta{flex:none}</code>).</li>
+<li><b>Render paths:</b> the Fit Analyzer (<code>renderFitAnalyzerResult</code>) and each Pilot Analyzer loss (<code>renderFitTabs</code>) both build the summary cards with <code>renderFitSummaryHtml(f)</code> and the Fit card with <code>fitCardHtml()</code>, in two separate containers; the Fit card was last on the page, below every card a state change recalculates.</li>
+<li>A mockup canvas ("D-Scan Analyzer layout": desktop ring, desktop list, phone) was reviewed first; the owner chose both fit views with a switch. Delivered in three phases: this layout (v.15), the ring view with a Ring / List switch (v.16), collapsible cards with summaries (v.17).</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Viewport tag</b> added. Phone styles (&lt; 600 px): less page/panel/card padding, finger-sized state buttons (34 px) and drone squares (22 px).</li>
+<li><b>One layout per fit:</b> new <code>fitLayoutHtml(f, idToName, cardOpts)</code> returns a <code>.fit-layout</code> grid with three areas. <code>fitSummaryParts(f)</code> (was the body of <code>renderFitSummaryHtml</code>) returns the cards in two groups; card markup and order within each group are unchanged.
+<table>
+<tr><th>Area</th><th>Holds</th></tr>
+<tr><td><code>.fl-beat</code></td><td>how to beat it: mode selector, Weaknesses, EWAR / Misc</td></tr>
+<tr><td><code>.fl-fit</code></td><td>the Fit card (module states, drones, implants, cargo)</td></tr>
+<tr><td><code>.fl-stats</code></td><td>Firepower, Resistance + Repairs, Navigation &amp; targeting, Capacitor</td></tr>
+</table></li>
+<li><b>Columns by width:</b> phone (&lt; 900 px) one column, beat &rarr; fit &rarr; stats; tablet (900&ndash;1279 px) the fit on the left with beat and stats stacked on the right; desktop (&ge; 1280 px) beat | fit | stats, as on EVE Workbench. The page is now up to 1440 px wide (was 980); long intro text is capped at 860 px.</li>
+<li><b>Sticky fit column</b> from 900 px up: it stays in view while the stats scroll, and a state change no longer moves it. This closes bug list #1 (the page jumped because the Fit card sat below the cards it recalculates).</li>
+<li><b>Re-rendering:</b> every control (mode buttons, ASB out-of-charges toggle, module states, drone squares, reset) now rebuilds that fit's whole layout and re-wires all of them (Fit Analyzer <code>rerenderAll()/wireAll()</code>, Pilot Analyzer <code>rerenderTab(i)/wireTab(i)</code>), replacing the separate summary/card wrappers and their duplicated wiring.</li>
+<li><b>Pilot Analyzer Fit card:</b> still collapsible (the owner's D1: a killmail never says what was running) but starts <b>open</b> at 900 px and up, where it has its own column; on a phone it starts closed as before.</li>
+<li>Narrow columns: a drone's name keeps 110 px (its numbers wrap below), the capacitor state tile takes a wider share. Fit card legend now says "every card recalculates" (the cards are beside it, not above).</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Full output diff v.14 &rarr; v.15 over every golden fit: <b>0 of 214 fits differ</b> (layout only). Regression suite ALL PASS, parse tests 293/293, update-check chain all OK, PYFA CORE lock unchanged.</li>
+<li>New <code>tools/page_checks/layout_check.py</code> (+ <code>esi_from_sde.py</code>): the real page in Chromium at 1440, 1100 and 375 px (mobile emulation), ESI served from the SDE, a Hecate with modes, an ASB and blasters. At each width: no sideways scrolling; columns as specified; mode switch, ASB toggle, a blaster set online (DPS 755 &rarr; 604), reset (back to 755); the Pilot Analyzer with two losses from <code>renderFitTabs</code> (one layout each, Fit card open/closed by width, a state change on tab 1 leaves tab 2 alone, a mode switch keeps the custom states); no page errors; at 1440 and 1100 the fit column stays pinned at 12 px through a state change. <b>FAILURES: 0</b>; on v.14 it fails (no <code>.fit-layout</code>).</li>
+<li>Screenshots at 1440 / 1100 / 375 px looked at for overlap and squeezing (found and fixed: drone names squeezed to one letter per line, capacitor ring tile too narrow).</li>
+</ul>
+
+<h2>Not in this phase</h2>
+<ul>
+<li>The ring view and the Ring / List switch (v.16); collapsible cards with one-line summaries (v.17).</li>
+<li>The cards' own insides are unchanged; some stat tiles stack in the narrower side columns.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #33</b> (new): check a layout at a real phone width with mobile emulation, not only a desktop screenshot; the missing viewport tag was invisible in every desktop check. Any layout change runs <code>tools/page_checks/layout_check.py</code> (checklist step 10 now says so).</li>
+<li>When markup moves into one container, every control that re-renders part of it must re-render and re-wire the whole container; click each one at each width.</li>
+</ul>
+</body>
+</html>

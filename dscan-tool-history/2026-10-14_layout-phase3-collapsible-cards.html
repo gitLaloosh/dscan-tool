@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-14 — Layout Phase 3: collapsible cards with summaries</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Layout Phase 3: collapsible cards with summaries</h1>
+<p><span class="tag">Layout</span><span class="tag">Feature</span> 2026-10-14 &middot; <code>v2026.10.14.17</code> &rarr; <code>v2026.10.14.18</code> &middot; Backlog "Collapsible cards with a summary when collapsed" (the owner 2026-10-13: "maybe we can render the high level info in the collapsed version"), the last of the three layout phases. the owner: "go ahead".</p>
+
+<h2>What changed</h2>
+<ul>
+<li>Every summary card's <b>title is a button</b> (chevron before it) that collapses the card to <b>one row</b>: the title and its headline numbers, which are the same values the open card shows, computed in the card's own function:
+<table>
+<tr><th>Card</th><th>Collapsed row shows (Hecate example)</th></tr>
+<tr><td>Weaknesses</td><td>EM weakest (46% resist) · drone Acolyte</td></tr>
+<tr><td>EWAR / Misc</td><td>the modules, e.g. Stasis Webifier II · Warp Scrambler II</td></tr>
+<tr><td>Firepower</td><td>755 DPS · 1,316 volley</td></tr>
+<tr><td>Resistance</td><td>6,518 EHP</td></tr>
+<tr><td>Navigation &amp; targeting</td><td>speed · align · targeting range</td></tr>
+<tr><td>Capacitor</td><td>its state (Stable at x% / Drains in …) · net GJ/s</td></tr>
+</table></li>
+<li><b>Defaults:</b> all open on desktop and tablet; on a phone (&lt; 600 px) only Weaknesses (the "how to beat it" answer) starts open, as in the mockup. The Fit card keeps its own behaviour (always open in the Fit Analyzer; collapsible in the Pilot Analyzer as before).</li>
+<li>Open / closed is kept per fit (<code>f.cardOpen</code>), so it survives mode switches, module states and drone changes, and each Pilot Analyzer loss keeps its own. A collapsed card's numbers follow the recalculation.</li>
+<li>Keyboard: real buttons with <code>aria-expanded</code>; focus returns to the same toggle after the re-render.</li>
+<li>Code: <code>cardIsOpen()</code>, <code>cardLabelHtml()</code>, <code>collapsedCardHtml()</code>, <code>wireCardToggles()</code> (wired from both render paths); each card function returns its collapsed row when closed. Presentation only.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Full output diff v.17 &rarr; v.18: <b>0 of 214 fits differ</b>. Suite ALL PASS, parse tests 293/293, update-check chain all OK.</li>
+<li><code>tools/page_checks/layout_check.py</code> adds, at 1440 and 375 px: defaults per width; every card collapses to a summary row; Firepower and Resistance summaries equal the open cards' totals; EWAR names its modules; Capacitor / Navigation summaries present; focus stays on each toggle; a module-state change keeps the cards collapsed and the Firepower summary follows it (755 &rarr; 604); no sideways scrolling; Pilot loss 1 collapsing Weaknesses leaves loss 2 open; no page errors. All earlier checks (layout, ring, long names) still pass: <b>FAILURES: 0</b>. v.17 fails it (no card toggles).</li>
+<li>Screenshots at 1440 and 375 px looked at.</li>
+</ul>
+
+<h2>Found on the way</h2>
+<ul><li>The summaries were first cut with an ellipsis when too long; the long-names check flagged the phone's Navigation summary ("… · 75 km") running past its card, hidden by the ellipsis. Summaries now wrap onto a second line, right-aligned, instead of losing numbers.</li></ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #33</b> (extended): an ellipsis hides information; the layout check counts clipped text as overflow.</li>
+<li>A collapsed summary must come from the same values the open card shows (computed in the same function), so the two can never disagree; the check compares them.</li>
+</ul>
+</body>
+</html>

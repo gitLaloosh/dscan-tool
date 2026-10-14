@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Implants and boosters from an EFT paste (Phase 1)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Implants and boosters from an EFT paste (Phase 1)</h1>
+<p><span class="tag">Feature</span><span class="tag">PYFA CORE</span><span class="tag">Tooling</span> 2026-10-14 &middot; <code>v2026.10.14.11</code> &rarr; <code>v2026.10.14.12</code> &middot; the owner: "it does calculate their affect when passed as part of an EFT fit. let's implement it but in a way that it can be disabled for the pilot analyzer. if we ever decide to include pods, we can turn it on at that point."</p>
+
+<h2>What was checked first</h2>
+<ul>
+<li><b>pyfa applies them from an EFT paste, not from cargo.</b> <code>service/port/eft.py</code>: a bare line naming an item with implantness (attr 331) or boosterness (attr 1087) becomes an implant or booster; <code>Name x1</code> is cargo, and <code>Fit.calculateModifiedAttributes</code> never runs cargo. pyfa keeps the first item per slot (<code>HandledImplantList</code> / <code>HandledBoosterList</code>). the owner confirmed in pyfa.</li>
+<li><b>Ship killmails never list implants.</b> Real zKillboard data (built-in browser; the sandbox can't reach zKillboard or ESI): a shuttle loss at 08:07:44 had none, the same pilot's pod 9 s later listed 10, all at flag 89. Boosters appeared on none of ~1,000 pod losses. So the Pilot Analyzer has nothing to apply; the owner chose a switch, off.</li>
+<li><b>Scope.</b> Every implant and booster effect run through the recorder: ~350 pyfa handlers reaching nearly every stat. Delivered in phases (the owner was told before work began).</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>New PYFA CORE section <code>implant-calc</code></b> (18 sections locked): <code>IMPLANT_EFFECTS</code> (310 effects, 361 rows: 183 implant, 127 booster) and <code>IMPLANT_ATTRS</code> by the new <code>tools/gen_implant_table.py</code>. Each effect is recorded in its carrier's own context (<code>'implant'</code> / <code>'booster'</code>) because handlers branch on it (e.g. <code>stackingPenalties = 'implant' not in context</code>). Set bonuses (Genolution, Amulet, Crystal, Snake, Halo, Talon...) are pyfa's early <code>filteredItemMultiply</code> on the other implants, the carrier included; the generator asserts they are unpenalized multiplies that no other set bonus changes. Booster side effects are skipped: pyfa's default is off. <code>pyfaImplantSetup()</code> applies the set bonuses and hands the rows to the stat code.</li>
+<li><b>Applied in Phase 1:</b> shield / armor / hull HP, resists (into the resonance pools, before the RAH), capacitor capacity and recharge, shield recharge, speed / agility / mass and propulsion speed factor (<code>pyfaShipSpeed</code>), signature, targeting range, scan resolution, sensor strength (including the Talon set's flat add), EWAR module values (<code>pyfaEwarSetup</code>), and the module attributes <code>moduleAttrMult</code> serves: capacitor need, cycle time, shield / armor / hull repair amount.</li>
+<li><b>Not yet (Phase 2):</b> weapon damage, rate of fire, range, tracking, missiles, drones, fighters (DEVIATIONS.md). The Fit card says so under the implant list.</li>
+<li><b>Parsing:</b> <code>parseEftFit()</code> puts implant and booster lines into the tally's <code>Implants</code> / <code>Boosters</code> groups; a second item for an occupied slot is listed as "Not applied, slot already taken". Before, these lines showed up as "Not recognized".</li>
+<li><b>Pilot Analyzer switch:</b> <code>PILOT_ANALYZER_APPLY_IMPLANTS = false</code>. <code>buildLossTally()</code> skips flag 89; on, it would put those items in <code>Implants</code> and the engine would apply them the same way.</li>
+<li><b>Fit card and EFT export:</b> Implants and Boosters lists with the scope note; the EFT export writes them as pyfa does (implants then boosters, by slot, between drones and cargo). A paste &rarr; export &rarr; paste round trip gives the same tally.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Expected values first: <code>tools/pyfa_fit_oracle.py</code> now runs implants and boosters (between the ship and the modules, as <code>fit.py</code> orders them); the new <code>tools/independent_checks/compare_implants.py</code> compares every golden fit with implants, unrounded at 1e-6: <b>0 mismatches over 9 fits</b>. <code>compare_speed.py</code> 0 of 209, <code>compare_resists.py</code> 0 of 209, <code>compare_ewar.py</code> 0, <code>compare_modes.py</code> 0.</li>
+<li><b>the owner's Rorqual, pyfa-verified:</b> the full QuadFeed fit with Genolution CA-1..4, Strong Blue Pill and Agency 'Hardshell' TB9 Dose IV now gives EHP 1,775,127 (pyfa 1.78M), capacitor 102,474 GJ (102k), align 280.3 s (280), shield repair 17,030 HP/s (pyfa 85,426.6 EHP/s = 17,030 raw), and with his screenshot's active modules a capacitor delta of &minus;6.0 GJ/s (pyfa &minus;5.98). Without implants v.11 gave 1,735,676 / 97,675 / 294.8 / 12,018 / &minus;15.7.</li>
+<li>10 new golden fits (210), 9 failing on v.11: the two Rorqual fits above, Abaddon (armor set, repair and HP hardwirings, Exile + Halcyon Y), Drake (Crystal set, Blue Pill + Halcyon B), Rifter navigation (Snake set, acceleration control, evasive maneuvering, LRT, X-Instinct), Rifter Halo set, Merlin low-grade and high-grade Talon sets, Punisher cap use. The 10th is a killmail Rifter with a Snake set at flag 89: it pins the implant-free numbers and fails if the switch is turned on (checked both ways).</li>
+<li>Full output diff v.11 &rarr; v.12 over every golden fit (ignoring the two new output fields <code>exact</code> and <code>implantsApplied</code>): only the 9 implant fits change.</li>
+<li>Update-check chain <b>21/21 OK</b> (new steps "implant / booster tables" and "implants vs pyfa handlers"). Regression suite ALL PASS, parse tests 293/293.</li>
+<li>Real page (Playwright, ESI served from the SDE): a Drake EFT with the Crystal set, hardwirings, two boosters, a duplicate slot-7 implant and an implant in cargo shows the Implants and Boosters lists with the scope note, the slot clash, the cargo implant as cargo, and EHP 41,571 / shield repair 138 = the golden fit.</li>
+</ul>
+
+<h2>PYFA-VERIFIED after delivery</h2>
+<p>the owner's pyfa screenshot (v2.69.2, All 5, "Use Fit-specific Implants") of the Drake check fit, with its 9 implants and 2 boosters, matches every value: EHP 41.6k (tool 41,571; layers 28.6k / 6.02k / 7k = 28,556 / 6,019 / 6,996), shield resists 48.2 / 58.5 / 68.9 / 74.1, armor 50 / 45 / 25 / 10, hull 33, shield boost 366.7 EHP/s and passive recharge 72.3 EHP/s (the tool's raw 137.9 and 27.2 HP/s over the average shield resonance give 366.67 and 72.33), capacitor 3.45k GJ at &minus;23.8 GJ/s lasting 1m56s, scan resolution 263 mm, sensor strength 24.6, drone range 60 km, speed 444 m/s, align 11.3 s with the afterburner on, signature 320. Targeting reads 81.2 km in pyfa and 81.3 km on the page: both are exactly 81,250 m, and pyfa's formatting rounds the tie to even. <code>drake_constructed_shield_implants_boosters</code> is marked PYFA-VERIFIED with EHP, capacitor delta, time to empty and boosted align pinned.</p>
+
+<h2>Found on the way</h2>
+<ul>
+<li><b>Recorder silent gate:</b> Effect2298 (Halcyon B boosters, high-grade Talon/Grail/Jackal/Spur) boosts scan strength only <code>if sensorBoost in implant.item.attributes</code>. The recorder's source item answered False, so no rows. <code>compare_implants.py</code> caught it (22.8 vs pyfa 24.6). Fixed in <code>pyfa_effects.py</code> (<code>SrcAttrs</code>); every other generator is unchanged ("up to date").</li>
+<li><b>Oracle hang:</b> Effect2589 tests <code>attr in booster.itemModifiedAttributes</code>; the oracle's attribute dict had no <code>__contains__</code>, so Python iterated it forever. Added <code>__contains__</code> / <code>__iter__</code> like pyfa's <code>ModifiedAttributeDict</code>.</li>
+<li><b>Checks that rebuild the reference dropped the implants:</b> <code>compare_speed.py</code> / <code>compare_modes.py</code> rebuilt the oracle fit without them and reported the Rorqual's align as 294.8 against the tool's 280.3 (= the owner's pyfa). Fixed in the checks.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #31</b> (new): confirm on real data that an input exists before building around it (ship killmails have no implants), and size a mechanic by running the recorder over every carrier of it (~350 handlers, not "Moderate"). A feature shipped in phases says on the page which numbers include it.</li>
+<li><b>#28</b> (extended): the carrier itself can gate a handler silently (<code>in implant.item.attributes</code>).</li>
+<li><b>#27</b> (extended): a missing stand-in method can hang a check, not only skip a handler; and a check that rebuilds the reference must carry every input of the original.</li>
+</ul>
+</body>
+</html>

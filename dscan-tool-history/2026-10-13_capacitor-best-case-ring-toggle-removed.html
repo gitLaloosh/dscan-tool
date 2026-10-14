@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Capacitor: best case of the running modules, ring toggle removed</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Capacitor: best case of the running modules, ring toggle removed</h1>
+<p><span class="tag">Feature</span><span class="tag">Test suite</span> 2026-10-13 &middot; <code>v2026.10.13.26</code> &rarr; <code>v2026.10.13.27</code></p>
+<p>the owner: "if multiple modules can be activated separately, their impact on the capacitor should be reflected based on which ones are active. let the logic related to 'at their best' be reflected in the fit which then impacts the resulting cap state that is then presented in the capacitor and/or weaknesses cards. we can still have icons appear next to the ring that reflect any 'boosts' being applied to the capacitor." Then: "make the ASB icon clickable. if it causes problems we can change it later."</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>No boosted/unboosted toggle.</b> The Capacitor card shows one figure: the best case of the modules that are running.
+  <ul>
+  <li>Every <b>active</b> Capacitor Booster injects. It uses the loaded charge; if none is loaded, one from cargo or the fleet hangar; if none is found anywhere, the largest compatible charge. The injection is averaged over reloads, as before.</li>
+  <li>Every <b>active</b> Ancillary Shield Booster has charges, so it uses no capacitor. This is pyfa's per-module "use" column.</li>
+  <li>To see a fit without a booster, set the booster online or offline in the module list.</li>
+  </ul></li>
+<li><b>Boost icons next to the ring.</b> Each boost counted shows its module's in-game icon, and hovering gives the charge and how much it adds or saves.
+  <ul>
+  <li>A cyan border means the charge was loaded or found in cargo (the hover says which).</li>
+  <li>A dashed amber border means no charge was found and one is assumed.</li>
+  </ul></li>
+<li><b>The ASB icon is clickable</b> for "out of charges": the ASB then runs on capacitor while the Capacitor Boosters keep injecting. A greyed, dashed icon shows that state. It is kept per fit, including on each Pilot Analyzer loss tab.</li>
+<li><b>Card text.</b> The ring caption lists what's counted. "Net cap rate" now reads peak recharge &minus; active drain + Capacitor Booster injection.</li>
+<li><b>Weaknesses card.</b> It already used the best case, so it now matches the Capacitor card exactly.</li>
+<li><b>Engine.</b>
+  <ul>
+  <li>The primary <code>capacitor</code> fields are the best case. New fields: <code>injectionPerSec</code>, <code>boosts</code> (for the icons), <code>asbDry</code> and <code>withoutBoosts</code> (reference).</li>
+  <li><code>combinedConfident</code>, <code>combinedAssumed</code> and <code>boostAvailable</code> were removed.</li>
+  <li>When a fit has two Capacitor Boosters and only one charge was found, the best case now includes the second booster's best charge too; before, it was left out.</li>
+  </ul></li>
+</ul>
+
+<h2>Effect on existing fits (diff of every golden fit, v.26 &rarr; v.27)</h2>
+<p>Only fits with an active Capacitor Booster or ASB changed, all to their previous "boosted" figures:</p>
+<ul>
+<li>Hawk (2 ASBs): 120.6 &rarr; 1.8 GJ/s drain, now stable.</li>
+<li>Osprey Navy Issue (ASB): 270.9 &rarr; 33.3 GJ/s.</li>
+<li>Megathron, Dominix Navy Issue, Abaddon, Leshak, Ishkur and the Vexor constructed fit: now stable.</li>
+<li>Vedmak, Rokh, Sacrilege and both Curse fits: drain longer or higher stable %.</li>
+<li>Rorqual (pyfa active-state fit): drain 2367.3 &rarr; <b>567.3 GJ/s, which is pyfa's "Use 567.33" exactly</b>; net rate &minus;15.7 (the pyfa capDelta pin, implant-free).</li>
+</ul>
+<p>Re-pinned with notes:</p>
+<ul>
+<li>Rorqual &times;2: drain on the new basis; the old baselines moved to <code>capacitorNoBoost*</code>.</li>
+<li>Curse &times;2: time to empty 32.3 &rarr; the boosted 86.3 s pinned earlier.</li>
+<li>Ishkur: stable, using its largest compatible charge.</li>
+</ul>
+
+<h2>Test-suite change: a pinned field that's missing now fails</h2>
+<p>The checker used to skip any pinned field the result didn't have. Removing <code>combinedConfident</code> would have turned the Rorqual's pyfa pin into a no-op while the suite still printed ALL PASS.</p>
+<ul>
+<li>It now fails with "<code>(not in result)</code>".</li>
+<li>The only fields this caught were three object-valued <code>adj*ResPct_approx</code> notes on <code>legion_owner</code>, which never worked as checks. Keys ending in <code>_approx</code> are now treated as informational.</li>
+<li>See <code>LESSONS_LEARNED.md</code> #21.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b>New independent check:</b> <code>tools/independent_checks/check_capacitor_best_case.py</code>, with a constructed Hawk fit (Medium ASB with Navy Cap Booster 50, 1MN AB II).
+  <ul>
+  <li>Charged: drain 0.73, net +8.3, stable.</li>
+  <li>Out of charges: +59.4, drain 60.1, net &minus;51.1.</li>
+  </ul></li>
+<li><b>Suites:</b> 161/161 fits pass, and v.26 fails 24 checks against them. Parse tests 280/280; <code>node --check</code> clean.</li>
+<li><b>Playwright, real page:</b>
+  <ul>
+  <li>Hawk: the ASB icon click goes +8.3 &rarr; &minus;51.1 &rarr; +8.3 GJ/s, with the card screenshotted in both states.</li>
+  <li>Vexor with Cap Booster 800: +36.4 injected, stable 84.3%.</li>
+  <li>Vexor with no charge: amber dashed icon, "assumed" hover.</li>
+  <li>Capacitor Booster set offline: the "not running" caption.</li>
+  <li>Pilot Analyzer tab: the ASB click works per tab.</li>
+  <li>The states, drones, tactical-mode and icon scripts all run without console errors.</li>
+  </ul></li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When a result field is renamed or removed, its pins don't fail; they just stop checking anything. That's true unless the checker fails on missing fields, as it now does. Grep <code>golden_fits.json</code> for the flattened name and move every pin (LESSONS #21).</p>
+</body></html>

@@ -1,0 +1,184 @@
+{
+  "note": "PYFA CORE lock -- see PYFA_CORE.md. sha256 = SHA-256 of the lines between a section's BEGIN/END markers (LF line endings). Update ONLY with `node tools/check_pyfa_core.mjs --update` after running the section's verify commands; say so in the history doc.",
+  "pyfa": {
+    "version": "v2.69.2",
+    "commit": "3b9ce39b8bb41bb7e3fbf097f683da9143a48133",
+    "clientBuild": 3579973,
+    "dataDumped": "2026-10-06",
+    "verifiedOn": "2026-10-14",
+    "ownerPyfa": "v2.69.2 / EVE data 3579973 (Help -> About, 2026-10-14)"
+  },
+  "sections": {
+    "resist-calc": {
+      "kind": "generated",
+      "mirrors": "every pyfa handler that changes a ship resonance or a fitted module's resistance attributes (RESIST_EFFECTS, RESIST_SKILL_MODULE_ROWS: hulls incl. special editions, modules, scripts, Compensation skills, Polarized weapons, Tactical Destroyer modes; MODE_ITEMS = pyfa Ship.__getModeItems), eos/modifiedAttributeDict.py __calculateValue for those attributes (pyfaModPool/pyfaModAdd/pyfaModValue: unpenalized x per-group penalized, forced, max cap), and eos/effects.py Effect4928 adaptiveArmorHardener (pyfaRahAverage). Replaces the old rah-sim section, which was not pyfa's algorithm. The shared pool (pyfaModPool/pyfaModAdd/pyfaModValue) also carries pyfa's pre/post increases since v2026.10.14.8.",
+      "verify": [
+        "python3 -I tools/gen_resist_table.py index.html (must say up to date)",
+        "python3 -I tools/independent_checks/check_resists.py",
+        "node regression_suite/run_regression.mjs index.html",
+        "resist oracle comparison over every golden fit (tools/independent_checks/compare_resists.py: 0 differences)"
+      ],
+      "sha256": "d4896abaebad9f3f119211aec2e6b192dd426f2f73060f419e5be2b1adb5c6c7"
+    },
+    "modes": {
+      "kind": "generated",
+      "mirrors": "every effect of every ship mode item (eos/saveddata/ship.py Ship.__getModeItems: Tactical Destroyers incl. the Skua, and the Anhinga) run through pyfa's own handlers (MODE_EFFECT_ROWS, tools/gen_mode_table.py), Ship.validateModeItem's default (resolveModeKey: the first mode item; the tool's Sharpshooter choice for Tactical Destroyers is an input, DEVIATIONS.md) and the module/charge filter of each handler (modeRowsMult). Mode resonance rows live in RESIST_EFFECTS (resist-calc).",
+      "verify": [
+        "python3 -I tools/gen_mode_table.py index.html (must say up to date; asserts every penalized row is alone in its stacking group)",
+        "python3 -I tools/independent_checks/compare_modes.py index.html (0 mismatches: every golden fit on a hull with modes, in every mode, vs pyfa_fit_oracle)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "aeb29ddf4305d20cf016b016737b69f3a93eff758afc6684651e4622b37429d8"
+    },
+    "speed-calc": {
+      "kind": "generated + port",
+      "mirrors": "every pyfa handler on a ship's maxVelocity / agility / mass and on a fitted module's speedFactor / speedBoostFactor / massAddition and the module attributes ship rows read (rig drawback, plate massAddition, cloak maxVelocityModifier...): skills, hulls incl. getSkill (Effect1615) and hull-skill conditions (Effect1616), modules by state, rigs, subsystems, cloak-only bonuses (fit.extraAttributes['cloaked']) -- SPEED_EFFECTS / SPEED_SKILL_ROWS by tools/gen_speed_table.py; eos/effects.py Effect6730 moduleBonusMicrowarpdrive / Effect6731 moduleBonusAfterburner (pyfaPropBoost, source hash checked by the generator); eos/saveddata/fit.py Fit.maxSpeed / Fit.alignTime",
+      "verify": [
+        "python3 -I tools/gen_speed_table.py index.html (must say up to date; fails if pyfa's Effect6730/6731 source changed)",
+        "python3 -I tools/independent_checks/compare_speed.py index.html (0 mismatches: every golden fit vs pyfa_fit_oracle)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "8d576e3239ee515217b8ebb1b34c87d2c640242e792fd24710127f13170b6024"
+    },
+    "ewar-calc": {
+      "kind": "generated + port",
+      "mirrors": "every pyfa handler on an EWAR module's own attributes shown on the EWAR / Misc card (maxRange, falloffEffectiveness, warpScrambleStrength, speedFactor, signatureRadiusBonus, maxTargetRangeBonus, scanResolutionBonus, energyNeutralizerAmount, powerTransferAmount, duration, the 4 ECM strengths, the 3 tracking-disruption and 4 guidance-disruption bonuses): skills at V, hulls incl. hull-skill conditions, modules by state, rigs (stacking groups), subsystems and loaded scripts (charge effects on their own module) -- EWAR_EFFECTS / EWAR_SKILL_ROWS by tools/gen_ewar_table.py; pooled with pyfaModPool / pyfaModValue (eos/modifiedAttributeDict.py), ship mode from MODE_EFFECT_ROWS",
+      "verify": [
+        "python3 -I tools/gen_ewar_table.py index.html (must say up to date)",
+        "python3 -I tools/independent_checks/compare_ewar.py index.html (0 mismatches: every golden fit's EWAR modules vs pyfa_fit_oracle)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "f48fcf954c8a3ae531f2a94ac5b3659726568f050f168dddbb33950fd5cfa2c5"
+    },
+    "implant-calc": {
+      "kind": "generated + port",
+      "mirrors": "pyfa's implants and boosters as carriers (eos/saveddata/implant.py: 'passive' activeByDefault effects in context ('implant',); booster.py: 'passive' effects in context ('booster',), side effects off = pyfa's default; fit.py order ship, boosters, implants, modules): IMPLANT_EFFECTS / IMPLANT_ATTRS by tools/gen_implant_table.py (every row recorded in the carrier's own context; set bonuses = early filteredItemMultiply on appliedImplants); pyfaImplantSetup applies set bonuses then returns the rows, pooled by the callers (pyfaModPool / their own accumulators)",
+      "verify": [
+        "python3 -I tools/gen_implant_table.py index.html (must say up to date)",
+        "python3 -I tools/independent_checks/compare_implants.py index.html (0 mismatches: every golden fit with implants or boosters vs pyfa_fit_oracle)",
+        "python3 -I tools/independent_checks/compare_speed.py index.html ; compare_resists.py ; compare_ewar.py (the same fits, 0 mismatches)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "af79424e49c230dbe0a2db76744b8e26bf887b13ff8e191a0ea2473570a6f93e"
+    },
+    "sig-effect-tables": {
+      "kind": "audited",
+      "mirrors": "every pyfa handler on ship signatureRadius / MWD signatureRadiusBonus (hull, subsystem)",
+      "verify": [
+        "node tools/dump_effect_tables.mjs index.html > /tmp/t.json && python3 -I tools/audit_effect_tables.py /tmp/t.json (must print no MISSING/EXTRA/DIFF)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "6412569d6b1291de8a5da5db98cbfc8393fbfd4773e28647270116cd8f1c8c9b"
+    },
+    "weapon-range-table": {
+      "kind": "generated",
+      "mirrors": "every pyfa handler on turret maxRange/falloff and missile maxVelocity/explosionDelay",
+      "verify": [
+        "python3 -I tools/gen_weapon_range_table.py index.html (must say up to date)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "2dc035f98327af4ab0e825d9ad0a433aa4c784d91d3ea0053081d6bf8e8d4f87"
+    },
+    "missile-range": {
+      "kind": "port",
+      "mirrors": "eos/saveddata/module.py Module.missileMaxRangeData (ship-radius flight-time bonus, floatUnerr, floor/ceil whole seconds with the higher chance, acceleration at half speed, FoF maxFOFTargetRange cap, centre-to-surface) and the missile branch of Module.maxRange (weighted average shown in pyfa's range column); eos/utils/float.py floatUnerr",
+      "verify": [
+        "python3 -I tools/independent_checks/check_missile_range.py index.html (0 mismatches: pyfa's own function lifted unmodified from module.py, on oracle attributes, every golden missile)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "69a7a2edee477e2ca14a764b7596892f9cd1f3b6e8b935f29948f4a23b1a6ec8"
+    },
+    "cap-rep-effect-tables": {
+      "kind": "audited",
+      "mirrors": "every pyfa handler on module capacitorNeed/duration/shieldBonus/armorDamageAmount/structureDamageAmount, ship capacitor and shield recharge; siege-family local/remote rep handlers",
+      "verify": [
+        "node tools/dump_effect_tables.mjs index.html > /tmp/t.json && python3 -I tools/audit_effect_tables.py /tmp/t.json (must print no MISSING/EXTRA/DIFF)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "799bf39ded36f2f4550d476bd848c03a85aed8d3b8b928fe501b54577963de34"
+    },
+    "cap-sim": {
+      "kind": "port",
+      "mirrors": "eos/capSim.py CapSimulator, run as eos/saveddata/fit.py Fit.__runCapSim",
+      "verify": [
+        "node regression_suite/compare_cap_sim.mjs index.html (0 mismatches; needs PYFA_SRC)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "048f4acdbd8052dbef32a02109d7f6b5b7a8303af54afd4a8d192d18cea7c19a"
+    },
+    "sensor-effect-table": {
+      "kind": "audited",
+      "mirrors": "every pyfa handler on ship maxTargetRange / scanResolution / scan*Strength",
+      "verify": [
+        "node tools/dump_effect_tables.mjs index.html > /tmp/t.json && python3 -I tools/audit_effect_tables.py /tmp/t.json (must print no MISSING/EXTRA/DIFF)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "8d19e9106c4d55bff7870cf9697a7bed9eb7781d0ff739b7cd7b51e6d4f4beff"
+    },
+    "cycle-time-tables": {
+      "kind": "audited",
+      "mirrors": "modifiers of moduleReactivationDelay and the Burst Projector durations (recorder-checked handlers 8120, 6845, 7210, 2982, 6615-6618)",
+      "verify": [
+        "python3 -I tools/independent_checks/check_reactivation_delay.py",
+        "python3 -I tools/independent_checks/check_phase3.py",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "5cffe04598d7d8e4565e236e5e2ab980714e2062e0b5d12cd1167c670f8caad7"
+    },
+    "sensor-strength-effect-ids": {
+      "kind": "audited",
+      "mirrors": "pyfa handlers on scan*StrengthPercent pooled with Sensor Boosters",
+      "verify": [
+        "node tools/dump_effect_tables.mjs index.html > /tmp/t.json && python3 -I tools/audit_effect_tables.py /tmp/t.json (must print no MISSING/EXTRA/DIFF)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "1ce0dd42531fa0ec1a1bbe0ccbf8f23ff63604877faafe387365b1e3a0726cd0"
+    },
+    "stacking-penalty": {
+      "kind": "port",
+      "mirrors": "eos/modifiedAttributeDict.py __calculateValue stacking penalty: 1+(m-1)*exp(-i^2/7.1289), >1 and <1 chains separate, largest first",
+      "verify": [
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "0dcd717ff341b6326c9c125e4da8c59bf26712439a6d702c44a5a2f56853ee79"
+    },
+    "hp-effect-table": {
+      "kind": "audited",
+      "mirrors": "every pyfa handler on ship shieldCapacity / armorHP / hp",
+      "verify": [
+        "node tools/dump_effect_tables.mjs index.html > /tmp/t.json && python3 -I tools/audit_effect_tables.py /tmp/t.json (must print no MISSING/EXTRA/DIFF)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "b24441c487160431eedfa358a3decb9b07e18e423cca5ca46aa08c2b4a350084"
+    },
+    "module-state-tables": {
+      "kind": "generated",
+      "mirrors": "pyfa effect types (active/online/offline/overheat), maxGroupActive/Online modifiers, activation-blocking effects",
+      "verify": [
+        "python3 -I tools/gen_module_state_tables.py index.html (must say matches)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "f3f91be747ff54f7b7e11a70fccad03be75e950e94cdde5e311ac641bd8204f9"
+    },
+    "cycle-time": {
+      "kind": "port",
+      "mirrors": "eos/saveddata/module.py Module.rawCycleTime, reactivationDelay, getCycleParameters",
+      "verify": [
+        "python3 -I tools/independent_checks/check_reactivation_delay.py",
+        "python3 -I tools/independent_checks/compare_modes.py index.html (Anhinga Tertiary: Micro Jump Drive reactivation delay x0.1 from the mode)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "4b16803710b7bad7e11038d54e07151e77f0b02d952ee5df145b23ac6bca6b1e"
+    },
+    "hull-damage": {
+      "kind": "generated",
+      "mirrors": "every pyfa hull and subsystem handler on weapon damageMultiplier/speed, charge em/thermal/kinetic/explosiveDamage, drone damage, and fighter Attack Missile + Missiles damage/duration (SHIP_DAMAGE_MOD_EFFECTS + the helpers that apply its rows); FIGHTER_ABILITY_EFFECTS + pyfaDefaultFighterAbilities = pyfa Fighter.__init__ default ability activation (eos/saveddata/fighter.py)",
+      "verify": [
+        "python3 -I tools/gen_hull_damage_table.py index.html (must say up to date)",
+        "python3 -I tools/independent_checks/check_firepower.py",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "f97d9f8f7b4599c0bbd528d436b0b364c51104dfebc86274fae830610c94fd7e"
+    }
+  }
+}

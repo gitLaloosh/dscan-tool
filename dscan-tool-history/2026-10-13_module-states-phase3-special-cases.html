@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-13 — Module states: special cases folded in (plan Phase 3)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Module states: special cases folded in (plan Phase 3)</h1>
+<p><span class="tag">Feature</span><span class="tag">Bug fix</span> 2026-10-13 &middot; <code>v2026.10.13.25</code> &rarr; <code>v2026.10.13.26</code> &middot; the owner: "work on phase 3"</p>
+
+<h2>What changed</h2>
+<p>The modules that used to be "not modeled while active" now work like every other module. Their bonuses apply when you set them <b>active</b> in the module list. Their defaults are unchanged (the owner's D2/D3), so a killmail or paste shows the same numbers as before except for the fixes listed further down.</p>
+<table>
+<tr><th>Module</th><th>When set active (pyfa handler)</th><th>Default</th></tr>
+<tr><td>Micro Jump Drive</td><td>Signature radius +150%, not stacking-penalized (Effect4921)</td><td>online</td></tr>
+<tr><td>Micro Jump Field Generator, capital MJFG</td><td>Signature radius +150%, penalized (6208 / 12126)</td><td>online</td></tr>
+<tr><td>Signature Suppressor</td><td>Signature radius &times;0.3, penalized together with its passive &times;0.9 (8109). Capacitor: 660 GJ per 15 s</td><td>online</td></tr>
+<tr><td>Entosis Link</td><td>Sensor strength +100%, penalized with Sensor Boosters (6063)</td><td>online</td></tr>
+<tr><td>Networked Sensor Array</td><td>Scan resolution +500%, sensor strength +50% (6567). EWAR lockout, see below</td><td>online</td></tr>
+<tr><td>Integrated Sensor Array</td><td>Targeting range &times;12 with its own 1,000,000 km cap, scan resolution +500%, sensor strength +50%, capital local reps &minus;30% cycle time and cap need (12597)</td><td>online</td></tr>
+<tr><td>Siege family (Bastion, Siege, Triage, Industrial Core)</td><td>Already state-driven since Phase 1. Now pinned: Siege Module online gives exactly the no-siege numbers.</td><td>active (D2)</td></tr>
+</table>
+<ul>
+<li><b>Triage / Networked Sensor Array EWAR lockout.</b> While either runs, it raises the cap need of EWAR, webs, scrams and disruptors by +900,000,000% (Triage) or +9,999,900% (NSA). In the game they can't run, so the tool treats them as blocked. They default online, and asking for active is refused with the reason on hover.
+  <ul><li><b>Difference from pyfa:</b> pyfa leaves those modules active with the huge cap need, and its capacitor then empties at once.</li></ul></li>
+<li><b>Capacitor booster.</b> Whether the booster runs is its row in the module list; only an active booster injects. The ring toggle stays, because it is about <i>charges</i> (with or without charges), which also covers the Ancillary Shield Booster. With the booster set online or offline, the ring caption now says so. The plan said the toggle would "become one row in the list"; this is my call on how to fold it in, and the plan doc says so.</li>
+<li><b>MWD / afterburner.</b> Unchanged from v.20: the speed card shows cruising and boosted figures side by side, and an online prop mod is the "if switched on" figure.</li>
+</ul>
+
+<h2>Bugs fixed along the way (these change default numbers)</h2>
+<table>
+<tr><th>Bug</th><th>pyfa rule</th><th>Example, v.25 &rarr; v.26</th></tr>
+<tr><td>Targeting range was never capped</td><td>maxTargetRange is capped at maximumRangeCap (attr 797; 300 km when the hull has none, 750 km carriers, 1,000,000 km supers) &mdash; <code>modifiedAttributeDict.__calculateValue</code></td><td>Rokh with 3 scripted Sensor Boosters 441 km &rarr; 300 km; titans and the Monitor 312.5 &rarr; 300 km</td></tr>
+<tr><td>Some active modules used no capacitor</td><td>The cycle time is the largest of speed, duration, durationHighisGood and the four Burst Projector durations (<code>Module.rawCycleTime</code>). Signature Masking (+25%) and the Interceptor role bonus (+100%) extend durationHighisGood; Burst Projector Operation and the supercarrier hull bonus shorten the burst durations.</td><td>Crow Interdiction Nullifier 0 &rarr; 1.7 GJ/s; Nyx Sensor Dampening Burst Projector 0 &rarr; 48.9 GJ/s</td></tr>
+<tr><td>Drones kept their damage in triage</td><td>Triage droneDamageBonus &minus;100% (Effect6581). CCP: drones in space "will be unable to deal damage"</td><td>Apostle with 5 Hobgoblin II, triage active: 99 &rarr; 0 DPS</td></tr>
+</table>
+
+<h2>Effect on existing fits (diff of every golden fit, v.25 &rarr; v.26)</h2>
+<ul>
+<li><b>Azariel and two Monitor fits:</b> targeting range 312,500 &rarr; 300,000 (cap).</li>
+<li><b>Crow, Interceptor nullifier role bonus:</b> drain 1.2 &rarr; 2.9 GJ/s (the active Nullifier now uses capacitor).</li>
+<li><b>Vargur, Bastion online with MJD active (Phase 1 fit):</b> signature 360 &rarr; 900, now pinned.</li>
+<li>Every other existing fit is unchanged. The other differences are the new fits.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b>Expected values first:</b> <code>tools/independent_checks/check_phase3.py</code> (hand-typed pyfa rules, SDE values). Before writing it, every one of the 99 active module handlers was run with the recorder to list what each changes.</li>
+<li><b>New constructed goldens:</b> 16 fits through the real EFT parser:
+  <ul>
+  <li>Raven &times;4: Suppressor and MJD states</li>
+  <li>Vexor: Entosis</li>
+  <li>Nyx &times;2: NSA, Burst Projector</li>
+  <li>Thanatos &times;2: ISA</li>
+  <li>Rokh: range cap</li>
+  <li>Apostle &times;3: triage default, damp refused, triage online</li>
+  <li>Revelation: siege online</li>
+  <li>Crow: Nullifier</li>
+  <li>Vexor &times;2: cap booster rule pins</li>
+  </ul></li>
+<li><b>Fail-then-pass:</b> v.25 fails 23 checks (including the Vargur pin); v.26 passes all 160 fits.</li>
+<li><b>Other suites:</b> parse tests 280/280; <code>node --check</code> clean; <code>tools/audit_effect_tables.py</code> clean (KNOWN list updated: 4921/6208/12126/8109/6063/12597 removed; 6567/6581 now "modeled as a lockout"); <code>gen_module_state_tables.py</code> matches.</li>
+<li><b>Playwright, real page:</b>
+  <ul>
+  <li>Apostle: the dampener shows Online with the lockout reason on hover; switching Triage off lets it run (2.7 GJ/s).</li>
+  <li>Vexor: switching the Capacitor Booster off gives drain 3.8 &rarr; 40.1 and the new ring caption.</li>
+  <li>Raven: the Suppressor set active gives drain 44.</li>
+  <li>The Phase 2, drone, Pilot Analyzer, tactical-mode and icon scripts all run without console errors.</li>
+  </ul></li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>A stat isn't only the sum of the effects that modify it. pyfa also caps an attribute at its <code>maxAttributeID</code>, and reads a module's cycle time from several attributes. Both bugs had been there since the targeting and capacitor batches, because those batches only listed modifiers. For every stat, also read the attribute's SDE record (min/max attribute, default value) and the pyfa property that reads it. See <code>LESSONS_LEARNED.md</code> #20.</p>
+
+<h2>Found along the way (not changed)</h2>
+<ul>
+<li><b>Entosis Link speed limit:</b> it has a 4,000 m/s cap (<code>speedLimit</code>). pyfa's handler writes it where its <code>maxSpeed</code> never reads it, so pyfa doesn't apply it. Left out to match pyfa.</li>
+<li><b>Triage locked targets:</b> Triage also raises max locked targets, which the tool doesn't show.</li>
+</ul>
+
+<h2>Next</h2>
+<p>Phase 4 is optional. It covers D4 (capacitor advice) and D5 (overheat), both in the backlog. Fighters in space are also still automatic (backlog).</p>
+</body></html>

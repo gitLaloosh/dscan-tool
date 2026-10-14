@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Golden-fit data refresh from the SDE</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:900px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Golden-fit data refresh from the SDE</h1>
+<p><span class="tag">Test suite</span><span class="tag">Tooling</span> 2026-10-14 &middot; <code>index.html</code> unchanged (<code>v2026.10.14.1</code>) &middot; the owner: "do we need to revisit all of our golden fits or test data at some point if it's been tainted by old code making stuff up?", then "tell me what you're going to work on next and we'll get started"</p>
+
+<h2>Why</h2>
+<p>The Ishtar capacitor gap turned out to be a trimmed test record (history <code>2026-10-14_ishtar-capacitor-gap-was-a-fixture-defect.html</code>). A follow-up measurement showed about 20 more fits whose fitted modules lacked attributes the engine reads. Some tests therefore exercised data the live page never sees. The live page always fetches full records from ESI.</p>
+<p>Reference data: CCP's SDE as shipped with pyfa v2.69.2, client build 3579973 (2026-10-06). the owner's updated pyfa shows <b>exactly this version and data build</b>, so the tool, its tests and his pyfa now all use the same game data.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>New <code>tools/refresh_golden_fixtures.py</code>.</b> For every type a fit references (types, ship, tally including cargo, slot maps, killmail items) it fills in the SDE attributes and effects, plus mass, volume, capacity and radius. It also adds every group record a type points at.
+  <ul>
+  <li>It <b>merges</b>: SDE values win, and anything only a live-ESI capture had is kept. That covers 282 attributes (zero placeholders, a Hornet EC-300 range) and one effect (Zirnitra ammo tracking).</li>
+  <li>It keeps the file's compact serialization, and a second run changes nothing.</li>
+  <li>Report mode is the completeness check: <code>0 of 161 fits change</code>.</li>
+  </ul></li>
+<li><b>Totals:</b>
+  <ul>
+  <li>1,925 attributes filled on 194 trimmed records</li>
+  <li>33 missing types added (Leshak cargo)</li>
+  <li>2,470 group records added</li>
+  <li>19 effects added, all on cargo items (boosters, accelerator)</li>
+  <li>one value changed: the Hawk's <code>shipBonusCF</code> 10 &rarr; 7.5, the 2026-09-22 patch. Firepower uses the hand table there, so no output moved.</li>
+  </ul></li>
+</ul>
+
+<h2>Effect on the tests</h2>
+<p>15 of 161 fits' outputs moved. <b>Only one pinned check failed</b>: <code>legion_owner</code> capacitor 300 &rarr; 2,100. Every other move was in a field those tests never pinned, and each test still checks what its name says.</p>
+<p><b>The strongest confirmation:</b> after the refresh, the killmail copy of owner's Legion gives <i>exactly</i> the numbers of its full-data twin <code>legion_owner_eft_pyfa_verified</code>, which the owner checked in pyfa, on every moved field:</p>
+<ul>
+<li>capacitor 2,100, drain 29</li>
+<li>signature 184 / 1,050</li>
+<li>targeting 184,777</li>
+<li>scan resolution 745</li>
+<li>sensor 76.9</li>
+<li>weapon range 16,831 / 13,564</li>
+<li>MWD speed 1,819, align 6.3</li>
+</ul>
+<table>
+<tr><th>New pin</th><th>Old (trimmed)</th><th>New</th><th>Independent source</th></tr>
+<tr><td>Legion: 11 fields above</td><td>e.g. capacitor 300, targeting 0, signature 5</td><td>= pyfa-verified twin</td><td>the owner's pyfa screenshot</td></tr>
+<tr><td>Rifter armor layering: raw armor</td><td>563</td><td>6,563</td><td>(450 + 4,800 plate) &times; 1.25 Hull Upgrades, SDE</td></tr>
+<tr><td>Vedmak: neutralizer GJ/s</td><td>0</td><td>15</td><td>Medium Energy Neutralizer II 180 GJ / 12 s, SDE</td></tr>
+<tr><td>Vargur: capacitor</td><td>0</td><td>5,813</td><td>6,200 &times; 1.25 &times; 0.75 (MWD penalty), SDE</td></tr>
+</table>
+<p>All 14 new checks fail on the old trimmed data and pass on the refreshed data.</p>
+
+<h3>Moved but not pinned yet</h3>
+<p>These are now computed from real data, but they don't yet have an independent derivation. They get one when the hand-table phase for their stat reaches them.</p>
+<ul>
+<li><b>Vargur:</b> align, MWD speed, capacitor stable 39.8% with its Navy Cap Booster 3200 (was 0 / no charge GJ).</li>
+<li><b>Vedmak:</b> capacitor now unstable (360 s) with neut drain counted.</li>
+<li><b>Skybreaker and both Svipul tests:</b> the ship records were nearly empty, so armor HP and resists, capacitor and align were 0. All are now real.</li>
+<li><b>Moros:</b> align 0 &rarr; 296.1 s (Siege's &times;10 mass applies).</li>
+<li><b>Rifter single-module tests:</b>
+  <ul>
+  <li>capacitor drain now counted for the Shield Boost Amplifier / Cap Power Relay, Sensor Booster, Remote Sensor Booster and Nullifier tests;</li>
+  <li>RAH resists now real (10/25/35 &rarr; 41/39/40);</li>
+  <li>rig-drawback test shield HP 776 &rarr; 892;</li>
+  <li>heavy-missile test: the missile ammo suggestion now uses real explosion values.</li>
+  </ul></li>
+<li>Recommendation text (drones, turret ammo) moved wherever the target's stats did.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Suite 161/161; parse tests 280/280; <code>compare_cap_sim.mjs</code> 483 simulations, 0 mismatches against pyfa's simulator.</li>
+<li>Full-output diff of every fit before and after the refresh; all 15 moved fits reviewed.</li>
+<li>Spot values hand-checked from the SDE (table above).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>A test fixture is only as faithful as its records. Before trusting a golden fit, or after adding one, run <code>refresh_golden_fixtures.py</code> in report mode; it must print <code>0 of N fits change</code>. A pin that matched a trimmed record can still pass while every unpinned field is wrong, which is how the Legion's killmail copy computed targeting range 0 and capacitor 300 without failing anything. See <code>LESSONS_LEARNED.md</code> #6.</p>
+</body></html>

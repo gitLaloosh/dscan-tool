@@ -46,3 +46,30 @@ def reqs(t):
     """Direct required skills (requiredSkill1-6) -- what pyfa's requiresSkill() checks."""
     a = {x['attributeID']: x['value'] for x in td.get(str(t), {}).get('dogmaAttributes', [])}
     return {int(a[i]) for i in (182, 183, 184, 1285, 1289, 1290) if i in a}
+
+def pyfa_removed_types():
+    """Type ids the SDE has but pyfa's database does not offer (db_update.py post-processing, v2.69.2):
+      * boosters whose boosterLastInjectionDatetime is before the data dump (expired event boosters):
+        DELETED from the database ("Remove boosters which were expired at the time data dump was generated");
+      * items named like '%abyssal%' / '%mutated%' / '%_PLACEHOLDER%' and the four Lux Drifter weapons:
+        unpublished (except Abyssal Ore Processing, Mutated Drone Specialization, Asteroid Mining Crystals),
+        so pyfa's EFT import (service/port/shared.py fetchItem) refuses them.
+    The dump time is staticdata/phobos/metadata.0.json 'dump_time'. Added v2026.10.14.13 (LESSON #32): the owner's
+    pyfa dropped Strokar Booster VI (last injection 2026-08-26, dump 2026-10-06) from an EFT paste."""
+    import datetime
+    meta = json.load(open(os.path.join(PYFA_SRC, 'staticdata', 'phobos', 'metadata.0.json')))
+    dump = int(next(x['field_value'] for x in meta if x['field_name'] == 'dump_time'))
+    delta = datetime.datetime.fromtimestamp(dump, tz=datetime.timezone.utc) - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+    dumpDays = delta.days + delta.seconds / (24 * 60 * 60)
+    lastInj = next(int(k) for k, v in attrs.items() if v.get('name') == 'boosterLastInjectionDatetime')
+    out = set()
+    for t, v in types.items():
+        n = name(t) or ''
+        low = n.lower()
+        if v.get('published') and (('abyssal' in low or 'mutated' in low or '_placeholder' in low or n in ('Lux Kontos', 'Lux Xiphos', 'Lux Ballistra', 'Lux Kopis'))
+                                   and n not in ('Abyssal Ore Processing', 'Mutated Drone Specialization') and 'Asteroid Mining Crystal' not in n):
+            out.add(int(t))
+        if cat(t) == 20 and v.get('published'):   # the query filters Item.published
+            for a in td.get(str(t), {}).get('dogmaAttributes', []):
+                if a['attributeID'] == lastInj and a['value'] < dumpDays: out.add(int(t))
+    return out

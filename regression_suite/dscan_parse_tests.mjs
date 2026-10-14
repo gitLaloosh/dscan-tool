@@ -983,7 +983,54 @@ const r2 = checkBlock('REAL-PASTE-2 (round 3, 229 contacts)', REAL_PASTE_2, REAL
 
 pass += r1.pass + r2.pass;
 fail += r1.fail + r2.fail;
-const totalCases = CASES.length + REAL_PASTE_EXPECTED_TYPES.length + REAL_PASTE_2_EXPECTED_TYPES.length;
+
+// Bug list #1 (2026-10-14, v2026.10.14.9): an EFT fit pasted into the D-Scan
+// box must be recognized as a fit and refused; no real scan may trip the
+// check. The real pastes are tested whole AND starting at every one of their
+// rows (any row can end up first after a partial copy). Expected values
+// written before the code: EFT header -> {format:'EFT', shipName, fitName};
+// everything else -> null. NOT_IN_SPACE_CATEGORY_IDS from the SDE
+// categories file: fitted/character/hangar-only categories in, every
+// category that can be a D-Scan contact out (ship 6, drone 18, charge 8 --
+// probes/bombs, deployable 22, celestial 2, structure 65, fighter 87,
+// starbase 23, sovereignty 40, orbitals 46, asteroid 25).
+const FIT_CASES = [
+  { label: 'EFT: client copy', text: '[Rifter, the owner test]\nDamage Control II\n\n5MN Microwarpdrive II\n', expect: { format: 'EFT', shipName: 'Rifter', fitName: 'the owner test' } },
+  { label: 'EFT: pyfa export with leading blank lines/spaces', text: '\n  \n  [Legion, *Simulated Legion Fit]\nMedium Armor Repairer II\n', expect: { format: 'EFT', shipName: 'Legion', fitName: '*Simulated Legion Fit' } },
+  { label: 'EFT: header without a fit name', text: '[Purifier]\nDamage Control II', expect: { format: 'EFT', shipName: 'Purifier', fitName: '' } },
+  { label: 'EFT: Windows line endings', text: '[Svipul, pvp]\r\nDamage Control II\r\n', expect: { format: 'EFT', shipName: 'Svipul', fitName: 'pvp' } },
+  { label: 'not a fit: single ship name', text: 'Purifier', expect: null },
+  { label: 'not a fit: lowercase ship name', text: 'svipul', expect: null },
+  { label: 'not a fit: "[Empty High slot]" placeholder first', text: '[Empty High slot]\nDamage Control II', expect: null },
+  { label: 'not a fit: modules only, no header', text: 'Damage Control II\n400mm Steel Plates II', expect: null },
+  { label: 'not a fit: empty', text: '   \n', expect: null },
+  { label: 'not a fit: tabbed row whose name is bracketed', text: '587\t[OXF] Rifter\tRifter\t10 km', expect: null },
+  { label: 'not a fit: tabbed row that is entirely bracketed', text: '[x, y]\tRifter\t10 km', expect: null },
+];
+if (typeof sandbox.detectFitPaste !== 'function' || typeof sandbox.isNotInSpaceCategory !== 'function') {
+  console.log('FAIL: detectFitPaste() / isNotInSpaceCategory() not found'); fail++;
+} else {
+  for (const c of FIT_CASES) {
+    const got = sandbox.detectFitPaste(c.text);
+    const ok = JSON.stringify(got) === JSON.stringify(c.expect);
+    if (ok) pass++; else { fail++; console.log(`FAIL: ${c.label} -- expected ${JSON.stringify(c.expect)}, got ${JSON.stringify(got)}`); }
+  }
+  let realOk = 0, realBad = 0;
+  for (const [name, text] of [['REAL_PASTE', REAL_PASTE], ['REAL_PASTE_2', REAL_PASTE_2]]) {
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const got = sandbox.detectFitPaste(lines.slice(i).join('\n'));
+      if (got === null) realOk++; else { realBad++; console.log(`FAIL: ${name} from row ${i} detected as a fit: ${JSON.stringify(got)}`); }
+    }
+  }
+  if (realBad) fail++; else pass++;
+  console.log(`detectFitPaste: ${FIT_CASES.length} cases + ${realOk + realBad} real-paste starting rows (${realBad} misread)`);
+  const NOT_IN_SPACE = [7, 9, 16, 20, 30, 32, 66, 91, 2100];
+  const IN_SPACE = [2, 6, 8, 18, 22, 23, 25, 40, 46, 65, 87];
+  const catBad = NOT_IN_SPACE.filter(c => !sandbox.isNotInSpaceCategory(c)).concat(IN_SPACE.filter(c => sandbox.isNotInSpaceCategory(c)));
+  if (catBad.length) { fail++; console.log(`FAIL: isNotInSpaceCategory wrong for categories ${catBad}`); } else pass++;
+}
+const totalCases = CASES.length + REAL_PASTE_EXPECTED_TYPES.length + REAL_PASTE_2_EXPECTED_TYPES.length + FIT_CASES.length + 2;
 
 console.log(`\n${pass}/${totalCases} PASS` + (fail ? `, ${fail} FAIL` : ''));
 process.exit(fail ? 1 : 0);

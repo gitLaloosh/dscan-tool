@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>2026-10-14 — Implants and boosters, Phase 2: weapons and drones</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Implants and boosters, Phase 2: weapons and drones</h1>
+<p><span class="tag">Feature</span><span class="tag">Bug fix</span><span class="tag">Tooling</span> 2026-10-14 &middot; <code>v2026.10.14.12</code> &rarr; <code>v2026.10.14.13</code> &middot; the owner: "ok, proceed with implants phase 2"</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Weapon damage and rate of fire, charge damage, drone damage:</b> the implant and booster rows from <code>IMPLANT_EFFECTS</code> (already generated in Phase 1) now join the hull damage rows that <code>hullWeaponMods</code> / <code>hullDroneMods</code> apply to every weapon, charge and drone they match. In pyfa they are unpenalized multipliers on the same attributes, so this is exact. Confirmed weapons, the cargo-ammo estimates and the weapons' capacitor use all read them.</li>
+<li><b>Ranges:</b> turret optimal and falloff, missile velocity and flight time rows join the weapon range sources (Frentix, Sooth Sayer, Strokar, Deadeye hardwirings, Halcyon B...). Missile range goes through pyfa's own <code>missileMaxRangeData</code> as before.</li>
+<li><b>Precursor spool-up:</b> the Mimesis set's bonus to <code>damageMultiplierBonusMax</code> is applied to the maximum spool.</li>
+<li><b>Smartbombs:</b> an implant on the smartbomb cycle (Energy Pulse Weapons EP-70x) now changes its DPS too; its capacitor use already did in Phase 1.</li>
+<li><b>Drone control range:</b> boosters that add to it (Halcyon Y, Free-Zone) are added before the hull multiplier, as pyfa's <code>increase</code> on <code>fit.extraAttributes</code>; the hover names them.</li>
+<li>The Fit card note now reads "Included in every number above, as in pyfa." Implants also touch stats the tool doesn't show (turret and drone tracking, warp speed, CPU / powergrid, mining, fighter ranges).</li>
+</ul>
+
+<h2>Found on the way</h2>
+<ul>
+<li><b>Precursor and Vorton falloff:</b> these weapons have no falloff attribute; the tool read 0, pyfa reads the SDE default 1 (1 m, 1.25 after Trajectory Analysis). Fixed (LESSON #22). Six goldens re-pinned 0 &rarr; 1 and five more fits show 1 m; nothing else moves.</li>
+<li><b>Oracle:</b> drones in space added (<code>drones=</code>, run as pyfa's <code>Drone.calculateModifiedAttributes</code>), and <code>fit.extraAttributes</code> is now the ship's attribute dict with pyfa's <code>Ship.EXTRA_ATTRIBUTES</code> (drone control range starts at 20 km; before, a separate empty dict).</li>
+<li><b>My own check was wrong first:</b> the new DPS comparison multiplied by <code>1 + damageMultiplierBonusMax</code>, whose SDE default is 0.5 on every item, so every turret came out 50% high (Rifter 288 vs the owner's pyfa 192). pyfa's <code>calculateSpoolup</code> needs the per-cycle value too. Fixed in the check before it was used for any pin.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Expected values first from <code>compare_implants.py</code>, extended to weapon / smartbomb / drone DPS (pyfa <code>Module.getVolley</code> and <code>Drone.getDps</code> over the cycle), weapon ranges and drone control range; it reproduces the pinned Rifter 192 (pyfa-verified), Caracal 409 and Hawk 203. Now <b>0 mismatches over 13 fits</b> with implants or boosters.</li>
+<li>4 new goldens (214), each failing on v.12: Rupture (turret hardwirings + Pyrolancea / Frentix / Strokar: 231 &rarr; 301 DPS, optimal 1.5 &rarr; 1.8 km, falloff 13.5 &rarr; 15.2 km), Caracal (light missile hardwirings + Halcyon B-5 / Pyrolancea: 177 &rarr; 218 DPS, range 42.2 &rarr; 47.0 km), Vexor (drone tuner + Hardpoint booster + Halcyon Y-5: 238 &rarr; 264 DPS, drone control range 60 &rarr; 80 km), Vedmak (Mimesis set: 464 &rarr; 684 DPS). Re-pinned: Punisher smartbomb 9 &rarr; 10, Abaddon drone control range 60 &rarr; 76 km (Halcyon Y-4).</li>
+<li>Full output diff v.12 &rarr; v.13: 17 of 214 fits move: those 6 implant fits and 11 Precursor / Vorton falloffs 0 &rarr; 1 m.</li>
+<li>Update-check chain 21/21 OK, suite ALL PASS, parse tests 293/293. No PYFA CORE section changed (the rows were already in <code>implant-calc</code>; the stat code passes them in).</li>
+<li>Real page: the Rupture EFT shows 301 DPS, volley 1,111, optimal 1.8 km and the new note.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #22</b> (extended): a missing attribute is its SDE default in both directions: the tool read falloff 0 where pyfa reads 1, and a check read <code>damageMultiplierBonusMax</code> 0.5 where pyfa's consuming code guards it. Read the default, then the code that consumes the value.</li>
+<li>Reuse the shape that already exists: implant rows fit the hull damage rows exactly, so one loop wired every weapon, charge, drone and the capacitor use of weapons at once.</li>
+</ul>
+</body>
+</html>
