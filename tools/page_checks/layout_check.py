@@ -9,6 +9,8 @@ and subsystems), a tile click recalculates like a list button, and the choice is
 v2026.10.14.18 (Phase 3): collapsible cards -- default open/closed per width (phone: only Weaknesses open),
 a collapsed card's summary row equals the open card's numbers, the choice survives a module-state change,
 each Pilot Analyzer loss keeps its own, and keyboard focus stays on the toggle.
+v2026.10.14.19: collapsible bays in the Fit card (drone bay, cargo...) -- defaults (v.20: only the drone bay
+open), summary rows, kept through a module-state change.
 v2026.10.14.17 (Erik: "test how large strings will affect layout"): long strings everywhere -- the longest real
 ship / module / charge / drone / implant / subsystem names in the SDE, a long fit name with and without spaces,
 an unrecognized 120-character line, a 37-character pilot name (EVE's maximum), long D-scan names -- and every
@@ -213,7 +215,7 @@ with sync_playwright() as p:
         pg.goto('file://' + html); pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE.replace('Warp Scrambler II', 'Warp Scrambler II\nStasis Webifier II')); pg.click('#fitAnalyzerBtn')
         pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults .fit-layout')", timeout=30000); pg.wait_for_timeout(400)
         R = '#fitAnalyzerResults'
-        state = lambda: pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-toggle')].map(b => [b.dataset.card, b.getAttribute('aria-expanded') === 'true']))")
+        state = lambda: pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-toggle:not(.bay-toggle)')].map(b => [b.dataset.card, b.getAttribute('aria-expanded') === 'true']))")
         st = state()
         want = {k: (W >= 600 or k == 'weak') for k in CARD_KEYS}
         check(st == want, f'{W}: cards open by default as specified {st}')
@@ -226,7 +228,7 @@ with sync_playwright() as p:
             pg.click(f'{R} button.cc-toggle[data-card="{k}"]'); pg.wait_for_timeout(150)
             focused = pg.evaluate("document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.card : null")
             check(focused == k, f'{W}: focus stays on the {k} toggle after collapsing ({focused})')
-        sums = pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-row')].map(b => [b.dataset.card, b.querySelector('.cc-sum').textContent]))")
+        sums = pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-row:not(.bay-toggle)')].map(b => [b.dataset.card, b.querySelector('.cc-sum').textContent]))")
         check(set(sums) == set(CARD_KEYS) and all(sums.values()), f'{W}: every card collapses to a summary row {sorted(sums)}')
         check(sums['fp'].startswith(dps_open + ' DPS'), f'{W}: Firepower summary "{sums["fp"]}" = open card total {dps_open}')
         check(sums['rs'] == ehp_open + ' EHP', f'{W}: Resistance summary "{sums["rs"]}" = open card total {ehp_open}')
@@ -352,6 +354,35 @@ with sync_playwright() as p:
         ob = pg.evaluate(OUT_OF_BOX, '#resultsGrid > *')
         check(not ob and pg.evaluate('document.documentElement.scrollWidth') <= W, f'{W}: D-scan contacts with long names: everything inside its card {ob}')
         check(not errs, f'{W}: long strings, no page errors {errs}')
+        ctx.close()
+    b.close()
+
+with sync_playwright() as p:
+    b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
+    for W in (1440, 375):
+        ctx = b.new_context(viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
+        pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+        route_all(pg)
+        pg.goto('file://' + html); pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', long_eft('bay test')); pg.click('#fitAnalyzerBtn')
+        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults .fit-layout')", timeout=30000); pg.wait_for_timeout(400)
+        R = '#fitAnalyzerResults .fl-fit'
+        bays = lambda: pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.bay-toggle')].map(b => [b.dataset.card, b.getAttribute('aria-expanded') === 'true']))")
+        st = bays()
+        want = {'bay:drone': True, 'bay:cargo': False} # v.20: every bay but the drone bay starts closed
+        check(st == want, f'{W}: bays open by default as specified {st}')
+        if not st.get('bay:cargo'): pg.click(f'{R} button.bay-toggle[data-card="bay:cargo"]'); pg.wait_for_timeout(150)
+        for k in ('bay:drone', 'bay:cargo'):
+            pg.click(f'{R} button.bay-toggle[data-card="{k}"]'); pg.wait_for_timeout(150)
+        sums = pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.bay-toggle.cc-row')].map(b => [b.dataset.card, b.querySelector('.cc-sum').textContent]))")
+        check(sums.get('bay:drone', '').startswith('5 / 5 in space · 5 types · 12 items') and sums.get('bay:cargo') == '2 types · 60 items', f'{W}: collapsed bay summaries {sums}')
+        check(pg.locator(R + ' button.ds-pip').count() == 0, f'{W}: collapsed drone bay hides its squares')
+        pg.locator(R + ' button.ms-state[data-from="active"]').first.click()
+        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults .ms-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
+        check(bays() == {'bay:drone': False, 'bay:cargo': False}, f'{W}: bays stay collapsed through a module-state change {bays()}')
+        pg.click(f'{R} button.bay-toggle[data-card="bay:drone"]'); pg.wait_for_timeout(150)
+        check(pg.locator(R + ' button.ds-pip').count() > 0 and pg.evaluate("document.activeElement && document.activeElement.dataset.card") == 'bay:drone', f'{W}: drone bay reopens with its squares, focus kept')
+        sw = pg.evaluate('document.documentElement.scrollWidth'); check(sw <= W, f'{W}: bays, no sideways scroll ({sw})')
+        check(not errs, f'{W}: bays, no page errors {errs}')
         ctx.close()
     b.close()
 print('FAILURES:', len(bad))

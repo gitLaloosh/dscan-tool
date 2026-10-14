@@ -1103,6 +1103,12 @@
   .fit-summary.cc-closed, .ewar-card.cc-closed{padding-top:11px; padding-bottom:11px;}
   button.cc-toggle.cc-row{display:flex; width:100%; margin:0; min-height:24px; gap:8px;}
   .cc-row .cc-title{flex:none;}
+  /* v.19 bays: the toggle looks like the other Fit card group headings (small caps label) */
+  button.cc-toggle.bay-toggle{font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); margin:0 0 8px;}
+  .ds-head button.cc-toggle.bay-toggle{margin-bottom:6px;}
+  .fitgroup.cc-closed{margin-bottom:10px;}
+  button.cc-toggle.bay-toggle.cc-row{margin:0;}
+  .cc-row.bay-toggle .cc-sum{text-transform:none; letter-spacing:0;}
   .cc-row .cc-sum{flex:1 1 auto; min-width:0; text-align:right; font-family:var(--mono); font-size:11.5px; font-weight:400; color:var(--text-dim); line-height:1.45;}
   /* Phones: less padding around everything so the cards get the width. */
   @media (max-width: 599px){
@@ -1123,7 +1129,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.18</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.20</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -11996,12 +12002,14 @@ function capWeakGaugeHtml(cap){
 // survives every re-render (mode, states, drones). Default: all open; on a phone (< 600px) only Weaknesses
 // stays open (the "how to beat it" answer), as in the layout mockup. Presentation only.
 const CARD_PHONE_CLOSED = new Set(['ewar', 'fp', 'rs', 'nv', 'cp']);
+// v2026.10.14.20 (Erik: "please have all bays except the drone bay collapsed by default"): closed at every width.
+const CARD_ALWAYS_CLOSED = new Set(['bay:fighter', 'bay:fleet', 'bay:cargo']);
 const CC_CHEV = '<svg class="cc-chev" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5 L7 9 L11 5" fill="none" stroke-width="1.6"></path></svg>';
 function cardIsOpen(f, key){
   if(!f.cardOpen) f.cardOpen = {};
   if(f.cardOpen[key] === undefined){
     const phone = !!(window.matchMedia && window.matchMedia('(max-width: 599px)').matches);
-    f.cardOpen[key] = !(phone && CARD_PHONE_CLOSED.has(key));
+    f.cardOpen[key] = !(CARD_ALWAYS_CLOSED.has(key) || (phone && CARD_PHONE_CLOSED.has(key)));
   }
   return f.cardOpen[key];
 }
@@ -12417,14 +12425,21 @@ function moduleListWithStatesHtml(f, idToName, opts = {}){
   for(const group of groupOrder){
     if(!tally[group]) continue;
     if(opts.skipSlots && MODULE_STATE_SLOT_GROUPS.includes(group)) continue; // v.16: shown by fitRingHtml()
-    if(group === 'Drone bay' && f.estimate && f.estimate.droneStates && f.estimate.droneStates.items.length){
+    const bayKey = FIT_BAY_KEYS[group]; // v.19: bays collapse
+    const ds = f.estimate && f.estimate.droneStates;
+    if(bayKey && !cardIsOpen(f, bayKey)){
+      html += collapsedBayHtml(bayKey, group, (group === 'Drone bay' && ds && ds.items.length)
+        ? `${Math.round(ds.activeCount)} / ${ds.maxActive} in space · ${bayContentsSummary(tally, group)}` : bayContentsSummary(tally, group));
+      continue;
+    }
+    if(group === 'Drone bay' && ds && ds.items.length){
       html += droneBayStatesHtml(f, idToName);
       continue;
     }
     const entries = Object.entries(tally[group])
       .map(([id, data]) => ({id: Number(id), name: idToName.get(Number(id)) || `type ${id}`, qty: data.totalQty}))
       .sort((a, b) => a.name.localeCompare(b.name));
-    html += `<div class="fitgroup"><h3>${group}</h3>`;
+    html += `<div class="fitgroup">${bayKey ? bayLabelHtml(bayKey, group) : `<h3>${group}</h3>`}`;
     for(const e of entries){
       const item = MODULE_STATE_SLOT_GROUPS.includes(group) ? byId.get(e.id) : null;
       if(item){
@@ -12481,7 +12496,7 @@ function droneBayStatesHtml(f, idToName){
   const ds = f.estimate.droneStates;
   const pct = ds.bandwidthTotal ? Math.min(100, ds.bandwidthUsed / ds.bandwidthTotal * 100) : 0;
   const budget = `<span class="ds-budget">Bandwidth <b>${Math.round(ds.bandwidthUsed)}</b> / ${ds.bandwidthTotal === null ? '?' : ds.bandwidthTotal} Mbit/s · <b>${Math.round(ds.activeCount)}</b> / ${ds.maxActive} in space</span>`;
-  let html = `<div class="fitgroup"><div class="ds-head"><h3>Drone bay</h3>${budget}</div>`;
+  let html = `<div class="fitgroup"><div class="ds-head">${bayLabelHtml('bay:drone', 'Drone bay')}${budget}</div>`;
   if(ds.bandwidthTotal) html += `<div class="ds-bar" title="Drone bandwidth used"><i style="width:${pct.toFixed(1)}%"></i></div>`;
   // One square per drone this fit could have in space at once (min 1, so a
   // type that can never launch still shows a locked square with the reason).
@@ -12602,6 +12617,22 @@ function fitRingHtml(f, idToName){
 function fitViewSwitchHtml(view){
   const b = (v, label) => `<button type="button" class="fit-view-btn${view === v ? ' on' : ''}" data-view="${v}" aria-pressed="${view === v}">${label}</button>`;
   return `<div class="fit-view-row"><div class="fit-view-switch" role="group" aria-label="Fit view">${b('ring', 'Ring')}${b('list', 'List')}</div></div>`;
+}
+// COLLAPSIBLE BAYS (v2026.10.14.19, Erik: "can we please make any bays in the fit collapsible as well?
+// drone bay, cargo bay, etc."): the drone bay, fighter bay, fleet hangar and cargo headings in the Fit card
+// are toggles like the card titles (same cardIsOpen() / f.cardOpen / wireCardToggles()); a closed bay is one
+// row with what it holds. Default: drone bay open, every other bay closed (CARD_ALWAYS_CLOSED, v.20).
+const FIT_BAY_KEYS = {'Drone bay': 'bay:drone', 'Fighter bay': 'bay:fighter', 'Fleet hangar': 'bay:fleet', 'Cargo': 'bay:cargo'};
+function bayLabelHtml(key, title){
+  return `<button type="button" class="cc-toggle bay-toggle" data-card="${key}" aria-expanded="true" title="Collapse">${CC_CHEV}${escapeHtml(title)}</button>`;
+}
+function collapsedBayHtml(key, title, summary){
+  return `<div class="fitgroup cc-closed"><button type="button" class="cc-toggle cc-row bay-toggle" data-card="${key}" aria-expanded="false" title="Expand">${CC_CHEV}<span class="cc-title">${escapeHtml(title)}</span><span class="cc-sum">${escapeHtml(summary)}</span></button></div>`;
+}
+function bayContentsSummary(tally, group){
+  const entries = Object.values(tally[group] || {});
+  const n = entries.reduce((t, d) => t + (d.totalQty || 0), 0);
+  return `${entries.length} type${entries.length === 1 ? '' : 's'} · ${n.toLocaleString()} item${n === 1 ? '' : 's'}`;
 }
 // opts.collapsible: Pilot Analyzer losses (closed until opened; f.fitCardOpen remembers).
 function fitCardHtml(f, idToName, opts = {}){
