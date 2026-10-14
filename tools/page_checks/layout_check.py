@@ -9,6 +9,8 @@ and subsystems), a tile click recalculates like a list button, and the choice is
 v2026.10.14.18 (Phase 3): collapsible cards -- default open/closed per width (phone: only Weaknesses open),
 a collapsed card's summary row equals the open card's numbers, the choice survives a module-state change,
 each Pilot Analyzer loss keeps its own, and keyboard focus stays on the toggle.
+v2026.10.14.21: the Fit card collapses with the same toggle (no "hide" link, no "Module states assumed"
+label), collapsed summary row, Pilot Analyzer default by width, reset icon button beside Ring / List.
 v2026.10.14.19: collapsible bays in the Fit card (drone bay, cargo...) -- defaults (v.20: only the drone bay
 open), summary rows, kept through a module-state change.
 v2026.10.14.17 (Erik: "test how large strings will affect layout"): long strings everywhere -- the longest real
@@ -87,7 +89,7 @@ with sync_playwright() as p:
         if W >= 900: pg.evaluate("window.scrollTo(0, document.querySelector('#fitAnalyzerResults .fit-layout').getBoundingClientRect().top + scrollY + 250)"); pg.wait_for_timeout(200)
         y0 = pg.evaluate("document.querySelector('#fitAnalyzerResults .fl-fit').getBoundingClientRect().top")
         btn = pg.locator(R + ' button.ms-state[data-from="active"]').first
-        btn.click(); pg.wait_for_function("() => !document.querySelector('#fitAnalyzerResults .fit-card-busy') && document.querySelector('#fitAnalyzerResults .ms-custom')", timeout=30000); pg.wait_for_timeout(300)
+        btn.click(); pg.wait_for_function("() => !document.querySelector('#fitAnalyzerResults .fit-card-busy') && document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom')", timeout=30000); pg.wait_for_timeout(300)
         d2 = dps(); check(d2 != d0, f'{W}: switching a blaster to online recalculates ({d0} -> {d2})')
         y1 = pg.evaluate("document.querySelector('#fitAnalyzerResults .fl-fit').getBoundingClientRect().top")
         if W >= 900: check(abs(y1 - y0) < 2 and abs(y0 - 12) < 2, f'{W}: fit column pinned at the top and stays put on a state change ({y0:.0f} -> {y1:.0f})')
@@ -96,7 +98,7 @@ with sync_playwright() as p:
         if n:
             t0 = pg.inner_text(R + ' .fl-stats'); pg.locator(R + ' .cap-asb-toggle').first.click(); pg.wait_for_timeout(400)
             check(pg.inner_text(R + ' .fl-stats') != t0, f'{W}: ASB charges toggle re-renders')
-        pg.locator(R + ' button.ms-reset').click(); pg.wait_for_function("() => !document.querySelector('#fitAnalyzerResults .ms-custom')", timeout=30000); pg.wait_for_timeout(300)
+        pg.locator(R + ' button.ms-reset').click(); pg.wait_for_function("() => !document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom')", timeout=30000); pg.wait_for_timeout(300)
         check(dps() == d0, f'{W}: reset to best case restores DPS')
         # Pilot Analyzer path: renderFitTabs with two "losses" built from the same paste
         pg.click('#tabBtnPilot')
@@ -110,16 +112,19 @@ with sync_playwright() as p:
           return document.querySelectorAll('#fitResults .fit-layout').length; }""", HECATE)
         check(res == 2, f'{W}: Pilot Analyzer renders one layout per loss ({res})')
         P = '#fitResults .subtab-panel[data-idx="0"]'
-        opened = pg.evaluate(f"!!document.querySelector('{P} details.fit-card-details').open")
+        opened = pg.evaluate(f"document.querySelector('{P} button.cc-toggle[data-card=fit]').getAttribute('aria-expanded') === 'true'")
         check(opened == (W >= 900), f'{W}: Pilot fit card starts {"open" if W >= 900 else "closed"} ({opened})')
-        if not opened: pg.locator(P + ' details.fit-card-details > summary').click(); pg.wait_for_timeout(200)
+        if not opened:
+            ps = pg.text_content(P + ' button.cc-row[data-card=fit] .cc-sum')
+            check(ps.startswith('Hecate — ') and ps.endswith(' loss'), f'{W}: collapsed Pilot fit card names the loss "{ps}"')
+            pg.locator(P + ' button.cc-toggle[data-card=fit]').click(); pg.wait_for_timeout(200)
         pdps = lambda: total_dps(pg, P)
         p0 = pdps(); pg.locator(P + ' button.ms-state[data-from="active"]').first.click()
-        pg.wait_for_function(f"() => document.querySelector('{P} .ms-custom') && !document.querySelector('{P} .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
+        pg.wait_for_function(f"() => document.querySelector('{P} button.ms-reset.is-custom') && !document.querySelector('{P} .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
         check(pdps() != p0, f'{W}: Pilot tab 1 state change recalculates ({p0} -> {pdps()})')
-        check(pg.evaluate("!document.querySelector('#fitResults .subtab-panel[data-idx=\"1\"] .ms-custom')"), f'{W}: Pilot tab 2 unaffected')
+        check(pg.evaluate("!document.querySelector('#fitResults .subtab-panel[data-idx=\"1\"] button.ms-reset.is-custom')"), f'{W}: Pilot tab 2 unaffected')
         pg.locator(P + ' .td-mode-btn').nth(1).click(); pg.wait_for_timeout(400)
-        check('active' in pg.locator(P + ' .td-mode-btn').nth(1).get_attribute('class') and pg.locator(P + ' .ms-custom').count() == 1, f'{W}: Pilot mode switch keeps the custom states')
+        check('active' in pg.locator(P + ' .td-mode-btn').nth(1).get_attribute('class') and pg.locator(P + ' button.ms-reset.is-custom').count() == 1, f'{W}: Pilot mode switch keeps the custom states')
         check(not errs, f'{W}: no page errors {errs}')
         ctx.close()
     b.close()
@@ -190,13 +195,13 @@ with sync_playwright() as p:
         nt = pg.locator(R + ' .fit-ring .ms-tile').count()
         d0 = total_dps(pg, R)
         pg.locator(R + ' .fit-ring button.ms-tile[data-from="active"]').first.click()
-        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults .ms-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
+        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
         d1 = total_dps(pg, R)
         check(d1 != d0 and pg.locator(R + ' .fit-ring .ms-tile.ms-online').count() >= 1, f'{W}: ring tile click recalculates ({d0} -> {d1})')
         pg.click(R + ' .fit-view-btn[data-view="list"]'); pg.wait_for_timeout(300)
         nr = pg.locator(R + ' .ms-row').count()
         check(nt == nr and pg.locator(R + ' .fit-ring').count() == 0, f'{W}: list shows the same {nr} module rows as the ring has tiles ({nt})')
-        check(pg.locator(R + ' .ms-row.ms-online').count() >= 1 and pg.locator(R + ' .ms-custom').count() == 1, f'{W}: the state set in the ring carries over to the list')
+        check(pg.locator(R + ' .ms-row.ms-online').count() >= 1 and pg.locator(R + ' button.ms-reset.is-custom').count() == 1, f'{W}: the state set in the ring carries over to the list')
         run(HECATE)
         check(pg.evaluate(f"document.querySelector('{R} .fit-view-btn.on').dataset.view") == 'list', f'{W}: list choice remembered after a reload')
         pg.click(R + ' .fit-view-btn[data-view="ring"]'); pg.wait_for_timeout(200); run(HECATE)
@@ -215,7 +220,7 @@ with sync_playwright() as p:
         pg.goto('file://' + html); pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE.replace('Warp Scrambler II', 'Warp Scrambler II\nStasis Webifier II')); pg.click('#fitAnalyzerBtn')
         pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults .fit-layout')", timeout=30000); pg.wait_for_timeout(400)
         R = '#fitAnalyzerResults'
-        state = lambda: pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-toggle:not(.bay-toggle)')].map(b => [b.dataset.card, b.getAttribute('aria-expanded') === 'true']))")
+        state = lambda: pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-toggle:not(.bay-toggle):not([data-card=fit])')].map(b => [b.dataset.card, b.getAttribute('aria-expanded') === 'true']))")
         st = state()
         want = {k: (W >= 600 or k == 'weak') for k in CARD_KEYS}
         check(st == want, f'{W}: cards open by default as specified {st}')
@@ -228,7 +233,7 @@ with sync_playwright() as p:
             pg.click(f'{R} button.cc-toggle[data-card="{k}"]'); pg.wait_for_timeout(150)
             focused = pg.evaluate("document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.card : null")
             check(focused == k, f'{W}: focus stays on the {k} toggle after collapsing ({focused})')
-        sums = pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-row:not(.bay-toggle)')].map(b => [b.dataset.card, b.querySelector('.cc-sum').textContent]))")
+        sums = pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-row:not(.bay-toggle):not([data-card=fit])')].map(b => [b.dataset.card, b.querySelector('.cc-sum').textContent]))")
         check(set(sums) == set(CARD_KEYS) and all(sums.values()), f'{W}: every card collapses to a summary row {sorted(sums)}')
         check(sums['fp'].startswith(dps_open + ' DPS'), f'{W}: Firepower summary "{sums["fp"]}" = open card total {dps_open}')
         check(sums['rs'] == ehp_open + ' EHP', f'{W}: Resistance summary "{sums["rs"]}" = open card total {ehp_open}')
@@ -236,7 +241,7 @@ with sync_playwright() as p:
         check(('Drains in' in sums['cp'] or 'Stable at' in sums['cp']) and 'm/s' in sums['nv'] and 'align' in sums['nv'], f'{W}: Capacitor / Navigation summaries "{sums["cp"]}" / "{sums["nv"]}"')
         # a module state change keeps the cards collapsed, and the summary follows the new numbers
         pg.locator(R + ' button.ms-state[data-from="active"]').first.click()
-        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults .ms-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
+        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
         st2 = state()
         check(not any(st2.values()), f'{W}: cards stay collapsed through a module-state change {st2}')
         check(total_dps(pg, R) != dps_open, f'{W}: collapsed Firepower summary follows the recalculation ({dps_open} -> {total_dps(pg, R)})')
@@ -377,12 +382,40 @@ with sync_playwright() as p:
         check(sums.get('bay:drone', '').startswith('5 / 5 in space · 5 types · 12 items') and sums.get('bay:cargo') == '2 types · 60 items', f'{W}: collapsed bay summaries {sums}')
         check(pg.locator(R + ' button.ds-pip').count() == 0, f'{W}: collapsed drone bay hides its squares')
         pg.locator(R + ' button.ms-state[data-from="active"]').first.click()
-        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults .ms-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
+        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
         check(bays() == {'bay:drone': False, 'bay:cargo': False}, f'{W}: bays stay collapsed through a module-state change {bays()}')
         pg.click(f'{R} button.bay-toggle[data-card="bay:drone"]'); pg.wait_for_timeout(150)
         check(pg.locator(R + ' button.ds-pip').count() > 0 and pg.evaluate("document.activeElement && document.activeElement.dataset.card") == 'bay:drone', f'{W}: drone bay reopens with its squares, focus kept')
         sw = pg.evaluate('document.documentElement.scrollWidth'); check(sw <= W, f'{W}: bays, no sideways scroll ({sw})')
         check(not errs, f'{W}: bays, no page errors {errs}')
+        ctx.close()
+    b.close()
+
+with sync_playwright() as p:
+    b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
+    for W in (1440, 375):
+        ctx = b.new_context(viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
+        pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+        route_all(pg)
+        pg.goto('file://' + html); pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn')
+        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults .fit-layout')", timeout=30000); pg.wait_for_timeout(400)
+        F = '#fitAnalyzerResults .fl-fit'
+        txt = pg.inner_text(F)
+        check('Module states assumed' not in txt and not re.search(r'\bhide\b', txt) and 'show modules and states' not in txt, f'{W}: Fit card has no "Module states assumed" label and no hide / show link')
+        tg = F + ' button.cc-toggle[data-card=fit]'
+        check(pg.locator(tg).count() == 1 and pg.get_attribute(tg, 'aria-expanded') == 'true' and pg.locator(tg + ' .cc-chev').count() == 1, f'{W}: Fit card title is a toggle with the arrow, open by default in the Fit Analyzer')
+        check(pg.locator(F + ' .fit-card-head .fit-view-switch').count() == 1, f'{W}: Ring / List switch sits in the Fit card header')
+        check(pg.locator(F + ' .fit-view-controls button.ms-reset[disabled]').count() == 1 and 'Reset to best case' not in pg.inner_text(F), f'{W}: a reset icon button sits next to Ring / List, disabled while everything is default')
+        pg.locator(F + ' button.ms-state[data-from="active"]').first.click()
+        pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)
+        check(pg.locator(F + ' .fit-view-controls button.ms-reset.is-custom:not([disabled])').count() == 1, f'{W}: the reset button next to Ring / List turns active after a state change')
+        pg.click(tg); pg.wait_for_timeout(200)
+        sm = pg.text_content(F + ' button.cc-row[data-card=fit] .cc-sum')
+        fam = pg.evaluate(f"getComputedStyle(document.querySelector('{F} button.cc-row[data-card=fit] .cc-sum')).textTransform")
+        check(sm == 'Hecate — mode test' and fam == 'uppercase' and pg.locator(F + ' button.ms-state').count() == 0, f'{W}: collapsed Fit card shows the fit name in the stat-label style "{sm}" ({fam})')
+        pg.click(F + ' button.cc-toggle[data-card=fit]'); pg.wait_for_timeout(200)
+        check(pg.locator(F + ' button.ms-state').count() > 0 and pg.locator(F + ' button.ms-reset.is-custom').count() == 1, f'{W}: Fit card reopens with the custom states kept')
+        check(not errs, f'{W}: Fit card toggle, no page errors {errs}')
         ctx.close()
     b.close()
 print('FAILURES:', len(bad))
