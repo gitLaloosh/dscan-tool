@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-22 — ZPME defaults online</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Zero-Point Mass Entangler defaults to online</h1>
+<p><span class="tag">Input rule</span> 2026-10-22 &middot; <code>v2026.10.14.29</code> &rarr; <code>v2026.10.14.30</code> &middot; Erik: "I agree that having it default to off is best", replying to the question raised in the v.29 doc.</p>
+
+<h2>What changed</h2>
+<ul>
+<li>A fitted Zero-Point Mass Entangler (Heavy Interdictors, Odysseus) now defaults to <b>online</b>, like a cyno, cloak or MJD. Active, it pins the ship in place (pyfa Effect7142: speed &times;0.05, mass &times;0.2, can't warp, MWD blocked). A HIC runs it only once it's tackled, so assuming it's active made every HIC carrying one read as nearly stationary.</li>
+<li>It's still one click to set it active in the module list, and the active numbers are pyfa-exact as before. The module's note reads "Assumed online: zero-point mass entangler".</li>
+<li>This is an input choice, outside the PYFA CORE sections: effect 7142 added to <code>MODULE_DEFAULT_ONLINE_EFFECTS</code>, and the same id added to <code>golden_oracle.py</code>'s copy. DEVIATIONS.md lists it with the other default-online modules.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><code>onyx_constructed_zero_point_mass_entangler</code> (default) re-pinned to 250 m/s, 560 with the AB, align 7.9 / 10.5 s. Hand check: Onyx 200 m/s &times; 1.25 Navigation = 250. v.29 showed 13 / 13 / 1.6 / 2.1 and fails all four pins.</li>
+<li>New <code>onyx_constructed_zero_point_mass_entangler_active</code> requests the ZPME active and keeps the old numbers. <code>compare_speed.py</code>: 0 mismatches over 237 fits, with pyfa's handlers in the same states.</li>
+<li>Full output diff v.29 &rarr; v.30: only those two fits.</li>
+<li>Chain all 26 OK; suite ALL PASS; parse tests 293/293; layout check FAILURES 0.</li>
+<li>Page: an Onyx with a ZPME shows 560 m/s; the module tile says "Online. Click to set active."</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>A default state is a threat-assessment input, not a pyfa rule. "Active if it can be" is wrong for a module whose active state cripples its own ship: list it with the other situational modules and name it in DEVIATIONS.md.</li></ul>
+</body>
+</html>

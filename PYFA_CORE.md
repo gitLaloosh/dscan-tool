@@ -101,7 +101,7 @@ When pyfa or its data moves:
 When comparing with one of Erik's pyfa screenshots, ask for Help → About:
 his pyfa must be the same version and data build (LESSON #10).
 
-## Sections (2026-10-14, verified against pyfa v2.69.2, data 3579973; 13 sections)
+## Sections (2026-10-14; re-verified 2026-10-21 against pyfa v2.69.3, data 3624425; 13 sections)
 
 | Section | Kind | Mirrors |
 |---|---|---|
@@ -110,7 +110,7 @@ his pyfa must be the same version and data build (LESSON #10).
 | `resist-calc` | generated + port | every resistance handler (hulls, modules, scripts, Compensation skills, Polarized weapons, ship modes; `gen_resist_table.py`), `modifiedAttributeDict.py` value calculation for those attributes, and `effects.py` Effect4928 (Reactive Armor Hardener). Since v2026.10.14.5; replaced `rah-sim`, which was locked as a "port" but was not pyfa's algorithm (LESSON #25) |
 | `modes` | generated | every effect of every ship mode item (`Ship.__getModeItems`: Tactical Destroyers incl. the Skua, and the Anhinga) as pyfa's handlers apply it (`gen_mode_table.py`), the default mode (`Ship.validateModeItem`) and each handler's module/charge filter. Since v2026.10.14.6; replaced five hand tables. Resonance rows stay in `resist-calc` |
 | `speed-calc` | generated + port | every handler on ship maxVelocity / agility / mass and on the module attributes they read (`gen_speed_table.py`), pyfa's MWD / AB effects 6730 / 6731 (`pyfaPropBoost`), `Fit.maxSpeed` / `Fit.alignTime`. Since v2026.10.14.8 (hand-tables P3) |
-| `ewar-calc` | generated | every handler on an EWAR module's own attributes the EWAR / Misc card shows: skills, hulls, modules, rigs, subsystems and loaded scripts (`gen_ewar_table.py`); verified by `compare_ewar.py` against `pyfa_fit_oracle.py` |
+| `ewar-calc` | generated | every handler on an EWAR module's own attributes the EWAR / Misc card shows: skills, hulls, modules, rigs, subsystems and loaded scripts (`gen_ewar_table.py`); since v2026.10.14.26 also Warp Disrupt Field Generators and Command Bursts, with their charges' own attributes (`EWAR_CHARGE_ATTRS`: burst charge multipliers after the Command Specialist skills); since v2026.10.14.29 also the ECM Burst (Burst Jammer) and the Supercarriers' Burst Projectors (field radius, lifetime, warning, how long targets stay affected); verified by `compare_ewar.py` against `pyfa_fit_oracle.py` |
 | `implant-calc` | generated + port | implants and boosters from a pasted EFT fit, as pyfa runs them (`implant.py` / `booster.py`, each effect in its carrier's own context, set bonuses first, booster side effects off): `IMPLANT_EFFECTS` by `gen_implant_table.py`; `pyfaImplantSetup` hands the rows to the stat code (v2026.10.14.12; weapon / charge / drone rows join the hull damage rows and the weapon range sources since v2026.10.14.13). `PYFA_REMOVED_IMPLANT_IDS`: the implants / boosters pyfa's database doesn't have (`pyfa_sde.pyfa_removed_types`, v2026.10.14.14). Verified by `compare_implants.py` (HP, capacitor, recharge, signature, targeting, sensors, repairs, cap use, weapon / smartbomb / drone DPS, weapon ranges, drone control range) and by `compare_speed.py` / `compare_resists.py` / `compare_ewar.py` on the same fits |
 | `missile-range` | port | `Module.missileMaxRangeData` + the missile branch of `Module.maxRange`, and `eos/utils/float.py` floatUnerr. Since v2026.10.14.7; verified by running pyfa's own function (`check_missile_range.py`) |
 | `cycle-time` | port | `Module.rawCycleTime` / `reactivationDelay` / `getCycleParameters` |
@@ -125,7 +125,7 @@ his pyfa must be the same version and data build (LESSON #10).
 - nothing from the hand-tables plan: firepower moved into `hull-damage` (v2026.10.14.3), resistances into
   `resist-calc` (v.5), speed into `speed-calc` (v.8) and EWAR into `ewar-calc` (v.11); the old hand tables
   remain only as the fallback for a hull record without dogma effects
-- the rounded stacking helpers `applyStacking` / `applyStackingBonus`
-  (see `DEVIATIONS.md`)
+- `applyStacking` / `applyStackingBonus` are thin wrappers over the core's `pyfaPenalizedProduct`
+  since v2026.10.14.23 (they used a rounded 3-decimal table before)
 
 They move into the core as each is replaced with pyfa-derived code.

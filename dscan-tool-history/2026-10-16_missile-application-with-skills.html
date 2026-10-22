@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-16 — Missile recommendation with application skills</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Missile recommendation with application skills</h1>
+<p><span class="tag">Calculation</span> 2026-10-16 &middot; <code>v2026.10.14.26</code> &rarr; <code>v2026.10.14.27</code> &middot; Erik: "4. do it", the last part of item 4 (hand-tables optional P5: "the missile recommendation uses raw charge explosion radius / velocity").</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The Weaknesses card's missile pick is what <b>you</b> fire at this target. Your missiles now get the tool's standing All V skills. pyfa has exactly two skill handlers on a missile's application:
+<ul>
+<li><b>Guided Missile Precision</b>, Effect1472: explosion radius &minus;5% per level, &times;0.75 at V;</li>
+<li><b>Target Navigation Prediction</b>, Effect1590: explosion velocity +10% per level, &times;1.5 at V.</li>
+</ul>
+Both are unpenalized and apply to every charge requiring Missile Launcher Operation (every missile).</li>
+<li>The formula is unchanged: <code>min(1, S/E, (S/E &times; Ve/Vt)^drf)</code>. pyfa's own application graph uses the same one (<code>graphs/.../launcher.py calcMissileFactor</code>).</li>
+<li>Still not applied, because they're unknown here (DEVIATIONS.md): your own rigs (Rigor, Flare), Missile Guidance Computers and hull bonuses.</li>
+<li>The result carries <code>missileApplication.inputs</code>: the unrounded target signature and speed each ranking used.</li>
+</ul>
+
+<h2>Effect</h2>
+<p>Missiles land better, so the ranking moves on most fits (only <code>missileApplication</code> fields change; every other number is identical). Re-pinned fits:</p>
+<table>
+<tr><th>Fit</th><th>v.26</th><th>v.27</th></tr>
+<tr><td>Rifter (35 m, 456 m/s)</td><td>Rocket 70% / 5.78</td><td>Rocket 100% / 8.25</td></tr>
+<tr><td>Crow cruising / MWD on</td><td>Rocket 63% / 30.2%</td><td>Rocket 98.5% / 47.2%</td></tr>
+<tr><td>Megathron (380 m, 152.5 m/s)</td><td>Precision Cruise Missile 76.6%</td><td>Torpedo 96.2%</td></tr>
+</table>
+<p>Hand check (Megathron): Scourge Torpedo E 405 &times; 0.75 = 303.75 m, Ve 78 &times; 1.5 = 117 m/s. min(1, 380 / 303.75 = 1.251, (1.251 &times; 117 / 152.5)<sup>0.944</sup> = 0.962) = <b>96.2%</b>.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>New <code>tools/independent_checks/check_missile_application.py</code>, in the chain:
+<ul>
+<li>Part 1 runs pyfa's handlers for every published skill and must find exactly those two, so a pyfa or SDE change fails it.</li>
+<li>Part 2 recomputes every golden fit's ranking from SDE ammo values: 247 rankings, 0 mismatches. v.26 fails it.</li>
+</ul></li>
+<li>Suite ALL PASS (3 fits re-pinned with notes). Chain all 25 OK, parse tests 293/293, layout and missing-charges page checks FAILURES 0.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>Before applying "max skills" to a number, decide whose number it is. These missiles belong to the viewer, so the viewer's All V skills apply. The target's own skills and fit were never involved, and the viewer's fit is unknown.</li></ul>
+</body>
+</html>

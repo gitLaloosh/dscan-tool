@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-21 — Mindlinks on Command Burst strength</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Mindlink implants on Command Burst strength</h1>
+<p><span class="tag">Calculation</span> 2026-10-21 &middot; <code>v2026.10.14.27</code> &rarr; <code>v2026.10.14.28</code> &middot; Erik: "Ok do it", for the open gap listed after v.27 (DEVIATIONS.md: "mindlink implants' Command Burst strength"). Verified against pyfa v2.69.3 (see 2026-10-21_pyfa-2-69-3-update).</p>
+
+<h2>What changed</h2>
+<ul>
+<li>A pasted fit's mindlink now strengthens its Command Bursts on the EWAR / Misc card, as in pyfa. Each of pyfa's mindlink handlers does two things for its command type:
+<ul>
+<li><code>filteredChargeBoost</code>: the loaded charge's <code>warfareBuffNMultiplier</code> &times; (1 + mindlinkBonus/100). That is +25% on every mindlink, unpenalized, in the same pool as the Command Specialist skills. <b>This was missing.</b></li>
+<li><code>filteredItemBoost</code>: the burst's <code>buffDuration</code> +25%. This was already applied, so durations don't move.</li>
+</ul></li>
+<li>Covered (pyfa effect &rarr; implants):
+<ul>
+<li>1643 armored, 1644 information, 1645 / 1646 shield and skirmish, 1848 mining foreman;</li>
+<li>the single-type mindlinks, plus Imperial Navy, Federation Navy, Republic Fleet, Caldari Navy, ORE Mining Director, Guri Malakim and Sisters Expedition (each carries two).</li>
+</ul></li>
+<li>Expedition Command Mindlink (Effect12542) already worked: it boosts the burst's own <code>warfareBuffNValue</code>, which the implant table already applied.</li>
+<li>Killmails (Pilot Analyzer) are unchanged. A ship killmail never lists implants, so none are applied (<code>PILOT_ANALYZER_APPLY_IMPLANTS</code> false).</li>
+</ul>
+
+<h2>Why it was missing</h2>
+<p><code>gen_implant_table.py</code> tests a charge row's filter on (charge, module) pairs, and its pair list held only weapons and their ammo. All 20 mindlink charge rows were skipped with "filter matches no published item". The fix adds every Command Burst paired with the charges it can load (<code>chargeGroup1-5</code>). The generator now fails if there are no such pairs. pyfa's filter is exactly "the burst requires &lt;X&gt; Command" (asserted). In <code>ewar-calc</code>, <code>pyfaEwarSetup</code> now adds the implant charge rows to the charge-multiplier pool, the same pool the skill rows use (one line). LESSONS_LEARNED #35.</p>
+
+<h2>Effect</h2>
+<table>
+<tr><th>New constructed fit</th><th>v.27</th><th>v.28 (= pyfa)</th></tr>
+<tr><td>Vulture, Shield Harmonizing + Rapid Deployment, Republic Fleet Command Mindlink</td><td>-17.25% / +22.5%</td><td>-21.5625% / +28.125%</td></tr>
+<tr><td>Damnation, Armor Energizing + Electronic Superiority, Imperial Navy Command Mindlink</td><td>-17.25% / +19.40625%</td><td>-21.5625% / +24.2578%</td></tr>
+<tr><td>Orca, Mining Laser Optimization, Mining Foreman Mindlink</td><td>-32.34% / +4.3125%</td><td>-40.43% / +5.390625%</td></tr>
+</table>
+<p>Hand check (Vulture): 1.25 &times; 1.15 (Command Ships) &times; -8 &times; 1.5 (Shield Command Specialist) &times; 1.25 (mindlink) = <b>-21.5625%</b>. Durations: 103.5 s &times; 1.25 = 129.375 s, the same on v.27 and v.28.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>compare_ewar.py</code> (pyfa's handlers through the oracle, 1e-6): 0 mismatches on 101 entries. The v.27 build fails 5 of those entries.</li>
+<li>Suite ALL PASS (226 fits; the 3 new ones were pinned from pyfa's values before the tool's numbers were read). v.27 fails 6 pins.</li>
+<li>Full output diff v.27 &rarr; v.28: only the 3 new fits change. No existing golden fit has a mindlink.</li>
+<li>PYFA CORE: <code>ewar-calc</code> and <code>implant-calc</code> were re-verified with each section's verify commands:
+<ul>
+<li>both generators up to date;</li>
+<li><code>compare_implants</code>: 0 mismatches on 16 fits;</li>
+<li><code>compare_speed</code>, <code>compare_resists</code> and <code>compare_ewar</code>: 0 mismatches;</li>
+<li>suite ALL PASS.</li>
+</ul>
+Then re-locked with <code>check_pyfa_core.mjs --update</code>.</li>
+<li>Update-check chain all 25 OK. Parse tests 293/293. Layout and missing-charges page checks FAILURES 0.</li>
+<li>Screenshot: a Vulture with the Republic Fleet mindlink pasted into the real page shows "-21.6% shield damage taken (129.4 s)" and "+28.1% AB / MWD speed (112.5 s)".</li>
+<li>DEVIATIONS.md: the mindlink line is removed.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>A generator's "matches nothing" skip can be a gap in its own test set. Before accepting it, ask whether pyfa applies the row to a real item in game. Here it did: every Command Burst. See LESSONS #35.</li></ul>
+</body>
+</html>

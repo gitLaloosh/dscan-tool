@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-16 — Exact stacking penalty everywhere</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Exact stacking penalty everywhere</h1>
+<p><span class="tag">Calculation</span> 2026-10-16 &middot; <code>v2026.10.14.22</code> &rarr; <code>v2026.10.14.23</code> &middot; Erik: "1. ok do it" (the last listed calculation difference from pyfa).</p>
+
+<h2>What was wrong</h2>
+<ul>
+<li><code>applyStacking</code> / <code>applyStackingBonus</code> used a stacking-penalty table rounded to 3 decimals (1, 0.869, 0.571, 0.283, 0.106, 0.030, 0.006, 0.001, then 0). pyfa uses the exact <code>exp(-i&sup2; / 7.1289)</code> (0.86912, 0.57058, 0.28296, ...).</li>
+<li>Still affected:
+<ul>
+<li>turret and missile damage and rate-of-fire modules and rigs;</li>
+<li>shield boost amplifiers;</li>
+<li>sensor strength;</li>
+<li>the legacy speed and mass path, and EWAR rigs on fallback hulls.</li>
+</ul>
+Drones, fighters, resists, speed and EWAR on current hulls already used the exact formula.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li>Both helpers are now one-line wrappers over the core's <code>pyfaPenalizedProduct</code>, which keeps separate chains for bonuses and reductions, strongest first. Mixed signs in one pool now split into those two chains, as in pyfa. The table <code>STACKING_PENALTY</code> is removed.</li>
+<li>The "Rounded stacking table" entry is gone from DEVIATIONS.md, and PYFA_CORE.md is updated.</li>
+<li><code>compare_fit_stats.py</code> drops its 3e-4 tolerance on weapon DPS and sensor strength: every field now compares at 1e-6.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Full output diff v.22 &rarr; v.23: 23 fits move in their unrounded values. Only one shown number changes: Paladin volley 5,714 &rarr; 5,713, now pinned. A few capacitor drain cycles move by 1 ms (e.g. Legion 3302 &rarr; 3303 ms); stable / time-to-empty text is unchanged.</li>
+<li><code>compare_fit_stats.py</code> at 1e-6: <b>0 mismatches</b> on v.23; v.22 fails it 23 times.</li>
+<li>Suite ALL PASS, parse tests 293/293, update-check chain all 23 steps OK.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li><b>LESSONS_LEARNED #7</b> (extended): a tolerance that exists for one known gap hides every other gap of that size. Remove the gap, then the tolerance.</li></ul>
+</body>
+</html>

@@ -76,7 +76,8 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 7. Gate on dogma effect IDs and read the value from the item's own
    attribute. Keep group names only as a fallback for records without effects.
    When a count depends on module state, count per **effect**, not per item.
-   → #2, #17, #30
+   Round a displayed pyfa stat with `pyRound()` / `kmText()` from its unrounded value.
+   → #2, #17, #30, #34
 8. Copy `stackingPenalties` and `penaltyGroup` from the recorded handler
    call. Apply one `pyfaPenalizedProduct()` per penalty group.
    → #7, #15
@@ -219,8 +220,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 
     The generated `SHIP_DAMAGE_MOD_EFFECTS` replaced it; the hand table is
     now only the fallback for 7 special editions with no SDE effects.
+  - **A universal constant is a hand table with one row (v2026.10.14.22):**
+    `MAX_MISSILE_DAMAGE_MULT = 1.10 * 1.25` assumed every missile needs one
+    skill with the missile damage effects (660/661/662/668, 5%/level). pyfa
+    applies every such skill the charge requires, and Auto-Targeting (FoF)
+    missiles need their size skill **and** Auto-Targeting Missiles (3322):
+    1.25 × 1.25. The Raven FoF test fit showed 45 DPS against pyfa's 56.5.
+    Found only when `compare_fit_stats.py` compared every golden fit.
 - **Do this instead:** generate hull bonus tables from the hull's
-  `dogma_effects` (#1). If a hull record has effects, don't also apply the old
+  `dogma_effects` (#1). For a "max skills" constant, list every item it
+  covers and check which skills each one actually requires (`requiredSkill1-6`). If a hull record has effects, don't also apply the old
   hand table, or the bonus gets counted twice. See `weaponRangeViaEffects`
   and `hullHasDamageEffects`.
 
@@ -243,6 +252,10 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Do this instead:** treat "nothing found" as unproven. Re-run the search
   against the data (e.g. every skill in group 1213 × its effects) before
   relying on it.
+- **The reverse happens too (v2026.10.14.29):** the backlog said the Zero-Point Mass Entangler's speed and
+  mass effects were "not modelled". A constructed Onyx compared with pyfa's handlers showed they had been
+  exact since the v2026.10.14.8 speed phase (`SPEED_EFFECTS` 7142). A "not done" note goes stale the same
+  way a "nothing found" note does. Test it against pyfa before building anything.
 
 ## 8. Excluding an attribute as a "collision"
 
@@ -390,6 +403,11 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     looked like "no hits". Since v2026.10.14.11 it returns the item's real base value and records
     `('hasattr', name)`; `gen_ewar_table.py` fails if such a test matters for the modules it reads.
   - Compare filter hits by signature when the pool is one type per signature.
+  - One type per signature is only safe while the filter tests skills and group. Effect2982 (Burst Projector
+    Operation) also tests whether the module *has* an attribute (`getAttribute('durationECMJammerBurstProjector')`).
+    The seven Burst Projectors share one signature but each has a different duration attribute, so with one
+    representative, four of the effect's five rows matched nothing and were silently skipped (v2026.10.14.29).
+    `gen_ewar_table.py` now evaluates filters on every EWAR module as well.
   - The carrier itself can gate a handler silently too (v2026.10.14.12): Effect2298 (Halcyon B /
     Federation Electronics boosters, high-grade Talon / Grail / Jackal / Spur sets) boosts each scan
     strength only `if sensorBoost in implant.item.attributes`. The recorder's source item was a plain
@@ -397,6 +415,21 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     `compare_implants.py` caught it (a Drake with Halcyon B-4: tool 22.8, pyfa 24.6). `Src.item.attributes`
     now answers True and records `('cond', 'srcHas', name)`; the generator then requires the gated
     value's SDE default to be neutral (a carrier without the attribute changes nothing, as in pyfa).
+
+## 35. "Matches no published item" can mean your test set is missing that item
+
+- **What happened (v2026.10.14.28):** `gen_implant_table.py` skipped 20 mindlink rows with "filter matches
+  no published item". The rows were pyfa's `filteredChargeBoost` on a Command Burst charge's
+  `warfareBuffNMultiplier`. The generator tests charge filters on (charge, module) pairs, and its pair list
+  held only weapons and their ammo. No Command Burst was in it, so nothing could match. A pasted fit's
+  mindlink lengthened its bursts (the module row was kept) but never made them stronger.
+- **How it was caught:** DEVIATIONS.md listed it as a gap. Reading the generator's skip list found the cause.
+- **Do this instead:**
+  - Treat every "matches nothing" skip as a question: does pyfa apply this to a real item? If yes, the test
+    set is wrong, not the row.
+  - Pairs come from what a module can actually load (its `chargeGroup1-5`). The generator now fails if no
+    Command Burst pair exists.
+  - The constructed check (a burst fit with a mindlink) must fail on the old build: v.27 failed 6 pins.
 
 ## 31. Find where the input really comes from, and size the job by running it
 
@@ -641,6 +674,14 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     `compare_speed.py` and `compare_modes.py` rebuilt `OracleFit` from `oracle_for()`'s modules and
     dropped its implants: the Rorqual's align came out 294.8 s in the "reference" against the tool's
     280.3 s, which is Erik's pyfa number. The check was wrong, not the tool.
+  - A whole-fit comparison must feed the reference the tool's **resolved inputs**, not the
+    reference's own defaults (v2026.10.14.22, `compare_fit_stats.py`): the oracle picked its own
+    propulsion module and applied group limits again, so fits "differed" on choices, not on maths.
+    Pass the tool's `moduleStates` / `droneStates` and `group_limits=False`.
+  - `x or 1` turns a real 0 into 1: the Triage Module's drone `damageMultiplier` 0 became 1 in the
+    reference, so the tool's (correct) 0 drone DPS looked wrong. Test for "absent", not "falsy".
+  - A reference that rounds must round like pyfa: `floor(x + 0.5)` in `compare_implants.py` disagreed
+    with pyfa on every exact tie once the tool rounded like pyfa (#34).
 
 # Phase 3 — Implementing
 
@@ -689,6 +730,12 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     (`postDiv`), WCS/cloak scan-res (`PostMul`).
   - **Skill effects carried by rigs** (Hydraulic Bay Thrusters, Rocket Fuel
     Cache) run at level 1 and are penalized.
+  - **A rounded penalty table (fixed v2026.10.14.23):** `applyStacking` used
+    0.869 / 0.571 / 0.283 / ... and 0 from the 9th source on. It was off by up
+    to 0.007% (Paladin volley 5,714 vs pyfa 5,713), small enough that the
+    all-fit check had a 3e-4 tolerance just for it. A tolerance that exists
+    for one known gap hides every other gap of that size; remove the gap,
+    then the tolerance.
 - **Do this instead:** copy `stackingPenalties` and `penaltyGroup` straight
   from the recorded handler call. Use `pyfaPenalizedProduct()` once per
   penalty group. It keeps >1 and <1 chains separate, largest first,
@@ -754,6 +801,33 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     skill, implant or subsystem is ever an object in space).
   - Test a new input check against every real paste in the parse tests, starting at every row,
     so it can't misread a real scan.
+
+## 34. JavaScript rounds a tie up; pyfa rounds it to even
+
+- **What happened (fixed v2026.10.14.22):** pyfa formats every number with
+  Python's `round()` (`gui/utils/numberFormatter.py` → `roundToPrec`), which
+  rounds the exact binary value and sends an exact tie to the even digit.
+  `Math.round`, `toFixed` and `toLocaleString` send it up. So a speed of
+  exactly 262.5 m/s showed 262 in pyfa and 263 here, and 81,250 m targeting
+  81.2 km vs 81.3 km. Exact ties are common in EVE (HP 562.5, capacitor
+  312.5, resists 12.5%): 148 golden fits moved.
+  - **Double rounding:** a range rounded to whole metres and then to 0.1 km
+    can differ from pyfa, which rounds the raw value once (81,350.3 m → pyfa
+    81.4 km, tool 81,350 → 81.3).
+  - **Truncation, not rounding:** pyfa shows time to empty with `"%ds"` /
+    `"%dm%ds" % divmod(t, 60)`, which truncates (40.8 s → "40s"). The tool
+    rounded, so about a quarter of the unstable fits showed one second more.
+- **How it was caught:** comparing Erik's pyfa screenshots (262 vs 263,
+  81.2 vs 81.3), then fuzzing.
+- **Do this instead:**
+  - Round a pyfa stat with `pyRound(x, nd)` (or `kmText(m)` for km), never
+    `Math.round` / `toFixed` alone. `tools/check_py_round.mjs` fuzzes it
+    against Python `round()` and `formatDurationShort` against pyfa's format.
+  - Format from the **unrounded** value (`exact.*`, `rangeEstimates[].exactM`,
+    `timeToEmptyExactSec`), so the value is rounded once, as in pyfa.
+  - Read how pyfa *formats* a stat (its `gui/` view), not only how it computes it.
+  - Values that are only the tool's own (missile application ranking, ring
+    geometry) can keep `Math.round`; say so in `DEVIATIONS.md`.
 
 # Phase 4 — Verifying and delivering
 

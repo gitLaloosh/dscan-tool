@@ -19,7 +19,7 @@ SLOTS = ('High slots', 'Mid slots', 'Low slots', 'Rigs', 'Subsystems')
 # effects default to online instead of active (cloaks, MJD/MJFG, Signature Suppressor burst,
 # Entosis Link, Capital Sensor Arrays, Assault Damage Control burst). Same ids as the tool's
 # MODULE_DEFAULT_ONLINE_EFFECTS -- typed here from that DEVIATIONS entry, an input, not a formula.
-DEFAULT_ONLINE_EFFECTS = {607, 980, 5945, 4921, 6208, 12126, 8109, 6063, 6567, 12597, 7012, 2857}   # 2857 cyno since v2026.10.14.8
+DEFAULT_ONLINE_EFFECTS = {607, 980, 5945, 4921, 6208, 12126, 8109, 6063, 6567, 12597, 7012, 2857, 7142}   # 2857 cyno since v2026.10.14.8; 7142 Zero-Point Mass Entangler since v2026.10.14.30
 def pyfa_default_state(t):
     it = GameItem(t)
     act = any('active' in _etype(e) for e in it.effectIds if e in EFFECTS) and not it.attributes.get('activationBlocked', 0)
@@ -56,8 +56,10 @@ def implants_of(f):
         return [it['item_type_id'] for it in f['killmail']['victim'].get('items', []) if it['flag'] == 89], []
     t = f.get('tally') or {}
     return [int(x) for x in (t.get('Implants') or {})], [int(x) for x in (t.get('Boosters') or {})]
-def oracle_for(fitId, mode=None, states=None, drones=()):
-    """drones: [(typeId, inSpace)] -- the tool's own choice of drones in space (an input, DEVIATIONS.md)."""
+def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True):
+    """drones: [(typeId, inSpace)] -- the tool's own choice of drones in space (an input, DEVIATIONS.md).
+    group_limits=False: the states given are already legal (the tool's own resolved states, which apply the
+    hull's maxGroupActive modifiers this stand-in doesn't), so apply_group_limits is skipped."""
     global _G
     if _G is None: _G = json.load(open(GOLDEN))
     f = _G[fitId]
@@ -77,21 +79,25 @@ def oracle_for(fitId, mode=None, states=None, drones=()):
             if not (11 <= fl <= 34 or 92 <= fl <= 99 or 125 <= fl <= 132): continue
             q = it.get('quantity_destroyed', 0) + it.get('quantity_dropped', 0)
             byflag.setdefault(fl, []).append((it['item_type_id'], q))
-        mods = []
+        mods = []; seen = {}
         for fl, lst in sorted(byflag.items()):
             mod = next((t for t, q in lst if cat(t) != 8), None); ch = next((t for t, q in lst if cat(t) == 8), None)
             if mod is None: continue
-            st = pinned.get(str(mod))
-            mods.append((mod, st if isinstance(st, str) else pyfa_default_state(mod), ch))
+            st = pinned.get(str(mod)); i = seen.get(mod, 0); seen[mod] = i + 1
+            if isinstance(st, dict):   # {active, online, offline} counts (compare_fit_stats.py passes the tool's own)
+                s = 'active' if i < st.get('active', 0) else 'online' if i < st.get('active', 0) + st.get('online', 0) else 'offline'
+            else: s = st if isinstance(st, str) else pyfa_default_state(mod)
+            mods.append((mod, s, ch))
         imps, boos = implants_of(f)
-        return OracleFit(int(f['shipTypeId']), apply_group_limits(mods), mode=mode, implants=imps, boosters=boos, drones=drones).calculate()
+        return OracleFit(int(f['shipTypeId']), apply_group_limits(mods) if group_limits else mods, mode=mode, implants=imps, boosters=boos, drones=drones).calculate()
     # A slot flag lists its module and loaded charge in either order (the killmail's item order).
     from pyfa_sde import cat
     charges = {}
     for key in ('highSlotByFlag', 'midSlotByFlag'):
         for flag, lst in (f.get(key) or {}).items():
-            mod = next((x['id'] for x in lst if cat(x['id']) != 8), None); ch = next((x['id'] for x in lst if cat(x['id']) == 8), None)
-            if mod is not None and ch is not None: charges.setdefault(mod, []).append(ch)
+            mod = next((x for x in lst if cat(x['id']) != 8), None); ch = next((x['id'] for x in lst if cat(x['id']) == 8), None)
+            # a constructed fit may list several copies under one flag ({id, qty: 5}): each copy gets the charge
+            if mod is not None and ch is not None: charges.setdefault(mod['id'], []).extend([ch] * max(1, int(mod.get('qty') or 1)))
     mods = []
     for g in SLOTS:
         for tid, v in (f['tally'].get(g) or {}).items():
@@ -105,4 +111,4 @@ def oracle_for(fitId, mode=None, states=None, drones=()):
                 ch = charges.get(int(tid), [])
                 mods.append((int(tid), s, ch[i] if i < len(ch) else None))
     imps, boos = implants_of(f)
-    return OracleFit(int(f['shipTypeId']), apply_group_limits(mods), mode=mode, implants=imps, boosters=boos, drones=drones).calculate()
+    return OracleFit(int(f['shipTypeId']), apply_group_limits(mods) if group_limits else mods, mode=mode, implants=imps, boosters=boos, drones=drones).calculate()
