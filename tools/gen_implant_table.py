@@ -63,6 +63,17 @@ POOLS = {'module': reps([t for t in pub if cat(t) == 7]), 'drone': reps([t for t
          'fighter': reps([t for t in pub if cat(t) == 87]), 'implant': reps(IMPLANTS)}
 CHARGE_REPS = reps([t for t in pub if cat(t) == 8])
 PAIRS = [(c, w) for c in CHARGE_REPS for w in POOLS['module'] if gname(w).startswith(('Missile Launcher', 'Energy Weapon', 'Hybrid Weapon', 'Projectile Weapon', 'Precursor Weapon', 'Vorton Projector'))]
+# v2026.10.14.28 (the owner: "Ok do it" -- mindlinks on burst strength): Command Burst modules paired with every charge
+# they can load (chargeGroup1-5). Before this the mindlinks' filteredChargeBoost rows on warfareBuffNMultiplier
+# matched no pair and were skipped ("filter matches no published item"), so a pasted fit's mindlink only
+# lengthened its bursts (the module buffDuration row) and never strengthened them. LESSON #35.
+def _chargeGroups(t):
+    return {int(x['value']) for x in td.get(str(t), {}).get('dogmaAttributes', [])
+            if re.fullmatch(r'chargeGroup\d', aname(x['attributeID']) or '') and x['value']}
+_BURSTS = [w for w in POOLS['module'] if gname(w) == 'Command Burst']
+if not _BURSTS: raise AssertionError('no published Command Burst module -- group renamed?')
+PAIRS += [(c, w) for w in _BURSTS for c in CHARGE_REPS if types[str(c)]['groupID'] in _chargeGroups(w)]
+if not any(gname(w) == 'Command Burst' for c, w in PAIRS): raise AssertionError('no Command Burst charge pairs')
 COLL_TARGET = {'modules': 'module', 'drones': 'drone', 'fighters': 'fighter', 'appliedImplants': 'implant'}
 
 def matches(t, sk, gs): return (not sk or any(s in reqs(t) for s in sk)) and (not gs or gname(t) in gs)

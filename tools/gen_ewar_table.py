@@ -15,7 +15,9 @@ Tables (JSON between `const NAME = ` and `;`):
                              groups, cond], ...]}
       target 'module': every fitted module passing the filter (any of skills) AND (any of groups),
         asserted exact against every published module; 'self': the module carrying the effect (a
-        script: the module the charge is loaded in; the value comes from the charge).
+        script: the module the charge is loaded in; the value comes from the charge -- its MODIFIED
+        value for a CHARGE_ATTR); 'charge' (v2026.10.14.26): the charge loaded in every module passing
+        the filter (pyfa filteredChargeBoost), attr one of EWAR_CHARGE_ATTRS.
       op 'boost' x(1+v/100) | 'mul' | 'add' (pre-increase) | 'force'; perLevel 5 when pyfa passes
       skill=; penaltyGroup pyfa's stacking group when stackingPenalties=True, else null;
       cond null | {shipSkills: [...]} | {cloaked: true}, as in SPEED_EFFECTS.
@@ -33,12 +35,29 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pyfa_effects import *
 
 EWAR_GROUPS = ['Warp Scrambler', 'Stasis Web', 'Stasis Grappler', 'ECM', 'Sensor Dampener', 'Target Painter',
-               'Weapon Disruptor', 'Energy Neutralizer', 'Energy Nosferatu']
+               'Weapon Disruptor', 'Energy Neutralizer', 'Energy Nosferatu',
+               # v2026.10.14.26 (the owner: "4. do it" -- bubbles and Command Bursts on the EWAR / Misc card)
+               'Warp Disrupt Field Generator', 'Command Burst',
+               # v2026.10.14.29 (the owner: "start on 1 and 2 together" -- effect-audit leftovers): the ECM Burst
+               # (an area jam around the ship) and the Supercarriers' Burst Projectors (area web / neut / paint /
+               # damp / disruption / ECM / bubble fields projected up to 200-500 km away)
+               'Burst Jammer', 'Burst Projectors']
 ATTR_NAMES = ['maxRange', 'falloffEffectiveness', 'warpScrambleStrength', 'speedFactor', 'signatureRadiusBonus',
               'maxTargetRangeBonus', 'scanResolutionBonus', 'energyNeutralizerAmount', 'powerTransferAmount', 'duration',
               'scanGravimetricStrengthBonus', 'scanLadarStrengthBonus', 'scanMagnetometricStrengthBonus', 'scanRadarStrengthBonus',
               'maxRangeBonus', 'falloffBonus', 'trackingSpeedBonus',
-              'missileVelocityBonus', 'explosionDelayBonus', 'aoeVelocityBonus', 'aoeCloudSizeBonus']
+              'missileVelocityBonus', 'explosionDelayBonus', 'aoeVelocityBonus', 'aoeCloudSizeBonus',
+              # v2026.10.14.26: Warp Disrupt Field Generator bubble radius; Command Burst strength and duration
+              'warpScrambleRange', 'warfareBuff1Value', 'warfareBuff2Value', 'warfareBuff3Value', 'warfareBuff4Value', 'buffDuration',
+              # v2026.10.14.29: Burst Jammer radius; Burst Projector field radius, field lifetime, warning delay and how
+              # long a target stays affected (the four per-type durations)
+              'ecmBurstRange', 'doomsdayAOERange', 'doomsdayAOEDuration', 'doomsdayWarningDuration',
+              'durationECMJammerBurstProjector', 'durationTargetIlluminationBurstProjector',
+              'durationSensorDampeningBurstProjector', 'durationWeaponDisruptionBurstProjector']
+# v2026.10.14.26: CHARGE attributes modified by pyfa handlers (filteredChargeBoost: the filter tests the
+# module the charge is loaded in). A Command Burst charge's warfareBuffNMultiplier, boosted by the
+# Command Specialist skills, then multiplies the burst's warfareBuffNValue (charge effect 6737, 'self').
+CHARGE_ATTR_NAMES = ['warfareBuff1Multiplier', 'warfareBuff2Multiplier', 'warfareBuff3Multiplier', 'warfareBuff4Multiplier']
 attrId = {v['name']: int(k) for k, v in attrs.items()}
 DEFAULT = {v['name']: v.get('defaultValue', 0.0) for v in attrs.values()}
 MODE_GROUP = 'Ship Modifiers'
@@ -52,11 +71,16 @@ EWAR_SIGS = {sig(t) for t in EWAR_MODULES}
 # charges an EWAR module can load (its chargeGroup1-5 attributes): the scripts
 EWAR_CHARGE_GROUPS = {int(v) for t in EWAR_MODULES for k, v in adict(t).items() if re.fullmatch(r'chargeGroup\d', k) and v}
 missing = sorted(set(EWAR_GROUPS) - {gname(t) for t in EWAR_MODULES})
+# v2026.10.14.29: filters run on one module per (skills, group) signature PLUS every EWAR module. One representative
+# is enough while a filter tests only skills and group, but Effect2982 also tests whether the module HAS an attribute
+# (`getAttribute('durationECMJammerBurstProjector')`), and the seven Burst Projectors share one signature while each
+# carries a different duration attribute: with one representative, four of Effect2982's five rows matched nothing.
+FILTER_POOL = moduleReps + sorted(EWAR_MODULES - set(moduleReps))   # LESSON #28
 if missing: raise AssertionError(f'no published module in groups {missing} -- group renamed?')
 
-def fit_filter(lam):
+def fit_filter(lam, target=None, meth=''):
     REC.clear(); hits = []
-    for w in moduleReps:
+    for w in FILTER_POOL:
         try:
             if lam(Probe(w)): hits.append(w)
         except Exception: pass
@@ -64,13 +88,18 @@ def fit_filter(lam):
     if any(x[0] == 'skill?' for x in rec): raise AssertionError('filter tests the carrying skill -- pass carrier=')
     sk = sorted({skillId[x[1]] for x in rec if x[0] == 'skill' and x[1] in skillId}); gs = sorted({x[1] for x in rec if x[0] == 'eq'})
     ha = sorted({x[1] for x in rec if x[0] == 'hasattr'})
-    calc0 = [w for w in moduleReps if (not sk or any(s in reqs(w) for s in sk)) and (not gs or gname(w) in gs)]
+    calc0 = [w for w in FILTER_POOL if (not sk or any(s in reqs(w) for s in sk)) and (not gs or gname(w) in gs)]
     calc = [w for w in calc0 if all(adict(w).get(n) for n in ha)]
     if set(calc) != set(hits): raise AssertionError(f'filter not expressible as skills AND groups ({sk}, {gs}, has {ha})')
     # a base-attribute test (Effect2982 `getAttribute('duration')`) is dropped only when it changes
     # nothing for the EWAR modules; otherwise the row would need it as a condition
     if ha and {sig(w) for w in calc0} & EWAR_SIGS != {sig(w) for w in calc} & EWAR_SIGS:
-        raise AssertionError(f'filter tests base attributes {ha} that some EWAR modules lack -- model it')
+        # v2026.10.14.29: Effect2982 (Burst Projector Operation) boosts each Burst Projector duration only on a
+        # projector that HAS that attribute (pyfa #927: "otherwise we add attributes that don't belong"). When the
+        # tested attribute is the one being boosted / multiplied and its SDE default is 0, a module without it stays
+        # at 0 either way, so the test changes no value and is dropped. Anything else still fails.
+        if not (ha == [target] and DEFAULT.get(target, 0.0) == 0 and re.search(r'(Boost|Multiply)$', meth)):
+            raise AssertionError(f'filter tests base attributes {ha} that some EWAR modules lack -- model it')
     return sk or None, gs or None, hits
 
 def parse(expr):
@@ -99,6 +128,12 @@ for t, v in td.items():
     for e in v.get('dogmaEffects', []): carriersByEff[e['effectID']].add(int(t))
 
 modAttrs = set(ATTR_NAMES)
+_EFF_SRC = open(os.path.join(PYFA_SRC, 'eos', 'effects.py')).read()
+def src_only_read(attr):
+    """True when every mention of the attribute in pyfa's effects.py is a read (getModified*Attr)."""
+    total = len(re.findall(r"['\"]" + re.escape(attr) + r"['\"]", _EFF_SRC))
+    reads = len(re.findall(r"getModified(?:Item|Charge)Attr\(\s*['\"]" + re.escape(attr) + r"['\"]", _EFF_SRC))
+    return total > 0 and total == reads
 table, skillRows, skipped, errors, late, byCtx = {}, [], collections.Counter(), [], [], {}
 for eid in sorted(carriersByEff):
     if eid not in EFFECTS: continue
@@ -109,8 +144,8 @@ for eid in sorted(carriersByEff):
         skillCarriers = sorted(t for t in cs if cat(t) == 16) if c == 16 else [None]
         for carrier in skillCarriers:
             def ev(coll, meth, a):
-                if not (coll == 'modules' and a and callable(a[0]) and 'Charge' not in meth): return None
-                try: return fit_filter(a[0])
+                if not (coll == 'modules' and a and callable(a[0])): return None
+                try: return fit_filter(a[0], str(a[1]) if len(a) > 1 else None, meth)
                 except AssertionError as ex: return ('ERR', str(ex))
             calls, err = run(eid, ctx, ev, carrier=carrier, rich=True)
             if err: errors.append((eid, c, err)); continue
@@ -121,7 +156,13 @@ for eid in sorted(carriersByEff):
                 if coll == 'cond' and meth == 'extra':
                     if a[0] != 'cloaked': raise AssertionError(f'effect {eid}: condition on extraAttributes[{a[0]!r}]')
                     cond = {'cloaked': True}; continue
-                if coll == 'modules' and len(a) > 2 and str(a[1]) in modAttrs:
+                if coll == 'modules' and len(a) > 2 and 'Charge' in meth and str(a[1]) in CHARGE_ATTR_NAMES:
+                    if kw['_eval'][0] == 'ERR': raise AssertionError(f'effect {eid}: {kw["_eval"][1]}')
+                    sk, gs, hits = kw['_eval']
+                    if not ({sig(t) for t in hits} & EWAR_SIGS):
+                        skipped[f'charge {a[1]} only in non-EWAR modules: {ename(eid)}'] += 1; continue
+                    target, attr, expr = 'charge', str(a[1]), a[2]
+                elif coll == 'modules' and len(a) > 2 and str(a[1]) in modAttrs:
                     if 'Charge' in meth: skipped[f'charge {a[1]}: {ename(eid)}'] += 1; continue
                     if kw['_eval'][0] == 'ERR': raise AssertionError(f'effect {eid}: {kw["_eval"][1]}')
                     sk, gs, hits = kw['_eval']
@@ -143,7 +184,11 @@ for eid in sorted(carriersByEff):
                 # runTime early/late only matters when the result depends on order: a force, or a value
                 # read from an attribute other handlers modify. Script boosts read the charge's own value.
                 if getattr(EFFECTS[eid], 'runTime', 'normal') != 'normal':
-                    if op == 'force' or c != 8: late.append((eid, ename(eid)))
+                    # v2026.10.14.26: an early / late boost or multiply whose source attribute no handler ever
+                    # writes is order-independent (boosts commute): Industrial Core burst rows, Laelaps WDFG sig
+                    if op != 'force' and kind == 'attr' and src_only_read(src):
+                        skipped[f'runTime {EFFECTS[eid].runTime} kept (source {src} is never modified, order-independent): {ename(eid)}'] += 1
+                    elif op == 'force' or c != 8: late.append((eid, ename(eid)))
                     else: skipped[f'runTime {EFFECTS[eid].runTime} kept (script boost from the charge, order-independent): {ename(eid)}'] += 1
                 perLevel = 5 if (kw.get('skill') or lvl == 5) else 1
                 if c == 16:
@@ -170,6 +215,7 @@ if late: raise AssertionError(f'non-normal runtime EWAR effects: {sorted(set(lat
 
 table = dict(sorted(table.items(), key=lambda kv: int(kv[0])))
 EWAR_ATTRS = {n: attrId[n] for n in ATTR_NAMES}
+EWAR_CHARGE_ATTRS = {n: attrId[n] for n in CHARGE_ATTR_NAMES}
 print(f'EWAR_EFFECTS: {len(table)} effects, {sum(map(len, table.values()))} rows; EWAR_SKILL_ROWS: {len(skillRows)}; handler errors {len(errors)}')
 for k, v in sorted(skipped.items()): print('  skipped:', k) if '--verbose' in sys.argv else None
 print('  skipped kinds:', dict(collections.Counter(k.split(':')[0] for k in skipped)))
@@ -181,7 +227,7 @@ if '--verbose' in sys.argv:
 
 html = next((x for x in sys.argv[1:] if not x.startswith('--')), os.path.join(os.path.dirname(__file__), '..', 'index.html'))
 src = open(html).read(); uptodate = True
-for tname, data in (('EWAR_EFFECTS', table), ('EWAR_SKILL_ROWS', skillRows), ('EWAR_ATTRS', EWAR_ATTRS), ('EWAR_GROUPS', EWAR_GROUPS)):
+for tname, data in (('EWAR_EFFECTS', table), ('EWAR_SKILL_ROWS', skillRows), ('EWAR_ATTRS', EWAR_ATTRS), ('EWAR_CHARGE_ATTRS', EWAR_CHARGE_ATTRS), ('EWAR_GROUPS', EWAR_GROUPS)):
     m = re.compile(r'(const ' + tname + r' = )([\[{].*?[\]}]);\n', re.S).search(src)
     blob = json.dumps(data, separators=(',', ':'))
     if '--write' in sys.argv:

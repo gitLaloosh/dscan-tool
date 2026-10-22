@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-22 — ECM Bursts, Burst Projectors, apostrophes</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>ECM Bursts and Burst Projectors on the EWAR card; names with either apostrophe</h1>
+<p><span class="tag">Feature</span><span class="tag">Input</span> 2026-10-22 &middot; <code>v2026.10.14.28</code> &rarr; <code>v2026.10.14.29</code> &middot; the owner: "start on 1 and 2 together". Item 1 = apostrophe-tolerant names plus recording his pyfa update. Item 2 = the effect-audit leftovers: Burst Projectors, the Particle Dispersion Projector, the Zero-Point Mass Entangler.</p>
+
+<h2>1. Pasted names with either apostrophe</h2>
+<ul>
+<li>CCP's names use both kinds of apostrophe. The October data build 3624425 renamed <i>Sarikusa’s</i> / <i>Horm’s</i> / <i>Zorya’s</i> officer modules to a straight <code>'</code>. <i>‘Vigilant’ Shield Command Burst</i>, <i>Tenzin’s Modified Guidance Disruptor</i> and 26 other published names still use curly quotes. A blind conversion either way would break one of the two sets.</li>
+<li><code>resolveNamesToIdsFlexible</code> already sent a title-cased variant with each name. It now also sends <code>apostropheVariants(name)</code>: every quote straightened, and every straight quote curled (‘ at the start of a word, ’ elsewhere). ESI resolves whichever spelling exists, and the item is shown under CCP's name. The D-Scan box and the Pilot Analyzer use the same function.</li>
+<li>New check <code>tools/independent_checks/check_apostrophe_names.py</code> (in the chain): all 3,204 published names with an apostrophe, each typed 3 ways, 0 misses. It fails on v.28.</li>
+<li>Page check: an EFT with <i>Sarikusa’s Capital Energy Nosferatu</i> (old curly spelling) and one with <i>'Vigilant' Shield Command Burst</i> (straight) both resolve and show on the EWAR card. On v.28 neither appeared.</li>
+<li>Manifest: <code>ownerPyfa</code> = v2.69.3 / data 3624425 (the owner updated on 2026-10-22). Screenshot comparisons match the verified version again.</li>
+</ul>
+
+<h2>2. The three leftovers</h2>
+<table>
+<tr><th>Item</th><th>Finding</th><th>Now</th></tr>
+<tr><td><b>Burst Projectors</b> (Supercarriers: web, neut, paint, damp, weapon disruption, ECM, bubble fields)</td><td>Only their capacitor drain was modelled. pyfa applies their effect only to the ships inside the field (projected effects, Effect6476-6513). Handlers on the carrying fit: Burst Projector Operation V (−25% on each duration, Effect2982), the Vendetta's web strength bonus (Effect6713), and the Aeon / Wyvern / Nyx / Hel duration bonuses (Effect6615-6618).</td><td>On the card. Example chip: "up to 500 km away · 10 km field: −20% optimal/falloff, −20% tracking, −11% missile velocity/flight time for 168.8 s (field lasts 60 s, 10 s warning)". Badge by field type: web and bubble T, neut drain, the rest D.</td></tr>
+<tr><td><b>ECM Burst</b> (Burst Jammer, an area jam around the ship)</td><td>It wasn't on the card at all (deferred in 2026-10-11). This is why the Particle Dispersion Projector rig's ECM Burst range row (Effect2491) was skipped.</td><td>On the card: "50.6 km radius · area jam around the ship: Multispectral jam 15.8 on every ship inside". Radius = <code>ecmBurstRange</code> after Long Distance Jamming, the rig and the Scorpion bonus (Effect2812); strength includes the Widow's Black Ops bonus (Effect4799). A real killmail fit in the suite (Rokh) now lists its Burst Jammer II.</td></tr>
+<tr><td><b>Particle Dispersion Projector</b> rig</td><td>Its ECM, damp, paint and disruption range rows (Effect1445-1452) were already in <code>EWAR_EFFECTS</code>. Only the ECM Burst row was missing, because of the missing group above.</td><td>All rows applied. First golden pin: Multispectral ECM II 97.2 + 72.9 km with the rig.</td></tr>
+<tr><td><b>Zero-Point Mass Entangler</b></td><td>The backlog line "speed/mass not modelled" was <b>stale</b>. Effect7142 has been in <code>SPEED_EFFECTS</code> since the v.8 speed phase. An Onyx with a ZPME and an AB matches pyfa's handlers exactly (<code>compare_speed.py</code>).</td><td>No change; now pinned. Note: the tool's default state for a ZPME is <b>active</b> (13 m/s, align 1.6 s, can't warp, MWD blocked). Whether that's the right default for a threat read is the owner's call.</td></tr>
+</table>
+
+<h2>How (PYFA CORE <code>ewar-calc</code>, re-verified and re-locked)</h2>
+<ul>
+<li><code>gen_ewar_table.py</code>:
+<ul>
+<li><code>EWAR_GROUPS</code> += Burst Jammer, Burst Projectors.</li>
+<li>New attributes: <code>ecmBurstRange</code>, <code>doomsdayAOERange</code> / <code>Duration</code>, <code>doomsdayWarningDuration</code> and the four <code>durationXBurstProjector</code> attributes.</li>
+<li>Result: 8 new effects and 6 new skill rows. No existing row changed.</li>
+</ul></li>
+<li>Two generator fixes on the way:
+<ul>
+<li>Effect2982 tests whether the module <i>has</i> the duration attribute. A test like that is now accepted when the tested attribute is the one being boosted or multiplied and its SDE default is 0, since a module without it stays at 0 either way. Anything else still fails.</li>
+<li>Filters ran on one module per (skills, group) signature. The seven Burst Projectors share one signature but carry different duration attributes, so four of Effect2982's five rows matched nothing and were skipped. Filters now also run on every EWAR module. See LESSONS #28.</li>
+</ul></li>
+<li>Engine: kinds <code>burstJammer</code> and <code>projector</code>. The projector type comes from its doomsday effect id (<code>BURST_PROJECTOR_EFFECT_KIND</code>). The legacy hand path skips both kinds.</li>
+<li><code>compare_ewar.py</code> now also compares <code>burstRadiusM</code>, <code>fieldRadiusM</code>, <code>fieldDurationSec</code>, <code>warningSec</code>, <code>affectedSec</code> and the neut amount.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>10 constructed fits (236 total). Pins were written by a script from pyfa's handlers (oracle) before the tool's numbers were read:
+<ul>
+<li>Scorpion (Burst Jammer + ECM + rig) and Widow (Burst Jammer);</li>
+<li>one Supercarrier per projector type: Vendetta web −82.5%, Hel paint +35% for 168.75 s, Nyx damp, Wyvern ECM 5, Aeon disruption, Revenant neut 3,000 GJ, Nyx bubble;</li>
+<li>Onyx ZPME.</li>
+</ul>
+v.28 fails 45 pins (every EWAR pin). The ZPME pins pass on v.28 too, as expected, because that stat was already right.</li>
+<li><code>compare_ewar.py</code>: 0 mismatches over 113 entries. <code>compare_speed.py</code>: 0 over 236 fits.</li>
+<li>Full output diff v.28 &rarr; v.29: 11 fits. These are the 9 new EWAR fits, plus the Rokh killmail and nyx_constructed_p3, whose Burst Jammer / Burst Projector now appear on the card. No other number moves.</li>
+<li>Chain: all 26 steps OK (new: "pasted names, either apostrophe"). Parse tests 293/293. Layout and missing-charges page checks FAILURES 0.</li>
+<li>Screenshots at 1440 px and at 375 px with mobile emulation (no sideways scroll).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>A "not done" backlog line can be as stale as a "nothing found" note (LESSONS #5). Build the test fit and compare with pyfa before writing code: the ZPME took one fit to close.</li>
+<li>One representative per signature is only safe while the filter tests skills and group. When a filter asks whether an item has an attribute, run it on every item it could reach (LESSONS #28).</li>
+</ul>
+</body>
+</html>

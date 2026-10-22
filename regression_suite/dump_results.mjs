@@ -20,7 +20,7 @@ for (const [id, fit] of Object.entries(golden)) {
   let hs = new Map(Object.entries(fit.highSlotByFlag || {}).map(([k, v]) => [Number(k), v])), ms = new Map(Object.entries(fit.midSlotByFlag || {}).map(([k, v]) => [Number(k), v]));
   if (fit.killmail) ({tally, cargoItemIds: cargo, highSlotByFlag: hs, midSlotByFlag: ms} = sb.buildLossTally(fit.killmail));
   try {
-    const r = JSON.parse(JSON.stringify(await sb.estimateHpAndDps(fit.shipTypeId, tally, cargo, hs, (modeOverride && modeOverride !== '-') ? modeOverride : (fit.tacticalMode || 'sharpshooter'), ms, fit.moduleStates || null, fit.droneStates || null)));
+    const r = JSON.parse(JSON.stringify(await sb.estimateHpAndDps(fit.shipTypeId, tally, cargo, hs, (modeOverride && modeOverride !== '-') ? modeOverride : (fit.tacticalMode || 'sharpshooter'), ms, fit.moduleStates || null, fit.droneStates || null, fit.fitSource ? {fitSource: fit.fitSource} : null)));
     out[id] = fields ? Object.fromEntries(fields.map(f => [f, r[f]])) : r;
   } catch (e) { out[id] = {error: String(e)}; }
 }

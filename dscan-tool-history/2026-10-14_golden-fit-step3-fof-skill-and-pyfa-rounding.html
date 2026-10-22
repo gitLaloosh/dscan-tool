@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-14 — Every golden fit vs pyfa, the FoF skill bonus, and rounding like pyfa</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Every golden fit vs pyfa, the FoF skill bonus, and rounding like pyfa</h1>
+<p><span class="tag">Verification</span><span class="tag">Bug fix</span><span class="tag">Presentation</span> 2026-10-14 &middot; <code>v2026.10.14.21</code> &rarr; <code>v2026.10.14.22</code> &middot; the owner: "ok do it" to (1) finishing the golden-fit data refresh, step 3, and (2) rounding exact ties like pyfa, as one delivery.</p>
+
+<h2>1. Golden-fit refresh step 3: every fit against pyfa's handlers</h2>
+<ul>
+<li>New <code>tools/independent_checks/compare_fit_stats.py</code> runs <b>all 214 golden fits</b> through <code>pyfa_fit_oracle.py</code> (pyfa's own handlers), using the tool's resolved module states and drones in space. It compares the unrounded values:
+<ul>
+<li>HP pools, capacitor, shield recharge, signature, targeting, scan resolution and sensor strength;</li>
+<li>local repair, weapon / smartbomb / drone DPS, drone control range and weapon ranges;</li>
+<li>cap drains, as total cap need per cycle time.</li>
+</ul>
+Speed / align, resists and the capacitor simulation are already covered by <code>compare_speed.py</code>, <code>compare_resists.py</code> and <code>compare_cap_sim.mjs</code>. Result: <b>0 mismatches</b>, with an empty <code>KNOWN</code> list. It is in the update-check chain.</li>
+<li>Values that were checked but not pinned are now pinned, each with a note naming the check that proves it:
+<ul>
+<li>Vargur: align, cruise speed in Bastion, capacitor stable %.</li>
+<li>Vedmak: align, MWD speed, capacitor, time to empty.</li>
+<li>Skybreaker and both Svipuls: armor HP and resists, capacitor, align.</li>
+<li>Moros: align.</li>
+<li>Rifters: cap drain for 4 of them, a phasing-resist fit and a rig-drawback fit.</li>
+</ul></li>
+<li>Getting the reference right took fixes on the reference side (LESSON #27):
+<ul>
+<li>The oracle picked its own propulsion module and applied group limits a second time.</li>
+<li>Multi-copy modules lost their charge pairing.</li>
+<li><code>damageMultiplier or 1</code> turned the Triage Module's real 0 into 1.</li>
+<li>Burst-projector cycle attributes were missing.</li>
+<li>Crystal cap need was averaged instead of compared per cycle.</li>
+<li>Assumed ASB charges were not excluded.</li>
+<li>Drones with no damage cycle were not skipped.</li>
+</ul></li>
+</ul>
+
+<h2>2. Bug found: FoF missiles missed the Auto-Targeting Missiles bonus</h2>
+<ul>
+<li><code>MAX_MISSILE_DAMAGE_MULT = 1.10 &times; 1.25</code> assumed every missile needs <b>one</b> skill with the missile damage effects (660/661/662/668, <code>damageMultiplierBonus</code>, 5%/level). pyfa applies every such skill the charge requires. Auto-Targeting (FoF) missiles require their size skill <b>and</b> Auto-Targeting Missiles (3322), so they get 1.25 &times; 1.25.</li>
+<li>Fix: <code>missileExtraSkillDamageMult(chargeDogma)</code> counts the charge's required skills among the 7 SDE skills with those effects (all 5%/level). It is applied on both the loaded-ammo and the cargo-ammo paths.</li>
+<li>The Raven FoF test fit goes from <b>45 to 57 DPS</b> (pyfa 56.5) and volley from 386 to 483. Per shot: 281 &times; 1.10 &times; 1.25 &times; 1.25 = 482.97, on an 8.54 s cycle. This was the only fit that changed.</li>
+</ul>
+
+<h2>3. Rounding like pyfa</h2>
+<ul>
+<li>pyfa formats numbers with Python's <code>round()</code> (<code>gui/utils/numberFormatter.py</code> &rarr; <code>roundToPrec</code>). It rounds the exact binary value and sends an exact tie to the even digit. JavaScript sends ties up. So a speed of 262.5 m/s showed 262 in pyfa and 263 here; 81,250 m targeting showed 81.2 km in pyfa and 81.3 km here (both found earlier from the owner's pyfa screenshots).</li>
+<li><code>pyRound(x, nd)</code> is Python's <code>round</code>: it splits the value exactly into M / 2<sup>k</sup> and rounds with BigInt arithmetic. <code>kmText(m)</code> formats km.
+<ul>
+<li>Used for every rounded number <code>estimateHpAndDps</code> returns.</li>
+<li>Also used for weapon ranges, drone / fighter / ammo breakdown DPS, EWAR chips and Misc flag texts.</li>
+<li>Also used in the capacitor simulation (PYFA CORE <code>cap-sim</code>: <code>cap_wrap = round(cap, 1)</code> and the "%.1f" stable %). It was re-verified with <code>compare_cap_sim.mjs</code> (642 simulations, 0 mismatches) and its fingerprint updated.</li>
+</ul></li>
+<li><b>Rounded once, from the raw value, as pyfa does:</b> the km figures for targeting, drone control range and weapon ranges are now formatted from unrounded values. These are <code>exact.*</code> and the new <code>rangeEstimates[].exactM</code>, not the already-rounded metres.</li>
+<li><b>Time to empty is truncated, as in pyfa:</b> pyfa shows <code>"%ds"</code> / <code>"%dm%ds" % divmod(t, 60)</code>, so 40.8 s shows "40s". The tool rounded. 21 of 82 unstable results in the golden set showed one second more than pyfa, e.g. the Rorqual without boosts showed 41s where pyfa shows 40s, and the Legion 1m56s where pyfa shows 1m55s. The new <code>timeToEmptyExactSec</code> (pyfa's <code>sim.t / 1000</code>) feeds the text.</li>
+<li>The tool's own ranking values (missile application % and applied DPS) and the ring geometry keep <code>Math.round</code>; this is listed in DEVIATIONS.md.</li>
+<li>Only exact ties change. Pins moved, each with a note:
+<table>
+<tr><th>Fit</th><th>Value</th><th>Exact</th></tr>
+<tr><td>Rifter nav implants / Halo set</td><td>raw shield / armor HP 563 &rarr; 562, capacitor 313 &rarr; 312</td><td>562.5, 312.5</td></tr>
+<tr><td>Punisher cap-use implants</td><td>hull HP 563 &rarr; 562</td><td>562.5</td></tr>
+<tr><td>Rifter resistance phasing</td><td>armor kinetic 39 &rarr; 38</td><td>38.5</td></tr>
+<tr><td>Legion (pyfa-verified EFT)</td><td>shield EM 13 &rarr; 12</td><td>12.5</td></tr>
+<tr><td>Arbitrator</td><td>scan resolution 356.3 &rarr; 356.2</td><td>356.25</td></tr>
+<tr><td>Confessor</td><td>optimal 6,563 &rarr; 6,562 m</td><td>6,562.5</td></tr>
+<tr><td>Hawk (the owner's fit)</td><td>falloff 5,913 &rarr; 5,912 m</td><td>5,912.5</td></tr>
+</table></li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Full output diff v.21 &rarr; v.22: 362 values in 152 fits. One is the Raven FoF fix (DPS / volley); every other value is an exact tie, now one unit toward the even digit (checked one by one). The rest are new fields: <code>exactM</code> and <code>timeToEmptyExactSec</code>.</li>
+<li><code>compare_fit_stats.py</code>: 0 mismatches on v.22; <b>v.21 fails it 5 times</b> (Raven DPS plus 4 range ties).</li>
+<li>New <code>tools/check_py_round.mjs</code> fuzzes <code>pyRound</code> against Python <code>round</code> and <code>formatDurationShort</code> against pyfa's format: 0 mismatches over 14,064 cases. v.21 fails it (no <code>pyRound</code>). It is in the update-check chain.</li>
+<li><code>compare_implants.py</code> now rounds ranges with Python <code>round</code> (it used <code>floor(x + 0.5)</code>) and keeps a real 0 multiplier: 0 mismatches.</li>
+<li><code>compare_cap_sim.mjs</code> rounds the reference the Python way and also compares the exact time to empty (1e-9): 0 mismatches.</li>
+<li>Suite ALL PASS (v.21 fails 12 checks). Parse tests 293/293. Update-check chain all OK. <code>layout_check.py</code> FAILURES: 0.</li>
+</ul>
+
+<h2>Still open</h2>
+<ul><li>Cap Booster with no charge: the owner's decision is still needed on what to show.</li></ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li><b>LESSONS_LEARNED #4</b> (extended): a "max skills" constant is a hand table with one row. List every item it covers and check which skills each one requires.</li>
+<li><b>#27</b> (extended): feed a whole-fit reference the tool's resolved inputs, not its own defaults. <code>x or 1</code> turns a real 0 into 1. A reference that rounds must round like pyfa.</li>
+<li><b>#34</b> (new): JavaScript rounds a tie up and pyfa rounds it to even. Round once from the unrounded value. Read how pyfa <i>formats</i> a stat (it truncates time to empty), not only how it computes it.</li>
+</ul>
+</body>
+</html>

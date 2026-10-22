@@ -29,7 +29,7 @@ Since v2026.10.14.13 (Phase 2, weapons / drones):
   droneDps         pyfa Drone.getDps for the drones the tool has in space (passed to the oracle):
                    damage x damageMultiplier x amount / cycle
   droneControlRange  ship droneControlRange (pyfa extraAttributes, 20000 + increases)
-  ranges           rangeEstimates, rounded like the tool: turret optimal / falloff (maxRange / falloff),
+  ranges           rangeEstimates, rounded like pyfa and the tool (Python round, ties to even): turret optimal / falloff (maxRange / falloff),
                    missile range = pyfa's own Module.missileMaxRangeData / maxRange (check_missile_range.py)
 Speed, align, resistances and EWAR of the same fits are compared by compare_speed.py,
 compare_resists.py and compare_ewar.py (golden_oracle passes the implants to the oracle for every check).
@@ -42,8 +42,15 @@ from golden_oracle import oracle_for, implants_of, GOLDEN
 from check_missile_range import pyfa_missile_range
 DMG = ('emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage')
 def is_weapon(g): return g.endswith('Weapon') or g.startswith('Missile Launcher') or g == 'Vorton Projector'
-def jsround(x): import math; return math.floor(x + 0.5)
+# Python round(): ties to even on the exact value, as pyfa's display rounding and, since v2026.10.14.22,
+# the tool's pyRound(). (Before v.22 this was floor(x + 0.5), the JavaScript Math.round way.)
+def pyround(x): return round(x)
 
+def _mult(item):
+    """damageMultiplier, 1 only when the attribute is absent -- a real 0 (Triage Module II: drones deal no
+    damage, droneDamageBonus -100%) stays 0. v2026.10.14.22: was `or 1`, which turned that 0 into 1."""
+    v = item.get('damageMultiplier')
+    return 1 if v is None else v
 def close(a, b): return abs(a - b) <= 1e-6 * max(1.0, abs(a), abs(b))
 
 def oracle_values(o):
@@ -75,14 +82,14 @@ def oracle_values(o):
             # pyfa calculateSpoolup: no spool unless BOTH damageMultiplierBonusMax and ...PerCycle are set
             # (the SDE default of BonusMax is 0.5 on every item -- reading it alone gave every turret +50%)
             spool = (m.get('damageMultiplierBonusMax') or 0) if (m.get('damageMultiplierBonusPerCycle') or 0) else 0
-            vol = sum(m.charge.get(a) or 0 for a in DMG) * (m.get('damageMultiplier') or 1) * (1 + spool)
+            vol = sum(m.charge.get(a) or 0 for a in DMG) * _mult(m) * (1 + spool)
             wd += vol / cyc
-            if g.startswith('Missile Launcher'): rng.append(('travel', jsround(pyfa_missile_range(o, m)[3])))
-            else: rng += [('optimal', jsround(m.get('maxRange'))), ('falloff', jsround(m.get('falloff')))]
+            if g.startswith('Missile Launcher'): rng.append(('travel', pyround(pyfa_missile_range(o, m)[3])))
+            else: rng += [('optimal', pyround(m.get('maxRange'))), ('falloff', pyround(m.get('falloff')))]
         elif g == 'Smart Bomb':
             sd += sum(m.get(a) or 0 for a in DMG) / cyc
     v['weaponDps'] = wd; v['smartbombDps'] = sd
-    v['droneDps'] = sum(sum(d.get(a) or 0 for a in DMG) * (d.get('damageMultiplier') or 1) * d.amountActive / ((d.get('speed') or d.get('duration')) / 1000) for d in o.drones)
+    v['droneDps'] = sum(sum(d.get(a) or 0 for a in DMG) * _mult(d) * d.amountActive / ((d.get('speed') or d.get('duration')) / 1000) for d in o.drones if (d.get('speed') or d.get('duration')))  # mining / logistics drones have no damage cycle
     v['droneControlRange'] = o.ship.get('droneControlRange')
     v['ranges'] = sorted(set(rng))
     return v

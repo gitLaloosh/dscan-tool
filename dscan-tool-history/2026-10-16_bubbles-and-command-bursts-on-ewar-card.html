@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-16 — Bubbles and Command Bursts on the EWAR card</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Bubbles and Command Bursts on the EWAR / Misc card</h1>
+<p><span class="tag">Feature</span><span class="tag">Bug fix</span> 2026-10-16 &middot; <code>v2026.10.14.25</code> &rarr; <code>v2026.10.14.26</code> &middot; the owner: "4. do it". Backlog items "Bubbles on EWAR card" ([stated] "add bubbles to EWAR card") and "Command Burst modules on a card". This covers the first two parts of item 4; missile application is the next build.</p>
+
+<h2>What the card shows now</h2>
+<table>
+<tr><th>Module</th><th>Chip (example)</th><th>Numbers from</th></tr>
+<tr><td>Warp Disrupt Field Generator (Heavy Interdictors), no script</td><td>T &middot; 25 km radius &middot; warp bubble around the ship: nothing inside can warp</td><td><code>warpScrambleRange</code> after the HIC bonus (pyfa Effect3468)</td></tr>
+<tr><td>... with Focused Warp Disruption Script</td><td>T &middot; 37.5 km &middot; targeted point, scramble strength 100</td><td>+ the script's +50% (Effect3648); strength from Effect3380</td></tr>
+<tr><td>Interdiction Sphere Launcher (Interdictors)</td><td>T &middot; Warp Disrupt Probe &middot; 20 km radius &middot; launches ... bubbles lasting 120 s</td><td>the loaded probe's own <code>warpScrambleRange</code> / <code>explosionDelay</code> (no pyfa handler modifies either). If nothing is loaded, a probe in cargo is used and marked; otherwise "no interdiction probe found"</td></tr>
+<tr><td>Command Burst (new blue <b>B</b> badge)</td><td>B &middot; Shield Harmonizing Charge &middot; 65.8 km &middot; fleet in range: -17.2% shield damage taken (103.5 s)</td><td>Each buff is the burst's <code>warfareBuffNValue</code> after the hull and skills, times its charge's multiplier after the Command Specialist skills (pyfa Effect6737). Range is <code>maxRange</code> and duration <code>buffDuration</code>. A burst with nothing loaded says so and lists compatible charges found in cargo.</td></tr>
+</table>
+<ul>
+<li>Buff wording follows pyfa's <code>__runCommandBoosts</code>: shield / armor damage taken, repair cycle and cap, HP, scan resolution, EWAR range and strength, sensor strength, signature, web and scram range, AB / MWD speed, targeting range, agility, and the mining / expedition buffs.</li>
+<li>Only bursts that are online count. pyfa's group limits still apply: one burst per hull, two on a Command Ship.</li>
+<li>A booster's bursts don't change its own stats; pyfa only applies them to fleet members.</li>
+</ul>
+
+<h2>How (PYFA CORE <code>ewar-calc</code>, re-verified and re-locked)</h2>
+<ul>
+<li><code>gen_ewar_table.py</code>: WDFG and Command Burst groups added; new attributes <code>warpScrambleRange</code>, <code>warfareBuff1-4Value</code>, <code>buffDuration</code>.</li>
+<li>New row target <b><code>'charge'</code></b> (pyfa <code>filteredChargeBoost</code>), with the charge attributes listed in <code>EWAR_CHARGE_ATTRS</code>. <code>pyfaEwarSetup</code> computes the loaded charge's modified attributes first. A <code>'self'</code> row reading one of them uses that modified value, as pyfa's <code>getModifiedChargeAttr</code> does.</li>
+<li>An early-runtime row is kept when it is order-independent: a boost or multiply whose source attribute no pyfa handler ever writes (checked against effects.py). Examples: Industrial Core burst rows, Laelaps WDFG sig.</li>
+<li>Charges loaded in high slots now pair with their module, as mid-slot scripts already did.</li>
+</ul>
+
+<h2>Two real gaps found on the way (both now pyfa-exact)</h2>
+<ul>
+<li><b>An active bubble blooms the Heavy Interdictor's own signature</b> (pyfa Effect3380: +signatureRadiusBonus, unpenalized, only without a script). The Onyx showed 150 m where pyfa has 225 m. Now modelled from the module's modified <code>signatureRadiusBonus</code>, the same ewar-calc value; Laelaps cuts it via Effect8362.</li>
+<li><b>Warp Disruption Scripts change cap need and cycle</b> (Effect804 capNeedBonus, Effect3602 durationBonus). The Focused script showed 112.5 GJ / 30 s where pyfa has 45 GJ / 6 s. Each scripted copy now gets its own drain entry. An ASB's charge is excluded, since its capNeedBonus is the ASB's own "runs on charges" rule.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>4 constructed fits:
+<ul>
+<li>Onyx with WDFG II;</li>
+<li>Onyx with WDFG II and the Focused script;</li>
+<li>Sabre with a sphere launcher and probe;</li>
+<li>Vulture with Shield (Harmonizing) and Skirmish (Rapid Deployment) bursts.</li>
+</ul>
+Expected values come from pyfa's handlers through the oracle, with hand checks in the notes. For example, Shield Harmonizing = 1.25 &times; 1.15 (Command Ships) &times; -8 &times; 1.5 (Shield Command Specialist) = -17.25%. v.25 fails every new pin.</li>
+<li><code>compare_ewar.py</code> now also compares bubble radius, probe lifetime, burst range, duration and every buff: <b>0 mismatches</b> (96 entries). <code>compare_fit_stats.py</code>: 0 mismatches (223 fits); it flagged the two gaps above. <code>gen_ewar_table.py</code>: up to date.</li>
+<li>Suite ALL PASS. Chain all 24 OK. Parse tests 293/293. Layout check and missing-charges page check FAILURES 0.</li>
+<li>Full output diff v.25 &rarr; v.26: the 4 new fits, plus 7 existing fits whose bursts are now listed (Nighthawk, Prophecy, Damnation, and the Rorquals' Mining Foreman Burst). No other number moves.</li>
+<li>EWAR cards checked on screenshots of pasted fits through the real page.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>Test fits built for one feature check every stat. The all-fit pyfa comparison found two gaps in signature and capacitor that had nothing to do with the card being built. Run <code>compare_fit_stats.py</code> on every new fit, not only the check for the feature.</li>
+<li>When pyfa reads a <i>charge's</i> attribute (<code>getModifiedChargeAttr</code>), the value includes the charge's own modifiers. Model the charge's attributes first, then the module's.</li>
+</ul>
+</body>
+</html>

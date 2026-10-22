@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-16 — Drone recommendation tests, probe launcher guard</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Drone recommendation tests, probe launcher guard</h1>
+<p><span class="tag">Tests</span><span class="tag">Bug fix</span> 2026-10-16 &middot; <code>v2026.10.14.24</code> &rarr; <code>v2026.10.14.25</code> &middot; the owner: "3. do it". Two items: backlog "drone recommendation regression coverage" and bug list #2 "Probe Launcher cosmetic miscount".</p>
+
+<h2>Drone recommendation: first tests, one bug</h2>
+<ul>
+<li>New <code>tools/independent_checks/check_drone_recommendation.py</code> types the rule independently, from the comments and the owner's 2026-10-13 decisions:
+<ul>
+<li>size tier by the unboosted signature (MWD never assumed);</li>
+<li>race by the weakest damage type;</li>
+<li>target speed with the Afterburner on if one is fitted;</li>
+<li>alt = the first faster drone size that keeps up;</li>
+<li>the D-Scan sentry caveat;</li>
+<li>the group-name fallback for a zero signature.</li>
+</ul>
+It checks every golden fit's shown pick and alt, and runs the page's own functions over 864 grid cases (signatures at every tier edge &times; speeds at every drone-speed edge &times; 4 damage types, plus the D-Scan path). It is in the update-check chain.</li>
+<li><b>Bug found:</b> a target with speed <b>0</b> took the D-Scan branch (the test was <code>targetSpeed &gt; 0</code>). It was offered a "won't sit still" heavy-drone alt although it can't move: a Rorqual with its Industrial Core on, Marauders in Bastion, a sieged Dreadnought, a Triage carrier. Fixed to <code>&gt;= 0</code>. In 16 golden fits the alt goes from "Berserker / Praetor / Ogre (heavy)" to none. Nothing else changes.</li>
+<li>The result now carries <code>droneSpeedBasis</code> (the unrounded speed the pick used). The suite exposes <code>droneRecPrimary</code> / <code>droneRecAlt</code>, pinned on 6 fits, one per case: light, medium, battlecruiser tier, battleship with alt, capital at speed 0, Bastion at speed 0.</li>
+</ul>
+
+<h2>Probe launcher: already fixed, now guarded</h2>
+<ul>
+<li>The bug-list item was stale. The 2026-10-11 independent review (finding #18) already skips a launcher that <code>weaponCategoryFromGroup</code> doesn't recognize before the weapon count, so probe, bomb and interdiction sphere launchers never show as "unaccounted for". Nothing tested it.</li>
+<li>New golden <code>rifter_constructed_probe_launcher_not_a_weapon</code>: an autocannon with EMP S plus a Core Probe Launcher I loaded with probes. Pins: 1 weapon, 0 unaccounted for, 35 DPS (the autocannon alone, compared with pyfa's handlers by <code>compare_fit_stats.py</code>).</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><code>check_drone_recommendation.py</code>: 0 mismatches (219 fits, 864 grid cases, 3 fallback cases); v.24 fails it 44 times.</li>
+<li>Suite ALL PASS (219 fits); v.24 fails the two speed-0 pins.</li>
+<li>Full output diff v.24 &rarr; v.25: only the 16 speed-0 alts plus the new <code>droneSpeedBasis</code> field.</li>
+<li>Update-check chain all 24 OK, parse tests 293/293, layout check FAILURES 0.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>Write the first test of a function from its <b>stated rule</b>, at every edge of every threshold, including 0. The speed-0 case slipped through because "no speed known" and "speed 0" were the same test (<code>&gt; 0</code>). An untested branch that "obviously works" is where these hide.</li>
+<li>A bug-list item can be fixed and still lack a test. Before closing it, add a regression fit that fails if the fix is reverted.</li></ul>
+</body>
+</html>

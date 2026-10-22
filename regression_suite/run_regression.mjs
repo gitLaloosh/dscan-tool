@@ -182,7 +182,7 @@ for (const [fitId, fit] of Object.entries(golden)) {
     // fit can pin an optional "moduleStates" object ({typeId: 'offline' |
     // 'online' | 'active'} or {typeId: {active, online, offline}}), the same
     // way tacticalMode works. Fits without it run at the default states.
-    result = await sandbox.estimateHpAndDps(fit.shipTypeId, tally, cargoItemIds, highSlotByFlag, fit.tacticalMode || 'sharpshooter', midSlotByFlag, fit.moduleStates || null, fit.droneStates || null);
+    result = await sandbox.estimateHpAndDps(fit.shipTypeId, tally, cargoItemIds, highSlotByFlag, fit.tacticalMode || 'sharpshooter', midSlotByFlag, fit.moduleStates || null, fit.droneStates || null, fit.fitSource ? {fitSource: fit.fitSource} : null);
   } catch (e) {
     error = e;
   }
@@ -337,6 +337,11 @@ for (const [fitId, fit] of Object.entries(golden)) {
     result.alignTimeBase = result.alignTime.base;
     if (result.alignTime.boosted !== null) result.alignTimeBoosted = result.alignTime.boosted;
   }
+  // v2026.10.14.25: drone recommendation as shown ("Name (size)"; alt 'none' when there is no second pick)
+  if (result && result.drones && result.drones.primary) {
+    result.droneRecPrimary = `${result.drones.primary.name} (${result.drones.primary.size})`;
+    result.droneRecAlt = result.drones.alt ? `${result.drones.alt.name} (${result.drones.alt.size})` : 'none';
+  }
   if (result && result.capacitor) {
     result.capacitorActiveDrainPerSec = result.capacitor.activeDrainPerSec;
     // Backlog #16 fix (2026-10-11): capacitor.capacity had no flattened
@@ -394,6 +399,9 @@ for (const [fitId, fit] of Object.entries(golden)) {
     // prop mod has no speedBoosted field).
     result.capacitorHasCapBooster = result.capacitor.hasCapBooster ? 1 : 0;
     result.capacitorChargeUnidentified = result.capacitor.chargeUnidentified ? 1 : 0;
+    // v2026.10.14.24: pasted-fit boosters with no charges anywhere (Weaknesses card flag), and each boost's source
+    result.capacitorChargesMissing = (result.capacitor.chargesMissing || []).length;
+    for (const b of result.capacitor.boosts || []) result[`capacitorBoostSource_${b.kind}`] = b.source;
     if (result.capacitor.boosted) {
       result.capacitorBoostedGainPerSec = result.capacitor.boosted.gainPerSec;
       result.capacitorBoostedStable = result.capacitor.boosted.stable ? 1 : 0;
@@ -451,6 +459,8 @@ for (const [fitId, fit] of Object.entries(golden)) {
     // copies of one type with different scripts are separate entries since v.11.
     for (const m of result.ewarModules) {
       for (const [f, v] of Object.entries(m)) if (typeof v === 'number') result[`ewar:${m.name}:${m.script || '-'}:${f}`] = v;
+      // v2026.10.14.26: Command Burst buffs, e.g. "ewar:Shield Command Burst II:Shield Harmonizing Charge:buff10"
+      for (const b of m.buffs || []) result[`ewar:${m.name}:${m.script || '-'}:buff${b.id}`] = b.value;
     }
     // EWAR effectiveness bonuses (skills/hull/subsystem/rig, added
     // 2026-10-11) -- flattened per-kind so a golden fit can pin the EXACT

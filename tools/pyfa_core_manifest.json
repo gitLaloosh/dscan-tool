@@ -1,12 +1,12 @@
 {
   "note": "PYFA CORE lock -- see PYFA_CORE.md. sha256 = SHA-256 of the lines between a section's BEGIN/END markers (LF line endings). Update ONLY with `node tools/check_pyfa_core.mjs --update` after running the section's verify commands; say so in the history doc.",
   "pyfa": {
-    "version": "v2.69.2",
-    "commit": "3b9ce39b8bb41bb7e3fbf097f683da9143a48133",
-    "clientBuild": 3579973,
-    "dataDumped": "2026-10-06",
-    "verifiedOn": "2026-10-14",
-    "ownerPyfa": "v2.69.2 / EVE data 3579973 (Help -> About, 2026-10-14)"
+    "version": "v2.69.3",
+    "commit": "d2722a4c8b2ec9cdfded5024cb97df362ac513da",
+    "clientBuild": 3624425,
+    "dataDumped": "2026-10-17",
+    "verifiedOn": "2026-10-21",
+    "ownerPyfa": "v2.69.3 / EVE data 3624425 (the owner updated 2026-10-22; v2.69.3 ships data 3624425)"
   },
   "sections": {
     "resist-calc": {
@@ -48,7 +48,7 @@
         "python3 -I tools/independent_checks/compare_ewar.py index.html (0 mismatches: every golden fit's EWAR modules vs pyfa_fit_oracle)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "f48fcf954c8a3ae531f2a94ac5b3659726568f050f168dddbb33950fd5cfa2c5"
+      "sha256": "a6da5641d142e4975d62126088d817426a1b745b9dbb4993de3f9a517c06448a"
     },
     "implant-calc": {
       "kind": "generated + port",
@@ -59,7 +59,7 @@
         "python3 -I tools/independent_checks/compare_speed.py index.html ; compare_resists.py ; compare_ewar.py (the same fits, 0 mismatches)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "af79424e49c230dbe0a2db76744b8e26bf887b13ff8e191a0ea2473570a6f93e"
+      "sha256": "dc3cc71752070ddc8ba0e66b1b7435832f9357c884e8a89e292fe6fa79573d91"
     },
     "sig-effect-tables": {
       "kind": "audited",
@@ -104,7 +104,7 @@
         "node regression_suite/compare_cap_sim.mjs index.html (0 mismatches; needs PYFA_SRC)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "048f4acdbd8052dbef32a02109d7f6b5b7a8303af54afd4a8d192d18cea7c19a"
+      "sha256": "277247ddd0916ab1e4564cb2f56893328775863c2d77649284975b8da921e28a"
     },
     "sensor-effect-table": {
       "kind": "audited",

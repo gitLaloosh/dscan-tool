@@ -84,6 +84,11 @@ if '--run' in sys.argv:
         ('implants vs pyfa handlers', env + 'python3 -I tools/independent_checks/compare_implants.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('PANIC flag vs pyfa', env + 'python3 -I tools/independent_checks/check_panic.py', lambda o: o.strip().splitlines()[-1].startswith('0 problems')),
         ('modes vs pyfa handlers', env + 'python3 -I tools/independent_checks/compare_modes.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
+        ('every golden fit vs pyfa handlers', env + 'python3 -I tools/independent_checks/compare_fit_stats.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
+        ('display rounding vs Python round', 'node tools/check_py_round.mjs index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
+        ('missile application skills + ranking', env + 'python3 -I tools/independent_checks/check_missile_application.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
+        ('drone recommendation rule', env + 'python3 -I tools/independent_checks/check_drone_recommendation.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
+        ('pasted names, either apostrophe', env + 'python3 -I tools/independent_checks/check_apostrophe_names.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 misses')),
     ]
     bad = 0
     for name, cmd, good in chain:

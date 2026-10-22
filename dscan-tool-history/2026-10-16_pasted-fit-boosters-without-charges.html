@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-16 — Pasted fits: Cap Booster / ASB with no charges</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Pasted fits: Cap Booster / ASB with no charges</h1>
+<p><span class="tag">Feature</span><span class="tag">Input rule</span> 2026-10-16 &middot; <code>v2026.10.14.23</code> &rarr; <code>v2026.10.14.24</code> &middot; Backlog "Fit Analyzer: cap-booster/ASB with no charges found". the owner (earlier): "we should probably call out the fact that it's missing charges and flag it as a weakness if no charges are found"; then "let's go with option A".</p>
+
+<h2>The rule</h2>
+<ul>
+<li>A pasted fit (Fit Analyzer) has no "used them all up" alibi like a killmail. So a Capacitor Booster or Ancillary Shield Booster with no charge loaded and none in cargo or the fleet hangar is <b>empty</b>:
+<ul>
+<li>the Capacitor Booster injects nothing;</li>
+<li>the ASB repairs from capacitor, so its cap need counts in the best case.</li>
+</ul></li>
+<li>The Weaknesses card shows a red "!" row: <b>"No charges for its &lt;module&gt;"</b>, with "none loaded and none in cargo, so it can't inject capacitor" or "...so it repairs from capacitor instead".</li>
+<li>On the Capacitor card, the booster's icon is greyed with a red dashed ring. The caption reads "&lt;module&gt; has no charges in the fit, not injecting" (or "running on capacitor (N GJ/s)"). An empty ASB has no out-of-charges toggle.</li>
+<li>Killmails (Pilot Analyzer) are unchanged: their charges may have run out in the fight, so the largest compatible charge is still assumed (v.27 best case). A charge found in cargo counts in both analyzers.</li>
+</ul>
+
+<h2>How</h2>
+<ul>
+<li><code>estimateHpAndDps(..., options)</code> takes a new 9th argument, <code>{fitSource: 'eft'}</code>. The Fit Analyzer passes it, keeps it on <code>f.input</code>, and <code>recomputeFitWithStates</code> passes it again, so module-state changes keep the rule.</li>
+<li>Engine:
+<ul>
+<li><code>capBoosterChargesMissing</code> clears the "assume the best charge" fallback.</li>
+<li><code>asbChargesMissing</code> keeps the ASB's drain in <code>capSimInputs.best</code> and <code>activeDrainPerSec</code>.</li>
+<li>Each boost has <code>source: 'none'</code>, and <code>capacitor.chargesMissing</code> lists them.</li>
+</ul></li>
+<li>Test harnesses (run_regression, dump_results, compare_cap_sim) pass a golden fit's <code>fitSource</code>. <code>compare_fit_stats.py</code> keeps an empty ASB's drain in the pyfa comparison, since pyfa without charges runs it on capacitor too.</li>
+<li>DEVIATIONS.md (inputs) updated. pyfa itself only uses the charge in the fit, which is what the pasted-fit rule now does.</li>
+</ul>
+
+<h2>Verification</h2>
+<table>
+<tr><th>New constructed fit (Rifter)</th><th>v.23</th><th>v.24</th></tr>
+<tr><td>EFT, Small Capacitor Booster II, no charge</td><td>assumed 18.2 GJ/s, stable 2.9%</td><td>0 GJ/s, drains in 108 s, flagged</td></tr>
+<tr><td>Same fit as a killmail</td><td>assumed 18.2 GJ/s</td><td>unchanged (assumed)</td></tr>
+<tr><td>EFT, Cap Booster 150 x20 in cargo</td><td>8.8 GJ/s from cargo</td><td>unchanged. Independently: clip floor(15/6) = 2, 2 &times; 150 / (24 s + 10 s reload) = 8.82</td></tr>
+<tr><td>EFT, Small Ancillary Shield Booster, no charge</td><td>on charges, 0.7 GJ/s drain, stable 95.5%</td><td>on capacitor, 30.4 GJ/s, drains in 12 s, flagged</td></tr>
+</table>
+<ul>
+<li>Suite ALL PASS (218 fits); v.23 fails 12 checks on the new fits. Full output diff v.23 &rarr; v.24: only the 2 empty pasted fits change.</li>
+<li><code>compare_fit_stats.py</code> 0 mismatches (218), <code>compare_cap_sim.mjs</code> 654 simulations, 0 mismatches. Chain all 23 OK, parse tests 293/293, layout check FAILURES 0.</li>
+<li>New <code>tools/page_checks/missing_charges_check.py</code> pastes the fits into the real page:
+<ul>
+<li>the flag and caption show;</li>
+<li>the flag is still there after a module-state change;</li>
+<li>a charge in cargo gives 8.8 GJ/s and no flag;</li>
+<li>an empty ASB has no toggle;</li>
+<li>no page errors.</li>
+</ul>
+FAILURES 0; v.23 fails 7. The Weaknesses and Capacitor cards were checked on a screenshot (the flag first wrapped its badge onto its own line; fixed).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>When an assumption depends on where the input came from (killmail vs pasted fit), pass the source explicitly and carry it through <b>every</b> recalculation path, not just the first render. The page check repeats the check after a module-state change for that reason.</li></ul>
+</body>
+</html>

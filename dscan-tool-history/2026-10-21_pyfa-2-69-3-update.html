@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-21 — pyfa v2.69.3 update</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>pyfa v2.69.3 update (CCP data build 3624425)</h1>
+<p><span class="tag">pyfa update</span> 2026-10-21 &middot; shipped with <code>v2026.10.14.28</code> &middot; Found by the start-of-session check (<code>pyfa_update_check.py</code>): pyfa v2.69.3 was released on 2026-10-17. The tool had been verified against v2.69.2, data build 3579973.</p>
+
+<h2>What changed in pyfa (v2.69.2 commit 3b9ce39b8b &rarr; v2.69.3 commit d2722a4c8b)</h2>
+<table>
+<tr><th>Change</th><th>Effect on the tool</th></tr>
+<tr><td>Data build 3579973 &rarr; 3624425. No new types. 195 types changed, and almost all of the changes are names and descriptions (event boosters, crates, translations). The only dogma change is that the Akoman gained attribute 6364, "Ansiblex Activation Cost" (14,000).</td><td>None. The tool doesn't read 6364. The Akoman golden fixture was refreshed (<code>refresh_golden_fixtures.py --write</code>: 1 attribute added, 0 values changed).</td></tr>
+<tr><td>Three officer modules renamed (curly apostrophe &rarr; straight): Sarikusa's Capital Energy Nosferatu, Horm's Capital Energy Neutralizer, Zorya's Ultratidal Entropic Disintegrator. pyfa added a name conversion for old fits.</td><td>The live page reads names from ESI, which already uses the new spelling. A fit saved before the patch with the curly apostrophe would not resolve that line. The tool has no conversion table; this is noted as an idea below.</td></tr>
+<tr><td><code>eos/effects.py</code>: 17 new pyfa-only effects (Effect100100-100106, 100200-100209) for two Alliance Tournament prize ships pyfa adds by hand, <b>Herald</b> (Assault Frigate) and <b>Penitence</b> (Heavy Interdictor). They replace the earlier Shapash / Cybele placeholders. The other changed effects only had their "Used by" docstring counts updated.</td><td>None for now. pyfa gives these ships made-up type ids (1000000 / 1000001) that ESI and killmails never use. When CCP publishes them, the generators will pick up their real effects. Rerun the chain then.</td></tr>
+<tr><td><code>dbuffcollections</code>: translations of one Crimson Harvest buff name.</td><td>None.</td></tr>
+</table>
+
+<h2>What was done (PYFA_CORE.md procedure)</h2>
+<ul>
+<li>Shallow-fetched tag v2.69.3 and ran the whole chain against it before changing anything. Every check was OK except the golden-fit data refresh (the Akoman attribute above).</li>
+<li>The standard pyfa checkout is now v2.69.3. In <code>tools/pyfa_core_manifest.json</code>, the <code>pyfa</code> block is now version v2.69.3, commit d2722a4c8b, clientBuild 3624425, dumped 2026-10-17, verified 2026-10-21. No section fingerprint changed because of the update; the v.28 mindlink change re-locked two of them (see that doc).</li>
+<li>PYFA_CORE.md and tools/README.md now name the new version.</li>
+<li>Final chain on v.28: all 25 steps OK, with "UP TO DATE: pyfa matches the verified version".</li>
+</ul>
+
+<h2>For the owner</h2>
+<ul>
+<li>Your pyfa is recorded as v2.69.2 / data 3579973 (<code>ownerPyfa</code> in the manifest; left unchanged). For a screenshot comparison, update pyfa to v2.69.3 first (LESSON #10). No stat the tool shows differs between the two data builds.</li>
+<li>Idea: treat a curly and a straight apostrophe as the same character when resolving a pasted name, so pre-patch fits with the three renamed officer modules still resolve. pyfa does this with its conversion table.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>A new pyfa release can be large on disk and still change nothing the tool reads. Run the chain first, then read the diff to explain each change. Don't assume from the size of <code>effects.py</code>'s diff: here all 17 new effects belonged to ships that exist only in pyfa.</li></ul>
+</body>
+</html>
