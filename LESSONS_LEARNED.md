@@ -90,7 +90,8 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 10. Run `node --check`, the regression suite (ALL PASS, parse tests too) and a
     Playwright render of one affected fit. A layout change: also
     `tools/page_checks/layout_check.py` (desktop, tablet and a real phone width).
-    → #12, #33
+    New code that runs at page load: the suites load the script with a stub DOM.
+    → #12, #33, #36
 11. Diff the full output of the old and new builds over every golden fit
     (`diffall`). Explain and pin every change with a note. Re-run any table
     generator or audit script; it must be clean. Renamed or removed a result
@@ -499,6 +500,9 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   - An ellipsis is hidden information, not a fix (v.18): the collapsed cards' one-line summaries were
     first cut with `text-overflow:ellipsis`; on a phone the Navigation summary lost its last numbers.
     The text-run check flags clipped text too; summaries now wrap.
+  - Swapping one view for another (v.33, the threat <-> my ship switch): if the new view is drawn after a
+    tick ("Loading…"), the page is briefly short and the browser clamps the scroll to the top. Keep the old
+    height (`min-height`) until the new view is drawn, and check `scrollY` before and after the switch.
 
 ## 29. pyfa's gaps are not the game's rules, and a control must change something
 
@@ -828,6 +832,24 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   - Read how pyfa *formats* a stat (its `gui/` view), not only how it computes it.
   - Values that are only the tool's own (missile application ranking, ring
     geometry) can keep `Math.round`; say so in `DEVIATIONS.md`.
+
+## 36. Code that runs at page load also runs inside the regression suites
+
+- **What happened (v2026.10.14.33, caught before delivery):** My Ship's start-up code reads the browser's
+  storage and draws the header chip when the script loads. The regression suite, the parse tests and the
+  output diff load the same `<script>` in a Node `vm` with a stub DOM: `getElementById()` returns an object
+  with only `addEventListener`, `style`, `innerHTML`; there is no `classList`, no `localStorage`, no
+  `document.addEventListener`. Code that touches those at load throws, and the whole suite stops before a
+  single fit is checked.
+- **Do this instead:**
+  - Anything that runs at load (not on a click) either uses only what the stub has, or returns early when
+    an element looks like the stub: `if(!chip || !chip.classList) return;` (`myShipInit`, `// LESSON #36`).
+  - Wrap every storage access in try/catch (a private window throws too).
+  - After adding start-up code, run `run_regression.mjs`, `dscan_parse_tests.mjs` and the output diff, not
+    only the page checks: the page checks use a real browser and can't see this.
+  - Pick a new class-name prefix with a grep first: `ms-` already meant "module state" here, so My Ship
+    uses `mys-`. A shared prefix makes a `querySelectorAll('button.ms-...')` in one feature pick up the
+    other's buttons.
 
 # Phase 4 — Verifying and delivering
 

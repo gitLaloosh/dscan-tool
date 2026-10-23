@@ -33,6 +33,20 @@ Before changing any calculation:
 4. Bump the version tag in `header.hero` (`vYYYY.MM.DD.N`). Add a dated note
    to `dscan-tool-history/`.
 
+**Error messages carry codes** (`ERRORS.md`). Every error the page writes ends
+with a code such as `(ZKB-01)`, defined once in `ERROR_CODES` in `index.html`
+(what triggers it, what to check, why it exists, the build and history doc).
+A new error message gets a new code there (never reuse or renumber one; retire
+it instead), shown with `withCode()` / `codedError()`. Then run
+`python3 -I tools/gen_errors_md.py --write`. Owner reports quote the code: look it up in
+`ERRORS.md` first.
+
+**My Ship** (v2026.10.14.33, `roadmap/my-ship-plan.md`): the user's own fit, saved in
+the browser (`localStorage` `dscanMyShip`: EFT text, module states, the switch; never the
+numbers, which are recomputed from the text). Code: the `MY SHIP` block at the end of the
+script; classes `mys-*` (`ms-*` means module state). Start-up code must survive the suites'
+stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
+
 When you find a new kind of mistake, add it to `LESSONS_LEARNED.md` and give
 the history doc a "Lesson for future models" section. In code, mark the site
 with a `// LESSON #n` comment that points at the entry.

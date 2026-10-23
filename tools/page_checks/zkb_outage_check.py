@@ -1,4 +1,4 @@
-"""Pilot Analyzer when zKillboard's API is down (v2026.10.14.31).
+"""Pilot Analyzer when zKillboard's API is down (v2026.10.14.31; error codes since v2026.10.14.32).
 
     PYFA_SRC=... python3 tools/page_checks/zkb_outage_check.py [index.html]   -> 'FAILURES: N'
 
@@ -19,9 +19,9 @@ from playwright.sync_api import sync_playwright
 
 HTML = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')),
                             os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'index.html')))
-OUTAGE = "zKillboard's API isn't answering right now"
+OUTAGE = "(ZKB-01)"   # v2026.10.14.32: checked by error code, so the wording can change
 
-def run(mode):
+def run(mode, pilot='Test Pilot'):
     def esi(route):
         if '/universe/ids/' in route.request.url and 'Test Pilot' in (route.request.post_data or ''):
             return route.fulfill(status=200, content_type='application/json',
@@ -41,7 +41,7 @@ def run(mode):
         pg.route(re.compile(r'https://zkillboard\.com/.*'), zkb)
         pg.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))
         pg.goto('file://' + HTML); pg.click('#tabBtnPilot')
-        pg.fill('#pilotName', 'Test Pilot'); t0 = time.time(); pg.click('#fitBtn')
+        pg.fill('#pilotName', pilot); t0 = time.time(); pg.click('#fitBtn')
         pg.wait_for_function("() => !document.getElementById('fitBtn').disabled", timeout=90000)
         out = (time.time() - t0, pg.inner_text('#fitStatus'), pg.inner_text('#lastKillInfo'), errs)
         b.close()
@@ -60,4 +60,8 @@ for mode in ('503', 'hang', 'ok'):
         check('network connection' not in status, f'{mode}: no "check your network" hint')
         check(secs < (5 if mode == '503' else 30), f'{mode}: gave up in {secs:.1f} s')
     check(not errs, f'{mode}: no page errors {errs}')
+# v2026.10.14.32: an unknown pilot name shows PILOT-01 (ESI's stand-in knows only "Test Pilot")
+secs, status, lastkill, errs = run('ok', pilot='Nobody Here')
+check('(PILOT-01)' in status, f'unknown pilot: status ends with (PILOT-01): {status[:120]!r}')
+check(not errs, f'unknown pilot: no page errors {errs}')
 print(f'FAILURES: {fails}')
