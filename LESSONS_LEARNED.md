@@ -61,9 +61,11 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
    has no `oracleGaps` for your fits.
    → #3, #27
 5. Build a constructed golden fit from full SDE records, through the real EFT
-   parser, with slot pairing for charges and scripts. Run the suite and
-   confirm the fit **fails** on the current build.
-   → #6
+   parser, with slot pairing for charges and scripts, every item in the slot a
+   real fit puts it. Run the suite and confirm the fit **fails** on the current
+   build. A mutation the check doesn't catch means the grid has a hole: add a
+   point where the mutated rule changes the result.
+   → #6, #37
 6. If you are comparing with a pyfa screenshot:
    - split pyfa's number into its parts first
    - get pyfa's module states
@@ -584,6 +586,24 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   (`midSlotByFlag`, `highSlotByFlag`) whenever charges or scripts are fitted.
   If a fit didn't change when it should have, inspect the fixture's records
   first.
+
+## 37. A fixture built from the code's assumption agrees with the code
+
+- **What happened (v2026.10.14.35):**
+  - Since v2026.10.14.26 the engine paired a Warp Disrupt Field Generator's script from **mid-slot** flags
+    only. A WDFG is a **high-slot** module, so on a real killmail or EFT paste its script sits in a high-slot
+    flag.
+  - The two constructed Heavy Interdictor goldens written for that version listed the WDFG as a mid slot. Code
+    and fixture shared the same wrong assumption, so they agreed, and `compare_fit_stats.py` agreed with both.
+  - The result on real HIC fits: a scripted WDFG still got the bubble's +50% signature bloom (pyfa Effect3380
+    skips it when a charge is loaded) and none of the script's cycle / capacitor change (Focused script:
+    6 s and 45 GJ, not 30 s and 112.5 GJ).
+- **How it was caught:** a new golden for Phase 2a put the WDFG in a high slot, the way a real fit has it, and
+  `check_projected.py` found the target's signature 225 m against pyfa's 150 m.
+- **Do this instead:** put every item in a constructed fit where a real fit puts it: the slot its module
+  occupies in the game, its charge in that slot's flag. If unsure, build the fit through `parseEftFit()` from
+  an EFT paste (it assigns slots from the item itself), or copy the layout of a real killmail. When code pairs
+  charges by slot, check the slot against the module's own slot attribute, not against the fixture.
 
 ## 9. Comparing different quantities with pyfa
 

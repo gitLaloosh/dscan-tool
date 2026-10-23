@@ -70,6 +70,13 @@ console.log(`Testing: ${path.resolve(htmlPath)}`);
 console.log(`Against: ${path.resolve(goldenPath)} (${Object.keys(golden).length} fits)\n`);
 
 let anyFail = false;
+// v2026.10.14.35 (PYFA CORE projected): every fit's application / projectedTarget, for the cross-fit pins
+// "tackled@<target fitId>,distance=..,speed=<share of the target's top speed>[,lock=1][,dcr=1][,drones=1|2|3]"
+// (the target's speed under this fit's webs / scram) and "painted@..." (its signature radius under this fit's
+// painters), checked after every fit has run.
+const projApps = {}, projTargets = {}, projPins = [];
+let lastSandbox = null;
+const PROJ_PIN = /^(tackled|painted)@/;
 
 // PYFA CORE lock (2026-10-14, PYFA_CORE.md): code fenced as PYFA CORE in index.html
 // must match the fingerprints in tools/pyfa_core_manifest.json. A changed section
@@ -621,6 +628,33 @@ for (const [fitId, fit] of Object.entries(golden)) {
       result[key] = sandbox.pyfaAppliedDps(result.application, q);
     }
   }
+  // v2026.10.14.35 projected inputs: "proj:<list>:<i>:<field>" (each list sorted by boost, optimal), counts, scram range
+  // (-1 = none), drone control range; the fit as a target: "projTarget:*" (top speed and signature radius, the same
+  // with its scrammed modules ignored, web / painter resistance, disallowOffensive).
+  if (result && result.application && result.application.projected) {
+    const pr = result.application.projected;
+    result['proj:scramRange'] = pr.scramRange === null ? -1 : pr.scramRange;
+    result['proj:droneControlRange'] = pr.droneControlRange;
+    for (const name of ['webMods', 'tpMods', 'webDrones', 'tpDrones', 'webFighters']) {
+      const list = pr[name].slice().sort((a, b) => (a.boost - b.boost) || (a.optimal - b.optimal));
+      result[`proj:${name}`] = list.length;
+      list.forEach((x, i) => { for (const f of ['boost', 'optimal', 'falloff', 'resAttrID', 'speed', 'radius']) if (typeof x[f] === 'number') result[`proj:${name}:${i}:${f}`] = x[f]; });
+    }
+    projApps[fitId] = JSON.parse(JSON.stringify(result.application));
+  }
+  if (result && result.projectedTarget) {
+    const t = result.projectedTarget;
+    result['projTarget:maxVelocity'] = sandbox.pyfaTargetValue(t, 'maxVelocity', null, false);
+    result['projTarget:signatureRadius'] = sandbox.pyfaTargetValue(t, 'signatureRadius', null, false);
+    result['projTarget:scrammedMaxVelocity'] = sandbox.pyfaTargetValue(t, 'maxVelocity', null, true);
+    result['projTarget:scrammedSignatureRadius'] = sandbox.pyfaTargetValue(t, 'signatureRadius', null, true);
+    result['projTarget:webResistance'] = t.resist[2115];
+    result['projTarget:painterResistance'] = t.resist[2114];
+    result['projTarget:disallowOffensive'] = t.disallowOffensiveModifiers ? 1 : 0;
+    projTargets[fitId] = JSON.parse(JSON.stringify(t));
+  }
+  lastSandbox = sandbox;
+  for (const key of Object.keys(fit.expected || {})) if (PROJ_PIN.test(key)) projPins.push([fitId, key, fit.expected[key], (fit.expected.tolerancePct || 1) / 100]);
   if (result && result.turretRecs) {
     for (const sys of ['Laser', 'Hybrid', 'Projectile']) {
       const rec = result.turretRecs[sys.toLowerCase()];
@@ -676,6 +710,7 @@ for (const [fitId, fit] of Object.entries(golden)) {
   const reserved = new Set(['note', 'tolerancePct']);
   for (const key of Object.keys(exp)) {
     if (reserved.has(key) || key.endsWith('_min') || key.endsWith('_max')) continue;
+    if (PROJ_PIN.test(key)) continue;   // cross-fit pins: checked after every fit (below)
     if (key.endsWith('_approx')) continue; // informational only (legion_owner's old resist notes), never checked
     // v2026.10.13.27: a pinned field missing from the result FAILS. It used to
     // be skipped silently, so a renamed/removed field (e.g. the old
@@ -704,5 +739,29 @@ for (const [fitId, fit] of Object.entries(golden)) {
   }
 }
 
+// v2026.10.14.35: cross-fit projected pins (an attacker's webs / painters / scram on another golden fit)
+if (projPins.length) {
+  console.log('\n=== cross-fit projected pins (PYFA CORE projected: attacker -> target) ===');
+  for (const [fitId, key, expected, tol] of projPins) {
+    const [kind, rest] = key.split('@');
+    const parts = rest.split(','), tgtId = parts[0];
+    const p = {distance: 0, speedFrac: 1, ignoreLockRange: true, ignoreDCR: false, droneMode: 1};
+    for (const kv of parts.slice(1)) {
+      const [k, v] = kv.split('=');
+      if (k === 'lock') p.ignoreLockRange = v !== '1'; else if (k === 'dcr') p.ignoreDCR = v === '1';
+      else if (k === 'drones') p.droneMode = Number(v); else if (k === 'speed') p.speedFrac = Number(v); else p[k] = Number(v);
+    }
+    let actual;
+    if (projApps[fitId] && projTargets[tgtId] && lastSandbox) {
+      const t = projTargets[tgtId];
+      const r = lastSandbox.pyfaProjectedPoint(projApps[fitId], t, {distance: p.distance, tgtSpeed: p.speedFrac * lastSandbox.pyfaTargetValue(t, 'maxVelocity', null, false),
+        ignoreLockRange: p.ignoreLockRange, ignoreDCR: p.ignoreDCR, droneMode: p.droneMode});
+      actual = kind === 'tackled' ? r.tgtSpeed : r.tgtSigRadius;
+    }
+    const pass = actual !== undefined && Math.abs(actual - expected) <= Math.abs(expected) * tol;
+    console.log(`  ${pass ? 'PASS' : 'FAIL'}  ${fitId} ${key}: got ${actual}, expected ${expected}`);
+    if (!pass) anyFail = true;
+  }
+}
 console.log(anyFail ? '\n*** REGRESSION SUITE: FAIL — do not deliver this file until understood/fixed ***' : '\nREGRESSION SUITE: ALL PASS');
 process.exit(anyFail ? 1 : 0);

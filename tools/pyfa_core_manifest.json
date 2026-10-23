@@ -32,13 +32,13 @@
     },
     "speed-calc": {
       "kind": "generated + port",
-      "mirrors": "every pyfa handler on a ship's maxVelocity / agility / mass and on a fitted module's speedFactor / speedBoostFactor / massAddition and the module attributes ship rows read (rig drawback, plate massAddition, cloak maxVelocityModifier...): skills, hulls incl. getSkill (Effect1615) and hull-skill conditions (Effect1616), modules by state, rigs, subsystems, cloak-only bonuses (fit.extraAttributes['cloaked']) -- SPEED_EFFECTS / SPEED_SKILL_ROWS by tools/gen_speed_table.py; eos/effects.py Effect6730 moduleBonusMicrowarpdrive / Effect6731 moduleBonusAfterburner (pyfaPropBoost, source hash checked by the generator); eos/saveddata/fit.py Fit.maxSpeed / Fit.alignTime",
+      "mirrors": "every pyfa handler on a ship's maxVelocity / agility / mass and on a fitted module's speedFactor / speedBoostFactor / massAddition and the module attributes ship rows read (rig drawback, plate massAddition, cloak maxVelocityModifier...): skills, hulls incl. getSkill (Effect1615) and hull-skill conditions (Effect1616), modules by state, rigs, subsystems, cloak-only bonuses (fit.extraAttributes['cloaked']) -- SPEED_EFFECTS / SPEED_SKILL_ROWS by tools/gen_speed_table.py; eos/effects.py Effect6730 moduleBonusMicrowarpdrive / Effect6731 moduleBonusAfterburner (pyfaPropBoost, source hash checked by the generator); eos/saveddata/fit.py Fit.maxSpeed / Fit.alignTime; v2026.10.14.35: pyfaShipSpeed / pyfaPropBoost also return the velocity pools and the prop module's postMul multiplier (read by PYFA CORE projected: a scram makes pyfa ignore the MWD)",
       "verify": [
         "python3 -I tools/gen_speed_table.py index.html (must say up to date; fails if pyfa's Effect6730/6731 source changed)",
         "python3 -I tools/independent_checks/compare_speed.py index.html (0 mismatches: every golden fit vs pyfa_fit_oracle)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "8d576e3239ee515217b8ebb1b34c87d2c640242e792fd24710127f13170b6024"
+      "sha256": "4e87025194c078a190d6dfa69d370d498ba5f7025eff71487a8d83222a3a64ac"
     },
     "ewar-calc": {
       "kind": "generated + port",
@@ -97,6 +97,16 @@
         "node regression_suite/run_regression.mjs index.html"
       ],
       "sha256": "eca7aff91950378d52ba7434d291cb70cf9239362a32a5179b041a4eec7a7a85"
+    },
+    "projected": {
+      "kind": "generated + port",
+      "mirrors": "graphs/data/fitDamageStats/calc/projected.py getScramRange / _isRegularScram / _isHicScram, getScrammables, getTackledSpeed (webs by range factor, mobile webs: long enough / faster than the target / projected from the attacker, by mobileDroneMode), getSigRadiusMult; graphs/data/fitDamageStats/cache/projected.py getProjModData / getProjDroneData (fighters: getProjFighterData not fed, the tool launches no support fighters); graphs/wrapper.py getMaxVelocity / getSigRadius; eos/modifiedAttributeDict.py getExtended / __calculateValue (extra multipliers joined to their stacking group after the target's resistance, scrammed afflictors divided out or removed), getResistanceAttrID (remoteResistanceID); eos/calc.py calculateMultiplier; graphs/calc.py checkLockRange / checkDroneControlRange; getter.py _calculatePoint (applyProjected); eos Module.maxRange / falloff, Drone.maxRange / falloff. PROJ_TARGET_EFFECTS (disallowOffensiveModifiers, stasisWebifierResistance, targetPainterResistance) and PROJ_DRONE_EFFECTS / PROJ_DRONE_SKILL_ROWS (web / painter drones' speedFactor, signatureRadiusBonus, maxVelocity, ranges) by tools/gen_projected_table.py",
+      "verify": [
+        "python3 -I tools/gen_projected_table.py index.html (must say up to date; fails if a pyfa handler on those attributes can't be recorded)",
+        "python3 -I tools/independent_checks/check_projected.py index.html (0 mismatches: pyfa's calc/projected.py and cache/projected.py run unmodified on oracle attributes vs the tool, every attacker x every golden fit over a 156-point grid)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "9ae45f9bdaa341c2cec3da4c27f2b1d29b5969f543e2b39f384e0b10b657d779"
     },
     "cap-rep-effect-tables": {
       "kind": "audited",

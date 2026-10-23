@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — Webs, painters and scrams in damage application (turret plan Phase 2a)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Their tackle on you: pyfa's webs, painters and scrams in damage application, engine only</h1>
+<p><span class="tag">Engine</span><span class="tag">PYFA CORE</span><span class="tag">Bug fix</span> 2026-10-23 &middot; <code>v2026.10.14.34</code> &rarr; <code>v2026.10.14.35</code> &middot; the owner asked whether Phase 2 could be accurate without this, then for a recommendation, then "yes please". This is Phase 2a of <code>roadmap/turret-application-plan.md</code>. Nothing on the page changes yet; the chart is Phase 2b.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>New PYFA CORE section <code>projected</code>.</b> pyfa's damage graph applies the attacker's own webs, target painters and warp scramblers to the target by default (graph setting <code>applyProjected</code>). Ported line for line:
+<ul>
+<li><code>graphs/data/fitDamageStats/calc/projected.py</code>: getScramRange, getScrammables, getTackledSpeed, getSigRadiusMult;</li>
+<li>what <code>cache/projected.py</code> collects from the attacker: webs, painters, burst projectors, web and painter drones in space;</li>
+<li><code>graphs/wrapper.py</code> getMaxVelocity / getSigRadius and <code>eos/modifiedAttributeDict.py</code> getExtended. A web's multiplier joins the target's own speed modifiers in their stacking group, after the target's web resistance. A scram makes pyfa ignore the target's MWD, MJD and MJFG.</li>
+<li><code>eos/calc.py</code> calculateMultiplier, for a target profile (the class presets of decision D2).</li>
+</ul>
+<code>pyfaProjectedPoint(application, target, p)</code> gives the target's speed under the tackle and its signature radius under the painters. <code>pyfaAppliedDpsProjected</code> gives the applied DPS that pyfa's default graph shows.</li>
+<li><b>Inputs.</b>
+<ul>
+<li>As an attacker, <code>estimate.application.projected</code>: one entry per active web / painter / burst projector copy and per drone in space, with pyfa's modified strength, optimal and falloff, the target attribute that resists it, and the drones' speed and radius. Also the longest active scram range (a regular scram, or a Heavy Interdictor's field generator with a Focused Warp Scrambling Script) and the drone control range.</li>
+<li>As a target, <code>estimate.projectedTarget</code>: the fit's top speed and signature radius as pyfa keeps them (base, unpenalized multiplier, stacking groups), what its running MWD and active MJD / MJFG put in, its web and painter resistances.</li>
+</ul></li>
+<li><b>New generator <code>tools/gen_projected_table.py</code>.</b> It records every pyfa handler on these attributes:
+<ul>
+<li>the target ship's web / painter resistance and disallowOffensiveModifiers: 5 effects, among them Bastion, the Cenotaph / Tholos hull bonuses and the Imperial Electronics boosters;</li>
+<li>a web or painter drone's strength, speed and ranges: 30 effects and 2 skills over the 13 web and painter drones, among them Drone Navigation, Drone Sharpshooting, drone speed modules and rigs, tracking links, hull bonuses and implants.</li>
+</ul>
+It fails if a handler that touches one of them can't be recorded.</li>
+<li><b>Speed-calc</b> now also returns its velocity pools and the prop module's own multiplier, which <code>projected</code> reads. It was re-verified: generator up to date, <code>compare_speed.py</code> 0 mismatches.</li>
+<li><b>Not applied: support fighters' webs</b> (Dromi, pyfa getProjFighterData). The tool never launches support fighters: their squadrons deal no damage, so the fighter step skips them. Recorded in DEVIATIONS.md.</li>
+</ul>
+
+<h2>Bug found and fixed: scripted Heavy Interdictor bubbles</h2>
+<p>Since v2026.10.14.26 the engine paired a Warp Disrupt Field Generator's script from mid-slot flags only. A WDFG is a high-slot module, so on a real killmail or EFT paste the tool missed the script. On a scripted HIC it then:</p>
+<ul>
+<li>added the bubble's +50% signature bloom, which pyfa leaves out when a charge is loaded (Effect3380);</li>
+<li>kept the unscripted cycle and capacitor need: 30 s and 112.5 GJ instead of the Focused script's 6 s and 45 GJ.</li>
+</ul>
+<p>The v.26 test fits listed the WDFG as a mid slot, so the code and the test fits agreed (LESSON #37). The fix also pairs high-slot scripts for WDFGs. Only WDFGs: a turret's crystal in the same high-slot flag is handled by the weapon capacitor path. On the new HIC golden fit: signature 225 &rarr; 150 m, capacitor stable 81.2% &rarr; 69.2%, both equal to pyfa's handlers. v2026.10.14.34 fails <code>compare_fit_stats.py</code> on it.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><b>New <code>tools/independent_checks/check_projected.py</code>.</b> It runs pyfa's <code>calc/projected.py</code> and <code>cache/projected.py</code> unmodified, with <code>getResistanceAttrID</code> lifted from pyfa's source, on pyfa's own attribute values for both fits (<code>tools/pyfa_fit_oracle.py</code>). The oracle now records who made each modifier and has a port of getExtended. The tool's side is the core functions on its own inputs, in Node (<code>projected_grid.mjs</code>).
+<ul>
+<li>Coverage: 24 attackers &times; all 249 golden fits as targets &times; 156 points. The points vary distance, the target's own speed, lock range, drone control range and pyfa's mobile drone mode.</li>
+<li>Result: 0 mismatches over 932,256 points. pyfa changes the target's speed or signature at 509,422 of them, and 917,677 are bit-identical.</li>
+<li>The check can fail. Mutations give:
+<ul>
+<li>no web resistance: 300 mismatches;</li>
+<li>no scram rule: 253;</li>
+<li>the attacker's radius left out of the drone-range rule: 231;</li>
+<li>the drone speed rule: 12;</li>
+<li>burst projector radius: 4;</li>
+<li>an empty drone skill table: 250.</li>
+</ul>
+The drone-range mutation first passed unnoticed; the grid gained a 13,400 m point inside the window where it matters.</li>
+<li>One fault of my own, caught by the first run: the drone control range check read a field that doesn't exist, so no drone ever applied.</li>
+</ul></li>
+<li><b>Golden fits: 8 new constructed fits, now 249.</b>
+<ul>
+<li>Attackers:
+<ul>
+<li>a Vexor with web and painter drones in space, a painter, a Drone Navigation Computer, an Omnidirectional Tracking Link and speed rigs;</li>
+<li>an Onyx with a focused scram script and a web;</li>
+<li>an Avatar with a web burst projector;</li>
+<li>a Ragnarok with a painter burst projector.</li>
+</ul></li>
+<li>Targets:
+<ul>
+<li>a Cenotaph with an MWD and an Imperial Electronics Booster (web resistance);</li>
+<li>a Bifrost with MWD and MJFG active;</li>
+<li>a Typhoon with MWD and MJD active;</li>
+<li>an Apostle in Triage. The Triage Module forces disallowOffensiveModifiers to its own value, 0, so webs still apply, as in pyfa.</li>
+</ul></li>
+<li>The Paladin Bastion killmail gained target pins.</li>
+</ul>
+New cross-fit pins in <code>run_regression.mjs</code>: <code>tackled@&lt;target&gt;</code> and <code>painted@&lt;target&gt;</code> (24 pins). Every pin comes from pyfa's side and was written before the tool's numbers were pinned. v2026.10.14.34 fails 189 of them.</li>
+<li><b>No number on the page changed</b> except the HIC fix. The full output diff v.34 &rarr; v.35, ignoring the two new fields, shows 1 of 249 fits differing: the new Onyx golden. <code>compare_fit_stats.py</code> 0 mismatches over 249 fits. The regression suite passes. PYFA CORE is locked at 20 sections: <code>projected</code> is new, <code>speed-calc</code> was re-recorded after its verify commands. The update-check chain gained two steps, projected tables and <code>check_projected.py</code>; it runs 30 steps, all OK. Layout, missing-charges, zKillboard-outage and My Ship page checks: FAILURES 0.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>Put every item in a constructed test fit where a real fit has it: a module in its own slot, its charge in that slot's flag. If code and fixture share a wrong assumption, they agree, and so does every check built on them. Build constructed fits from an EFT paste or a real killmail layout when unsure (LESSON #37).</li>
+<li>A mutation that passes is a hole in the grid, not proof the code is right. Ask where the mutated rule changes the result, here a 150 m window around a drone's optimal, and put a point there.</li>
+<li>When porting a function that reads <code>src.item.extraAttributes[...]</code>, check where the tool keeps that value before reading it. A missing field reads as <code>undefined</code>, and <code>distance &lt;= undefined</code> is silently false.</li>
+</ul>
+</body>
+</html>

@@ -53,9 +53,13 @@ Each is in a backlog:
   uses it yet, turret-application-plan.md Phase 2): pyfa's damage graph is ported for turrets, missile
   launchers, Vorton Projectors and smartbombs with pyfa's graph defaults (lock range ignored unless asked,
   target resists ignored). Not yet: drones and fighters (D5: their DPS stays raw, `application.unapplied`),
-  bombs, doomsdays and breacher pods, and pyfa's `applyProjected` (on by default in pyfa's graph): the
-  attacker's own webs and target painters slowing and growing the target, which needs the target's fit
-  (My Ship) and comes with Phase 2
+  bombs, doomsdays and breacher pods. Since v2026.10.14.35 (Phase 2a, PYFA CORE `projected`) the engine also
+  has pyfa's `applyProjected` (on by default in pyfa's graph): the attacker's own webs, target painters, web /
+  painter drones, burst projectors and warp scramblers (a scrammed target's MWD, MJD and MJFG are ignored)
+  slowing and growing the target fit or profile. One part of it is not applied: **support fighters' webs**
+  (Dromi, pyfa `getProjFighterData`). The tool never launches support fighters (their squadrons deal no damage,
+  so the fighter step skips them), so `webFighters` is always empty. Nothing on the page uses any of this yet
+  (Phase 2b, the chart)
 - mode effects on stats the tool doesn't show: remote repair and remote shield boost amounts (Confessor / Svipul Defense; their capacitor need *is* applied), weapon-disruption and sensor-dampener resistance (every Sharpshooter mode)
 
 **Hand-built tables not yet replaced by pyfa-derived ones:** none. Firepower was replaced in v2026.10.14.3 (P1); fighter
