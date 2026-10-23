@@ -72,6 +72,7 @@ if '--run' in sys.argv:
         ('speed tables', env + 'python3 -I tools/gen_speed_table.py index.html', lambda o: 'up to date' in o),
         ('EWAR tables', env + 'python3 -I tools/gen_ewar_table.py index.html', lambda o: 'up to date' in o),
         ('implant / booster tables', env + 'python3 -I tools/gen_implant_table.py index.html', lambda o: 'up to date' in o),
+        ('projected tables', env + 'python3 -I tools/gen_projected_table.py index.html', lambda o: 'up to date' in o),   # v2026.10.14.35
         ('module-state tables', env + 'python3 -I tools/gen_module_state_tables.py index.html', lambda o: o.count('matches pyfa + SDE') >= 3),
         ('effect tables audit', 'node tools/dump_effect_tables.mjs index.html > /tmp/_t.json && ' + env + 'python3 -I tools/audit_effect_tables.py /tmp/_t.json',
          lambda o: not re.search(r'MISSING|EXTRA|DIFF', o)),
@@ -87,6 +88,7 @@ if '--run' in sys.argv:
         ('every golden fit vs pyfa handlers', env + 'python3 -I tools/independent_checks/compare_fit_stats.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('display rounding vs Python round', 'node tools/check_py_round.mjs index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('damage application vs pyfa getApplicationPerKey', env + 'python3 -I tools/independent_checks/check_application.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.34
+        ('projected webs / painters / scram vs pyfa', env + 'python3 -I tools/independent_checks/check_projected.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.35
         ('missile application skills + ranking', env + 'python3 -I tools/independent_checks/check_missile_application.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('drone recommendation rule', env + 'python3 -I tools/independent_checks/check_drone_recommendation.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('error codes registry and ERRORS.md', 'python3 -I tools/gen_errors_md.py index.html', lambda o: o.strip().splitlines()[-1].endswith('ERRORS.md is up to date')),

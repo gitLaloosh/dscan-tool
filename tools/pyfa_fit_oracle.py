@@ -26,6 +26,8 @@ What is pyfa's own code and what is a hand port:
   * Skill and HandledList semantics: eos/saveddata/character.py Skill, eos/effectHandlerHelpers.py.
 Damage pattern: pyfa's default uniform pattern (25 each), which the Reactive Armor Hardener reads.
 Not modelled: fighters, projected and command effects. Drones (v2026.10.14.13): the ones passed in, in space.
+Since v2026.10.14.35: Attrs.afflictions (who made each modifier, eos __afflict) and Attrs.extended, a hand port of
+getExtended / __calculateValue (extra multipliers, ignored afflictors) for pyfa's damage graph (check_projected.py).
 """
 import math, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -83,6 +85,11 @@ class Attrs:
         self.item, self.fit = item, fit
         self.preAssigns, self.forced, self.preInc, self.postInc, self.mult, self.pen = {}, {}, {}, {}, {}, {}
         self.intermediary = {}   # __setitem__ (cap boosters set capacitorNeed this way)
+        # v2026.10.14.35: who modified what (eos __afflict: (modifier, operator, stackingGroup, amount)), for
+        # getExtended below -- pyfa's damage graph ignores a scrammed target's MWD / MJD / MJFG this way.
+        self.afflictions = {}
+    def _afflict(self, key, op, group, amount):
+        self.afflictions.setdefault(key, []).append((getattr(self.fit, '_modifier', None), op, group, amount))
     def original(self, key):
         # getOriginal: the item's value, else the attribute's SDE defaultValue (LESSON #22)
         v = self.item.attributes.get(key)
@@ -112,20 +119,71 @@ class Attrs:
         if hi is not None: v = min(v, hi)
         return v
     def _lvl(self, skill): return SKILL_LEVEL if skill else 1
-    def preAssign(self, key, value, **kw): self.preAssigns[key] = value
+    def preAssign(self, key, value, **kw): self.preAssigns[key] = value; self._afflict(key, 'preAssign', None, value)
     def increase(self, key, inc, position='pre', skill=None, **kw):
         inc *= SKILL_LEVEL if skill else 1
         tbl = self.preInc if position == 'pre' else self.postInc
         tbl[key] = tbl.get(key, 0) + inc
+        self._afflict(key, 'preIncrease' if position == 'pre' else 'postIncrease', None, inc)
     def multiply(self, key, m, stackingPenalties=False, penaltyGroup='default', skill=None, **kw):
         if m is None: return
         if skill: m *= SKILL_LEVEL
         if stackingPenalties: self.pen.setdefault(key, {}).setdefault(penaltyGroup, []).append(m)
         else: self.mult[key] = self.mult.get(key, 1) * m
+        self._afflict(key, 'multiply', penaltyGroup if stackingPenalties else None, m)
     def boost(self, key, b, skill=None, **kw):
         if skill: b *= SKILL_LEVEL
         self.multiply(key, 1 + b / 100.0, **kw)
-    def force(self, key, value, **kw): self.forced[key] = value
+    def force(self, key, value, **kw): self.forced[key] = value; self._afflict(key, 'force', None, value)
+    def extended(self, key, extraMultipliers=None, ignoreAfflictors=()):
+        """Hand port of eos/modifiedAttributeDict.py getExtended + __calculateValue (v2026.10.14.35): the value
+        with extra multipliers {stacking group: [(mult, resist attr id)]} joined to their groups (each scaled by
+        this fit's ship resistance attribute first) and without the modifiers ignoreAfflictors made."""
+        preIncAdj, multAdj, postIncAdj, ignorePen = 0, 1, 0, {}
+        for afflictor, op, group, amount in self.afflictions.get(key, []):
+            if afflictor is None or not any(afflictor is x for x in ignoreAfflictors): continue
+            if op == 'multiply':
+                if group is None: multAdj /= amount
+                else: ignorePen.setdefault(group, []).append(amount)
+            elif op == 'preIncrease': preIncAdj -= amount
+            elif op == 'postIncrease': postIncAdj -= amount
+        if not extraMultipliers and preIncAdj == 0 and multAdj == 1 and postIncAdj == 0 and not ignorePen:
+            return self.get(key)
+        info = ATTR_BY_NAME.get(key, {})
+        lo = self.get(ATTR_BY_ID[info['minAttributeID']]['name']) if info.get('minAttributeID') in ATTR_BY_ID else None
+        hi = self.get(ATTR_BY_ID[info['maxAttributeID']]['name']) if info.get('maxAttributeID') in ATTR_BY_ID else None
+        if key in self.forced:
+            v = self.forced[key]
+            if lo is not None: v = max(v, lo)
+            if hi is not None: v = min(v, hi)
+            return v
+        groups = {g: list(ms) for g, ms in self.pen.get(key, {}).items()}
+        for g, ops in (extraMultipliers or {}).items():
+            ms = []
+            for mult, resAttrID in ops:
+                resName = ATTR_BY_ID.get(resAttrID, {}).get('name') if resAttrID else None
+                if not resName: ms.append(mult); continue
+                resMult = self.fit.ship.attrs.get(resName)
+                if resMult is None or resMult == 1: ms.append(mult); continue
+                ms.append((mult - 1) * resMult + 1)
+            groups[g] = groups.get(g, []) + ms
+        default = info.get('defaultValue', 0.0)
+        o = self.original(key)
+        v = self.intermediary.get(key, self.preAssigns.get(key, o if o is not None else default))
+        v += self.preInc.get(key, 0) + preIncAdj
+        v *= self.mult.get(key, 1)
+        v *= multAdj
+        for group, ms in groups.items():
+            if group in ignorePen:
+                ms = ms[:]
+                for x in ignorePen[group]:
+                    if x in ms: ms.remove(x)
+            for chain in (sorted([m for m in ms if m > 1], key=lambda m: -abs(m - 1)), sorted([m for m in ms if m < 1], key=lambda m: -abs(m - 1))):
+                for i, m in enumerate(chain): v *= 1 + (m - 1) * math.exp(-i * i / 7.1289)
+        v += self.postInc.get(key, 0) + postIncAdj
+        if lo is not None: v = max(v, lo)
+        if hi is not None: v = min(v, hi)
+        return v
     def __getitem__(self, key): return self.get(key)
     def __setitem__(self, key, value): self.intermediary[key] = value
     # ModifiedAttributeDict.__contains__ / __iter__ (Effect2589 Neurotoxin Recovery tests
@@ -232,12 +290,14 @@ class OracleFit:
         # drone control range read 0 + increases.
         for k, v in SHIP_EXTRA_ATTRIBUTES.items(): self.ship.item.attributes.setdefault(k, v)
         self.extraAttributes = self.ship.attrs
+        self._modifier = None
     def getSkill(self, item):
         # eos Character.getSkill (the All 5 character): by name or typeID
         sid = SKILL_IDS_BY_NAME.get(item) if isinstance(item, str) else int(item)
         return next(s for s in self.skills if s.item.ID == sid)
     def __getattr__(self, k): return _Any()
     def _run(self, eid, src, ctx):
+        self._modifier = src   # eos fit.getModifier(): the item whose effect is running (Attrs.afflictions)
         try: EFFECTS[eid].handler(self, src, ctx, None, effect=None)
         except AttributeError as ex:   # pyfa swallows these for skills (character.py) and in HandledList
             # ...but one raised by a MISSING STAND-IN METHOD here is an oracle bug, not pyfa behaviour

@@ -1,7 +1,9 @@
 # Plan: how much of their damage actually lands (turret application)
 
 Status: **PHASE 1 DONE** (v2026.10.14.34, 2026-10-23; `dscan-tool-history/2026-10-23_damage-application-engine.html`).
-All six decisions in section 4 made. Next: Phase 2, the "Their damage on you" chart with sliders.
+**PHASE 2a DONE** (v2026.10.14.35, 2026-10-23; `dscan-tool-history/2026-10-23_projected-webs-painters-scram.html`).
+All six decisions in section 4 made. Erik 2026-10-23: Phase 2 split into 2a (pyfa's `applyProjected`, engine only)
+and 2b (the "Their damage on you" chart with sliders). Next: Phase 2b.
 Backlog: "Turret damage application" (DEVIATIONS.md: "turret tracking application"; architecture memory:
 "turret-side damage application, needs attacker tracking + assumed range").
 
@@ -160,3 +162,24 @@ webs and target painters slow the target and grow its signature before applicati
 getTackledSpeed / getSigRadiusMult, recomputing the TARGET fit's speed and signature with those multipliers,
 its scrammed MWD off). For "their damage on you" that is your speed and signature under their tackle, from My
 Ship's fit. Phase 2 has to port it (or show it as a separate line) to match pyfa's default graph.
+Erik 2026-10-23 ("yes please"): port it first, as Phase 2a, before the chart.
+
+## Phase 2a as built (v2026.10.14.35)
+
+- PYFA CORE `projected`: `pyfaGetTackledSpeed`, `pyfaGetSigRadiusMult`, `pyfaTargetValue` (getMaxVelocity /
+  getSigRadius with getExtended), `pyfaCalculateMultiplier` (target profiles), `pyfaProjectedPoint(app, tgt, p)`
+  (tackled speed, then painted signature) and `pyfaAppliedDpsProjected(app, tgt, p)` = what pyfa's default
+  graph shows. p = {distance, tgtSpeed (the target's own speed before tackle), ignoreLockRange (default true),
+  ignoreDCR (default false), droneMode (1 auto)}.
+- Attacker inputs: `estimate.application.projected` = {scramRange, webMods, tpMods, webDrones, tpDrones,
+  webFighters (always empty: no support fighters), tpFighters, droneControlRange}; one entry per active copy /
+  drone in space, pyfa's modified attributes (EWAR tables for modules, new drone table for drones).
+- Target inputs: `estimate.projectedTarget` = {isFit, radius, disallowOffensiveModifiers, resist {2115, 2114},
+  maxVelocity / signatureRadius: {base, pool (pyfa's stacking groups), scrammed (what the running MWD, an active
+  MJD / MJFG put in)}}. The fit's current state: with its active prop module (D4 decides the default in 2b).
+  A target profile for 2b: {isFit: false, maxVelocity, signatureRadius, radius}.
+- Checks: `check_projected.py` (pyfa's calc/projected.py and cache/projected.py unmodified, every attacker x every
+  golden fit, 156-point grid, 0 mismatches of 932,256 points), 8 constructed golden fits, cross-fit pins in
+  `run_regression.mjs` (`tackled@<target>` / `painted@<target>`).
+- Found and fixed on the way: a scripted Warp Disrupt Field Generator (high slot) got the bubble's signature bloom
+  and none of the script's cycle / capacitor change (LESSON #37).
