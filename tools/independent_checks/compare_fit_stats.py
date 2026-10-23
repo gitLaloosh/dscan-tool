@@ -5,7 +5,9 @@ step 3 ("pins with no independent source get re-derived").
 
 The same stats as compare_implants.py (HP pools, capacitor capacity / recharge, shield recharge, signature
 without an MWD, targeting, scan resolution, sensor strength, local repair HP/s, module cap drains, weapon /
-smartbomb / drone DPS, weapon ranges, drone control range), but over EVERY golden fit, with the oracle given
+smartbomb / drone DPS, weapon ranges, drone control range; since v2026.10.14.34 also every input of pyfa's
+damage graph per weapon: turret tracking and signature resolution, missile and Vorton explosion radius /
+velocity / drf, missile flight ranges, smartbomb range), but over EVERY golden fit, with the oracle given
 the tool's own resolved module states and drones in space (inputs, DEVIATIONS.md section 2: e.g. one prop
 module running, the fastest), so only the calculation is compared. Speed / align, resistances, EWAR and modes
 have their own checks (compare_speed / compare_resists / compare_ewar / compare_modes).
@@ -21,7 +23,51 @@ import sys, os, json, subprocess, tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from golden_oracle import oracle_for, GOLDEN
-from compare_implants import oracle_values, close
+from compare_implants import oracle_values, close, is_weapon
+from check_missile_range import pyfa_missile_range
+
+def oracle_application(o):
+    """v2026.10.14.34 (turret-application-plan.md Phase 1): what pyfa's damage graph reads for each running weapon +
+    charge (graphs/data/fitDamageStats/calc/application.py): turret maxRange / falloff / trackingSpeed /
+    optimalSigRadius; launcher missileMaxRangeData and the charge's aoeCloudSize / aoeVelocity /
+    aoeDamageReductionFactor; Vorton maxRange and the module's aoe attributes; smartbomb range (Module.maxRange)."""
+    out = {}
+    for m in o.modules:
+        if m.state < 2: continue
+        g = m.item.group.name; t = int(m.item.ID)
+        if m.charge is not None and is_weapon(g):
+            key = f'{t}:{int(m.charge.item.ID)}'
+            if g.startswith('Missile Launcher'):
+                mr = pyfa_missile_range(o, m)
+                v = {'missileMaxRangeData': list(mr[:3]) if mr else None, 'aoeCloudSize': m.getModifiedChargeAttr('aoeCloudSize'),
+                     'aoeVelocity': m.getModifiedChargeAttr('aoeVelocity'), 'aoeDamageReductionFactor': m.getModifiedChargeAttr('aoeDamageReductionFactor', 1)}
+            elif g == 'Vorton Projector':
+                v = {'maxRange': m.getModifiedItemAttr('maxRange'), 'aoeCloudSize': m.getModifiedItemAttr('aoeCloudSize'),
+                     'aoeVelocity': m.getModifiedItemAttr('aoeVelocity'), 'aoeDamageReductionFactor': m.getModifiedItemAttr('aoeDamageReductionFactor', 1)}
+            else:
+                v = {'optimal': m.getModifiedItemAttr('maxRange'), 'falloff': m.getModifiedItemAttr('falloff'),
+                     'tracking': m.getModifiedItemAttr('trackingSpeed'), 'optimalSigRadius': m.getModifiedItemAttr('optimalSigRadius', 1000)}
+            out.setdefault(key, v)
+        elif g == 'Smart Bomb':
+            out.setdefault(f'{t}:', {'maxRange': m.getModifiedItemAttr('maxRange') or m.getModifiedItemAttr('empFieldRange') or None})
+    return out
+
+APP_COUNT = [0, 0, 0]   # weapons compared, of which turrets, launchers
+
+def compare_application(t, o):
+    tool = {f"{w['weaponTypeId']}:{w.get('ammoTypeId', '')}": w for w in ((t.get('application') or {}).get('weapons') or [])}
+    want = oracle_application(o); diffs = []
+    APP_COUNT[0] += len(want); APP_COUNT[1] += sum(1 for w in want.values() if 'tracking' in w); APP_COUNT[2] += sum(1 for w in want.values() if 'missileMaxRangeData' in w)
+    for key in sorted(set(tool) | set(want)):
+        if key not in tool or key not in want: diffs.append(f'application weapon {key} tool {key in tool} pyfa {key in want}'); continue
+        for f, pv in want[key].items():
+            tv = tool[key].get(f)
+            if isinstance(pv, list) or isinstance(tv, list):
+                ok = pv is not None and tv is not None and len(pv) == len(tv) and all(close(a, b) for a, b in zip(tv, pv))
+            elif pv is None or tv is None: ok = pv is None and tv is None
+            else: ok = close(tv, pv)
+            if not ok: diffs.append(f'application {key} {f} tool {tv} pyfa {pv}')
+    return diffs
 
 STACKING_TOL = {}  # v2026.10.14.23: the rounded stacking table is gone, every field compares at 1e-6
 KNOWN = {}   # fitId: reason -- filled only with a stated, checked reason
@@ -34,7 +80,7 @@ if __name__ == '__main__':
     G = json.load(open(GOLDEN))
     fits = [k for k in G if k not in KNOWN]
     tmp = os.path.join(tempfile.mkdtemp(), 'f.json')
-    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, tmp, 'exact,capacitor,moduleStates,droneStates,rangeEstimates', '-', ','.join(fits)], check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, tmp, 'exact,capacitor,moduleStates,droneStates,rangeEstimates,application', '-', ','.join(fits)], check=True, stdout=subprocess.DEVNULL)
     tool = json.load(open(tmp))
     bad = checked = 0
     for k in fits:
@@ -81,6 +127,8 @@ if __name__ == '__main__':
             tol = STACKING_TOL.get(f, 1e-6)
             if got is None or not close_tol(got, want, tol): diffs.append(f'{f} tool {got} pyfa {want}')
             elif '--verbose' in sys.argv: print(f'  {k} {f} {got:.6g} = pyfa')
+        diffs += compare_application(t, o)   # v2026.10.14.34
         checked += 1
         if diffs: bad += 1; print(f'{k}: ' + '; '.join(diffs))
+    print(f'application inputs: {APP_COUNT[0]} weapon + charge pairs ({APP_COUNT[1]} turrets, {APP_COUNT[2]} launchers)')
     print(f'{bad} mismatches ({checked} golden fits vs pyfa handlers; {len(KNOWN)} skipped with a stated reason)')

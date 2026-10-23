@@ -86,6 +86,7 @@ if '--run' in sys.argv:
         ('modes vs pyfa handlers', env + 'python3 -I tools/independent_checks/compare_modes.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('every golden fit vs pyfa handlers', env + 'python3 -I tools/independent_checks/compare_fit_stats.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('display rounding vs Python round', 'node tools/check_py_round.mjs index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
+        ('damage application vs pyfa getApplicationPerKey', env + 'python3 -I tools/independent_checks/check_application.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.34
         ('missile application skills + ranking', env + 'python3 -I tools/independent_checks/check_missile_application.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('drone recommendation rule', env + 'python3 -I tools/independent_checks/check_drone_recommendation.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('error codes registry and ERRORS.md', 'python3 -I tools/gen_errors_md.py index.html', lambda o: o.strip().splitlines()[-1].endswith('ERRORS.md is up to date')),

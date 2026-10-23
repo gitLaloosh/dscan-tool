@@ -832,6 +832,14 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   - Read how pyfa *formats* a stat (its `gui/` view), not only how it computes it.
   - Values that are only the tool's own (missile application ranking, ring
     geometry) can keep `Math.round`; say so in `DEVIATIONS.md`.
+  - Rounding *inside* a calculation too (v2026.10.14.34): pyfa's `floatUnerr`
+    keeps 7 significant digits with `round()`. The port used `toFixed`, fine
+    for flight times, but damage-application multipliers can be exact binary
+    ties (0.5 ** 11 = 0.00048828125). `pyfaRound(x, n)` is Python's `round()`
+    exactly (BigInt, ties to even); use it wherever pyfa calls `round()`.
+  - Don't round a reference value when you pin it: an applied DPS of 2e-19
+    rounded to 9 decimals became 0, and the pin failed against the exact tool.
+    Pin the reference unrounded and let `tolerancePct` do the comparing.
 
 ## 36. Code that runs at page load also runs inside the regression suites
 

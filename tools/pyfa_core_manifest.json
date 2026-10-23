@@ -72,21 +72,31 @@
     },
     "weapon-range-table": {
       "kind": "generated",
-      "mirrors": "every pyfa handler on turret maxRange/falloff and missile maxVelocity/explosionDelay",
+      "mirrors": "every pyfa handler on turret maxRange/falloff and missile maxVelocity/explosionDelay; since v2026.10.14.34 also every handler on turret trackingSpeed, the charge's aoeCloudSize / aoeVelocity and a Vorton Projector's own aoeCloudSize / aoeVelocity (targets tracking / missileExplosion* / vortonExplosion*), what pyfa's damage graph reads",
       "verify": [
         "python3 -I tools/gen_weapon_range_table.py index.html (must say up to date)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "2dc035f98327af4ab0e825d9ad0a433aa4c784d91d3ea0053081d6bf8e8d4f87"
+      "sha256": "789eb8f36df807d41b703cf43e81102232776b611ccbd7dcaa554cc8af480702"
     },
     "missile-range": {
       "kind": "port",
-      "mirrors": "eos/saveddata/module.py Module.missileMaxRangeData (ship-radius flight-time bonus, floatUnerr, floor/ceil whole seconds with the higher chance, acceleration at half speed, FoF maxFOFTargetRange cap, centre-to-surface) and the missile branch of Module.maxRange (weighted average shown in pyfa's range column); eos/utils/float.py floatUnerr",
+      "mirrors": "eos/saveddata/module.py Module.missileMaxRangeData (ship-radius flight-time bonus, floatUnerr, floor/ceil whole seconds with the higher chance, acceleration at half speed, FoF maxFOFTargetRange cap, centre-to-surface) and the missile branch of Module.maxRange (weighted average shown in pyfa's range column); eos/utils/float.py floatUnerr; since v2026.10.14.34 floatUnerr rounds through pyfaRound = Python round() exactly, ties to even (toFixed broke exact binary ties upward)",
       "verify": [
         "python3 -I tools/independent_checks/check_missile_range.py index.html (0 mismatches: pyfa's own function lifted unmodified from module.py, on oracle attributes, every golden missile)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "69a7a2edee477e2ca14a764b7596892f9cd1f3b6e8b935f29948f4a23b1a6ec8"
+      "sha256": "d46b9796cb13db5cb335790f00d3ae3dd161f1b1d32a5dcb242e72e1ff9c2549"
+    },
+    "application": {
+      "kind": "port",
+      "mirrors": "graphs/data/fitDamageStats/calc/application.py getApplicationPerKey (turret / missile launcher / Vorton / smartbomb branches; lock range with pyfa's graph setting ignoreLockRange, FoF exempt), getTurretMult, _calcTurretChanceToHit, _calcAngularSpeed, _calcTrackingFactor, _calcTurretMult, getLauncherMult, getVortonMult, getSmartbombMult, _calcMissileFactor; eos/calc.py calculateRangeFactor; graphs/data/fitDamageStats/getter.py applyDamage (sum of DPS x multiplier, ignoreResists default). Drones, fighters, bombs, doomsdays, breachers not ported (turret-application-plan.md D5)",
+      "verify": [
+        "python3 -I tools/independent_checks/check_application.py index.html (0 mismatches: pyfa's own getApplicationPerKey, run unmodified on oracle attributes and per-module DPS, vs the tool, every golden fit with weapons over a 6000-point grid)",
+        "python3 -I tools/independent_checks/compare_fit_stats.py index.html (0 mismatches: the application inputs per weapon vs pyfa's handlers)",
+        "node regression_suite/run_regression.mjs index.html"
+      ],
+      "sha256": "eca7aff91950378d52ba7434d291cb70cf9239362a32a5179b041a4eec7a7a85"
     },
     "cap-rep-effect-tables": {
       "kind": "audited",

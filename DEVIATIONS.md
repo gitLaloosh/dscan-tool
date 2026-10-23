@@ -49,8 +49,14 @@ Each is in a backlog:
 - drone hit points
 - effect beacons (wormhole and incursion system effects)
 - projected effects (remote reps on the target; command bursts received from a fleet booster -- the booster's OWN bursts are listed on its EWAR / Misc card since v2026.10.14.26, they don't change its own stats, as in pyfa)
-- turret tracking application
-- mode effects on stats the tool doesn't show: turret tracking (Svipul Sharpshooter), remote repair and remote shield boost amounts (Confessor / Svipul Defense; their capacitor need *is* applied), weapon-disruption and sensor-dampener resistance (every Sharpshooter mode)
+- damage application, partly (v2026.10.14.34 added the engine, PYFA CORE `application`; nothing on the page
+  uses it yet, turret-application-plan.md Phase 2): pyfa's damage graph is ported for turrets, missile
+  launchers, Vorton Projectors and smartbombs with pyfa's graph defaults (lock range ignored unless asked,
+  target resists ignored). Not yet: drones and fighters (D5: their DPS stays raw, `application.unapplied`),
+  bombs, doomsdays and breacher pods, and pyfa's `applyProjected` (on by default in pyfa's graph): the
+  attacker's own webs and target painters slowing and growing the target, which needs the target's fit
+  (My Ship) and comes with Phase 2
+- mode effects on stats the tool doesn't show: remote repair and remote shield boost amounts (Confessor / Svipul Defense; their capacitor need *is* applied), weapon-disruption and sensor-dampener resistance (every Sharpshooter mode)
 
 **Hand-built tables not yet replaced by pyfa-derived ones:** none. Firepower was replaced in v2026.10.14.3 (P1); fighter
 abilities and Fighter Support Units followed in v2026.10.14.4, resistances (P2)
