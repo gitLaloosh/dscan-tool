@@ -1,6 +1,7 @@
 # Plan: how much of their damage actually lands (turret application)
 
-Status: **PROPOSAL** (2026-10-22), waiting for the owner's decisions in section 4.
+Status: **PHASE 1 DONE** (v2026.10.14.34, 2026-10-23; `dscan-tool-history/2026-10-23_damage-application-engine.html`).
+All six decisions in section 4 made. Next: Phase 2, the "Their damage on you" chart with sliders.
 Backlog: "Turret damage application" (DEVIATIONS.md: "turret tracking application"; architecture memory:
 "turret-side damage application, needs attacker tracking + assumed range").
 
@@ -70,6 +71,21 @@ On the Firepower card, under the raw DPS: **"Their damage on you"**. A small DPS
 to their reach, with two lines (see D3), plus one headline number at the distance you pick. It has hover,
 like pyfa's graph.
 
+**Sliders** (the owner, 2026-10-23: "would those calculations allow us to create our own graphing with sliders we
+can use to adjust things like engagement range, speeds, etc.?" -> "yes please"). The chart opens on the two
+D3 lines; sliders under it change the assumptions and the chart redraws while you drag:
+
+- engagement range (where the headline number is read);
+- your speed and heading (still / straight at them / orbiting), their speed and heading;
+- your signature radius (e.g. a Target Painter or MWD bloom), prop module on or off;
+- what the horizontal axis shows: distance, your speed or your sig (pyfa offers the same choice).
+
+Your sig, speed and radius start at My Ship's numbers (D2). A reset button returns to them and the two
+default lines. Moving a slider never re-runs the fit engine: the weapon and ship stats are computed once,
+and each chart point is a few lines of the ported application maths per weapon (a full redraw of a few
+hundred points is well under a millisecond). Only a fit change (a module state, the prop toggle) recomputes,
+as today. On a phone the sliders sit in a collapsible panel under the chart.
+
 ### Optional (Phase 3)
 
 The reverse direction, **your guns vs them**: turret ammo picks that account for range and tracking, like
@@ -80,12 +96,12 @@ your applied DPS vs their tank, and theirs vs yours).
 
 | # | Question | Options | Recommendation |
 |---|---|---|---|
-| D1 | Which direction first? | (a) **their guns vs you** (threat); (b) your guns vs them; (c) both together | **(a)**, then (b) as Phase 3. (a) answers the threat question with nothing assumed about your weapons. |
-| D2 | Where do "your" sig, speed and radius come from? | (a) **a fit you've analyzed, saved as "my ship"** (one click in the Fit Analyzer, remembered in your browser); (b) class presets (frigate / cruiser / battleship); (c) typed in by hand | **(a)**, with (b) as the fallback until a ship is set. With (a) the numbers come from the tool's own pyfa-exact stats, MWD or AB included. |
-| D3 | What movement do we assume? | (a) **two lines: you sitting still and you orbiting at full speed** (90°, the worst case for them); (b) orbiting only; (c) a speed slider | **(a)**. Still = their range-only damage, orbiting = with tracking. The gap between the lines is what speed tanking buys you. |
-| D4 | Prop module for "you" | (a) **your fit's prop active** (AB or MWD, with the MWD's sig bloom); (b) cruising | **(a)**. Real orbits run the prop, and the MWD's sig bloom is exactly the trade-off the chart should show. |
-| D5 | Their drones and fighters | (a) **include now** (needs drone speed and tracking: more engine work); (b) turrets, missiles, Vorton and smartbombs first, drones in a follow-up | **(b)**. Drone DPS keeps showing raw until then, labelled. |
-| D6 | Pilot Analyzer as well as Fit Analyzer? | (a) **both**; (b) Fit Analyzer only | **(a)**. Same engine; killmail fits get the same card. |
+| D1 | Which direction first? | (a) **their guns vs you** (threat); (b) your guns vs them; (c) both together | **Decided 2026-10-23: (a)**, their guns vs you first; (b) later as Phase 3. Why: (a) answers the threat question with nothing assumed about your weapons. |
+| D2 | Where do "your" sig, speed and radius come from? | (a) **a fit you've analyzed, saved as "my ship"** (one click in the Fit Analyzer, remembered in your browser); (b) class presets (frigate / cruiser / battleship); (c) typed in by hand | **Decided 2026-10-23: (a)**, My Ship (built in v2026.10.14.33), with (b) class presets until a ship is saved. Why: the numbers come from the tool's own pyfa-exact stats, MWD or AB included. |
+| D3 | What movement do we assume? | (a) two lines: you sitting still and you orbiting at full speed (90°, the worst case for them); (b) orbiting only; (c) a speed slider | **Decided 2026-10-23: (a) as the default view, plus sliders** for range, both ships' speed and heading, your sig, prop on/off and the horizontal axis (section 3, Display). Still = their range-only damage, orbiting = with tracking; the gap between the lines is what speed tanking buys you. |
+| D4 | Prop module for "you" | (a) **your fit's prop active** (AB or MWD, with the MWD's sig bloom); (b) cruising | **Decided 2026-10-23: (a)**, your fit's prop active, MWD sig bloom included (a slider can switch it off). Why: Real orbits run the prop, and the MWD's sig bloom is exactly the trade-off the chart should show. |
+| D5 | Their drones and fighters | (a) **include now** (needs drone speed and tracking: more engine work); (b) turrets, missiles, Vorton and smartbombs first, drones in a follow-up | **Decided 2026-10-23: (b)**, turrets, missiles, Vorton and smartbombs first; drones and fighters in a follow-up, raw drone DPS labelled as raw until then. |
+| D6 | Pilot Analyzer as well as Fit Analyzer? | (a) **both**; (b) Fit Analyzer only | **Decided 2026-10-23: (a)**, both the Pilot and Fit Analyzers. Why: Same engine; killmail fits get the same card. |
 
 ## 5. Risks and how they're handled
 
@@ -110,13 +126,37 @@ your applied DPS vs their tank, and theirs vs yours).
    - a lock-range cliff case.
 5. A pyfa screenshot check from you: the Damage graph for one test fit with a set target profile. We read
    two points off it.
-6. Page checks: the chart at 1440 / 375 px, profile save and reload, no sideways scroll.
+6. Page checks: the chart at 1440 / 375 px, profile save and reload, no sideways scroll; every slider redraws
+   the chart and its headline number equals `check_application.py`'s value for that input; reset returns to
+   My Ship's numbers; dragging doesn't re-run the fit engine.
 
 ## 7. Rough size
 
 | Phase | Size |
 |---|---|
 | 1 — tracking table + application core + checks | Medium to large (one or two deliveries) |
-| 2 — "Their damage on you" chart + "my ship" profile | Medium |
+| 2 — "Their damage on you" chart + sliders (My Ship profile already built, v2026.10.14.33) | Medium |
 | 3 — your guns vs them (optional) | Medium |
 | Drones / fighters follow-up (if D5 = b) | Medium |
+
+## Phase 1 as built (v2026.10.14.34)
+
+- `WEAPON_RANGE_MOD_EFFECTS` (generator `gen_weapon_range_table.py`) gained the targets `tracking`,
+  `missileExplosionRadius`, `missileExplosionVelocity`, `vortonExplosionRadius`, `vortonExplosionVelocity`
+  (234 effects, 249 rows); skills as All V constants (Motion Prediction x1.25, Vorton Arc Guidance, the existing
+  Guided Missile Precision / Target Navigation Prediction); the ammo's own tracking multiplier (Effect600) and an
+  Advanced Condenser Pack's explosion velocity (Effect8062); Tracking Speed and Missile Precision scripts.
+- `estimate.application` = {radius, lockRange, weapons: [{kind turret | missile | vorton | smartbomb, name,
+  ammoName, weaponTypeId, ammoTypeId, qty, dps, and pyfa's modified inputs}], unapplied: {droneDps, fighterDps,
+  otherFixedDps, cargoGuessWeapons}}.
+- PYFA CORE `application`: `pyfaApplicationMult(w, p)` and `pyfaAppliedDps(app, p)`, p = {distance, atkSpeed,
+  atkAngle, tgtSpeed, tgtAngle, tgtSigRadius, tgtRadius, ignoreLockRange}; pyfa's graph defaults (lock range
+  ignored, resists ignored).
+- Checks: `check_application.py` (pyfa's getApplicationPerKey unmodified, 6,000-point grid, 0 mismatches),
+  `compare_fit_stats.py` (inputs vs pyfa's handlers, 0 mismatches), 4 constructed golden fits + smartbomb pins.
+
+**Found while building, for Phase 2:** pyfa's damage graph has `applyProjected` ON by default: the attacker's own
+webs and target painters slow the target and grow its signature before application (`calc/projected.py`
+getTackledSpeed / getSigRadiusMult, recomputing the TARGET fit's speed and signature with those multipliers,
+its scrammed MWD off). For "their damage on you" that is your speed and signature under their tackle, from My
+Ship's fit. Phase 2 has to port it (or show it as a separate line) to match pyfa's default graph.

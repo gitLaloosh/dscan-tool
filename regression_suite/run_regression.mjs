@@ -600,6 +600,27 @@ for (const [fitId, fit] of Object.entries(golden)) {
   // turretXFallback is 1 only when that system's answer came from the
   // fit's SECOND-weakest damage type rather than a direct hit on its real
   // weakest -- see buildTurretRecs() in dscan-tool.html.
+  // v2026.10.14.34 damage application (PYFA CORE application, turret-application-plan.md Phase 1): every
+  // weapon's inputs as "app:<weapon>:<charge or ->:<field>" (missileMaxRangeData as lower / higher /
+  // higherChance), and applied DPS at the points a fit pins as "applied@distance=...,tgtSpeed=...,..." (unset
+  // parameters: 0, sig 40 m, target radius 50 m, lock range ignored = pyfa's graph defaults; lock=1 respects it).
+  if (result && result.application) {
+    for (const w of result.application.weapons) {
+      const base = `app:${w.name}:${w.ammoName || '-'}:`;
+      for (const [f, v] of Object.entries(w)) if (typeof v === 'number') result[base + f] = v;
+      if (w.missileMaxRangeData) ['lower', 'higher', 'higherChance'].forEach((f, i) => { result[base + f] = w.missileMaxRangeData[i]; });
+    }
+    result.appLockRange = result.application.lockRange;
+    for (const key of Object.keys(fit.expected || {})) {
+      if (!key.startsWith('applied@')) continue;
+      const q = {distance: 0, atkSpeed: 0, atkAngle: 0, tgtSpeed: 0, tgtAngle: 0, tgtSigRadius: 40, tgtRadius: 50, ignoreLockRange: true};
+      for (const kv of key.slice(8).split(',')) {
+        const [k, v] = kv.split('=');
+        if (k === 'lock') q.ignoreLockRange = v !== '1'; else q[k] = Number(v);
+      }
+      result[key] = sandbox.pyfaAppliedDps(result.application, q);
+    }
+  }
   if (result && result.turretRecs) {
     for (const sys of ['Laser', 'Hybrid', 'Projectile']) {
       const rec = result.turretRecs[sys.toLowerCase()];

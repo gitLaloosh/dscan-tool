@@ -1252,7 +1252,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.33</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.34</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1708,6 +1708,28 @@ const MAX_FOF_TARGET_RANGE_DEFAULT = 200000;   // its SDE defaultValue (pyfa get
 const GUNNERY_SKILL_ID = 3300;
 const MAX_SHARPSHOOTER_RANGE_MULT = 1.25;
 const MAX_TRAJECTORY_ANALYSIS_FALLOFF_MULT = 1.25;
+// v2026.10.14.34 damage application (PYFA CORE application): the attributes pyfa's damage graph reads, at All V.
+//   Motion Prediction    Effect2847 filteredItemBoost trackingSpeed trackingSpeedBonus 5 x 5 = +25%, items requiring Gunnery
+//   Vorton Arc Guidance  Effect8039 aoeVelocity +10 x 5 = +50%, aoeCloudSize -5 x 5 = -25%, items requiring Vorton Projector Operation
+// (Guided Missile Precision / Target Navigation Prediction: MISSILE_APPLICATION_SKILL_*_MULT.) Everything else
+// on these attributes comes from WEAPON_RANGE_MOD_EFFECTS (targets tracking / missileExplosion* / vortonExplosion*).
+const MAX_MOTION_PREDICTION_TRACKING_MULT = 1.25;
+const MAX_VORTON_ARC_GUIDANCE_AOE_VELOCITY_MULT = 1.5;
+const MAX_VORTON_ARC_GUIDANCE_AOE_CLOUD_MULT = 0.75;
+const TURRET_TRACKING_ATTR = 160;            // trackingSpeed
+const TURRET_OPTIMAL_SIG_RADIUS_ATTR = 620;  // optimalSigRadius (SDE default 1000; no pyfa handler changes it)
+const AMMO_TRACKING_MULT_ATTR = 244;         // trackingSpeedMultiplier on a charge
+const AMMO_TRACKING_MULT_EFFECT_ID = 600;    // ammoTrackingMultiplier: module trackingSpeed x the charge's multiplier
+const AMMO_AOE_VELOCITY_MULT_EFFECT_ID = 8062; // ammoAOEvelocityMultiplier (Advanced Condenser Packs): Vorton aoeVelocity x the charge's aoeVelocityBonus
+const AOE_VELOCITY_BONUS_ATTR = 847;         // aoeVelocityBonus
+const SMARTBOMB_RANGE_ATTR = 99;             // empFieldRange
+function chargeHasEffect(cls, effectId, fallbackAttrId){
+  // pyfa runs a charge's effect only when the charge carries it; an old trimmed golden stub without an effect
+  // list falls back to "carries the attribute the effect reads".
+  const effs = cls && cls.type && cls.type.dogma_effects;
+  if(effs && effs.length) return effs.some(e => e.effect_id === effectId);
+  return ((cls && cls.type && cls.type.dogma_attributes) || []).some(a => a.attribute_id === fallbackAttrId);
+}
 // Missile Projection/Bombardment (comprehensive skill audit, Finding C/P1-D,
 // 2026-10-11) -- closes the long-open F1 gap. Missile Projection(12442, "10%
 // bonus to all missiles' maximum velocity per level" -- own ESI description)
@@ -2621,15 +2643,28 @@ function modeRowsMult(rows, coll, attr, item, charge){
 // ==== PYFA CORE END modes ====
 // ==== PYFA CORE BEGIN missile-range ==== mirrors pyfa; change only to match pyfa (PYFA_CORE.md, tools/pyfa_core_manifest.json)
 // pyfa eos/utils/float.py floatUnerr: round to keepDigits = int(sys.float_info.dig / 2) = 7
-// significant digits, to kill float error (e.g. 9.9999999 -> 10) before floor/ceil. Python's
-// round() and toFixed() both round the exact binary value; they differ only on an exact binary
-// tie (half-even vs half-up), which a flight time essentially never is.
+// significant digits, to kill float error (e.g. 9.9999999 -> 10) before floor/ceil.
+// v2026.10.14.34: through pyfaRound = Python's round() exactly, ties included. toFixed() also rounds the
+// exact binary value but breaks an exact tie upward; damage-application multipliers can be exact binary
+// ties (0.5 ** 11 = 0.00048828125 at 7 significant digits), where Python rounds to even.
+function pyfaRound(value, ndigits){
+  // Python round(float, int): the exact binary value times 10^ndigits, rounded half to even, then the
+  // double nearest that decimal (BigInt arithmetic, so nothing is lost on the way).
+  if(!isFinite(value) || value === 0) return value;
+  const dv = new DataView(new ArrayBuffer(8)); dv.setFloat64(0, value);
+  const hi = dv.getUint32(0), lo = dv.getUint32(4), expBits = (hi >>> 20) & 0x7ff;
+  let mant = (BigInt(hi & 0xfffff) << 32n) | BigInt(lo), e;
+  if(expBits === 0) e = -1074; else { mant |= 1n << 52n; e = expBits - 1075; }
+  let N = mant, D = 1n;
+  if(e >= 0) N <<= BigInt(e); else D <<= BigInt(-e);
+  if(ndigits >= 0) N *= 10n ** BigInt(ndigits); else D *= 10n ** BigInt(-ndigits);
+  let q = N / D; const twice = 2n * (N % D);
+  if(twice > D || (twice === D && (q & 1n) === 1n)) q += 1n;
+  return Number((value < 0 ? '-' : '') + q.toString() + 'e' + (-ndigits));
+}
 function pyfaFloatUnerr(value){
   if(value === 0 || value === Infinity) return value;
-  const roundFactor = 7 - Math.ceil(Math.log10(Math.abs(value)));
-  if(roundFactor >= 0) return Number(value.toFixed(Math.min(100, roundFactor)));
-  const p = Math.pow(10, -roundFactor);
-  return Math.round(value / p) * p;
+  return pyfaRound(value, Math.trunc(7 - Math.ceil(Math.log10(Math.abs(value)))));
 }
 // pyfa eos/saveddata/module.py Module.missileMaxRangeData, ported line for line, plus the missile
 // branch of Module.maxRange (the number pyfa's range column shows). Inputs are pyfa's MODIFIED
@@ -2662,6 +2697,114 @@ function pyfaMissileMaxRangeData(maxVelocity, explosionDelayMs, shipRadius, mass
   return {lowerRange, higherRange, higherChance, maxRange: lowerRange * (1 - higherChance) + higherRange * higherChance};
 }
 // ==== PYFA CORE END missile-range ====
+// ==== PYFA CORE BEGIN application ==== mirrors pyfa; change only to match pyfa (PYFA_CORE.md, tools/pyfa_core_manifest.json)
+// v2026.10.14.34 (turret-application-plan.md Phase 1; the owner 2026-10-23: D1 their guns vs you, D5 turrets,
+// missiles, Vorton and smartbombs first). How much of a weapon's DPS lands on a target: pyfa's damage graph,
+// graphs/data/fitDamageStats/calc/application.py (getApplicationPerKey and the per-weapon functions) and
+// eos/calc.py calculateRangeFactor, ported line for line. Distances are surface to surface (m), speeds m/s,
+// angles in degrees (0 = straight at the other ship, 90 = full transversal), signature radius m.
+// Each weapon w (estimate.application.weapons) carries pyfa's modified attributes: turret optimal / falloff /
+// trackingSpeed / optimalSigRadius; launcher missileMaxRangeData (lower, higher, higherChance) and the
+// charge's aoeCloudSize / aoeVelocity / aoeDamageReductionFactor; Vorton maxRange and the module's aoe
+// attributes; smartbomb range. Drones and fighters (getDroneMult / getFighterAbilityMult) are not ported yet
+// (D5); bombs and doomsdays deal no DPS in this tool. Checked by tools/independent_checks/check_application.py,
+// which runs pyfa's own getApplicationPerKey, lifted unmodified, on the same inputs over a grid.
+function pyfaCalculateRangeFactor(srcOptimalRange, srcFalloffRange, distance, restrictedRange = true){
+  if(distance === null || distance === undefined) return 1;
+  if(srcFalloffRange > 0){
+    // Most modules cannot be activated when at 3x falloff range, with few exceptions like guns
+    if(restrictedRange && distance > srcOptimalRange + 3 * srcFalloffRange) return 0;
+    return Math.pow(0.5, Math.pow(Math.max(0, distance - srcOptimalRange) / srcFalloffRange, 2));
+  }else if(distance <= srcOptimalRange){
+    return 1;
+  }
+  return 0;
+}
+function pyfaCalcAngularSpeed(atkSpeed, atkAngle, atkRadius, distance, tgtSpeed, tgtAngle, tgtRadius){
+  if(distance === null || distance === undefined) return 0;
+  atkAngle = atkAngle * Math.PI / 180;
+  tgtAngle = tgtAngle * Math.PI / 180;
+  const ctcDistance = atkRadius + distance + tgtRadius;
+  // Target is to the right of the attacker, so transversal is projection onto Y axis
+  const transSpeed = Math.abs(atkSpeed * Math.sin(atkAngle) - tgtSpeed * Math.sin(tgtAngle));
+  if(ctcDistance === 0) return transSpeed === 0 ? 0 : Infinity;
+  return transSpeed / ctcDistance;
+}
+function pyfaCalcTrackingFactor(atkTracking, atkOptimalSigRadius, angularSpeed, tgtSigRadius){
+  return Math.pow(0.5, Math.pow((angularSpeed * atkOptimalSigRadius) / (atkTracking * tgtSigRadius), 2));
+}
+function pyfaCalcTurretChanceToHit(atkSpeed, atkAngle, atkRadius, atkOptimalRange, atkFalloffRange, atkTracking, atkOptimalSigRadius,
+                                   distance, tgtSpeed, tgtAngle, tgtRadius, tgtSigRadius){
+  const angularSpeed = pyfaCalcAngularSpeed(atkSpeed, atkAngle, atkRadius, distance, tgtSpeed, tgtAngle, tgtRadius);
+  // Turrets can be activated regardless of range to target
+  const rangeFactor = pyfaCalculateRangeFactor(atkOptimalRange, atkFalloffRange, distance, false);
+  const trackingFactor = pyfaCalcTrackingFactor(atkTracking, atkOptimalSigRadius, angularSpeed, tgtSigRadius);
+  return rangeFactor * trackingFactor;
+}
+function pyfaCalcTurretMult(chanceToHit){
+  // https://wiki.eveuniversity.org/Turret_mechanics#Damage : 1% wrecking hits (x3), the rest averages
+  // (0.01 + cth) / 2 + 0.49
+  const wreckingChance = Math.min(chanceToHit, 0.01);
+  const wreckingPart = wreckingChance * 3;
+  const normalChance = chanceToHit - wreckingChance;
+  let normalPart = 0;
+  if(normalChance > 0){
+    const avgDamageMult = (0.01 + chanceToHit) / 2 + 0.49;
+    normalPart = normalChance * avgDamageMult;
+  }
+  return normalPart + wreckingPart;
+}
+function pyfaCalcMissileFactor(atkEr, atkEv, atkDrf, tgtSpeed, tgtSigRadius){
+  const factors = [1];
+  if(atkEr > 0) factors.push(tgtSigRadius / atkEr);                                         // "Slow" part
+  if(tgtSpeed > 0) factors.push(Math.pow((atkEv * tgtSigRadius) / (atkEr * tgtSpeed), atkDrf)); // "Fast" part
+  return Math.min(...factors);
+}
+function pyfaGetTurretMult(w, p){
+  return pyfaCalcTurretMult(pyfaCalcTurretChanceToHit(p.atkSpeed, p.atkAngle, p.atkRadius, w.optimal || 0, w.falloff || 0, w.tracking,
+    w.optimalSigRadius, p.distance, p.tgtSpeed, p.tgtAngle, p.tgtRadius, p.tgtSigRadius));
+}
+function pyfaGetVortonMult(w, p){
+  return pyfaCalculateRangeFactor(w.maxRange, 0, p.distance) * pyfaCalcMissileFactor(w.aoeCloudSize, w.aoeVelocity, w.aoeDamageReductionFactor, p.tgtSpeed, p.tgtSigRadius);
+}
+function pyfaGetLauncherMult(w, p){
+  if(!w.missileMaxRangeData) return 0;
+  // The ranges already consider ship radius
+  const [lowerRange, higherRange, higherChance] = w.missileMaxRangeData;
+  let distanceFactor;
+  if(p.distance === null || p.distance === undefined || p.distance <= lowerRange) distanceFactor = 1;
+  else if(lowerRange < p.distance && p.distance <= higherRange) distanceFactor = higherChance;
+  else distanceFactor = 0;
+  return distanceFactor * pyfaCalcMissileFactor(w.aoeCloudSize, w.aoeVelocity, w.aoeDamageReductionFactor, p.tgtSpeed, p.tgtSigRadius);
+}
+function pyfaGetSmartbombMult(w, p){
+  if(w.maxRange === null || w.maxRange === undefined) return 0;
+  if(p.distance !== null && p.distance !== undefined && p.distance > w.maxRange) return 0;
+  return 1;
+}
+// getApplicationPerKey: one multiplier per weapon. p = {distance, atkSpeed, atkAngle, tgtSpeed, tgtAngle,
+// tgtSigRadius, tgtRadius, atkRadius, lockRange, ignoreLockRange}. pyfa's graph setting 'ignoreLockRange'
+// defaults to true (service/settings.py GraphSettings); with it off, nothing but smartbombs and FoF missiles
+// hits beyond the attacker's lock range.
+function pyfaApplicationMult(w, p){
+  const d = p.distance;
+  const inLockRange = (d === null || d === undefined) || !!p.ignoreLockRange || d <= p.lockRange;
+  let mult = 0;
+  if(w.kind === 'vorton') mult = inLockRange ? pyfaGetVortonMult(w, p) : 0;
+  else if(w.kind === 'turret') mult = inLockRange ? pyfaGetTurretMult(w, p) : 0;
+  else if(w.kind === 'missile') mult = (inLockRange || w.fof) ? pyfaGetLauncherMult(w, p) : 0;
+  else if(w.kind === 'smartbomb') mult = pyfaGetSmartbombMult(w, p);
+  // Ensure consistent results - round off a little to avoid float errors
+  return pyfaFloatUnerr(mult);
+}
+// pyfa applyDamage(): sum of each weapon's DPS x its multiplier (graph setting 'ignoreResists' defaults to
+// true, so no target resists here).
+function pyfaAppliedDps(app, p){
+  let total = 0;
+  for(const w of app.weapons) total += w.dps * pyfaApplicationMult(w, Object.assign({atkRadius: app.radius, lockRange: app.lockRange}, p));
+  return total;
+}
+// ==== PYFA CORE END application ====
 // ==== PYFA CORE BEGIN speed-calc ==== mirrors pyfa; change only to match pyfa (PYFA_CORE.md, tools/pyfa_core_manifest.json)
 // Hand-tables Phase 3 (v2026.10.14.8). Generated by tools/gen_speed_table.py from every pyfa handler on
 // a ship's maxVelocity / agility / mass and on a fitted module's speedFactor / speedBoostFactor /
@@ -3544,20 +3687,29 @@ const HIGH_SPEED_MANEUVERING_SKILL_ID = 3454;
 // ==== PYFA CORE BEGIN weapon-range-table ==== mirrors pyfa; change only to match pyfa (PYFA_CORE.md, tools/pyfa_core_manifest.json)
 const WEAPON_RANGE_MOD_EFFECTS = {
   "521":[["optimal",[3304],null,487,5,0]],
+  "553":[["tracking",[3307],null,500,5,0]],
   "784":[["missileFlightTime",[3319],null,557,1,1]],
   "882":[["optimal",[3301],null,588,5,0]],
   "891":[["missileVelocity",[3326],null,598,5,0]],
   "892":[["missileVelocity",[3325],null,598,5,0]],
+  "919":[["tracking",[3304],null,658,5,0]],
   "989":[["optimal",[3301],null,673,5,0]],
   "991":[["optimal",[3303],null,673,5,0]],
+  "996":[["tracking",[3301],null,675,5,0]],
   "998":[["falloff",[3302],null,675,5,0]],
   "1024":[["missileVelocity",[3324],null,657,5,0]],
   "1058":[["optimal",[3306],null,692,5,0]],
   "1060":[["falloff",[3305],null,692,5,0]],
   "1080":[["falloff",[3304],null,692,5,0]],
+  "1099":[["tracking",[3302],null,587,5,0]],
+  "1228":[["tracking",[3302],null,462,5,0]],
   "1230":[["missileVelocity",[3319],null,793,1,0]],
   "1234":[["missileVelocity",[3321],null,793,1,0]],
+  "1264":[["tracking",[3301],null,804,5,0]],
+  "1268":[["tracking",[3303],null,804,5,0]],
   "1412":[["optimal",[3307],null,491,5,0]],
+  "1472":[["missileExplosionRadius",[3319],null,848,1,1]],
+  "1590":[["missileExplosionVelocity",[3319],null,847,1,1]],
   "1764":[["missileVelocity",[3319],null,20,1,1]],
   "1773":[["falloff",[3301],null,586,5,0]],
   "2130":[["optimal",[3301],null,351,1,0]],
@@ -3566,6 +3718,8 @@ const WEAPON_RANGE_MOD_EFFECTS = {
   "2156":[["falloff",[3305],null,999,5,0]],
   "2160":[["falloff",[3304],null,999,5,0]],
   "2201":[["falloff",[3302],null,1012,5,0]],
+  "2503":[["tracking",[3307],null,561,5,0]],
+  "2504":[["tracking",[3301],null,586,5,0]],
   "2561":[["missileVelocity",[3319],null,673,5,0]],
   "2693":[["falloff",null,["Energy Weapon"],349,1,1]],
   "2694":[["falloff",null,["Hybrid Weapon"],349,1,1]],
@@ -3577,21 +3731,32 @@ const WEAPON_RANGE_MOD_EFFECTS = {
   "3343":[["falloff",[3305],null,1246,5,0]],
   "3355":[["missileVelocity",[3324],null,1246,5,0]],
   "3356":[["missileVelocity",[25719],null,1246,5,0]],
+  "3392":[["tracking",[3309],null,1257,5,0]],
+  "3424":[["tracking",[3307],null,1265,5,0]],
+  "3425":[["tracking",[3308],null,1265,5,0]],
   "3447":[["falloff",[3308],null,490,5,0]],
+  "3480":[["tracking",[3309],null,585,5,0]],
+  "3484":[["tracking",[3306],null,656,5,0]],
+  "3489":[["tracking",[3303],null,485,5,0]],
   "3655":[["optimal",[3300],null,351,1,1]],
+  "3656":[["tracking",[3300],null,767,1,1]],
   "3677":[["optimal",[3309],null,585,5,0]],
+  "3706":[["tracking",[3305],null,659,5,0]],
   "4104":[["optimal",[3304],null,1444,5,0]],
   "4106":[["falloff",[3304],null,1439,5,0]],
   "4114":[["falloff",[3305],null,1449,5,0]],
   "4115":[["optimal",[3305],null,1449,5,0]],
   "4330":[["optimal",[3306],null,1531,5,0]],
   "4331":[["missileVelocity",[3324,25719],null,1533,5,0]],
+  "4347":[["tracking",[3304],null,1532,5,0]],
+  "4351":[["tracking",[3305],null,1534,5,0]],
   "4377":[["missileVelocity",[3325],null,586,5,0]],
   "4378":[["missileVelocity",[3325],null,587,5,0]],
   "4379":[["missileVelocity",[3325],null,485,5,0]],
   "4380":[["missileVelocity",[3325],null,588,5,0]],
   "4384":[["missileVelocity",[3324],null,962,5,0]],
   "4385":[["missileVelocity",[25719],null,962,5,0]],
+  "4398":[["missileExplosionVelocity",[3325],null,460,5,0]],
   "4413":[["missileFlightTime",[3325],null,462,5,0]],
   "4415":[["missileFlightTime",[3325],null,460,5,0]],
   "4416":[["missileFlightTime",[3325],null,463,5,0]],
@@ -3606,31 +3771,59 @@ const WEAPON_RANGE_MOD_EFFECTS = {
   "4515":[["falloff",[3302],null,460,5,0]],
   "4516":[["falloff",[3304],null,486,5,0]],
   "4527":[["falloff",[3300],null,349,1,1]],
-  "4559":[["optimal",[3300],null,351,1,1],["falloff",[3300],null,349,1,1]],
+  "4559":[["optimal",[3300],null,351,1,1],["falloff",[3300],null,349,1,1],["tracking",[3300],null,767,1,1]],
   "4622":[["optimal",[3301],null,1577,1,0]],
+  "4623":[["tracking",[3301],null,1577,1,0]],
+  "4624":[["tracking",[3304],null,1575,1,0]],
   "4625":[["falloff",[3304],null,1575,1,0]],
+  "4636":[["missileExplosionVelocity",[3325,3326],null,501,5,0]],
   "4637":[["missileVelocity",[3325,3326],null,598,5,0]],
   "4782":[["optimal",[3303],null,1577,1,0]],
   "4999":[["optimal",[3301],null,1826,1,0]],
   "5080":[["missileVelocity",[3319],null,463,5,0]],
   "5132":[["falloff",[3305],null,659,5,0]],
   "5153":[["missileVelocity",[3320],null,793,1,0]],
+  "5188":[["tracking",null,["Hybrid Weapon"],767,1,1]],
+  "5189":[["tracking",null,["Energy Weapon"],767,1,1]],
+  "5190":[["tracking",null,["Projectile Weapon"],767,1,1]],
+  "5205":[["tracking",[3303],null,1857,1,0]],
   "5206":[["optimal",[3303],null,1858,1,0]],
   "5213":[["missileVelocity",[3320],null,1863,1,0]],
   "5214":[["missileVelocity",[3321],null,1862,1,0]],
+  "5215":[["tracking",[3301],null,1865,1,0]],
   "5216":[["falloff",[3301],null,1866,1,0]],
+  "5217":[["tracking",[3302],null,1867,1,0]],
   "5218":[["falloff",[3302],null,1868,1,0]],
   "5219":[["optimal",[3302],null,1869,1,0]],
+  "5294":[["tracking",[3303],null,1888,5,0]],
   "5303":[["optimal",[3301],null,734,5,0]],
+  "5304":[["tracking",[3301],null,735,5,0]],
+  "5307":[["missileExplosionVelocity",[3320],null,735,5,0]],
+  "5308":[["missileExplosionVelocity",[3321],null,735,5,0]],
   "5309":[["falloff",[3301],null,738,5,0]],
+  "5310":[["tracking",[3301],null,739,5,0]],
+  "5318":[["tracking",[3302],null,740,5,0]],
   "5334":[["optimal",[3304],null,743,5,0]],
   "5356":[["optimal",[3307],null,743,5,0]],
+  "5358":[["tracking",[3307],null,747,5,0]],
   "5361":[["falloff",[3308],null,749,5,0]],
+  "5378":[["missileExplosionRadius",[3324],null,743,5,0]],
+  "5379":[["missileExplosionRadius",[25719],null,743,5,0]],
+  "5380":[["tracking",[3304],null,746,5,0]],
+  "5381":[["tracking",[3306],null,795,5,0]],
   "5382":[["optimal",[3306],null,656,5,0]],
+  "5387":[["missileExplosionRadius",[25719],null,657,5,0]],
+  "5388":[["missileExplosionRadius",[3324],null,657,5,0]],
   "5402":[["missileVelocity",[25719],null,1889,5,0]],
   "5403":[["missileVelocity",[3324],null,1889,5,0]],
   "5411":[["missileVelocity",[3319],null,734,5,0]],
+  "5429":[["missileExplosionVelocity",[3325],null,518,5,0]],
+  "5430":[["missileExplosionVelocity",[3326],null,518,5,0]],
+  "5444":[["missileExplosionRadius",[3325],null,491,5,0]],
+  "5445":[["missileExplosionRadius",[3326],null,491,5,0]],
   "5485":[["optimal",[3302],null,460,5,0]],
+  "5499":[["missileExplosionRadius",[25719],null,999,5,0]],
+  "5500":[["missileExplosionRadius",[3324],null,999,5,0]],
   "5552":[["missileVelocity",[3324],null,692,5,0]],
   "5553":[["missileVelocity",[25719],null,692,5,0]],
   "5610":[["optimal",[3309],null,492,5,0]],
@@ -3642,16 +3835,22 @@ const WEAPON_RANGE_MOD_EFFECTS = {
   "5779":[["falloff",[3302],null,587,5,0]],
   "5867":[["missileFlightTime",[3319],null,1688,1,0]],
   "5957":[["optimal",[3306],null,1246,5,0]],
+  "5958":[["tracking",[3304],null,486,5,0]],
   "5959":[["optimal",[3304],null,1246,5,0]],
   "6025":[["optimal",[3304],null,962,5,0]],
   "6038":[["optimal",[3302],null,2005,5,0]],
   "6110":[["missileVelocity",[3319],null,547,1,1]],
   "6111":[["missileFlightTime",[3319],null,596,1,1]],
-  "6135":[["missileVelocity",[3319],null,547,1,1],["missileFlightTime",[3319],null,596,1,1]],
+  "6112":[["missileExplosionRadius",[3319],null,848,1,1]],
+  "6113":[["missileExplosionVelocity",[3319],null,847,1,1]],
+  "6135":[["missileExplosionRadius",[3319],null,848,1,1],["missileExplosionVelocity",[3319],null,847,1,1],["missileVelocity",[3319],null,547,1,1],["missileFlightTime",[3319],null,596,1,1]],
+  "6150":[["tracking",[3301],null,2028,5,0]],
   "6172":[["optimal",[3306],null,2043,1,0],["falloff",[3306],null,2043,1,0]],
   "6173":[["optimal",[3304],null,2043,1,0],["falloff",[3304],null,2043,1,0]],
   "6174":[["optimal",[3305],null,2043,1,0],["falloff",[3305],null,2043,1,0]],
   "6175":[["missileVelocity",[3319],null,2043,1,0]],
+  "6178":[["tracking",[3305],null,749,5,0]],
+  "6359":[["missileExplosionVelocity",[3320],null,460,5,0]],
   "6582":[["missileVelocity",[3325],null,2304,1,1]],
   "6658":[["optimal",[3307,3308,3309,47872],null,351,1,1],["falloff",[3307,3308,3309],null,349,1,1],["missileVelocity",[3324,3325,3326],null,547,1,1]],
   "6725":[["falloff",[3303],null,485,5,0]],
@@ -3659,17 +3858,25 @@ const WEAPON_RANGE_MOD_EFFECTS = {
   "6874":[["missileFlightTime",[3324],null,657,5,0],["missileFlightTime",[25719],null,657,5,0]],
   "6881":[["missileFlightTime",[3325],null,491,5,0],["missileFlightTime",[3326],null,491,5,0]],
   "6923":[["missileVelocity",[3324,25719],null,1449,5,0]],
+  "6924":[["missileExplosionVelocity",[3319],null,1534,5,0]],
   "7000":[["falloff",[3301],null,462,5,0]],
+  "7017":[["missileExplosionVelocity",[3319],null,675,5,0]],
+  "7086":[["tracking",[47871],null,2765,5,0]],
   "7087":[["optimal",[47870],null,2763,5,0]],
   "7156":[["optimal",[47870],null,351,1,0]],
   "7157":[["optimal",[47870],null,2800,5,0]],
   "7162":[["optimal",[47871],null,2043,1,0]],
   "7209":[["optimal",[47870],null,675,5,0]],
   "7228":[["optimal",[47871],null,693,5,0]],
+  "7247":[["missileExplosionVelocity",[3324,25719],null,489,5,0]],
   "8053":[["optimal",[55035],null,3043,5,0]],
   "8070":[["missileVelocity",[3324,25719],null,999,5,0]],
   "8074":[["optimal",[47871],null,2765,5,0]],
+  "8155":[["tracking",[3308],null,1257,5,0]],
   "8156":[["falloff",[3308],null,1258,5,0]],
+  "11055":[["missileExplosionVelocity",[3324],null,748,5,0]],
+  "11056":[["missileExplosionVelocity",[25719],null,748,5,0]],
+  "11059":[["tracking",[3304],null,743,5,0]],
   "11061":[["optimal",[3304],null,5045,1,0],["falloff",[3304],null,5045,1,0]],
   "11064":[["optimal",[3306],null,795,5,0]],
   "11067":[["optimal",[3306],null,5045,1,0],["falloff",[3306],null,5045,1,0]],
@@ -3682,24 +3889,41 @@ const WEAPON_RANGE_MOD_EFFECTS = {
   "11401":[["optimal",[3302],null,5238,1,0]],
   "11402":[["falloff",[3302],null,5239,1,0]],
   "11410":[["falloff",[3303],null,5224,1,0]],
+  "11413":[["missileExplosionVelocity",[3324,25719],null,692,5,0]],
+  "11415":[["tracking",[3304],null,692,5,0]],
   "11416":[["falloff",[3304],null,658,5,0]],
+  "11428":[["missileExplosionVelocity",[3326],null,490,5,0]],
+  "11429":[["missileExplosionVelocity",[3325],null,490,5,0]],
+  "11430":[["tracking",[3308],null,490,5,0]],
   "11450":[["optimal",[3303],null,5223,1,0]],
+  "11696":[["tracking",[21666],null,2286,5,0]],
   "11697":[["optimal",[21666],null,2287,5,0]],
   "11704":[["falloff",[21667],null,2293,5,0]],
+  "11706":[["missileExplosionRadius",[3325,21668,32435],null,2284,5,0]],
+  "11743":[["tracking",[3302],null,738,5,0]],
   "11763":[["falloff",[3305],null,747,5,0]],
+  "11767":[["tracking",[3304],null,692,5,0]],
   "11919":[["falloff",[3302],null,729,5,0]],
   "11944":[["falloff",[21667],null,2415,5,0]],
+  "11945":[["tracking",[21667],null,2414,5,0]],
   "11994":[["falloff",[3304],null,693,5,0]],
   "11998":[["optimal",[3301],null,675,5,0]],
+  "11999":[["tracking",[3301],null,675,5,0]],
   "12038":[["falloff",[3302],null,1626,5,0]],
   "12213":[["falloff",[3305],null,5747,5,0]],
   "12245":[["falloff",[21667],null,2289,5,0]],
   "12286":[["optimal",[47872],null,2766,5,0]],
-  "12567":[["falloff",[3302],null,2303,1,0]]};
+  "12287":[["tracking",[47872],null,2767,5,0]],
+  "12567":[["falloff",[3302],null,2303,1,0]],
+  "12766":[["missileExplosionRadius",[3325,3326],null,743,5,0]],
+  "12790":[["missileExplosionVelocity",[3325,3326],null,745,5,0]],
+  "12815":[["missileExplosionRadius",[3320,3321],null,6088,5,0]],
+  "12819":[["missileExplosionVelocity",[3320,3321],null,729,5,0]],
+  "13024":[["tracking",[3301],null,673,5,0]]};
 // ==== PYFA CORE END weapon-range-table ====
 // Tracking Computer / Missile Guidance Computer scripts scale the module's
 // own bonus attrs (pyfa 3600/3686/6130/6131): module attr -> script attr.
-const WEAPON_RANGE_SCRIPT_ATTRS = { 351: 1315, 349: 1332, 547: 2025, 596: 2026 };
+const WEAPON_RANGE_SCRIPT_ATTRS = { 351: 1315, 349: 1332, 547: 2025, 596: 2026, 767: 1316, 848: 2023, 847: 2024 }; // v.34: + tracking (Tracking Speed script, pyfa 3599) and explosion radius / velocity (Missile Precision script, pyfa 6128 / 6129)
 // Mode weapon range (Sharpshooter optimal / missile velocity, Anhinga flight time and velocity):
 // MODE_EFFECT_ROWS since v2026.10.14.6 (was TACTICAL_DESTROYER_SHARPSHOOTER_RANGE).
 // Vorton Arc Extension (skill 55511, pyfa 8065): +5%/lvl maxRange on modules
@@ -9553,7 +9777,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // weapon, missile velocity / flight time on the charge (Frentix, Sooth Sayer, Deadeye hardwirings...).
   // A row filtering the charge by the LAUNCHER's skills or group can't be told apart here (the filter sees the
   // charge only): none exists (gen_implant_table.py output), so such a row is skipped, not misapplied.
-  const IMPLANT_RANGE_TARGET = {'module:maxRange': 'optimal', 'module:falloff': 'falloff', 'charge:maxVelocity': 'missileVelocity', 'charge:explosionDelay': 'missileFlightTime'};
+  const IMPLANT_RANGE_TARGET = {'module:maxRange': 'optimal', 'module:falloff': 'falloff', 'charge:maxVelocity': 'missileVelocity', 'charge:explosionDelay': 'missileFlightTime',
+    'module:trackingSpeed': 'tracking', 'charge:aoeCloudSize': 'missileExplosionRadius', 'charge:aoeVelocity': 'missileExplosionVelocity', 'module:aoeCloudSize': 'vortonExplosionRadius', 'module:aoeVelocity': 'vortonExplosionVelocity'}; // v.34 application
   for(const m of implants.mods){
     const target = IMPLANT_RANGE_TARGET[m.target + ':' + m.attr];
     if(!target || (m.op !== 'boost' && m.op !== 'mul')) continue;
@@ -9562,7 +9787,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   }
   // v2026.10.14.6 mode range rows (penalty group 'postDiv', alone in it): turret optimal on the
   // weapon, missile velocity / flight time on the charge.
-  const MODE_RANGE_TARGET = {'module:maxRange': 'optimal', 'module:falloff': 'falloff', 'charge:maxVelocity': 'missileVelocity', 'charge:explosionDelay': 'missileFlightTime'};
+  const MODE_RANGE_TARGET = {'module:maxRange': 'optimal', 'module:falloff': 'falloff', 'charge:maxVelocity': 'missileVelocity', 'charge:explosionDelay': 'missileFlightTime',
+    'module:trackingSpeed': 'tracking', 'charge:aoeCloudSize': 'missileExplosionRadius', 'charge:aoeVelocity': 'missileExplosionVelocity', 'module:aoeCloudSize': 'vortonExplosionRadius', 'module:aoeVelocity': 'vortonExplosionVelocity'}; // v.34 application
   for(const [c, a, mult, , skills, , groups] of modeRows){
     const target = MODE_RANGE_TARGET[c + ':' + a];
     if(target) weaponRangeSources.push({target, skills, groups, mult, pen: false});
@@ -11314,6 +11540,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // pair collapse into one entry. Deliberately scoped to CONFIRMED weapons
   // only (not the cargo-ammo-fallback guess below) for v1.
   const rangeByAmmo = new Map();
+  const applicationWeapons = new Map(); // v2026.10.14.34: 'weaponTypeId:chargeTypeId' -> PYFA CORE application inputs + DPS
+  let unappliedFixedDps = 0;            // fixed-damage modules other than smartbombs (none counted by pyfa's graph here)
   const weaponActiveLeft = new Map(); // v.20: typeId -> ACTIVE copies not yet given to a High slot
 
   for(const flag of flagList){
@@ -11348,6 +11576,17 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       const existingFixed = fixedWeaponDps.get(weaponItem.id) || {name: weaponCls.type.name, dps: 0, typeId: weaponItem.id};
       existingFixed.dps += dps;
       fixedWeaponDps.set(weaponItem.id, existingFixed);
+      // v2026.10.14.34 damage application: pyfa getSmartbombMult (Module.maxRange = the first non-zero of
+      // maxRange, ..., empFieldRange; nothing on a ship changes empFieldRange).
+      if(weaponCls.group && weaponCls.group.name === 'Smart Bomb'){
+        const key = weaponItem.id + ':';
+        const aw = applicationWeapons.get(key) || {kind: 'smartbomb', name: weaponCls.type.name, weaponTypeId: weaponItem.id, qty: 0, dps: 0,
+          maxRange: attrVal(dmgDogma, TURRET_OPTIMAL_RANGE_ATTR, 0) || attrVal(dmgDogma, SMARTBOMB_RANGE_ATTR, 0) || null};
+        aw.qty += qty; aw.dps += dps;
+        applicationWeapons.set(key, aw);
+      }else{
+        unappliedFixedDps += dps;
+      }
       continue;
     }
 
@@ -11401,7 +11640,10 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       // Drones have no equivalent here (excluded from this feature, see the
       // constants' own comment) and aren't reachable from this loop anyway
       // (they're scored in their own separate section further down).
-      if(!rangeByAmmo.has(chargeItem.id)){
+      // v2026.10.14.34: computed for every weapon + charge (not only the first time a charge is seen), so the
+      // damage-application inputs below get this weapon's own ranges; rangeByAmmo still keeps one per charge.
+      let rangeEntry = null, rangeMr = null, rangeTracking = null;
+      {
         if(isMissile){
           // Missile Projection/Bombardment (see MISSILE_LAUNCHER_OPERATION_
           // SKILL_ID etc. above) -- gated on the CHARGE requiring Missile
@@ -11424,8 +11666,9 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
             attrVal(chargeDogma, SHIP_MASS_ATTR, chargeCls.type.mass || 0),
             attrVal(chargeDogma, SHIP_AGILITY_ATTR, 0),
             isFof ? attrVal(chargeDogma, MAX_FOF_TARGET_RANGE_ATTR, MAX_FOF_TARGET_RANGE_DEFAULT) : 0) : null;
+          rangeMr = mr;
           if(mr){
-            rangeByAmmo.set(chargeItem.id, {
+            rangeEntry = ({
               weaponName: weaponCls.type.name, ammoName: chargeCls.type.name, kind: 'missile', weaponTypeId: weaponItem.id, ammoTypeId: chargeItem.id,
               travelDistanceM: pyRound(mr.maxRange),            // what pyfa's range column shows
               travelLowerM: pyRound(mr.lowerRange), travelHigherM: pyRound(mr.higherRange),
@@ -11460,9 +11703,13 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
             // Extension applies to Vorton Projectors only.
             const weaponGroupName = weaponCls.group ? weaponCls.group.name : '';
             const vortonArcMult = REQUIRED_SKILL_ATTRS.some(attrId => attrVal(weaponDogma, attrId, 0) === VORTON_PROJECTOR_OPERATION_SKILL_ID) ? MAX_VORTON_ARC_EXTENSION_RANGE_MULT : 1;
+            // v2026.10.14.34 turret tracking (pyfa trackingSpeed): weapon x the charge's trackingSpeedMultiplier
+            // (Effect600, unpenalized) x Motion Prediction V (Gunnery) x hull / module / rig / implant / mode rows.
+            const ammoTrackingMult = chargeHasEffect(chargeCls, AMMO_TRACKING_MULT_EFFECT_ID, AMMO_TRACKING_MULT_ATTR) ? attrVal(chargeDogma, AMMO_TRACKING_MULT_ATTR, 1) : 1;
+            rangeTracking = attrVal(weaponDogma, TURRET_TRACKING_ATTR, 0) * ammoTrackingMult * (gunneryGated ? MAX_MOTION_PREDICTION_TRACKING_MULT : 1) * weaponRangeMultFor('tracking', weaponDogma, weaponGroupName);
             const optMods = weaponRangeViaEffects ? weaponRangeMultFor('optimal', weaponDogma, weaponGroupName) : catMod.rangeMult * weaponRangeMultFor('optimal', weaponDogma, weaponGroupName);
             const falMods = weaponRangeViaEffects ? weaponRangeMultFor('falloff', weaponDogma, weaponGroupName) : catMod.falloffMult * weaponRangeMultFor('falloff', weaponDogma, weaponGroupName);
-            rangeByAmmo.set(chargeItem.id, {
+            rangeEntry = ({
               weaponName: weaponCls.type.name, ammoName: chargeCls.type.name, kind: 'turret', weaponTypeId: weaponItem.id, ammoTypeId: chargeItem.id,
               optimalM: pyRound(baseOptimal * rangeMult * sharpshooterMult * vortonArcMult * optMods), falloffM: pyRound(baseFalloff * falloffMult * trajectoryAnalysisMult * falMods),
               exactM: {optimal: baseOptimal * rangeMult * sharpshooterMult * vortonArcMult * optMods, falloff: baseFalloff * falloffMult * trajectoryAnalysisMult * falMods} // unrounded, for the km text
@@ -11470,6 +11717,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
           }
         }
       }
+      if(rangeEntry && !rangeByAmmo.has(chargeItem.id)) rangeByAmmo.set(chargeItem.id, rangeEntry);
       const turretSpecMult = !isMissile ? turretSpecializationMult(weaponDogma) : 1; // LESSON #18
       // Missile Specialization (see MISSILE_SPECIALIZATION_SKILL_IDS comment
       // above, independent review finding #4, 2026-10-11) -- T2-gated RoF
@@ -11494,6 +11742,38 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       const existing = confirmedAmmoDps.get(chargeItem.id) || {name: chargeCls.type.name, dps: 0, typeId: chargeItem.id, weaponTypeId: weaponItem.id};
       existing.dps += dps;
       confirmedAmmoDps.set(chargeItem.id, existing);
+      // v2026.10.14.34 damage application inputs (PYFA CORE application): pyfa's modified attributes for this
+      // weapon + charge, one entry per pair (identical weapons sum their DPS).
+      const appKey = weaponItem.id + ':' + chargeItem.id;
+      let aw = applicationWeapons.get(appKey);
+      if(!aw){
+        aw = {kind: isMissile ? 'missile' : (isVorton ? 'vorton' : 'turret'), name: weaponCls.type.name, ammoName: chargeCls.type.name,
+          weaponTypeId: weaponItem.id, ammoTypeId: chargeItem.id, qty: 0, dps: 0};
+        if(isMissile){
+          const gated = REQUIRED_SKILL_ATTRS.some(attrId => attrVal(chargeDogma, attrId, 0) === MISSILE_LAUNCHER_OPERATION_SKILL_ID);
+          const cg = chargeCls.group ? chargeCls.group.name : '';
+          aw.missileMaxRangeData = rangeMr ? [rangeMr.lowerRange, rangeMr.higherRange, rangeMr.higherChance] : null;
+          aw.fof = (chargeCls.type.dogma_effects || []).some(e => e.effect_id === FOF_MISSILE_LAUNCHING_EFFECT_ID);
+          aw.aoeCloudSize = attrVal(chargeDogma, MISSILE_EXPLOSION_RADIUS_ATTR, 0) * (gated ? MISSILE_APPLICATION_SKILL_RADIUS_MULT : 1) * weaponRangeMultFor('missileExplosionRadius', chargeDogma, cg);
+          aw.aoeVelocity = attrVal(chargeDogma, MISSILE_EXPLOSION_VELOCITY_ATTR, 0) * (gated ? MISSILE_APPLICATION_SKILL_VELOCITY_MULT : 1) * weaponRangeMultFor('missileExplosionVelocity', chargeDogma, cg);
+          aw.aoeDamageReductionFactor = attrVal(chargeDogma, MISSILE_DRF_ATTR, 1);
+        }else if(isVorton){
+          const wg = weaponCls.group ? weaponCls.group.name : '';
+          const gated = REQUIRED_SKILL_ATTRS.some(attrId => attrVal(weaponDogma, attrId, 0) === VORTON_PROJECTOR_OPERATION_SKILL_ID);
+          aw.maxRange = rangeEntry ? rangeEntry.exactM.optimal : attrVal(weaponDogma, TURRET_OPTIMAL_RANGE_ATTR, 0);
+          aw.aoeCloudSize = attrVal(weaponDogma, MISSILE_EXPLOSION_RADIUS_ATTR, 0) * (gated ? MAX_VORTON_ARC_GUIDANCE_AOE_CLOUD_MULT : 1) * weaponRangeMultFor('vortonExplosionRadius', weaponDogma, wg);
+          const ammoAoeVel = chargeHasEffect(chargeCls, AMMO_AOE_VELOCITY_MULT_EFFECT_ID, AOE_VELOCITY_BONUS_ATTR) ? (attrVal(chargeDogma, AOE_VELOCITY_BONUS_ATTR, 0) || 0) : 1;
+          aw.aoeVelocity = attrVal(weaponDogma, MISSILE_EXPLOSION_VELOCITY_ATTR, 0) * ammoAoeVel * (gated ? MAX_VORTON_ARC_GUIDANCE_AOE_VELOCITY_MULT : 1) * weaponRangeMultFor('vortonExplosionVelocity', weaponDogma, wg);
+          aw.aoeDamageReductionFactor = attrVal(weaponDogma, MISSILE_DRF_ATTR, 1);
+        }else{
+          aw.optimal = rangeEntry ? rangeEntry.exactM.optimal : 0;
+          aw.falloff = rangeEntry ? rangeEntry.exactM.falloff : 0;
+          aw.tracking = rangeTracking || 0;
+          aw.optimalSigRadius = attrVal(weaponDogma, TURRET_OPTIMAL_SIG_RADIUS_ATTR, 1000);
+        }
+        applicationWeapons.set(appKey, aw);
+      }
+      aw.qty += qty; aw.dps += dps;
     }else{
       unresolvedWeapons.push({id: weaponItem.id, qty});
     }
@@ -12358,6 +12638,15 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // weapon had a confirmed loaded charge (cargo-fallback-guessed weapons
     // aren't covered by this, v1 scope).
     rangeEstimates: [...rangeByAmmo.values()],
+    // v2026.10.14.34 (turret-application-plan.md Phase 1): inputs for PYFA CORE application (pyfaApplicationMult /
+    // pyfaAppliedDps). Drones and fighters stay raw until their application is ported (D5); fixed-damage modules
+    // other than smartbombs and cargo-guessed weapons are left out too, so 'unapplied' says what isn't covered.
+    application: {
+      radius: attrVal(shipDogma, RADIUS_ATTR, shipType.radius || 0),
+      lockRange: targetingRange,
+      weapons: [...applicationWeapons.values()],
+      unapplied: {droneDps: droneDps, fighterDps: fighterDps, otherFixedDps: unappliedFixedDps, cargoGuessWeapons: cargoResolvedWeaponCount}
+    },
     confirmedAmmoBreakdown,
     confirmedWeaponCount: pyRound(confirmedWeaponCount),
     cargoResolvedWeaponCount: pyRound(cargoResolvedWeaponCount),

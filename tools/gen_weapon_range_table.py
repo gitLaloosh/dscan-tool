@@ -1,7 +1,8 @@
 """Regenerate WEAPON_RANGE_MOD_EFFECTS (index.html) from pyfa + SDE, and diff
-it against the copy embedded in index.html.
+it against the copy embedded in index.html. Since v2026.10.14.34 it also covers the application attributes
+(turret tracking, missile and Vorton explosion radius / velocity) for the damage-application core.
 
-    PYFA_SRC=/path/to/Pyfa python3 -I tools/gen_weapon_range_table.py [index.html]
+    PYFA_SRC=/path/to/Pyfa python3 -I tools/gen_weapon_range_table.py [index.html] [--write]
 
 This is the worked example for LESSONS_LEARNED.md #1 (execute handlers, don't
 regex them) and #2 (gate on effects, not group names). Use it as the template
@@ -18,7 +19,12 @@ MLO = skillId['Missile Launcher Operation']
 missiles = [t for t in pub if cat(t) == 8 and MLO in reqs(t)]
 launcher = [t for t in pub if gname(t) == 'Missile Launcher Heavy'][0]
 attrId = {v['name']: int(k) for k, v in attrs.items()}
-TARGET = {'maxRange': 'optimal', 'falloff': 'falloff', 'charge.maxVelocity': 'missileVelocity', 'charge.explosionDelay': 'missileFlightTime'}
+TARGET = {'maxRange': 'optimal', 'falloff': 'falloff', 'charge.maxVelocity': 'missileVelocity', 'charge.explosionDelay': 'missileFlightTime',
+          # v2026.10.14.34 (turret-application-plan.md Phase 1): what pyfa's damage graph reads per weapon --
+          # turret tracking, the missile's explosion radius / velocity, and a Vorton Projector's own explosion
+          # radius / velocity (on the module, not a charge). Same recorder, rows and checks as range.
+          'trackingSpeed': 'tracking', 'charge.aoeCloudSize': 'missileExplosionRadius', 'charge.aoeVelocity': 'missileExplosionVelocity',
+          'aoeCloudSize': 'vortonExplosionRadius', 'aoeVelocity': 'vortonExplosionVelocity'}
 CTX = {6: 'ship', 7: 'module', 32: 'module'}   # skills keep their own MAX_* constants in index.html
 
 table, errors = {}, []
@@ -55,7 +61,7 @@ for eid, ts in sorted(carriers().items()):
             if row not in table[str(eid)]: table[str(eid)].append(row)
 
 print(f'{len(table)} effects, {sum(map(len, table.values()))} rows; handler errors (unrelated effects): {len(errors)}')
-html = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '..', 'index.html')
+html = next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(os.path.dirname(__file__), '..', 'index.html'))
 m = re.search(r'const WEAPON_RANGE_MOD_EFFECTS = (\{.*?\});', open(html).read(), re.S)
 if m:
     embedded = json.loads(m.group(1))
@@ -63,3 +69,10 @@ if m:
     changed = sorted([k for k in set(table) & set(embedded) if table[k] != embedded[k]], key=int)
     print('vs index.html -- new:', added, 'gone:', removed, 'changed:', changed)
     if not (added or removed or changed): print('index.html table is up to date with this pyfa/SDE.')
+if '--write' in sys.argv:   # v2026.10.14.34: rewrite the embedded table (then re-lock: check_pyfa_core.mjs --update)
+    src = open(html, encoding='utf-8').read()
+    body = ',\n'.join(f'  "{k}":' + json.dumps(table[k], separators=(',', ':')) for k in sorted(table, key=int))
+    new = 'const WEAPON_RANGE_MOD_EFFECTS = {\n' + body + '};'
+    src, n = re.subn(r'const WEAPON_RANGE_MOD_EFFECTS = \{.*?\};', lambda _: new, src, count=1, flags=re.S)
+    assert n == 1
+    open(html, 'w', encoding='utf-8').write(src); print('wrote', html)

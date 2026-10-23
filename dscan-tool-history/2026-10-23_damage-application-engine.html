@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — Damage application engine (turret plan Phase 1)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>How much of their damage lands: pyfa's damage application, engine only</h1>
+<p><span class="tag">Engine</span><span class="tag">PYFA CORE</span> 2026-10-23 &middot; <code>v2026.10.14.33</code> &rarr; <code>v2026.10.14.34</code> &middot; the owner: "alright let's go with your suggestions on D1, D2, D4, D5 and D6", then "yes, begin." This is Phase 1 of <code>roadmap/turret-application-plan.md</code>. Nothing on the page changes yet.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>New PYFA CORE section <code>application</code>.</b> It is a line-for-line port of pyfa's damage graph:
+<ul>
+<li><code>graphs/data/fitDamageStats/calc/application.py</code>: getApplicationPerKey, plus the turret, missile launcher, Vorton Projector and smartbomb functions;</li>
+<li><code>eos/calc.py</code> calculateRangeFactor;</li>
+<li>applyDamage.</li>
+</ul>
+<code>pyfaApplicationMult(weapon, p)</code> gives the multiplier for one weapon. <code>pyfaAppliedDps(application, p)</code> gives the applied DPS of the whole fit. The point <code>p</code> holds:
+<ul>
+<li>distance;</li>
+<li>both ships' speed and heading;</li>
+<li>the target's signature radius and radius;</li>
+<li>whether lock range is ignored. pyfa's graph ignores it by default.</li>
+</ul></li>
+<li><b>Inputs per weapon: <code>estimate.application</code>.</b>
+<ul>
+<li>For each weapon and charge: DPS plus pyfa's modified attributes. That means turret optimal, falloff, tracking and signature resolution; launcher flight ranges and the charge's explosion radius, velocity and drf; Vorton maxRange and the projector's own explosion attributes; smartbomb range.</li>
+<li>The ship's radius and lock range.</li>
+<li><code>unapplied</code>: the DPS not covered yet. That is drones and fighters (D5) and any fixed-damage module that isn't a smartbomb.</li>
+</ul></li>
+<li><b>Tracking and explosion attributes come from pyfa's handlers.</b>
+<ul>
+<li><code>gen_weapon_range_table.py</code> records five new targets: <code>tracking</code>, <code>missileExplosionRadius</code>, <code>missileExplosionVelocity</code>, <code>vortonExplosionRadius</code> and <code>vortonExplosionVelocity</code>.</li>
+<li>The table grew from 153 to 234 effects. It covers hull bonuses, Tracking Enhancers and Computers, Missile Guidance Enhancers and Computers, Rigor and Flare rigs, T3 subsystems, implants and mode rows.</li>
+<li>The new <code>--write</code> option rewrites the embedded table.</li>
+</ul></li>
+<li><b>Skills, ammo and scripts.</b>
+<ul>
+<li>All V skill constants: Motion Prediction ×1.25 for Gunnery turrets, and Vorton Arc Guidance (explosion velocity ×1.5, radius ×0.75). Guided Missile Precision and Target Navigation Prediction were already there.</li>
+<li>A charge's own tracking multiplier, for example Barrage ×0.75 (pyfa Effect600).</li>
+<li>An Advanced Condenser Pack's explosion velocity (Effect8062).</li>
+<li>Tracking Speed and Missile Precision scripts.</li>
+</ul></li>
+<li><b>Python's round(), exactly.</b> pyfa's <code>floatUnerr</code> keeps 7 significant digits with <code>round()</code>, and the tool's port used <code>toFixed</code>. The two disagree on an exact binary tie, which application multipliers can produce. The new <code>pyfaRound</code> rounds exactly as Python does, using BigInt arithmetic. This touched the <code>missile-range</code> section, which was re-verified with <code>check_missile_range.py</code> (0 mismatches).</li>
+</ul>
+
+<h2>Found for Phase 2</h2>
+<p>pyfa's damage graph applies the attacker's own webs and target painters to the target by default (<code>applyProjected</code>, <code>calc/projected.py</code>). It recomputes the target fit's speed and signature under that tackle. For "their damage on you", that means your speed and signature under their webs, from My Ship's fit. Phase 2 needs it to match pyfa's default graph. It is recorded in the plan and in DEVIATIONS.md.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><b>Maths, new <code>tools/independent_checks/check_application.py</code>.</b> It runs pyfa's own <code>getApplicationPerKey</code> unmodified, on pyfa's attributes and per-module DPS from the oracle. The tool's core functions run on its own <code>estimate.application</code>, in Node (<code>application_grid.mjs</code>).
+<ul>
+<li>Coverage: 79 weapon and charge pairs over 6,000 points each. The points vary distance, both ships' speeds and headings, target signature and lock range.</li>
+<li>Result: 0 mismatches, every multiplier and every fit's applied DPS. All 474,000 multipliers (79 pairs &times; 6,000 points) are bit-identical. That includes the points where pyfa leaves a Vorton Projector out of its map beyond lock range, which its graph reads as 0.</li>
+<li>The check can fail: one wrong character in the turret formula gives 36 mismatches, and in the missile formula 26.</li>
+</ul></li>
+<li><b>Inputs, <code>compare_fit_stats.py</code>.</b> It now compares every weapon's application inputs with pyfa's handlers. Result: 0 mismatches over 241 fits. Removing the scripts, the ammo multiplier or the Vorton skill makes it fail, on the fits that carry them.</li>
+<li><b>Golden fits.</b> Four new constructed fits, now 241:
+<ul>
+<li>a Megathron with rails, a Tracking Computer with script and two Tracking Enhancers. Pinned against a frigate, a cruiser, a battleship, a stationary target, both ships moving, and the lock-range cliff;</li>
+<li>a Rifter with Barrage, a Tracking Enhancer and a Motion Prediction implant;</li>
+<li>a Caracal with a Missile Guidance Computer and script, Rigor and Flare rigs, and Deadeye implants;</li>
+<li>a Stormbringer with ElectroPunch Ultra;</li>
+<li>plus smartbomb pins on the existing Rifter.</li>
+</ul>
+Every pin comes from pyfa's side and was written before the tool's numbers were pinned. v2026.10.14.33 fails 39 of them.</li>
+<li><b>No number on the page changed.</b> The full output diff v.33 &rarr; v.34, ignoring the new <code>application</code> field, shows 0 of 237 fits differing. The regression suite passes; the PYFA CORE lock is re-recorded for <code>application</code> (new), <code>weapon-range-table</code> and <code>missile-range</code> after their verify commands. The update-check chain gained a step for <code>check_application.py</code>.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>When pyfa calls <code>round()</code> inside a calculation (floatUnerr), port it with <code>pyfaRound</code>, not <code>toFixed</code>. The two only differ on exact binary ties, and damage multipliers like 0.5<sup>11</sup> are exactly that.</li>
+<li>Pin reference values unrounded. A pyfa applied DPS of 2&times;10<sup>-19</sup> rounded to 9 decimals became 0 and failed against the exact tool. The rounding was in the pin, not the tool. (LESSON #34, extended.)</li>
+<li>Read the graph's default settings before porting it (<code>service/settings.py</code> GraphSettings). pyfa ignores lock range and target resists by default, but applies the attacker's webs and target painters by default.</li>
+</ul>
+</body>
+</html>
