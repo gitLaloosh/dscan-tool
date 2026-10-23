@@ -1139,7 +1139,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.30</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.31</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1236,6 +1236,37 @@ const ZKB = 'https://zkillboard.com/api';
 // throws vs. succeeds, so it can't affect any DPS/EHP math (confirmed via
 // the regression suite: none of its 28 golden fits ever hit a non-2xx ESI
 // response, so this code path is never exercised there either way).
+// v2026.10.14.31 (Erik: "the pilot analyzer is failing on the published site. wont load zkillboard info"; option 1):
+// since 2026-10-22 zKillboard queues every API request for a background worker and answers 503
+// {"error":"API result unavailable, please try again later"} when the worker hasn't answered within 60 s
+// (zKillboard view/api.php, commit ffc94263 "Remove race condition for api queue"). The page used to sit on
+// "Checking..." for that whole minute and then blame the network. zkbFetch gives up after
+// ZKB_TIMEOUT_MS and, on a timeout or a 5xx, throws ZKB_UNAVAILABLE_TEXT, marked e.zkbUnavailable so callers
+// don't add a "check your network" hint.
+const ZKB_TIMEOUT_MS = 20000;
+// After a failure, the next zKillboard call within ZKB_COOLDOWN_MS fails at once instead of waiting another 20 s
+// (the Pilot Analyzer's last-kill and losses lookups run one after the other).
+const ZKB_COOLDOWN_MS = 60000;
+let zkbUnavailableUntil = 0;
+const ZKB_UNAVAILABLE_TEXT = "zKillboard's API isn't answering right now. That's on zKillboard's side, not your connection. Try again in a few minutes";
+async function zkbFetch(url){
+  const ac = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = ac ? setTimeout(() => ac.abort(), ZKB_TIMEOUT_MS) : null;
+  const unavailable = () => { zkbUnavailableUntil = Date.now() + ZKB_COOLDOWN_MS; return Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true}); };
+  if(Date.now() < zkbUnavailableUntil){ if(timer) clearTimeout(timer); throw Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true}); }
+  let res;
+  try{
+    res = await fetch(url, ac ? {signal: ac.signal} : undefined);
+  }catch(e){
+    if(e && e.name === 'AbortError') throw unavailable();
+    throw e;
+  }finally{
+    if(timer) clearTimeout(timer);
+  }
+  if(res.status >= 500) throw unavailable();
+  return res;
+}
+
 function describeEsiFailure(context, status, detail){
   let cause;
   if(status === undefined) cause = 'network error (offline, DNS issue, or ESI/zKillboard unreachable)';
@@ -6423,8 +6454,9 @@ async function fetchLossesStubs(charId, shipTypeId, forceRefresh){
     : `${ZKB}/losses/characterID/${charId}/`;
   let res;
   try{
-    res = await fetch(url);
+    res = await zkbFetch(url);
   }catch(e){
+    if(e.zkbUnavailable) throw e;
     throw new Error(describeEsiFailure(`zKillboard losses lookup (character ${charId})`, undefined));
   }
   if(!res.ok) throw new Error(describeEsiFailure(`zKillboard losses lookup (character ${charId})`, res.status));
@@ -7367,7 +7399,7 @@ async function renderLastKill(character, pilotName, statusEl){
   const el = document.getElementById('lastKillInfo');
   el.innerHTML = `<div class="lastkill">Checking last kill…</div>`;
   try{
-    const res = await fetch(`${ZKB}/kills/characterID/${character.id}/`);
+    const res = await zkbFetch(`${ZKB}/kills/characterID/${character.id}/`);
     if(!res.ok) throw new Error(describeEsiFailure(`zKillboard kills lookup (character ${character.id})`, res.status));
     const stubs = await res.json();
     if(!stubs.length){
@@ -7565,7 +7597,7 @@ async function runFitCheck(){
       await lastFitRun();
     }
   }catch(e){
-    setStatus(statusEl, 'Error: ' + e.message + '. Check your network connection to zkillboard.com and esi.evetech.net.', true);
+    setStatus(statusEl, 'Error: ' + e.message + (e.zkbUnavailable ? '.' : '. Check your network connection to zkillboard.com and esi.evetech.net.'), true);
   }finally{
     btn.disabled = false;
   }

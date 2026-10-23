@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — zKillboard API outage message</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Pilot Analyzer: a plain message when zKillboard's API is down</h1>
+<p><span class="tag">Bug</span><span class="tag">External</span> 2026-10-23 &middot; <code>v2026.10.14.30</code> &rarr; <code>v2026.10.14.31</code> &middot; Erik: "the pilot analyzer is failing on the published site. wont load zkillboard info." Then "ok go with option 1" (a clear message, no automatic retry).</p>
+
+<h2>Cause: zKillboard, not the tool</h2>
+<ul>
+<li>Tested from Erik's computer (the built-in browser), 2026-10-23 around 01:30 UTC. The zKillboard site itself loaded and showed new kills. Every API request (<code>/api/losses/characterID/…</code>, <code>/api/kills/characterID/…</code>, <code>/api/losses/shipTypeID/587/</code>) hung for 40–60 s, then answered <code>{"error":"API result unavailable, please try again later"}</code>.</li>
+<li>zKillboard's source (<code>view/api.php</code>, <code>cron/9.queueAPI.php</code>):
+<ul>
+<li>Since 2026-09-11, every API request is queued for a background worker. The request waits up to 60 s for that worker's result.</li>
+<li>Commit <code>ffc94263</code>, "Remove race condition for api queue" (2026-10-22 17:48 US Eastern), made a request with no result after 60 s answer 503 with that message.</li>
+<li>So the queue is not producing results. No open issue on their GitHub at the time.</li>
+</ul></li>
+<li>On the page this looked like "Checking…" for a minute, then "server error (status 503). Check your network connection to zkillboard.com and esi.evetech.net", which blamed the user's network.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li>New <code>zkbFetch(url)</code>, used by both zKillboard calls (the last-kill lookup and the losses lookup). It gives up after <code>ZKB_TIMEOUT_MS</code> (20 s). On a timeout or a 5xx it throws one plain message: "zKillboard's API isn't answering right now. That's on zKillboard's side, not your connection. Try again in a few minutes". The error is marked <code>zkbUnavailable</code>.</li>
+<li>After a failure, zKillboard calls in the next 60 s (<code>ZKB_COOLDOWN_MS</code>) fail at once. The two lookups run one after the other, so the page answers in about 20 s instead of 40.</li>
+<li>The Pilot Analyzer's status line no longer adds "check your network connection" to this message.</li>
+<li>Nothing is cached on failure; a later try asks zKillboard again. There is no automatic retry, per Erik's option 1.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>New <code>tools/page_checks/zkb_outage_check.py</code> runs the real page with zKillboard served three ways: 503, no answer at all, and an empty list. All three pass (FAILURES 0): outage message in the status line and the last-kill box, no network hint, gave up in 0.1 s and 20.1 s, normal texts when zKillboard answers. v.30 fails.</li>
+<li>No number changes. Suite ALL PASS; full output diff v.30 &rarr; v.31: 0 of 237 fits. PYFA CORE lock unchanged; parse tests 293/293; layout check FAILURES 0.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>When a third-party API fails, reproduce it from a real browser on the user's machine, then read the provider's own source and recent commits before changing anything. Here the provider's commit from the night before explained the failure exactly, and the fix on our side was only to fail fast and say so plainly.</li></ul>
+</body>
+</html>
