@@ -1,6 +1,7 @@
 # Plan: "My ship"
 
-Status: **DESIGN** (2026-10-23). Mockups: the "My ship — chip and panel mockup" design canvas
+Status: **PHASE 1 DONE** (v2026.10.14.33, 2026-10-23; `dscan-tool-history/2026-10-23_my-ship-phase1.html`).
+Phase 2 (comparing the two fits) waits for the turret-application decisions. Mockups: the "My ship — chip and panel mockup" design canvas
 (claude.ai artifact WKMf8Uf3GaZWbjiFCGyzCh), pages "Chip and panel" and "Threat ⇄ my ship".
 Related: `turret-application-plan.md` (its D2 = where "your" sig, speed and radius come from).
 
@@ -20,7 +21,14 @@ You save your own fit once (EFT paste), and the tool can then assess every threa
 | M6 | A changed number shows the change visually (amber), with no "updated" label. | 2026-10-23 |
 | M7 | Module-state changes made to a threat are forgotten when a different threat is loaded. Only "my ship" keeps its states. | 2026-10-23 |
 
-## Mockup details (not yet decided)
+## Mockup details
+
+the owner: "ok, work on 1" (2026-10-23), i.e. build phase 1 as drawn. Built in phase 1: the chip and switch, the
+panel (paste, summary, Replace, Copy EFT, Delete), "Set as my ship", "Viewing my ship", the threat ⇄ my ship
+switch with module states kept, storage, the phone layout. Not yet: the matchup strip, Weaknesses flipping its
+point of view, the "vs my ship" tag and the amber changed numbers (M6), which all need numbers that compare the
+two fits.
+
 
 - Chip states: an outlined "+ My Ship" with the toggle disabled (the owner renamed it from "Set my ship", 2026-10-23); once set, "MY SHIP · Vexor · Brawl". Clicking
   the chip opens a panel with a paste box (empty), or a six-number summary with Open in Fit Analyzer, Replace,
@@ -34,3 +42,19 @@ You save your own fit once (EFT paste), and the tool can then assess every threa
   Recomputed on load, so tool fixes and game-data patches apply.
 - Phone: a larger chip plus the toggle; the panel opens as a sheet from the bottom; the switch stays at the
   top when scrolling; the matchup numbers sit in a 2×2 grid.
+
+## Phase 1 as built (v2026.10.14.33)
+
+- Storage: `localStorage` key `dscanMyShip`, `{v: 1, eft, shipName, fitName, shipTypeId, shipGroup, savedAt,
+  use, moduleStates, moduleCopyOrder, droneStates, activeMode, asbDry}`. No numbers. The fit is recomputed from
+  `eft` the first time a page load needs it (no ESI call on page load).
+- "Use in assessments" is on when a ship is first saved; Replace keeps its setting.
+- "Set as my ship" keeps that fit's current module states (hover text says so).
+- Errors: MYSHIP-01 (storage refused: works until the page closes), MYSHIP-02 (saved fit no longer loads; the
+  message carries the underlying code, the saved text is kept).
+- Check: `tools/page_checks/my_ship_check.py`.
+
+## Phase 2 (not started)
+
+Needs turret-application D1-D6. Matchup strip (their DPS on you, yours on them, how long each lasts, who's
+faster), Weaknesses from both points of view, "vs my ship" tags, changed numbers in amber (M6).

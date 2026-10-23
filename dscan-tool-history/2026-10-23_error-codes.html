@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — Error codes</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; width:100%; margin:12px 0;}
+td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; vertical-align:top;} th{background:#f6f6f6;}
+</style></head>
+<body>
+<h1>Error codes that point back to why each message exists</h1>
+<p><span class="tag">Maintenance</span> 2026-10-23 &middot; <code>v2026.10.14.31</code> &rarr; <code>v2026.10.14.32</code> &middot; the owner: "should we have identifiers for custom error codes that point back to why we implemented them?", then "ok do it".</p>
+
+<h2>What changed</h2>
+<ul>
+<li>Every error the page writes now ends with a short code, for example "… Try again in a few minutes. (ZKB-01)". Prompts for an empty box ("Enter a pilot name.", "Paste a fit first.") have no code: they're instructions, not errors.</li>
+<li><code>ERROR_CODES</code> in <code>index.html</code> is the one place a code is defined. Each entry gives the title, where it shows, what triggers it, what to check, why the message exists, the build or date that added it, and its history doc when there is one. Helpers: <code>withCode(text, code)</code>, <code>codedError(code, message)</code>, and <code>errorCodeOf(e)</code>, which returns <b>APP-01</b> for any error without a code (an unexpected error, i.e. a bug).</li>
+<li><code>ERRORS.md</code> (repo root) is generated from the registry by <code>tools/gen_errors_md.py</code>. Without <code>--write</code>, the script fails when a code is used but not listed, listed but never used, or missing a field, or when ERRORS.md is out of date. It's in the update-check chain, now 27 steps.</li>
+<li>Rules, written in ERRORS.md and CLAUDE.md: never reuse or renumber a code; a retired error keeps its row, marked retired.</li>
+</ul>
+
+<h2>The 23 codes</h2>
+<table>
+<tr><th>Prefix</th><th>Codes</th></tr>
+<tr><td>APP</td><td>01 unexpected error (a bug)</td></tr>
+<tr><td>ESI</td><td>01 name lookup, 02 type, 03 group, 04 id-to-name, 05 killmail. Each still names its status: 404, 420/429 rate limit, 5xx, or no response (ARCH-4, 2026-10-10).</td></tr>
+<tr><td>ZKB</td><td>01 API not answering (v.31), 02 losses lookup, 03 kills lookup</td></tr>
+<tr><td>DSCAN</td><td>01 a fit pasted into the D-Scan box (v.9), 02 ESI rejected the scan's names, 03 lines that couldn't be split into columns</td></tr>
+<tr><td>PILOT</td><td>01 no such pilot, 02 no such ship, 03 no recorded losses, 04 / 06 losses couldn't be read, 05 only capsules / shuttles / rookie ships / MTUs (2026-10-08 filter), 07 pilot not among their last kill's attackers</td></tr>
+<tr><td>FIT</td><td>01 empty paste, 02 no EFT header, 03 ship not recognized, 04 some lines not recognized</td></tr>
+</table>
+<p>Where a message's origin predates the history log, the registry says "original (before 2026-10-08)" rather than guessing.</p>
+
+<h2>Small wording changes</h2>
+<ul>
+<li>The generic catch-alls ("Error: …") now end with a period before the code.</li>
+<li>DSCAN-02 no longer adds "check your network connection", since the likely cause is the paste.</li>
+<li>The last-kill box shows the underlying code: ESI-05, ZKB-01/03 or PILOT-07.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>No number changes: full output diff v.31 &rarr; v.32 is 0 of 237 fits. Suite ALL PASS, parse tests 293/293, chain all 27 OK.</li>
+<li>Page checks FAILURES 0: layout, missing charges, and <code>zkb_outage_check.py</code>. The last now checks by code (ZKB-01 for an outage in both places, PILOT-01 for an unknown pilot), so the wording can change without breaking it.</li>
+<li>Seen on the real page: DSCAN-01 (a fit pasted into the D-Scan box), FIT-02 (no header), FIT-04 (an unknown module).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul><li>When the owner reports an error, ask for the code and the version tag, then start from that code's row in ERRORS.md. When you add an error, register its code first. The check fails on a code that's used but not registered. An error thrown without a code shows APP-01; treat any APP-01 report as a gap to fix.</li></ul>
+</body>
+</html>

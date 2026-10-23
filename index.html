@@ -1120,6 +1120,119 @@
   button.cc-toggle.bay-toggle.cc-row{margin:0;}
   .cc-row.bay-toggle .cc-sum{text-transform:none; letter-spacing:0;}
   .cc-row .cc-sum{flex:1 1 auto; min-width:0; text-align:right; font-family:var(--mono); font-size:11.5px; font-weight:400; color:var(--text-dim); line-height:1.45;}
+  /* MY SHIP (v2026.10.14.33, roadmap/my-ship-plan.md M1-M5, the "My ship" design canvas): a chip and a
+     "Use in assessments" switch at the right end of the tab row, on every tab; the chip opens a panel
+     (a popover, a sheet from the bottom on a phone). Classes are mys-*: ms-* already means "module state".
+     Colours: my ship cyan, the threat amber. Presentation only: no number changes. */
+  .tabs{align-items:flex-end; flex-wrap:wrap;}
+  .mys-bar{margin-left:auto; display:flex; align-items:center; gap:14px; padding-bottom:7px; position:relative;}
+  button.mys-chip{display:inline-flex; align-items:center; gap:8px; min-height:36px; max-width:340px; padding:0 12px 0 10px; border:1px solid var(--line); border-radius:18px;
+    background:var(--panel); color:var(--text); font-weight:500; letter-spacing:0; text-align:left;}
+  button.mys-chip:hover{background:var(--panel-2); border-color:var(--cyan);}
+  button.mys-chip[aria-expanded="true"]{background:var(--panel-2); border-color:var(--cyan);}
+  button.mys-chip.is-empty{background:transparent; border:1px dashed var(--text-faint); color:var(--text); padding:0 14px;}
+  button.mys-chip.is-empty:hover{border-color:var(--cyan);}
+  .mys-chip svg{flex:none;}
+  .mys-chip-k{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); flex:none;}
+  .mys-chip-ship{font-weight:600; color:var(--heading); flex:none;}
+  .mys-chip-fit{color:var(--text-dim); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  label.mys-use{display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap;}
+  label.mys-use.is-off{color:var(--text-faint); cursor:default;}
+  .mys-use-short{display:none;}
+  input.mys-sw{appearance:none; -webkit-appearance:none; margin:0; width:38px; height:22px; border-radius:11px; background:var(--line); border:1px solid #2c3842; position:relative; cursor:pointer; flex:none;}
+  input.mys-sw::after{content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--text-dim); transition:left 0.12s;}
+  input.mys-sw:checked{background:#1f6f80; border-color:var(--cyan);}
+  input.mys-sw:checked::after{left:18px; background:var(--heading);}
+  input.mys-sw:disabled{opacity:0.45; cursor:default;}
+  input.mys-sw:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .mys-panel{position:absolute; right:0; top:calc(100% + 8px); z-index:60; width:min(520px, calc(100vw - 32px)); box-sizing:border-box; background:var(--panel);
+    border:1px solid #2c3842; border-radius:10px; padding:20px 22px; box-shadow:0 18px 40px rgba(0,0,0,0.55); text-align:left;}
+  .mys-backdrop{display:none;}
+  .mys-panel h2{font-size:16px; margin:0;}
+  .mys-panel-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px;}
+  .mys-ident{display:flex; align-items:center; gap:12px; min-width:0;}
+  .mys-ident-icon{width:44px; height:44px; border-radius:8px; background:var(--panel-2); border:1px solid var(--line); flex:none; overflow:hidden; display:flex; align-items:center; justify-content:center;}
+  .mys-ident-icon img{width:100%; height:100%; display:block;}
+  .mys-ident h2{overflow-wrap:anywhere;}
+  .mys-ident h2 .mys-dim{font-weight:400; color:var(--text-dim);}
+  .mys-ident-sub{font-size:12px; color:var(--text-dim); margin-top:2px;}
+  button.mys-x{width:32px; height:32px; padding:0; flex:none; display:flex; align-items:center; justify-content:center; border:0; background:transparent; color:var(--text-dim);}
+  button.mys-x:hover{background:transparent; color:var(--heading);}
+  .mys-panel p.mys-p{margin:0 0 14px; font-size:13px; color:var(--text-dim); line-height:1.5;}
+  .mys-panel p.mys-fine{margin:14px 0 0; font-size:12px; color:var(--text-dim); line-height:1.5;}
+  .mys-label{display:block; font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;}
+  .mys-panel textarea{min-height:190px;}
+  .mys-actions{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center;}
+  .mys-actions button{min-height:40px;}
+  button.mys-primary{background:var(--amber); border-color:var(--amber); color:var(--bg);}
+  button.mys-primary:hover{background:#e6a94d; border-color:#e6a94d;}
+  button.mys-primary:disabled:hover{background:var(--amber); border-color:var(--amber);}
+  button.mys-quiet{border-color:#2c3842; color:var(--text); font-weight:500;}
+  button.mys-quiet:hover{border-color:var(--cyan); background:rgba(79,195,217,0.06);}
+  button.mys-danger{border-color:var(--danger); color:#e98a7f; font-weight:500;}
+  button.mys-danger:hover{background:rgba(198,91,78,0.1); border-color:#e98a7f;}
+  .mys-actions .mys-push{margin-left:auto;}
+  button.mys-open{display:flex; width:100%; align-items:center; justify-content:center; gap:8px; min-height:42px; margin-top:16px;}
+  .mys-tiles{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; margin-top:16px;}
+  .mys-tile{background:var(--panel-2); border:1px solid var(--line-soft); border-radius:6px; padding:9px 11px; min-width:0;}
+  .mys-tile-k{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  .mys-tile-v{font-family:var(--mono); font-size:15px; font-weight:600; color:var(--heading); overflow-wrap:anywhere;}
+  .mys-states{font-size:12px; color:var(--text-dim); margin-top:10px;}
+  .mys-states b{color:var(--cyan); font-weight:600;}
+  .mys-panel details.mys-eft{margin-top:14px; border-top:1px solid var(--line); padding-top:8px;}
+  .mys-panel details.mys-eft summary{cursor:pointer; font-size:13px; color:var(--text); min-height:32px; display:flex; align-items:center;}
+  .mys-panel details.mys-eft pre{margin:8px 0 0; max-height:220px; overflow:auto; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:10px 12px;
+    font:12px/1.5 var(--mono); color:var(--text-dim); white-space:pre-wrap; overflow-wrap:anywhere;}
+  .mys-confirm{margin-top:16px; padding:12px 14px; border:1px solid var(--danger); border-radius:8px; background:rgba(198,91,78,0.07); font-size:13px; line-height:1.5;}
+  .mys-confirm .mys-actions{margin-top:10px;}
+  .mys-panel .status{margin-top:10px;}
+  .mys-panel .note{margin-top:10px;}
+  /* Fit Analyzer: "Set as my ship" beside the fit's name; the "Viewing my ship" banner (FitView screen). */
+  .mys-fa-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px;}
+  .mys-fa-head .cmeta{margin:0 !important; min-width:0; overflow-wrap:anywhere;}
+  button.mys-set{display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:0 12px; font-size:12px; font-weight:500; border-color:#2c3842; color:var(--text);}
+  button.mys-set:hover{border-color:var(--cyan); background:rgba(79,195,217,0.06);}
+  .mys-is-tag{display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:10px; background:#0f2a31; border:1px solid #1f6f80; color:#8fdcea; font:500 11px var(--mono);}
+  .mys-banner{display:flex; align-items:center; justify-content:space-between; gap:12px 16px; flex-wrap:wrap; margin:14px 0 14px; padding:12px 16px; background:#0f2a31; border:1px solid #1f6f80; border-radius:8px;}
+  .mys-banner-id{display:flex; align-items:center; gap:10px; min-width:0; flex-wrap:wrap;}
+  .mys-banner-k{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; color:#8fdcea;}
+  .mys-banner-v{font-size:15px; font-weight:600; color:var(--heading); overflow-wrap:anywhere;}
+  .mys-banner .mys-actions{margin:0;}
+  .mys-banner .mys-actions button{min-height:36px; padding:0 14px;}
+  /* Threat <-> my ship switch (Proto / PhoneSwitch screens): amber = the threat, cyan = my ship. */
+  .mys-switch-host{margin-top:14px;}
+  .mys-switch-host[hidden]{display:none;}
+  .mys-switch{display:inline-flex; padding:4px; gap:4px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; max-width:100%; box-sizing:border-box;}
+  button.mys-sw-btn{display:flex; flex-direction:column; align-items:flex-start; justify-content:center; min-width:200px; max-width:340px; min-height:52px; padding:6px 14px;
+    background:transparent; border:1px solid transparent; border-radius:7px; color:var(--text); font-weight:600; letter-spacing:0; text-align:left;}
+  button.mys-sw-btn:hover{background:var(--panel); border-color:var(--line);}
+  .mys-sw-k{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); font-weight:600;}
+  .mys-sw-v{font-size:14px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  button.mys-sw-btn[aria-pressed="false"] .mys-sw-v{color:var(--text);}
+  button.mys-sw-btn.is-threat[aria-pressed="true"]{background:#2a2114; border-color:var(--amber); color:var(--heading);}
+  button.mys-sw-btn.is-threat[aria-pressed="true"] .mys-sw-k{color:var(--amber);}
+  button.mys-sw-btn.is-mine[aria-pressed="true"]{background:#0f2a31; border-color:var(--cyan); color:var(--heading);}
+  button.mys-sw-btn.is-mine[aria-pressed="true"] .mys-sw-k{color:var(--cyan);}
+  .mys-mine-view{border-top:2px solid var(--cyan); padding-top:12px; margin-top:12px;}
+  .mys-mine-view[hidden], .mys-threat-view[hidden]{display:none;}
+  .mys-mine-view .status{margin-top:0;}
+  @media (max-width: 599px){
+    .mys-bar{order:-1; width:100%; margin:0 0 4px; padding:0; justify-content:space-between; gap:10px;}
+    button.mys-chip{min-height:44px; flex:1 1 auto; max-width:none; min-width:0;}
+    .mys-use-long{display:none;}
+    .mys-use-short{display:inline;}
+    label.mys-use{min-height:44px; font-size:13px;}
+    .mys-panel{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-height:88vh; overflow-y:auto; border-radius:14px 14px 0 0; padding:18px 16px 24px; z-index:61;}
+    .mys-backdrop{display:block; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,0.5);}
+    .mys-backdrop[hidden]{display:none;}
+    .mys-tiles{grid-template-columns:repeat(2, minmax(0, 1fr));}
+    .mys-switch-host{position:sticky; top:0; z-index:20; background:var(--bg); padding:8px 0; margin-top:8px;}
+    .mys-switch{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); width:100%;}
+    button.mys-sw-btn{min-width:0; max-width:none; min-height:48px; padding:4px 10px;}
+    .mys-sw-v{font-size:13px;}
+    .mys-banner .mys-actions{width:100%;}
+    .mys-banner .mys-actions button{flex:1 1 0;}
+  }
   /* Phones: less padding around everything so the cards get the width. */
   @media (max-width: 599px){
     body{padding:14px 10px 60px;}
@@ -1139,7 +1252,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.31</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.33</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1152,6 +1265,12 @@
     <button type="button" class="tab-btn active" id="tabBtnDscan">D-Scan Analyzer</button>
     <button type="button" class="tab-btn" id="tabBtnPilot">Pilot Analyzer</button>
     <button type="button" class="tab-btn" id="tabBtnFit">Fit Analyzer</button>
+    <div class="mys-bar" id="myShipBar">
+      <button type="button" class="mys-chip is-empty" id="myShipChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="myShipPanel"></button>
+      <label class="mys-use is-off" id="myShipUseLabel" title="Save your ship first"><input type="checkbox" class="mys-sw" id="myShipUse" disabled aria-label="Use my ship in assessments"><span class="mys-use-long">Use in assessments</span><span class="mys-use-short">Use</span></label>
+      <div class="mys-backdrop" id="myShipBackdrop" hidden></div>
+      <div class="mys-panel" id="myShipPanel" role="dialog" aria-label="My Ship" hidden></div>
+    </div>
   </div>
 
   <div id="tabDscan" class="tab-panel">
@@ -1220,6 +1339,243 @@
 const ESI = 'https://esi.evetech.net/latest';
 const ZKB = 'https://zkillboard.com/api';
 
+// v2026.10.14.32 (the owner: "should we have identifiers for custom error codes that point back to why we implemented
+// them?" -> "ok do it"): every error the page writes carries a short code at its end, e.g. "... (ZKB-01)". This
+// registry is the one place a code is defined: what triggers it, what to check, why the message exists, the build
+// and history doc that added it. ERRORS.md is generated from it (tools/gen_errors_md.py, which also fails when a
+// code is used but not listed, listed but never used, or ERRORS.md is out of date). Rules: never reuse or renumber a
+// code; a retired error keeps its row with "status": "retired". An error without a code shows APP-01 (a bug).
+const ERROR_CODES = {
+ "APP-01": {
+  "title": "Unexpected error",
+  "where": "Any status line",
+  "trigger": "An error the page didn't anticipate: a bug in the tool, not a network or data problem.",
+  "check": "Report it with the version tag and what was pasted or typed. The browser console has the full error.",
+  "why": "Catch-all so every error shown carries a code; anything shown with APP-01 is a gap to fix.",
+  "since": "v2026.10.14.32",
+  "doc": "2026-10-23_error-codes.html"
+ },
+ "ESI-01": {
+  "title": "ESI name lookup failed",
+  "where": "D-Scan, Pilot and Fit Analyzer status lines",
+  "trigger": "ESI's /universe/ids/ (turns pasted names into ids) gave no answer or an error status. The message names the status: 404, 420/429 rate limit, 5xx server error, or no response.",
+  "check": "ESI status (esi.evetech.net), the user's connection; a 420/429 clears by waiting.",
+  "why": "Every ESI and zKillboard failure used to look identical ('type fetch failed'); ARCH-4 gave each one its context and the cause class.",
+  "since": "2026-10-10",
+  "doc": "2026-10-10_esi-error-messages-phase4.html"
+ },
+ "ESI-02": {
+  "title": "ESI type fetch failed",
+  "where": "Any analysis",
+  "trigger": "ESI's /universe/types/{id}/ failed for one item. A 404 usually means an id ESI doesn't know (often a new or removed item).",
+  "check": "The type id in the message; whether ESI has it.",
+  "why": "ARCH-4: show which type id failed and why.",
+  "since": "2026-10-10",
+  "doc": "2026-10-10_esi-error-messages-phase4.html"
+ },
+ "ESI-03": {
+  "title": "ESI group fetch failed",
+  "where": "Any analysis",
+  "trigger": "ESI's /universe/groups/{id}/ failed.",
+  "check": "The group id in the message; ESI status.",
+  "why": "ARCH-4.",
+  "since": "2026-10-10",
+  "doc": "2026-10-10_esi-error-messages-phase4.html"
+ },
+ "ESI-04": {
+  "title": "ESI id-to-name lookup failed",
+  "where": "Pilot Analyzer",
+  "trigger": "ESI's /universe/names/ failed.",
+  "check": "ESI status, the user's connection.",
+  "why": "ARCH-4.",
+  "since": "2026-10-10",
+  "doc": "2026-10-10_esi-error-messages-phase4.html"
+ },
+ "ESI-05": {
+  "title": "Killmail fetch failed",
+  "where": "Pilot Analyzer (losses, last kill)",
+  "trigger": "ESI's /killmails/{id}/{hash}/ failed for one killmail.",
+  "check": "The killmail id in the message; ESI status.",
+  "why": "ARCH-4.",
+  "since": "2026-10-10",
+  "doc": "2026-10-10_esi-error-messages-phase4.html"
+ },
+ "ZKB-01": {
+  "title": "zKillboard's API isn't answering",
+  "where": "Pilot Analyzer status line and last-kill box",
+  "trigger": "A zKillboard API call took over 20 s (ZKB_TIMEOUT_MS) or answered 5xx. Since 2026-10-22 zKillboard queues API requests and answers 503 'API result unavailable' when its worker doesn't answer within 60 s. Further zKillboard calls fail at once for 60 s (ZKB_COOLDOWN_MS).",
+  "check": "Open a zkillboard.com/api/... URL in a browser. If it shows 'API result unavailable', the problem is on zKillboard's side.",
+  "why": "The page used to wait a full minute and then tell the user to check their network.",
+  "since": "v2026.10.14.31",
+  "doc": "2026-10-23_zkillboard-api-outage-message.html"
+ },
+ "ZKB-02": {
+  "title": "zKillboard losses lookup failed",
+  "where": "Pilot Analyzer status line",
+  "trigger": "zKillboard's /api/losses/characterID/... gave no response or a non-5xx error status (5xx is ZKB-01).",
+  "check": "The status in the message; the user's connection to zkillboard.com.",
+  "why": "ARCH-4.",
+  "since": "2026-10-10",
+  "doc": "2026-10-10_esi-error-messages-phase4.html"
+ },
+ "ZKB-03": {
+  "title": "zKillboard kills lookup failed",
+  "where": "Pilot Analyzer last-kill box",
+  "trigger": "zKillboard's /api/kills/characterID/... answered a non-5xx error status (5xx is ZKB-01).",
+  "check": "The status in the message.",
+  "why": "ARCH-4.",
+  "since": "2026-10-10",
+  "doc": "2026-10-10_esi-error-messages-phase4.html"
+ },
+ "DSCAN-01": {
+  "title": "A fit was pasted into the D-Scan box",
+  "where": "D-Scan Analyzer",
+  "trigger": "The paste starts with an EFT header like [Ship, Fit name].",
+  "check": "Nothing to fix: the hint offers to open it in the Fit Analyzer.",
+  "why": "Bug list (the owner, 2026-10-14): an EFT fit pasted into the D-Scan box was read as a scan.",
+  "since": "v2026.10.14.9",
+  "doc": "2026-10-14_dscan-fit-paste-guard-and-panic-active-state.html"
+ },
+ "DSCAN-02": {
+  "title": "ESI rejected the D-Scan names",
+  "where": "D-Scan Analyzer",
+  "trigger": "The name lookup for the scan's types failed (wraps the ESI-01 text). Usually the paste lost its tab characters, so whole lines were sent as names.",
+  "check": "'Parsed rows' under the input: whether columns are split correctly.",
+  "why": "Points at the paste rather than ESI when columns weren't split.",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "DSCAN-03": {
+  "title": "D-Scan lines couldn't be split into columns",
+  "where": "D-Scan Analyzer, parsed rows note",
+  "trigger": "Lines without the tab-separated columns a D-Scan copy has.",
+  "check": "Copy the scan again with Ctrl+A, Ctrl+C in the client.",
+  "why": "Explains why those lines' type lookup will fail.",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "PILOT-01": {
+  "title": "No pilot with that name",
+  "where": "Pilot Analyzer",
+  "trigger": "ESI doesn't know a character with exactly that name.",
+  "check": "Spelling and capitalization.",
+  "why": "Name lookups are exact.",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "PILOT-02": {
+  "title": "No ship type with that name",
+  "where": "Pilot Analyzer (optional ship box)",
+  "trigger": "The typed ship name isn't an ESI type (title-case and apostrophe variants are tried too).",
+  "check": "Spelling.",
+  "why": "",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "PILOT-03": {
+  "title": "No recorded losses",
+  "where": "Pilot Analyzer",
+  "trigger": "zKillboard lists no losses for the pilot.",
+  "check": "Type a ship name to analyze that hull without a loss.",
+  "why": "",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "PILOT-04": {
+  "title": "Couldn't read the losses to guess a ship",
+  "where": "Pilot Analyzer (no ship typed)",
+  "trigger": "None of the sampled loss killmails could be fetched from ESI.",
+  "check": "ESI status; type a ship name instead.",
+  "why": "",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "PILOT-05": {
+  "title": "Only capsules, shuttles, rookie ships or MTUs lost",
+  "where": "Pilot Analyzer (no ship typed)",
+  "trigger": "Every recent loss was a hull the 'most flown' guess leaves out.",
+  "check": "Type a ship name.",
+  "why": "Those hulls say nothing about what the pilot flies into fights (exact ESI group ids, not name matching).",
+  "since": "2026-10-08",
+  "doc": "2026-10-08_pilot-search-hull-exclusion-filter.html"
+ },
+ "PILOT-06": {
+  "title": "Couldn't read the losses of that hull",
+  "where": "Pilot Analyzer",
+  "trigger": "None of the hull's recent loss killmails could be fetched from ESI.",
+  "check": "ESI status.",
+  "why": "",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "PILOT-07": {
+  "title": "Pilot not among the attackers of their last kill",
+  "where": "Pilot Analyzer last-kill box",
+  "trigger": "zKillboard's latest kill for the pilot doesn't list them as an attacker in ESI's killmail.",
+  "check": "The killmail on zkillboard.com.",
+  "why": "",
+  "since": "2026-10-10",
+  "doc": "2026-10-10_last-kill-hull-pivot-button.html"
+ },
+ "FIT-01": {
+  "title": "The fit paste is empty",
+  "where": "Fit Analyzer",
+  "trigger": "Only blank lines were pasted.",
+  "check": "Paste a fit copied from the EVE client or exported from pyfa.",
+  "why": "",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "FIT-02": {
+  "title": "The first line isn't an EFT header",
+  "where": "Fit Analyzer",
+  "trigger": "The paste doesn't start with [Ship Name, Fit Name].",
+  "check": "Paste the whole fit, header included.",
+  "why": "",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "FIT-03": {
+  "title": "The fit's ship isn't recognized",
+  "where": "Fit Analyzer",
+  "trigger": "The ship name in the header doesn't resolve in ESI (title-case and apostrophe variants are tried too).",
+  "check": "Spelling of the ship name.",
+  "why": "",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "FIT-04": {
+  "title": "Some fit lines weren't recognized",
+  "where": "Fit Analyzer, note under the fit; My Ship panel and its views",
+  "trigger": "Item names that don't resolve in ESI; they're left out of the fit.",
+  "check": "Spelling, SKIN variants, renamed or removed items.",
+  "why": "The rest of the fit is still analyzed; the note lists what was dropped.",
+  "since": "original (before 2026-10-08)",
+  "doc": null
+ },
+ "MYSHIP-01": {
+  "title": "Browser storage unavailable",
+  "where": "My Ship panel",
+  "trigger": "The browser refused to store or read the saved ship: a private window, blocked site data, or full storage.",
+  "check": "The browser's site-data settings for the page. My Ship still works until the page is closed.",
+  "why": "My Ship lives only in the browser; without storage it is gone after a reload, and the user should know that before relying on it.",
+  "since": "v2026.10.14.33",
+  "doc": "2026-10-23_my-ship-phase1.html"
+ },
+ "MYSHIP-02": {
+  "title": "The saved ship couldn't be loaded",
+  "where": "My Ship panel, the Fit Analyzer's \"Viewing my ship\" page, the threat / my ship switch",
+  "trigger": "The saved fit is recomputed from its EFT text when first needed, and that failed (the message includes the underlying code, e.g. ESI-01), or the stored copy is damaged.",
+  "check": "The underlying code in the message. If an item was renamed or removed from the game, Replace the fit.",
+  "why": "Recomputing on load lets tool fixes and game patches apply to a saved ship; when it fails, the saved text is kept rather than dropped.",
+  "since": "v2026.10.14.33",
+  "doc": "2026-10-23_my-ship-phase1.html"
+ }
+};
+function withCode(text, code){ return code ? `${text} (${code})` : text; }
+function codedError(code, message){ return Object.assign(new Error(message), {code}); }
+function errorCodeOf(e){ return (e && e.code) || 'APP-01'; }
+
 // ARCH-4 fix (remediation plan Phase 4): every ESI/zKillboard fetch site
 // below used to throw a bare, context-free message on failure -- the
 // canonical example flagged in the architecture critique was getType()'s
@@ -1252,8 +1608,8 @@ const ZKB_UNAVAILABLE_TEXT = "zKillboard's API isn't answering right now. That's
 async function zkbFetch(url){
   const ac = typeof AbortController === 'function' ? new AbortController() : null;
   const timer = ac ? setTimeout(() => ac.abort(), ZKB_TIMEOUT_MS) : null;
-  const unavailable = () => { zkbUnavailableUntil = Date.now() + ZKB_COOLDOWN_MS; return Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true}); };
-  if(Date.now() < zkbUnavailableUntil){ if(timer) clearTimeout(timer); throw Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true}); }
+  const unavailable = () => { zkbUnavailableUntil = Date.now() + ZKB_COOLDOWN_MS; return Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true, code: 'ZKB-01'}); };
+  if(Date.now() < zkbUnavailableUntil){ if(timer) clearTimeout(timer); throw Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true, code: 'ZKB-01'}); }
   let res;
   try{
     res = await fetch(url, ac ? {signal: ac.signal} : undefined);
@@ -5730,12 +6086,12 @@ async function resolveNamesToIds(names){
       body: JSON.stringify(unique)
     });
   }catch(e){
-    throw new Error(describeEsiFailure(`Name resolution (${unique.length} name(s))`, undefined));
+    throw codedError('ESI-01', describeEsiFailure(`Name resolution (${unique.length} name(s))`, undefined));
   }
   if(!res.ok){
     let detail = '';
     try{ detail = await res.text(); }catch(e){}
-    throw new Error(describeEsiFailure(`Name resolution (${unique.length} name(s))`, res.status, detail));
+    throw codedError('ESI-01', describeEsiFailure(`Name resolution (${unique.length} name(s))`, res.status, detail));
   }
   return await res.json();
 }
@@ -5798,12 +6154,12 @@ async function getType(typeId){
   try{
     res = await fetch(`${ESI}/universe/types/${typeId}/?datasource=tranquility&language=en`);
   }catch(e){
-    throw new Error(describeEsiFailure(`Type ${typeId} fetch`, undefined));
+    throw codedError('ESI-02', describeEsiFailure(`Type ${typeId} fetch`, undefined));
   }
   if(!res.ok){
     let detail = '';
     try{ detail = await res.text(); }catch(e){}
-    throw new Error(describeEsiFailure(`Type ${typeId} fetch`, res.status, detail));
+    throw codedError('ESI-02', describeEsiFailure(`Type ${typeId} fetch`, res.status, detail));
   }
   const data = await res.json();
   typeCache.set(typeId, data);
@@ -5819,12 +6175,12 @@ async function getGroup(groupId){
   try{
     res = await fetch(`${ESI}/universe/groups/${groupId}/?datasource=tranquility&language=en`);
   }catch(e){
-    throw new Error(describeEsiFailure(`Group ${groupId} fetch`, undefined));
+    throw codedError('ESI-03', describeEsiFailure(`Group ${groupId} fetch`, undefined));
   }
   if(!res.ok){
     let detail = '';
     try{ detail = await res.text(); }catch(e){}
-    throw new Error(describeEsiFailure(`Group ${groupId} fetch`, res.status, detail));
+    throw codedError('ESI-03', describeEsiFailure(`Group ${groupId} fetch`, res.status, detail));
   }
   const data = await res.json();
   groupCache.set(groupId, data);
@@ -5843,12 +6199,12 @@ async function resolveIdsToNames(ids){
       body: JSON.stringify(unique)
     });
   }catch(e){
-    throw new Error(describeEsiFailure(`Id resolution (${unique.length} id(s))`, undefined));
+    throw codedError('ESI-04', describeEsiFailure(`Id resolution (${unique.length} id(s))`, undefined));
   }
   if(!res.ok){
     let detail = '';
     try{ detail = await res.text(); }catch(e){}
-    throw new Error(describeEsiFailure(`Id resolution (${unique.length} id(s))`, res.status, detail));
+    throw codedError('ESI-04', describeEsiFailure(`Id resolution (${unique.length} id(s))`, res.status, detail));
   }
   return await res.json();
 }
@@ -6048,6 +6404,7 @@ function switchTab(tab){
     document.getElementById('tab' + key.charAt(0).toUpperCase() + key.slice(1)).style.display = active ? 'block' : 'none';
     document.getElementById('tabBtn' + key.charAt(0).toUpperCase() + key.slice(1)).classList.toggle('active', active);
   }
+  myShipRefreshStale(); // v2026.10.14.33: redraw My Ship views changed on another tab
 }
 document.getElementById('tabBtnDscan').addEventListener('click', () => switchTab('dscan'));
 document.getElementById('tabBtnPilot').addEventListener('click', () => switchTab('pilot'));
@@ -6061,7 +6418,7 @@ async function runAnalysis(){
   const fitPaste = detectFitPaste(input);
   if(fitPaste){
     document.getElementById('resultsWrap').style.display = 'none';
-    setStatus(statusEl, `That's a ship fit (EFT format, ${fitPaste.shipName}), not D-Scan results.`, true);
+    setStatus(statusEl, withCode(`That's a ship fit (EFT format, ${fitPaste.shipName}), not D-Scan results.`, 'DSCAN-01'), true);
     showDscanFitHint(`This box reads what your directional scanner shows: one contact per line with its type and distance. To check a fit, use the Fit Analyzer. <button type="button" id="dscanOpenFitBtn">Analyze it in the Fit Analyzer</button>`);
     const openBtn = document.getElementById('dscanOpenFitBtn');
     if(openBtn) openBtn.addEventListener('click', openPasteInFitAnalyzer);
@@ -6098,7 +6455,7 @@ async function runAnalysis(){
     try{
       idsRes = await resolveNamesToIdsFlexible(lookupTypes);
     }catch(e){
-      throw new Error(e.message + ' — the batch of names sent to ESI was rejected. Check "parsed rows" above to see whether columns are being split correctly.');
+      throw codedError('DSCAN-02', e.message + ' — the batch of names sent to ESI was rejected. Check "parsed rows" above to see whether columns are being split correctly');
     }
     const invTypes = idsRes.inventory_types || [];
     const nameToId = new Map(invTypes.map(t => [t.name, t.id]));
@@ -6166,7 +6523,7 @@ async function runAnalysis(){
       : '';
     setStatus(statusEl, `Done — ${contactTypes} contact type(s) recognized from ${rows.length} line(s)${fittingLines ? `, ${fittingLines} fitting item line(s) skipped` : ''}${badRows ? `, ${badRows} line(s) couldn't be split` : ''}.${failNote}`);
   }catch(e){
-    setStatus(statusEl, 'Error: ' + e.message + '. Check your network connection to esi.evetech.net.', true);
+    setStatus(statusEl, withCode('Error: ' + e.message + (e.code === 'DSCAN-02' ? '.' : '. Check your network connection to esi.evetech.net.'), errorCodeOf(e)), true);
   }finally{
     btn.disabled = false;
   }
@@ -6303,7 +6660,7 @@ function renderDebugRows(rows){
   const bad = rows.filter(r => !r.ok);
   let html = '';
   if(bad.length){
-    html += `<div class="note" style="border:none;padding:0;margin-bottom:8px;color:var(--danger);">${bad.length} line${bad.length>1?'s':''} could not be split into columns — the type lookup for these will fail. This usually means tab characters were lost when the scan was pasted.</div>`;
+    html += `<div class="note" style="border:none;padding:0;margin-bottom:8px;color:var(--danger);">${bad.length} line${bad.length>1?'s':''} could not be split into columns — the type lookup for these will fail (DSCAN-03). This usually means tab characters were lost when the scan was pasted.</div>`;
   }
   html += rows.slice(0, 60).map(r => `
     <div class="lossrow" style="font-family:var(--mono);">
@@ -6435,10 +6792,10 @@ async function fetchKillmail(stub){
   try{
     res = await fetch(`${ESI}/killmails/${stub.killmail_id}/${hash}/?datasource=tranquility`);
   }catch(e){
-    return {error: describeEsiFailure(`Killmail ${stub.killmail_id} fetch`, undefined)};
+    return {error: describeEsiFailure(`Killmail ${stub.killmail_id} fetch`, undefined), code: 'ESI-05'};
   }
   if(!res.ok){
-    return {error: describeEsiFailure(`Killmail ${stub.killmail_id} fetch`, res.status)};
+    return {error: describeEsiFailure(`Killmail ${stub.killmail_id} fetch`, res.status), code: 'ESI-05'};
   }
   const km = await res.json();
   const result = {killmail_id: stub.killmail_id, hash, km};
@@ -6457,9 +6814,9 @@ async function fetchLossesStubs(charId, shipTypeId, forceRefresh){
     res = await zkbFetch(url);
   }catch(e){
     if(e.zkbUnavailable) throw e;
-    throw new Error(describeEsiFailure(`zKillboard losses lookup (character ${charId})`, undefined));
+    throw codedError('ZKB-02', describeEsiFailure(`zKillboard losses lookup (character ${charId})`, undefined));
   }
-  if(!res.ok) throw new Error(describeEsiFailure(`zKillboard losses lookup (character ${charId})`, res.status));
+  if(!res.ok) throw codedError('ZKB-02', describeEsiFailure(`zKillboard losses lookup (character ${charId})`, res.status));
   const stubs = await res.json();
   lossStubCache.set(cacheKey, stubs);
   return stubs;
@@ -6499,7 +6856,7 @@ document.getElementById('refreshLossesBtn').addEventListener('click', async () =
     // to refresh.
     await lastFitRun(true);
   }catch(e){
-    setStatus(statusEl, 'Error: ' + e.message, true);
+    setStatus(statusEl, withCode('Error: ' + e.message + '.', errorCodeOf(e)), true);
   }finally{
     btn.disabled = false;
   }
@@ -7400,7 +7757,7 @@ async function renderLastKill(character, pilotName, statusEl){
   el.innerHTML = `<div class="lastkill">Checking last kill…</div>`;
   try{
     const res = await zkbFetch(`${ZKB}/kills/characterID/${character.id}/`);
-    if(!res.ok) throw new Error(describeEsiFailure(`zKillboard kills lookup (character ${character.id})`, res.status));
+    if(!res.ok) throw codedError('ZKB-03', describeEsiFailure(`zKillboard kills lookup (character ${character.id})`, res.status));
     const stubs = await res.json();
     if(!stubs.length){
       el.innerHTML = `<div class="lastkill">No recorded kills for ${escapeHtml(pilotName)} on zKillboard.</div>`;
@@ -7409,13 +7766,13 @@ async function renderLastKill(character, pilotName, statusEl){
     const stub = stubs[0];
     const kmResult = await fetchKillmail(stub);
     if(kmResult.error){
-      el.innerHTML = `<div class="lastkill">Could not retrieve their last kill (${escapeHtml(kmResult.error)}).</div>`;
+      el.innerHTML = `<div class="lastkill">${escapeHtml(withCode(`Could not retrieve their last kill (${kmResult.error}).`, kmResult.code))}</div>`;
       return;
     }
     const km = kmResult.km;
     const attacker = (km.attackers || []).find(a => a.character_id === character.id);
     if(!attacker){
-      el.innerHTML = `<div class="lastkill">Could not identify ${escapeHtml(pilotName)} among the attackers on their last kill.</div>`;
+      el.innerHTML = `<div class="lastkill">${escapeHtml(withCode(`Could not identify ${pilotName} among the attackers on their last kill.`, 'PILOT-07'))}</div>`;
       return;
     }
     const ids = [km.victim.ship_type_id];
@@ -7502,7 +7859,7 @@ async function renderLastKill(character, pilotName, statusEl){
       });
     }
   }catch(e){
-    el.innerHTML = `<div class="lastkill">Could not check last kill: ${escapeHtml(e.message)}.</div>`;
+    el.innerHTML = `<div class="lastkill">${escapeHtml(withCode(`Could not check last kill: ${e.message}.`, errorCodeOf(e)))}</div>`;
   }
 }
 
@@ -7566,7 +7923,7 @@ async function runFitCheck(){
     const idsRes = await resolveNamesToIds([pilotName]);
     const character = (idsRes.characters || [])[0];
     if(!character){
-      setStatus(statusEl, `No pilot found named "${pilotName}" (check spelling — pilot names must match exactly, including capitalization).`, true);
+      setStatus(statusEl, withCode(`No pilot found named "${pilotName}" (check spelling — pilot names must match exactly, including capitalization).`, 'PILOT-01'), true);
       return;
     }
     currentCharacter = character;
@@ -7587,7 +7944,7 @@ async function runFitCheck(){
         }
       }
       if(!shipTypeId){
-        setStatus(statusEl, `No ship type found named "${shipName}".`, true);
+        setStatus(statusEl, withCode(`No ship type found named "${shipName}".`, 'PILOT-02'), true);
         return;
       }
       lastFitRun = (force) => runFitForShip(character, shipTypeId, displayShipName, statusEl, force);
@@ -7597,7 +7954,7 @@ async function runFitCheck(){
       await lastFitRun();
     }
   }catch(e){
-    setStatus(statusEl, 'Error: ' + e.message + (e.zkbUnavailable ? '.' : '. Check your network connection to zkillboard.com and esi.evetech.net.'), true);
+    setStatus(statusEl, withCode('Error: ' + e.message + (e.zkbUnavailable ? '.' : '. Check your network connection to zkillboard.com and esi.evetech.net.'), errorCodeOf(e)), true);
   }finally{
     btn.disabled = false;
   }
@@ -7607,14 +7964,14 @@ async function speculateShip(character, statusEl, forceRefresh){
   setStatus(statusEl, 'No ship specified — sampling recent losses to guess their most-flown hull…');
   const stubs = await fetchLossesStubs(character.id, undefined, forceRefresh);
   if(!stubs.length){
-    setStatus(statusEl, `No recorded losses for ${currentPilotName} on zKillboard — try specifying a ship directly.`, true);
+    setStatus(statusEl, withCode(`No recorded losses for ${currentPilotName} on zKillboard — try specifying a ship directly.`, 'PILOT-03'), true);
     return;
   }
   const sample = stubs.slice(0, 30);
   const kmResults = await analyzeChunks(sample, fetchKillmail, 3);
   const valid = kmResults.filter(r => r && !r.error);
   if(!valid.length){
-    setStatus(statusEl, 'Could not retrieve killmail details to guess a ship.', true);
+    setStatus(statusEl, withCode('Could not retrieve killmail details to guess a ship.', 'PILOT-04'), true);
     return;
   }
 
@@ -7647,7 +8004,7 @@ async function speculateShip(character, statusEl, forceRefresh){
     .slice(0, 5);
 
   if(!ranked.length){
-    setStatus(statusEl, `${currentPilotName}'s recent losses on zKillboard were all capsules/shuttles/rookie ships/MTUs — try specifying a ship directly.`, true);
+    setStatus(statusEl, withCode(`${currentPilotName}'s recent losses on zKillboard were all capsules/shuttles/rookie ships/MTUs — try specifying a ship directly.`, 'PILOT-05'), true);
     return;
   }
 
@@ -7796,11 +8153,11 @@ function slotGroupFromDogmaEffects(type){
 
 async function parseEftFit(text){
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  if(!lines.length) throw new Error('Paste is empty -- paste a fit copied from the EVE client (Ctrl+A/Ctrl+C in the Fitting window) or exported from pyfa.');
+  if(!lines.length) throw codedError('FIT-01', 'Paste is empty -- paste a fit copied from the EVE client (Ctrl+A/Ctrl+C in the Fitting window) or exported from pyfa');
 
   const headerMatch = lines[0].match(EFT_HEADER_RE);   // shared with the D-Scan tab's detectFitPaste()
   if(!headerMatch){
-    throw new Error('First line should be the "[Ship Name, Fit Name]" header EFT paste always starts with -- paste the fit exactly as copied, header line included.');
+    throw codedError('FIT-02', 'First line should be the "[Ship Name, Fit Name]" header EFT paste always starts with -- paste the fit exactly as copied, header line included');
   }
   const typedShipName = headerMatch[1].trim();
   const fitName = (headerMatch[2] || '').trim();
@@ -7848,7 +8205,7 @@ async function parseEftFit(text){
   const unresolved = [];
   const shipTypeId = nameToId.get(typedShipName);
   if(shipTypeId === undefined){
-    throw new Error(`Could not resolve ship "${typedShipName}" against ESI -- check the name matches exactly, including capitalization.`);
+    throw codedError('FIT-03', `Could not resolve ship "${typedShipName}" against ESI -- check the name matches exactly, including capitalization`);
   }
   const shipName = idToName.get(shipTypeId) || typedShipName;
 
@@ -7956,8 +8313,39 @@ async function parseEftFit(text){
   return { shipTypeId, shipName, fitName, tally, cargoItemIds, allItemIds, highSlotByFlag, midSlotByFlag, idToName, unresolved, implantsNotApplied };
 }
 
+// v2026.10.14.33: the paste -> fit object step is shared by the Fit Analyzer and My Ship (myShipEnsureFit,
+// the panel's Save), so both get exactly the same engine calls. Unchanged from runFitAnalyzer's old body.
+async function buildFitFromEft(text, onStatus = () => {}){
+  onStatus('Resolving fit against ESI…');
+  const parsed = await parseEftFit(text);
+
+  onStatus(`Estimating hull HP and DPS for ${parsed.shipName}…`);
+  const estimate = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag, null, null, {fitSource: 'eft'});
+
+  // Ship modes (MODE_ITEMS / MODE_EFFECT_ROWS, PYFA CORE): a
+  // pasted fit has no killmail moment to anchor which mode was active, so
+  // -- same as the Pilot Analyzer -- compute all three up front and default
+  // to Sharpshooter, letting the viewer toggle.
+  // v2026.10.14.6: every hull with modes (MODE_ITEMS: Tactical Destroyers and the Anhinga).
+  let tacticalModes, activeMode;
+  const modeOrder = hullModeOrder(parsed.shipTypeId);
+  if(modeOrder){
+    activeMode = resolveModeKey(parsed.shipTypeId, null);
+    tacticalModes = {};
+    for(const m of modeOrder) tacticalModes[m] = m === activeMode ? estimate
+      : await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, m, parsed.midSlotByFlag, null, null, {fitSource: 'eft'});
+  }
+
+  // v.22: the engine inputs stay on f so the Fit card's module-state
+  // buttons can recalculate (recomputeFitWithStates).
+  const f = { estimate, tally: parsed.tally, tacticalModes, activeMode, eftText: text,
+    input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag, fitSource: 'eft'} };
+  return {parsed, f};
+}
+
 async function runFitAnalyzer(){
   const statusEl = document.getElementById('fitAnalyzerStatus');
+  myShip.faViewing = false; // v.33: no longer showing My Ship here
   document.getElementById('fitAnalyzerResults').innerHTML = '';
   const text = document.getElementById('fitAnalyzerInput').value;
   if(!text.trim()){ setStatus(statusEl, 'Paste a fit first.', true); return; }
@@ -7965,30 +8353,7 @@ async function runFitAnalyzer(){
   const btn = document.getElementById('fitAnalyzerBtn');
   btn.disabled = true;
   try{
-    setStatus(statusEl, 'Resolving fit against ESI…');
-    const parsed = await parseEftFit(text);
-
-    setStatus(statusEl, `Estimating hull HP and DPS for ${parsed.shipName}…`);
-    const estimate = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag, null, null, {fitSource: 'eft'});
-
-    // Ship modes (MODE_ITEMS / MODE_EFFECT_ROWS, PYFA CORE): a
-    // pasted fit has no killmail moment to anchor which mode was active, so
-    // -- same as the Pilot Analyzer -- compute all three up front and default
-    // to Sharpshooter, letting the viewer toggle.
-    // v2026.10.14.6: every hull with modes (MODE_ITEMS: Tactical Destroyers and the Anhinga).
-    let tacticalModes, activeMode;
-    const modeOrder = hullModeOrder(parsed.shipTypeId);
-    if(modeOrder){
-      activeMode = resolveModeKey(parsed.shipTypeId, null);
-      tacticalModes = {};
-      for(const m of modeOrder) tacticalModes[m] = m === activeMode ? estimate
-        : await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, m, parsed.midSlotByFlag, null, null, {fitSource: 'eft'});
-    }
-
-    // v.22: the engine inputs stay on f so the Fit card's module-state
-    // buttons can recalculate (recomputeFitWithStates).
-    const f = { estimate, tally: parsed.tally, tacticalModes, activeMode,
-      input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag, fitSource: 'eft'} };
+    const {parsed, f} = await buildFitFromEft(text, msg => setStatus(statusEl, msg));
     renderFitAnalyzerResult(parsed.shipName, parsed.fitName, f, parsed.idToName, parsed.unresolved, parsed.implantsNotApplied);
 
     const warn = parsed.unresolved.length
@@ -7996,7 +8361,7 @@ async function runFitAnalyzer(){
       : '';
     setStatus(statusEl, `Showing fit for ${parsed.shipName}${parsed.fitName ? ' ("' + parsed.fitName + '")' : ''}${warn}.`);
   }catch(e){
-    setStatus(statusEl, 'Error: ' + e.message, true);
+    setStatus(statusEl, withCode('Error: ' + e.message + '.', errorCodeOf(e)), true);
   }finally{
     btn.disabled = false;
   }
@@ -8008,7 +8373,12 @@ async function runFitAnalyzer(){
 // entry", so unlike renderFitTabs() there's no killmail/zKillboard lossrow
 // and no multi-loss subtabs (a pasted fit is exactly one fit, not a sample
 // of several recent losses).
-function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, implantsNotApplied){
+// v2026.10.14.33 (My Ship): opts.myShip renders the saved ship (the "Viewing my ship" banner instead of the fit's
+// name, every change kept with the ship: myShipChanged). Otherwise the result is a threat: a "Set as my ship"
+// button beside its name, and the threat <-> my ship switch above it (mysSwitchHost, shown while a ship is
+// saved and "Use in assessments" is on).
+function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, implantsNotApplied, opts = {}){
+  const mine = !!opts.myShip;
   f.fitTitle = fitName ? `${shipName} — ${fitName}` : shipName; // v.21: shown on the collapsed Fit card
   const el = document.getElementById('fitAnalyzerResults');
   const clashes = (implantsNotApplied || []).filter(x => !x.removed), removedImpl = (implantsNotApplied || []).filter(x => x.removed);
@@ -8017,55 +8387,48 @@ function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, imp
     + (removedImpl.length ? `
     <div class="note" style="margin-top:10px;">Not applied, no longer available: ${removedImpl.map(x => `${escapeHtml(idToName.get(x.id) || 'type ' + x.id)}${x.expiry ? ` (an event ${x.kind} that could be injected until ${x.expiry})` : ''}`).join(', ')}. pyfa leaves expired event boosters out of its data and drops them from a pasted fit, so they are left out here too.</div>` : '');
   const unresolvedHtml = (unresolved && unresolved.length) ? `
-    <div class="note" style="margin-top:10px;">Not recognized against ESI, so left out of the fit below: ${unresolved.map(n => escapeHtml(n)).join(', ')}. Check spelling and capitalization match exactly, and that it isn't a SKIN variant or a renamed/removed item.</div>` : '';
+    <div class="note" style="margin-top:10px;">Not recognized against ESI, so left out of the fit below: ${unresolved.map(n => escapeHtml(n)).join(', ')}. Check spelling and capitalization match exactly, and that it isn't a SKIN variant or a renamed/removed item. (FIT-04)</div>` : '';
 
+  const nameHtml = `${escapeHtml(shipName)}${fitName ? ' — ' + escapeHtml(fitName) : ''}`;
+  const headHtml = mine ? myShipBannerHtml()
+    : `<div class="mys-fa-head"><div class="cmeta">${nameHtml}</div>${myShipSetButtonHtml(f)}</div>`;
   el.innerHTML = `
+    ${mine ? '' : mysSwitchHostHtml(fitName ? `${shipName} · ${fitName}` : shipName)}
+    <div class="mys-threat-view">
     <div style="margin-top:14px;">
-      <div class="cmeta" style="margin-bottom:10px;">${escapeHtml(shipName)}${fitName ? ' — ' + escapeHtml(fitName) : ''}</div>
+      ${headHtml}
       <div class="fit-layout-wrap" id="fit-analyzer-layout-wrap">${fitLayoutHtml(f, idToName)}</div>
       ${unresolvedHtml}
       ${slotClashHtml}
       ${hpDpsMethodologyHtml()}
     </div>
+    </div>
+    ${mine ? '' : '<div class="mys-mine-view" hidden></div>'}
   `;
+  if(mine) wireMyShipBanner(el); else { wireMyShipSetButton(el, f, shipName, fitName); mysWireSwitchHosts(el); }
 
   // v2026.10.14.15 (layout Phase 1): the summary cards and the Fit card now live in one .fit-layout grid
   // (fitLayoutHtml), so every control -- mode buttons, the ASB out-of-charges toggle, module states,
   // drone squares -- rebuilds that one container and re-wires all of them (same "mutate f -> re-render ->
   // re-wire" pattern as before; previously the summary and the Fit card were two separate wraps).
   const layoutWrap = () => el.querySelector('#fit-analyzer-layout-wrap');
-  function rerenderAll(){
+  function redraw(){
     const wrap = layoutWrap();
     if(!wrap) return;
     wrap.innerHTML = fitLayoutHtml(f, idToName);
     wireAll();
   }
+  function rerenderAll(){
+    redraw();
+    if(mine) myShipChanged(layoutWrap(), f); // v.33: my ship keeps every change (M4)
+  }
   function wireAll(){
     const wrap = layoutWrap();
     if(!wrap) return;
-    wrap.querySelectorAll('.td-mode-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        // The mode icons sit inside the mode card's <summary>: without this the click would also open or
-        // close its "How this is handled" panel (2026-10-12).
-        e.preventDefault();
-        e.stopPropagation();
-        f.activeMode = btn.dataset.mode;
-        f.estimate = f.tacticalModes[f.activeMode];
-        rerenderAll();
-      });
-    });
-    wrap.querySelectorAll('.cap-asb-toggle').forEach(btn => { // v.27: ASB out-of-charges
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        f.asbDry = !f.asbDry;
-        rerenderAll();
-      });
-    });
-    wireModuleStateControls(wrap.querySelector('.fl-fit'), f, rerenderAll);
-    wireCardToggles(wrap, f, rerenderAll); // v.18 collapsible cards
+    wireFitLayout(wrap, f, rerenderAll);
   }
   wireAll();
+  if(mine) mysTrackView(layoutWrap(), redraw);
 }
 
 document.getElementById('fitAnalyzerBtn').addEventListener('click', runFitAnalyzer);
@@ -8086,7 +8449,7 @@ async function runFitForShip(character, shipTypeId, shipName, statusEl, forceRef
     const kmResults = await analyzeChunks(sample, fetchKillmail, 3);
     const valid = kmResults.filter(r => r && !r.error);
     if(!valid.length){
-      setStatus(statusEl, 'Could not retrieve killmail details for these losses.', true);
+      setStatus(statusEl, withCode('Could not retrieve killmail details for these losses.', 'PILOT-06'), true);
       return;
     }
 
@@ -8128,7 +8491,7 @@ async function runFitForShip(character, shipTypeId, shipName, statusEl, forceRef
     renderFitTabs(currentPilotName, shipName, fits, idToName);
     setStatus(statusEl, `Showing the ${fits.length} most recent loss${fits.length>1?'es':''} of ${shipName}.`);
   }catch(e){
-    setStatus(statusEl, 'Error: ' + e.message, true);
+    setStatus(statusEl, withCode('Error: ' + e.message + '.', errorCodeOf(e)), true);
   }
 }
 
@@ -13123,7 +13486,11 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
     </div>
   `).join('');
 
+  // v2026.10.14.33: the threat <-> my ship switch sits above the loss tabs (mysSwitchHost); "My ship" hides
+  // all of them and shows the saved ship instead. Each loss keeps its own states while hidden.
   el.innerHTML = `
+    ${mysSwitchHostHtml(`${shipName} · ${pilotName}`)}
+    <div class="mys-threat-view">
     <div style="margin-top:14px;">
       <div class="cmeta" style="margin-bottom:10px;">${escapeHtml(pilotName)} — ${escapeHtml(shipName)} — ${fits.length} most recent loss${fits.length>1?'es':''}, each shown as its own fit</div>
       <div class="subtabs">
@@ -13138,7 +13505,10 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
       <div class="subtab-panels">${panelsHtml}</div>
       <div class="note">Each tab is one specific loss — weakest damage type, effective HP, and DPS are all calculated from that fit by itself, never combined with modules from any other loss.</div>
     </div>
+    </div>
+    <div class="mys-mine-view" hidden></div>
   `;
+  mysWireSwitchHosts(el);
 
   el.querySelectorAll('.subtab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -13195,29 +13565,522 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   function wireTab(i){
     const wrap = el.querySelector(`#fit-layout-wrap-${i}`);
     if(!wrap) return;
-    wrap.querySelectorAll('.td-mode-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        // See the Fit Analyzer's wireAll(): the icons sit inside the mode card's <summary>.
-        e.preventDefault();
-        e.stopPropagation();
-        fits[i].activeMode = btn.dataset.mode;
-        fits[i].estimate = fits[i].tacticalModes[fits[i].activeMode];
-        rerenderTab(i);
-      });
-    });
-    wrap.querySelectorAll('.cap-asb-toggle').forEach(btn => { // v.27: ASB out-of-charges
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        fits[i].asbDry = !fits[i].asbDry;
-        rerenderTab(i);
-      });
-    });
-    wireModuleStateControls(wrap.querySelector('.fl-fit'), fits[i], () => rerenderTab(i));
-    wireCardToggles(wrap, fits[i], () => rerenderTab(i)); // v.18 collapsible cards
+    wireFitLayout(wrap, fits[i], () => rerenderTab(i));
   }
   fits.forEach((f, i) => wireTab(i));
 }
+// ==== MY SHIP (v2026.10.14.33, phase 1) ====
+// the owner: "a 'my ship' feature that can be utilized on ALL tabs ... set by providing an EFT fit ... persist until a
+// new one is uploaded or the user chooses to delete it ... a simple toggle ... whether any assessments will use
+// 'my ship'"; then "if i can toggle the state of my ship's modules and see how that affects the resulting
+// analysis ... an easy way to toggle between the two fits (the threat and the user's)". Decisions M1-M7 and
+// the mockup are in roadmap/my-ship-plan.md and the "My ship" design canvas.
+//   * The chip and the "Use in assessments" switch sit at the right end of the tab row (every tab). The chip
+//     opens a panel: a paste box when no ship is saved, otherwise a six-number summary with Open in Fit
+//     Analyzer, Replace, Copy EFT and Delete (an inline confirm, no browser dialog).
+//   * Stored in this browser only (localStorage MY_SHIP_KEY): the EFT text, the module / drone / mode states,
+//     the switch and the date. The fit is RECOMPUTED from the text whenever it is first needed in a page
+//     load (myShipEnsureFit), so tool fixes and game-data patches apply; the numbers are never stored.
+//     No ESI call happens on page load: only the chip's label comes from storage.
+//   * Every change to my ship's states (on the Fit Analyzer's "Viewing my ship" page or behind the threat <->
+//     my ship switch) is kept with it (myShipChanged); the Fit card's reset icon returns to the pasted fit (M4).
+//   * The switch (M5) shows in the Pilot and Fit Analyzer results while a ship is saved and the switch is on.
+//     Each threat's own states live on that threat's fit object, so they're forgotten when a new threat
+//     renders (M7), and they're kept while my ship is shown.
+//   * Phase 1 does not compare the two fits: no matchup strip, no "vs my ship" numbers. Those wait for the
+//     turret-application decisions (turret-application-plan.md D1-D6). M6 (changed numbers in amber) is
+//     for those numbers.
+// Presentation and inputs only: the same buildFitFromEft() / recomputeFitWithStates() as the Fit Analyzer.
+const MY_SHIP_KEY = 'dscanMyShip';
+const MY_SHIP_HULL_SVG = (size, sw = 1.8) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="${sw}" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l7-6h8l3 6-3 6h-8z"></path><path d="M10 6v12"></path></svg>`;
+const MY_SHIP_PLUS_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>';
+const MY_SHIP_CHEV_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>';
+const MY_SHIP_X_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
+const MY_SHIP_ARROW_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>';
+// rec: what is stored. f / parsed: this page load's computed fit (null until first needed).
+// version: bumped on every change to my ship, so a view drawn earlier knows it is stale (myShipRefreshStale).
+const myShip = {rec: null, f: null, parsed: null, loading: null, error: '', storageOk: true, panelMode: 'paste', faViewing: false, faEft: null, version: 0, saveNote: ''};
+const mysViews = new Map(); // element showing my ship -> its redraw()
+
+function myShipReadStored(){
+  let raw;
+  try{ raw = localStorage.getItem(MY_SHIP_KEY); }catch(e){ myShip.storageOk = false; return null; }
+  if(!raw) return null;
+  try{
+    const r = JSON.parse(raw);
+    if(r && r.v === 1 && typeof r.eft === 'string' && r.eft.trim() && r.shipName) return r;
+  }catch(e){}
+  myShip.error = withCode("The saved My Ship couldn't be read (the stored copy is damaged). Paste your fit again to replace it.", 'MYSHIP-02');
+  return null;
+}
+function myShipWriteStored(){
+  try{
+    if(myShip.rec) localStorage.setItem(MY_SHIP_KEY, JSON.stringify(myShip.rec));
+    else localStorage.removeItem(MY_SHIP_KEY);
+    myShip.storageOk = true;
+  }catch(e){ myShip.storageOk = false; }
+}
+function myShipLabel(){
+  const r = myShip.rec;
+  return r ? `${r.shipName}${r.fitName ? ' · ' + r.fitName : ''}` : '';
+}
+
+// Shared wiring for one .fit-layout: mode buttons, the ASB out-of-charges toggle, module states, drone squares
+// and card toggles. rerender() rebuilds the layout and calls this again. Used by the Fit Analyzer, each Pilot
+// Analyzer loss and every My Ship view (was the same code twice, in wireAll() and wireTab()).
+function wireFitLayout(wrap, f, rerender){
+  wrap.querySelectorAll('.td-mode-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      // The mode icons sit inside the mode card's <summary>: without this the click would also open or
+      // close its "How this is handled" panel (2026-10-12).
+      e.preventDefault();
+      e.stopPropagation();
+      f.activeMode = btn.dataset.mode;
+      f.estimate = f.tacticalModes[f.activeMode];
+      rerender();
+    });
+  });
+  wrap.querySelectorAll('.cap-asb-toggle').forEach(btn => { // v.27: ASB out-of-charges
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      f.asbDry = !f.asbDry;
+      rerender();
+    });
+  });
+  wireModuleStateControls(wrap.querySelector('.fl-fit'), f, rerender);
+  wireCardToggles(wrap, f, rerender); // v.18 collapsible cards
+}
+
+// The fit for my ship, computed once per page load (and again after Replace). Stored states are applied
+// through recomputeFitWithStates, which also brings a request the engine refuses back in line.
+function myShipEnsureFit(){
+  const r = myShip.rec;
+  if(!r) return Promise.resolve(null);
+  if(myShip.f && myShip.f.eftText === r.eft) return Promise.resolve(myShip.f);
+  if(myShip.loading) return myShip.loading;
+  const text = r.eft;
+  myShip.loading = (async () => {
+    try{
+      const {parsed, f} = await buildFitFromEft(text);
+      if(!myShip.rec || myShip.rec.eft !== text) return null; // replaced or deleted meanwhile
+      const cur = myShip.rec;
+      if(cur.activeMode && f.tacticalModes && f.tacticalModes[cur.activeMode]){ f.activeMode = cur.activeMode; f.estimate = f.tacticalModes[cur.activeMode]; }
+      f.asbDry = !!cur.asbDry;
+      if((cur.moduleStates && Object.keys(cur.moduleStates).length) || cur.droneStates){
+        f.moduleStates = cur.moduleStates || null;
+        f.moduleCopyOrder = cur.moduleCopyOrder || null;
+        f.droneStates = cur.droneStates || null;
+        await recomputeFitWithStates(f);
+      }
+      f.fitTitle = parsed.fitName ? `${parsed.shipName} — ${parsed.fitName}` : parsed.shipName;
+      myShip.f = f; myShip.parsed = parsed; myShip.error = '';
+      myShipStoreStates(f);
+      return f;
+    }catch(e){
+      myShip.error = withCode(`Your saved ship couldn't be loaded (${errorCodeOf(e)}: ${e.message}). It is still saved; try again later, or Replace it.`, 'MYSHIP-02');
+      return null;
+    }finally{
+      myShip.loading = null;
+    }
+  })();
+  return myShip.loading;
+}
+function myShipStoreStates(f){
+  const r = myShip.rec;
+  if(!r || f !== myShip.f) return false;
+  r.moduleStates = (f.moduleStates && Object.keys(f.moduleStates).length) ? f.moduleStates : null;
+  r.moduleCopyOrder = f.moduleCopyOrder || null;
+  r.droneStates = f.droneStates || null;
+  r.activeMode = f.activeMode || null;
+  r.asbDry = !!f.asbDry;
+  myShipWriteStored();
+  return true;
+}
+// Called after every re-render of a My Ship view (module, drone, mode, ASB or card change): keep the states
+// with my ship and mark the other views stale.
+function myShipChanged(el, f){
+  if(!myShipStoreStates(f)) return;
+  myShip.version++;
+  if(el) el.dataset.mysVer = String(myShip.version);
+}
+function mysTrackView(el, redraw){
+  if(!el) return;
+  el.dataset.mysVer = String(myShip.version);
+  mysViews.set(el, redraw);
+}
+function myShipRefreshStale(){
+  for(const [el, redraw] of [...mysViews]){
+    if(!el.isConnected){ mysViews.delete(el); continue; }
+    if(el.dataset.mysVer !== String(myShip.version)){ redraw(); el.dataset.mysVer = String(myShip.version); }
+  }
+}
+
+// ---- header chip and switch ----
+function renderMyShipChip(){
+  const chip = document.getElementById('myShipChip'), use = document.getElementById('myShipUse'), lab = document.getElementById('myShipUseLabel');
+  const r = myShip.rec;
+  if(!r){
+    chip.classList.add('is-empty');
+    chip.innerHTML = `${MY_SHIP_PLUS_SVG}<span>My Ship</span>`;
+    chip.setAttribute('aria-label', 'My Ship: not set. Paste your fit');
+    chip.title = 'Save the fit you fly';
+    use.checked = false; use.disabled = true;
+    lab.classList.add('is-off'); lab.title = 'Save your ship first';
+    return;
+  }
+  chip.classList.remove('is-empty');
+  chip.innerHTML = `${MY_SHIP_HULL_SVG(18)}<span class="mys-chip-k">My ship</span><span class="mys-chip-ship">${escapeHtml(r.shipName)}</span>${r.fitName ? `<span class="mys-chip-fit">· ${escapeHtml(r.fitName)}</span>` : ''}${MY_SHIP_CHEV_SVG}`;
+  chip.setAttribute('aria-label', `My Ship: ${myShipLabel()}. Open my ship`);
+  chip.title = myShipLabel();
+  use.disabled = false; use.checked = !!r.use;
+  lab.classList.remove('is-off');
+  lab.title = r.use ? 'On: the Pilot and Fit Analyzers can switch between the threat and your ship' : 'Off: assessments leave your ship out';
+}
+
+// ---- panel ----
+function myShipPanelEl(){ return document.getElementById('myShipPanel'); }
+function myShipPanelIsOpen(){ return !myShipPanelEl().hidden; }
+function openMyShipPanel(mode){
+  const panel = myShipPanelEl();
+  myShip.panelMode = mode || (myShip.rec ? 'summary' : 'paste');
+  panel.hidden = false;
+  document.getElementById('myShipBackdrop').hidden = false;
+  document.getElementById('myShipChip').setAttribute('aria-expanded', 'true');
+  renderMyShipPanel();
+  const ta = panel.querySelector('#myShipEft');
+  (ta || panel.querySelector('button.mys-x')).focus({preventScroll: true});
+  try{ panel.scrollIntoView({block: 'nearest'}); }catch(e){}
+  if(myShip.panelMode !== 'paste' && myShip.rec && !myShip.f){
+    myShipEnsureFit().then(() => { if(myShipPanelIsOpen() && myShip.panelMode !== 'paste') renderMyShipPanel(); });
+  }
+}
+function closeMyShipPanel(returnFocus = true){
+  const panel = myShipPanelEl();
+  if(panel.hidden) return;
+  panel.hidden = true;
+  document.getElementById('myShipBackdrop').hidden = true;
+  const chip = document.getElementById('myShipChip');
+  chip.setAttribute('aria-expanded', 'false');
+  myShip.saveNote = '';
+  if(returnFocus) chip.focus({preventScroll: true});
+}
+function myShipTilesHtml(){
+  const f = myShip.f, e = f && f.estimate;
+  const keys = ['EHP', 'DPS', 'Capacitor', 'Speed', 'Signature', 'Lock range'];
+  let tiles;
+  if(!e){
+    const v = myShip.loading ? '…' : '—';
+    tiles = keys.map(k => [k, v]);
+  }else{
+    const guess = e.ammoEstimates.length > 0;
+    const dps = guess ? `${e.ammoEstimates[0].dps.toLocaleString()}–${e.ammoEstimates[e.ammoEstimates.length - 1].dps.toLocaleString()}` : e.dpsFixed.toLocaleString();
+    const cap = (f.asbDry && e.capacitor.asbDry) ? e.capacitor.asbDry : e.capacitor;
+    const capText = cap.stable ? `Stable ${cap.stablePct}%` : (cap.timeToEmptyCapped ? 'Lasts 4h+' : `Lasts ${formatDurationShort(cap.timeToEmptyExactSec ?? cap.timeToEmptySec)}`);
+    const prop = e.speed.boosted !== null ? (e.speed.propModType === 'mwd' ? 'MWD' : e.speed.propModType === 'afterburner' ? 'AB' : 'prop') : null;
+    tiles = [
+      ['EHP', e.totalHP.toLocaleString()],
+      ['DPS', dps],
+      ['Capacitor', capText],
+      [prop ? `Speed, ${prop} on` : 'Speed', `${(prop ? e.speed.boosted : e.speed.cruising).toLocaleString()} m/s`],
+      [e.signatureRadius.boosted !== null ? 'Sig, MWD on' : 'Signature', `${(e.signatureRadius.boosted !== null ? e.signatureRadius.boosted : e.signatureRadius.base).toLocaleString()} m`],
+      ['Lock range', `${kmText(e.exact ? e.exact.targetingRange : e.targetingRange)} km`]];
+  }
+  return `<div class="mys-tiles">${tiles.map(([k, v]) => `<div class="mys-tile"><div class="mys-tile-k">${escapeHtml(k)}</div><div class="mys-tile-v">${escapeHtml(v)}</div></div>`).join('')}</div>`;
+}
+function myShipCustomStates(f){
+  return !!(f && ((f.moduleStates && Object.keys(f.moduleStates).length) || f.droneStates));
+}
+function renderMyShipPanel(){
+  const panel = myShipPanelEl();
+  const r = myShip.rec;
+  const x = `<button type="button" class="mys-x" data-act="close" aria-label="Close">${MY_SHIP_X_SVG}</button>`;
+  const storageNote = myShip.storageOk ? ''
+    : `<div class="note">${escapeHtml(withCode("This browser isn't letting the page store anything (a private window, blocked site data, or full storage), so My Ship is kept only until this page is closed.", 'MYSHIP-01'))}</div>`;
+  if(!r || myShip.panelMode === 'paste'){
+    panel.innerHTML = `
+      <div class="mys-panel-head"><h2>${r ? 'Replace my ship' : 'My Ship'}</h2>${x}</div>
+      <p class="mys-p">Paste the fit you fly, in EFT format (pyfa: Export to clipboard; in game: Copy to clipboard in the Fitting window).${r ? ` It replaces ${escapeHtml(myShipLabel())} and its module states.` : ''}</p>
+      <label class="mys-label" for="myShipEft">EFT fit</label>
+      <textarea id="myShipEft" rows="10" spellcheck="false" placeholder="[Vexor, Brawl]&#10;Damage Control II&#10;Medium Armor Repairer II&#10;...&#10;&#10;Hammerhead II x5"></textarea>
+      <div class="mys-actions">
+        <button type="button" class="mys-primary" data-act="save">Save as my ship</button>
+        <button type="button" class="mys-quiet" data-act="cancel">Cancel</button>
+      </div>
+      <div class="status" id="myShipPanelStatus"></div>
+      ${!r && myShip.error ? `<div class="status err">${escapeHtml(myShip.error)}</div>` : ''}
+      ${myShip.saveNote ? `<div class="status">${escapeHtml(myShip.saveNote)}</div>` : ''}
+      ${storageNote}
+      <p class="mys-fine">Saved in this browser only, until you replace or delete it. Implants and boosters in the paste count, as in the Fit Analyzer.</p>`;
+  }else{
+    const set = r.savedAt ? new Date(r.savedAt) : null;
+    const sub = [r.shipGroup, set && !isNaN(set) ? 'set ' + set.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) : '',
+      myShip.storageOk ? 'stored in this browser' : 'kept until this page closes'].filter(Boolean).join(' · ');
+    const icon = `${MY_SHIP_HULL_SVG(26, 1.6)}${r.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(r.shipTypeId)}/icon?size=64" alt="" loading="lazy" style="position:absolute; inset:0;" onerror="this.remove();">` : ''}`;
+    const statesLine = !myShip.f ? (myShip.loading ? 'Calculating…' : '')
+      : myShipCustomStates(myShip.f)
+        ? '<b>Module states changed</b> from the paste, and kept with your ship. The reset icon on its Fit card returns to the pasted states.'
+        : 'Module states as pasted. Changes you make on its Fit card are kept with your ship.';
+    const confirm = myShip.panelMode === 'confirmDelete' ? `
+      <div class="mys-confirm" role="alertdialog" aria-label="Delete my ship">
+        Delete ${escapeHtml(myShipLabel())}? Its fit and module states are removed from this browser.
+        <div class="mys-actions">
+          <button type="button" class="mys-danger" data-act="delete-yes">Delete</button>
+          <button type="button" class="mys-quiet" data-act="delete-no">Keep it</button>
+        </div>
+      </div>` : '';
+    panel.innerHTML = `
+      <div class="mys-panel-head">
+        <div class="mys-ident">
+          <div class="mys-ident-icon" style="position:relative;">${icon}</div>
+          <div><h2>${escapeHtml(r.shipName)}${r.fitName ? ` <span class="mys-dim">· ${escapeHtml(r.fitName)}</span>` : ''}</h2><div class="mys-ident-sub">${escapeHtml(sub)}</div></div>
+        </div>
+        ${x}
+      </div>
+      ${myShipTilesHtml()}
+      <div class="mys-states">${statesLine}</div>
+      ${myShip.error && !myShip.f && !myShip.loading ? `<div class="status err">${escapeHtml(myShip.error)}</div>` : ''}
+      ${myShip.saveNote ? `<div class="status">${escapeHtml(myShip.saveNote)}</div>` : ''}
+      ${storageNote}
+      <details class="mys-eft"><summary>Fit and EFT text</summary><pre>${escapeHtml(r.eft)}</pre></details>
+      <button type="button" class="mys-primary mys-open" data-act="open">Open in Fit Analyzer ${MY_SHIP_ARROW_SVG}</button>
+      <div class="mys-actions">
+        <button type="button" class="mys-quiet" data-act="replace">Replace</button>
+        <button type="button" class="mys-quiet" data-act="copy">Copy EFT</button>
+        <button type="button" class="mys-danger mys-push" data-act="delete">Delete</button>
+      </div>
+      ${confirm}`;
+  }
+  wireMyShipPanel(panel);
+}
+function wireMyShipPanel(panel){
+  const on = (act, fn) => { const b = panel.querySelector(`[data-act="${act}"]`); if(b) b.addEventListener('click', fn); };
+  on('close', () => closeMyShipPanel());
+  on('cancel', () => { if(myShip.rec){ myShip.panelMode = 'summary'; renderMyShipPanel(); panel.querySelector('button.mys-x').focus(); } else closeMyShipPanel(); });
+  on('save', myShipSaveFromPaste);
+  on('open', () => showMyShipInFitAnalyzer());
+  on('replace', () => { myShip.saveNote = ''; myShip.panelMode = 'paste'; renderMyShipPanel(); panel.querySelector('#myShipEft').focus(); });
+  on('delete', () => { myShip.panelMode = 'confirmDelete'; renderMyShipPanel(); panel.querySelector('[data-act="delete-no"]').focus(); });
+  on('delete-no', () => { myShip.panelMode = 'summary'; renderMyShipPanel(); panel.querySelector('[data-act="delete"]').focus(); });
+  on('delete-yes', myShipDelete);
+  on('copy', async (e) => {
+    const b = e.currentTarget;
+    try{ await navigator.clipboard.writeText(myShip.rec.eft); b.textContent = 'Copied!'; }
+    catch(err){ b.textContent = 'Copy failed'; }
+    setTimeout(() => { if(b.isConnected) b.textContent = 'Copy EFT'; }, 1100);
+  });
+  const ta = panel.querySelector('#myShipEft');
+  if(ta) ta.addEventListener('keydown', (e) => { if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); myShipSaveFromPaste(); } });
+}
+async function myShipSaveFromPaste(){
+  const panel = myShipPanelEl();
+  const ta = panel.querySelector('#myShipEft'), st = panel.querySelector('#myShipPanelStatus'), btn = panel.querySelector('[data-act="save"]');
+  if(!ta || btn.disabled) return;
+  const text = ta.value;
+  if(!text.trim()){ setStatus(st, 'Paste a fit first.', true); ta.focus(); return; }
+  btn.disabled = true;
+  try{
+    const {parsed, f} = await buildFitFromEft(text, m => setStatus(st, m));
+    await myShipAdopt(text, parsed, f, null);
+    myShip.saveNote = parsed.unresolved.length ? `Not recognized, so left out of your ship: ${parsed.unresolved.join(', ')}. (FIT-04)` : '';
+    myShip.panelMode = 'summary';
+    if(myShipPanelIsOpen()){ renderMyShipPanel(); panel.querySelector('[data-act="open"]').focus(); }
+  }catch(e){
+    if(st.isConnected) setStatus(st, withCode('Error: ' + e.message + '.', errorCodeOf(e)), true);
+  }finally{
+    if(btn.isConnected) btn.disabled = false;
+  }
+}
+// Makes `text` my ship. With a computed fit (the panel's Save) it is used as is; without one (the Fit
+// Analyzer's "Set as my ship", which keeps that fit's states) it is computed when first needed, so the threat's
+// fit object is never shared with my ship (M7).
+async function myShipAdopt(text, meta, f, states){
+  let group = '';
+  try{ const t = await getType(meta.shipTypeId); const g = await getGroup(t.group_id); group = (g && g.name) || ''; }catch(e){}
+  myShip.rec = {v: 1, eft: text, shipName: meta.shipName, fitName: meta.fitName || '', shipTypeId: meta.shipTypeId, shipGroup: group,
+    savedAt: new Date().toISOString(), use: myShip.rec ? !!myShip.rec.use : true,
+    moduleStates: null, moduleCopyOrder: null, droneStates: null, activeMode: null, asbDry: false, ...(states || {})};
+  if(f){
+    f.fitTitle = meta.fitName ? `${meta.shipName} — ${meta.fitName}` : meta.shipName;
+    myShip.f = f; myShip.parsed = meta;
+  }else{
+    myShip.f = null; myShip.parsed = null;
+  }
+  myShip.error = '';
+  myShip.version++;
+  myShipWriteStored();
+  myShipAfterChange();
+}
+function myShipDelete(){
+  const label = myShipLabel();
+  myShip.rec = null; myShip.f = null; myShip.parsed = null; myShip.error = ''; myShip.version++;
+  myShipWriteStored();
+  if(myShip.faViewing){
+    myShip.faViewing = false;
+    document.getElementById('fitAnalyzerResults').innerHTML = '';
+    setStatus(document.getElementById('fitAnalyzerStatus'), '');
+  }
+  myShipAfterChange();
+  myShip.saveNote = `Deleted ${label}.`;
+  myShip.panelMode = 'paste';
+  renderMyShipPanel();
+  const ta = myShipPanelEl().querySelector('#myShipEft');
+  if(ta) ta.focus();
+}
+// After my ship is set, replaced, deleted or switched on/off: the chip, every switch, the "Set as my ship"
+// buttons and (when it is showing) the Fit Analyzer's "Viewing my ship" page.
+function myShipAfterChange(){
+  renderMyShipChip();
+  document.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h, {redrawMine: true}));
+  document.querySelectorAll('.mys-set-slot').forEach(slot => mysRenderSetSlot(slot));
+  if(myShip.faViewing && myShip.rec && myShip.faEft !== myShip.rec.eft) showMyShipInFitAnalyzer({keepPanel: true, noTab: true});
+}
+
+// ---- Fit Analyzer: "Set as my ship", "Viewing my ship" ----
+function myShipSetButtonHtml(f){ return '<span class="mys-set-slot"></span>'; }
+function wireMyShipSetButton(el, f, shipName, fitName){
+  const slot = el.querySelector('.mys-set-slot');
+  if(!slot) return;
+  slot._mysFit = {f, shipName, fitName};
+  mysRenderSetSlot(slot);
+}
+function mysRenderSetSlot(slot){
+  const {f, shipName, fitName} = slot._mysFit || {};
+  if(!f) return;
+  if(myShip.rec && f.eftText && myShip.rec.eft === f.eftText){
+    slot.innerHTML = `<span class="mys-is-tag">${MY_SHIP_HULL_SVG(13)} This is my ship</span>`;
+    return;
+  }
+  slot.innerHTML = `<button type="button" class="mys-set" title="${myShip.rec ? `Replaces ${escapeHtml(myShipLabel())}. ` : ''}Keeps this fit's current module states">${MY_SHIP_HULL_SVG(14)} Set as my ship</button>`;
+  slot.querySelector('button').addEventListener('click', async (e) => {
+    const b = e.currentTarget;
+    b.disabled = true;
+    await myShipAdopt(f.eftText, {shipName, fitName, shipTypeId: f.input.shipTypeId}, null, {
+      moduleStates: (f.moduleStates && Object.keys(f.moduleStates).length) ? JSON.parse(JSON.stringify(f.moduleStates)) : null,
+      moduleCopyOrder: f.moduleCopyOrder ? JSON.parse(JSON.stringify(f.moduleCopyOrder)) : null,
+      droneStates: f.droneStates ? {...f.droneStates} : null,
+      activeMode: f.activeMode || null, asbDry: !!f.asbDry});
+  });
+}
+function myShipBannerHtml(){
+  return `<div class="mys-banner">
+      <div class="mys-banner-id">${MY_SHIP_HULL_SVG(20)}<span class="mys-banner-k">Viewing my ship</span><span class="mys-banner-v">${escapeHtml(myShipLabel())}</span></div>
+      <div class="mys-actions">
+        <button type="button" class="mys-quiet" data-act="mys-replace">Replace fit</button>
+        <button type="button" class="mys-quiet" data-act="mys-another">Analyze another fit</button>
+      </div>
+    </div>`;
+}
+function wireMyShipBanner(el){
+  const rep = el.querySelector('[data-act="mys-replace"]'), other = el.querySelector('[data-act="mys-another"]');
+  if(rep) rep.addEventListener('click', () => openMyShipPanel('paste'));
+  if(other) other.addEventListener('click', () => {
+    myShip.faViewing = false;
+    el.innerHTML = '';
+    setStatus(document.getElementById('fitAnalyzerStatus'), '');
+    document.getElementById('fitAnalyzerInput').focus();
+  });
+}
+async function showMyShipInFitAnalyzer(o = {}){
+  if(!o.keepPanel) closeMyShipPanel(false);
+  if(!o.noTab) switchTab('fit');
+  const el = document.getElementById('fitAnalyzerResults'), statusEl = document.getElementById('fitAnalyzerStatus');
+  myShip.faViewing = true;
+  myShip.faEft = myShip.rec ? myShip.rec.eft : null;
+  el.innerHTML = '';
+  setStatus(statusEl, 'Loading your ship…');
+  const f = await myShipEnsureFit();
+  if(!myShip.faViewing) return; // another fit was analyzed meanwhile
+  if(!f){ setStatus(statusEl, myShip.error || '', true); return; }
+  const p = myShip.parsed;
+  renderFitAnalyzerResult(p.shipName, p.fitName, f, p.idToName, p.unresolved, p.implantsNotApplied, {myShip: true});
+  setStatus(statusEl, `Showing my ship, ${myShipLabel()}. Module, drone and mode changes are kept with it.`);
+  if(!o.keepPanel) el.scrollIntoView({block: 'start'});
+}
+
+// ---- threat <-> my ship switch (M5) ----
+// A host sits before .mys-threat-view and .mys-mine-view in the same parent. Hidden unless a ship is saved
+// and "Use in assessments" is on; "My ship" hides the threat (its states stay on its own fit objects) and
+// draws my ship in .mys-mine-view, fresh every time it is shown.
+function mysSwitchHostHtml(threatLabel){
+  return `<div class="mys-switch-host" data-threat="${escapeHtml(threatLabel)}" data-view="threat" hidden></div>`;
+}
+function mysWireSwitchHosts(root){
+  root.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h));
+}
+function mysRenderSwitch(host, o = {}){
+  const root = host.parentElement;
+  const tv = root && root.querySelector(':scope > .mys-threat-view'), mv = root && root.querySelector(':scope > .mys-mine-view');
+  if(!tv || !mv) return;
+  if(!(myShip.rec && myShip.rec.use)){
+    host.hidden = true; host.innerHTML = ''; host.dataset.view = 'threat';
+    tv.hidden = false; mv.hidden = true; mv.innerHTML = '';
+    return;
+  }
+  const view = host.dataset.view === 'mine' ? 'mine' : 'threat';
+  host.hidden = false;
+  host.innerHTML = `<div class="mys-switch" role="group" aria-label="Show fit">
+      <button type="button" class="mys-sw-btn is-threat" data-view="threat" aria-pressed="${view === 'threat'}"><span class="mys-sw-k">Threat</span><span class="mys-sw-v">${escapeHtml(host.dataset.threat || '')}</span></button>
+      <button type="button" class="mys-sw-btn is-mine" data-view="mine" aria-pressed="${view === 'mine'}"><span class="mys-sw-k">My ship</span><span class="mys-sw-v">${escapeHtml(myShipLabel())}</span></button>
+    </div>`;
+  host.querySelectorAll('button.mys-sw-btn').forEach(b => b.addEventListener('click', () => {
+    if(b.dataset.view === host.dataset.view) return;
+    host.dataset.view = b.dataset.view;
+    mysRenderSwitch(host, {redrawMine: true});
+    const again = host.querySelector(`button.mys-sw-btn[data-view="${b.dataset.view}"]`);
+    if(again) again.focus({preventScroll: true});
+    // on a phone the switch is sticky: bring the top of the newly shown fit back under it
+    if(host.getBoundingClientRect().top <= 1) (b.dataset.view === 'mine' ? mv : tv).scrollIntoView({block: 'start'});
+  }));
+  // Keep the page height while the other fit is drawn, so the browser doesn't clamp the scroll position.
+  const keep = (view === 'mine' ? tv : mv).offsetHeight;
+  if(view === 'threat') mv.innerHTML = '';
+  else if(o.redrawMine || !mv.firstChild){ mv.style.minHeight = keep + 'px'; mysRenderMineView(mv); }
+  tv.hidden = view !== 'threat';
+  mv.hidden = view !== 'mine';
+}
+async function mysRenderMineView(mv){
+  const token = {};
+  mv._mysToken = token;
+  // Drawn at once when my ship is already computed this page load; otherwise "Loading" until it is.
+  const ready = myShip.f && myShip.rec && myShip.f.eftText === myShip.rec.eft;
+  if(!ready) mv.innerHTML = '<div class="status">Loading your ship…</div>';
+  const f = ready ? myShip.f : await myShipEnsureFit();
+  if(mv._mysToken !== token || !mv.isConnected) return;
+  mv.style.minHeight = '';
+  if(!f){ mv.innerHTML = `<div class="status err">${escapeHtml(myShip.error || '')}</div>`; return; }
+  const p = myShip.parsed;
+  const left = (p.unresolved && p.unresolved.length) ? `<div class="note" style="margin-top:10px;">Not recognized, so left out of your ship: ${p.unresolved.map(n => escapeHtml(n)).join(', ')}. (FIT-04)</div>` : '';
+  mv.innerHTML = `<div class="fit-layout-wrap mys-mine-wrap">${fitLayoutHtml(f, p.idToName)}</div>${left}`;
+  const wrap = mv.firstElementChild;
+  const redraw = () => { wrap.innerHTML = fitLayoutHtml(f, p.idToName); wireFitLayout(wrap, f, rerender); };
+  const rerender = () => { redraw(); myShipChanged(wrap, f); };
+  wireFitLayout(wrap, f, rerender);
+  mysTrackView(wrap, redraw);
+}
+
+(function myShipInit(){
+  const chip = document.getElementById('myShipChip');
+  if(!chip || !chip.classList) return; // LESSON #36: the regression suites run this script against a stub DOM
+  myShip.rec = myShipReadStored();
+  renderMyShipChip();
+  chip.addEventListener('click', () => { if(myShipPanelIsOpen()) closeMyShipPanel(); else openMyShipPanel(); });
+  document.getElementById('myShipUse').addEventListener('change', (e) => {
+    if(!myShip.rec) return;
+    myShip.rec.use = e.target.checked;
+    myShipWriteStored();
+    myShipAfterChange();
+  });
+  // Outside press closes the panel (pointerdown, so the click that opens it from a page button can't close it).
+  document.addEventListener('pointerdown', (e) => {
+    if(!myShipPanelIsOpen()) return;
+    if(myShipPanelEl().contains(e.target) || chip.contains(e.target)) return;
+    closeMyShipPanel(false);
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && myShipPanelIsOpen()){ e.preventDefault(); closeMyShipPanel(); }
+  });
+})();
 </script>
 
 </body>

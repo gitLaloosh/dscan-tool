@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — My Ship, phase 1</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>My Ship, phase 1: save your fit and switch to it from any threat</h1>
+<p><span class="tag">Feature</span> 2026-10-23 &middot; <code>v2026.10.14.32</code> &rarr; <code>v2026.10.14.33</code> &middot; the owner: "ok, work on 1" (build My Ship phase 1 as drawn in the "My ship" design canvas). Decisions M1&ndash;M7 are in <code>roadmap/my-ship-plan.md</code>.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Chip and switch on every tab</b>, at the right end of the tab row: "+ My Ship" with "Use in assessments" disabled until a fit is saved; then "MY SHIP · Vexor · Brawl" with the switch on.</li>
+<li><b>The panel</b> (a popover; a sheet from the bottom on a phone). Empty: paste an EFT fit, Save as my ship. Set: the ship, its class and the date, six numbers (EHP, DPS, capacitor, speed with the prop module on, signature with an MWD on, lock range), the EFT text, Open in Fit Analyzer, Replace, Copy EFT, and Delete with an inline "Delete / Keep it". Escape, the X or a click outside closes it.</li>
+<li><b>Fit Analyzer.</b> "Set as my ship" beside any analyzed fit's name; it keeps that fit's current module states and then reads "This is my ship". "Open in Fit Analyzer" shows the saved ship under a "Viewing my ship" banner with Replace fit and Analyze another fit.</li>
+<li><b>Threat ⇄ my ship switch</b> (M5) above the results in the Fit Analyzer and the Pilot Analyzer, while a ship is saved and "Use in assessments" is on. Threat is amber, my ship cyan. Showing my ship hides the threat; the threat's own module changes stay (M7: they're forgotten only when a new threat is loaded). On a phone the switch stays at the top while scrolling.</li>
+<li><b>Module states are kept with your ship</b> (M4): every module, drone, mode or ASB change on any My Ship view is saved, and shows on the other views. The Fit card's reset icon returns to the pasted states.</li>
+<li><b>Storage</b>: this browser only (<code>localStorage</code> <code>dscanMyShip</code>): the EFT text, the states, the switch and the date. The numbers are not stored. The fit is recomputed from the text the first time a page load needs it, so tool fixes and game-data updates apply; no ESI request is made just for loading the page.</li>
+<li><b>Two new error codes</b>: MYSHIP-01 (the browser refuses storage: My Ship still works until the page closes) and MYSHIP-02 (the saved fit no longer loads; the message includes the underlying code, for example FIT-03, and the saved text is kept). ERRORS.md regenerated, 25 codes.</li>
+<li>Code: the <code>MY SHIP</code> block at the end of the script. The Fit Analyzer's paste-to-fit step is now <code>buildFitFromEft()</code>, shared with My Ship (same engine calls). The wiring for one fit layout is <code>wireFitLayout()</code>, used by the Fit Analyzer, each Pilot Analyzer loss and every My Ship view (it was the same code twice). Class names are <code>mys-*</code>, since <code>ms-*</code> already means module state.</li>
+</ul>
+
+<h2>Not in phase 1</h2>
+<p>Nothing compares the two fits yet: no matchup strip, no "vs my ship" numbers, no amber changed numbers (M6), no Weaknesses from your side. Those need the turret-application decisions (D1&ndash;D6).</p>
+
+<h2>Verification</h2>
+<ul>
+<li>New <code>tools/page_checks/my_ship_check.py</code>, FAILURES 0 (67 checks). It covers:
+<ul>
+<li>the paste errors and the panel's numbers, which equal the Fit Analyzer's for the same paste;</li>
+<li>a reload: the ship is still there and no ESI request is made;</li>
+<li>a module change survives a reload, and reset clears it;</li>
+<li>the switch in both analyzers: the threat keeps its own change, the scroll position doesn't move, and a change on one tab shows on the other;</li>
+<li>the "Use in assessments" toggle, Set as my ship and Delete;</li>
+<li>MYSHIP-01 and MYSHIP-02;</li>
+<li>the phone layout at 375 px with mobile emulation.</li>
+</ul></li>
+<li>No number changes: full output diff v.32 &rarr; v.33 is 0 of 237 fits. Regression suite ALL PASS, parse tests 293/293, PYFA CORE lock unchanged (18 sections), update-check chain 27 OK, layout / missing-charges / zKillboard-outage checks FAILURES 0.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>Code that runs when the page loads also runs inside the regression suites, which load the same script with a stub DOM (no <code>classList</code>, no <code>localStorage</code>). If start-up code touches either, the suites stop before checking a fit, and the browser-based page checks can't show it. Guard start-up code (<code>myShipInit</code> returns early on a stub element) and run the Node suites after adding any (LESSON #36).</li>
+<li>When one view replaces another after a tick, keep the page's height until the new view is drawn. Otherwise the browser clamps the scroll to the top. Check <code>scrollY</code> before and after the swap (LESSON #33).</li>
+</ul>
+</body>
+</html>
