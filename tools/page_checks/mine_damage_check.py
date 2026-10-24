@@ -5,6 +5,8 @@ roadmap/turret-application-plan.md board 4).
 
 The number is pyfa's applied DPS of your ship on the threat (the board's "DPS applied to them", checked against pyfa by
 tools/independent_checks/check_matchup.py); this checks the card around it, in the real page:
+  * v2026.10.14.56: the fight's range (both cards' sliders and charts, the strip's slider) runs to the farther-reaching
+    ship (no ship saved: the threat's own reach); 100 m steps;
   * placement: with a ship saved, the My ship view has the card on top, across the Fit and stats columns at 1440 px
     (Weaknesses beside it), full width at 1100 px, first on a phone; the tag names the threat; a cyan edge;
   * the headline is the board's "DPS applied to them" and the card's own point; one solid line; the key lists YOUR
@@ -85,6 +87,14 @@ def desktop(b, W):
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
     check(pg.locator(f'{MV} .fl-dmg').count() == 0, f'{W}: no ship saved, no card of yours')
+    # v2026.10.14.56: the fight's range runs to the farther-reaching ship; with no ship saved, the threat's own reach
+    # (the typical-class preset has no weapons and doesn't widen it)
+    TMAX = f"() => [document.querySelector('{TC} input[data-in=\"range\"]').max, dmgReachMax(document.querySelector('{TC}')._dmg.f.estimate.application)]"
+    if not pg.locator(TC).count(): pg.locator(f'{R} .mys-threat-view .fl-dmg .cc-toggle[data-card="dmg"]').first.click(); settle(pg, 300)
+    pg.wait_for_selector(f'{TC} input[data-in="range"]')
+    t0 = pg.evaluate(TMAX) if pg.locator(TC).count() else None
+    if t0 is None: t0 = pg.evaluate(f"() => [document.querySelector('{R} .fl-dmg .dmg-card input[data-in=\"range\"]').max, dmgReachMax(document.querySelector('{R} .fl-dmg .dmg-card')._dmg.f.estimate.application)]")
+    check(str(t0[1]) == t0[0], f'{W}: no ship saved, the range runs to the threat\'s reach ({t0[0]} m)')
     save_ship(pg); settle(pg, 800)
     to_mine(pg); open_card(pg, MV)
     # placement
@@ -98,6 +108,23 @@ def desktop(b, W):
     edge = pg.evaluate(f"getComputedStyle(document.querySelector('{MC}')).borderLeftColor")
     cyan = pg.evaluate("(() => { const d = document.createElement('div'); d.style.color = 'var(--cyan)'; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c; })()")
     check(edge == cyan and pg.inner_text(f'{MC} .dmg-vs') == 'applied to the Hecate · threat', f'{W}: cyan edge, tag "{pg.inner_text(f"{MC} .dmg-vs")}"')
+    # v2026.10.14.56 (the owner: "engagement range appears to be capped for both perspectives by the threat's range. It
+    # should probably be the greater of the two"): the Hecate reaches ~10 km, your Vexor's drones 60 km
+    mx = pg.evaluate(f"""() => {{ const c = document.querySelector('{MC}')._dmg; return {{mine: document.querySelector('{MC} input[data-in="range"]').max,
+      strip: document.querySelector('{S} input[data-fset="range"]').max, step: document.querySelector('{MC} input[data-in="range"]').step + '/' + document.querySelector('{S} input[data-fset="range"]').step,
+      axis: c.m.axis.hi, them: dmgReachMax(c.f.estimate.application), you: dmgReachMax(c.mf.estimate.application), dcr: c.mf.estimate.application.projected.droneControlRange}}; }}""")
+    want = str(max(mx['them'], mx['you']))
+    check(mx['you'] > mx['them'] and mx['mine'] == mx['strip'] == want and str(mx['axis']) == want and int(want) >= mx['dcr'] and mx['step'] == '100/100',
+          f'{W}: the range runs to the farther-reaching ship on your card, its chart and the strip ({mx})')
+    to_threat(pg); open_card(pg, f'{R} .mys-threat-view')
+    tm = pg.evaluate(f"() => [document.querySelector('{TC} input[data-in=\"range\"]').max, document.querySelector('{TC}')._dmg.m.axis.hi]")
+    check(tm[0] == want and str(tm[1]) == want, f'{W}: the threat\'s card too: slider and chart to {want} m ({tm})')
+    set_range(pg, f'{TC} input[data-in="range"]', mx['dcr']); settle(pg, 200)
+    check(pg.inner_text(f'{TC} [data-out="range"]') == '60 km' and pg.evaluate(f"document.querySelector('{TC}')._dmg.f.dmg.range") == mx['dcr'],
+          f'{W}: the threat\'s card can set the range to your drone range (60 km)')
+    set_range(pg, f'{TC} input[data-in="range"]', 4400); settle(pg, 200)
+    check(pg.evaluate(f"document.querySelector('{TC} input[data-in=\"range\"]').value") == '4400', f'{W}: 100 m steps: 4.4 km stays 4.4 km on the long slider')
+    to_mine(pg); open_card(pg, MV)
     # the number
     h = head(pg)
     check(h == board_your(pg) == pg.evaluate(EXPECT, MC), f'{W}: headline {h} = the board\'s DPS applied to them ({board_your(pg)}) = the card\'s point')

@@ -1601,7 +1601,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.55</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.56</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -15101,6 +15101,11 @@ function dmgReachM(app){
   for(const d of app.drones || []) r = Math.max(r, Math.min(dcr * 1.1, dmgIsSentry(d) ? (d.optimal || 0) + 3 * (d.falloff || 0) : dcr * 1.1));
   return r;
 }
+// v2026.10.14.56 (the owner 2026-10-24: "engagement range appears to be capped for both perspectives by the threat's range.
+// It should probably be the greater of the two for both perspectives"): with your ship in use, the fight's range (the
+// distance axis and every range slider: both cards and the strip) runs to whichever ship reaches farther.
+function dmgReachMax(app){ return dmgNiceKm(Math.max(dmgReachM(app), dmgDefaultRangeM(app) * 1.25, 1000) / 1000) * 1000; }
+function dmgFightRangeMax(tApp, mApp){ return Math.max(dmgReachMax(tApp), mApp ? dmgReachMax(mApp) : 0); }
 function dmgNiceKm(km){
   const steps = [2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 120, 150, 200, 250, 300, 400, 500];
   return steps.find(s => s >= km) || Math.ceil(km / 100) * 100;
@@ -15216,7 +15221,7 @@ function dmgModel(f, T, st){
   const tSpeed = dmgTheirSpeed(st, maxU, theirTop), tAngle = FIGHT_ANGLE[st.theirMode] || 0;
   // v.53: Keep at Range for either ship -- can it hold here? (their tackle on you; yours on them, from the target's fit)
   const keep = {you: fightKeepState('you', st, maxU, theirTop, dmgTackleReach(app)), them: fightKeepState('them', st, maxU, theirTop, dmgTackleReach(T.app))};
-  const xMax = dmgNiceKm(Math.max(dmgReachM(app), dmgDefaultRangeM(app) * 1.25, 1000) / 1000) * 1000;
+  const xMax = dmgFightRangeMax(app, T.kind === 'mine' ? T.app : null);   // v.56: your ship's reach too (not a preset's)
   const base = {d: st.range, ySpeed, yAngle, tSpeed, tAngle};
   const pointAt = (over, tg = tgt) => dmgPoint(app, tg, Object.assign({}, base, over));
   const cur = pointAt({}), still = pointAt({ySpeed: 0, yAngle: 0});
@@ -15254,8 +15259,7 @@ function dmgModelMine(tf, mf, st, axisKey, threatName){
   const app = F.mApp, tgt = F.them, mPt = mf.estimate.projectedTarget, tPt = tf.estimate.projectedTarget;
   const T = {kind: 'threat', label: threatName, pt: tPt, app: F.tApp};
   const theirMwd = !!(tPt.variants && tPt.variants.running && tPt.variants.propKind === 'mwd');
-  const reachMax = (a) => dmgNiceKm(Math.max(dmgReachM(a), dmgDefaultRangeM(a) * 1.25, 1000) / 1000) * 1000;
-  const rangeMax = reachMax(F.tApp), xMax = Math.max(reachMax(app), rangeMax);   // the range slider is the fight's (the threat card's and the strip's)
+  const xMax = dmgFightRangeMax(F.tApp, app), rangeMax = xMax;   // v.56: the fight's range, the same on both cards and the strip
   const ySpeed = F.qIn.ySpeed, tSpeed = F.qIn.tSpeed;
   const pointAt = (over, tg = tgt) => dmgPoint(app, tg, Object.assign({}, F.qOut, over));
   const cur = pointAt({}), still = pointAt({ySpeed: 0, yAngle: 0});
@@ -15450,11 +15454,11 @@ function dmgCardShellHtml(f, mine = false){
 function dmgControlsHtml(m, T){
   const st = m.st, mine = m.side === 'mine';
   const seg = (name, list, cur) => `<div class="dmg-seg" role="group" aria-label="${escapeHtml(name)}">${list.map(([k, l]) => `<button type="button" data-seg="${escapeHtml(name)}" data-v="${k}" aria-pressed="${k === cur}">${escapeHtml(l)}</button>`).join('')}</div>`;
-  const rangeMax = mine ? m.rangeMax : m.st.axis === 'distance' ? m.axis.hi : dmgNiceKm(Math.max(dmgReachM(m.app), dmgDefaultRangeM(m.app) * 1.25, 1000) / 1000) * 1000;
+  const rangeMax = m.xMax;   // v.56: the fight's range (dmgFightRangeMax), whatever the chart is across
   const propLabel = T.pt.variants.propKind === 'afterburner' ? 'Your afterburner' : 'Your MWD';
   return `
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Engagement range</span><span class="dmg-num" data-out="range">${dmgKm(st.range)}</span></span>
-        <input type="range" data-in="range" min="0" max="${rangeMax}" step="${rangeMax <= 50000 ? 100 : 500}" value="${st.range}"></label>
+        <input type="range" data-in="range" min="0" max="${rangeMax}" step="100" value="${st.range}"></label>
       <div class="dmg-ctl"><span class="dmg-ctl-row"><span>You</span></span>${seg('You', [['still', 'Stopped'], ['straight', 'Approach'], ['orbit', 'Orbit'], ['keep', 'Keep at Range']], st.mode)}</div>
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Your speed</span><span class="dmg-num" data-out="speed"></span></span>
         <input type="range" data-in="speedPct" min="0" max="100" step="1" value="${st.speedPct}"></label>
@@ -15941,7 +15945,7 @@ async function mysRenderStrip(host){
   if(edgeEl) edgeEl.dataset.edge = m.edge;
   // v2026.10.14.51 (F1): the fight is shown and set in the strip under the board; the note is only for errors now.
   if(note) note.textContent = '';
-  mysRenderFight(host, tf, st, m);
+  mysRenderFight(host, tf, st, m, mf);
   host._m = m;
   wpFill(host, tf, mf, st, fight);   // v.42 phase 2b: the Weaknesses picks, same fight (v.49: the words go into the picks' hover)
 }
@@ -16745,7 +16749,7 @@ function mysWireFight(host){
   }));
 }
 // The strip's labels and its menus' controls, from the fight settings st (called with the board's numbers).
-function mysRenderFight(host, tf, st, m){
+function mysRenderFight(host, tf, st, m, mf){
   const strip = host.querySelector(':scope > .mys-fight');
   if(!strip) return;
   const app = tf.estimate.application;
@@ -16780,8 +16784,10 @@ function mysRenderFight(host, tf, st, m){
   strip.querySelector('[data-fnum="range"]').textContent = '';
   strip.querySelector('[data-fout="range"]').textContent = dmgKm(st.range);
   const r = strip.querySelector('input[data-fset="range"]');
-  const max = dmgNiceKm(Math.max(dmgReachM(app), dmgDefaultRangeM(app) * 1.25, 1000) / 1000) * 1000;
-  r.max = max; r.step = max <= 50000 ? 100 : 500; r.value = st.range;
+  const max = dmgFightRangeMax(app, mf && mf.estimate && mf.estimate.application);   // v.56: the farther-reaching ship's
+  // v.56: always 100 m steps. A 500 m step (used past 50 km) snapped a range the slider didn't move, e.g. the default
+  // 4.4 km showed at 4.5 km, and with your reach in the fight long sliders are common now.
+  r.max = max; r.step = 100; r.value = st.range;
 }
 function mysRenderSwitch(host, o = {}){
   const root = host.parentElement;

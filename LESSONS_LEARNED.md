@@ -785,6 +785,9 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   moved it, got the value it was drawn with (4400) instead of the current one (5000), and failed a correct page.
 - **Do this instead:** read the live value as a property (`el.value` in `evaluate`, or `input_value()`), and the
   same for `checked`. The attribute only says what the HTML said when it was written.
+- **Also (v2026.10.14.56):** a range slider's `step` rounds whatever is written into it: with 500 m steps the default
+  4.4 km silently showed 4.5 km. Keep the step as fine as the values the page writes (here 100 m), and derive a shared
+  value's limits once (`dmgFightRangeMax`) instead of in each view; three copies had drifted.
 
 ## 9. Comparing different quantities with pyfa
 

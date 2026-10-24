@@ -138,6 +138,8 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
 - **Your card** (v2026.10.14.55, My Ship Perspective): the same chart for your guns on them: your ship as the attacker,
   the threat as the target with its fit's own speed and signature (its prop module as it runs), your webs, painters
   and scram applied, the same fight. Its number is the board's "DPS applied to them".
+- **The range** (v2026.10.14.56) runs to whichever ship reaches farther (weapons, drone control range, or 1.25 × its
+  default range), on both cards and the strip; with no ship saved, to the threat's reach.
 - **One fight:** the strip under the Matchup and the card's Adjust panel set the same values, and both perspectives
   use them. The chart is a snapshot at that distance, as pyfa's graph: it doesn't play the fight out over time.
 - **They last / you last** (not a pyfa number): damage by type against each layer's resists, shield then armor then

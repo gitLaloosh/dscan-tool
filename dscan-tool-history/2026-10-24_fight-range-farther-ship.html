@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — The fight's range runs to the farther-reaching ship</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The fight's range runs to the farther-reaching ship</h1>
+<p><span class="tag">Fix</span> 2026-10-24 &middot; <code>v2026.10.14.55</code> &rarr; <code>v2026.10.14.56</code>.</p>
+<p>the owner (2026-10-24): "Currently engagement range appears to be capped for both perspectives by the threat's range. It should probably be the greater of the two for both perspectives."</p>
+
+<h2>Cause</h2>
+<p>Every range slider was capped at the end of the threat's reach. That cap applied to the threat's card, your card in the My Ship Perspective, and the strip under the Matchup. Your ship's reach only widened your own card's chart. Example: a Hecate threat (blasters, ~10 km) against your Vexor (drones to 60 km). The range could not be set past 10 km on either perspective, so you couldn't look at the fight from your drones' range.</p>
+
+<h2>Fix</h2>
+<ul>
+<li>One rule for the fight's range, <code>dmgFightRangeMax(threat, yours)</code>: the farther of the two ships' reach. Each ship's reach is <code>dmgReachMax</code>: its weapons' and drones' reach, or 1.25 &times; its default range, rounded up to a round number. Example: 80 km for the Hecate against the Vexor.</li>
+<li>It sets both cards' range sliders, both charts' distance axes and the strip's slider. They now always agree.</li>
+<li>With no ship saved, it is the threat's own reach, as before. The typical-class preset (a hull with an MWD, no weapons) doesn't widen it.</li>
+<li>Range sliders now always step 100 m. Past 50 km they used to step 500 m, which moved a range nobody had changed: the default 4.4 km showed as 4.5 km on a long slider. Longer sliders are common now.</li>
+</ul>
+<p>Trade-off: on a short-range threat's card, the chart now runs to your reach, so its damage curve takes the left part of the chart, the same scale as your card. The chart is still 120 points across, so the curve's shape keeps its detail at that width.</p>
+<p>Presentation and inputs only; no number changed.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>mine_damage_check.py</code></b>, 1440 and 1100 px:
+<ul>
+<li>with no ship saved, the range runs to the threat's own reach;</li>
+<li>with your Vexor in use, your card's slider and chart, the strip's slider, and the threat card's slider and chart all run to the farther reach (80 km);</li>
+<li>the threat's card can set 60 km (your drone range);</li>
+<li>4.4 km stays 4.4 km on the long slider.</li>
+</ul>
+v2026.10.14.55 fails 3 of these (sliders capped at 10 km).</li>
+<li>Regression suite ALL PASS; update-check chain all 36 steps OK; all 13 page checks 0 failures, run one at a time. <code>weakness_picks_check.py</code> stopped once with &ldquo;Execution context was destroyed&rdquo; and passed on rerun. Its log shows the same spot as every earlier stop: a <code>page.evaluate</code> right after clicking the Pilot Analyzer tab (here line 145; also <code>layout_check.py</code>; <code>damage_chart_check.py</code>&rsquo;s spot wasn&rsquo;t logged). <code>switchTab</code> navigates nowhere, so it remains a watch item.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When two views show one value, derive its bounds once and use them everywhere (LESSON #49 applied to limits, not only values). Here three copies of "how far the range goes" had drifted: two read only the threat, one read both. Also, a slider's <code>step</code> rounds any value written into it. A coarse step quietly changes a value the user never touched.</p>
+</body>
+</html>
