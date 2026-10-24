@@ -9,7 +9,8 @@ The real page (Fit Analyzer, a Hecate threat against a saved Vexor, ESI served f
 375 px. Every Damage Application control is used in turn: each slider at several values, every movement button,
 the chart-axis buttons, the prop toggle. After each, every card's top edge and height is compared with the start.
 FAILS when a part that the rule already covers moves by more than 1 px (phase S1: the Matchup board and the
-Damage Application card; S2/S3 add the rest). Everything else that moves is REPORTED with how far, so the next
+Damage Application card; S2: also the Mode row, Weaknesses, EWAR / Misc and Fit, at every width; S3 adds the rest).
+Everything else that moves is REPORTED with how far, so the next
 phases can see what is left.
 """
 import sys, os
@@ -26,10 +27,12 @@ from playwright.sync_api import sync_playwright
 
 HTML = M.HTML
 R = '#fitAnalyzerResults'
-# phase S1: these must not move. Grows as S2/S3 move cards to the rule. On a phone the Damage Application headline
-# still wraps differently as its sentence changes ("you still" vs "you orbiting at 1,691 m/s"): phase S2 splits it
-# into a number + one context line, then 'dmg' joins the phone list.
-HARD = {1440: {'board', 'dmg'}, 1100: {'board', 'dmg'}, 375: {'board'}}
+# These must not move; the set grows as the phases move cards to the rule. S1 (v.48): the Matchup board and the
+# Damage Application card on the wide layouts. S2 (v.49): also the Damage Application card on a phone (its headline
+# is a number and one line now), the Mode row, Weaknesses (the picks are three single lines per tile), EWAR / Misc
+# and the Fit card, at every width. Each of them must also have been measured (a card that isn't found can't move).
+S2 = {'board', 'dmg', 'tdmode', 'weak', 'ewar', 'fit'}
+HARD = {1440: S2, 1100: S2, 375: S2}
 failures = []
 def check(ok, msg):
     print(('OK   ' if ok else 'FAIL ') + msg)
@@ -43,7 +46,7 @@ BOXES = r"""() => {
   for(const el of document.querySelectorAll('#fitAnalyzerResults .mys-threat-view .fit-layout > div > *')){
     if(el.offsetParent === null) continue;
     const t = el.querySelector('button.cc-toggle[data-card]');
-    const key = el.classList.contains('dmg-card') || el.querySelector('.dmg-card') ? 'dmg' : t ? t.dataset.card : (el.className.toString().split(' ')[0] || 'part');
+    const key = el.classList.contains('dmg-card') || el.querySelector('.dmg-card') ? 'dmg' : el.classList.contains('td-mode-card') ? 'tdmode' : t ? t.dataset.card : (el.className.toString().split(' ')[0] || 'part');
     const r = el.getBoundingClientRect(); out[key] = [r.top + scrollY, r.height];
   }
   return out; }"""
@@ -89,6 +92,7 @@ with sync_playwright() as p:
             pg.click(f'{R} .fl-dmg .dmg-adjust > summary'); pg.wait_for_timeout(200)
         M.settle(pg, 400)
         base = pg.evaluate(BOXES)
+        check(HARD[W] <= set(base), f'{W}: every card the rule covers is on the page ({sorted(HARD[W] - set(base))} missing)')
         worst = {}
         for label, do in list(actions(pg)):
             do(); M.settle(pg, 150)

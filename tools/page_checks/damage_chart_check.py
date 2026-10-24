@@ -161,7 +161,7 @@ def desktop(b):
     set_range(pg, f'{C} input[data-in="range"]', 2000); h1 = head(pg)
     check(h1 != h0 and pg.inner_text(f'{C} [data-out="range"]') == '2 km' and head(pg) == pg.evaluate(EXPECT, C), f'range slider: redrawn ({h0} -> {h1} at 2 km)')
     pg.click(f'{C} button[data-seg="You"][data-v="still"]')
-    check(head(pg) == pg.evaluate(EXPECT, C) and 'you still' in pg.inner_text(f'{C} [data-out="headText"]'), 'You: Still')
+    check(head(pg) == pg.evaluate(EXPECT, C) and 'you still' in pg.inner_text(f'{C} [data-out="headSub"]'), 'You: Still')
     pg.click(f'{C} button[data-seg="You"][data-v="orbit"]')
     set_range(pg, f'{C} input[data-in="sigPct"]', 200); h2 = head(pg)
     check(head(pg) == pg.evaluate(EXPECT, C) and '200%' in pg.inner_text(f'{C} [data-out="sig"]'), f'signature slider ({h2})')

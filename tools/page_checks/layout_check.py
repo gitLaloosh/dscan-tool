@@ -62,6 +62,22 @@ def total_dps(pg, scope):
 def check(c, msg):
     print(('OK   ' if c else 'FAIL ') + msg)
     if not c: bad.append(msg)
+# v2026.10.14.49: every card's info panel, opened one at a time: on screen, and on a wide layout inside its card's
+# column (the Weaknesses / Mode panel in the narrow left column used to open off the screen's left edge).
+INFO_PANELS = """async (W) => {
+  const bad = [], seen = [];
+  for(const d of document.querySelectorAll('#fitAnalyzerResults details.info-pop')){
+    if(!d.offsetParent) continue;
+    d.open = true; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const r = d.querySelector('.info-body').getBoundingClientRect(), col = d.closest('.fit-layout > div');
+    const c = col ? col.getBoundingClientRect() : {left: 0, right: W};
+    seen.push(d.dataset.info);
+    if(r.left < -1 || r.right > W + 1 || r.width < 200) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)} of the ${W} px window`);
+    else if(W >= 600 && (r.left < c.left - 1 || r.right > c.right + 1)) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)}, column ${Math.round(c.left)}..${Math.round(c.right)}`);
+    d.open = false;
+  }
+  return {bad, seen};
+}"""
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 1100, 375):
@@ -168,6 +184,22 @@ Legion Defensive - Covert Reconfiguration
 Legion Offensive - Liquid Crystal Magnifiers
 Legion Propulsion - Intercalated Nanofibers
 """
+# v2026.10.14.49: every card's info panel, opened one at a time: on screen, and on a wide layout inside its card's
+# column (the Weaknesses / Mode panel in the narrow left column used to open off the screen's left edge).
+INFO_PANELS = """async (W) => {
+  const bad = [], seen = [];
+  for(const d of document.querySelectorAll('#fitAnalyzerResults details.info-pop')){
+    if(!d.offsetParent) continue;
+    d.open = true; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const r = d.querySelector('.info-body').getBoundingClientRect(), col = d.closest('.fit-layout > div');
+    const c = col ? col.getBoundingClientRect() : {left: 0, right: W};
+    seen.push(d.dataset.info);
+    if(r.left < -1 || r.right > W + 1 || r.width < 200) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)} of the ${W} px window`);
+    else if(W >= 600 && (r.left < c.left - 1 || r.right > c.right + 1)) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)}, column ${Math.round(c.left)}..${Math.round(c.right)}`);
+    d.open = false;
+  }
+  return {bad, seen};
+}"""
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 1100, 375):
@@ -317,6 +349,7 @@ OUT_OF_BOX = """(sel) => {
     const c = col.getBoundingClientRect();
     col.querySelectorAll('*').forEach(e => {
       if(!e.offsetParent) return;
+      if(e.closest('details.info-pop:not([open])')) return;   // v2026.10.14.49: a closed info panel isn't shown (INFO_PANELS checks it open)
       const r = e.getBoundingClientRect();
       if(r.width === 0 || r.height === 0) return;
       if(r.right > c.right + 1 || r.left < c.left - 1) bad.push((e.className || e.tagName).toString().slice(0, 40) + ' ' + desc(c, r));
@@ -325,7 +358,7 @@ OUT_OF_BOX = """(sel) => {
     const w = document.createTreeWalker(col, NodeFilter.SHOW_TEXT), rg = document.createRange();
     let t;
     while((t = w.nextNode())){
-      if(!t.textContent.trim() || !t.parentElement || !t.parentElement.offsetParent) continue;
+      if(!t.textContent.trim() || !t.parentElement || !t.parentElement.offsetParent || t.parentElement.closest('details.info-pop:not([open])')) continue;
       rg.selectNodeContents(t);
       for(const r of rg.getClientRects()){
         if(r.width > 0 && (r.right > c.right + 1 || r.left < c.left - 1)){ bad.push('text "' + t.textContent.trim().slice(0, 40) + '" ' + desc(c, r)); break; }
@@ -333,6 +366,22 @@ OUT_OF_BOX = """(sel) => {
     }
   });
   return bad.slice(0, 6);
+}"""
+# v2026.10.14.49: every card's info panel, opened one at a time: on screen, and on a wide layout inside its card's
+# column (the Weaknesses / Mode panel in the narrow left column used to open off the screen's left edge).
+INFO_PANELS = """async (W) => {
+  const bad = [], seen = [];
+  for(const d of document.querySelectorAll('#fitAnalyzerResults details.info-pop')){
+    if(!d.offsetParent) continue;
+    d.open = true; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const r = d.querySelector('.info-body').getBoundingClientRect(), col = d.closest('.fit-layout > div');
+    const c = col ? col.getBoundingClientRect() : {left: 0, right: W};
+    seen.push(d.dataset.info);
+    if(r.left < -1 || r.right > W + 1 || r.width < 200) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)} of the ${W} px window`);
+    else if(W >= 600 && (r.left < c.left - 1 || r.right > c.right + 1)) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)}, column ${Math.round(c.left)}..${Math.round(c.right)}`);
+    d.open = false;
+  }
+  return {bad, seen};
 }"""
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
@@ -350,6 +399,9 @@ with sync_playwright() as p:
                 ob = pg.evaluate(OUT_OF_BOX, '#fitAnalyzerResults .fl-beat, #fitAnalyzerResults .fl-fit, #fitAnalyzerResults .fl-stats, #tabFit section.panel')
                 sw = pg.evaluate('document.documentElement.scrollWidth')
                 check(not ob and sw <= W, f'{W}: {label}, {view} view: everything inside its column (page {sw}px) {ob}')
+                if view == 'list':
+                    ip = pg.evaluate(INFO_PANELS, W)
+                    check(not ip['bad'] and {'weak', 'fit'} <= set(ip['seen']), f'{W}: {label}: every info panel opens on screen and inside its column ({", ".join(ip["seen"])}) {ip["bad"]}')
         tops = pg.evaluate("""() => [...document.querySelectorAll('#fitAnalyzerResults .ds-row')].map(r => { const p = r.querySelector('.ds-pips').getBoundingClientRect(), n = r.querySelector('.ms-name').getBoundingClientRect(); return [Math.round(p.right), Math.round(p.top - n.top)]; })""")
         check(len(tops) >= 4 and len({t[0] for t in tops}) == 1 and all(abs(t[1]) <= 4 for t in tops), f'{W}: drone squares right-aligned on the name line in every row {tops}')
         # Pilot Analyzer header with a 37-character pilot name (EVE's maximum)

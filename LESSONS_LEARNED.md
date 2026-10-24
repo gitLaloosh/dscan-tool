@@ -707,6 +707,26 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   (`display: none` ancestors, tabs, collapsed cards). If it can, fall back to something that is laid out (here the
   window width), or decide in CSS. The page check opens the second loss tab and checks Adjust is open there.
 
+## 46. A pop-up checked in one place can open off the screen in another
+
+- **What happened (caught before delivery, v2026.10.14.49):** the info panel was built for the Damage Application
+  card, which sits on the right, and its check opened only that panel. Placed against its button's right edge, it
+  was fine there. Phase S2 put the same button on the Weaknesses and EWAR / Misc cards in the narrow left column at
+  1440 px: the 380 px panel would have opened 1 px past the screen's left edge, across the column's edge.
+- **Do this instead:** when a shared piece (a panel, a menu, a tooltip) goes onto more cards, check every place it
+  appears, at every layout width, not the first one. Place it against something that can't be narrower than it (here
+  the card, as wide as 380 px or its column allows). `layout_check.py` now opens every info panel at 1440, 1100 and
+  375 px and fails if one leaves the screen or its column; on v.48's placement it fails on Weaknesses and EWAR.
+
+## 47. One wrong anchor stops a whole patch
+
+- **What happened (S2 start):** one large replace script asserted each piece of old text before writing. Its first
+  anchor was typed from memory ("  \"myshippage\"..." with two spaces; the file has one), so the assert stopped the
+  script and none of the changes were written. Nothing broke, but all of it had to be redone.
+- **Do this instead:** read the exact text of every anchor from the file before writing the replacement (copy it,
+  don't retype it), and split a big change into small patches by card, each checking its own anchors and saving on
+  its own. A mismatch then costs one small patch, and it says exactly which text didn't match.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

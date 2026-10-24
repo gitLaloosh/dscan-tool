@@ -98,22 +98,24 @@ def desktop(b):
     t1 = tiles(pg, TV)
     check(t1 == pg.evaluate(EXPECT, [R, 'yours']) and len(t1) == 2 and t1[0][0].startswith('Your Heavy Neutron Blaster II') and t1[1][0] == 'Your drones',
           f'threat view: your blasters and your drones, each the page\'s own wpRank ({t1})')
-    head = pg.inner_text(f'{TV} .wp-head'); note = pg.inner_text(f'{TV} .wp-note')
-    check('against the Hecate' in head and ('as set on "%s"' % pg.evaluate("CARD_NAMES.dmg")) in note and 'Only the ammo and drones aboard' in note, f'threat view: head "{head}", note "{note}"')
+    # v2026.10.14.49 (subtext rule 2): how the picks are ranked is in the card's info panel, not a note under them
+    head = pg.inner_text(f'{TV} .wp-head'); info = pg.evaluate("() => CARD_INFO.weak.join(' ')")
+    check('against the Hecate' in head and pg.locator(f'{TV} .wp-note').count() == 0 and pg.locator(f'{TV} details.info-pop[data-info="weak"]').count() >= 1
+          and 'Only the ammo and drones aboard' in info and '{card:dmg}' in info, f'threat view: head "{head}", ranking explained behind the info button')
     # sitting still at 1 km your blasters apply; then the range slider re-ranks them (Void M close, Null M further out)
     pg.locator(f'{R} .fl-dmg button[data-seg="You"][data-v="still"]').click(); pg.wait_for_timeout(300)
     pg.evaluate("() => { const i = document.querySelector('#fitAnalyzerResults .fl-dmg input[data-in=\"range\"]'); i.value = 1000; i.dispatchEvent(new Event('input', {bubbles: true})); }"); pg.wait_for_timeout(400)
     t2 = tiles(pg, TV)
     pg.evaluate("() => { const i = document.querySelector('#fitAnalyzerResults .fl-dmg input[data-in=\"range\"]'); i.value = 9000; i.dispatchEvent(new Event('input', {bubbles: true})); }"); pg.wait_for_timeout(400)
     t3 = tiles(pg, TV)
-    check(t2 != t1 and t3 != t2 and t3 == pg.evaluate(EXPECT, [R, 'yours']) and t2[0][1] != 'Out of reach' and '9 km' in pg.inner_text(f'{TV} .wp-note'),
+    check(t2 != t1 and t3 != t2 and t3 == pg.evaluate(EXPECT, [R, 'yours']) and t2[0][1] != 'Out of reach' and '9 km' in (pg.get_attribute(f'{TV} .weak-picks .wp-stat', 'title') or ''),
           f'still, range slider: the picks follow (1 km {t2[0][1:]} -> 9 km {t3[0][1:]})')
     # My ship view: their guns
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{MV} .weak-picks .wp-stat', timeout=60000); settle(pg)
     m1 = tiles(pg, MV)
     check(vis(pg, f'{MV} .wp-tag-theirs') and not vis(pg, f'{MV} .wp-tag-yours') and 'What the Hecate should use against you' in pg.inner_text(f'{MV} .wp-head'),
           'My ship view: "their guns" tag and "What the Hecate should use against you"')
-    check(m1 == pg.evaluate(EXPECT, [R, 'theirs']) and len(m1) == 1 and m1[0][0] == 'Their Light Neutron Blaster II ×5' and 'DPS applied to you' in m1[0][2],
+    check(m1 == pg.evaluate(EXPECT, [R, 'theirs']) and len(m1) == 1 and m1[0][0] == 'Their Light Neutron Blaster II ×5' and ' DPS · you ' in m1[0][2] and 'DPS applied to you' in (pg.get_attribute(f'{MV} .weak-picks .wp-stat', 'title') or ''),
           f'My ship view: their blasters, the page\'s own wpRank ({m1})')
     # a state change on my ship (Drone Damage Amplifier off): nothing amber inside the picks; back in the threat
     # view your drone pick has followed the change
