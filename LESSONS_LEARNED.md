@@ -727,6 +727,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   don't retype it), and split a big change into small patches by card, each checking its own anchors and saving on
   its own. A mismatch then costs one small patch, and it says exactly which text didn't match.
 
+## 48. Moving text into a hover hides it from checks that read the page
+
+- **What happened (caught by the page checks, v2026.10.14.50):** the Capacitor card's caption ("Small Capacitor
+  Booster II has no charges in the fit, not injecting") became a short line ("best case · booster has no charges"),
+  with the sentence moved to its hover. `missing_charges_check.py` read the card with `inner_text`, which doesn't
+  include hover text, so three checks failed although the page was right.
+- **Do this instead:** before shortening a line, search the checks for its words (`grep -rn "<a few words>" tools/`).
+  Point each one at the new short line *and* at the hover (`title`), so the check still proves the same fact. Don't
+  delete the check or loosen it to "something is there".
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

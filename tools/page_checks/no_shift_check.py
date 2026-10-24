@@ -9,9 +9,8 @@ The real page (Fit Analyzer, a Hecate threat against a saved Vexor, ESI served f
 375 px. Every Damage Application control is used in turn: each slider at several values, every movement button,
 the chart-axis buttons, the prop toggle. After each, every card's top edge and height is compared with the start.
 FAILS when a part that the rule already covers moves by more than 1 px (phase S1: the Matchup board and the
-Damage Application card; S2: also the Mode row, Weaknesses, EWAR / Misc and Fit, at every width; S3 adds the rest).
-Everything else that moves is REPORTED with how far, so the next
-phases can see what is left.
+Damage Application card; S2: also the Mode row, Weaknesses, EWAR / Misc and Fit, at every width; S3, v.50: every
+card, and anything else measured). How far and at which control is printed, so a failure says what moved it.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -31,8 +30,10 @@ R = '#fitAnalyzerResults'
 # Damage Application card on the wide layouts. S2 (v.49): also the Damage Application card on a phone (its headline
 # is a number and one line now), the Mode row, Weaknesses (the picks are three single lines per tile), EWAR / Misc
 # and the Fit card, at every width. Each of them must also have been measured (a card that isn't found can't move).
-S2 = {'board', 'dmg', 'tdmode', 'weak', 'ewar', 'fit'}
-HARD = {1440: S2, 1100: S2, 375: S2}
+# S3 (v.50): also Firepower, Resistance, Navigation & Targeting and Capacitor, so every card on the page; anything
+# else measured (a part that isn't a card) fails too.
+ALL = {'board', 'dmg', 'tdmode', 'weak', 'ewar', 'fit', 'fp', 'rs', 'nav', 'cp'}
+HARD = {1440: ALL, 1100: ALL, 375: ALL}
 failures = []
 def check(ok, msg):
     print(('OK   ' if ok else 'FAIL ') + msg)
@@ -105,8 +106,8 @@ with sync_playwright() as p:
             d, why = worst.get(k, (0, ''))
             if k in HARD[W]:
                 check(d <= 1, f'{W}: {k} stays put while every Damage Application control is used (moved {d:.0f} px{", worst at " + why if d > 1 else ""})')
-            elif d > 1:
-                print(f'NOTE {W}: {k} moves up to {d:.0f} px (worst at {why}) -- not covered by the rule yet')
+            else:
+                check(d <= 1, f'{W}: {k} (not a card) stays put (moved {d:.0f} px{", worst at " + why if d > 1 else ""})')
         check(not errs, f'{W}: no page errors {errs}')
         pg.close()
     b.close()

@@ -162,7 +162,7 @@
      that changes index.html, per this convention.  */
   .build-tag{
     position:absolute; top:10px; right:0;
-    font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
+    font-family:var(--mono); font-size:10.5px; color:var(--text-dim);
     letter-spacing:0.3px; cursor:default;
   }
   @keyframes sweep{
@@ -346,7 +346,7 @@
   .card .cname{font-size:14px; font-weight:600; color:var(--heading);}
   .card .ccount{font-family:var(--mono); font-size:11px; color:var(--text-dim);}
   .card .cmeta{font-size:11.5px; color:var(--text-dim); margin-bottom:12px;}
-  .card .cmeta.notship{color:var(--text-faint); font-style:italic;}
+  .card .cmeta.notship{color:var(--text-dim); font-style:italic;}
 
   .bars{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
   .bar-row{display:flex; align-items:center; gap:8px;}
@@ -462,7 +462,11 @@
   }
   .estimate-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking);}
   .estimate-value{font-size:20px; font-weight:600; color:var(--heading); display:flex; align-items:center; gap:2px 6px; flex-wrap:wrap;} /* v.37: a badge wraps above the number in a narrow tile, the number stays whole */
-  .estimate-sub{font-size:11px; color:var(--text-faint); line-height:1.4;}
+  .estimate-sub{font-size:11px; color:var(--text-dim); line-height:1.4;}
+  /* v2026.10.14.50 (subtext rule 2): a card's title row with its info button on the right */
+  .card-head{display:flex; align-items:center; gap:8px; margin-bottom:10px; min-width:0;}
+  .card-head button.cc-toggle{margin:0;}
+  .cap-state-t{display:block; font:600 12.5px/16px var(--sans); color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
   /* Tactical Destroyer Mode toggle (bug #17b) — a mode icon badge inline
      with the HP/DPS values above, plus the "Mode:" row of clickable icons
@@ -658,7 +662,7 @@
      Offline = dashed dot with the row dimmed. Colour is never the only cue:
      every button also carries its state as text. */
   .fit-card-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;}
-  .ms-head-right{display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:11px; color:var(--text-faint);}
+  .ms-head-right{display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:11px; color:var(--text-dim);}
   .ms-custom{color:var(--amber); font-weight:600;}
   button.ms-reset{padding:4px 10px; font-size:11px; border-color:var(--line); color:var(--cyan);}
   button.ms-reset:hover{border-color:var(--cyan); background:rgba(79,195,217,0.08);}
@@ -674,7 +678,7 @@
   .ms-state.ms-active{color:var(--cyan); border-color:rgba(79,195,217,0.45);}
   .ms-state.ms-active .ms-dot{background:currentColor;}
   .ms-state.ms-online{color:var(--text);}
-  .ms-state.ms-offline{color:var(--text-faint);}
+  .ms-state.ms-offline{color:var(--text-dim);}
   .ms-state.ms-offline .ms-dot{border-style:dashed;}
   button.ms-state:hover:not(:disabled){border-color:var(--cyan); background:rgba(79,195,217,0.08);}
   button.ms-state:disabled{cursor:default; opacity:0.75;}
@@ -728,7 +732,7 @@
   .candidate-btn .cfreq{font-family:var(--mono); font-size:11px; color:var(--text-dim);}
   .candidate-btn.active{border-color:var(--amber); color:var(--amber);}
   .candidate-btn.active .cfreq{color:var(--amber-dim);}
-  .candidates-note{font-size:11.5px; color:var(--text-faint); margin-bottom:4px;}
+  .candidates-note{font-size:11.5px; color:var(--text-dim); margin-bottom:4px;}
 
   /* Sub-tabs — one per recent loss, inside the Pilot Analyzer results.
      Same active/hover language as the top-level .tabs, scaled down so it
@@ -802,12 +806,12 @@
 
   .dmg-badge.sm{padding:2px 7px; font-size:10.5px; margin-right:2px;}
   .dmg-badge.faded{opacity:0.4;}
-  .dmg-variable-note{font-size:11px; color:var(--text-faint); margin-left:4px;}
+  .dmg-variable-note{font-size:11px; color:var(--text-dim); margin-left:4px;}
 
   .nav-badge{display:inline-block; padding:2px 8px; margin-right:4px; border-radius:4px;
     font-size:10.5px; font-weight:700; letter-spacing:0.02em;
     color:var(--cyan); background:rgba(91,180,217,0.14); border:1px solid rgba(91,180,217,0.3);}
-  .nav-badge-none{font-size:11px; color:var(--text-faint);}
+  .nav-badge-none{font-size:11px; color:var(--text-dim);}
 
   /* Resistance card — standalone section (its own .fit-summary, not nested
      in the Combat effectiveness card), replacing the old separate "Tank
@@ -825,7 +829,7 @@
      all three rows, flagged to and accepted by the owner.
      Icons follow the tacticalModeIconSvg() convention: stroke="currentColor"
      on the <svg> root (inherited by children), sized/colored by CSS. */
-  .resistance-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px;}
+  .resistance-head{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 8px; margin-bottom:10px;}   /* v.50: in a very narrow card the total + info button go under the title */
   /* P2 (the owner 2026-10-11): Total EHP was reading much smaller than Firepower's
      Total DPS despite being a comparably important headline number -- the
      "Total" word stays small/muted (same role as .estimate-label), but the
@@ -839,7 +843,7 @@
 
   .resistance-collabels{display:grid; grid-template-columns:20px 44px 1fr 58px; column-gap:10px; align-items:center; margin-bottom:6px;}
   .resistance-collabels-cells{display:grid; grid-template-columns:repeat(4,1fr); column-gap:8px;}
-  .resistance-collabel{font-family:var(--sans); font-size:9.5px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; text-align:center; color:var(--text-faint);}
+  .resistance-collabel{font-family:var(--sans); font-size:9.5px; font-weight:600; letter-spacing:0.3px; text-transform:uppercase; text-align:center; color:var(--text-dim);}
 
   .resistance-row{display:grid; grid-template-columns:20px 44px 1fr 58px; column-gap:10px; align-items:center; padding:7px 0; border-top:1px solid var(--line-soft); position:relative; color:var(--text-dim);}
   .resistance-row:first-of-type{border-top:none;}
@@ -852,7 +856,7 @@
   .resistance-cell{display:flex; flex-direction:column; align-items:center; gap:3px;}
   .resistance-cell-track{width:100%; height:9px; background:var(--line); border-radius:2px; overflow:hidden;}
   .resistance-cell-fill{height:100%; opacity:0.75;}
-  .resistance-cell-pct{font-family:var(--mono); font-size:9.5px; color:var(--text-faint);}
+  .resistance-cell-pct{font-family:var(--mono); font-size:9.5px; color:var(--text-dim);}
   .resistance-row-ehp{text-align:right; font-family:var(--mono); font-size:12px; font-weight:600; color:var(--heading);}
 
   /* Per-layer identity colors (2026-10-13) -- applied directly to each
@@ -923,13 +927,12 @@
   .repairs-layer-name{font-size:11.5px; font-weight:600;}
   .repairs-values{display:grid; grid-template-columns:repeat(4,1fr); column-gap:8px;}
   .repairs-cell{font-family:var(--mono); font-size:12.5px; font-weight:700; text-align:center;}
-  .repairs-cell.empty{color:var(--text-faint); font-weight:400;}
+  .repairs-cell.empty{color:var(--text-dim); font-weight:400;}
   .repairs-bp{display:flex; flex-direction:column; align-items:flex-end; line-height:1.25; cursor:default;}
   .repairs-bp-val{font-family:var(--mono); font-weight:700; color:var(--break-point); font-size:14px;}
-  .repairs-bp.empty .repairs-bp-val{color:var(--text-faint); font-weight:400;}
+  .repairs-bp.empty .repairs-bp-val{color:var(--text-dim); font-weight:400;}
   .repairs-bp-unit{font-size:9px; color:var(--text-dim); font-weight:500; margin-left:3px;}
-  .repairs-bp-burst{color:var(--text-faint); font-weight:400; font-size:9.5px; margin-top:1px;}
-  .repairs-note{font-size:10.5px; color:var(--text-faint); line-height:1.4; margin-top:10px;}
+  .repairs-bp-burst{color:var(--text-dim); font-weight:400; font-size:9.5px; margin-top:1px;}
 
   /* .repairs-badge -- NOT used by the Repairs strip itself anymore as of
      the 2026-10-13 rebuild above (it used to be the ACTIVE REP/PASSIVE
@@ -953,21 +956,12 @@
   .firepower-row:not(:first-of-type){border-top:1px solid var(--line-soft);}
   .fp-icon{width:16px; height:16px; flex:none; stroke:var(--text-dim); fill:none; stroke-width:1.8;}
   .fp-name{font-size:11.5px; font-weight:600; color:var(--heading); flex:1; min-width:0;}
-  .fp-sub{display:block; font-size:10.5px; font-weight:400; color:var(--text-faint); margin-top:1px;}
-  .fp-range{font-family:var(--mono); font-size:11px; color:var(--text-dim); text-align:right; flex:none; width:130px;}
-  .fp-range.none{color:var(--text-faint); font-style:italic;}
+  /* v2026.10.14.50 (subtext rule 1): the name and one context line (weapon · range), each one line */
+  .fp-name-t{display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .fp-sub{font-weight:400; margin-top:1px;}
   .fp-dps{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--heading); text-align:right; flex:none; width:64px;}
-  /* v2026.10.14.17 (long-names pass): in a narrow card (a phone, the side columns) the fixed 130px range
-     column squeezed long ammo and drone names to a few letters per line; there the range moves under the
-     name instead. */
-  .firepower-strip{container-type:inline-size;}
-  @container (max-width: 380px){
-    .firepower-row{display:grid; grid-template-columns:20px minmax(0, 1fr) auto; column-gap:10px; row-gap:2px; align-items:start;}
-    .firepower-row > :first-child{grid-column:1; grid-row:1 / span 2;}
-    .firepower-row .fp-name{grid-column:2; grid-row:1;}
-    .firepower-row .fp-dps{grid-column:3; grid-row:1; width:auto;}
-    .firepower-row .fp-range{grid-column:2 / 4; grid-row:2; width:auto; text-align:left;}
-  }
+  /* (v2026.10.14.17 moved the range column under the name in a narrow card; since v.50 it is always there, as the
+     row's one context line) */
 
   /* EWAR card — standalone, deliberately compact (a single wrapped row of
      chips, not a tile+strip layout like Firepower/Resistance) since it
@@ -990,7 +984,7 @@
   .ewar-chip .chip-name{white-space:nowrap; flex:none;}
   .ewar-chip .chip-name{color:var(--heading); font-weight:600;}
   .ewar-chip .chip-detail{color:var(--text-dim); font-family:var(--mono); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}   /* v.49: one line, whole on hover */
-  .ewar-chip .chip-qty{color:var(--text-faint); font-size:10.5px;}
+  .ewar-chip .chip-qty{color:var(--text-dim); font-size:10.5px;}
   .ewar-badge{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:3px; font-size:9.5px; font-weight:700; flex:none;}
   .ewar-badge.tackle{color:var(--bg); background:var(--tank-armor);}
   .ewar-badge.disrupt{color:var(--bg); background:var(--tank-shield);}
@@ -1023,7 +1017,7 @@
   .attacker-row .a-dmg{display:flex; align-items:center; flex-shrink:0;}
 
   .note{
-    font-size:11.5px; color:var(--text-faint); margin-top:14px; line-height:1.6;
+    font-size:11.5px; color:var(--text-dim); margin-top:14px; line-height:1.6;
     border-top:1px solid var(--line-soft); padding-top:12px;
   }
 
@@ -1050,7 +1044,7 @@
   details.info-disclosure .info-icon{width:13px; height:13px; flex:none; color:var(--text-dim);}
   details.info-disclosure .note{margin-top:8px; border-top:none; padding-top:0;}
 
-  ::placeholder{color:var(--text-faint);}
+  ::placeholder{color:var(--text-dim);}
 
   /* ============================================================
      LAYOUT (v2026.10.14.15, Phase 1 of the EVE Workbench-style layout; the owner: "something similar to
@@ -1113,7 +1107,7 @@
   .card-tools{margin-left:auto; display:inline-flex; align-items:center; gap:6px; flex:none;}
   button.dmg-reset{width:30px; height:30px; min-height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:transparent; border:1px solid #1f6f80; border-radius:6px; color:var(--cyan); cursor:pointer;}
   button.dmg-reset:hover:not(:disabled){border-color:var(--cyan);}
-  button.dmg-reset:disabled{border-color:var(--line); color:var(--text-faint); cursor:default; opacity:1;}
+  button.dmg-reset:disabled{border-color:var(--line); color:var(--text-faint); cursor:default; opacity:1;}   /* faint: disabled control */
   .dmg-body{margin-top:10px;}
   .dmg-grid{display:grid; grid-template-columns:minmax(0, 1fr); gap:14px;}
   @container (min-width: 720px){ .dmg-grid{grid-template-columns:minmax(0, 1fr) minmax(260px, 320px); align-items:start;} }
@@ -1177,7 +1171,7 @@
   .dmg-chips{display:flex; flex-wrap:wrap; gap:8px;}
   .dmg-chip{min-height:36px; padding:0 14px; background:transparent; border:1px solid #2c3842; border-radius:18px; color:var(--text); font:500 13px var(--sans); cursor:pointer;}
   .dmg-chip[aria-pressed="true"]{background:#1a3a42; border-color:var(--cyan); color:var(--heading); font-weight:600;}
-  .dmg-link{align-self:flex-start; padding:0; min-height:28px; background:none; border:none; color:var(--cyan); font:500 12px var(--sans); cursor:pointer; text-align:left;}
+  .dmg-link{align-self:flex-start; padding:0; min-height:28px; max-width:100%; background:none; border:none; color:var(--cyan); font:500 12px var(--sans); cursor:pointer; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .dmg-link:hover{color:#8fdcea; text-decoration:underline;}
   .dmg-fp-slot:empty{display:none;}
   .dmg-fp-slot{margin-top:8px;}
@@ -1188,7 +1182,7 @@
   .fit-card-head{align-items:center; margin-bottom:10px;}
   .fit-card-head button.cc-toggle{margin:0;}
   .fit-view-controls{display:flex; align-items:center; gap:6px;}
-  button.ms-reset.fit-reset-btn{width:30px; height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:4px; background:transparent; color:var(--text-faint);}
+  button.ms-reset.fit-reset-btn{width:30px; height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:4px; background:transparent; color:var(--text-faint);}   /* faint: disabled control (enabled = .is-custom) */
   button.ms-reset.fit-reset-btn svg{width:15px; height:15px; display:block;}
   button.ms-reset.fit-reset-btn.is-custom{color:var(--cyan); border-color:rgba(79,195,217,0.45);}
   button.ms-reset.fit-reset-btn.is-custom:hover{background:rgba(79,195,217,0.08); border-color:var(--cyan);}
@@ -1215,7 +1209,7 @@
   .ms-state.ms-tile.ms-fixed{border-color:var(--amber-dim); border-style:solid;}
   button.ms-state.ms-tile:hover:not(:disabled){border-color:var(--cyan); background:var(--panel);}
   .fit-ring-loaded{font-size:12px; color:var(--text-dim); text-align:center; margin:0 0 12px;}
-  .fit-ring-loaded span{font-size:var(--label-size); font-weight:600; text-transform:uppercase; letter-spacing:var(--label-tracking); color:var(--text-faint); margin-right:4px;}
+  .fit-ring-loaded span{font-size:var(--label-size); font-weight:600; text-transform:uppercase; letter-spacing:var(--label-tracking); color:var(--text-dim); margin-right:4px;}
   /* COLLAPSIBLE CARDS (v2026.10.14.18) -- see cardIsOpen(). The title is the toggle (chevron before it); a
      closed card is one row: title, then its headline numbers, right-aligned; in a narrow column they wrap
      onto a second line rather than being cut off (the long-names check caught an ellipsis hiding them). */
@@ -1255,7 +1249,7 @@
   .mys-chip-ship{font-weight:600; color:var(--heading); flex:none;}
   .mys-chip-fit{color:var(--text-dim); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   label.mys-use{display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--text); cursor:pointer; white-space:nowrap;}
-  label.mys-use.is-off{color:var(--text-faint); cursor:default;}
+  label.mys-use.is-off{color:var(--text-faint); cursor:default;}   /* faint: disabled control */
   .mys-use-short{display:none;}
   input.mys-sw{appearance:none; -webkit-appearance:none; margin:0; width:38px; height:22px; border-radius:11px; background:var(--line); border:1px solid #2c3842; position:relative; cursor:pointer; flex:none;}
   input.mys-sw::after{content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--text-dim); transition:left 0.12s;}
@@ -1537,7 +1531,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.49</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.50</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1701,6 +1695,32 @@ const CARD_INFO = {
   "Ring view: filled dot = active, hollow = online, dashed = off; hover a module for its name. The reset icon puts every module and drone back to its default state.",
   "A killmail doesn't say what was running, so every module starts running if the game allows it (one propulsion module, the fastest; only as many Command Bursts as the hull permits), except cloaks, Micro Jump Drives and Field Generators, a Signature Suppressor's burst, Entosis Links, Capital Sensor Arrays and an Assault Damage Control's burst, which start online.",
   "Implants and boosters are in every number, as in pyfa; booster side effects are off (pyfa's default)."
+ ],
+ "fp": [
+  "Total DPS: every turret and launcher with the charge it had loaded, plus the drones in space and fighters, at max skills (V), with the fit's damage modules, rigs and the hull's bonuses, as pyfa calculates it.",
+  "A weapon with no loaded charge is estimated from compatible ammo in cargo; Total and Weapon DPS then show the range from the weakest to the strongest of that ammo, listed at the bottom of the card.",
+  "Drone DPS counts only the drones the hull can have in space at once (max drones and bandwidth), hardest-hitting first; fighters only as many squadrons as the launch tubes and class limits allow.",
+  "Volley: one shot from every weapon, drone and fighter at once, as pyfa's Volley, not a sustained rate.",
+  "Each weapon's range: optimal + falloff for turrets; for missiles the average flight range (hover it for the two whole-second distances), as pyfa. How much damage lands at a distance is on the {card:dmg} card. A drone's range is up to its pilot.",
+  "Every number is a ceiling: a less-trained pilot hits softer."
+ ],
+ "rs": [
+  "Resists per layer and damage type, with every resist source pyfa applies: hardeners, Damage Control, rigs, max skills (V), the hull's bonuses, a mode, and a Reactive Armor Hardener as pyfa simulates it against an even damage mix.",
+  "EHP: each layer's hit points against an even mix of the four damage types.",
+  "Repairs: what each layer gets back per second: passive shield regen (its peak, reached near 25% shield), a shield booster, an armor repairer, a hull repairer. Max-trained Repair Systems / Capital Repair Systems (cycle time) and Shield Operation (passive regen); cycle times include rigs and hull bonuses. A Shield Booster's own output per cycle doesn't train up.",
+  "Break Point: the DPS an attacker has to sustain to outpace that layer's repair or regen (hover a value for its breakdown). A dash means the layer has no repair module (pure buffer), not a missing number. An Ancillary Armor Repairer also shows its burst while its Nanite Repair Paste lasts."
+ ],
+ "nav": [
+  "Speed: top speed with the fastest propulsion module running (assumed, as in a fight); the line under it is with it off. Align time: without the propulsion module, and with it on in the line under it. Both as pyfa: max skills, plates, rigs, the hull's bonuses.",
+  "Signature radius: without the MWD; the line under it with the MWD running (its signature bloom).",
+  "Drone control range: base + skills (Drone Avionics, Advanced Drone Avionics at V) + Drone Link Augmentors + hull bonus + boosters; hover the line for the parts.",
+  "Targeting range, scan resolution and sensor strength include max skills and fitted Sensor Boosters, Signal Amplifiers, a Bastion and similar modules, as pyfa. Hover a value's line for the whole sentence."
+ ],
+ "cp": [
+  "Capacitor state is pyfa's capacitor simulation: every running module on its real cycle for 6 hours, staggered, Capacitor Boosters injecting when needed. Stable shows the % it settles at; otherwise how long until it's empty.",
+  "Best case of the running modules: a running Capacitor Booster injects and a running Ancillary Shield Booster has charges. Their icons sit by the ring; click the Ancillary Shield Booster's icon for out of charges. A pasted fit with no charges anywhere gets none.",
+  "The ring goes from green (50% and up) through amber to red when it runs out. Hover it for the in-game fitting window's figure (pyfa's EVE stability value).",
+  "Net cap rate is the simple average (peak recharge − drain + injection); the state comes from the simulation, so the two can disagree. Drain resistance: a fitted Capacitor Battery cuts incoming neutralizers and nosferatu by that much; the {card:ewar} card's own neut figures assume an unresisted target."
  ]
 };
 const CTX_MAX = 40;
@@ -8167,15 +8187,14 @@ function resistanceCardHtml(f, estimate){
           </span>
         </div>`;
         }).join('')}
-        <div class="repairs-note">Break Point = DPS sustained to outpace repair/regen (hover a value for its breakdown). Assumes max-trained Repair Systems / Capital Repair Systems (armor/hull rep cycle time) and max-trained Shield Operation (shield passive regen); rep cycle times also include fitted rigs and hull bonuses. A Shield Booster's own output per cycle doesn't train up at all. A dash means that layer has no repair module fitted at all (pure buffer), not a missing calculation.</div>
-      </div>`;
+      </div>`;   // v2026.10.14.50 (subtext rule 2): the note under the strip moved to the card's info panel (CARD_INFO.rs)
 
   if(!cardIsOpen(f, 'rs')) return collapsedCardHtml('rs', `${estimate.totalHP.toLocaleString()} EHP`);
   return `
     <div class="fit-summary">
       <div class="resistance-head">
         ${cardLabelHtml('rs', 'fit-subsection-label', 'margin:0;')}
-        <span class="resistance-total">${f.tacticalModes ? `<span class="td-mode-badge" title="${TACTICAL_MODE_LABEL[f.activeMode]} active">${tacticalModeIconSvg(f.activeMode)}</span> ` : ''}Total <b>${estimate.totalHP.toLocaleString()} ehp</b></span>
+        <span class="card-tools"><span class="resistance-total">${f.tacticalModes ? `<span class="td-mode-badge" title="${TACTICAL_MODE_LABEL[f.activeMode]} active">${tacticalModeIconSvg(f.activeMode)}</span> ` : ''}Total <b>${estimate.totalHP.toLocaleString()} ehp</b></span>${infoBtnHtml('rs')}</span>
       </div>
       <div class="resistance-collabels">
         <span></span><span></span>
@@ -8362,6 +8381,17 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
   if(hasCargoGuess) totalSubParts.push(`${estimate.cargoResolvedWeaponCount} estimated from cargo ammo`);
   if(estimate.unmatchedWeaponCount > 0) totalSubParts.push(`${estimate.unmatchedWeaponCount} unaccounted for`);
   const totalSub = totalSubParts.length ? totalSubParts.join(' · ') : (estimate.variableWeaponCount > 0 ? '' : 'drones and fixed-damage weapons only');
+  // v2026.10.14.50 (subtext rule 1): every tile has one short context line; the full sentence is its hover.
+  const shortParts = [];
+  if(estimate.confirmedWeaponCount > 0) shortParts.push(`${estimate.confirmedWeaponCount}${hasCargoGuess || estimate.unmatchedWeaponCount > 0 ? '' : ` weapon${estimate.confirmedWeaponCount > 1 ? 's' : ''}`} confirmed`);
+  if(hasCargoGuess) shortParts.push(`${estimate.cargoResolvedWeaponCount} from cargo`);
+  if(estimate.unmatchedWeaponCount > 0) shortParts.push(`${estimate.unmatchedWeaponCount} not found`);
+  const totalShort = shortParts.length ? shortParts.join(' · ') : (estimate.variableWeaponCount > 0 ? '' : 'drones and fixed weapons only');
+  const droneShortParts = [];
+  if(estimate.droneBayCount > 0) droneShortParts.push(estimate.droneCount === estimate.droneBayCount ? `all ${estimate.droneCount} in space at once`
+    : estimate.droneCount > 0 ? `${estimate.droneCount} of ${estimate.droneBayCount} in space at once` : `${estimate.droneBayCount} in bay, none launchable`);
+  if(estimate.fighterBayCount > 0) droneShortParts.push(estimate.fighterSquadronCount > 0
+    ? `${estimate.fighterSquadronCount} squadron${estimate.fighterSquadronCount > 1 ? 's' : ''} of ${estimate.fighterBayCount}` : `${estimate.fighterBayCount} fighters, none launchable`);
 
   // Weapon rows: prefer rangeEstimates (has both weapon+ammo name and a
   // real range figure), matched back to confirmedAmmoBreakdown's own dps
@@ -8379,11 +8409,15 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
     const rangeText = r.kind === 'missile'
       ? `max range ~${pyRound((r.exactM ? r.exactM.travel : r.travelDistanceM) / 1000, 1).toFixed(1)} km`
       : `optimal ${pyRound((r.exactM ? r.exactM.optimal : r.optimalM) / 1000, 1).toFixed(1)} km${r.falloffM > 0 ? ` · falloff ${pyRound((r.exactM ? r.exactM.falloff : r.falloffM) / 1000, 1).toFixed(1)} km` : ''}`;
+    // v.50: the short form for the row's one context line ("2.8 + 1.6 km", "~47.0 km")
+    const rangeShort = r.kind === 'missile'
+      ? `~${pyRound((r.exactM ? r.exactM.travel : r.travelDistanceM) / 1000, 1).toFixed(1)} km`
+      : `${pyRound((r.exactM ? r.exactM.optimal : r.optimalM) / 1000, 1).toFixed(1)}${r.falloffM > 0 ? ` + ${pyRound((r.exactM ? r.exactM.falloff : r.falloffM) / 1000, 1).toFixed(1)}` : ''} km`;
     // pyfa's range-column tooltip: the two whole-second outcomes, shown unless one is certain.
     const rangeTitle = r.kind === 'missile' && r.travelHigherChancePct > 0 && r.travelHigherChancePct < 100
       ? `Missile flight range: ${100 - r.travelHigherChancePct}% chance to fly ${pyRound((r.exactM ? r.exactM.lower : r.travelLowerM) / 1000, 1).toFixed(1)} km, ${r.travelHigherChancePct}% chance to fly ${pyRound((r.exactM ? r.exactM.higher : r.travelHigherM) / 1000, 1).toFixed(1)} km (missiles fly whole seconds; the range shown is the average, as in pyfa)`
       : null;
-    weaponRows.push({name: r.ammoName, sub: r.weaponName, range: rangeText, rangeTitle, dps, iconId: r.weaponTypeId});
+    weaponRows.push({name: r.ammoName, sub: r.weaponName, range: rangeText, rangeShort, rangeTitle, dps, iconId: r.weaponTypeId});
   }
   for(const a of estimate.confirmedAmmoBreakdown){
     if(!matchedAmmoNames.has(a.name)) weaponRows.push({name: a.name, sub: null, range: null, dps: a.dps, iconId: a.weaponTypeId || a.typeId});
@@ -8398,18 +8432,21 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
     ...estimate.fighterDpsBreakdown.map(g => ({name: g.name, qty: g.qty, dps: g.dps, iconId: g.typeId}))
   ].sort((a, b) => b.dps - a.dps);
 
-  const weaponRowsHtml = weaponRows.map(w => `
+  // v2026.10.14.50 (subtext rule 1): a row is the charge (or weapon) and one context line -- the weapon and its range
+  // ("Light Neutron Blaster II · 2.8 + 1.6 km") -- with the DPS on the right; the long range text is the line's hover.
+  const weaponRowsHtml = weaponRows.map(w => {
+    const ctx = [w.sub, w.rangeShort].filter(Boolean).join(' · ') || 'range not tracked';
+    const full = [w.sub, w.range || 'range not tracked'].filter(Boolean).join(': ') + (w.rangeTitle ? `. ${w.rangeTitle}` : '');
+    return `
       <div class="firepower-row">
         ${w.iconId ? eveTypeIconHtml(w.iconId, w.sub || w.name, 'fp-eve-icon', firepowerIconSvg('weapon')) : firepowerIconSvg('weapon')}
-        <span class="fp-name">${escapeHtml(w.name)}${w.sub ? `<span class="fp-sub">${escapeHtml(w.sub)}</span>` : ''}</span>
-        <span class="fp-range${w.range ? '' : ' none'}"${w.rangeTitle ? ` title="${escapeHtml(w.rangeTitle)}"` : ''}>${w.range || 'range not tracked'}</span>
+        <span class="fp-name"><span class="fp-name-t" title="${escapeHtml(w.name)}">${escapeHtml(w.name)}</span>${ctxHtml(ctx, 'fp-sub', full)}</span>
         <span class="fp-dps">${w.dps.toLocaleString()}</span>
-      </div>`).join('');
+      </div>`; }).join('');
   const droneRowsHtml = droneRows.map(d => `
       <div class="firepower-row">
         ${d.iconId ? eveTypeIconHtml(d.iconId, d.name, 'fp-eve-icon', firepowerIconSvg('drone')) : firepowerIconSvg('drone')}
-        <span class="fp-name">${escapeHtml(d.name)}${d.qty > 1 ? ` <span class="fp-sub" style="display:inline;">&times;${d.qty}</span>` : ''}</span>
-        <span class="fp-range none">range not tracked</span>
+        <span class="fp-name"><span class="fp-name-t" title="${escapeHtml(d.name)}">${escapeHtml(d.name)}${d.qty > 1 ? ` ×${d.qty}` : ''}</span>${ctxHtml('range set by its pilot', 'fp-sub', 'A drone or fighter engages at whatever range its pilot sends it to; not tracked.')}</span>
         <span class="fp-dps">${d.dps.toLocaleString()}</span>
       </div>`).join('');
   const stripHtml = (weaponRowsHtml || droneRowsHtml) ? `<div class="firepower-strip">${weaponRowsHtml}${droneRowsHtml}</div>` : '';
@@ -8417,12 +8454,12 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
   if(!cardIsOpen(f, 'fp')) return collapsedCardHtml('fp', `${totalDisplay} DPS · ${estimate.volleyFixed.toLocaleString()} volley`);
   return `
     <div class="fit-summary">
-      ${cardLabelHtml('fp')}
+      <div class="card-head">${cardLabelHtml('fp')}<span class="card-tools">${infoBtnHtml('fp')}</span></div>
       <div class="estimate-box">
         <div class="estimate-stat">
           <span class="estimate-label">Total DPS</span>
           <span class="estimate-value">${f.tacticalModes ? `<span class="td-mode-badge">${tacticalModeIconSvg(f.activeMode)}</span>` : ''}${totalDisplay}</span>
-          ${totalSub ? `<span class="estimate-sub">${totalSub}</span>` : ''}
+          ${totalShort ? ctxHtml(totalShort, 'estimate-sub', totalSub) : ''}
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Weapon DPS</span>
@@ -8430,20 +8467,20 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Drone DPS</span>
-          <span class="estimate-value"${droneFighterDps === 0 ? ' style="color:var(--text-faint);"' : ''}>${droneFighterDps > 0 ? droneFighterDps.toLocaleString() : '—'}</span>
-          ${fighterOrDroneNote ? `<span class="estimate-sub">${fighterOrDroneNote}</span>` : (droneFighterDps === 0 ? `<span class="estimate-sub">no drones/fighters in bay</span>` : '')}
+          <span class="estimate-value"${droneFighterDps === 0 ? ' style="color:var(--text-dim);"' : ''}>${droneFighterDps > 0 ? droneFighterDps.toLocaleString() : '—'}</span>
+          ${fighterOrDroneNote ? ctxHtml(droneShortParts.join(' · '), 'estimate-sub', fighterOrDroneNote) : (droneFighterDps === 0 ? ctxHtml('none in bay', 'estimate-sub', 'No drones or fighters in the bay.') : '')}
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Volley</span>
           <span class="estimate-value">${estimate.volleyFixed.toLocaleString()}</span>
-          <span class="estimate-sub">one-shot damage from every confirmed weapon/drone/fighter firing at once, not sustained over time</span>
+          ${ctxHtml('all at once', 'estimate-sub', 'One-shot damage from every confirmed weapon, drone and fighter firing at once, not sustained over time.')}
         </div>
       </div>
       <div class="dmg-fp-slot"></div>
       ${stripHtml}
       ${hasCargoGuess ? `
       <div class="ammo-dps-list">
-        <div class="ammo-dps-label">Total DPS if the rest fired this cargo ammo instead</div>
+        <div class="ammo-dps-label" title="Total DPS if the weapons with no loaded charge fired this cargo ammo instead">Total DPS with this cargo ammo</div>
         ${estimate.ammoEstimates.map(a => `
           <div class="ammo-dps-row">
             <span>${escapeHtml(a.name)}</span>
@@ -8495,6 +8532,19 @@ function droneControlRangeSubHtml(dcr){
   if(dcr.penaltyMult && dcr.penaltyMult !== 1) text += `, ${Math.round((1 - dcr.penaltyMult) * 100)}% hull role bonus PENALTY applied`;
   return text;
 }
+// v2026.10.14.50 (subtext rule 1): the drone control range parts in one short line ("20 base + 40 skills").
+function droneControlRangeShort(dcr){
+  const km = (m) => kmText(m);
+  const parts = [`${km(dcr.base)} base`];
+  if(dcr.skillBonus > 0) parts.push(`${km(dcr.skillBonus)} skills`);
+  if(dcr.moduleBonus > 0) parts.push(`${km(dcr.moduleBonus)} modules`);
+  if(dcr.shipBonus > 0) parts.push(`${km(dcr.shipBonus)} hull`);
+  if(dcr.implantBonus > 0) parts.push(`${km(dcr.implantBonus)} boosters`);
+  let text = parts.join(' + ');
+  if(dcr.penaltyMult && dcr.penaltyMult !== 1) text += `, −${Math.round((1 - dcr.penaltyMult) * 100)}% hull`;
+  return text;
+}
+const NAV_PROP_LABEL = {afterburner: 'AB', mwd: 'MWD'};
 function navCardHtml(f, estimate){
   const speedHasBoost = estimate.speed.boosted !== null;
   const alignHasBoost = estimate.alignTime.boosted !== null;
@@ -8518,32 +8568,41 @@ function navCardHtml(f, estimate){
   // smaller depends on each module's own massAddition -- NOT on which one
   // won the Speed tile's speedFactor comparison -- so those two are sorted
   // by actual value rather than assumed-primary-first.
-  const speedSubs = [];
+  // v2026.10.14.50 (subtext rule 1): one context line under Speed and Align time (the fastest first, as before);
+  // the whole sentence is on hover.
+  const pl = (t) => NAV_PROP_LABEL[t] || 'prop mod';
+  let speedSub = '';
   if(speedHasBoost){
-    if(speedHasSecondary) speedSubs.push(`<span class="estimate-sub">${navModBadgeHtml(estimate.speed.secondaryPropModType)}${estimate.speed.secondaryBoosted.toLocaleString()} m/s also fitted</span>`);
-    speedSubs.push(`<span class="estimate-sub">${estimate.speed.cruising.toLocaleString()} m/s with prop mod off</span>`);
+    const full = [speedHasSecondary ? `${estimate.speed.secondaryBoosted.toLocaleString()} m/s with the ${pl(estimate.speed.secondaryPropModType)} also fitted` : '',
+      `${estimate.speed.cruising.toLocaleString()} m/s with prop mod off`].filter(Boolean).join('; ');
+    speedSub = speedHasSecondary
+      ? ctxHtml(`${pl(estimate.speed.secondaryPropModType)} ${estimate.speed.secondaryBoosted.toLocaleString()} · off ${estimate.speed.cruising.toLocaleString()} m/s`, 'estimate-sub', full)
+      : ctxHtml(`${estimate.speed.cruising.toLocaleString()} m/s without ${pl(estimate.speed.propModType)}`, 'estimate-sub', full);
   }
   const alignEntries = [];
-  if(alignHasBoost) alignEntries.push({val: estimate.alignTime.boosted, html: `<span class="estimate-sub">${navModBadgeHtml(estimate.alignTime.propModType)}${estimate.alignTime.boosted.toFixed(1)} s with prop mod on</span>`});
-  if(alignHasSecondary) alignEntries.push({val: estimate.alignTime.secondaryBoosted, html: `<span class="estimate-sub">${navModBadgeHtml(estimate.alignTime.secondaryPropModType)}${estimate.alignTime.secondaryBoosted.toFixed(1)} s also fitted</span>`});
+  if(alignHasBoost) alignEntries.push({val: estimate.alignTime.boosted, kind: estimate.alignTime.propModType, full: `${estimate.alignTime.boosted.toFixed(1)} s with the ${pl(estimate.alignTime.propModType)} on`});
+  if(alignHasSecondary) alignEntries.push({val: estimate.alignTime.secondaryBoosted, kind: estimate.alignTime.secondaryPropModType, full: `${estimate.alignTime.secondaryBoosted.toFixed(1)} s with the ${pl(estimate.alignTime.secondaryPropModType)} (also fitted) on`});
   alignEntries.sort((a, b) => a.val - b.val);
+  const alignSub = !alignEntries.length ? '' : alignEntries.length === 1
+    ? ctxHtml(`${alignEntries[0].val.toFixed(1)} s with ${pl(alignEntries[0].kind)} on`, 'estimate-sub', alignEntries[0].full)
+    : ctxHtml(alignEntries.map(e => `${e.val.toFixed(1)} s ${pl(e.kind)}`).join(' · '), 'estimate-sub', alignEntries.map(e => e.full).join('; '));
   if(!cardIsOpen(f, 'nav')){
     const spd = speedHasBoost ? estimate.speed.boosted : estimate.speed.cruising;
     return collapsedCardHtml('nav', `${spd.toLocaleString()} m/s · align ${estimate.alignTime.base.toFixed(1)} s · ${kmText(estimate.exact ? estimate.exact.targetingRange : estimate.targetingRange)} km`);
   }
   return `
     <div class="fit-summary">
-      ${cardLabelHtml('nav')}
+      <div class="card-head">${cardLabelHtml('nav')}<span class="card-tools">${infoBtnHtml('nav')}</span></div>
       <div class="estimate-box">
         <div class="estimate-stat">
           <span class="estimate-label">Speed</span>
           <span class="estimate-value">${speedHasBoost ? `${navModBadgeHtml(estimate.speed.propModType)}${estimate.speed.boosted.toLocaleString()} m/s` : `${estimate.speed.cruising.toLocaleString()} m/s`}</span>
-          ${speedSubs.join('\n          ')}
+          ${speedSub}
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Align time</span>
           <span class="estimate-value">${estimate.alignTime.base.toFixed(1)} s</span>
-          ${alignEntries.map(e => e.html).join('\n          ')}
+          ${alignSub}
         </div>
       </div>
       <div class="estimate-box">
@@ -8554,7 +8613,7 @@ function navCardHtml(f, estimate){
         <div class="estimate-stat">
           <span class="estimate-label">Drone control range</span>
           <span class="estimate-value">${kmText(estimate.exact ? estimate.exact.droneControlRange : estimate.droneControlRange.total)} km</span>
-          <span class="estimate-sub">${droneControlRangeSubHtml(estimate.droneControlRange)}</span>
+          ${ctxHtml(droneControlRangeShort(estimate.droneControlRange), 'estimate-sub', droneControlRangeSubHtml(estimate.droneControlRange))}
         </div>
       </div>
       <div class="estimate-box">
@@ -8565,12 +8624,12 @@ function navCardHtml(f, estimate){
         <div class="estimate-stat">
           <span class="estimate-label">Signature radius</span>
           <span class="estimate-value">${estimate.signatureRadius.base.toLocaleString()} m</span>
-          ${estimate.signatureRadius.boosted !== null ? `<span class="estimate-sub">${estimate.signatureRadius.boosted.toLocaleString()} m with MWD active (assumed) — bloated by the fitted MWD's own signature penalty</span>` : ''}
+          ${estimate.signatureRadius.boosted !== null ? ctxHtml(`${estimate.signatureRadius.boosted.toLocaleString()} m with MWD on`, 'estimate-sub', `${estimate.signatureRadius.boosted.toLocaleString()} m with MWD active (assumed) — bloated by the fitted MWD's own signature penalty`) : ''}
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Sensor strength</span>
           <span class="estimate-value">${estimate.sensorStrength.value}</span>
-          ${estimate.sensorStrength.type ? `<span class="estimate-sub">${estimate.sensorStrength.type}${estimate.sensorStrength.moduleBoosted ? ' — includes a fitted Sensor Booster, Signal Amplifier, Bastion, Entosis Link or Capital Sensor Array bonus' : ''}</span>` : ''}
+          ${estimate.sensorStrength.type ? ctxHtml(`${estimate.sensorStrength.type}${estimate.sensorStrength.moduleBoosted ? ' · module bonus' : ''}`, 'estimate-sub', `${estimate.sensorStrength.type}${estimate.sensorStrength.moduleBoosted ? ' — includes a fitted Sensor Booster, Signal Amplifier, Bastion, Entosis Link or Capital Sensor Array bonus' : ''}`) : ''}
         </div>
       </div>
     </div>`;
@@ -8695,35 +8754,45 @@ function capacitorCardHtml(f, estimate){
                 : `<span class="${cls}" title="${boostTitle(b).replace(/"/g, '&quot;')}">${icon}</span>`;
             }).join('')}</div>` : '';
 
-  // Caption under the ring: names what's driving the number shown.
-  let captionHtml;
+  // Caption under the ring: names what's driving the number shown. v2026.10.14.50 (subtext rule 1): one short line
+  // ("best case · ASB on charges"), the sentence it was before is its hover.
+  let captionFull, captionShort;
   if(boosts.length){
     const parts = boosts.map(b => b.source === 'none'
-      ? (b.kind === 'capBooster' ? `${escapeHtml(b.name)} has no charges in the fit, not injecting`
-          : `${escapeHtml(b.name)} has no charges in the fit, running on capacitor (${b.capSavedPerSec.toLocaleString()} GJ/s)`)
+      ? (b.kind === 'capBooster' ? `${b.name} has no charges in the fit, not injecting`
+          : `${b.name} has no charges in the fit, running on capacitor (${b.capSavedPerSec.toLocaleString()} GJ/s)`)
       : b.kind === 'capBooster'
-      ? `${escapeHtml(b.name)} injecting +${b.gainPerSec.toLocaleString()} GJ/s${b.source === 'assumed' ? ' (no charge found — largest compatible charge assumed)' : b.source === 'cargo' ? ` (${escapeHtml(b.chargeName)} from cargo, not confirmed loaded)` : ` (${escapeHtml(b.chargeName)})`}`
-      : (asbDry ? `${escapeHtml(b.name)} out of charges, drawing ${b.capSavedPerSec.toLocaleString()} GJ/s` : `${escapeHtml(b.name)} on charges${b.source === 'assumed' ? ' (assumed)' : ''}`));
-    captionHtml = `<span class="estimate-sub">Best case of the running modules: ${parts.join('; ')}${idleCapBooster ? `. ${escapeHtml(idleCapBooster.name)} is not running (module list)` : ''}</span>`;
+      ? `${b.name} injecting +${b.gainPerSec.toLocaleString()} GJ/s${b.source === 'assumed' ? ' (no charge found — largest compatible charge assumed)' : b.source === 'cargo' ? ` (${b.chargeName} from cargo, not confirmed loaded)` : ` (${b.chargeName})`}`
+      : (asbDry ? `${b.name} out of charges, drawing ${b.capSavedPerSec.toLocaleString()} GJ/s` : `${b.name} on charges${b.source === 'assumed' ? ' (assumed)' : ''}`));
+    captionFull = `Best case of the running modules: ${parts.join('; ')}${idleCapBooster ? `. ${idleCapBooster.name} is not running (module list)` : ''}`;
+    const shortParts = [...new Set(boosts.map(b => b.kind === 'capBooster'
+      ? (b.source === 'none' ? 'booster has no charges' : 'booster injecting')
+      : (b.source === 'none' ? 'ASB has no charges' : asbDry ? 'ASB out of charges' : 'ASB on charges')))];
+    captionShort = `best case · ${shortParts.join(', ')}`;
   }else if(idleCapBooster){
     // v.26: whether the Capacitor Booster runs is its module state.
-    captionHtml = `<span class="estimate-sub">${escapeHtml(idleCapBooster.name)} is ${idleCapBooster.offline >= idleCapBooster.qty ? 'offline' : 'online but not running'} in the module list, so no injection is counted — set it active there to see the boosted figure</span>`;
+    captionFull = `${idleCapBooster.name} is ${idleCapBooster.offline >= idleCapBooster.qty ? 'offline' : 'online but not running'} in the module list, so no injection is counted — set it active there to see the boosted figure`;
+    captionShort = 'cap booster not running';
   }else if(displayResult.stable){
-    captionHtml = `<span class="estimate-sub">with every running cap-using module cycling at once — the % of total capacity it settles at, not a fixed point</span>`;
+    captionFull = 'with every running cap-using module cycling at once — the % of total capacity it settles at, not a fixed point';
+    captionShort = 'every running module cycling';
   }else{
     // 2026-10-13 addendum -- the owner's screenshot caught this: the stable caption
     // ("the % of total capacity it settles at") is nonsensical next to a
     // DRAINING ring (it empties on a timer instead).
-    captionHtml = `<span class="estimate-sub">with every running cap-using module cycling at once — no fitted booster to offset the drain</span>`;
+    captionFull = 'with every running cap-using module cycling at once — no fitted booster to offset the drain';
+    captionShort = 'no booster to offset the drain';
   }
+  const captionHtml = ctxHtml(captionShort, '', captionFull);
   // v2026.10.14.1: hover names the method and gives EVE's fitting-window formula for comparison.
   const capRingTitle = `pyfa capacitor simulation (6 h, modules staggered, Capacitor Boosters injecting when needed)${displayResult.eveStablePct !== null && displayResult.eveStablePct !== undefined ? ` — the in-game fitting window's formula (pyfa's "EVE stability value") gives ${displayResult.eveStablePct > 0 ? displayResult.eveStablePct + '%' : 'unstable'}` : ''}`;
   const netSub = `${cap.peakRechargeRate.toLocaleString()} GJ/s peak recharge − ${displayActiveDrain.toLocaleString()} GJ/s active drain${cap.injectionPerSec > 0 ? ` + ${cap.injectionPerSec.toLocaleString()} GJ/s Capacitor Booster injection` : ''} — the average behind the state above. The state itself comes from pyfa's own capacitor simulation (every module firing on its real cycle, boosters injecting when needed), so it can differ from what this average suggests`;
+  const netShort = `${cap.peakRechargeRate.toLocaleString()} recharge − ${displayActiveDrain.toLocaleString()} drain${cap.injectionPerSec > 0 ? ` + ${cap.injectionPerSec.toLocaleString()}` : ''}`;
 
   if(!cardIsOpen(f, 'cp')) return collapsedCardHtml('cp', `${capCardStateText(displayResult)} · ${displayNetRate >= 0 ? '+' : ''}${displayNetRate.toLocaleString()} GJ/s`);
   return `
     <div class="fit-summary">
-      ${cardLabelHtml('cp')}
+      <div class="card-head">${cardLabelHtml('cp')}<span class="card-tools">${infoBtnHtml('cp')}</span></div>
       <div class="estimate-box">
         <div class="estimate-stat">
           <span class="estimate-label">Capacitor state</span>
@@ -8732,7 +8801,7 @@ function capacitorCardHtml(f, estimate){
               ${capRingHtml(displayResult)}
             </div>${boostIconsHtml}
             <div class="cap-gauge-caption">
-              <span class="weak-sub" style="color:var(--heading); font-weight:600; font-size:12.5px;">${escapeHtml(capCardStateText(displayResult))}</span>
+              <span class="cap-state-t">${escapeHtml(capCardStateText(displayResult))}</span>
               ${captionHtml}
             </div>
           </div>
@@ -8740,7 +8809,7 @@ function capacitorCardHtml(f, estimate){
         <div class="estimate-stat">
           <span class="estimate-label">Net cap rate</span>
           <span class="estimate-value" style="${displayResult.stable ? '' : 'color:#ff8a8a'}">${displayNetRate >= 0 ? '+' : ''}${displayNetRate.toLocaleString()} GJ/s</span>
-          <span class="estimate-sub">${netSub}</span>
+          ${ctxHtml(netShort, 'estimate-sub', netSub)}
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Capacitor capacity</span>
@@ -8750,7 +8819,7 @@ function capacitorCardHtml(f, estimate){
         <div class="estimate-stat">
           <span class="estimate-label">Drain resistance</span>
           <span class="estimate-value">${cap.warfareResistPct}%</span>
-          <span class="estimate-sub">Capacitor Battery fitted — cuts incoming Energy Neutralizer/Nosferatu effectiveness against this ship by this much (a defensive stat about this ship; not applied to its own outgoing neut/nos figures in the ${cardName('ewar')} card, which assume an unresisted target)</span>
+          ${ctxHtml('cuts incoming neuts and nos', 'estimate-sub', `Capacitor Battery fitted — cuts incoming Energy Neutralizer/Nosferatu effectiveness against this ship by this much (a defensive stat about this ship; not applied to its own outgoing neut/nos figures in the ${cardName('ewar')} card, which assume an unresisted target)`)}
         </div>` : ''}
       </div>
     </div>`;
