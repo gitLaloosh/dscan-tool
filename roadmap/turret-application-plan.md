@@ -284,7 +284,8 @@ Proposed:
     label when both lines give the same number).
   - Numbers keep a set width and the chart keeps its frame while values change (subtext-plan.md rule 4).
   All fight-setup decisions are made; build in phases next (subtext-plan.md section 5). **F1 DONE v2026.10.14.51**:
-  the strip, in-game names (their new Stopped state is the default) and the shared fight.
+  the strip, in-game names (their new Stopped state is the default) and the shared fight. **F2 DONE v2026.10.14.53**:
+  Keep at Range as mapped below, for both ships; the example below is checked on the page (`fight_strip_check.py`).
 - **In-game names everywhere:** You and the threat each get Stopped / Approach / Orbit / Keep at Range (today: You
   Still / Straight at them / Orbiting; them They fly at you / They orbit you).
 - **One fight for both perspectives:** the Adjust panel edits the same settings on both cards.

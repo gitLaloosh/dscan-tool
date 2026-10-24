@@ -14,6 +14,9 @@ saved Vexor, ESI served from the SDE):
   * the card's Adjust panel changes the strip too; one part open at a time; Escape and a press outside close it;
   * the My Ship Perspective shares the fight: a change there shows in the threat's card when switching back;
   * Pilot losses: each loss keeps its own fight;
+  * Keep at Range (v2026.10.14.53, F2) for both ships: the plan's example (you keeping range from an approaching
+    Hecate at 15 km: 0 applied to you, 291 to them, they last 26 s), chosen-but-can't-hold marked amber with the
+    reason, not offered inside their scram/web or when the other ship closes faster;
   * "More on Damage Application" opens the card's Adjust panel and scrolls to it;
   * phone (375 px): three parts in a row under the board, each a 44 px target opening a sheet from the bottom, with
     a close button; the collapsed card's row follows a change; no sideways scroll;
@@ -121,6 +124,39 @@ def desktop(b, W):
     pg.click(f'{R} .mys-sw-btn.is-threat'); pg.wait_for_timeout(500); settle(pg)
     check(st(pg)['theirMode'] == 'toward' and pressed(pg, 'Them') == 'toward' and cells(pg) == c_mine == pg.evaluate(EXPECT, R) and pg.inner_text(f'{C} [data-out="head"]') == c_mine['their'],
           f'{W}: one fight: Approach set in the My Ship Perspective is on the threat\'s card ({c_mine["their"]})')
+    # v2026.10.14.53 (F2): Keep at Range -- the example from turret-application-plan.md: the Hecate approaching at full
+    # speed, you keeping range at 15 km (you're faster, outside its 9 km scram and 10 km web) -> nothing applied to you,
+    # 291 applied to them, they last 26 s
+    if W == 1440:
+        pick(pg, 'them', 'toward'); pg.evaluate(f"""() => {{ mysFightSet(document.querySelector('{R} .mys-switch-host'), 'theirPct', 100); mysFightSet(document.querySelector('{R} .mys-switch-host'), 'range', 15000); }}"""); pg.wait_for_timeout(300)
+        pick(pg, 'you', 'keep')
+        c = cells(pg); mk = model(pg)
+        check(st(pg)['mode'] == 'keep' and pressed(pg, 'You') == 'keep' and pg.is_disabled(f'{C} input[data-in="speedPct"]') and label(pg, 'you') == f'Keep at Range · {mk["t"]} m/s' and mk['y'] == mk['t']
+              and c == pg.evaluate(EXPECT, R) and (c['their'], c['youLast'], c['your'], c['theyLast']) == ('0', 'holds', '291', '26 s'),
+              f'{W}: Keep at Range at 15 km, the Hecate approaching: you move at its speed ({mk["y"]} m/s); the plan\'s example: {c}')
+        check('holding' in pg.inner_text(f'{C} [data-out="speed"]') and pg.locator(f'{S} .mys-fseg.is-warn').count() == 0, f'{W}: Keep at Range holds: "{pg.inner_text(f"{C} [data-out=speed]")}", no warning')
+        pg.evaluate(f"""() => mysFightSet(document.querySelector('{R} .mys-switch-host'), 'range', 5000)"""); pg.wait_for_timeout(300)
+        why = pg.get_attribute(f'{S} details.mys-fpart-you > summary', 'title') or ''
+        check(pg.locator(f'{S} details.mys-fpart-you > summary.is-warn').count() == 1 and 'scram (9 km)' in why and 'web (10 km)' in why
+              and 'is-warn' in (pg.get_attribute(f'{C} button[data-seg="You"][data-v="keep"]', 'class') or '') and "can't hold" in pg.inner_text(f'{C} [data-out="speed"]') and cells(pg) == pg.evaluate(EXPECT, R),
+              f'{W}: moved inside their scram and web at 5 km: Keep at Range stays chosen, marked amber ("{why}")')
+        pick(pg, 'you', 'orbit')
+        pg.click(f'{S} details.mys-fpart-you > summary'); pg.wait_for_timeout(150)
+        kb = f'{S} details.mys-fpart-you button.mys-fopt[data-v="keep"]'
+        check(pg.is_disabled(kb) and 'inside their scram' in pg.inner_text(kb) and pg.is_disabled(f'{C} button[data-seg="You"][data-v="keep"]'),
+              f'{W}: inside their tackle Keep at Range isn\'t offered ("{pg.inner_text(kb)}")')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
+        # their Keep at Range: you approach faster than the Hecate can fly -> not offered
+        pg.evaluate(f"""() => {{ const h = document.querySelector('{R} .mys-switch-host'); mysFightSet(h, 'range', 15000); mysFightSet(h, 'mode', 'straight'); mysFightSet(h, 'speedPct', 100); }}"""); pg.wait_for_timeout(300)
+        tb = f'{S} details.mys-fpart-them button.mys-fopt[data-v="keep"]'
+        pg.click(f'{S} details.mys-fpart-them > summary'); pg.wait_for_timeout(150)
+        check(pg.is_disabled(tb) and "you're faster" in pg.inner_text(tb), f'{W}: you approach faster than they fly: their Keep at Range isn\'t offered ("{pg.inner_text(tb)}")')
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
+        pg.evaluate(f"""() => mysFightSet(document.querySelector('{R} .mys-switch-host'), 'speedPct', 60)"""); pg.wait_for_timeout(300)
+        pick(pg, 'them', 'keep'); mk = model(pg)
+        check(st(pg)['theirMode'] == 'keep' and mk['t'] == mk['y'] and label(pg, 'them') == f'Keep at Range · {mk["t"]} m/s' and cells(pg) == pg.evaluate(EXPECT, R),
+              f'{W}: you approach at 60%: they keep range at your speed ({mk["t"]} m/s)')
+        pick(pg, 'them', 'toward'); pick(pg, 'you', 'still')
     # More on Damage Application
     pg.evaluate("window.scrollTo(0, 0)")
     pg.click(f'{S} details.mys-fpart-range > summary'); pg.wait_for_timeout(150)

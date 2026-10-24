@@ -756,6 +756,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   `mysRenderStrip`, which reads the same settings. Test both directions (`fight_strip_check.py`: strip → card and
   card → strip), and from the other perspective too.
 
+## 50. A choice that can become impossible: keep it, mark it, say why
+
+- **What happened (designed in, v2026.10.14.53):** Keep at Range only works outside the other ship's tackle and
+  when the other ship isn't faster. Moving the range slider or the other ship's speed can make an earlier choice
+  impossible. Switching it to something else behind the user's back would change the fight without telling them.
+- **Do this instead:** offer the choice only where it's possible, with the reason where it isn't. If it becomes
+  impossible later, keep it chosen, mark it (amber), say why on hover, and compute the nearest honest thing (here
+  the speed capped at the ship's top). Test all three cases: possible, not offered, chosen but impossible
+  (`fight_strip_check.py`).
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

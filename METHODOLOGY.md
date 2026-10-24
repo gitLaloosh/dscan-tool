@@ -117,3 +117,20 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
     Arrays and an Assault Damage Control's burst start online, not running.
 - **Changing states:** switch any module off, online or active on the Fit card and every number recalculates. The
   game's rules still apply: one propulsion module running at a time, Bastion blocks the Micro Jump Drive, and so on.
+
+## The fight (Damage Application card, Matchup and its strip)
+
+- **Damage applied:** pyfa's damage graph, at one distance and one movement for each ship, with the attacker's own
+  webs, target painters and scram applied (pyfa's default). Resists aren't counted there; lock range is ignored.
+- **Movements** (in-game names, for both ships):
+  - **Stopped:** speed 0.
+  - **Approach:** straight at the other ship (no transversal), at the chosen share of top speed.
+  - **Orbit:** at 90° to the line of sight, at the chosen share of top speed.
+  - **Keep at Range:** straight away from the other ship at the other's closing speed (its speed when it
+    approaches, 0 otherwise), up to its own top speed, so the distance holds. Not offered inside the other ship's
+    scram or web range, or when the other ship closes faster than it can fly.
+- **One fight:** the strip under the Matchup and the card's Adjust panel set the same values, and both perspectives
+  use them. The chart is a snapshot at that distance, as pyfa's graph: it doesn't play the fight out over time.
+- **They last / you last** (not a pyfa number): damage by type against each layer's resists, shield then armor then
+  hull, minus that layer's local repairs and the shield's peak passive regen, with the repairs stopping when pyfa's
+  capacitor simulation runs dry. "holds" means the damage never gets through.

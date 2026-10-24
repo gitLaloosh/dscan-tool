@@ -78,7 +78,10 @@ FITS = {
 }
 PAIRS = [('vexor', 'hecate'), ('hecate', 'vexor'), ('omen', 'caracal'), ('caracal', 'rupture'), ('rupture', 'thrasher'), ('thrasher', 'drake'), ('ishtar', 'drake'), ('drake', 'ishtar'), ('ishtar', 'omen')]
 GRID = [dict(range=r, mode=mo, speedPct=100, prop=pr, sigPct=100, theirPct=tp, theirMode=tm, axis='distance')
-        for r, mo, pr, (tp, tm) in itertools.product([1500, 5000, 12000, 30000, 60000], ['still', 'orbit', 'straight'], [True, False], [(0, 'toward'), (100, 'toward'), (100, 'orbit'), (100, 'still')])]   # v.51: their Stopped
+        for r, mo, pr, (tp, tm) in itertools.product([1500, 5000, 12000, 30000, 60000], ['still', 'orbit', 'straight'], [True, False], [(0, 'toward'), (100, 'toward'), (100, 'orbit'), (100, 'still'), (100, 'keep')])]   # v.51: their Stopped, v.53: Keep at Range
+# v2026.10.14.53: you keeping range from them approaching / orbiting
+GRID += [dict(range=r, mode='keep', speedPct=100, prop=pr, sigPct=100, theirPct=tp, theirMode=tm, axis='distance')
+         for r, pr, (tp, tm) in itertools.product([5000, 12000, 30000], [True, False], [(100, 'toward'), (50, 'toward'), (100, 'orbit')])]
 
 def eft(k):
     ship, mods, drones, cargo = FITS[k]
@@ -247,8 +250,14 @@ if __name__ == '__main__':
             tf_fit = CP._Fit(orc(t)); t_inp = CP.pyfa_inputs(tf_fit)
             m_cur = CP._Fit(orc(m)); m_inp = CP.pyfa_inputs(m_cur)
             my_top = me.getMaxVelocity(); their_top = tf_fit.getMaxVelocity()
-            y_frac = 0 if st['mode'] == 'still' else st['speedPct'] / 100; y_ang = 90 if st['mode'] == 'orbit' else 0
-            t_frac = 0 if st['theirMode'] == 'still' else st['theirPct'] / 100; t_ang = 90 if st['theirMode'] == 'orbit' else 0   # v.51: a stopped ship has speed 0
+            # v.51 Stopped; v.53 Keep at Range: straight away (180 deg) at the other's closing speed, capped at its own top
+            y_close = st['speedPct'] / 100 * my_top if st['mode'] == 'straight' else 0.0
+            t_close = st['theirPct'] / 100 * their_top if st['theirMode'] == 'toward' else 0.0
+            ANG = {'still': 0, 'straight': 0, 'toward': 0, 'orbit': 90, 'keep': 180}
+            y_spd = 0.0 if st['mode'] == 'still' else min(t_close, my_top) if st['mode'] == 'keep' else st['speedPct'] / 100 * my_top
+            t_spd = 0.0 if st['theirMode'] == 'still' else min(y_close, their_top) if st['theirMode'] == 'keep' else st['theirPct'] / 100 * their_top
+            y_frac = y_spd / my_top if my_top else 0.0; t_frac = t_spd / their_top if their_top else 0.0
+            y_ang = ANG[st['mode']]; t_ang = ANG[st['theirMode']]
             for side, k, G, D, cur_fit, cur_inp, tgt, sf, ta, asp, aa in (
                     ('yours', m, gm, dm, m_cur, m_inp, tf_fit, t_frac, t_ang, y_frac * my_top, y_ang),
                     ('theirs', t, gt, dt, tf_fit, t_inp, me, y_frac, y_ang, t_frac * their_top, t_ang)):

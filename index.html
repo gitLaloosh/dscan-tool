@@ -1101,6 +1101,8 @@
   .dmg-key{display:inline-flex; align-items:center; gap:6px; flex:none;}
   .dmg-key:last-child{flex:0 1 auto; min-width:0;}
   .dmg-key svg{flex:none;}
+  .dmg-seg button.is-warn, .dmg-seg button.is-warn[aria-pressed="true"]{color:var(--amber); box-shadow:inset 0 -2px 0 var(--amber);}   /* v.53: Keep at Range chosen but can't hold */
+  .dmg-seg button:disabled{cursor:not-allowed; opacity:0.55;}
   .dmg-key-t{min-width:0; overflow:hidden; text-overflow:ellipsis;}
   .dmg-chart{position:relative; margin-top:4px; touch-action:pan-y;}
   .dmg-svg{display:block; max-width:100%;}
@@ -1422,6 +1424,8 @@
   summary.mys-fseg:hover{background:var(--panel);}
   summary.mys-fseg:focus-visible{outline:2px solid var(--cyan); outline-offset:-2px;}
   details.mys-fpart[open] > summary.mys-fseg{background:#0f2a31; box-shadow:inset 0 -2px 0 var(--cyan);}
+  summary.mys-fseg.is-warn .mys-fseg-name{color:var(--amber);}   /* v.53: Keep at Range chosen but can't hold (reason on hover) */
+  button.mys-fopt:disabled{cursor:not-allowed; color:var(--text-dim);}
   .mys-fseg-k{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; font-weight:600; color:var(--text-dim); flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;}
   .mys-fpart-them .mys-fseg-k{color:var(--amber);}
   .mys-fpart-you .mys-fseg-k{color:var(--cyan);}
@@ -1564,7 +1568,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.52</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.53</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1699,6 +1703,7 @@ const CARD_INFO = {
  "dmg": [
   "The big number is the DPS that lands on you at the range and movement set under Adjust; the line under it is the same with you sitting still, and the raw DPS. Hover it for the whole sentence.",
   "As pyfa's damage graph: their webs, target painters and scram applied, resists not counted, their lock range ignored.",
+  "Keep at Range: that ship moves straight away from the other at the other's closing speed (its approach speed; 0 when it sits still, orbits or keeps range too), up to its own top speed, so the distance holds; pyfa's graph gets that speed, at 180°. It isn't offered inside the other ship's scram or web range, or when the other ship closes faster than it can fly; chosen and then no longer possible, it's marked amber.",
   "Their drones hit fully when faster than you; otherwise they track like turrets from their ship, out to their drone control range.",
   "A close, perfect hit chance averages 1.5% above raw DPS (wrecking hits), as in pyfa."
  ],
@@ -1759,7 +1764,7 @@ const CARD_INFO = {
   "DPS applied to you and to them: pyfa's applied DPS for the fight set in the strip under the board (the range and how each ship moves), as on {card:dmg}. The DPS applied to them uses the same fight, seen from your side.",
   "They last / you last is not a pyfa number: the damage by type against each layer's resists (shield, then armor, then hull), minus that layer's local repairs and passive shield regen, with the repairs stopping when the capacitor runs out. \"holds\" means the damage never gets through.",
   "Edge: who outlasts the other. Faster: the two top speeds. An amber number differs from your pasted fit's own module states; hover it for the pasted value.",
-  "The strip under the board sets one fight for both perspectives: each ship's movement, with the in-game names (Stopped, Approach, Orbit), and the range between you. Adjust on {card:dmg} changes the same settings."
+  "The strip under the board sets one fight for both perspectives: each ship's movement, with the in-game names (Stopped, Approach, Orbit, Keep at Range), and the range between you. Adjust on {card:dmg} changes the same settings."
  ]
 };
 const CTX_MAX = 40;
@@ -15007,13 +15012,13 @@ async function dmgResolveTarget(){
     const pt = f.estimate && f.estimate.projectedTarget;
     if(!pt) return {kind: 'mine', error: withCode("Your ship's hull record has no dogma effects, so pyfa's speed and signature can't be worked out for it.", 'DMG-01')};
     const propName = pt.variants.propTypeId && myShip.parsed && myShip.parsed.idToName ? (myShip.parsed.idToName.get(pt.variants.propTypeId) || '') : '';
-    return {kind: 'mine', label: myShipLabel(), pt, propName, version: myShip.version};
+    return {kind: 'mine', label: myShipLabel(), pt, propName, version: myShip.version, app: f.estimate.application};
   }
   const key = dmgPresetKey(), p = DMG_CLASS_PRESETS.find(x => x.key === key);
   const slot = await dmgLoadPreset(key);
   if(!slot.f) return {kind: 'preset', presetKey: key, error: slot.error};
   const pt = slot.f.estimate.projectedTarget;
-  return {kind: 'preset', presetKey: key, label: `a typical ${p.label.toLowerCase()}`, pt, propName: p.prop, preset: p};
+  return {kind: 'preset', presetKey: key, label: `a typical ${p.label.toLowerCase()}`, pt, propName: p.prop, preset: p, app: slot.f.estimate.application};
 }
 
 // ---- the numbers ----
@@ -15072,10 +15077,43 @@ function dmgDefaults(app){
 }
 // The in-game movement names (the owner 2026-10-24: "in-game names" for both ships). Values stay as before:
 // you 'still' | 'straight' | 'orbit'; them 'still' | 'toward' | 'orbit'.
-const FIGHT_MOVE_NAME = {still: 'Stopped', straight: 'Approach', toward: 'Approach', orbit: 'Orbit'};
+const FIGHT_MOVE_NAME = {still: 'Stopped', straight: 'Approach', toward: 'Approach', orbit: 'Orbit', keep: 'Keep at Range'};
 // Speeds the fight uses (pyfa graph inputs): a stopped ship has speed 0; Orbit is 90° to the line of sight, the rest 0°.
-function dmgYourSpeed(st, top){ return st.mode === 'still' ? 0 : st.speedPct / 100 * top; }
-function dmgTheirSpeed(st, top){ return st.theirMode === 'still' ? 0 : st.theirPct / 100 * top; }
+// KEEP AT RANGE (v2026.10.14.53, fight setup F2; turret-application-plan.md "Keep at Range in pyfa's inputs"). the owner
+// 2026-10-24: "if one ship is faster than the other, and is outside of the target's scram/web range, it's possible for
+// them to maintain a specified distance from the target". pyfa's damage graph has no such state; it is mapped onto
+// the graph's own inputs (PYFA_CORE rule: inputs only). The ship keeping range moves straight away along the line of
+// sight (angle 180: no transversal, pyfa _calcAngularSpeed) at the speed that holds the distance: the other ship's
+// closing speed (its speed when it approaches, 0 when it stops, orbits or keeps range too), up to its own top speed.
+// It can't hold inside the other ship's scram or web range, or when the other ship closes faster (fightKeepState).
+const FIGHT_ANGLE = {still: 0, straight: 0, toward: 0, orbit: 90, keep: 180};
+function dmgYourClosing(st, myTop){ return st.mode === 'straight' ? st.speedPct / 100 * myTop : 0; }
+function dmgTheirClosing(st, theirTop){ return st.theirMode === 'toward' ? st.theirPct / 100 * theirTop : 0; }
+function dmgYourSpeed(st, myTop, theirTop){
+  if(st.mode === 'still') return 0;
+  if(st.mode === 'keep') return Math.min(dmgTheirClosing(st, theirTop), myTop);
+  return st.speedPct / 100 * myTop;
+}
+function dmgTheirSpeed(st, myTop, theirTop){
+  if(st.theirMode === 'still') return 0;
+  if(st.theirMode === 'keep') return Math.min(dmgYourClosing(st, myTop), theirTop);
+  return st.theirPct / 100 * theirTop;
+}
+// An attacker's tackle reach: its warp scrambler range and its furthest web (modules and web drones), 0 when none.
+function dmgTackleReach(app){
+  const pr = (app && app.projected) || DMG_EMPTY_PROJECTED;
+  const webs = [...(pr.webMods || []), ...(pr.webDrones || [])].map(w => w.optimal).filter(x => x > 0);
+  return {scram: pr.scramRange || 0, web: webs.length ? Math.max(...webs) : 0};
+}
+// Can `side` ('you' or 'them') keep the range? otherReach: the OTHER ship's tackle (dmgTackleReach of its application).
+function fightKeepState(side, st, myTop, theirTop, otherReach){
+  const you = side === 'you';
+  const inside = [['scram', otherReach.scram], ['web', otherReach.web]].filter(([, r]) => r > 0 && st.range <= r);
+  if(inside.length) return {ok: false, reason: `inside ${you ? 'their' : 'your'} ${inside.map(([k, r]) => `${k} (${dmgKm(r)})`).join(' and ')}`};
+  const close = you ? dmgTheirClosing(st, theirTop) : dmgYourClosing(st, myTop), top = you ? myTop : theirTop;
+  if(close > top + 1e-9) return {ok: false, reason: `${you ? "they're" : "you're"} faster (${dmgFmt(close)} m/s)`};
+  return {ok: true, reason: ''};
+}
 // One target as PYFA CORE projected wants it, for the chosen prop state and signature scale.
 function dmgTargetObj(pt, prop, sigScale){
   const v = (prop && pt.variants.on) ? pt.variants.on : pt.variants.off;
@@ -15096,15 +15134,18 @@ function dmgModel(f, T, st){
   const hasProp = !!T.pt.variants.on;
   const maxU = pyfaTargetValue(tgt, 'maxVelocity', null, false);
   const sigFit = pyfaTargetValue(dmgTargetObj(T.pt, st.prop, 1), 'signatureRadius', null, false);
-  const ySpeed = dmgYourSpeed(st, maxU), yAngle = st.mode === 'orbit' ? 90 : 0;
-  const theirTop = dmgTopSpeed(est), tSpeed = dmgTheirSpeed(st, theirTop), tAngle = st.theirMode === 'orbit' ? 90 : 0;
+  const theirTop = dmgTopSpeed(est);
+  const ySpeed = dmgYourSpeed(st, maxU, theirTop), yAngle = FIGHT_ANGLE[st.mode] || 0;
+  const tSpeed = dmgTheirSpeed(st, maxU, theirTop), tAngle = FIGHT_ANGLE[st.theirMode] || 0;
+  // v.53: Keep at Range for either ship -- can it hold here? (their tackle on you; yours on them, from the target's fit)
+  const keep = {you: fightKeepState('you', st, maxU, theirTop, dmgTackleReach(app)), them: fightKeepState('them', st, maxU, theirTop, dmgTackleReach(T.app))};
   const xMax = dmgNiceKm(Math.max(dmgReachM(app), dmgDefaultRangeM(app) * 1.25, 1000) / 1000) * 1000;
   const base = {d: st.range, ySpeed, yAngle, tSpeed, tAngle};
   const pointAt = (over, tg = tgt) => dmgPoint(app, tg, Object.assign({}, base, over));
   const cur = pointAt({}), still = pointAt({ySpeed: 0, yAngle: 0});
   let axis;
   if(st.axis === 'speed') axis = {lo: 0, hi: maxU, title: `your speed at ${dmgKm(st.range)}`, fmt: (x) => dmgFmt(x) + ' m/s', eng: ySpeed,
-    q: (x) => ({ySpeed: x, yAngle: st.mode === 'straight' ? 0 : 90})};
+    q: (x) => ({ySpeed: x, yAngle: st.mode === 'straight' ? 0 : st.mode === 'keep' ? 180 : 90})};
   else if(st.axis === 'sig') axis = {lo: 25, hi: Math.max(1500, dmgNiceY(sigFit * 3)), title: `your signature radius at ${dmgKm(st.range)}`, fmt: (x) => dmgFmt(x) + ' m', eng: sigFit * st.sigPct / 100,
     q: (x) => ({tg: dmgTargetObj(T.pt, st.prop, x / sigFit)})};
   else axis = {lo: 0, hi: xMax, title: 'distance, surface to surface', fmt: dmgKm, eng: st.range, q: (x) => ({d: x})};
@@ -15122,10 +15163,11 @@ function dmgModel(f, T, st){
     if(app.lockRange && app.lockRange <= xMax) markers.push({x: app.lockRange, label: 'their lock range'});
     if((app.drones || []).length && pr.droneControlRange && pr.droneControlRange <= xMax) markers.push({x: pr.droneControlRange, label: 'their drone range'});
   }
-  const moveText = st.mode === 'still' ? 'you still' : `${st.mode === 'orbit' ? 'you orbiting' : 'you approaching'} at ${dmgFmt(ySpeed)} m/s`;
-  const line2Label = st.axis !== 'distance' ? `At ${dmgKm(st.range)}, ${st.axis === 'speed' ? (st.mode === 'straight' ? 'approaching' : 'orbiting') : moveText.replace(/^you /, '')}`
-    : (st.mode === 'still' ? 'You still' : `You ${st.mode === 'orbit' ? 'orbiting' : 'approaching'}, ${dmgFmt(ySpeed)} m/s`);
-  return {app, tgt, T, st, hasProp, maxU, sigFit, ySpeed, theirTop, tSpeed, cur, still, axis, xs, line1, line2, yMax, markers, moveText, line2Label, at, pointAt,
+  const MOVING = {orbit: 'orbiting', straight: 'approaching', keep: 'keeping range'};
+  const moveText = st.mode === 'still' ? 'you still' : `you ${MOVING[st.mode]} at ${dmgFmt(ySpeed)} m/s`;
+  const line2Label = st.axis !== 'distance' ? `At ${dmgKm(st.range)}, ${st.axis === 'speed' ? (MOVING[st.mode] || 'orbiting') : moveText.replace(/^you /, '')}`
+    : (st.mode === 'still' ? 'You still' : `You ${MOVING[st.mode]}, ${dmgFmt(ySpeed)} m/s`);
+  return {app, tgt, T, st, hasProp, maxU, sigFit, ySpeed, theirTop, tSpeed, keep, cur, still, axis, xs, line1, line2, yMax, markers, moveText, line2Label, at, pointAt,
     raw: app.weapons.reduce((s, w) => s + w.dps, 0) + (app.drones || []).reduce((s, d) => s + d.dps, 0)};
 }
 
@@ -15223,13 +15265,13 @@ function dmgControlsHtml(m, T){
   return `
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Engagement range</span><span class="dmg-num" data-out="range">${dmgKm(st.range)}</span></span>
         <input type="range" data-in="range" min="0" max="${rangeMax}" step="${rangeMax <= 50000 ? 100 : 500}" value="${st.range}"></label>
-      <div class="dmg-ctl"><span class="dmg-ctl-row"><span>You</span></span>${seg('You', [['still', 'Stopped'], ['straight', 'Approach'], ['orbit', 'Orbit']], st.mode)}</div>
+      <div class="dmg-ctl"><span class="dmg-ctl-row"><span>You</span></span>${seg('You', [['still', 'Stopped'], ['straight', 'Approach'], ['orbit', 'Orbit'], ['keep', 'Keep at Range']], st.mode)}</div>
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Your speed</span><span class="dmg-num" data-out="speed"></span></span>
         <input type="range" data-in="speedPct" min="0" max="100" step="1" value="${st.speedPct}"></label>
       ${m.hasProp ? `<label class="dmg-ctl dmg-ctl-sw"><span>${propLabel}${T.propName ? ` <span class="dmg-faint">(${escapeHtml(T.propName)})</span>` : ''}</span><input type="checkbox" class="dmg-sw" data-in="prop"${st.prop ? ' checked' : ''}></label>` : '<div class="dmg-ctl dmg-faint">No prop module fitted.</div>'}
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Your signature</span><span class="dmg-num" data-out="sig"></span></span>
         <input type="range" data-in="sigPct" min="25" max="300" step="5" value="${st.sigPct}"></label>
-      <div class="dmg-ctl"><span class="dmg-ctl-row"><span>Them</span></span>${seg('Them', [['still', 'Stopped'], ['toward', 'Approach'], ['orbit', 'Orbit']], st.theirMode)}</div>
+      <div class="dmg-ctl"><span class="dmg-ctl-row"><span>Them</span></span>${seg('Them', [['still', 'Stopped'], ['toward', 'Approach'], ['orbit', 'Orbit'], ['keep', 'Keep at Range']], st.theirMode)}</div>
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Their speed</span><span class="dmg-num" data-out="their"></span></span>
         <input type="range" data-in="theirPct" min="0" max="100" step="1" value="${st.theirPct}"></label>
       <div class="dmg-ctl"><span class="dmg-ctl-row"><span>Chart across</span></span>${seg('Chart across', [['distance', 'Distance'], ['speed', 'Your speed'], ['sig', 'Your signature']], st.axis)}</div>`;
@@ -15334,12 +15376,23 @@ function dmgDraw(card){
   out('table').innerHTML = dmgTableHtml(m);
   const set = (k, v) => { const el = out(k); if(el) el.textContent = v; };
   set('range', dmgKm(st.range));
-  set('speed', st.mode === 'still' ? 'stopped' : `${dmgFmt(m.ySpeed)} m/s · ${st.speedPct}%`);
+  const keepTxt = (k, v) => k.ok ? `holding, ${dmgFmt(v)} m/s` : "can't hold";
+  set('speed', st.mode === 'still' ? 'stopped' : st.mode === 'keep' ? keepTxt(m.keep.you, m.ySpeed) : `${dmgFmt(m.ySpeed)} m/s · ${st.speedPct}%`);
   set('sig', `${dmgFmt(m.sigFit * st.sigPct / 100)} m${st.sigPct === 100 ? ' · from the fit' : ` · ${st.sigPct}%`}`);
-  set('their', st.theirMode === 'still' ? 'stopped' : `${dmgFmt(m.tSpeed)} of ${dmgFmt(m.theirTop)} m/s`);
+  set('their', st.theirMode === 'still' ? 'stopped' : st.theirMode === 'keep' ? keepTxt(m.keep.them, m.tSpeed) : `${dmgFmt(m.tSpeed)} of ${dmgFmt(m.theirTop)} m/s`);
   // v.51: a stopped ship's speed slider is greyed out but keeps its place (subtext rule 4)
-  card.querySelectorAll('input[data-in="speedPct"]').forEach(i => { i.disabled = st.mode === 'still'; });
-  card.querySelectorAll('input[data-in="theirPct"]').forEach(i => { i.disabled = st.theirMode === 'still'; });
+  // v.53: Keep at Range sets its own speed (the other ship's closing speed), so its slider is greyed out too
+  card.querySelectorAll('input[data-in="speedPct"]').forEach(i => { i.disabled = st.mode === 'still' || st.mode === 'keep'; });
+  card.querySelectorAll('input[data-in="theirPct"]').forEach(i => { i.disabled = st.theirMode === 'still' || st.theirMode === 'keep'; });
+  // Keep at Range is offered only where it holds; chosen and then no longer possible, it stays chosen and is marked
+  for(const [seg, side] of [['You', 'you'], ['Them', 'them']]){
+    const b = card.querySelector(`button[data-seg="${seg}"][data-v="keep"]`);
+    if(!b) continue;
+    const k = m.keep[side], on = (side === 'you' ? st.mode : st.theirMode) === 'keep';
+    b.disabled = !k.ok && !on;
+    b.classList.toggle('is-warn', !k.ok && on);
+    b.title = k.ok ? (side === 'you' ? 'Hold this range, moving straight away from them' : 'They hold this range, moving straight away from you') : `Can't keep range: ${k.reason}`;
+  }
   const reset = card.querySelector('.dmg-reset');
   const d = dmgDefaults(m.app);
   reset.disabled = Object.keys(d).every(k => d[k] === st[k]);
@@ -15499,11 +15552,13 @@ function mysFight(tf, mf, st){
   const mApp = Object.assign({}, mApp0, {projected: mApp0.projected || DMG_EMPTY_PROJECTED});
   const me = dmgTargetObj(mEst.projectedTarget, st.prop, st.sigPct / 100);
   const myTop = pyfaTargetValue(me, 'maxVelocity', null, false);
-  const ySpeed = dmgYourSpeed(st, myTop), yAngle = st.mode === 'orbit' ? 90 : 0;
   const tv = tEst.projectedTarget.variants;
   const them = dmgTargetObj(tEst.projectedTarget, !!(tv && tv.running), 1);
-  const theirTop = dmgTopSpeed(tEst), tSpeed = dmgTheirSpeed(st, theirTop), tAngle = st.theirMode === 'orbit' ? 90 : 0;
-  return {tEst, mEst, tApp, mApp, me, them, myTop, theirTop,
+  const theirTop = dmgTopSpeed(tEst);
+  const ySpeed = dmgYourSpeed(st, myTop, theirTop), yAngle = FIGHT_ANGLE[st.mode] || 0;
+  const tSpeed = dmgTheirSpeed(st, myTop, theirTop), tAngle = FIGHT_ANGLE[st.theirMode] || 0;
+  const keep = {you: fightKeepState('you', st, myTop, theirTop, dmgTackleReach(tApp)), them: fightKeepState('them', st, myTop, theirTop, dmgTackleReach(mApp))};
+  return {tEst, mEst, tApp, mApp, me, them, myTop, theirTop, keep,
     qIn: {d: st.range, ySpeed, yAngle, tSpeed, tAngle},
     qOut: {d: st.range, ySpeed: tSpeed, yAngle: tAngle, tSpeed: ySpeed, tAngle: yAngle}};
 }
@@ -15517,7 +15572,7 @@ function mysMatchup(tf, mf, st){
   const diff = myTop - theirTop;
   // v2026.10.14.43 scoreboard: the edge goes to whoever outlasts the other (both "holds": neither breaks the other).
   const edge = youLast === theyLast ? (youLast === Infinity ? 'none' : 'even') : (youLast > theyLast ? 'you' : 'threat');
-  return {theirDps: inc.dps, yourDps: out.dps, youLast, theyLast, myTop, theirTop, edge,
+  return {theirDps: inc.dps, yourDps: out.dps, youLast, theyLast, myTop, theirTop, edge, keep: F.keep,
     cells: [
       {key: 'their', label: 'DPS applied to you', value: dmgFmt(inc.dps)},
       {key: 'theyLast', label: 'they last', value: ttkText(theyLast)},
@@ -16326,8 +16381,8 @@ function mysBoardHtml(host){
 // speeds and angles the card's Adjust panel sets. Keep at Range comes in F2.
 const FIGHT_CHEV = '<svg class="mys-fchev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>';
 const FIGHT_MENUS = {
-  them: {key: 'theirMode', pct: 'theirPct', opts: [['still', 'Sitting still'], ['toward', 'Flying straight at you'], ['orbit', 'Circling you']]},
-  you: {key: 'mode', pct: 'speedPct', opts: [['still', 'Sit still'], ['straight', 'Fly straight at them'], ['orbit', 'Circle them at this range']]}
+  them: {key: 'theirMode', pct: 'theirPct', opts: [['still', 'Sitting still'], ['toward', 'Flying straight at you'], ['orbit', 'Circling you'], ['keep', 'Holding this range']]},
+  you: {key: 'mode', pct: 'speedPct', opts: [['still', 'Sit still'], ['straight', 'Fly straight at them'], ['orbit', 'Circle them at this range'], ['keep', 'Hold this range']]}
 };
 function mysFightStripHtml(host){
   const threat = (host.dataset.threat || 'Threat').split(' · ')[0];
@@ -16397,7 +16452,7 @@ function mysRenderFight(host, tf, st, m){
   const strip = host.querySelector(':scope > .mys-fight');
   if(!strip) return;
   const app = tf.estimate.application;
-  const speeds = {them: dmgTheirSpeed(st, m.theirTop), you: dmgYourSpeed(st, m.myTop)};
+  const speeds = {them: dmgTheirSpeed(st, m.myTop, m.theirTop), you: dmgYourSpeed(st, m.myTop, m.theirTop)};
   const tops = {them: m.theirTop, you: m.myTop};
   const modes = {them: st.theirMode, you: st.mode};
   for(const side of ['them', 'you']){
@@ -16410,7 +16465,19 @@ function mysRenderFight(host, tf, st, m){
     const M = FIGHT_MENUS[side];
     strip.querySelectorAll(`button.mys-fopt[data-fset="${M.key}"]`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === modes[side])));
     const sl = strip.querySelector(`input[data-fset="${M.pct}"]`);
-    sl.value = st[M.pct]; sl.disabled = !moving;
+    sl.value = st[M.pct]; sl.disabled = !moving || modes[side] === 'keep';
+    // v.53 Keep at Range: offered where it holds; the reason in its one context line when it can't
+    const k = m.keep && m.keep[side], keeping = modes[side] === 'keep';
+    const kb = strip.querySelector(`button.mys-fopt[data-fset="${M.key}"][data-v="keep"]`);
+    if(kb && k){
+      kb.disabled = !k.ok && !keeping;
+      const ctx = kb.querySelector('.ctx'), sub = k.ok ? M.opts.find(o => o[0] === 'keep')[1] : `Can't: ${k.reason}`;
+      ctx.textContent = sub; ctx.title = sub;
+    }
+    const seg = strip.querySelector(`details.mys-fpart-${side} > summary`);
+    seg.classList.toggle('is-warn', !!(keeping && k && !k.ok));
+    if(keeping && k && !k.ok) seg.title = `Can't keep range: ${k.reason}`; else seg.removeAttribute('title');
+    if(keeping) strip.querySelector(`[data-fout="${side}"]`).textContent = k && k.ok ? `holding, ${dmgFmt(speeds[side])} m/s` : "can't hold";
   }
   strip.querySelector('[data-fname="range"]').textContent = dmgKm(st.range);
   strip.querySelector('[data-fnum="range"]').textContent = '';
