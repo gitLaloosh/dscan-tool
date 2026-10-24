@@ -1121,8 +1121,11 @@
   .dmg-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
   .dmg-top .cc-toggle{margin-bottom:0;}
   .dmg-vs{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#8fdcea;}
-  .dmg-reset{margin-left:auto; min-height:32px; padding:0 12px; background:transparent; border:1px solid var(--line); border-radius:6px; color:var(--text); font:500 12px var(--sans); cursor:pointer;}
-  .dmg-reset:hover{border-color:var(--cyan);}
+  /* v2026.10.14.48: Reset is a reserved icon (subtext rule 4), next to the card's info button */
+  .card-tools{margin-left:auto; display:inline-flex; align-items:center; gap:6px; flex:none;}
+  button.dmg-reset{width:30px; height:30px; min-height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center; background:transparent; border:1px solid #1f6f80; border-radius:6px; color:var(--cyan); cursor:pointer;}
+  button.dmg-reset:hover:not(:disabled){border-color:var(--cyan);}
+  button.dmg-reset:disabled{border-color:var(--line); color:var(--text-faint); cursor:default; opacity:1;}
   .dmg-body{margin-top:10px;}
   .dmg-grid{display:grid; grid-template-columns:minmax(0, 1fr); gap:14px;}
   @container (min-width: 720px){ .dmg-grid{grid-template-columns:minmax(0, 1fr) minmax(260px, 320px); align-items:start;} }
@@ -1352,6 +1355,24 @@
   /* v2026.10.14.44 (option A of the "Last kill details" mockup): the details float under the line that opens them,
      over the page, so the header and the loss box never move; a sheet from the bottom on a phone. */
   #lastKillInfo{position:relative;}
+  /* SUBTEXT RULE (v2026.10.14.48, roadmap/subtext-plan.md): one line of context under a value, the info panel. */
+  .ctx{display:block; font-size:11.5px; line-height:16px; height:16px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .num-box{display:inline-block; text-align:right; font-variant-numeric:tabular-nums;}
+  details.info-pop{position:relative; display:inline-block; flex:none;}
+  summary.info-btn{list-style:none; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; box-sizing:border-box; border:1px solid var(--line); border-radius:6px; color:var(--text-dim); cursor:pointer;}
+  summary.info-btn::-webkit-details-marker{display:none;}
+  summary.info-btn:hover, details.info-pop[open] > summary.info-btn{border-color:var(--cyan); color:var(--cyan); background:#0f2a31;}
+  summary.info-btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .info-body{position:absolute; right:0; top:calc(100% + 6px); z-index:40; width:380px; max-width:calc(100vw - 32px); max-height:70vh; overflow-y:auto; box-sizing:border-box;
+    background:var(--panel-2); border:1px solid #2c3842; border-radius:8px; box-shadow:0 10px 28px rgba(0,0,0,0.55); padding:14px 16px; text-align:left; cursor:auto;}
+  .info-head{display:flex; align-items:center; gap:8px; font:600 13px var(--sans); color:var(--heading);}
+  .info-body p{margin:8px 0 0; font:400 12.5px/1.55 var(--sans); color:var(--text);}
+  button.info-close{display:none; margin-left:auto; width:44px; height:44px; min-height:44px; padding:0; border:none; background:transparent; color:var(--text-dim); font-size:20px;}
+  @media (max-width: 599px){
+    .info-body{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; max-height:82vh; border-radius:14px 14px 0 0;
+      padding:8px 16px 24px; box-shadow:0 0 0 100vmax rgba(0,0,0,0.55);}
+    button.info-close{display:block;}
+  }
   .lk-pop .lk-sum{padding:0 10px; border:1px solid transparent; border-radius:6px;}
   .lk-pop[open] .lk-sum{background:var(--panel-2); border-color:var(--line);}
   .lk-pop[open] .lk-caret{transform:rotate(180deg);}
@@ -1515,7 +1536,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.47</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.48</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1634,6 +1655,44 @@ function cardName(key){
   const n = CARD_NAMES[key];
   if(!n) throw new Error(`cardName: no name for "${key}" (add it to CARD_NAMES and roadmap/card-names.md)`);
   return n;
+}
+
+// SUBTEXT RULE (v2026.10.14.48, roadmap/subtext-plan.md; the owner 2026-10-24: "the subtext in the tool is a little
+// overwhelming and distracts from important values ... address it as a site wide design choice", then "works as
+// written. info icon opens a panel over the page. the 40 character limit is fine."):
+//  1. under a value, at most one line of context (ctxHtml), <= 40 characters, never wraps (full text on hover);
+//  2. how a card works goes behind one info button per card (infoBtnHtml), its text in CARD_INFO by card key;
+//  3. warnings are warning rows; 4. nothing moves unless you open or close something: live numbers sit in boxes as
+//     wide as their widest possible value (numBoxStyle), controls that come and go keep their space.
+// tools/check_subtext.py (update-check chain) enforces 1 and 2; tools/page_checks/no_shift_check.py checks 4.
+// CARD_INFO: plain text paragraphs (escaped when shown). JSON on purpose, so the Python tools can read it.
+const CARD_INFO = {
+ "dmg": [
+  "As pyfa's damage graph: their webs, target painters and scram applied, resists not counted, their lock range ignored.",
+  "Their drones hit fully when faster than you; otherwise they track like turrets from their ship, out to their drone control range.",
+  "A close, perfect hit chance averages 1.5% above raw DPS (wrecking hits), as in pyfa."
+ ]
+};
+const CTX_MAX = 40;
+// One line of context under a value. Longer text is cut with an ellipsis and shown whole on hover (the lint keeps
+// literal context within CTX_MAX, so the ellipsis is a safety net for live values).
+function ctxHtml(text, extraCls = ''){
+  const t = String(text == null ? '' : text);
+  return `<span class="ctx${extraCls ? ' ' + extraCls : ''}"${t ? ` title="${escapeHtml(t)}"` : ''}>${escapeHtml(t)}</span>`;
+}
+// A live number's box: as wide as the widest value it can take (mono digits are all one width), so the words after
+// it never slide as the value changes. `widest` is a sample string of that width.
+function numBoxStyle(widest){ return `min-width:${String(widest).length}ch;`; }
+// The card's info button: a small <details> whose panel floats over the page (a sheet from the bottom on a phone),
+// closed by Escape, a press outside it, or its close button (headerPopClose).
+const INFO_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><path d="M12 7.5v.5"></path></svg>';
+function infoBtnHtml(key){
+  const paras = CARD_INFO[key];
+  if(!paras) throw new Error(`infoBtnHtml: no CARD_INFO for "${key}"`);
+  const title = `How ${cardName(key)} works`;
+  return `<details class="info-pop" data-info="${key}"><summary class="info-btn" aria-label="${escapeHtml(title)}" title="${escapeHtml(title)}">${INFO_SVG}</summary>
+    <div class="info-body" role="dialog" aria-label="${escapeHtml(title)}"><div class="info-head"><span>${escapeHtml(title)}</span><button type="button" class="info-close" aria-label="Close">×</button></div>
+    ${paras.map(t => `<p>${escapeHtml(t)}</p>`).join('')}</div></details>`;
 }
 
 // v2026.10.14.32 (the owner: "should we have identifiers for custom error codes that point back to why we implemented
@@ -8946,8 +9005,14 @@ async function speculateShip(character, statusEl, forceRefresh){
 // every analysis, so per-render document listeners would pile up -- see the .fit-menu note).
 (function headerPopClose(){
   if(typeof document === 'undefined' || !document.addEventListener) return;   // LESSON #36: suites run this file against a stub DOM
-  const openOnes = () => [...document.querySelectorAll('details.lk-pop[open], details.hull-pick[open]')];
+  const openOnes = () => [...document.querySelectorAll('details.lk-pop[open], details.hull-pick[open], details.info-pop[open]')];
   document.addEventListener('pointerdown', (e) => { for(const d of openOnes()) if(!d.contains(e.target)) d.open = false; }, true);
+  // v2026.10.14.48: an info panel's close button (shown on a phone, where the panel is a sheet)
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('button.info-close');
+    if(!b) return;
+    const d = b.closest('details.info-pop'); if(d){ d.open = false; d.querySelector('summary').focus(); }
+  });
   document.addEventListener('keydown', (e) => {
     if(e.key !== 'Escape') return;
     for(const d of openOnes()){ d.open = false; const s = d.querySelector('summary'); if(s) s.focus(); }
@@ -14994,10 +15059,16 @@ function dmgUnappliedText(app){
 }
 
 // ---- the card ----
+// v2026.10.14.48 (subtext rule 4): Reset is an icon that is always there, disabled at the defaults. It used to
+// appear as a text button once a setting moved, which made the card 16 px taller and pushed the page down.
+const DMG_RESET_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>';
+function dmgRawDps(app){ return app.weapons.reduce((s, w) => s + w.dps, 0) + (app.drones || []).reduce((s, d) => s + d.dps, 0); }
+// The widest applied DPS a fit can show: raw plus wrecking hits (a close, perfect hit averages 1.5% above raw).
+function dmgWidestDps(app){ return dmgFmt(Math.ceil(dmgRawDps(app) * 1.02) + 1); }
 function dmgCardShellHtml(f){
   if(!cardIsOpen(f, 'dmg')) return collapsedCardHtml('dmg', f._dmgSummary || DMG_SUMMARY_NONE);
   return `<div class="fit-summary dmg-card">
-      <div class="dmg-top">${cardLabelHtml('dmg')}<span class="dmg-vs"></span><button type="button" class="dmg-reset" hidden>Reset to my ship</button></div>
+      <div class="dmg-top">${cardLabelHtml('dmg')}<span class="dmg-vs"></span><span class="card-tools"><button type="button" class="dmg-reset" disabled aria-label="Reset" title="Reset">${DMG_RESET_SVG}</button>${infoBtnHtml('dmg')}</span></div>
       <div class="dmg-body"><div class="status">Loading the ship to chart against…</div></div>
     </div>`;
 }
@@ -15047,15 +15118,18 @@ async function dmgFill(host, f){
   card.querySelector('.dmg-vs').innerHTML = `${T.kind === 'mine' ? MY_SHIP_HULL_SVG(14) : ''}<span>applied to ${escapeHtml(T.kind === 'mine' ? 'your ' : '')}${escapeHtml(T.label)}</span>`;
   const m0 = dmgModel(f, T, f.dmg);
   const unapplied = dmgUnappliedText(app);
-  const phone = host.clientWidth < 720; // a narrow card: Adjust folds under the chart, closed (same 720 px as its container query)
+  // A narrow card: Adjust folds under the chart, closed (same 720 px as its container query). v2026.10.14.48: a card in
+  // a loss tab that isn't shown has no width yet (0), which closed Adjust; on the wide layout that left an "Adjust"
+  // heading with no sliders (the owner's screenshot). Not laid out yet -> judge by the window instead.
+  const phone = (host.clientWidth || window.innerWidth) < 720;
   body.innerHTML = `
       ${T.kind === 'preset' ? dmgPresetPickerHtml(T) : ''}
       <div class="dmg-grid">
         <div class="dmg-main">
-          <div class="dmg-head"><span class="dmg-big" data-out="head"></span><span data-out="headText"></span><span class="dmg-faint" data-out="headSub"></span></div>
+          <div class="dmg-head"><span class="dmg-big num-box" data-out="head" style="${numBoxStyle(dmgWidestDps(app))}"></span><span data-out="headText"></span><span class="dmg-faint" data-out="headSub"></span></div>
           <div class="dmg-legend" data-out="legend"></div>
           <div class="dmg-chart"><div data-out="chart"></div><div class="dmg-tip" hidden></div></div>
-          <p class="dmg-note">As pyfa's damage graph: their webs, target painters and scram applied, resists not counted, their lock range ignored; their drones hit fully when faster than you, otherwise track like turrets from their ship, out to their drone control range. A close, perfect hit chance averages 1.5% above raw DPS (wrecking hits), as in pyfa.${unapplied ? ' ' + escapeHtml(unapplied) : ''}</p>
+          ${unapplied ? `<p class="dmg-note">${escapeHtml(unapplied)}</p>` : ''}
           <details class="dmg-values"><summary>Show values</summary><div data-out="table"></div></details>
         </div>
         <details class="dmg-adjust"${phone ? '' : ' open'}><summary>Adjust</summary><div class="dmg-controls">${dmgControlsHtml(m0, T)}</div></details>
@@ -15116,8 +15190,9 @@ function dmgDraw(card){
   set('their', `${dmgFmt(m.tSpeed)} of ${dmgFmt(m.theirTop)} m/s`);
   const reset = card.querySelector('.dmg-reset');
   const d = dmgDefaults(m.app);
-  reset.hidden = Object.keys(d).every(k => d[k] === st[k]);
-  reset.textContent = T.kind === 'mine' ? 'Reset to my ship' : 'Reset';
+  reset.disabled = Object.keys(d).every(k => d[k] === st[k]);
+  const rl = T.kind === 'mine' ? 'Reset to my ship' : 'Reset';
+  reset.setAttribute('aria-label', rl); reset.title = reset.disabled ? `${rl} (already at the defaults)` : rl;
   const tip = card.querySelector('.dmg-tip');
   if(c.hover === null){ tip.hidden = true; }
   else{
@@ -15355,6 +15430,10 @@ async function mysRenderStrip(host){
     cell.classList.toggle('is-changed', changed);
     if(changed) cell.title = `Your pasted fit: ${bc.value}`; else cell.removeAttribute('title');
   }
+  // v2026.10.14.48 (subtext rule 4): each number keeps the width of the widest value it can show, so the second
+  // number in a half doesn't slide when the first changes ("26 s" -> "1 min 7 s").
+  const widest = {their: dmgWidestDps(tf.estimate.application), your: dmgWidestDps(mf.estimate.application), theyLast: 'over an hour', youLast: 'over an hour'};
+  for(const [k, w] of Object.entries(widest)){ const v = board.querySelector(`[data-cell="${k}"] .mys-cell-v`); if(v) v.style.minWidth = `${w.length}ch`; }
   const edgeEl = board.querySelector('.mys-edge');
   if(edgeEl) edgeEl.dataset.edge = m.edge;
   if(note) note.textContent = `At${fight.slice(2)}, as set on "${cardName('dmg')}". Time to kill: damage by type against resists layer by layer, minus reps while the capacitor lasts.`;

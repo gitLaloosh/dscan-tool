@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Subtext rule, phase S1: the shared pieces</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Subtext rule, phase S1: info panel, reserved Reset, set-width numbers</h1>
+<p><span class="tag">Design</span><span class="tag">Fix</span> 2026-10-24 &middot; <code>v2026.10.14.47</code> &rarr; <code>v2026.10.14.48</code>. Plan: <code>roadmap/subtext-plan.md</code>; mockup on the layout canvas, page "Subtext rule".</p>
+<p>the owner (2026-10-24): "the subtext in the tool is a little overwhelming and distracts from important values ... address it as a site wide design choice", and "when making changes to the damage application slider, numbers change on multiple cards which causes the content to shuffle and move elements on the page". Decided: "works as written. info icon opens a panel over the page. the 40 character limit is fine." This first phase builds the pieces every card will use, and fixes the two things measured to move the page.</p>
+
+<h2>What changed on the page</h2>
+<ul>
+<li><b>Info button on the Damage Application card.</b> The card's grey method paragraph ("As pyfa's damage graph: …") is gone from the card. It now opens from an ⓘ button in the card's title row, in a panel over the page. The panel is a sheet from the bottom on a phone. Escape, a press outside it, or its close button close it. A "Not in the chart yet: …" warning still shows under the chart when something isn't charted.</li>
+<li><b>Reset is always there.</b> It's an icon button next to ⓘ: enabled once a setting moves, disabled at the defaults. It used to appear as a text button once a setting moved, which made the card 16 px taller and pushed the whole page down (42 px on a phone).</li>
+<li><b>Numbers keep their width.</b> The headline DPS and the four Matchup numbers sit in boxes as wide as the widest value they can show, so the second number in a Matchup half no longer slides when the first changes ("26 s" → "1 min 7 s"):
+<ul>
+<li>DPS: the fit's raw DPS plus 2%, since wrecking hits average 1.5% above raw;</li>
+<li>times: "over an hour".</li>
+</ul></li>
+<li><b>Fix: "Adjust" with no sliders</b> (the owner's earlier screenshot). The card opens Adjust only when it is at least 720 px wide. A Pilot loss tab that isn't shown is drawn with no width (0), so Adjust started closed, and on the wide layout that left an "Adjust" heading with nothing under it. A card that isn't laid out yet now judges by the window width.</li>
+</ul>
+<p>No calculation changed.</p>
+
+<h2>The shared pieces (for phases S2 and S3)</h2>
+<ul>
+<li><code>CARD_INFO</code>: each card's info-panel text, by card key, as plain paragraphs. It sits next to <code>CARD_NAMES</code>, and is JSON so the tools can read it.</li>
+<li><code>infoBtnHtml(key)</code>: the ⓘ button and its panel. It reuses the Last Kill panel's style and the page-wide Escape / outside-press closer, which now also closes info panels.</li>
+<li><code>ctxHtml(text)</code>: the one-line context slot. 11.5 px in <code>--text-dim</code>, one line, cut with "…" and shown whole on hover.</li>
+<li><code>numBoxStyle(widest)</code>: a live number's set width.</li>
+</ul>
+
+<h2>New checks</h2>
+<ul>
+<li><b><code>tools/check_subtext.py</code></b> (update-check chain, now 36 steps). It fails on:
+<ul>
+<li>a context line in the code over 40 characters;</li>
+<li>an info button without <code>CARD_INFO</code> text, or <code>CARD_INFO</code> text that's never shown or isn't a card key.</li>
+</ul>
+It reports (doesn't fail yet) the 29 CSS rules that colour text with the too-faint grey.</li>
+<li><b><code>tools/page_checks/no_shift_check.py</code></b>: uses every Damage Application control at 1440, 1100 and 375 px and measures every card. It fails if the Matchup board or the Damage Application card moves (wide layouts), and reports what else still moves:
+<ul>
+<li>the Weaknesses card grows up to 42 px when the picks text changes, and the cards below it follow (phase S2);</li>
+<li>on a phone, the Damage Application headline still re-wraps as its sentence changes (phase S2).</li>
+</ul>
+On v.47 it fails exactly where expected: the card moved 16 px with Reset appearing.</li>
+<li><b><code>damage_chart_check.py</code></b>: Reset enabled/disabled; the method text off the card and in the panel; the panel doesn't change the card's height; Escape and an outside press close it; the phone sheet and its close button; Adjust open on a loss tab that was hidden when drawn.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Regression suite ALL PASS; update-check chain all 36 steps OK; every page check 0 failures.</li>
+<li>The new checks fail on v.47 and pass on v.48.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>Two mistake classes, LESSONS #44 and #45.</p>
+<ul>
+<li><b>Reserve space.</b> A control or line that appears only after the user changes something moves everything below it. Reserve its space from the start: show it disabled, and give live numbers a fixed width. Then measure before and after using each control, because a screenshot of either state looks fine.</li>
+<li><b>Hidden means width 0.</b> A size measured while the element is hidden (an inactive tab) is 0. Check whether it can be hidden before trusting it.</li>
+</ul>
+</body>
+</html>

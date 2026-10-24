@@ -686,6 +686,27 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   hook, ask what else on the page displays that value: a collapsed row, the Firepower link, the Matchup. A page
   check that changes an input while the card is collapsed catches it; one that only tests the open card doesn't.
 
+## 44. A control that appears when a value changes moves the page
+
+- **What happened (fixed v2026.10.14.48, found by the owner):** the Damage Application card showed a "Reset to my
+  ship" button only once a setting left its default. The button's row was taller than the title row without it, so
+  the first touch of any slider made the card 16 px taller (42 px on a phone) and pushed every card below it down.
+  the owner: "numbers change on multiple cards which causes the content to shuffle and move elements on the page".
+- **Do this instead:** anything that can appear while the user is working keeps its space from the start. Show
+  the control disabled rather than hidden, and give live numbers a box as wide as their widest possible value
+  (`numBoxStyle`). Then measure it: `tools/page_checks/no_shift_check.py` uses every control and fails if a covered
+  card moves more than 1 px. A screenshot can't show this; only a before/after measurement can.
+
+## 45. Measuring a hidden element gives 0
+
+- **What happened (fixed v2026.10.14.48, from the owner's screenshot):** the Damage Application card decides whether its
+  "Adjust" panel starts open from the card's width (`clientWidth < 720` = phone). A Pilot loss tab that isn't shown
+  is drawn while hidden, so its width is 0. The panel started closed, and on the wide layout the closed panel looked
+  like an "Adjust" heading with nothing under it.
+- **Do this instead:** before using a measured size, ask whether the element can be hidden at that moment
+  (`display: none` ancestors, tabs, collapsed cards). If it can, fall back to something that is laid out (here the
+  window width), or decide in CSS. The page check opens the second loss tab and checks Adjust is open there.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**
