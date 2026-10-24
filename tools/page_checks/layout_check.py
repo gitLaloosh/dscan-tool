@@ -69,7 +69,15 @@ INFO_PANELS = """async (W) => {
   for(const d of document.querySelectorAll('#fitAnalyzerResults details.info-pop')){
     if(!d.offsetParent) continue;
     d.open = true; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    const r = d.querySelector('.info-body').getBoundingClientRect(), col = d.closest('.fit-layout > div');
+    const body = d.querySelector('.info-body');
+    body.scrollIntoView({block: 'nearest'}); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    // v2026.10.14.52 (Erik: the Matchup's panel was cut off by the board's edge): every corner of the panel must be
+    // the panel itself on screen, not something drawn over it or a clipped edge
+    const b = body.getBoundingClientRect();
+    const hidden = [[b.left + 8, b.top + 8], [b.right - 8, b.top + 8], [b.left + 8, b.bottom - 8], [b.right - 8, b.bottom - 8]]
+      .filter(([x, y]) => { const e = document.elementFromPoint(x, y); return !(e && body.contains(e)); });
+    if(hidden.length) bad.push(`${d.dataset.info}: ${hidden.length} corner(s) not visible (clipped or covered)`);
+    const r = body.getBoundingClientRect(), col = d.closest('.fit-layout > div');
     const c = col ? col.getBoundingClientRect() : {left: 0, right: W};
     seen.push(d.dataset.info);
     if(r.left < -1 || r.right > W + 1 || r.width < 200) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)} of the ${W} px window`);
@@ -191,7 +199,15 @@ INFO_PANELS = """async (W) => {
   for(const d of document.querySelectorAll('#fitAnalyzerResults details.info-pop')){
     if(!d.offsetParent) continue;
     d.open = true; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    const r = d.querySelector('.info-body').getBoundingClientRect(), col = d.closest('.fit-layout > div');
+    const body = d.querySelector('.info-body');
+    body.scrollIntoView({block: 'nearest'}); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    // v2026.10.14.52 (Erik: the Matchup's panel was cut off by the board's edge): every corner of the panel must be
+    // the panel itself on screen, not something drawn over it or a clipped edge
+    const b = body.getBoundingClientRect();
+    const hidden = [[b.left + 8, b.top + 8], [b.right - 8, b.top + 8], [b.left + 8, b.bottom - 8], [b.right - 8, b.bottom - 8]]
+      .filter(([x, y]) => { const e = document.elementFromPoint(x, y); return !(e && body.contains(e)); });
+    if(hidden.length) bad.push(`${d.dataset.info}: ${hidden.length} corner(s) not visible (clipped or covered)`);
+    const r = body.getBoundingClientRect(), col = d.closest('.fit-layout > div');
     const c = col ? col.getBoundingClientRect() : {left: 0, right: W};
     seen.push(d.dataset.info);
     if(r.left < -1 || r.right > W + 1 || r.width < 200) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)} of the ${W} px window`);
@@ -374,7 +390,15 @@ INFO_PANELS = """async (W) => {
   for(const d of document.querySelectorAll('#fitAnalyzerResults details.info-pop')){
     if(!d.offsetParent) continue;
     d.open = true; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    const r = d.querySelector('.info-body').getBoundingClientRect(), col = d.closest('.fit-layout > div');
+    const body = d.querySelector('.info-body');
+    body.scrollIntoView({block: 'nearest'}); await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    // v2026.10.14.52 (Erik: the Matchup's panel was cut off by the board's edge): every corner of the panel must be
+    // the panel itself on screen, not something drawn over it or a clipped edge
+    const b = body.getBoundingClientRect();
+    const hidden = [[b.left + 8, b.top + 8], [b.right - 8, b.top + 8], [b.left + 8, b.bottom - 8], [b.right - 8, b.bottom - 8]]
+      .filter(([x, y]) => { const e = document.elementFromPoint(x, y); return !(e && body.contains(e)); });
+    if(hidden.length) bad.push(`${d.dataset.info}: ${hidden.length} corner(s) not visible (clipped or covered)`);
+    const r = body.getBoundingClientRect(), col = d.closest('.fit-layout > div');
     const c = col ? col.getBoundingClientRect() : {left: 0, right: W};
     seen.push(d.dataset.info);
     if(r.left < -1 || r.right > W + 1 || r.width < 200) bad.push(`${d.dataset.info}: ${Math.round(r.left)}..${Math.round(r.right)} of the ${W} px window`);

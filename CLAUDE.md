@@ -51,6 +51,10 @@ When you find a new kind of mistake, add it to `LESSONS_LEARNED.md` and give
 the history doc a "Lesson for future models" section. In code, mark the site
 with a `// LESSON #n` comment that points at the entry.
 
+**How the numbers are worked out, for people:** `METHODOLOGY.md` (was the "How effective HP and DPS are
+calculated" note on the page, removed in v2026.10.14.51); each card's short version is its ⓘ panel (`CARD_INFO`).
+Change both when a calculation's assumptions change.
+
 **After finishing any task,** check `todo-inbox/` for new requests the
 owner wrote down while you were working: `new-bugs.txt` and
 `new-backlog-items.txt`. If either file has entries, add each one to the bug

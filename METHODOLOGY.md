@@ -1,0 +1,119 @@
+# How the numbers are worked out
+
+This was the "How effective HP and DPS are calculated" note at the bottom of every fit, one long paragraph. Erik
+(2026-10-24): "At this point it's impossible to read and comprehend in that format. perhaps it needs to be it's own
+document." It moved here in v2026.10.14.51, split into sections and brought up to date. The short version of each
+section is behind the matching card's ⓘ button on the page (`CARD_INFO` in index.html).
+
+Everything follows pyfa (the verified version is in `tools/pyfa_core_manifest.json`). Where the tool deliberately
+differs, it's listed in `DEVIATIONS.md`. **Treat every number as a ceiling, not a guarantee:** all skills are assumed
+at level V, so a less-trained pilot with fewer damage modules hits softer and tanks less.
+
+## Effective HP and resists (Resistance card)
+
+- **Resist sources:** every source pyfa applies to the fit, with pyfa's own rules:
+  - Damage Control, hardeners, amplifiers, membranes and resist rigs;
+  - a Bastion Module and hardener scripts;
+  - a Tactical Destroyer's Defense Mode;
+  - the hull's own resist bonuses (special-edition hulls included);
+  - Shield and Armor Compensation skills at V.
+- **Stacking penalties** follow pyfa's groups:
+  - hardeners, amplifiers and rigs penalize each other;
+  - Damage Control, a Bastion Module and a Reactive Armor Hardener penalize each other in a separate group;
+  - hull bonuses aren't penalized.
+- **Reactive Armor Hardener:** simulated exactly as pyfa does by default, against an even 25% per type incoming
+  profile, after every other resist source. Its real split depends on the incoming damage, which a killmail can't
+  reveal.
+- **Polarized weapons:** a fitted Polarized weapon sets every resist to 0%, as in the game.
+- **Hit points:**
+  - the hull's base HP;
+  - plus plates, shield extenders, and Reinforced Bulkheads / Nanofiber Internal Structure (flat HP or a multiplier,
+    whichever the module uses);
+  - plus Trimark Armor Pump and Core Defense Field Extender rigs, minus other rigs' HP drawbacks;
+  - plus Shield Management, Hull Upgrades and Mechanics at V.
+- **Strategic Cruisers** (Tengu, Legion, Proteus, Loki): subsystems count like any other module. That includes flat
+  shield and hull HP, and any hardener-style resist a Defensive subsystem carries.
+- **EHP** is each layer's HP against an even mix of the four damage types.
+
+## Repairs and Break Point (Resistance card, Repairs strip)
+
+- **Sources:** a fitted Shield Booster, Armor Repairer or Hull Repairer, from the module's own repair amount and cycle
+  time.
+- **Armor and hull:** Repair Systems / Capital Repair Systems at V (25% faster cycling).
+- **Shield Booster:** gets no skill bonus. Its required skill, Shield Operation, only speeds up passive shield
+  regen, not the booster. This is a real asymmetry in the game, not an oversight.
+- **Passive shield regen:** its peak (reached near 25% shield), 2.5 × shield HP ÷ recharge time.
+- **Break Point:** the sustained DPS an attacker needs to outpace that layer's repair or regen. A dash means the layer
+  has no repair module (pure buffer), not a missing number.
+- **Ancillary Armor Repairer:** also shows a burst figure while its Nanite Repair Paste lasts, because its repair
+  amount roughly triples then.
+- **Ancillary Shield Booster:** its Cap Booster charges only change where the activation cost comes from, not the
+  repair amount.
+
+## DPS (Firepower card)
+
+- **Turrets and launchers:** DPS is calculated per weapon.
+  - First from the exact charge that weapon had loaded (the same killmail flag as the gun).
+  - Only when a gun has no identifiable loaded charge, from a category-matched guess at spare ammo in cargo or the
+    fleet hangar. Total and Weapon DPS then show a range, and the ammo is listed at the bottom of the card.
+- **Other sources:** drones, fighters and fixed-damage weapons. Smartbombs cycle 25% faster with Energy Pulse Weapons
+  at V.
+- **Vorton Projector (EDENCOM):** trains on its own three-skill tree, not the turret skills, and is scored with that.
+- **Drones:** only as many as the hull can have in space at once (the lower of max active drones and drone
+  bandwidth), hardest-hitting first, not every drone in the bay.
+- **Fighters** (carriers, supercarriers, FAXes): only as many squadrons as the hull's launch tubes and per-class
+  (light / support / heavy) limits allow, hardest-hitting first.
+- **Skills, all at V:**
+  - Turrets and missiles: damage and rate-of-fire skills (Surgical Strike / Rapid Firing, or Warhead Upgrades /
+    Rapid Launch), plus the weapon-size and T2 Specialization skills.
+  - Drones: damage-only skills (Drone Interfacing, the size skill or Sentry Drone Interfacing, racial Drone
+    Specialization on T2 drones).
+  - Fighters: damage-only skills (Fighters, Drone Interfacing's fighter bonus, Heavy Fighters, racial Fighter
+    Specialization on T2 light squadrons).
+  - Drones and fighters have no rate-of-fire skill.
+- **Damage modules and rigs:** Gyrostabilizer, Magnetic Field Stabilizer, Heat Sink, Ballistic Control System, Drone
+  Damage Amplifier, the rate-of-fire rigs, Bay Loading Accelerator and Warhead Calefaction Catalyst rigs, and Sentry
+  Damage Augmentor rigs on sentries. Each is stacking-penalized against its own kind.
+- **Hull bonuses:** the hull's role and skill bonuses at V (a Vexor's hybrid damage, a Drake's kinetic missiles). On a
+  Strategic Cruiser the bonus comes from the fitted Offensive subsystem instead.
+- **Siege-type modules:**
+  - **Bastion Module** (Marauders): doubles turret and launcher rate of fire while running.
+  - **Siege Module** (Dreadnoughts): a much larger flat damage bonus. Turrets get damage only; launchers get damage
+    and rate of fire.
+  - **Industrial Core** (Rorqual / Orca / Porpoise): doesn't affect turrets or launchers. While running it adds a
+    large stacking-penalized drone damage bonus (+100% on a Capital Industrial Core II), boosts and speeds up local
+    shield boosters, and multiplies scan resolution.
+  - **Triage Module** (Carriers): no effect on weapon damage or rate of fire.
+  - All four run by default and immobilize the ship while running, so a fitted one shows 0 m/s. Siege, Triage and
+    Industrial Core also multiply mass by 10, which shows in align time.
+- **Volley:** one shot from every weapon, drone and fighter at once, exactly as pyfa's Volley. It's the instant alpha,
+  not a sustained rate, so it ignores different cycle times.
+
+## Weapon range (Firepower card's weapon rows)
+
+- **Turrets:** optimal + falloff with the loaded ammo, Sharpshooter / Trajectory Analysis at V. A Vorton Projector
+  uses Vorton Arc Extension instead.
+- **Missiles:** the flight range as pyfa computes it: flight time plus the ship-radius bonus, flown in whole seconds,
+  with acceleration, measured from the ship's surface, capped for auto-targeting missiles. Hover it for the two
+  possible distances. Missile Projection / Missile Bombardment at V.
+- **Bonuses included:** the hull's or subsystem's range bonuses, Tracking Enhancers and Computers (with a loaded
+  Optimal Range or Tracking Speed script), Missile Guidance Enhancers and Computers (with their scripts), range rigs,
+  a Bastion Module, and a Tactical Destroyer's Sharpshooter Mode. All stacking-penalized as pyfa does.
+- **What range is not:** this is how far a weapon reaches. How much of its damage *lands* at a distance depends on
+  the target's signature and speed; that is on the Damage Application card (pyfa's damage graph).
+- **Not shown:** weapons only resolved through the cargo-ammo guess, and drones, whose engagement range is up to
+  their pilot.
+
+## Module states (Fit card)
+
+- **When bonuses apply:** as in pyfa, only in the state that turns them on. A hardener, repairer, weapon or
+  propulsion module needs to be running; most other modules only need to be online. Only running modules use
+  capacitor.
+- **Default states:** a killmail doesn't say what was running, so every module starts running if the game allows
+  it, with these limits:
+  - one propulsion module at a time (the fastest);
+  - only as many Command Bursts or similar as the hull permits;
+  - cloaks, Micro Jump Drives and Field Generators, a Signature Suppressor's burst, Entosis Links, Capital Sensor
+    Arrays and an Assault Damage Control's burst start online, not running.
+- **Changing states:** switch any module off, online or active on the Fit card and every number recalculates. The
+  game's rules still apply: one propulsion module running at a time, Bastion blocks the Micro Jump Drive, and so on.
