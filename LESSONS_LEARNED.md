@@ -717,6 +717,15 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   appears, at every layout width, not the first one. Place it against something that can't be narrower than it (here
   the card, as wide as 380 px or its column allows). `layout_check.py` now opens every info panel at 1440, 1100 and
   375 px and fails if one leaves the screen or its column; on v.48's placement it fails on Weaknesses and EWAR.
+- **Again in v2026.10.14.52 (the owner's screenshot: "info panel clipping bottom edge of the matchup bar"):** the same
+  panel, put on the Matchup in v.51, was never opened by any check. Two things around it broke it:
+  - the board has `overflow: hidden`, and the panel's positioned parent was inside the board, so the panel was cut
+    off at the board's bottom edge;
+  - below 900 px a `transform` on the button's wrapper made that wrapper the frame for the phone sheet
+    (`position: fixed`), so the sheet was 34 px wide.
+  Being "on screen" isn't enough. Check that the panel is actually *seen*: `document.elementFromPoint` at its corners
+  must return the panel itself. `layout_check.py` (every card) and `fight_strip_check.py` (the Matchup) now do that;
+  `fight_strip_check.py` fails on v.51 at all three widths. Watch for `overflow: hidden` and `transform` on any ancestor of a pop-up.
 
 ## 47. One wrong anchor stops a whole patch
 
@@ -736,6 +745,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Do this instead:** before shortening a line, search the checks for its words (`grep -rn "<a few words>" tools/`).
   Point each one at the new short line *and* at the hover (`title`), so the check still proves the same fact. Don't
   delete the check or loosen it to "something is there".
+
+## 49. Two controls for one setting: one owner, both redraw from it
+
+- **What happened (designed in, v2026.10.14.51):** the fight strip under the Matchup and the Damage Application
+  card's Adjust panel both set the range and how each ship moves. If each kept its own copy, a change in one would
+  leave the other showing a stale value (the same class as LESSON #43, the stale collapsed row).
+- **Do this instead:** keep the value in one place (here the threat fit's `f.dmg`). Every control writes there and
+  then redraws from there: the strip calls `dmgSyncControls` + `dmgDraw` on the card, and the card's redraw calls
+  `mysRenderStrip`, which reads the same settings. Test both directions (`fight_strip_check.py`: strip → card and
+  card → strip), and from the other perspective too.
 
 ## 9. Comparing different quantities with pyfa
 

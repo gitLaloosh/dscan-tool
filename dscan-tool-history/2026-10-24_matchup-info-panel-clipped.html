@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Matchup info panel clipped</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fix: the Matchup's info panel was cut off at the board's edge</h1>
+<p><span class="tag">Fix</span> 2026-10-24 &middot; <code>v2026.10.14.51</code> &rarr; <code>v2026.10.14.52</code>.</p>
+<p>the owner (2026-10-24, screenshot of a Pilot loss, Loki vs his Osprey Navy Issue): "info panel clipping bottom edge of the matchup bar". The "How Matchup works" panel (new in v.51) showed only its title and first line; the rest was cut off where the board ends.</p>
+
+<h2>Cause</h2>
+<ul>
+<li><b>Wide layouts:</b> the board has <code>overflow: hidden</code>, so its colored halves follow its rounded corners. The ⓘ button sits in the board's middle column, which was <code>position: relative</code>. That made the middle column the panel's frame, inside the board, so the board clipped the panel at its bottom edge.</li>
+<li><b>Below 900 px:</b> the button's wrapper was centered with a <code>transform</code>. A transform makes an element the frame even for a <code>position: fixed</code> child, so on a phone the panel's bottom sheet was squeezed into the 34 px button wrapper instead of filling the screen's width.</li>
+</ul>
+<p>No check had opened this panel. <code>layout_check.py</code> opens every card's panel, but only with no ship saved, when there's no Matchup.</p>
+
+<h2>Fix</h2>
+<ul>
+<li>The board no longer clips its contents. The two halves round their own top corners, so the board looks the same.</li>
+<li>The button's wrapper is centered with flex instead of a transform.</li>
+</ul>
+<p>Presentation only; no calculation changed.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>fight_strip_check.py</code></b> opens the Matchup's panel at 1440, 1100 and 375 px. Every corner and the middle of its bottom edge must be the panel itself on screen (<code>document.elementFromPoint</code>), with its text inside. v.51 fails at all three widths (3, 3 and 2 corners not seen; a 34 px sheet on the phone); v.52 passes.</li>
+<li><b><code>layout_check.py</code></b>: the same corner test for every card's panel.</li>
+<li>Regression suite ALL PASS; update-check chain all 36 steps OK; every page check 0 failures.</li>
+<li><code>layout_check.py</code> has stopped twice since v.51 with "Execution context was destroyed", after a Pilot tab click, with no failed check before it. A run with page-navigation logging showed no stray navigation, and reruns pass. It is logged to watch, not hidden with a retry.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #46, again: a pop-up checked in one place can break in another. This time it wasn't off the screen but <em>cut off</em> by an ancestor's <code>overflow: hidden</code>, or trapped by an ancestor's <code>transform</code>. When a pop-up goes into a new container, check that each open panel is actually seen: <code>elementFromPoint</code> at its corners must return the panel. Look for <code>overflow</code> and <code>transform</code> on every ancestor.</p>
+</body>
+</html>

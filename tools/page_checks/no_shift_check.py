@@ -69,13 +69,27 @@ def actions(pg):
         yield f'your signature {v}%', lambda v=v: set_input(pg, 'sigPct', v)
     for v in (100, 50, 0):
         yield f'their speed {v}%', lambda v=v: set_input(pg, 'theirPct', v)
-    for seg in ('You', 'Their heading', 'Chart across'):
+    for seg in ('You', 'Them', 'Chart across'):   # v.51: 'Them' (Stopped / Approach / Orbit) replaced 'Their heading'
         for b in pg.locator(f'{R} .fl-dmg button[data-seg="{seg}"]').all():
             v = b.get_attribute('data-v')
             yield f'{seg}: {v}', lambda b=b: (b.click(), pg.wait_for_timeout(200))
     if pg.locator(f'{R} .fl-dmg input[data-in="prop"]').count():
         yield 'your MWD off', lambda: set_input(pg, 'prop', 0)
         yield 'your MWD on', lambda: set_input(pg, 'prop', 1)
+    # v2026.10.14.51 (F1): the fight strip under the Matchup -- every movement choice and the range, each opened,
+    # chosen and closed again (an open menu floats over the page; only what's left after closing is compared)
+    def strip_pick(part, v):
+        pg.click(f'{R} .mys-fight details.mys-fpart-{part} > summary'); pg.wait_for_timeout(150)
+        pg.click(f'{R} .mys-fight details.mys-fpart-{part} button.mys-fopt[data-v="{v}"]'); pg.wait_for_timeout(200)
+    def strip_range(v):
+        pg.click(f'{R} .mys-fight details.mys-fpart-range > summary'); pg.wait_for_timeout(150)
+        pg.evaluate(f"""() => {{ const i = document.querySelector('{R} .mys-fight input[data-fset="range"]'); i.value = {v}; i.dispatchEvent(new Event('input', {{bubbles: true}})); }}""")
+        pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
+    for part, vals in (('them', ('toward', 'orbit', 'still')), ('you', ('still', 'straight', 'orbit'))):
+        for v in vals:
+            yield f'strip {part}: {v}', lambda part=part, v=v: strip_pick(part, v)
+    for v in (mx * 0.2, mx * 0.8):
+        yield f'strip range {v / 1000:g} km', lambda v=v: strip_range(v)
 
 with sync_playwright() as p:
     b = p.chromium.launch()

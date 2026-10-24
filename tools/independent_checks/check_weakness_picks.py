@@ -78,7 +78,7 @@ FITS = {
 }
 PAIRS = [('vexor', 'hecate'), ('hecate', 'vexor'), ('omen', 'caracal'), ('caracal', 'rupture'), ('rupture', 'thrasher'), ('thrasher', 'drake'), ('ishtar', 'drake'), ('drake', 'ishtar'), ('ishtar', 'omen')]
 GRID = [dict(range=r, mode=mo, speedPct=100, prop=pr, sigPct=100, theirPct=tp, theirMode=tm, axis='distance')
-        for r, mo, pr, (tp, tm) in itertools.product([1500, 5000, 12000, 30000, 60000], ['still', 'orbit', 'straight'], [True, False], [(0, 'toward'), (100, 'toward'), (100, 'orbit')])]
+        for r, mo, pr, (tp, tm) in itertools.product([1500, 5000, 12000, 30000, 60000], ['still', 'orbit', 'straight'], [True, False], [(0, 'toward'), (100, 'toward'), (100, 'orbit'), (100, 'still')])]   # v.51: their Stopped
 
 def eft(k):
     ship, mods, drones, cargo = FITS[k]
@@ -248,7 +248,7 @@ if __name__ == '__main__':
             m_cur = CP._Fit(orc(m)); m_inp = CP.pyfa_inputs(m_cur)
             my_top = me.getMaxVelocity(); their_top = tf_fit.getMaxVelocity()
             y_frac = 0 if st['mode'] == 'still' else st['speedPct'] / 100; y_ang = 90 if st['mode'] == 'orbit' else 0
-            t_frac = st['theirPct'] / 100; t_ang = 90 if st['theirMode'] == 'orbit' else 0
+            t_frac = 0 if st['theirMode'] == 'still' else st['theirPct'] / 100; t_ang = 90 if st['theirMode'] == 'orbit' else 0   # v.51: a stopped ship has speed 0
             for side, k, G, D, cur_fit, cur_inp, tgt, sf, ta, asp, aa in (
                     ('yours', m, gm, dm, m_cur, m_inp, tf_fit, t_frac, t_ang, y_frac * my_top, y_ang),
                     ('theirs', t, gt, dt, tf_fit, t_inp, me, y_frac, y_ang, t_frac * their_top, t_ang)):

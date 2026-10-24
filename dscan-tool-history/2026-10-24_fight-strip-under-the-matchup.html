@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Fight setup F1: the fight strip under the Matchup</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fight setup F1: the fight strip under the Matchup, and the methodology note moved to a document</h1>
+<p><span class="tag">Feature</span><span class="tag">Design</span> 2026-10-24 &middot; <code>v2026.10.14.50</code> &rarr; <code>v2026.10.14.51</code>. Plan: <code>roadmap/turret-application-plan.md</code> "Fight setup mockup" and <code>roadmap/subtext-plan.md</code> section 5 (phase F1); mockup on the chart canvas, page "Fight setup", board 2b.</p>
+<p>the owner (2026-10-24): "incorporate some of the subtext as visuals attached to the bottom of the matchup card" ... "a series of little tabs" showing "Orbit" or "Approach" that "tie directly into the damage application card's settings". After the mockups: "option C is my preference. i like that quite a bit actually", in-game names for both ships, and one fight for both perspectives. Via the inbox: "remove 'How effective HP and DPS are calculated' info link and subtext at the bottom of the page ... perhaps it needs to be it's own document", then "just do it during the next phase".</p>
+
+<h2>What changed on the page</h2>
+<ul>
+<li><b>The fight strip.</b> A strip is joined under the Matchup board, with each part under the board's own column:
+<ul>
+<li>the threat's movement ("HECATE Stopped");</li>
+<li>the range ("RANGE 4.4 km");</li>
+<li>yours ("YOU Orbit 1,691 m/s").</li>
+</ul>
+Each part opens a short menu: Stopped / Approach / Orbit and a speed slider for a ship, a slider for the range. Every menu has a "More on Damage Application" link that opens the card's Adjust panel and scrolls to it. On a phone the three parts sit in a row (44 px targets), and each opens a sheet from the bottom with a close button. Escape, a press outside, or the close button close a menu, and only one is open at a time.</li>
+<li><b>One fight.</b> The strip and the card's Adjust panel edit the same settings, and each follows the other. The board, the card, the Weaknesses picks and the My Ship Perspective all read those settings, so a change made while looking at your ship shows on the threat's card. Each Pilot loss keeps its own fight.</li>
+<li><b>In-game names for both ships:</b> Stopped / Approach / Orbit. They replace "Still / Straight at them / Orbiting" and "They fly at you / They orbit you" on the card too.
+<ul>
+<li>The threat now has a Stopped state of its own. It is the default, so a new fight starts exactly as before (they sit still); Approach and Orbit then start at their full speed.</li>
+<li>A stopped ship's speed slider is greyed out but keeps its place.</li>
+<li>Prose such as "you flying straight at them" now reads "you approaching".</li>
+</ul></li>
+<li><b>The Matchup's note is gone.</b> The fight is shown in the strip. How the board's numbers are worked out ("they last" is not a pyfa number, what the edge means, amber numbers) is behind a new ⓘ on the board. The note's line only appears for an error now.</li>
+<li><b>"How effective HP and DPS are calculated" is gone from the page.</b> That was one long paragraph under every fit. It is now <code>METHODOLOGY.md</code> in the repo, in sections (resists and HP, repairs and Break Point, DPS, weapon range, module states) and brought up to date. Each card's short version stays behind its ⓘ. <code>CLAUDE.md</code> points to the document.</li>
+</ul>
+<p>Calculations: inputs only (PYFA_CORE rule). The strip sets the same range, speeds and angles the Adjust panel already set. The threat's Stopped state is a speed of 0, as setting their speed to 0% always gave. Regression suite unchanged (ALL PASS).</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/page_checks/fight_strip_check.py</code></b> at 1440, 1100 and 375 px:
+<ul>
+<li>placement under the board's columns, and the labels;</li>
+<li>each menu sets the card's setting, and the card's buttons, sliders, headline and the board follow (the page's own <code>dmgModel</code> / <code>mysMatchup</code>), and back the other way;</li>
+<li>one part open at a time, and Escape, a press outside and the close button each close it;</li>
+<li>the shared fight across perspectives, and Pilot losses keeping their own fights;</li>
+<li>"More on" opening Adjust (and the collapsed card on a phone);</li>
+<li>the phone sheet, no sideways scroll, and the methodology note gone.</li>
+</ul>
+All pass.</li>
+<li><b><code>no_shift_check.py</code></b> also uses every strip choice and the strip's range (each menu opened, chosen, closed): nothing on the page moves.</li>
+<li><b><code>check_matchup.py</code> / <code>check_weakness_picks.py</code></b> (update-check chain, against pyfa) now include the threat Stopped: 0 mismatches over 22,464 and 1,080 points.</li>
+<li><code>damage_chart_check.py</code>, <code>matchup_strip_check.py</code>: the new button names, and the range read from the strip instead of the note.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Regression suite ALL PASS; update-check chain all 36 steps OK; every page check 0 failures (12, run one at a time). <code>layout_check.py</code> stopped once with "Execution context was destroyed" (a browser hiccup, no failed check). It passed on both reruns.</li>
+<li>Screenshots at 1440 and 375 px: the strip, the open "You" menu, the phone sheet.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #49: when two controls set one value, keep the value in one place and redraw both from it. The strip and the card's Adjust panel both write the threat fit's settings, then each redraws the other: <code>dmgSyncControls</code> + <code>dmgDraw</code>, and the card's redraw calls <code>mysRenderStrip</code>. Test both directions, and from the other perspective too. A second copy of the value is how the collapsed row went stale before (LESSON #43).</p>
+</body>
+</html>

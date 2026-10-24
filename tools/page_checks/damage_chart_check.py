@@ -166,7 +166,7 @@ def desktop(b):
     set_range(pg, f'{C} input[data-in="sigPct"]', 200); h2 = head(pg)
     check(head(pg) == pg.evaluate(EXPECT, C) and '200%' in pg.inner_text(f'{C} [data-out="sig"]'), f'signature slider ({h2})')
     set_range(pg, f'{C} input[data-in="theirPct"]', 60)
-    pg.click(f'{C} button[data-seg="Their heading"][data-v="orbit"]')
+    pg.click(f'{C} button[data-seg="Them"][data-v="orbit"]')   # v.51: in-game names, Stopped / Approach / Orbit
     check(head(pg) == pg.evaluate(EXPECT, C), 'their speed and heading')
     pg.click(f'{C} button[data-seg="Chart across"][data-v="speed"]')
     check(pg.locator(f'{C} polyline.dmg-still').count() == 0 and pg.locator(f'{C} .dmg-legend .dmg-key').count() == 1 and 'm/s' in pg.text_content(f'{C} .dmg-table'),

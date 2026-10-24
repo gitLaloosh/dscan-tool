@@ -44,7 +44,7 @@ for (const [t, m] of pairs) out[t + '|' + m] = grid.map(st => {
 fs.writeFileSync(outPath, JSON.stringify(out));
 '''
 GRID = [dict(range=r, mode=mo, speedPct=sp, prop=pr, sigPct=100, theirPct=tp, theirMode=tm, axis='distance')
-        for r, mo, sp, pr, tp, tm in itertools.product([2000, 7500, 15000, 30000], ['still', 'orbit', 'straight'], [100, 50], [True, False], [0, 100], ['toward', 'orbit'])]
+        for r, mo, sp, pr, tp, tm in itertools.product([2000, 7500, 15000, 30000], ['still', 'orbit', 'straight'], [100, 50], [True, False], [0, 100], ['toward', 'orbit', 'still'])]   # v.51: their Stopped
 
 def close(a, b):
     if a == 'inf' or b == math.inf or a == math.inf or b == 'inf': return (a in ('inf', math.inf)) and (b in ('inf', math.inf))
@@ -152,7 +152,7 @@ if __name__ == '__main__':
             me_o = orc(m, bool(st['prop'])); me = CP._Fit(me_o)
             my_top = me.getMaxVelocity(); their_top = tf_fit.getMaxVelocity()
             y_frac = 0 if st['mode'] == 'still' else st['speedPct'] / 100; y_ang = 90 if st['mode'] == 'orbit' else 0
-            t_frac = st['theirPct'] / 100; t_ang = 90 if st['theirMode'] == 'orbit' else 0
+            t_frac = 0 if st['theirMode'] == 'still' else st['theirPct'] / 100; t_ang = 90 if st['theirMode'] == 'orbit' else 0   # v.51: a stopped ship has speed 0
             inc = pyfa_typed(tf_fit, tf_app, t_inp, me, st['range'], y_frac, y_ang, t_frac * their_top, t_ang)
             m_src_fit = CP._Fit(me_o); m_app = CA._Src(me_o); m_inp = CP.pyfa_inputs(m_src_fit)
             outd = pyfa_typed(m_src_fit, m_app, m_inp, tf_fit, st['range'], t_frac, t_ang, y_frac * my_top, y_ang)

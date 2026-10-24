@@ -91,7 +91,7 @@ def desktop(b):
     # the card's range slider moves the strip
     pg.evaluate("() => { const i = document.querySelector('#fitAnalyzerResults .fl-dmg input[data-in=\"range\"]'); i.value = 1500; i.dispatchEvent(new Event('input', {bubbles: true})); }"); pg.wait_for_timeout(200)
     c2 = cells(pg)
-    check(c2['their'] == pg.inner_text(f'{R} .fl-dmg [data-out="head"]') and c2 != c and c2 == pg.evaluate(EXPECT, R) and '1.5 km' in pg.inner_text(f'{R} .mys-strip-note'),
+    check(c2['their'] == pg.inner_text(f'{R} .fl-dmg [data-out="head"]') and c2 != c and c2 == pg.evaluate(EXPECT, R) and pg.inner_text(f'{R} .mys-fight [data-fname="range"]') == '1.5 km' and pg.inner_text(f'{R} .mys-strip-note') == '',
           f'range slider: the board follows ({c["their"]} -> {c2["their"]})')
     # my ship view: same strip; change a state -> amber
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{R} .mys-mine-view .fit-layout'); settle(pg)
