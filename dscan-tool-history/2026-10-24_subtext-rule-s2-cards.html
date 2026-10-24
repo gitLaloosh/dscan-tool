@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Subtext rule, phase S2: five cards moved to the rule</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; margin:10px 0;} td,th{border:1px solid #ddd; padding:4px 10px; text-align:left; font-size:14px;}
+</style></head>
+<body>
+<h1>Subtext rule, phase S2: Damage Application headline, Weaknesses, EWAR / Misc, Mode, Fit</h1>
+<p><span class="tag">Design</span><span class="tag">Fix</span> 2026-10-24 &middot; <code>v2026.10.14.48</code> &rarr; <code>v2026.10.14.49</code>. Plan: <code>roadmap/subtext-plan.md</code> (phase S2); mockup on the layout canvas, page "Subtext rule".</p>
+<p>Erik (2026-10-24): "the subtext in the tool is a little overwhelming and distracts from important values ... address it as a site wide design choice", and the cards "shuffle and move elements on the page" while the Damage Application controls are used. Decided: "works as written. info icon opens a panel over the page. the 40 character limit is fine." S1 built the pieces; S2 moves five cards onto them.</p>
+
+<h2>What changed on the page</h2>
+<ul>
+<li><b>Damage Application headline.</b> The number and "DPS applied at 4.4 km" on one line, and one context line under it: "290 if you sit still · 755 raw" (or "you still · 755 raw"). How you are moving is already in the chart's legend. The whole sentence is on hover. On a phone the headline used to re-wrap as its sentence changed ("you still" vs "you orbiting at 1,691 m/s"), which moved the page 40 px.</li>
+<li><b>Weaknesses.</b>
+<ul>
+<li>Every value has at most one context line, cut with "…" and shown whole on hover: "least resisted overall (46% resist)", "100% applies at cruising speed", "can't deal EM or Explosive", "or Hammerhead II if it moves".</li>
+<li>Warnings are warning rows: a bold line and one context line ("Capacitor drains" · "even with its booster on charges"; "No charges for its …" · "none aboard: no cap injection").</li>
+<li>Your picks (with your ship saved) are three single lines per tile: who, the pick, and "291 DPS · they last 26 s". "in cargo" is a small tag next to a pick you'd have to reload. The next best and the full sentence are on hover. The note under the picks ("Applied DPS at 4.4 km, you orbiting, as set on …") moved to the card's ⓘ. This was the card that grew up to 42 px as the picks changed.</li>
+<li>Tiles are one per row in a narrow card instead of two (a 120 px tile cut every line short).</li>
+<li>Three turret notes were shortened to fit one line: "100% EM, zero Thermal", "best Thermal lean; still mostly Kinetic", "best Kinetic lean for projectiles" (the D-Scan cards use the same notes).</li>
+</ul></li>
+<li><b>EWAR / Misc.</b> Each chip is one line (the detail is cut with "…", whole on hover). Misc chips show a short line: "can bridge in capitals and Black Ops", "jumps clear; sig +N% while spooling", "jumps its gang N km away", "warps through bubbles", "fleet nearly invulnerable 6 min". The full sentence stays on hover. The badge letters are explained behind ⓘ.</li>
+<li><b>Mode.</b> The row's "How this is handled" link (which opened a long paragraph inside the card) is now the card's ⓘ. The label comes from <code>CARD_NAMES</code> ("Mode", new key <code>tdmode</code>).</li>
+<li><b>Fit.</b> The grey legend under the modules ("Click a module to switch it off …") and the "Recalculating…" text are behind ⓘ. The implant note is one line ("Counted in every number, as in pyfa."). Each drone row's numbers are one line that no longer changes as drones go out ("N in bay · N Mbit/s · N DPS each"); the squares show how many are in space.</li>
+<li><b>Info panels open beside their card.</b> The panel is now placed against the card's right edge and is never wider than the card's column. Placed against its button, as in S1, the Weaknesses and EWAR / Misc panels in the narrow left column would have opened past the screen's left edge at 1440 px.</li>
+</ul>
+<p>No calculation changed. Regression suite unchanged (ALL PASS).</p>
+
+<h2>Measured: nothing moves</h2>
+<p><code>no_shift_check.py</code> uses every Damage Application control at 1440, 1100 and 375 px.</p>
+<table>
+<tr><th>Card</th><th>v.48 (most it moved)</th><th>v.49</th></tr>
+<tr><td>Damage Application (phone)</td><td>40 px</td><td>0</td></tr>
+<tr><td>Mode (phone)</td><td>40 px</td><td>0</td></tr>
+<tr><td>Weaknesses</td><td>42 px (1440), 13 (1100), 40 (phone)</td><td>0</td></tr>
+<tr><td>EWAR / Misc</td><td>42 px (1440), 13 (1100), 33 (phone)</td><td>0</td></tr>
+<tr><td>Fit (phone)</td><td>33 px</td><td>0</td></tr>
+<tr><td>Firepower, Resistance, Navigation &amp; Targeting, Capacitor</td><td>13 px (1100), 33 (phone), pushed by the cards above</td><td>0</td></tr>
+</table>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>no_shift_check.py</code></b>: the Mode row, Weaknesses, EWAR / Misc and Fit join the Matchup board and Damage Application as hard fails at every width (Damage Application now on a phone too). It also fails if one of them isn't on the page. It fails 9 times on v.48 and passes on v.49 with nothing else moving.</li>
+<li><b><code>layout_check.py</code></b>: opens every card's info panel at 1440, 1100 and 375 px; each must stay on screen, and on a wide layout inside its card's column. It fails on v.48's placement (Weaknesses -1..379 px, EWAR in a 58..398 px column).</li>
+<li><b><code>check_subtext.py</code></b>: accepts <code>CARD_INFO</code> keys of the form <code>&lt;card key&gt;#&lt;variant&gt;</code> (the Anhinga's Mode text is <code>tdmode#primary</code>), and fails on a <code>{card:key}</code> in the text that isn't a <code>CARD_NAMES</code> key. The panels name other cards that way, so a rename stays one edit. Now 6 panels, 12 context lines in the code, 0 problems; 24 CSS rules still colour text with the too-faint grey (down from 29; S3).</li>
+<li><b><code>weakness_picks_check.py</code></b>, <b><code>damage_chart_check.py</code></b>: read the new places (the ranking in <code>CARD_INFO.weak</code>, the fight in a pick's hover, "you still" in the headline's context line).</li>
+<li><code>roadmap/card-names.md</code>: the <code>tdmode</code> row.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>Regression suite ALL PASS; update-check chain all 36 steps OK; every page check 0 failures (run one at a time).</li>
+<li>Screenshots at 1440 and 375 px with and without a ship saved; the Weaknesses panel open at 1440 and the Mode sheet on a phone.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSONS #46 and #47.</p>
+<ul>
+<li><b>Check a shared piece everywhere it goes.</b> The info panel was checked on the one card it was built for. On a card in the narrow left column it would have opened off the screen. When a panel, menu or tooltip goes onto more cards, open every one at every layout width. Place it against something that can't be narrower than it.</li>
+<li><b>Copy anchors, don't retype them.</b> A big replace script stopped at its first anchor, which was typed from memory with one space too many, and nothing was written. Read the exact text first, and split a big change into small patches that each check and save on their own.</li>
+</ul>
+</body>
+</html>

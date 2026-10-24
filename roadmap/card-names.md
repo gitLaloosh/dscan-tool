@@ -28,6 +28,7 @@ types a name by hand.
 | `perspective.threat` | Threat Perspective | which ship the cards describe, picked on the Matchup; key was `views` (Erik 2026-10-23: "change the 'views' key to 'perspective' and we'll adjust names/text accordingly"); was "threat view" in text. Text reads e.g. "from the Threat Perspective" |
 | `perspective.mine` | My Ship Perspective | the other side of `perspective`; was "My ship view" |
 | `myshippage` | Viewing My Ship | the Fit Analyzer page that shows your saved ship on its own (no Matchup); a different thing from the My Ship Perspective, so it keeps its own key |
+| `tdmode` | Mode | the Tactical Destroyer / Anhinga mode row (v2026.10.14.49); its label was typed by hand ("Mode:") |
 
 Settled: Title Case for every name (the open capitalisation question is closed).
 

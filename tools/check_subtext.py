@@ -7,8 +7,9 @@ it as a site wide design choice"; decided: "works as written. info icon opens a 
 limit is fine." The rule, enforced here as far as a static read can:
   1. one line of context under a value: every ctxHtml(...) whose text is written in the code is <= CTX_MAX (40)
      characters (a template's ${...} parts count as one character each; live values are cut with an ellipsis);
-  2. how a card works lives behind its info button: CARD_INFO keys are card keys (CARD_NAMES), every infoBtnHtml(key)
-     has a CARD_INFO entry, and every CARD_INFO entry is used;
+  2. how a card works lives behind its info button: CARD_INFO keys are card keys (CARD_NAMES), or "<key>#<variant>"
+     for a variant of a card's text (v2026.10.14.49), every infoBtnHtml(key) has a CARD_INFO entry, every CARD_INFO
+     entry is used, and every {card:key} in the text is a CARD_NAMES key;
   4. (nothing moves) is checked in the page: tools/page_checks/no_shift_check.py.
 Also REPORTED (not failed until phase S3): CSS rules that colour text with --text-faint (below 4.5:1 contrast on the
 cards), and literal context written outside ctxHtml in the classes the rule replaces.
@@ -32,9 +33,15 @@ if CTX_MAX != 40: problems.append(f'CTX_MAX is {CTX_MAX}; Erik settled on 40 ("t
 
 # 2. info panels
 for k, paras in INFO.items():
-    if k not in NAMES: problems.append(f'CARD_INFO["{k}"]: not a card key in CARD_NAMES')
+    # v2026.10.14.49: "<card key>#<variant>" is a variant of a card's text (the Anhinga's Mode: "tdmode#primary")
+    if k.split('#')[0] not in NAMES: problems.append(f'CARD_INFO["{k}"]: not a card key in CARD_NAMES (a variant is "<card key>#<variant>")')
     if not isinstance(paras, list) or not paras or not all(isinstance(p, str) and p.strip() for p in paras):
         problems.append(f'CARD_INFO["{k}"]: must be a list of non-empty paragraphs')
+        continue
+    # other cards are named as {card:key} (infoBtnHtml fills the name in), so a rename stays one edit
+    for p in paras:
+        for ck in re.findall(r'\{card:([^}]*)\}', p):
+            if ck not in NAMES: problems.append(f'CARD_INFO["{k}"]: {{card:{ck}}} is not a key in CARD_NAMES')
 used = set()
 for mm in re.finditer(r'infoBtnHtml\(\s*([\'"`])([^\'"`]+)\1\s*\)', src):
     k = mm.group(2); used.add(k)
