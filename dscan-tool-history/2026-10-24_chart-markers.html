@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Fight setup F3: chart markers</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fight setup F3: EWAR zones, range pins and values on the axes</h1>
+<p><span class="tag">Feature</span><span class="tag">Design</span> 2026-10-24 &middot; <code>v2026.10.14.53</code> &rarr; <code>v2026.10.14.54</code>. Plan: <code>roadmap/turret-application-plan.md</code> "Chart markers" (boards 5b and 5c on the chart canvas, page "Fight setup"); <code>roadmap/subtext-plan.md</code> section 5 (phase F3).</p>
+<p>the owner (2026-10-24), on the marker mockups: A and B combined, "the shading really makes it clear when you're inside of tackle range", maybe "different colors for different types of EWAR", with a key that uses "the same letter codes that you use in the EWAR tab". Then "5b is the one", and of 5c (the distances and DPS printed on the axes): "i like it".</p>
+
+<h2>What changed on the page (Damage Application chart)</h2>
+<ul>
+<li><b>Zones.</b> Their EWAR that reaches you is shaded from 0 out to its range, in the EWAR / Misc card's badge colour, with its letter on a badge above the plot. Where two reach, the shading is darker.
+<ul>
+<li><b>T</b>: their warp scrambler, and their furthest web (modules and web drones). These are the same projected inputs pyfa's graph applies.</li>
+<li><b>D</b>: their furthest target painter.</li>
+<li><b>C</b>: their furthest running energy neutralizer, and their furthest running nosferatu. A neut switched off on the Fit card leaves the chart.</li>
+</ul></li>
+<li><b>Pins.</b> Ranges that aren't EWAR are numbered pins, in distance order: their lock range and their drone control range. They replace the old dashed lines with text labels, which were dropped whenever they collided.</li>
+<li><b>Badges never overlap.</b> Badges and pins sit 20 px apart; one that's moved has a short leader to its line.</li>
+<li><b>Key.</b> One row per zone and pin, under the chart: badge, a swatch of its shade, what it is, and how far. Below it, one line: "Shaded: inside their range", with the whole explanation on hover.
+<ul>
+<li>The rows come from the fit alone, so they stay the same on every axis and setting.</li>
+<li>Charted across your speed or signature, the zones aren't drawn and the line reads "Marked when charting across distance".</li>
+</ul></li>
+<li><b>Values on the axes (5c).</b>
+<ul>
+<li>Their tackle distances are printed in the x axis's number row in the tackle colour, and your range in white. Where your range equals a tackle distance, there's one number, yours.</li>
+<li>The DPS at your range is printed on the y axis in each line's colour, with a dashed guide to its dot. When both lines give the same number, there's one white number.</li>
+<li>Round tick numbers that would touch one of these are left out, and close labels are nudged apart with a leader. The axis end, which carries the unit, is always printed.</li>
+</ul></li>
+<li><b>Nothing moves (subtext rule 4).</b>
+<ul>
+<li>The plot's frame is fixed. The left edge comes from the widest number this fit's y axis can show, not the one shown now, and the top leaves room for the badge row.</li>
+<li>While a slider is dragged (on the card or in the fight strip), the y scale can only grow, so the lines don't jump under the pointer. On release, it fits again.</li>
+</ul></li>
+<li>The card's ⓘ panel explains the markers, and so does <code>METHODOLOGY.md</code> ("The fight").</li>
+</ul>
+<p>Presentation only: no PYFA CORE section changed (the manifest check passes). The EWAR modules now record whether they are running (<code>running</code>), for the C zone. The badge letters are one shared table (<code>EWAR_BADGE_LETTER</code>) for the EWAR card and the chart.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>damage_chart_check.py</code>, new <code>markers_at</code></b>, at 1440 and 375 px, with a Hecate (scram only) and an Arbitrator carrying every kind (scram, web, painter, neut, nos, drones):
+<ul>
+<li>the zones, worked out again from the fit's projected inputs and EWAR modules, against the drawn shading;</li>
+<li>badges, pins and the key;</li>
+<li>the x and y axis values, merged when equal;</li>
+<li>the collision cases: your range on a round tick and on their scram;</li>
+<li>no axis numbers touch;</li>
+<li>the frame, chart height and key rows unchanged through every setting;</li>
+<li>the y scale held while dragging and refitted on release;</li>
+<li>a neut switched off.</li>
+</ul></li>
+<li><b>Mutations</b>, each run against a copy of the page:
+<ul>
+<li>no y hold: fails;</li>
+<li>no tick dropping: fails (only after the collision cases were added; LESSON #51);</li>
+<li>no merging: fails;</li>
+<li>zones 5% too wide: fails.</li>
+</ul></li>
+<li>The old checks read the marker labels ("their drone range") from the chart. They now read them from the key.</li>
+<li>Regression suite ALL PASS; update-check chain all 36 steps OK (PYFA CORE manifest unchanged); every page check 0 failures, run one at a time. <code>damage_chart_check.py</code> (105 checks) stopped once with "Execution context was destroyed" in the full run, the same message <code>layout_check.py</code> has shown since v.51. That makes it a browser or harness hiccup, not one check's bug. Three reruns passed. The run script now keeps every check's full log, so the next stop shows where it happened.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #51: a collision rule passes trivially when nothing collides. The first "no axis numbers touch" check passed even with the tick dropping switched off, because at the default settings nothing sat near a tick. Put the colliding case into the test on purpose, then prove the check bites with a mutation.</p>
+</body>
+</html>

@@ -286,6 +286,9 @@ Proposed:
   All fight-setup decisions are made; build in phases next (subtext-plan.md section 5). **F1 DONE v2026.10.14.51**:
   the strip, in-game names (their new Stopped state is the default) and the shared fight. **F2 DONE v2026.10.14.53**:
   Keep at Range as mapped below, for both ships; the example below is checked on the page (`fight_strip_check.py`).
+  **F3 DONE v2026.10.14.54**: the chart markers 5b + 5c (zones T scram / web, D painter, C neut / nos; pins for their
+  lock and drone range; the key; tackle distances and your range on the x axis, the DPS on the y axis; frame fixed,
+  the y scale held while a slider is dragged).
 - **In-game names everywhere:** You and the threat each get Stopped / Approach / Orbit / Keep at Range (today: You
   Still / Straight at them / Orbiting; them They fly at you / They orbit you).
 - **One fight for both perspectives:** the Adjust panel edits the same settings on both cards.

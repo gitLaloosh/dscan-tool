@@ -26,6 +26,15 @@ against pyfa by tools/independent_checks/check_damage_chart.py; this checks the 
     (panel over the page, Escape / outside press close it); Adjust is open on a loss tab that was hidden when drawn;
   * phone (375 px): the card starts collapsed, opens to a chart no wider than the screen, Adjust starts closed,
     no sideways scrolling. No page errors anywhere.
+  * v2026.10.14.54 chart markers (F3, boards 5b + 5c), at 1440 and 375 px, with a fit carrying every kind (scram,
+    web, painter, neut, nos, drones): the zones worked out again here from the fit's own projected inputs and EWAR
+    modules (T scram / furthest web, D furthest painter, C furthest running neut / nos), each shaded from the plot's
+    left edge to its range; their badges carry the EWAR card's letters, 20 px apart and inside the chart; the pins
+    numbered by distance; the key has a row per zone and pin with its km and keeps them on every axis; the x axis
+    prints the tackle distances (tackle colour) and your range (white), the y axis the DPS at your range in each
+    line's colour (one white number when equal); no axis numbers touch; the plot frame and the chart's height stay
+    put through every setting; a dragged slider only grows the y scale and release fits it again; a running neut
+    switched off leaves the zones. The Hecate (scram 9 km, web 10 km) is checked against the board 5c numbers.
 """
 import sys, os, re, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -69,6 +78,20 @@ Medium Nanobot Accelerator I
 
 Hammerhead II x5
 """
+ARBITRATOR = """[Arbitrator, every kind of range]
+Drone Damage Amplifier II
+Drone Damage Amplifier II
+Damage Control II
+
+Warp Scrambler II
+Stasis Webifier II
+Target Painter II
+
+Medium Energy Neutralizer II
+Small Energy Nosferatu II
+
+Hammerhead II x5
+"""
 BESTOWER = """[Bestower, hauler]
 Expanded Cargohold II
 
@@ -92,8 +115,9 @@ EXPECT = """(sel) => { const card = document.querySelector(sel), c = card._dmg; 
   const pt = pyfaProjectedPoint(app, tgt, p);
   return dmgFmt(pyfaAppliedDps(app, Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius}))); }"""
 COUNT_ENGINE = "() => { if(!window.__est){ window.__est = 0; const o = estimateHpAndDps; estimateHpAndDps = function(){ window.__est++; return o.apply(this, arguments); }; } return window.__est; }"
-def set_range(pg, sel, v):
-    pg.evaluate("([s, v]) => { const i = document.querySelector(s); i.value = v; i.dispatchEvent(new Event('input', {bubbles: true})); }", [sel, str(v)])
+def set_range(pg, sel, v, release=True):
+    # a drag ('input' events) and its release ('change', v.54: the y scale fits again then)
+    pg.evaluate("([s, v, rel]) => { const i = document.querySelector(s); i.value = v; i.dispatchEvent(new Event('input', {bubbles: true})); if(rel) i.dispatchEvent(new Event('change', {bubbles: true})); }", [sel, str(v), release])
 
 def overlap(a, b):
     return a['x'] < b['x'] + b['width'] - 1 and b['x'] < a['x'] + a['width'] - 1 and a['y'] < b['y'] + b['height'] - 1 and b['y'] < a['y'] + a['height'] - 1
@@ -197,7 +221,7 @@ def desktop(b):
     check(info0 not in pg.inner_text(C), 'the method text is not on the card any more')
     pg.click(f'{C} summary.info-btn'); pg.wait_for_timeout(200)
     panel = pg.locator(f'{C} .info-body')
-    check(panel.is_visible() and info0 in panel.inner_text() and pg.evaluate("CARD_INFO.dmg[2]") in panel.inner_text(),
+    check(panel.is_visible() and info0 in panel.inner_text() and pg.evaluate("CARD_INFO.dmg[3]") in panel.inner_text(),
           'info button opens the panel with the card\'s CARD_INFO text')
     pb = panel.bounding_box()
     check(pb['x'] >= 0 and pb['x'] + pb['width'] <= pg.viewport_size['width'], f"the open panel is inside the window ({pb['x']:.0f} to {pb['x'] + pb['width']:.0f} of {pg.viewport_size['width']})")
@@ -260,7 +284,7 @@ def desktop(b):
     sub, chart = pg.inner_text(f'{C} [data-out="headSub"]'), pg.inner_text(f'{C} .dmg-chart')
     note = pg.inner_text(f'{C} .dmg-note') if pg.locator(f'{C} .dmg-note').count() else ''   # v.48: only shown when something isn't charted
     raw = pg.evaluate(f"() => {{ const a = document.querySelector('{C}')._dmg.f.estimate.application; return Math.round(a.weapons.reduce((s, w) => s + w.dps, 0) + a.drones.reduce((s, d) => s + d.dps, 0)); }}")
-    check(f'{raw:,} raw' in sub and 'their drone range' in chart and 'Not in the chart yet' not in note and head(pg) == pg.evaluate(EXPECT, C),
+    check(f'{raw:,} raw' in sub and 'their drone range' in chart.lower() and 'Not in the chart yet' not in note and head(pg) == pg.evaluate(EXPECT, C),
           f'drone ship: raw {raw} incl. drones ({sub}), drone range marked, drones not listed as missing, headline {head(pg)}')
     # nothing to chart
     pg.fill('#fitAnalyzerInput', BESTOWER); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{C} .dmg-note')
@@ -294,6 +318,149 @@ def desktop(b):
     pg.click('#myShipUseLabel')
     check(not errs, f'desktop: no page errors {errs}')
     pg.screenshot(path=os.path.join(os.environ.get('SHOTS', '/tmp'), 'dmg_desktop.png'), full_page=True)
+    ctx.close()
+
+# v2026.10.14.54 (F3): the chart's markers. Everything geometric is read off the drawn SVG (getBBox), and the
+# expected zones are worked out here from the fit's inputs, not by calling the page's dmgRangeMarks.
+CHART_STATE = """(sel) => { const card = document.querySelector(sel), c = card._dmg, m = c.m, svg = card.querySelector('.dmg-svg');
+  const bb = (e) => { const b = e.getBBox(); return {x: b.x, y: b.y, w: b.width, h: b.height, t: e.textContent, cls: e.getAttribute('class') || ''}; };
+  const pr = m.app.projected, ew = (c.f.estimate.ewarModules || []);
+  const hit = card.querySelector('.dmg-hit');
+  return {W: +svg.getAttribute('width'), H: +svg.getAttribute('height'), hit: ['x', 'y', 'width', 'height'].map(k => +hit.getAttribute(k)),
+    hi: m.axis.hi, lo: m.axis.lo, yMax: m.yMax, axis: c.f.dmg.axis, range: c.f.dmg.range, mode: c.f.dmg.mode, cur: m.cur.dps, still: m.still.dps,
+    engAt: m.at(m.axis.eng).dps, eng: m.axis.eng,
+    inputs: {scram: pr.scramRange, webs: [...pr.webMods, ...pr.webDrones].map(w => w.optimal), tps: [...pr.tpMods, ...pr.tpDrones].map(w => w.optimal),
+      neut: ew.filter(e => e.kind === 'neut' && e.running).map(e => e.rangeM), nos: ew.filter(e => e.kind === 'nos' && e.running).map(e => e.rangeM),
+      lock: m.app.lockRange, drones: (m.app.drones || []).length, dcr: pr.droneControlRange},
+    zones: [...svg.querySelectorAll('rect.dmg-zone')].map(e => ({cls: e.getAttribute('class'), x: +e.getAttribute('x'), w: +e.getAttribute('width')})),
+    badges: [...svg.querySelectorAll('g.dmg-badge')].map(e => Object.assign(bb(e), {letter: e.querySelector('text').textContent, title: e.querySelector('title').textContent})),
+    pins: [...svg.querySelectorAll('g.dmg-pin')].map(e => Object.assign(bb(e), {n: e.querySelector('text').textContent, title: e.querySelector('title').textContent})),
+    lines: [...svg.querySelectorAll('line.dmg-zline')].map(e => +e.getAttribute('x1')),
+    xrow: [...svg.querySelectorAll('text')].filter(e => +e.getAttribute('y') === +svg.getAttribute('height') - 8).map(bb),
+    yrow: [...svg.querySelectorAll('text.dmg-tick, text.dmg-ylab')].filter(e => e.getAttribute('text-anchor') === 'end' && +e.getAttribute('y') !== +svg.getAttribute('height') - 8).map(bb),
+    keyRows: [...card.querySelectorAll('.dmg-ck-row')].map(e => e.textContent.replace(/\\s+/g, ' ').trim()),
+    keyNote: (card.querySelector('.dmg-ck-note') || {}).textContent || '',
+    chartH: card.querySelector('.dmg-chart').getBoundingClientRect().height}; }"""
+def km_label(x): return f'{x / 1000:.1f}'.rstrip('0').rstrip('.') if x < 100000 else f'{x / 1000:.0f}'
+def km_text(m):
+    k = m / 1000
+    t = f'{k:.0f}' if k >= 100 else f'{k:.1f}' if k >= 10 else f'{k:.2f}'
+    return (t.rstrip('0').rstrip('.') if '.' in t else t) + ' km'
+def boxes_apart(bs, gap=0):
+    bs = sorted(bs, key=lambda b: b['x'])
+    return all(bs[i]['x'] + bs[i]['w'] + gap <= bs[i + 1]['x'] + 0.5 for i in range(len(bs) - 1))
+def expected_zones(i):
+    far = lambda a: max([x for x in a if x and x > 0] or [0])
+    z = [(i['scram'] or 0, 'tackle', 'T', 'Their scram'), (far(i['webs']), 'tackle', 'T', 'Their web'), (far(i['tps']), 'disrupt', 'D', 'Their target painter'),
+         (far(i['neut']), 'drain', 'C', 'Their neut'), (far(i['nos']), 'drain', 'C', 'Their nos')]
+    return sorted([t for t in z if t[0] > 0], key=lambda t: t[0])
+
+def markers_at(b, W):
+    ctx = b.new_context(viewport={'width': W, 'height': 1000}, is_mobile=W < 600, has_touch=W < 600)
+    pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    route_all(pg); pg.goto('file://' + HTML)
+    pg.evaluate("localStorage.removeItem('dscanMyShip'); localStorage.removeItem('dscanDmgPreset')"); pg.reload()
+    pg.click('#tabBtnFit')
+    # 1. the Hecate (this file's: a scram, no web): 9 km in the tackle colour, your range in white
+    pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout')
+    if not pg.locator(C).count(): pg.click(f'{R} .fl-dmg .cc-toggle[data-card="dmg"]')
+    ready(pg)
+    s = pg.evaluate(CHART_STATE, C)
+    tack = [t['t'] for t in s['xrow'] if 'dmg-xlab tackle' in t['cls']]
+    eng = [t['t'] for t in s['xrow'] if 'dmg-xlab eng' in t['cls']]
+    check([z['cls'] for z in s['zones']] == ['dmg-zone tackle'] and [b_['letter'] for b_ in s['badges']] == ['T'], f'{W} Hecate: one tackle zone with a T badge ({[z["cls"] for z in s["zones"]]})')
+    check(tack == ['9'] and eng == [km_label(s['range'])], f'{W} Hecate: x axis prints 9 in the tackle colour and your range {eng} in white ({tack})')
+    check(s['keyRows'] == ['TTheir scram (your MWD off)9 km'], f'{W} Hecate: the key row ({s["keyRows"]})')
+    # a dragged slider only grows the y scale; release fits it again. Charted across your speed, the range moves the
+    # whole curve: at 20 km the blasters hardly land, at 1 km they do.
+    if pg.get_attribute(f'{C} .dmg-adjust', 'open') is None: pg.click(f'{C} .dmg-adjust > summary')
+    pg.click(f'{C} button[data-seg="Chart across"][data-v="speed"]')
+    RG = f'{C} input[data-in="range"]'
+    set_range(pg, RG, 20000); y0 = pg.evaluate(CHART_STATE, C)['yMax']
+    set_range(pg, RG, 1000, release=False); y1 = pg.evaluate(CHART_STATE, C)['yMax']
+    set_range(pg, RG, 20000, release=False); y2 = pg.evaluate(CHART_STATE, C)['yMax']
+    pg.evaluate(f"() => document.querySelector('{RG}').dispatchEvent(new Event('change', {{bubbles: true}}))"); y3 = pg.evaluate(CHART_STATE, C)['yMax']
+    check(y1 > y0 and y2 == y1 and y3 == y0, f'{W}: dragging holds the y scale (grows {y0} -> {y1}, held at {y2}), release fits it again ({y3})')
+    pg.click(f'{C} button[data-seg="Chart across"][data-v="distance"]')
+    # 2. a fit with every kind of range
+    pg.fill('#fitAnalyzerInput', ARBITRATOR); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout')
+    if not pg.locator(C).count(): pg.click(f'{R} .fl-dmg .cc-toggle[data-card="dmg"]')
+    pg.wait_for_function(f"() => {{ const c = document.querySelector('{C}'); return c && c._dmg && /Arbitrator/.test(c._dmg.f.estimate.shipName || '') || (c && c._dmg && c._dmg.m && c._dmg.m.zones.length >= 4); }}", timeout=60000)
+    ready(pg)
+    if pg.get_attribute(f'{C} .dmg-adjust', 'open') is None: pg.click(f'{C} .dmg-adjust > summary')
+    s = pg.evaluate(CHART_STATE, C)
+    exp = expected_zones(s['inputs'])
+    L, Tp, pw, ph = s['hit']
+    xOf = lambda x: L + (min(max(x, s['lo']), s['hi']) - s['lo']) / (s['hi'] - s['lo']) * pw
+    check(len(exp) == 5, f'{W} Arbitrator: the fit carries scram, web, painter, neut and nos ({[(round(e[0]), e[1]) for e in exp]})')
+    check([z['cls'].split()[-1] for z in s['zones']] == [e[1] for e in exp] and all(abs(z['x'] - L) < 0.6 and abs(z['x'] + z['w'] - xOf(e[0])) < 0.6 for z, e in zip(s['zones'], exp)),
+          f'{W} Arbitrator: each zone shaded from the plot\'s left edge to its range, in its category ({[(round(z["x"]), round(z["w"])) for z in s["zones"]]})')
+    check([b_['letter'] for b_ in s['badges']] == [e[2] for e in exp] and all(b_['title'].startswith(e[3]) and b_['title'].endswith(km_text(e[0])) for b_, e in zip(s['badges'], exp)),
+          f'{W} Arbitrator: badges carry the EWAR card\'s letters in distance order, titled with what and how far ({[b_["title"] for b_ in s["badges"]]})')
+    tops = s['badges'] + s['pins']
+    cx = sorted(t['x'] + t['w'] / 2 for t in tops)
+    check(all(cx[i + 1] - cx[i] >= 19.5 for i in range(len(cx) - 1)) and min(t['x'] for t in tops) >= 0 and max(t['x'] + t['w'] for t in tops) <= s['W'] and all(t['y'] + t['h'] <= Tp for t in tops),
+          f'{W} Arbitrator: badges and pins above the plot, 20 px apart and inside the chart ({[round(c) for c in cx]})')
+    pins_exp = sorted([(x, l) for x, l, ok in ((s['inputs']['lock'], 'Their lock range', s['inputs']['lock'] and s['inputs']['lock'] <= s['hi']),
+                                                (s['inputs']['dcr'], 'Their drone range', s['inputs']['drones'] and s['inputs']['dcr'] and s['inputs']['dcr'] <= s['hi'])) if ok])
+    check([p_['n'] for p_ in s['pins']] == [str(i + 1) for i in range(len(pins_exp))] and [p_['title'] for p_ in s['pins']] == [f'{l}: {km_text(x)}' for x, l in pins_exp] and len(pins_exp) >= 1,
+          f'{W} Arbitrator: pins numbered by distance ({[p_["title"] for p_ in s["pins"]]})')
+    check(len(s['keyRows']) == len(exp) + len(pins_exp) and all(any(r.startswith(e[2] + e[3]) and r.endswith(km_text(e[0])) for r in s['keyRows']) for e in exp)
+          and all(r.endswith(' km') for r in s['keyRows']) and s['keyNote'] == 'Shaded: inside their range' and 'their drone range' in pg.inner_text(f'{C} .dmg-chart').lower(),
+          f'{W} Arbitrator: the key has a row per zone and pin ({s["keyRows"]}; {s["keyNote"]!r})')
+    tackle_lbls = {km_label(e[0]) for e in exp if e[1] == 'tackle' and e[0] <= s['hi']} - {km_label(s['range'])}
+    xl = [t for t in s['xrow'] if 'dmg-xlab' in t['cls']]
+    check({t['t'].replace(' km', '') for t in xl if 'tackle' in t['cls']} == tackle_lbls and [t['t'].replace(' km', '') for t in xl if 'eng' in t['cls']] == [km_label(s['range'])],
+          f'{W} Arbitrator: x axis prints the tackle distances {sorted(tackle_lbls)} and your range {km_label(s["range"])} (one number where they are equal)')
+    check(boxes_apart(s['xrow']) and min(t['x'] for t in s['xrow']) >= 0 and max(t['x'] + t['w'] for t in s['xrow']) <= s['W'] + 0.5, f'{W} Arbitrator: no x axis numbers touch ({[t["t"] for t in sorted(s["xrow"], key=lambda t: t["x"])]})')
+    # your range on a round tick (the tick's number goes), then on their scram (one number, yours)
+    for v, what in ((20000, 'a round tick'), (int(exp[1][0]) // 100 * 100 if km_label(exp[1][0]) == km_label(exp[1][0] // 100 * 100) else 0, 'their scram')):
+        if not v: continue
+        set_range(pg, f'{C} input[data-in="range"]', v); t = pg.evaluate(CHART_STATE, C)
+        texts = [x['t'].replace(' km', '') for x in t['xrow']]
+        check(boxes_apart(t['xrow']) and texts.count(km_label(v)) == 1 and [x['t'] for x in t['xrow'] if 'dmg-xlab eng' in x['cls']] == [km_label(v)],
+              f'{W} Arbitrator: your range on {what} ({km_label(v)} km): printed once, in white, nothing touches ({sorted(texts)})')
+    set_range(pg, f'{C} input[data-in="range"]', s['range'])
+    yl = [t for t in s['yrow'] if 'dmg-ylab' in t['cls']]
+    want = sorted([(f'{round(s["still"]):,}', 'still'), (f'{round(s["cur"]):,}', 'move')]) if round(s['still']) != round(s['cur']) else [(f'{round(s["cur"]):,}', 'same')]
+    check(sorted((t['t'], t['cls'].split()[-1]) for t in yl) == want, f'{W} Arbitrator: y axis prints the DPS at your range in each line\'s colour ({[(t["t"], t["cls"]) for t in yl]} vs {want})')
+    ys = sorted(s['yrow'], key=lambda t: t['y'])
+    check(all(ys[i]['y'] + ys[i]['h'] <= ys[i + 1]['y'] + 1.5 for i in range(len(ys) - 1)), f'{W} Arbitrator: no y axis numbers touch ({[t["t"] for t in ys]})')
+    # 3. rule 4: the plot frame and the chart's height stay put through every setting, and the key keeps its rows
+    frame, height, rows = s['hit'], s['chartH'], len(s['keyRows'])
+    moved = []
+    def look(what):
+        t = pg.evaluate(CHART_STATE, C)
+        if t['hit'][0] != frame[0] or t['hit'][1] != frame[1] or t['hit'][3] != frame[3] or abs(t['chartH'] - height) > 0.5 or len(t['keyRows']) != rows: moved.append((what, t['hit'], round(t['chartH'], 1), len(t['keyRows'])))
+        return t
+    for v in (0, 2000, 30000, 60000): set_range(pg, f'{C} input[data-in="range"]', v); look(f'range {v}')
+    for mode in ('still', 'straight', 'orbit'): pg.locator(f'{C} button[data-seg="You"][data-v="{mode}"]').click(); look(mode)
+    for v in (25, 300, 100): set_range(pg, f'{C} input[data-in="sigPct"]', v); look(f'sig {v}')
+    sw = pg.locator(f'{C} input[data-in="prop"]')
+    if sw.count(): sw.click(); look('MWD off'); sw.click(); look('MWD on')
+    for ax in ('speed', 'sig', 'distance'):
+        pg.locator(f'{C} button[data-seg="Chart across"][data-v="{ax}"]').click(); t = look(f'axis {ax}')
+        if ax != 'distance':
+            check(not t['zones'] and not t['badges'] and t['keyNote'] == 'Marked when charting across distance' and len(t['keyRows']) == rows
+                  and [re.sub(r' m(/s)?$', '', x['t']) for x in t['xrow'] if 'dmg-xlab eng' in x['cls']] == [f'{round(t["eng"]):,}'],
+                  f'{W} across {ax}: no zones, the key keeps its rows with the other note, your value printed in white ({[(x["t"], x["cls"]) for x in t["xrow"]]}, {t["keyNote"]!r}, {round(t["eng"])})')
+    check(not moved, f'{W}: the plot frame, the chart\'s height and the key rows stay put through every setting {moved[:3]}')
+    # mode still: both lines give the same number -> one white label
+    pg.locator(f'{C} button[data-seg="You"][data-v="still"]').click()
+    t = pg.evaluate(CHART_STATE, C)
+    check([(x['t'], x['cls']) for x in t['yrow'] if 'dmg-ylab' in x['cls']] == [(f'{round(t["cur"]):,}', 'dmg-ylab same')], f'{W} you stopped: one white DPS number on the y axis')
+    pg.locator(f'{C} button[data-seg="You"][data-v="orbit"]').click()
+    # 4. a neut switched off (Fit card) leaves the zones
+    n0 = len(pg.evaluate(CHART_STATE, C)['zones'])
+    neut = pg.locator(f'{R} button.ms-state[data-from="active"][aria-label^="Medium Energy Neutralizer II"]').first
+    neut.scroll_into_view_if_needed(); neut.click()
+    try:
+        pg.wait_for_function(f"() => !document.querySelector('{R} .fit-card-busy') && (c => c && c._dmg && c._dmg.m && c._dmg.m.zones.length === 4)(document.querySelector('{C}'))", timeout=30000); ok = True
+    except Exception: ok = False
+    t = pg.evaluate(CHART_STATE, C) if ok else {'keyRows': [], 'badges': []}
+    check(n0 == 5 and ok and not any('Their neut' in r for r in t['keyRows']) and [b_['letter'] for b_ in t['badges']].count('C') == 1,
+          f'{W}: the neut switched off on the Fit card leaves the zones and the key ({n0} -> {len(t.get("zones", []))}; {t["keyRows"]})')
+    check(not errs, f'{W} markers: no page errors {errs}')
     ctx.close()
 
 def phone(b):
@@ -335,5 +502,6 @@ def phone(b):
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=os.environ.get('CHROMIUM', '/opt/pw-browsers/chromium'))
     desktop(b); tablet(b); phone(b)
+    markers_at(b, 1440); markers_at(b, 375)
     b.close()
 print(f'FAILURES: {fails}')

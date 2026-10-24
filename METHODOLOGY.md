@@ -129,6 +129,12 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
   - **Keep at Range:** straight away from the other ship at the other's closing speed (its speed when it
     approaches, 0 otherwise), up to its own top speed, so the distance holds. Not offered inside the other ship's
     scram or web range, or when the other ship closes faster than it can fly.
+- **What the chart marks** (v2026.10.14.54): their EWAR that reaches you, shaded from 0 out to its range with the
+  EWAR / Misc card's letters and colours: **T** their warp scrambler and furthest web (the same inputs pyfa's graph
+  applies), **D** their furthest target painter, **C** their furthest running neutralizer and nosferatu (each module's
+  optimal range). Darker where two reach. Numbered pins mark their lock range and drone control range. The x axis
+  prints their tackle distances and your range, the y axis the DPS there. Markers are presentation only; the lines
+  are pyfa's.
 - **One fight:** the strip under the Matchup and the card's Adjust panel set the same values, and both perspectives
   use them. The chart is a snapshot at that distance, as pyfa's graph: it doesn't play the fight out over time.
 - **They last / you last** (not a pyfa number): damage by type against each layer's resists, shield then armor then

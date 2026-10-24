@@ -766,6 +766,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   the speed capped at the ship's top). Test all three cases: possible, not offered, chosen but impossible
   (`fight_strip_check.py`).
 
+## 51. A collision rule passes trivially when nothing collides
+
+- **What happened (v2026.10.14.54, chart markers):** the chart drops a round tick number that would touch a marked
+  value (your range, their scram). The first "no axis numbers touch" check passed, and still passed with the
+  dropping switched off: at the default settings no marked value sat near a tick, so there was nothing to drop.
+- **Do this instead:** put the case that collides into the test on purpose (here: your range set to exactly 20 km,
+  a round tick, and to their scram distance), then switch the rule off in a copy of the page and see the check fail
+  (`damage_chart_check.py`, `markers_at`). The same goes for any "nudge apart", "merge equal labels" or "clamp
+  inside" rule: test it where it has to act, and prove the check bites with a mutation.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**
