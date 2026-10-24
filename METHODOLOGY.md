@@ -144,4 +144,9 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
   use them. The chart is a snapshot at that distance, as pyfa's graph: it doesn't play the fight out over time.
 - **They last / you last** (not a pyfa number): damage by type against each layer's resists, shield then armor then
   hull, minus that layer's local repairs and the shield's peak passive regen, with the repairs stopping when pyfa's
-  capacitor simulation runs dry. "holds" means the damage never gets through.
+  capacitor simulation runs dry. An Ancillary Shield Booster on charges (v2026.10.14.57) doesn't need the capacitor:
+  it reps for a clip (an X-Large with Navy Cap Booster 400s: 9 cycles, 45 s), reloads for 60 s, and repeats while
+  charges last (loaded plus hold), then stops. "holds" means the damage never gets through.
+  - Not used, kept here so it can be brought back: pyfa's "factor in reload" average for an ASB, its rate x
+    (clip x cycle) / (clip x cycle + reload) for the whole fight (84 HP/s instead of 196 for an X-Large with
+    Navy Cap Booster 400s). It hides the reload gap, which is where a ship running an ASB usually breaks.

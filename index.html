@@ -1601,7 +1601,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.56</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.57</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1803,7 +1803,7 @@ const CARD_INFO = {
  ],
  "board": [
   "DPS applied to you and to them: pyfa's applied DPS for the fight set in the strip under the board (the range and how each ship moves), as on {card:dmg}. The DPS applied to them uses the same fight, seen from your side.",
-  "They last / you last is not a pyfa number: the damage by type against each layer's resists (shield, then armor, then hull), minus that layer's local repairs and passive shield regen, with the repairs stopping when the capacitor runs out. \"holds\" means the damage never gets through.",
+  "They last / you last is not a pyfa number: the damage by type against each layer's resists (shield, then armor, then hull), minus that layer's local repairs and passive shield regen, with the repairs stopping when the capacitor runs out. An Ancillary Shield Booster on charges keeps going without the capacitor: it reps for its clip, reloads for 60 s, and repeats until its charges (loaded and in the hold) run out. \"holds\" means the damage never gets through.",
   "Edge: who outlasts the other. Faster: the two top speeds. An amber number differs from your pasted fit's own module states; hover it for the pasted value.",
   "The strip under the board sets one fight for both perspectives: each ship's movement, with the in-game names (Stopped, Approach, Orbit, Keep at Range), and the range between you. Adjust on {card:dmg} changes the same settings."
  ]
@@ -9760,6 +9760,7 @@ async function classifyHighSlotItem(typeId){
 // attribute is missing (old trimmed golden stubs).
 const CAP_BOOSTER_RELOAD_TIME_ATTR = 1795;
 const CHARGE_VOLUME_ATTR = 161;
+const ASB_CHARGE_RATE_ATTR = 56;   // chargeRate: charges used per cycle (pyfa Module.numShots), v2026.10.14.57
 function capBoosterAvgGainPerSec(bonusGJ, cycleMs, capacityM3, chargeVolM3, reloadMs){
   const cycleSec = cycleMs / 1000;
   const clip = (capacityM3 > 0 && chargeVolM3 > 0) ? Math.floor(capacityM3 / chargeVolM3 + 1e-9) : 0;
@@ -11021,6 +11022,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   let hasAncillaryShieldBooster = false;
   let asbChargeName = null;
   let asbChargeConfirmed = false; // flag-paired (confirmed loaded) or cargo/fleet-hangar-inferred -- either counts as "confirmed" for this binary (charge present or not) mechanism, unlike Capacitor Booster's GJ-size range
+  let asbCargoChargeDt = null;   // v.57: the charge taken from cargo for an unloaded ASB
   let asbChargeFromCargo = false; // true only for the cargo/fleet-hangar-inferred case, for the same "inferred, not confirmed loaded" caveat text the Capacitor Booster module already gets
   const unresolvedAsbInstances = []; // ASB instances with no flag-paired charge -- queued for the same cargo/fleet-hangar inference pass as Capacitor Booster below
   // Cargo-inference + bounded-range follow-up (2026-10-12, the owner: "if the
@@ -11118,6 +11120,9 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // accumulators and never shows a separate burst figure).
   let shieldRepHpPerSec = 0, armorRepHpPerSec = 0, armorRepBurstHpPerSec = 0, hullRepHpPerSec = 0;
   let shieldRepHpPerSecCoreTarget = 0; // the part of shieldRepHpPerSec from boosters the Industrial Core boosts (see isIndustrialCoreRepTarget)
+  // v2026.10.14.57: each local repairer on its own (layer, HP/s while cycling, ASB clip data), for the Matchup's time to
+  // kill (ttkSeconds). Same amounts as the three totals above; an Ancillary Shield Booster gets its clip and reload.
+  const localReps = [];
   // Navigation & targeting, Phase 5 -- summed flat drone-control-range
   // bonus (attribute 459) across every fitted item that carries it (Drone
   // Link Augmentor I/II today, generically covers any future item with the
@@ -11619,6 +11624,9 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         // unpenalized; Shield Boost Amplifiers, Capacitor Power Relay, Bastion,
         // Siege, Triage, Industrial Core penalized together) -- moduleAttrMult.
         if(cycleSec > 0) shieldRepHpPerSec += qty * (attrVal(dogma, SHIELD_BOOST_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'shieldBonus') / cycleSec);
+        if(cycleSec > 0) localReps.push({layer: 'shield', rate: qty * (attrVal(dogma, SHIELD_BOOST_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'shieldBonus') / cycleSec),
+          cycleSec, qty, moduleId: dt.id, asb: groupName === ANCILLARY_SHIELD_BOOSTER_GROUP_NAME,
+          capacity: attrVal(dogma, CAP_BOOSTER_MODULE_CAPACITY_ATTR, 0), chargeRate: attrVal(dogma, ASB_CHARGE_RATE_ATTR, 1) || 1, reloadSec: attrVal(dogma, CAP_BOOSTER_RELOAD_TIME_ATTR, 0) / 1000});
       }else if(groupName.includes('armor repair')){
         hasArmorRep = true;
         if(cycleSec > 0){
@@ -11627,10 +11635,12 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
           const boostMult = attrVal(dogma, ANCILLARY_ARMOR_BOOST_MULT_ATTR, 1);
           armorRepHpPerSec += qty * (amount / effectiveCycleSec);
           armorRepBurstHpPerSec += qty * ((amount * boostMult) / effectiveCycleSec);
+          localReps.push({layer: 'armor', rate: qty * (amount / effectiveCycleSec)});   // (an Ancillary Armor Repairer's paste boost and reload: not modelled yet)
         }
       }else if(groupName.includes('hull repair')){
         hasHullRep = true;
         if(cycleSec > 0) hullRepHpPerSec += qty * (attrVal(dogma, HULL_REPAIR_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'structureDamageAmount') / cycleSec);
+        if(cycleSec > 0) localReps.push({layer: 'hull', rate: qty * (attrVal(dogma, HULL_REPAIR_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'structureDamageAmount') / cycleSec)});
       }
     }
     const dcEffIds = new Set((dt.type.dogma_effects || []).map(e => e.effect_id));
@@ -11894,6 +11904,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // these pools only ever fill for item records with no dogma_effects (fallback).
     shieldRepHpPerSec = otherRate * applyStackingBonus(shieldBoostAmpBonusFractions) * ampPenaltyMult
       + shieldRepHpPerSecCoreTarget * applyStackingBonus(shieldBoostAmpBonusFractions) * ampPenaltyMult;
+    for(const r of localReps) if(r.layer === 'shield') r.rate *= applyStackingBonus(shieldBoostAmpBonusFractions) * ampPenaltyMult;   // v.57: the same multiplier
   }
 
   // Apply flat HP adds first (pyfa applies "pre" increases before
@@ -12921,6 +12932,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         return attrVal(b.type.dogma_attributes || [], CAP_BOOSTER_BONUS_ATTR, 0) - attrVal(a.type.dogma_attributes || [], CAP_BOOSTER_BONUS_ATTR, 0);
       })[0];
       asbChargeName = asbBest.type.name;
+      asbCargoChargeDt = asbBest;   // v.57: its volume sets the clip (ttk)
       asbChargeConfirmed = true; // inferred, not flag-confirmed -- the Capacitor-card UI distinguishes this via asbChargeFromCargo below
       asbChargeFromCargo = true;
       unresolvedAsbInstances.length = 0;
@@ -13842,7 +13854,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // unrounded, for tools/independent_checks/compare_implants.py (v2026.10.14.12)
     exact: {shieldHP, armorHP, hullHP, capacitorCapacity: baseCapacitorCapacity, capRechargeTimeSec: capacitorRechargeTimeSec,
       shieldRechargeTimeSec, sigBase: baseSignatureRadius, targetingRange, scanResolution, sensorStrength: sensorStrengthValue,
-      shieldRepHpPerSec, armorRepHpPerSec, hullRepHpPerSec,
+      shieldRepHpPerSec, armorRepHpPerSec, hullRepHpPerSec, localReps: ttkLocalReps(localReps, asbChargeIdByModuleId, typeAndGroupById, asbCargoChargeDt, asbChargesMissing, tally),
       weaponDps: confirmedDps, smartbombDps: fixedHighSlotDps, droneDps, droneControlRange}, // v2026.10.14.13
     implantsApplied: implantCarriers.map(c => ({id: c.id, kind: c.ctx})),
     shieldResPct: Object.fromEntries(DMG.map(d => [d, pyRound((1 - adjShieldRes[d]) * 100)])),
@@ -15796,37 +15808,85 @@ function dmgTypedPoint(app, tgt, q){
   for(const d of app.drones || []) add(d.typeDps, pyfaGetDroneMult(app, d, p2));
   return {dps: DMG.reduce((s, d) => s + typed[d], 0), typed, speed: pt.tgtSpeed, sig: pt.tgtSigRadius};
 }
+// ANCILLARY SHIELD BOOSTER CLIP (v2026.10.14.57; the owner 2026-10-24, Orthrus vs his Osprey Navy Issue, both with an X-Large
+// ASB: "lets go with your recommendation" = simulate the clip). An ASB on charges uses no capacitor (pyfa
+// calculateSustainableTank: no capUse), so the capacitor running dry doesn't stop it; it stops to reload instead:
+// numShots cycles (pyfa Module.numShots = floor(capacity / charge volume) / chargeRate), then reloadTime (60 s for every
+// ASB), while charges last: a loaded clip (assumed full) plus the same charge in cargo / fleet hangar (all of it,
+// also when a Capacitor Booster draws the same charges); then it stops. With no charge aboard at all it runs on the
+// capacitor, as every other local repairer (until the capacitor simulation's empty time, which then counts its drain). The alternative not taken: pyfa's "factor in
+// reload" average, rate x numShots x cycle / (numShots x cycle + reload) for the whole fight, which hides the gap.
+// Inputs only; the time to kill is not a pyfa number (DEVIATIONS.md section 3).
+function ttkLocalReps(reps, pairedById, tgById, cargoDt, missing, tally){
+  const cargoQty = (id) => ['Cargo', 'Fleet hangar'].reduce((s, g) => { const d = (tally[g] || {})[id]; return s + (d ? (d.totalQty || 1) / (d.lossCount || 1) : 0); }, 0);
+  return reps.map(r => {
+    if(!r.asb) return {layer: r.layer, rate: r.rate};
+    const pid = pairedById.get(r.moduleId), cdt = pid !== undefined ? tgById.get(pid) : cargoDt;
+    const vol = cdt && !cdt.error ? attrVal(cdt.type.dogma_attributes || [], CHARGE_VOLUME_ATTR, 0) || cdt.type.volume || 0 : 0;
+    const clip = vol > 0 ? Math.floor(Math.floor(r.capacity / vol + 1e-9) / r.chargeRate) : 0;
+    if(missing || !(clip > 0) || !(r.reloadSec >= 0)) return {layer: r.layer, rate: r.rate};   // no charge aboard: on the capacitor
+    // charges per copy: a full loaded clip (when loaded, or assumed with nothing in the hold) plus the hold
+    const hold = cdt ? cargoQty(cdt.id) : 0;
+    const total = (pid !== undefined ? clip * r.qty : 0) + hold || clip * r.qty;
+    return {layer: r.layer, rate: r.rate, asb: {cycleSec: r.cycleSec, clip, reloadSec: r.reloadSec, cycles: Math.floor(total / r.qty / r.chargeRate)}};
+  });
+}
+// Where an ASB on charges is at time t: cycling ('on'), reloading ('off'), or out of charges ('spent'); next = when that
+// changes. Spent, it stops: the capacitor simulation the fight uses had it on charges (no drain), and on the capacitor
+// an ASB needs far more than a sub-capital recharges (an X-Large: 1,188 GJ a cycle).
+function ttkAsbState(a, t){
+  const k = a.clip, P = k * a.cycleSec + a.reloadSec, N = a.cycles;
+  const full = Math.floor(N / k), rem = N - full * k;
+  const end = rem > 0 ? full * P + rem * a.cycleSec : Math.max(0, full * P - a.reloadSec);
+  if(t >= end - 1e-9) return {mode: 'spent', next: Infinity};
+  const j = Math.floor((t + 1e-9) / P), onLen = (j < full ? k : rem) * a.cycleSec;
+  if(t - j * P < onLen - 1e-9) return {mode: 'on', next: Math.min(j * P + onLen, end)};
+  return {mode: 'off', next: (j + 1) * P};
+}
 function ttkDefense(est){
   const x = est.exact || {}, r = est.resonance || {}, cap = est.capacitor || {};
   const passive = (x.shieldHP > 0 && x.shieldRechargeTimeSec > 0) ? 2.5 * x.shieldHP / x.shieldRechargeTimeSec : 0;
+  // v.57: each layer's repairers (x.localReps); an estimate without them: one repairer per layer, as before
+  const reps = (layer, total) => x.localReps ? x.localReps.filter(l => l.layer === layer) : (total > 0 ? [{layer, rate: total}] : []);
   return {layers: [
-    {key: 'shield', hp: x.shieldHP || 0, res: r.shield || {}, rep: x.shieldRepHpPerSec || 0, passive},
-    {key: 'armor', hp: x.armorHP || 0, res: r.armor || {}, rep: x.armorRepHpPerSec || 0, passive: 0},
-    {key: 'hull', hp: x.hullHP || 0, res: r.hull || {}, rep: x.hullRepHpPerSec || 0, passive: 0}],
+    {key: 'shield', hp: x.shieldHP || 0, res: r.shield || {}, rep: x.shieldRepHpPerSec || 0, reps: reps('shield', x.shieldRepHpPerSec), passive},
+    {key: 'armor', hp: x.armorHP || 0, res: r.armor || {}, rep: x.armorRepHpPerSec || 0, reps: reps('armor', x.armorRepHpPerSec), passive: 0},
+    {key: 'hull', hp: x.hullHP || 0, res: r.hull || {}, rep: x.hullRepHpPerSec || 0, reps: reps('hull', x.hullRepHpPerSec), passive: 0}],
     capSec: cap.stable ? Infinity : (cap.timeToEmptyExactSec !== null && cap.timeToEmptyExactSec !== undefined ? cap.timeToEmptyExactSec : Infinity)};
 }
-// Seconds until hull is gone, Infinity if a layer holds. Layer by layer; the reps run until capSec, passive regen always.
+// Seconds until hull is gone, Infinity if a layer holds. Layer by layer; passive regen always; each repairer runs until
+// capSec (the capacitor simulation's empty time), except an Ancillary Shield Booster on charges, which runs its clip,
+// reloads, and stops once its charges are spent (v2026.10.14.57). A layer that's full stays full.
 function ttkSeconds(def, typed){
   let t = 0;
   for(const l of def.layers){
     if(!(l.hp > 0)) continue;
     const incoming = DMG.reduce((s, d) => s + (typed[d] || 0) * (l.res[d] === undefined ? 1 : l.res[d]), 0);
-    let hp = l.hp;
-    if(t < def.capSec){
-      const net = incoming - l.rep - l.passive;
-      if(net > 0){
-        const left = def.capSec - t;
-        if(hp / net <= left){ t += hp / net; continue; }
-        hp -= net * left;
-      }
-      if(def.capSec === Infinity) return Infinity;
-      t = def.capSec;
-    }
-    const net2 = incoming - l.passive;
-    if(!(net2 > 0)) return Infinity;
-    t += hp / net2;
+    t = ttkLayerEnd(l, incoming, t, def.capSec);
+    if(t === Infinity) return Infinity;
   }
   return t;
+}
+function ttkLayerEnd(l, incoming, t, capSec){
+  let hp = l.hp;
+  for(let guard = 0; guard < 20000; guard++){
+    let rep = 0, next = Infinity;
+    for(const r of l.reps || []){
+      let on, nx;
+      const st = r.asb ? ttkAsbState(r.asb, t) : {mode: 'cap'};
+      if(st.mode === 'cap'){ on = t < capSec - 1e-9; nx = on ? capSec : Infinity; }   // runs on the capacitor while it lasts
+      else{ on = st.mode === 'on'; nx = st.next; }
+      if(on) rep += r.rate;
+      next = Math.min(next, nx);
+    }
+    const net = incoming - rep - l.passive;
+    if(next === Infinity) return net > 0 ? t + hp / net : Infinity;
+    const dt = Math.max(next - t, 1e-9);
+    if(net > 0 && hp / net <= dt) return t + hp / net;
+    hp = Math.min(l.hp, hp - net * dt);
+    t += dt;
+  }
+  return Infinity;
 }
 function ttkText(s){
   if(s === Infinity) return 'holds';
@@ -16098,7 +16158,7 @@ async function wpBuildCandidates(f, est){
 function wpRank(cands, app, tgt, q, tgtEst){
   const pt = (ws, ds) => dmgTypedPoint(Object.assign({}, app, {weapons: ws, drones: ds}), tgt, q);
   const def = ttkDefense(tgtEst);
-  const buf = {layers: def.layers.map(l => Object.assign({}, l, {rep: 0, passive: 0})), capSec: Infinity};
+  const buf = {layers: def.layers.map(l => Object.assign({}, l, {rep: 0, reps: [], passive: 0})), capSec: Infinity};   // v.57: reps cleared too (ttkSeconds reads l.reps)
   const score = (o, ws, ds, own) => Object.assign({}, o, {dps: own.dps, ttk: ttkSeconds(def, pt(ws, ds).typed), ttkBuffer: ttkSeconds(buf, pt(ws, ds).typed)});
   const cmp = (x, y) => (x === y ? 0 : x - y);   // Infinity === Infinity: equal, go to the next key
   const order = (a, b) => cmp(a.ttk, b.ttk) || cmp(a.ttkBuffer, b.ttkBuffer) || ((b.loaded ? 1 : 0) - (a.loaded ? 1 : 0));

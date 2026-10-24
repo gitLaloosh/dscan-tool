@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Ancillary Shield Booster clip in "you last" / "they last"</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fix: an Ancillary Shield Booster's clip in "you last" / "they last"</h1>
+<p><span class="tag">Fix</span> 2026-10-24 &middot; <code>v2026.10.14.56</code> &rarr; <code>v2026.10.14.57</code>.</p>
+<p>the owner (2026-10-24, Pilot Analyzer screenshot, his Osprey Navy Issue against a pilot's Orthrus): "seeing discrepancies in the various calculated stats ... would the EFT fits for both ships help you investigate?" He sent both fits. After the findings: "lets go with your recommendation", which was to simulate the clip.</p>
+
+<h2>What was checked</h2>
+<p>Both fits were run through the tool's engine and through pyfa's own code (projected effects and damage application, by item name). At 48.9 km, with the Orthrus stopped and the Osprey orbiting at 2,500 m/s, every damage number matched exactly:</p>
+<ul>
+<li>Orthrus on you: 470.44, all thermal (Inferno Fury);</li>
+<li>you on the Orthrus: 87.93, all EM (Acolyte II &times;5; your rapid light missiles don't reach);</li>
+<li>top speeds 2,500 and 2,390 m/s;</li>
+<li>hit points and resists on both ships.</li>
+</ul>
+<p>The screen's numbers agreed with each other. They looked different because the threat's Damage Application chart shows <i>their</i> damage on you, while Weaknesses ("your guns") shows yours on them.</p>
+
+<h2>The bug</h2>
+<ul>
+<li><b>What the time to kill did:</b> it stopped every local repairer when the capacitor simulation ran dry, 120 s for the Osprey and 100 s for the Orthrus.</li>
+<li><b>Why that's wrong for an ASB:</b> an Ancillary Shield Booster on charges uses no capacitor. pyfa's <code>calculateSustainableTank</code> treats it the same way.</li>
+<li><b>What the rule missed:</b> the ASB stops for a different reason, to reload. An X-Large holds 112 m&sup3;, nine Navy Cap Booster 400s (12 m&sup3; each). That gives 45 s of repairs, then a 60 s reload.</li>
+<li><b>Why no check caught it:</b> <code>check_matchup.py</code> left every ASB fit out ("an ancillary booster's rate isn't a plain amount / duration"), so this case had never been compared.</li>
+</ul>
+
+<h2>Fix</h2>
+<ul>
+<li><b>The engine lists each local repairer</b> (<code>exact.localReps</code>). An ASB with charges aboard gets its clip:
+<ul>
+<li>clip = pyfa <code>numShots</code> = floor(capacity &divide; charge volume) &divide; chargeRate;</li>
+<li>reload = <code>reloadTime</code>, 60 s;</li>
+<li>charges = a full loaded clip plus the same charge in the cargo hold or fleet hangar. The whole hold counts for the ASB, even when a Capacitor Booster draws the same charges.</li>
+</ul></li>
+<li><b><code>ttkSeconds</code> now steps through the fight</b>, segment by segment (<code>ttkLayerEnd</code>):
+<ul>
+<li>the ASB reps through its clip, reloads, and repeats while charges last, then stops;</li>
+<li>every other repairer still runs until the capacitor runs dry;</li>
+<li>a layer that's full stays full.</li>
+</ul></li>
+<li><b>Unchanged cases:</b>
+<ul>
+<li>An ASB with no charge at all (a pasted fit with none loaded or in the hold) runs on the capacitor, as before.</li>
+<li>On a killmail with no charge seen, the tool assumes the booster was charged. It also runs until the capacitor runs dry, as before.</li>
+<li>Ancillary Armor Repairers (paste boost and reload) are not followed yet. That gap is listed in DEVIATIONS.md.</li>
+</ul></li>
+<li><b>The alternative not taken</b> is written in <code>METHODOLOGY.md</code> so it can be brought back: pyfa's "factor in reload" average over the whole fight. For an X-Large ASB with Navy Cap Booster 400s that's 84 HP/s instead of 196. It hides the reload gap, which is where a ship running an ASB usually breaks.</li>
+</ul>
+<table>
+<tr><th>At 48.9 km (the owner's pasted fits)</th><th>v.56</th><th>v.57</th></tr>
+<tr><td>You last (Osprey: 28 charges in the hold; its shield breaks 21 s into the first reload)</td><td>2 min 42 s</td><td>1 min 27 s</td></tr>
+<tr><td>They last (Orthrus: 9 charges in the hold, one clip)</td><td>8 min 15 s</td><td>7 min 20 s</td></tr>
+</table>
+<p>On the Pilot Analyzer the Orthrus comes from its killmail. A charge loaded in its ASB adds a full clip, so its time can be longer there.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>check_matchup.py</code></b> (update-check chain):
+<ul>
+<li>The rule is written again independently (<code>asb_windows</code>, <code>asb_input</code>, the time to kill by segments) on pyfa's numbers: capacity, charge volume, chargeRate, reloadTime, shieldBonus, duration.</li>
+<li>Fits with an ASB are no longer left out. 4 golden fits are covered: charges loaded, taken from cargo, and none.</li>
+<li>the owner's two fits are now in the repo (<code>tools/independent_checks/fits/orthrus_threat.eft</code>, <code>osprey_navy_issue_mine.eft</code>) and are checked both ways, through the tool's engine (<code>eft_engine</code>) and pyfa by item names.</li>
+<li>Result: 0 mismatches over 47,104 points.</li>
+<li>v2026.10.14.56 fails 4 pairs. So do a mutated page where a spent ASB keeps running on the capacitor, and one whose clip is one cycle too long.</li>
+</ul></li>
+<li>On the page (Fit Analyzer, both fits, 48.9 km): 470 / 7 min 20 s / 1 min 27 s / 88.</li>
+<li>The update-check chain caught a slip on the way: the Weaknesses picks' buffer-only time cleared each layer's total repair rate but not the new list of repairers, so repairs still counted there. <code>check_weakness_picks.py</code> found 1,152 differing values; fixed by clearing the list too.</li>
+<li>Regression suite ALL PASS; update-check chain all 36 steps OK; all 13 page checks 0 failures, run one at a time.</li>
+<li><code>weakness_picks_check.py</code> stopped with &ldquo;Execution context was destroyed&rdquo; at the same spot as before: line 145, the first <code>page.evaluate</code> after clicking the Pilot Analyzer tab. It stopped in the full run and in 2 of 5 runs alone, and passed in the other three. A run with full logging of navigations, page loads, crashes and console errors stopped with none of them logged, so it isn't a reload. Still a watch item, now reproducible.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #53: an independent check's exclusions are where bugs hide. <code>check_matchup.py</code> passed for weeks with ASB fits filtered out, and the first real ASB pair showed the rule was wrong. When a check skips a case "because it's not simple", write down what it skips and close it next, or test that case some other way before relying on the number.</p>
+</body>
+</html>

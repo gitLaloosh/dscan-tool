@@ -789,6 +789,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   4.4 km silently showed 4.5 km. Keep the step as fine as the values the page writes (here 100 m), and derive a shared
   value's limits once (`dmgFightRangeMax`) instead of in each view; three copies had drifted.
 
+## 53. An independent check's exclusions are where bugs hide
+
+- **What happened (v2026.10.14.57):** `check_matchup.py` compared the Matchup's "you last" / "they last" against an
+  independent build of the rule, and passed for weeks, but it left out every fit with an Ancillary Shield Booster
+  ("an ancillary booster's rate isn't a plain amount / duration"). the owner's first real ASB matchup showed the rule was
+  wrong for them: it stopped the ASB when the capacitor ran dry (an ASB on charges needs none) and never reloaded it.
+- **Do this instead:** when a check skips a case because it isn't simple, write down what it skips (in the check's
+  output, not only a comment) and close it next, or check that case another way before trusting the number there.
+  A user's own fits are the best test cases: keep them in the repo (`tools/independent_checks/fits/`) and check them.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

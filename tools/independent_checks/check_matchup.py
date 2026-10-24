@@ -100,30 +100,62 @@ def pyfa_typed(src_fit, src_app, inp, tgt, distance, speedFrac, tgtAngle, atkSpe
         for k, v in typed_dps_drone(d.d).items(): typed[k] += v * am.get(d, 0)
     return typed
 
-def ttk(o, cap_sec, typed):
-    """P2, written again from its description: layer by layer, reps while the capacitor lasts, passive shield regen always."""
+def asb_windows(clip, cyc, reload, cycles):
+    """v2026.10.14.57: the times an Ancillary Shield Booster on charges is cycling: `clip` cycles, a reload, again, until
+    `cycles` are used (written from the description in METHODOLOGY.md, "The fight")."""
+    out, t, left = [], 0.0, cycles
+    while left > 0:
+        n = min(clip, left); out.append((t, t + n * cyc)); t += n * cyc; left -= n
+        if left > 0: t += reload
+    return out
+def ttk(o, cap_sec, typed, asb=None):
+    """P2, written again from its description: layer by layer, reps while the capacitor lasts, passive shield regen always.
+    asb (v.57): {'windows': [...]} for an Ancillary Shield Booster on charges -- it reps inside its windows only, whatever
+    the capacitor; None with an ASB fitted = no charges aboard: it reps while the capacitor lasts like any booster."""
     sh = o.ship.get; res = resonances(o)
-    rep_s = sum(m.get('shieldBonus') / (m.get('duration') / 1000) for m in o.modules if m.state >= 2 and 4 in m.item.effectIds)
+    asb_mods = [m for m in o.modules if m.state >= 2 and m.item.group.name == 'Ancillary Shield Booster']
+    asb_rate = sum(m.get('shieldBonus') / (m.get('duration') / 1000) for m in asb_mods)
+    rep_s = sum(m.get('shieldBonus') / (m.get('duration') / 1000) for m in o.modules if m.state >= 2 and 4 in m.item.effectIds) + (0 if asb else asb_rate)
     rep_a = sum(m.get('armorDamageAmount') / (m.get('duration') / 1000) for m in o.modules if m.state >= 2 and 27 in m.item.effectIds)
     rep_h = sum(m.get('structureDamageAmount') / (m.get('duration') / 1000) for m in o.modules if m.state >= 2 and 26 in m.item.effectIds)
     shield = sh('shieldCapacity') or 0; tau = (sh('shieldRechargeRate') or 0) / 1000
-    layers = [(shield, res['shield'], rep_s, 2.5 * shield / tau if shield > 0 and tau > 0 else 0), (sh('armorHP') or 0, res['armor'], rep_a, 0), (sh('hp') or 0, res['hull'], rep_h, 0)]
+    layers = [(shield, res['shield'], rep_s, 2.5 * shield / tau if shield > 0 and tau > 0 else 0, asb), (sh('armorHP') or 0, res['armor'], rep_a, 0, None), (sh('hp') or 0, res['hull'], rep_h, 0, None)]
     t = 0.0
-    for hp, r, rep, passive in layers:
-        if hp <= 0: continue
+    for hp_max, r, rep, passive, a in layers:
+        if hp_max <= 0: continue
         incoming = sum(typed[k] * r[k] for k, _ in TYPES)
-        # time to empty this layer at net rate, the rate changing once when the capacitor runs out
-        if t < cap_sec:
-            net = incoming - rep - passive
-            if net > 0 and hp / net <= cap_sec - t: t += hp / net; continue
-            if cap_sec == math.inf: return math.inf
-            hp = hp - max(0.0, net) * (cap_sec - t); t = cap_sec
-        net2 = incoming - passive
-        if net2 <= 0: return math.inf
-        t += hp / net2
+        # the reps change only at the capacitor's empty time and at the ASB's window edges
+        edges = sorted({cap_sec} | {x for w in (a['windows'] if a else []) for x in w})
+        hp = hp_max
+        while True:
+            later = [e for e in edges if e > t + 1e-9]
+            nxt = later[0] if later else math.inf
+            mid = t + 1e-6 if nxt == math.inf else (t + nxt) / 2
+            reps = (rep if mid < cap_sec else 0) + (asb_rate if a and any(w0 <= mid < w1 for w0, w1 in a['windows']) else 0)
+            net = incoming - reps - passive
+            if nxt == math.inf:
+                if net <= 0: return math.inf
+                t += hp / net; break
+            if net > 0 and hp / net <= nxt - t: t += hp / net; break
+            hp = min(hp_max, hp - net * (nxt - t)); t = nxt
     return t
 
 SIMPLE_REPS = lambda o: not any(m.item.group.name in ('Shield Boost Amplifier', 'Siege Module', 'Ancillary Shield Booster', 'Ancillary Armor Repairer') or {4936, 5275} & set(m.item.effectIds) for m in o.modules if m.state >= 1)
+# v2026.10.14.57: Ancillary Shield Boosters are checked too (their clip); Ancillary Armor Repairers, amplifiers and siege still not
+ASB_OK = lambda o: not any(m.item.group.name in ('Shield Boost Amplifier', 'Siege Module', 'Ancillary Armor Repairer') or 5275 in set(m.item.effectIds) for m in o.modules if m.state >= 1)
+def asb_input(o, cap_tool, hold):
+    """The ASB's charges aboard, from the tool's INPUTS (capacitor.asb: loaded / taken from cargo / none, an input choice in
+    DEVIATIONS.md) and the fit's hold; the clip from pyfa's numbers (capacity, charge volume, chargeRate, reloadTime)."""
+    from pyfa_sde import types, T
+    mods = [m for m in o.modules if m.state >= 2 and m.item.group.name == 'Ancillary Shield Booster']
+    a = (cap_tool or {}).get('asb') or {}
+    if not mods or not a.get('confirmed') or not a.get('chargeName'): return None
+    m = mods[0]; q = len(mods)
+    vol = float(types[str(T(a['chargeName']))]['volume'])
+    clip = int(int(m.get('capacity') / vol + 1e-9) // (m.get('chargeRate') or 1))
+    if clip <= 0: return None
+    total = hold(int(T(a['chargeName']))) + (0 if a.get('fromCargo') else clip * q)
+    return {'windows': asb_windows(clip, m.get('duration') / 1000, (m.get('reloadTime') or 0) / 1000, int(total // q // (m.get('chargeRate') or 1)))}
 
 if __name__ == '__main__':
     ROOT = os.path.join(HERE, '..', '..')
@@ -133,6 +165,33 @@ if __name__ == '__main__':
     FIELDS = 'application,projectedTarget,moduleStates,droneStates,exact,resonance,capacitor,speed'
     subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, dump, FIELDS, '-', ','.join(G)], check=True, stdout=subprocess.DEVNULL)
     tool = json.load(open(dump))
+    # v2026.10.14.57: the owner's own pair (2026-10-24, both with an X-Large Ancillary Shield Booster), run from their EFT text
+    # through the tool's real engine (eft_engine) and through pyfa by item names
+    EFT = {'eft:orthrus_threat': os.path.join(HERE, 'fits', 'orthrus_threat.eft'), 'eft:osprey_navy_issue_mine': os.path.join(HERE, 'fits', 'osprey_navy_issue_mine.eft')}
+    from eft_engine import run_efts
+    tool.update(run_efts(html, {k: open(v).read() for k, v in EFT.items()}))
+    def eft_items(k):
+        """(module type id, loaded charge name) per module line, and the hold: {type id: qty} of 'Name xN' lines"""
+        from pyfa_sde import T, cat
+        mods, hold = [], {}
+        for l in open(EFT[k]).read().split('\n')[1:]:
+            l = l.strip()
+            if not l: continue
+            if ' x' in l and l.rsplit(' x', 1)[1].isdigit():
+                n, q = l.rsplit(' x', 1); tid = T(n.strip())
+                if tid: hold[int(tid)] = hold.get(int(tid), 0) + int(q)
+                continue
+            name, _, ch = l.partition(','); tid = T(name.strip())
+            if tid and cat(int(tid)) != 8: mods.append((int(tid), ch.strip() or None))
+        return mods, hold
+    def hold_of(k):
+        if k in EFT: h = eft_items(k)[1]; return lambda tid: h.get(tid, 0)
+        f = G[k]
+        if f.get('killmail'):
+            items = [it for it in f['killmail']['victim'].get('items', []) if it['flag'] in (5, 155)]
+            return lambda tid: sum(it.get('quantity_destroyed', 0) + it.get('quantity_dropped', 0) for it in items if it['item_type_id'] == tid)
+        t = f.get('tally') or {}
+        return lambda tid: sum((t.get(g) or {}).get(str(tid), {}).get('totalQty', 0) / max(1, (t.get(g) or {}).get(str(tid), {}).get('lossCount', 1)) for g in ('Cargo', 'Fleet hangar'))
     def ok_fit(k):
         t = tool[k]
         return t.get('projectedTarget') and (t.get('application') or {}).get('weapons') is not None
@@ -147,7 +206,14 @@ if __name__ == '__main__':
                 tid = str(v['propTypeId']); st = states.get(tid) or {'active': 0, 'online': 1, 'offline': 0}
                 n = st['active'] + st['online'] + st['offline']
                 states = dict(states); states[tid] = (st if v['running'] else {'active': 1, 'online': n - 1, 'offline': 0}) if prop else {'active': 0, 'online': n - st['offline'], 'offline': st['offline']}
-            oracles[key] = oracle_for(k, states=states, drones=drones, group_limits=False)
+            if k in EFT:
+                from pyfa_fit_oracle import OracleFit
+                seen, mods = {}, []
+                for tid, ch in eft_items(k)[0]:
+                    st_ = states.get(str(tid)) or {'active': 0, 'online': 1, 'offline': 0}; i = seen.get(tid, 0); seen[tid] = i + 1
+                    mods.append((tid, 'active' if i < st_['active'] else 'online' if i < st_['active'] + st_['online'] else 'offline', ch))
+                oracles[key] = OracleFit(open(EFT[k]).read().split('\n')[0][1:].split(',')[0], mods, drones=drones).calculate()
+            else: oracles[key] = oracle_for(k, states=states, drones=drones, group_limits=False)
         return oracles[key]
     cands = [k for k in G if ok_fit(k)]
     # my ships: armor / shield reps with the capacitor running out at different times, stable reps, drones, buffer
@@ -163,9 +229,15 @@ if __name__ == '__main__':
     mine = [k for k in MINE if k in cands and SIMPLE_REPS(orc(k)) and not orc(k).errors and not orc(k).oracleGaps] + [k for k in mine if k not in MINE][:2]
     threats = [k for k in THREATS if k in cands and SIMPLE_REPS(orc(k)) and not orc(k).errors and not orc(k).oracleGaps] + [k for k in threats if k not in THREATS][:5]
     pairs = [(t, m) for t in threats for m in mine if t != m]
+    # v.57: fits with an Ancillary Shield Booster, both ways (charges loaded, from cargo, none), and the owner's pair
+    asb_fits = [k for k in cands if any(m.item.group.name == 'Ancillary Shield Booster' and m.state >= 2 for m in orc(k).modules) and ASB_OK(orc(k)) and not orc(k).errors and not orc(k).oracleGaps]
+    asb_mine = [k for k in asb_fits if (tool[k]['projectedTarget']['variants'] or {}).get('propTypeId')]
+    asb_threats = [k for k in asb_fits if tool[k]['application'].get('weapons') or tool[k]['application'].get('drones')]
+    pairs += [(t, m) for t in asb_threats for m in mine[:2] if t != m] + [(t, m) for t in threats[:2] for m in asb_mine if t != m]
+    pairs += [('eft:orthrus_threat', 'eft:osprey_navy_issue_mine'), ('eft:osprey_navy_issue_mine', 'eft:orthrus_threat')]
     gin, gout, js = os.path.join(tmp, 'in.json'), os.path.join(tmp, 'out.json'), os.path.join(tmp, 'run.js')
     open(js, 'w').write(NODE)
-    json.dump({'fits': {k: tool[k] for k in set(threats) | set(mine)}, 'pairs': pairs, 'grid': GRID}, open(gin, 'w'))
+    json.dump({'fits': {k: tool[k] for k in {x for pr in pairs for x in pr}}, 'pairs': pairs, 'grid': GRID}, open(gin, 'w'))
     subprocess.run(['node', js, html, gin, gout], check=True)
     out = json.load(open(gout))
     bad, notes, points, inf_seen, finite_cut = 0, [], 0, 0, 0
@@ -182,7 +254,8 @@ if __name__ == '__main__':
             inc = pyfa_typed(tf_fit, tf_app, t_inp, me, st['range'], y_frac, y_ang, t_frac * their_top, t_ang)
             m_src_fit = CP._Fit(me_o); m_app = CA._Src(me_o); m_inp = CP.pyfa_inputs(m_src_fit)
             outd = pyfa_typed(m_src_fit, m_app, m_inp, tf_fit, st['range'], t_frac, t_ang, y_frac * my_top, y_ang)
-            you_last = ttk(orc(m), capsec(m), inc); they_last = ttk(orc(t), capsec(t), outd)
+            you_last = ttk(orc(m), capsec(m), inc, asb_input(orc(m), tool[m]['capacitor'], hold_of(m)))
+            they_last = ttk(orc(t), capsec(t), outd, asb_input(orc(t), tool[t]['capacitor'], hold_of(t)))
             exp = [sum(inc.values()), sum(outd.values()), you_last, they_last, my_top, their_top, y_holds, t_holds]
             got = out[t + '|' + m][i]; points += 1
             inf_seen += (you_last == math.inf) + (they_last == math.inf)
@@ -196,4 +269,5 @@ if __name__ == '__main__':
     for n in notes[:30]: print(n)
     print(f'{len(threats)} threats x {len(mine)} of my ships ({", ".join(mine)}), {points} points over {len(GRID)} card settings: {2 * points - inf_seen} finite times ({finite_cut} after the capacitor ran out), {inf_seen} "holds"')
     print(f'Keep at Range: {keep_seen[0]} keeping ships; the "can hold" verdict compared for both ships at every point ({keep_seen[1]} can\'t)')
+    print(f'Ancillary Shield Boosters: {len(asb_threats)} as threats, {len(asb_mine)} as my ship ({", ".join(asb_fits)}), plus the owner\'s Orthrus / Osprey Navy Issue both ways')
     print(f'{bad} mismatches (strip numbers vs pyfa projected.py + application.py by damage type, and the time-to-kill rule)')

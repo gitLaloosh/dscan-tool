@@ -41,8 +41,14 @@ introduces a difference.
   kill. Built from pyfa's pieces: the incoming applied DPS by damage type (pyfa's damage graph with applyProjected,
   each module's and drone's own damage types) against each layer's resonances, shield then armor then hull, minus
   that layer's local repair rate and the shield's PEAK passive regen (2.5 x HP / recharge time, as the Break Point;
-  real regen is lower away from ~25% shield), with the repairs stopping when pyfa's capacitor simulation runs dry
-  (an ancillary booster's charges are not followed separately). Not counted: their neuts on your capacitor, remote
+  real regen is lower away from ~25% shield), with the repairs stopping when pyfa's capacitor simulation runs dry.
+  An Ancillary Shield Booster on charges (v2026.10.14.57) doesn't use the capacitor (pyfa calculateSustainableTank): it
+  reps for its clip (pyfa numShots = capacity / charge volume / chargeRate), reloads (reloadTime, 60 s), and so on
+  while charges last (a full loaded clip plus the same charge in the hold, also if a Capacitor Booster shares them),
+  then stops. pyfa itself would either ignore the reload (its default) or average it over the fight ("factor in
+  reload": rate x clip time / (clip time + reload)); a time to kill needs the gap. An ASB with no charge seen on a
+  killmail (assumed charged) runs until the capacitor runs dry, as before. An Ancillary Armor Repairer's paste boost
+  and reload are not followed yet (its plain rate, until the capacitor runs dry). Not counted: their neuts on your capacitor, remote
   repairs, overheating, the card's MWD switch on your capacitor (it changes your speed and signature only).
   "holds" when the damage never gets through. Checked by `check_matchup.py` against an independent build of the
   same rule on pyfa's numbers.
