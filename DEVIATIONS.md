@@ -37,6 +37,23 @@ introduces a difference.
 - Misc flags on the EWAR / Misc card (cyno, MJD / MJFG, Interdiction Nullifier, PANIC). The PANIC's invulnerability has no pyfa handler, so, as in pyfa, it can't be set active and changes no stat; the flag quotes CCP's item description, its range and its duration as pyfa computes it at All V (6 min). (v2026.10.14.10; v.9 briefly allowed an Active state that changed nothing.)
 - Missile damage application vs a target (the Weaknesses card's missile pick). Uses the standard missile application formula `min(1, S/E, ((S/E)(Ve/Vt))^drf)` (EVE University; CCP dogma attributes; pyfa's graphs use the same). Since v2026.10.14.27 your missiles get the tool's All V application skills, the only two pyfa skill handlers on them: Guided Missile Precision -25% explosion radius, Target Navigation Prediction +50% explosion velocity (`check_missile_application.py`). Your own rigs, Missile Guidance Computers and hull bonuses aren't known and aren't applied.
 - "Net cap rate": a simple average (recharge − drain + injection). The capacitor *state* comes from pyfa's simulation.
+- The My Ship matchup strip's "You last" / "They last" (v2026.10.14.41, my-ship-plan.md P2). pyfa has no time to
+  kill. Built from pyfa's pieces: the incoming applied DPS by damage type (pyfa's damage graph with applyProjected,
+  each module's and drone's own damage types) against each layer's resonances, shield then armor then hull, minus
+  that layer's local repair rate and the shield's PEAK passive regen (2.5 x HP / recharge time, as the Break Point;
+  real regen is lower away from ~25% shield), with the repairs stopping when pyfa's capacitor simulation runs dry
+  (an ancillary booster's charges are not followed separately). Not counted: their neuts on your capacitor, remote
+  repairs, overheating, the card's MWD switch on your capacitor (it changes your speed and signature only).
+  "holds" when the damage never gets through. Checked by `check_matchup.py` against an independent build of the
+  same rule on pyfa's numbers.
+- The Weaknesses picks with My Ship in use (v2026.10.14.42, my-ship-plan.md B1-B4). The DPS shown is pyfa's applied
+  DPS of that weapon type with the charge loaded in every active copy (the fit run again through pyfa's handlers),
+  or of a flight of one drone type, at the strip's fight. The ORDER is the tool's: the strip's time to kill above
+  with that swap (their resists count; the rest of the fit as it is), then the time against their buffer alone,
+  then the charge already loaded. Choices: only ammo and drones aboard (loaded, cargo, drone bay; pyfa's
+  isValidCharge rule for what loads); a drone pick is one type at a time (as many as the bay, 5 drones and the
+  bandwidth allow), not mixed flights; the fight's webs, painters and scram are the fit's current ones, whatever
+  is being ranked. Fighters aren't ranked (not applied yet). Checked by `check_weakness_picks.py`.
 - EVE's closed-form capacitor stability, on ring hover (pyfa computes it as `cap_stable_eve` but doesn't display it).
 - Rounding of the tool's own values (missile application % and applied DPS in the ammo ranking, the ring's drawing geometry) stays JavaScript's `Math.round`. Every pyfa stat the tool shows is rounded with `pyRound` (Python `round()`, ties to even) since v2026.10.14.22.
 
@@ -49,10 +66,12 @@ Each is in a backlog:
 - drone hit points
 - effect beacons (wormhole and incursion system effects)
 - projected effects (remote reps on the target; command bursts received from a fleet booster -- the booster's OWN bursts are listed on its EWAR / Misc card since v2026.10.14.26, they don't change its own stats, as in pyfa)
-- damage application, partly (v2026.10.14.34 added the engine, PYFA CORE `application`; nothing on the page
-  uses it yet, turret-application-plan.md Phase 2): pyfa's damage graph is ported for turrets, missile
+- damage application, partly (v2026.10.14.34 added the engine, PYFA CORE `application`; the page shows it in
+  the "Their damage on you" card since v2026.10.14.36, turret-application-plan.md Phase 2b): pyfa's damage graph is ported for turrets, missile
   launchers, Vorton Projectors and smartbombs with pyfa's graph defaults (lock range ignored unless asked,
-  target resists ignored). Not yet: drones and fighters (D5: their DPS stays raw, `application.unapplied`),
+  target resists ignored). Drones since v2026.10.14.40 (getDroneMult; Erik "port drone application first").
+  Not yet: fighters (their DPS stays raw, `application.unapplied`; the "Their damage on you" chart names it under
+  the chart), drones on a hull record without dogma effects (fallback path, raw like fighters),
   bombs, doomsdays and breacher pods. Since v2026.10.14.35 (Phase 2a, PYFA CORE `projected`) the engine also
   has pyfa's `applyProjected` (on by default in pyfa's graph): the attacker's own webs, target painters, web /
   painter drones, burst projectors and warp scramblers (a scrammed target's MWD, MJD and MJFG are ignored)

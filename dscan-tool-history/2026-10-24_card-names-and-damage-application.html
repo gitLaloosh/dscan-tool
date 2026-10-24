@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Card names in one list, and Damage Application</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; font-size:14px;} td,th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Card names come from one list; "Their damage on you" is now Damage Application</h1>
+<p><span class="tag">Wording</span><span class="tag">Tools</span> 2026-10-24 &middot; <code>v2026.10.14.44</code> &rarr; <code>v2026.10.14.45</code>.</p>
+<p>Erik (2026-10-23): "i see a recurring issue with not having definitive names for each card. it results in subtext and explanatory info referencing card titles that should be interchangeable." The names were settled in <code>roadmap/card-names.md</code>. Separately, the damage card is renamed and its wording uses "damage applied" ("We're trying to communicate damage application so let's use the term").</p>
+
+<h2>What changed on the page</h2>
+<ul>
+<li><b>One list of names.</b> <code>CARD_NAMES</code> near the top of the script holds every card and page-part name: Weaknesses, EWAR / Misc, Firepower, Resistance, Navigation &amp; Targeting, Capacitor, Fit, Damage Application, Matchup, Last Kill, Threat Perspective, My Ship Perspective, Viewing My Ship. Titles, collapsed rows, notes and tooltips all take the name from it with <code>cardName(key)</code>. <code>cardLabelHtml(key)</code> and <code>collapsedCardHtml(key, summary)</code> no longer take a title at all.</li>
+<li><b>Damage Application</b> is the card's title (was "Their damage on you"). The tag reads "applied to your Vexor &middot; Brawl" / "applied to a typical cruiser", the headline "290 DPS applied at 4.4 km&hellip;", and the Matchup cells "DPS applied to you" / "DPS applied to them". The Firepower link, the collapsed row, the chart's description and the Show values column follow the same wording.</li>
+<li><b>Navigation &amp; Targeting</b> now has a capital T. Its card key is <code>nav</code> (was <code>nv</code>). Nothing saves card keys in the browser, so no one's open/closed cards are lost.</li>
+<li><b>Stale names fixed:</b>
+<ul>
+<li>the Capacitor Battery note named an "EWAR card";</li>
+<li>the PILOT codes named a "last-kill box" (now the Last Kill line);</li>
+<li>MYSHIP-02 named the "threat / my ship switch" (now the Matchup);</li>
+<li>WP-01 named the "threat view and My ship view" (now the two perspectives);</li>
+<li>DMG-01 is now "No ship to apply their damage to", on the Damage Application card;</li>
+<li>the "Use in assessments" tooltip now names the Matchup and both perspectives.</li>
+</ul></li>
+<li><b>Error codes</b> name page parts as <code>{card:key}</code>. <code>gen_errors_md.py</code> fills the name in when it writes ERRORS.md and fails on an unknown key.</li>
+</ul>
+<p>No calculation changed.</p>
+
+<h2>New check: <code>tools/check_card_names.py</code></h2>
+<p>It is the 35th step of the update-check chain. It reads every string the page can show: JavaScript string and template text with comments skipped, the HTML text and attributes, and every ERROR_CODES field. It fails when:</p>
+<ul>
+<li>a listed name is typed by hand (also with other capitals, so "Navigation &amp; targeting" is caught);</li>
+<li>text says "&lt;Name&gt; card" for a name that isn't listed;</li>
+<li>an old name (its <code>RETIRED</code> list: "their damage on you", "last-kill box", "threat view"&hellip;) is still shown;</li>
+<li>a helper or <code>{card:key}</code> uses a key that doesn't exist, or a helper is still handed a title;</li>
+<li><code>${cardName(</code> sits inside a quoted string (it would print literally or break the script);</li>
+<li>CARD_NAMES and <code>roadmap/card-names.md</code> disagree.</li>
+</ul>
+<p>The page checks now read titles from CARD_NAMES instead of literal text. <code>layout_check.py</code> also checks that every card title, open and collapsed, equals its listed name.</p>
+
+<h2>Verification</h2>
+<ul>
+<li>Regression suite ALL PASS (249 fits); the update-check chain all 35 steps OK; <code>check_card_names.py</code> 0 problems; ERRORS.md up to date (27 codes).</li>
+<li>Every page check 0 failures: layout, card width, damage chart, matchup, weakness picks, last kill, my ship, busy, missing charges, zKillboard outage.</li>
+<li>Screenshots of a Hecate against a saved Vexor, both perspectives and every card collapsed: all titles and collapsed rows show their listed names.</li>
+</ul>
+
+<h2>Still open</h2>
+<ul>
+<li>Chart labels (drone range and the other dotted-line markers): a design proposal comes first (<code>roadmap/turret-application-plan.md</code>).</li>
+<li>The "Adjust" panel that showed no sliders in Erik's screenshot: not reproduced yet.</li>
+<li>Bug #1: the My Ship Perspective's cyan top bar and amber card edges. It's next, after this build.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>A name typed at every place it's used drifts apart, one build at a time. Each copy was right the day it was written, then a card got renamed and only some copies followed. Name each card once, in one list, and refer to it by key everywhere, error-code text included. Then add a check that fails when someone types the name by hand again. Also, a <code>${...}</code> inside a single-quoted JavaScript string is printed literally. If that string also contains a quote, the whole script stops with a syntax error. Use backticks. (LESSON #42.)</p>
+</body>
+</html>

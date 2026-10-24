@@ -2,8 +2,11 @@
 
 Status: **PHASE 1 DONE** (v2026.10.14.34, 2026-10-23; `dscan-tool-history/2026-10-23_damage-application-engine.html`).
 **PHASE 2a DONE** (v2026.10.14.35, 2026-10-23; `dscan-tool-history/2026-10-23_projected-webs-painters-scram.html`).
+**PHASE 2b DONE** (v2026.10.14.36, 2026-10-23; `dscan-tool-history/2026-10-23_their-damage-on-you-chart.html`).
 All six decisions in section 4 made. Erik 2026-10-23: Phase 2 split into 2a (pyfa's `applyProjected`, engine only)
-and 2b (the "Their damage on you" chart with sliders). Next: Phase 2b.
+and 2b (the "Their damage on you" chart with sliders). Next: Phase 3 (your guns vs them, optional) or the drones /
+fighters follow-up (D5; drones done v2026.10.14.40, `dscan-tool-history/2026-10-23_drone-damage-application.html`); My Ship
+phase 2 (matchup strip) can now read the chart's headline.
 Backlog: "Turret damage application" (DEVIATIONS.md: "turret tracking application"; architecture memory:
 "turret-side damage application, needs attacker tracking + assumed range").
 
@@ -102,7 +105,7 @@ your applied DPS vs their tank, and theirs vs yours).
 | D2 | Where do "your" sig, speed and radius come from? | (a) **a fit you've analyzed, saved as "my ship"** (one click in the Fit Analyzer, remembered in your browser); (b) class presets (frigate / cruiser / battleship); (c) typed in by hand | **Decided 2026-10-23: (a)**, My Ship (built in v2026.10.14.33), with (b) class presets until a ship is saved. Why: the numbers come from the tool's own pyfa-exact stats, MWD or AB included. |
 | D3 | What movement do we assume? | (a) two lines: you sitting still and you orbiting at full speed (90°, the worst case for them); (b) orbiting only; (c) a speed slider | **Decided 2026-10-23: (a) as the default view, plus sliders** for range, both ships' speed and heading, your sig, prop on/off and the horizontal axis (section 3, Display). Still = their range-only damage, orbiting = with tracking; the gap between the lines is what speed tanking buys you. |
 | D4 | Prop module for "you" | (a) **your fit's prop active** (AB or MWD, with the MWD's sig bloom); (b) cruising | **Decided 2026-10-23: (a)**, your fit's prop active, MWD sig bloom included (a slider can switch it off). Why: Real orbits run the prop, and the MWD's sig bloom is exactly the trade-off the chart should show. |
-| D5 | Their drones and fighters | (a) **include now** (needs drone speed and tracking: more engine work); (b) turrets, missiles, Vorton and smartbombs first, drones in a follow-up | **Decided 2026-10-23: (b)**, turrets, missiles, Vorton and smartbombs first; drones and fighters in a follow-up, raw drone DPS labelled as raw until then. |
+| D5 | Their drones and fighters | (a) **include now** (needs drone speed and tracking: more engine work); (b) turrets, missiles, Vorton and smartbombs first, drones in a follow-up | **Decided 2026-10-23: (b)**, turrets, missiles, Vorton and smartbombs first; drones and fighters in a follow-up, raw drone DPS labelled as raw until then. **Drones DONE v2026.10.14.40** (Erik, for My Ship phase 2: "port drone application first"): getDroneMult in PYFA CORE application. Fighters still open. |
 | D6 | Pilot Analyzer as well as Fit Analyzer? | (a) **both**; (b) Fit Analyzer only | **Decided 2026-10-23: (a)**, both the Pilot and Fit Analyzers. Why: Same engine; killmail fits get the same card. |
 
 ## 5. Risks and how they're handled
@@ -140,6 +143,57 @@ your applied DPS vs their tank, and theirs vs yours).
 | 2 — "Their damage on you" chart + sliders (My Ship profile already built, v2026.10.14.33) | Medium |
 | 3 — your guns vs them (optional) | Medium |
 | Drones / fighters follow-up (if D5 = b) | Medium |
+
+## Phase 2b decisions (2026-10-23, after the mockup)
+
+Mockup canvas "Their damage on you — chart mockup" (Megathron vs Caracal from the golden fits; its interactive
+prototype runs the engine's maths, checked against the engine on 864 points).
+
+- **Layout: Option B** ([stated] "let's go with B"): its own full-width card under the three columns, chart left,
+  sliders right; the Firepower card keeps a one-line link ("785 on you at 10 km"). On a phone the sliders fold
+  into an "Adjust" panel.
+- **Signature slider: scales your fit's own signature** ([stated] "scaling is fine"), so the MWD bloom and the
+  scram rule still apply.
+- **Default engagement range: their optimal + falloff** ([stated]). For a fit whose biggest raw DPS isn't turrets,
+  the same idea per weapon: missiles their flight range (pyfa Module.maxRange), Vorton maxRange, smartbombs the
+  blast radius (my reading; the weapon group with the most raw DPS decides).
+- **Class presets until a ship is saved** ([stated] "yes" to the criteria, "keep it" to the Navitas): treated as
+  FITS, not target profiles, so their scram switches the preset's MWD off as it would yours. Rule: published T1
+  hulls of the four empire races (covert exploration frigates left out), each with its class's T2 MWD active and
+  nothing else, pyfa's handlers at All V; the real hull nearest the class median of MWD speed and MWD signature
+  (log distance). Picks (pyfa v2.69.3, data 3624425):
+
+  | Class | Pick | MWD speed | MWD signature | Radius | MWD off |
+  |---|---|---|---|---|---|
+  | Frigate (20 hulls) | Navitas + 5MN Microwarpdrive II | 3,026 m/s | 207 m | 35 m | 512 m/s, 36 m |
+  | Destroyer (8) | Cormorant + 5MN Microwarpdrive II | 1,671 m/s | 374 m | 112 m | 312 m/s, 65 m |
+  | Cruiser (16) | Caracal + 50MN Microwarpdrive II | 1,913 m/s | 719 m | 202 m | 288 m/s, 125 m |
+  | Battlecruiser (8) | Harbinger + 50MN Microwarpdrive II | 1,239 m/s | 1,552 m | 199 m | 219 m/s, 270 m |
+  | Battleship (12) | Raven + 500MN Microwarpdrive II | 1,046 m/s | 2,358 m | 250 m | 141 m/s, 410 m |
+
+  The selection is a script (re-run after a game-data update; a pick can change only when CCP rebalances hulls).
+
+## Phase 2b as built (v2026.10.14.36)
+
+- The card ("Their damage on you", collapsible key `dmg`, closed by default on a phone) is in the Fit Analyzer
+  and in every Pilot losses tab; not in the "My ship" view. v.36 put it under the `.fit-layout` grid (LESSON #38);
+  since v2026.10.14.37 (Erik: "place the new card ... at the top", option B) it is a band at the top of the grid,
+  across the Fit and stats columns from 1280 px, full width below that (`FIT_LAYOUT`, roadmap/card-layout-plan.md).
+  Its inner layout follows its own width (container query, 720 px). The Firepower card gets the one-line link (`.dmg-fp-slot`).
+- Target: My Ship when saved and "Use in assessments" is on, else the class preset (stored in
+  `localStorage['dscanDmgPreset']`, default cruiser). A preset is built from EFT text (`[Caracal, Typical
+  cruiser]` + its MWD) by the same `buildFitFromEft` as a paste; DMG-01 if it can't be.
+- Engine input added: `estimate.projectedTarget.variants` = {propTypeId, propKind, running, on, off}: the target
+  with its prop module running (the running one, else the fastest of the prop kind the fit has) and with every
+  prop module off. The switch picks one; D4 = on.
+- Every point: `pyfaProjectedPoint` (their tackle) then `pyfaAppliedDps` at the tackled speed and painted
+  signature, both PYFA CORE, unchanged. 121 samples per line; a control redraws the card only (no fit-engine run).
+- Lines: "you still" (solid, #c2832e) and "you moving" (dashed, #2f9fb5), validated together. Chart across
+  distance (two lines, markers: scram, web, their lock range), your speed or your signature (one line).
+  "Show values" table, hover / tap tooltip with your webbed speed and painted signature.
+- Checks: `tools/independent_checks/check_damage_chart.py` (pyfa's projected.py + application.py unmodified on
+  oracle fits, presets and golden targets, prop on / off, 486-point grid), `tools/select_class_presets.py
+  --check`, both in the update-check chain; `tools/page_checks/damage_chart_check.py`.
 
 ## Phase 1 as built (v2026.10.14.34)
 
@@ -183,3 +237,100 @@ Erik 2026-10-23 ("yes please"): port it first, as Phase 2a, before the chart.
   `run_regression.mjs` (`tackled@<target>` / `painted@<target>`).
 - Found and fixed on the way: a scripted Warp Disrupt Field Generator (high slot) got the bubble's signature bloom
   and none of the script's cycle / capacitor change (LESSON #37).
+
+## Open: clearer chart labels (Erik, 2026-10-23, task)
+
+Erik: "have the graph be more clear about some of the labeling (like drone range). the vertical dotted lines on either
+side of the text are confusing." His screenshot (Nex Xen, Osprey Navy Issue vs his Legion, distance axis to 80 km) has
+two dotted lines near the right edge with one label, "their drone range", printed BETWEEN them.
+
+Cause, from the code (`dmgChartSvg`, marker loop): every marker (scram, web, their lock range, their drone range) is the
+same grey dotted line with a label on the top edge. A label goes right of its line, or left of it when it would run
+off the chart; a label that would overlap the previous one is DROPPED. There, "their lock range" (~63 km) lost its
+label, and "their drone range" (~75 km) was pushed to the left of its own line, so it sits between the two lines.
+
+To do (design first, then build):
+- every line keeps a visible label: stack colliding labels on two rows, or label at the line with a short leader,
+  never drop one;
+- tell the line kinds apart (e.g. tackle lines vs range limits), and say what each limit means in the hover;
+- check at the card's narrow widths and on a phone; add the case (two markers close together near the right edge)
+  to `tools/page_checks/damage_chart_check.py`.
+Also in the same screenshot: the card's "Adjust" column shows only its heading, no sliders -- reproduce and fix with it.
+
+## Fight setup mockup (2026-10-24): tabs, Keep at Range, your damage card, chart markers
+
+Erik asked for these together (2026-10-24): fight settings as tabs under the Matchup ("Orbit", "Approach"; "things that
+can tie directly into the damage application card's settings"), a "Keep at range" movement ("if one ship is faster than
+the other, and is outside of the target's scram/web range, it's possible for them to maintain a specified distance"),
+a Damage Application card in the My Ship Perspective, plus the chart labels above. Mockup: chart canvas page
+"Fight setup" (boards 1-5), all numbers from the engine (Hecate threat vs saved Vexor, as in matchup_strip_check.py).
+
+Proposed:
+- **Tabs under the Matchup (board 1):** "Hecate: Stopped", "Range: 4.4 km", "You: Orbit · 1,691 m/s"; each opens a
+  short menu. Option B (board 2): one strip under the board with a Change button. Option C (board 2b, added at Erik's
+  request): one strip joined to the board, three parts under the board's own three columns (threat / middle / my
+  ship), each opening the same menu. **DECIDED 2026-10-24: Option C** (Erik: "option C is my preference. i like that
+  quite a bit actually."). Phone: the three parts in a row under the board, each opening a sheet (board 3's pattern).
+- **DECIDED 2026-10-24 (Erik, after option C):** in-game names for both ships, and one shared fight for both
+  perspectives. Chart markers: Erik asked for A and B combined ("the shading really makes it clear when you're inside
+  of tackle range"; later maybe "different colors for different types of EWAR"; key uses "the same letter codes
+  that you use in the EWAR tab") -> board 5b: EWAR ranges shaded from 0 in the EWAR card's badge colour with its
+  badge letter on the line (T tackle #b9812f, D disrupt #1f9ab3, C cap drain #a66bd9, B burst cyan), darker where two
+  overlap; ranges that aren't EWAR (drone range, lock range) as numbered pins; one key under the chart. **5b chosen** (Erik: "5b is the one"), **then 5c on top** (board 5c, Erik: "i like it"):
+  - the tackle distances are printed in the x axis numbers, in the tackle colour; round ticks that would overlap
+    are dropped, and close labels are nudged apart;
+  - your engagement range is printed on the x axis, in white;
+  - the DPS at that range is printed on the y axis in each line's colour, with a dashed guide to the dot (one white
+    label when both lines give the same number).
+  - Numbers keep a set width and the chart keeps its frame while values change (subtext-plan.md rule 4).
+  All fight-setup decisions are made; build in phases next.
+- **In-game names everywhere:** You and the threat each get Stopped / Approach / Orbit / Keep at Range (today: You
+  Still / Straight at them / Orbiting; them They fly at you / They orbit you).
+- **One fight for both perspectives:** the Adjust panel edits the same settings on both cards.
+- **Your card (board 4):** "DPS applied to them", your scram/web/drone/lock markers, cyan edge.
+- **Chart markers (board 5):** A = numbered pins over each line + a key under the chart (recommended; two close
+  pins shift sideways, never dropped); B = your/their tackle shaded, ranges as lines + key.
+
+**Keep at Range in pyfa's inputs** (pyfa `_calcAngularSpeed`, graphs/data/fitDamageStats/calc/application.py:396:
+transversal = |atkSpeed·sin(atkAngle) − tgtSpeed·sin(tgtAngle)|; missiles and drones read the target's speed):
+the ship keeping range moves along the line of sight (angle 180°, adds no transversal) at the speed that holds the
+distance = the other ship's closing speed (its speed × cos of its angle), capped at its own top speed. If the other
+ship closes faster than that, range can't be held: the option is unavailable with the reason. It is also unavailable
+inside the other ship's web/scram range (they're slowed). Example from the engine: Hecate approaching at 1,613 m/s,
+Vexor top 1,691 m/s, Keep at Range at 15 km → 0 DPS applied to you (holds), 291 DPS applied to them, they last 26 s.
+Note the chart stays a snapshot at one distance (as pyfa's graph): Approach / Keep at Range describe how each ship
+moves at that distance, not a fight played out over time.
+
+**"Adjust" with no sliders: reproduced and found.** `dmgFill` opens Adjust only when `host.clientWidth >= 720` at
+fill time. A Pilot loss tab that is hidden when the card is drawn has clientWidth 0, so Adjust starts closed; on the
+wide layout its summary then reads like an empty column heading. Repro: two loss tabs, open the second at 1440 px.
+Fix: decide from the viewport when the card isn't laid out yet, or keep Adjust open on the wide layout regardless.
+
+## DONE v2026.10.14.45: "damage applied" wording (Erik, 2026-10-23, task)
+
+Built as mapped below, with the card names registry (roadmap/card-names.md); the chart labels (section above) are
+still open.
+
+Erik first asked to rename "Their damage on you" to "Damage Application"; after the wording boards (canvas
+"Their damage on you -- chart mockup", page "Damage application wording") he settled the convention: "changing phrases
+like 'Their damage on you' and 'Your damage on them' to 'Damage applied to you' and 'Damage applied to them' ... We're
+trying to communicate damage application so let's use the term." Do it with the chart-labels task (same card).
+
+Phrase map (proposed on the boards; Erik may still edit them there):
+| Where | Today | New |
+|---|---|---|
+| Card title (open and collapsed) | Their damage on you | Damage Application (Erik: "we're getting rid of 'Damage applied to you'"; the name comes from roadmap/card-names.md) |
+| Tag beside the title | vs your Legion · Jun 18, 2026 | applied to your Legion · Jun 18, 2026 (says whose damage, since the title no longer does) |
+| Tag, no ship saved | vs a typical cruiser | applied to a typical cruiser |
+| Headline | 230 DPS at 42.2 km, you orbiting ... | 230 DPS applied at 42.2 km, you orbiting ... |
+| Collapsed summary | 230 DPS on you at 42.2 km, orbiting ... | 230 DPS applied to you at 42.2 km, orbiting ... |
+| Collapsed, before numbers | their applied DPS on your ship, by distance | damage applied to you, by distance |
+| Scoreboard labels | DPS on you / DPS on them | DPS applied to you / DPS applied to them |
+| Scoreboard and picks notes | as set on "Their damage on you" | as set on "Damage Application" |
+| Weaknesses picks | 614 DPS on them / 474 DPS on you | 614 DPS applied to them / 474 DPS applied to you |
+| Firepower link | 230 DPS on you at 42.2 km ↑ | 230 DPS applied to you at 42.2 km ↑ |
+| DMG-01 title / where | No ship to chart their damage against / "Their damage on you" card | No ship to apply their damage to / "Damage Application" card |
+| "Show values" table column, chart's screen-reader label | Their DPS on you | DPS applied to you |
+| Firepower link / summary, no ship saved | 230 DPS on a typical cruiser ... | 230 DPS applied to a typical cruiser ... |
+A later chart of your weapons on them would be "Damage applied to them". Checks that test the old text
+(damage_chart_check, weakness_picks_check, matchup_strip_check docstrings) change with it; history docs keep the old name.

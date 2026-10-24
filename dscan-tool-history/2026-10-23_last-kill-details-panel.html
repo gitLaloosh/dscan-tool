@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — Last kill details in a panel</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Last kill details in a panel that floats over the page</h1>
+<p><span class="tag">Layout</span> 2026-10-23 &middot; <code>v2026.10.14.43</code> &rarr; <code>v2026.10.14.44</code>.</p>
+<p>Erik's screenshot of v.43 showed a problem: opening the last kill made its details expand inside the header line. The pilot name and hull dropdown slid down to the middle of a tall block, and the loss box was pushed far down the page. Option A of the "Last kill details" mockup (My Ship canvas) was chosen: "I like A".</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>A panel under the "Last kill" line.</b> It floats over the page, so the header and the loss box never move. It is shifted left when it would run off the right edge. Escape, a press outside it, or the pivot button close it.</li>
+<li><b>Inside the panel:</b>
+<ul>
+<li>"Vedmak killed a Curse" with the date and time;</li>
+<li>the pilot's own weapon with its damage tag (left out when zKillboard only names the hull as the weapon);</li>
+<li>"See &lt;pilot&gt;'s Vedmak losses" and "view on zKillboard";</li>
+<li>the other attackers as a table: pilot, hull, weapon and damage tag (the weapon's damage types, or "ammo" when it depends on the ammo).</li>
+</ul>
+In the table, the final blow comes first, then the attackers by damage done. Five rows show, then "&hellip; N more". The weapon reads "&mdash;" when zKillboard names no weapon or only the hull. The attackers are looked up once, the first time the panel opens. The old "Show / hide other attackers" button is gone.</li>
+<li><b>Phone:</b> the panel is a sheet across the bottom of the screen with a close button. Each attacker takes two lines.</li>
+<li>The hull dropdown also closes on Escape or a press outside it. One listener pair serves the whole page, so re-analyzing doesn't pile up listeners.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b>New <code>tools/page_checks/last_kill_check.py</code>:</b> 24 checks, 0 failures. zKillboard and ESI are mocked, with a last kill that has seven other attackers. It checks:
+<ul>
+<li>the header doesn't move and the panel floats over the loss box;</li>
+<li>the headline, time, weapon tag and both actions;</li>
+<li>the attacker order, the "&mdash;" weapons, the damage tags, and "&hellip; 2 more" and "Show fewer";</li>
+<li>Escape, a press outside and the pivot button;</li>
+<li>at 1000 and 700 px the panel stays on screen;</li>
+<li>the phone sheet.</li>
+</ul></li>
+<li><b><code>busy_check.py</code>:</b> the header checks pass with the panel.</li>
+<li><b>Everything else:</b> all other page checks pass, the regression suite passes and the 34-step update check passes. No calculation changed.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>A detail view that opens inside a flex row grows the whole row. That is how the header line ended up as tall as the attacker list. Details that can be long belong in a layer over the page (a panel, or a sheet on a phone), anchored to what opened them. Test the open state at a narrow width too, not only the closed one.</p>
+</body>
+</html>

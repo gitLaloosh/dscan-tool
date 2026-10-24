@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — The matchup scoreboard inside the loss, and a quieter Pilot header</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The matchup scoreboard inside the loss, and a quieter Pilot header</h1>
+<p><span class="tag">Layout</span><span class="tag">Fix</span> 2026-10-23 &middot; <code>v2026.10.14.42</code> &rarr; <code>v2026.10.14.43</code>.</p>
+<p>Erik's request: "the UI is just too busy with all of the hulls from their losses. the threat/my ship toggle is outside of the actual assessment window so it feels disjointed." I drew three options on the My Ship canvas, on a page called "Matchup placement". Erik picked option B, the scoreboard bar: "ok that looks better. do it".</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>One header line in the Pilot Analyzer:</b>
+<ul>
+<li>the pilot's name;</li>
+<li>a hull dropdown showing the hull on screen and its share of their losses ("Loki 2 of 5 losses &#9662;"), with their most-lost hulls inside;</li>
+<li>the last kill as one line ("Last kill Vedmak &middot; 9/1/2026 &middot; Curse &rsaquo;"), which opens to the full details, the zKillboard link, the "see their losses in that hull" button and the other attackers.</li>
+</ul>
+These replace three rows: the last-kill box, the hull chips, and the "pilot &mdash; hull &mdash; 3 most recent losses" line. When the hull was typed or picked from the last kill, it is named plainly instead of in a dropdown.</li>
+<li><b>An assessment box:</b> the loss tabs sit on a box that holds everything about that loss. The Fit Analyzer result is the same box without tabs, with the fit's name and "Set as my ship" on top.</li>
+<li><b>The scoreboard is now the threat / my ship switch</b>, inside each loss and inside the Fit Analyzer box, above the cards:
+<ul>
+<li>Threat half: their DPS on you, and how long they last.</li>
+<li>My-ship half: how long you last, and your DPS on them.</li>
+<li>Middle: who has the edge (who outlasts the other; "neither breaks" when both hold) and who is faster.</li>
+</ul>
+Click a half to show that ship below. The side you're on stays when you change loss tabs, and only the visible loss draws your ship. Changed numbers still turn amber (M6). On a phone the two halves sit side by side, with the edge and speed underneath, and the board stays at the top while you scroll.</li>
+<li><b>Bug fixed (v.42, from Erik's screenshot):</b> a probe launcher got a Weaknesses tile ("No ammo aboard"). The picks now skip the same weapon-like groups the engine skips (probe, bomb and interdiction sphere launchers, via <code>weaponCategoryFromGroup</code>).</li>
+<li><b>Unchanged:</b> no calculation or PYFA CORE section changed. The scoreboard shows the same numbers the strip did, plus the edge, which is just which of the two times is longer.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b><code>check_weakness_picks.py</code></b> now includes a Drake with a Sisters Expanded Probe Launcher. It gives 0 mismatches on v.43. On v.42 it fails with 270 differing values, because v.42 lists the probe launcher as a weapon type.</li>
+<li><b><code>matchup_strip_check.py</code>, rewritten for the scoreboard:</b> 20 checks, 0 failures.
+<ul>
+<li>The six values sit in board order, each the page's own <code>mysMatchup</code>.</li>
+<li>The edge matches the times shown. Switching the armor repairer off flips it to "edge: threat" (you last 21 s, they last 26 s) and turns it amber.</li>
+<li>The board sits inside the box, above the cards, and each loss has its own board.</li>
+<li>The side you're on stays across loss tabs, and the phone board is sticky.</li>
+</ul></li>
+<li><b><code>busy_check.py</code></b> now covers the header: the pilot, hull dropdown and last kill sit on one line, the last kill opens to its details and pivot button, and the dropdown lists the hulls. The hull-switch race test now runs from the dropdown, and the zKillboard mock has a last kill.</li>
+<li><b><code>my_ship_check.py</code> and <code>weakness_picks_check.py</code></b> were updated for the per-loss panels. In the Pilot Analyzer, the loss tabs now stay visible in the My ship view.</li>
+<li><b>Everything else:</b> all other page checks pass, the regression suite passes, and the 34-step update check passes.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When you add mockup boards to an existing canvas, it still opens on its first page. Erik saw the old boards and asked whether he had the wrong file. Set the canvas's <code>launch</code> to the new page, or name the page in your message. Before describing what a mockup shows, render the board files yourself and send the images too, so the user has the options even if the canvas view goes wrong (LESSONS_LEARNED #41).</p>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — Weaknesses: your guns / their guns (My Ship phase 2b)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:10px 0;} th,td{border:1px solid #ddd; padding:4px 10px; text-align:left; vertical-align:top;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Weaknesses flips with the switch: your guns, their guns</h1>
+<p><span class="tag">Feature</span> 2026-10-23 &middot; <code>v2026.10.14.41</code> &rarr; <code>v2026.10.14.42</code> &middot; My Ship phase 2b. Erik's decisions:
+<ul>
+<li>B1: rank only what the ship carries.</li>
+<li>B2: rank at the damage card's settings.</li>
+<li>B3: replace the generic tiles.</li>
+<li>B4: build from the existing mockup.</li>
+</ul>
+Before starting, the strip's placement went on the backlog (roadmap/my-ship-plan.md): Erik wants it merged into the threat / my ship toggle and moved inside the container of the fit or loss being assessed.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>With a ship saved and "Use in assessments" on,</b> the Weaknesses card follows the switch.
+<table><tr><th>View</th><th>Tag</th><th>Tiles</th></tr>
+<tr><td>Threat</td><td>your guns</td><td>"Your ammo and drones against the Hecate, best first": one tile per weapon type on your ship, plus "Your drones"</td></tr>
+<tr><td>My ship</td><td>their guns</td><td>"What the Hecate should use against you": one tile per weapon type on the threat, plus "Their drones"</td></tr></table>
+Each tile names the best charge (or drone flight) and gives the following details:
+<ul>
+<li>pyfa's applied DPS for it;</li>
+<li>how long the target lasts with it loaded;</li>
+<li>whether it is loaded or in cargo;</li>
+<li>the next three choices.</li>
+</ul></li>
+<li><b>What counts as a choice (B1):</b>
+<ul>
+<li>charges already loaded;</li>
+<li>charges in cargo that the weapon can load, by pyfa's rule (charge group, charge size, and volume against the weapon's capacity);</li>
+<li>each drone type in the bay, flown alone (as many as the bay, the 5-drone limit and the bandwidth allow).</li>
+</ul>
+Killmails list cargo, so threats from Pilot losses work the same way.</li>
+<li><b>Where (B2):</b> the fight the strip describes, at the "Their damage on you" card's range and movement, mirrored for your side. Moving a slider re-ranks the picks.</li>
+<li><b>How they're ordered:</b> by how long the target lasts with that charge loaded. This is the strip's time to kill: damage by type against their resists, shield, then armor, then hull, minus their reps while their capacitor lasts, with the rest of the fit as it is. Ties are broken by the time against their buffer alone, then by the charge already loaded. See the lesson below for why it isn't plain DPS.</li>
+<li><b>When the card stays as before:</b> with no ship saved, with "Use in assessments" off, or in the Fit Analyzer's "Viewing my ship" (there is no opponent there).</li>
+<li><b>Collapsed card:</b> the summary row shows the picks, e.g. "their Null S".</li>
+<li><b>Amber changes (M6) are unchanged.</b> The picks are not compared with your pasted fit. They do follow your module states: switching your Drone Damage Amplifier off changes your drone pick.</li>
+<li><b>New error code WP-01:</b> shown when a candidate run fails (in ERRORS.md).</li>
+<li><b>Recorded in DEVIATIONS.md</b> (section 3):
+<ul>
+<li>the order is the tool's, the DPS shown is pyfa's;</li>
+<li>drones are ranked one type at a time;</li>
+<li>webs and painters are the fit's current ones;</li>
+<li>fighters aren't ranked.</li>
+</ul></li>
+</ul>
+
+<h2>How it works</h2>
+<ul>
+<li><code>wpCandidates(f)</code> runs the engine once per "round". Round k loads each weapon type's k-th untried charge into every active copy, and flies the k-th drone type. Charges change only their own weapon and drones only themselves, so one run serves them all. The results are cached per estimate object: a module-state change makes a new estimate and a new set of runs, while a slider move only re-ranks. The Hecate / Vexor pair takes about 0.3 s in the browser.</li>
+<li><code>wpRank</code> evaluates each candidate with the strip's own functions (<code>mysFight</code>, <code>dmgTypedPoint</code>, <code>ttkSeconds</code>).</li>
+<li><code>wpFill</code> is called from <code>mysRenderStrip</code>, so every strip refresh refreshes the picks. That covers slider moves, the switch, loss tabs and state changes.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b>New <code>tools/independent_checks/check_weakness_picks.py</code>:</b> 0 mismatches.
+<ul>
+<li>Coverage: 9 pairs of constructed fits &times; 90 card settings &times; both sides, 7,830 candidate values. The fits cover spare ammo in cargo, wrong-size and wrong-type ammo, a weapon type with mixed and empty charges, drone bays with several types (bandwidth-limited Ogres, sentries) and a Tactical Destroyer.</li>
+<li>The candidates come from pyfa's <code>isValidCharge</code> rule. Each candidate gets its own pyfa oracle fit. pyfa's <code>projected.py</code> and <code>application.py</code> run unmodified, and the time to kill is check_matchup's independent rule.</li>
+<li>In the checked fights, a carried charge beat the loaded one 863 times, and their resists changed the pick from the highest-DPS charge 204 times.</li>
+<li>The check catches broken logic. Mutations give:
+<ul>
+<li>cargo ignored: 1,350 differing values;</li>
+<li>loaded stats used for every charge: 4,560;</li>
+<li>drone flight not limited: 360;</li>
+<li>mirror swapped: 1,610;</li>
+<li>sorted by raw DPS: 519;</li>
+<li>rest of the fit ignored: 3,782.</li>
+</ul></li>
+<li>In the update-check chain (now 34 steps).</li>
+</ul></li>
+<li><b>New <code>tools/page_checks/weakness_picks_check.py</code>:</b> 18 checks, 0 failures, at 1440 and 375 px. It checks:
+<ul>
+<li>the tags and the generic tiles being swapped;</li>
+<li>every tile against the page's own ranking;</li>
+<li>sitting still, the picks re-rank with range: Void M at 1 km (loaded), Null M at 9 km (in cargo);</li>
+<li>Drone Damage Amplifier off: amber on the cards, none in the picks, and the drone pick follows;</li>
+<li>the collapsed summary;</li>
+<li>"Use in assessments" off, and "Viewing my ship";</li>
+<li>Pilot loss tabs;</li>
+<li>the phone layout.</li>
+</ul></li>
+<li><b>Everything else:</b> all other page checks pass (layout, card widths, busy indicator, My Ship, damage card, matchup strip, missing charges, zKillboard outage). The regression suite passes, and the PYFA CORE lock is unchanged (no core section touched).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>Before you rank anything, write down what the ranking is for, and check that the number you sort by contains every input that decides it. The first build sorted charges by applied DPS, which is pyfa's damage-graph number, and that graph ignores the target's resists by default. A card called "Weaknesses" then picked the wrong damage type in 204 of the checked fights. Show pyfa's number, but sort by the quantity that answers the question. Then add a mutation that sorts by the naive number, and make sure the check fails on it (LESSONS_LEARNED #40).</p>
+</body>
+</html>

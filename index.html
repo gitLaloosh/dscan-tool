@@ -111,6 +111,11 @@
     --label-tracking:0.6px;
     --mono:'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
     --sans:'Space Grotesk', 'Segoe UI', Arial, sans-serif;
+    /* "Their damage on you" chart (v2026.10.14.36): you still (solid) / you moving (dashed). Validated with the
+       dataviz skill's validate_palette.js --mode dark on #12171c and #161c22: lightness band, chroma floor, CVD
+       dE 17.3 protan / 23.3 tritan, normal-vision dE 21.5, 3:1 contrast. The dash is the second cue. */
+    --dmg-still:#c2832e;
+    --dmg-move:#2f9fb5;
   }
   *{box-sizing:border-box;}
   body{
@@ -286,6 +291,20 @@
     min-width:0; overflow-wrap:anywhere; /* v.17: it sits in a flex row, so a long fit name has to be allowed to break */
   }
   .status.err{color:var(--danger);}
+  /* BUSY INDICATOR (v2026.10.14.39) -- see withBusy(). */
+  .busy-bar{position:sticky; top:8px; z-index:40; display:flex; align-items:center; flex-wrap:wrap; gap:4px 10px; margin:12px 0 0; padding:10px 14px;
+    background:var(--panel-2); border:1px solid var(--line); border-left:3px solid var(--cyan); border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.45);
+    font-size:13px; color:var(--heading); animation:busyIn 0s linear 0.25s both;}
+  .busy-bar[hidden]{display:none;}
+  @keyframes busyIn{from{visibility:hidden;} to{visibility:visible;}}
+  .busy-label{font-weight:600;}
+  .busy-detail{font-family:var(--mono); font-size:11.5px; color:var(--text-dim); min-width:0; overflow-wrap:anywhere;}
+  .busy-spin, .is-loading::after{display:inline-block; width:14px; height:14px; flex:none; border-radius:50%; border:2px solid var(--line); border-top-color:var(--cyan); animation:busySpin 0.8s linear infinite; box-sizing:border-box;}
+  .is-loading::after{content:""; width:12px; height:12px; margin-left:8px; vertical-align:-2px;}
+  @keyframes busySpin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion: reduce){ .busy-spin, .is-loading::after{animation:none; border-top-color:var(--line); border-color:var(--cyan);} }
+  .is-busy#fitResults, .is-busy#fitAnalyzerResults{opacity:0.45; pointer-events:none; transition:opacity 0.15s 0.25s;}
+  #tabPilot.is-busy .candidate-btn:not(.is-loading), #tabPilot.is-busy #lkPivotBtn:not(.is-loading){opacity:0.5; pointer-events:none;}
   /* Bug list #1: shown under the D-Scan status line when the paste is a fit. */
   .fit-hint{
     margin-top:10px;
@@ -419,15 +438,30 @@
     border-top:1px dashed var(--line);
     margin:16px 0;
   }
+  /* v2026.10.14.37 (card-layout-plan.md step 2): a tile row is a grid whose column count follows the CARD's
+     width (container queries; the column or band around each card is the container, .fit-layout > div), not
+     the screen's: 1 column, 2 from 300 px, a row of 3 from 520 px and of 4 from 640 px, and never a lone tile
+     at the end of a row (an odd last tile spans the row). The capacitor row has its own rule below. */
   .estimate-box{
-    display:flex; flex-wrap:wrap; gap:12px; margin:0 0 12px;
+    display:grid; grid-template-columns:minmax(0, 1fr); gap:12px; margin:0 0 12px;
   }
   .estimate-stat{
-    flex:1; min-width:140px; background:var(--line-soft); border-radius:3px;
+    min-width:0; background:var(--line-soft); border-radius:3px;
     padding:10px 12px; display:flex; flex-direction:column; gap:2px;
   }
+  @container (min-width: 300px){
+    .estimate-box{grid-template-columns:repeat(2, minmax(0, 1fr));}
+    .estimate-box:not(:has(> .estimate-stat > .cap-ring-row)) > .estimate-stat:last-child:nth-child(odd){grid-column:1 / -1;}
+  }
+  @container (min-width: 520px){
+    .estimate-box:not(:has(> .estimate-stat > .cap-ring-row)):has(> .estimate-stat:nth-child(3):last-child){grid-template-columns:repeat(3, minmax(0, 1fr));}
+    .estimate-box:not(:has(> .estimate-stat > .cap-ring-row)):has(> .estimate-stat:nth-child(3):last-child) > .estimate-stat:last-child{grid-column:auto;}
+  }
+  @container (min-width: 640px){
+    .estimate-box:not(:has(> .estimate-stat > .cap-ring-row)):has(> .estimate-stat:nth-child(4):last-child){grid-template-columns:repeat(4, minmax(0, 1fr));}
+  }
   .estimate-label{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking);}
-  .estimate-value{font-size:20px; font-weight:600; color:var(--heading); display:flex; align-items:center; gap:6px;}
+  .estimate-value{font-size:20px; font-weight:600; color:var(--heading); display:flex; align-items:center; gap:2px 6px; flex-wrap:wrap;} /* v.37: a badge wraps above the number in a narrow tile, the number stays whole */
   .estimate-sub{font-size:11px; color:var(--text-faint); line-height:1.4;}
 
   /* Tactical Destroyer Mode toggle (bug #17b) — a mode icon badge inline
@@ -459,7 +493,7 @@
      sides already use. Every other .fit-summary card keeps the amber bar. */
   .td-mode-card{border-left:1px solid var(--line);}
   .td-mode-row{
-    display:flex; align-items:center; gap:10px;
+    display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; /* v.37: the info link wraps in a narrow card */
     cursor:pointer; list-style:none; /* this row IS the <details> summary now */
   }
   .td-mode-row::-webkit-details-marker{display:none;}
@@ -1044,25 +1078,112 @@
      change can no longer move it (bug list: "Changing a module's state makes the page jump").
      Layout only: no number changes. */
   header.hero p, section.panel .sub{max-width:860px;}
-  .fit-layout{display:grid; grid-template-columns:minmax(0, 1fr); grid-template-areas:"beat" "fit" "stats"; gap:0 18px; align-items:start;}
+  /* v2026.10.14.37: grid-template-columns / -rows / -areas per width are written from FIT_LAYOUT
+     (fitLayoutGridCss, <style id="fitLayoutGrid">); the rules here are everything else. */
+  .fit-layout{display:grid; grid-template-columns:minmax(0, 1fr); gap:0 18px; align-items:start;}
   .fl-beat{grid-area:beat; min-width:0;}
   .fl-fit{grid-area:fit; min-width:0;}
   .fl-stats{grid-area:stats; min-width:0;}
+  /* v.37: "Their damage on you" is a band at the top (FIT_LAYOUT); its inner layout follows its own width
+     (container queries), so it works in one, two or three columns. */
+  .fl-dmg{grid-area:dmg; min-width:0;}
   .fit-layout .fit-summary{margin:0 0 14px;}
   .fit-layout > div > .fit-summary:first-child{margin-top:0;}
   @media (min-width: 900px){
-    .fit-layout{grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); grid-template-rows:auto 1fr; grid-template-areas:"fit beat" "fit stats";}
     .fl-fit{position:sticky; top:12px; max-height:calc(100vh - 24px); overflow-y:auto; overscroll-behavior:contain;}
     .fl-fit .fit-summary{margin-bottom:0;}
   }
-  @media (min-width: 1280px){
-    .fit-layout{grid-template-columns:minmax(300px, 340px) minmax(0, 1fr) minmax(380px, 460px); grid-template-rows:auto; grid-template-areas:"beat fit stats";}
-    /* the narrower side columns: tiles two to a row instead of four */
-    .fl-beat .rec-stat{flex-basis:120px; min-width:120px;}
+  /* v.37 (card-layout-plan.md step 2): every column and band is a size container, so each card lays out by
+     its own width wherever FIT_LAYOUT puts it (was: rules keyed to the screen width or to .fl-beat). */
+  .fit-layout > div{container-type:inline-size;}
+  /* a narrow card: recommendation tiles two to a row instead of one (was .fl-beat at 1280 px and up) */
+  @container (max-width: 399px){ .rec-stat{flex-basis:120px; min-width:120px;} }
+  /* Capacitor: one tile per row under 440 px (the net-rate explanation is long); then the state tile (ring +
+     caption) takes the whole row and the rest go two to a row; from 700 px one row, 2 : 1 : 1 (: 1 with drain
+     resistance). */
+  /* LESSON #39: the general tile rules above exclude this row with :not(:has(...)); an override here alone would
+     lose to them (a :has() rule takes its argument's specificity). */
+  .estimate-box:has(> .estimate-stat > .cap-ring-row){grid-template-columns:minmax(0, 1fr);}
+  .estimate-box:has(> .estimate-stat > .cap-ring-row) > .estimate-stat{grid-column:auto;}
+  @container (min-width: 440px){
+    .estimate-box:has(> .estimate-stat > .cap-ring-row){grid-template-columns:repeat(2, minmax(0, 1fr));}
+    .estimate-box:has(> .estimate-stat > .cap-ring-row) > .estimate-stat:has(> .cap-ring-row){grid-column:1 / -1;}
+    .estimate-box:has(> .estimate-stat > .cap-ring-row):has(> .estimate-stat:nth-child(4):last-child) > .estimate-stat:last-child{grid-column:1 / -1;}
   }
-  /* Narrow columns: a drone's name keeps its width (its numbers wrap under it instead), and the capacitor
-     state tile (ring + caption) takes a wider share than the plain number tiles. */
-  .estimate-stat:has(> .cap-ring-row){flex:2 1 240px;}
+  @container (min-width: 700px){
+    .estimate-box:has(> .estimate-stat > .cap-ring-row){grid-template-columns:2fr 1fr 1fr;}
+    .estimate-box:has(> .estimate-stat > .cap-ring-row):has(> .estimate-stat:nth-child(4):last-child){grid-template-columns:2fr 1fr 1fr 1fr;}
+    .estimate-box:has(> .estimate-stat > .cap-ring-row) > .estimate-stat{grid-column:auto !important;}
+  }
+
+  /* THEIR DAMAGE ON YOU (v2026.10.14.36, turret-application-plan.md Phase 2b; mockup canvas "Their damage on
+     you", Option B): a full-width card under the three columns. Presentation only. */
+  .dmg-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .dmg-top .cc-toggle{margin-bottom:0;}
+  .dmg-vs{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#8fdcea;}
+  .dmg-reset{margin-left:auto; min-height:32px; padding:0 12px; background:transparent; border:1px solid var(--line); border-radius:6px; color:var(--text); font:500 12px var(--sans); cursor:pointer;}
+  .dmg-reset:hover{border-color:var(--cyan);}
+  .dmg-body{margin-top:10px;}
+  .dmg-grid{display:grid; grid-template-columns:minmax(0, 1fr); gap:14px;}
+  @container (min-width: 720px){ .dmg-grid{grid-template-columns:minmax(0, 1fr) minmax(260px, 320px); align-items:start;} }
+  .dmg-main{min-width:0;}
+  .dmg-head{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; font-size:13px; color:var(--text);}
+  .dmg-big{font:600 26px var(--mono); color:var(--heading);}
+  .dmg-faint{color:var(--text-dim); font-size:12px;}
+  .dmg-legend{display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:6px; font-size:12px; color:var(--text);}
+  .dmg-key{display:inline-flex; align-items:center; gap:6px;}
+  .dmg-chart{position:relative; margin-top:4px; touch-action:pan-y;}
+  .dmg-svg{display:block; max-width:100%;}
+  .dmg-axis{stroke:#3a4752; stroke-width:1;}
+  .dmg-gridline{stroke:var(--line); stroke-width:1;}
+  .dmg-tick{fill:#9aa7b0; font:11px var(--mono);}
+  .dmg-marker{stroke:#5b6872; stroke-width:1; stroke-dasharray:2 3;}
+  .dmg-eng{stroke:#9aa7b0; stroke-width:1;}
+  .dmg-hover{stroke:var(--text-dim); stroke-width:1;}
+  .dmg-line{fill:none; stroke-width:2; stroke-linejoin:round;}
+  .dmg-line.dmg-still{stroke:var(--dmg-still);}
+  .dmg-line.dmg-move{stroke:var(--dmg-move); stroke-dasharray:5 3;}
+  .dmg-dot{stroke:var(--panel-2); stroke-width:2;}
+  .dmg-dot.dmg-still{fill:var(--dmg-still);}
+  .dmg-dot.dmg-move{fill:var(--dmg-move);}
+  .dmg-hit{fill:transparent; cursor:crosshair;}
+  .dmg-tip{position:absolute; top:0; width:230px; box-sizing:border-box; padding:8px 10px; background:var(--panel); border:1px solid #2c3842; border-radius:6px; font-size:12px; color:var(--text); pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,.4);}
+  .dmg-tip-t{font:600 12px var(--mono); color:var(--heading); margin-bottom:4px;}
+  .dmg-tip-r{display:flex; justify-content:space-between; gap:10px;}
+  .dmg-tip-n{margin-top:4px; color:var(--text-dim);}
+  .dmg-num{font-family:var(--mono); color:var(--heading);}
+  .dmg-note{margin:8px 0 0; font-size:12px; line-height:1.5; color:var(--text-dim);}
+  .dmg-values, .dmg-adjust{margin-top:10px;}
+  .dmg-values > summary, .dmg-adjust > summary{cursor:pointer; min-height:32px; display:flex; align-items:center; font:600 13px var(--sans); color:var(--heading);}
+  .dmg-adjust{border-top:1px solid var(--line); padding-top:4px;}
+  @container (min-width: 720px){ .dmg-adjust{margin-top:0; border-top:none; border-left:1px solid var(--line); padding:0 0 0 14px;} }
+  .dmg-table{width:100%; border-collapse:collapse; font-size:12px; margin-top:6px;}
+  .dmg-table th, .dmg-table td{padding:4px 8px; border-bottom:1px solid var(--line-soft); text-align:right;}
+  .dmg-table th:first-child, .dmg-table td:first-child{text-align:left;}
+  .dmg-table th{color:var(--text-dim); font-weight:500;}
+  .dmg-table td{font-family:var(--mono); color:var(--text);}
+  .dmg-controls{display:flex; flex-direction:column; gap:10px;}
+  .dmg-ctl{display:block; font-size:13px; color:var(--text);}
+  .dmg-ctl-row{display:flex; justify-content:space-between; gap:8px;}
+  .dmg-ctl input[type=range]{width:100%; accent-color:var(--cyan); margin:4px 0 0; height:28px;}
+  .dmg-ctl-sw{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:36px;}
+  .dmg-sw{appearance:none; -webkit-appearance:none; margin:0; width:38px; height:22px; border-radius:11px; background:var(--line); border:1px solid #2c3842; position:relative; flex:none; cursor:pointer;}
+  .dmg-sw::after{content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:var(--text-dim);}
+  .dmg-sw:checked{background:#1f6f80; border-color:var(--cyan);}
+  .dmg-sw:checked::after{left:18px; background:var(--heading);}
+  .dmg-sw:focus-visible, .dmg-seg button:focus-visible, .dmg-chip:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .dmg-seg{display:flex; margin-top:4px; border:1px solid #2c3842; border-radius:6px; overflow:hidden;}
+  .dmg-seg button{flex:1; min-height:36px; padding:0 6px; background:transparent; border:none; border-left:1px solid #2c3842; color:var(--text-dim); font:500 12px var(--sans); cursor:pointer;}
+  .dmg-seg button:first-child{border-left:none;}
+  .dmg-seg button[aria-pressed="true"]{background:#1a3a42; color:var(--heading); font-weight:600;}
+  .dmg-presets{display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding:10px 12px; background:var(--panel); border-radius:6px;}
+  .dmg-chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .dmg-chip{min-height:36px; padding:0 14px; background:transparent; border:1px solid #2c3842; border-radius:18px; color:var(--text); font:500 13px var(--sans); cursor:pointer;}
+  .dmg-chip[aria-pressed="true"]{background:#1a3a42; border-color:var(--cyan); color:var(--heading); font-weight:600;}
+  .dmg-link{align-self:flex-start; padding:0; min-height:28px; background:none; border:none; color:var(--cyan); font:500 12px var(--sans); cursor:pointer; text-align:left;}
+  .dmg-link:hover{color:#8fdcea; text-decoration:underline;}
+  .dmg-fp-slot:empty{display:none;}
+  .dmg-fp-slot{margin-top:8px;}
   /* FIT VIEW: RING / LIST (v2026.10.14.16, layout Phase 2) -- see fitRingHtml(). Sizes are percentages of
      the square ring, so it scales with its column. Tile state: border (cyan active, grey online, dashed
      faint off), dimmed icon when off, and the same dot as the list's state buttons in the corner, so
@@ -1199,21 +1320,154 @@
   .mys-banner-v{font-size:15px; font-weight:600; color:var(--heading); overflow-wrap:anywhere;}
   .mys-banner .mys-actions{margin:0;}
   .mys-banner .mys-actions button{min-height:36px; padding:0 14px;}
-  /* Threat <-> my ship switch (Proto / PhoneSwitch screens): amber = the threat, cyan = my ship. */
-  .mys-switch-host{margin-top:14px;}
+  /* v2026.10.14.43 PILOT HEADER + ASSESSMENT BOX (Erik picked option B of the "Matchup placement" mockup):
+     one header line (pilot, hull dropdown, last kill), loss tabs sitting on the box that holds everything about
+     that loss. The Fit Analyzer result is the same box without tabs. */
+  .pilot-head{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin-top:12px;}
+  .ph-name{font-size:18px; font-weight:600; color:var(--heading);}
+  .ph-name:empty, #fitCandidates:empty, #lastKillInfo:empty{display:none;}
+  .pilot-head > * + *:not(:empty){padding-left:14px; border-left:1px solid var(--line);}
+  .hull-static{font-size:14px; font-weight:600; color:var(--heading);}
+  .hull-pick{position:relative;}
+  .hull-pick-btn{display:flex; align-items:center; gap:8px; min-height:34px; padding:0 12px; background:var(--panel-2); border:1px solid var(--line); border-radius:6px;
+    color:var(--heading); font-size:14px; font-weight:600; cursor:pointer; list-style:none; user-select:none;}
+  .hull-pick-btn::-webkit-details-marker{display:none;}
+  .hull-pick-btn:hover, .hull-pick[open] .hull-pick-btn{border-color:var(--amber-dim);}
+  .hull-pick-btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .hp-freq{font:400 12px var(--mono); color:var(--text-dim);}
+  .hp-caret{color:var(--text-dim);}
+  .hull-menu{position:absolute; left:0; top:calc(100% + 4px); z-index:30; min-width:240px; padding:6px; display:flex; flex-direction:column; gap:4px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:6px; box-shadow:0 6px 16px rgba(0,0,0,0.45);}
+  .hull-menu .candidates-note{padding:4px 6px; margin:0;}
+  .hull-menu .candidate-btn{flex-direction:row; justify-content:space-between; align-items:baseline; width:100%; border:1px solid transparent; background:transparent; text-align:left;}
+  .hull-menu .candidate-btn:hover{background:var(--line-soft);}
+  .hull-menu .candidate-btn.active{border-color:var(--amber-dim);}
+  .lastkill.lk-compact{background:none; border:none; padding:0; margin:0; font-size:13px; line-height:1.5;}
+  .lk-sum{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; min-height:34px; align-content:center; cursor:pointer; list-style:none; color:var(--text);}
+  .lk-sum::-webkit-details-marker{display:none;}
+  .lk-sum .lk-label{margin:0;}
+  .lk-caret{color:var(--text-dim); transition:transform 0.15s;}
+  .lk-compact[open] .lk-caret{transform:rotate(90deg);}
+  .lk-sum:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  /* v2026.10.14.44 (option A of the "Last kill details" mockup): the details float under the line that opens them,
+     over the page, so the header and the loss box never move; a sheet from the bottom on a phone. */
+  #lastKillInfo{position:relative;}
+  .lk-pop .lk-sum{padding:0 10px; border:1px solid transparent; border-radius:6px;}
+  .lk-pop[open] .lk-sum{background:var(--panel-2); border-color:var(--line);}
+  .lk-pop[open] .lk-caret{transform:rotate(180deg);}
+  .lk-body{position:absolute; left:14px; top:calc(100% + 6px); z-index:40; width:600px; max-width:calc(100vw - 48px); max-height:70vh; overflow-y:auto; box-sizing:border-box;
+    background:var(--panel-2); border:1px solid #2c3842; border-radius:8px; box-shadow:0 10px 28px rgba(0,0,0,0.55); padding:16px 18px; line-height:1.5;}
+  .lk-head{display:flex; align-items:baseline; gap:12px;}
+  .lk-title{font-size:16px; color:var(--text); flex:1 1 auto; min-width:0;}
+  .lk-when{font:400 12px var(--mono); color:var(--text-dim); white-space:nowrap;}
+  button.lk-close{display:none; width:44px; height:44px; padding:0; border:none; background:transparent; color:var(--text-dim); font-size:20px; flex:none;}
+  .lk-weapon{margin-top:6px; font-size:13px; color:var(--text-dim);}
+  .lk-actions{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:12px;}
+  .lk-actions .lk-toggle{margin:0; min-height:32px; font-size:12.5px; border-color:#1f6f80;}
+  .lk-actions a{font-size:12.5px;}
+  .lk-att-head{display:flex; justify-content:space-between; align-items:baseline; margin-top:16px; padding-bottom:6px; border-bottom:1px solid var(--line);}
+  .lk-att-head .lk-label{margin:0;}
+  .lk-att-order{font-size:11.5px; color:var(--text-dim);}
+  .lk-att-row{display:grid; grid-template-columns:minmax(0, 150px) minmax(0, 100px) minmax(0, 1fr) auto; gap:10px; align-items:center; min-height:32px;
+    border-bottom:1px solid var(--line-soft); font-size:12.5px;}
+  .lk-att-row[hidden]{display:none;}
+  .lk-att-who{color:var(--heading); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lk-att-row.finalblow .lk-att-who{color:#e6b770;}
+  .lk-att-ship{color:var(--text);}
+  .lk-att-weapon{color:var(--text); min-width:0; overflow-wrap:anywhere;}
+  .lk-att-weapon.none{color:#5f6c75;}
+  .lk-fb{color:var(--text-dim);}
+  .lk-att-dmg{display:flex; gap:4px; justify-content:flex-end;}
+  .lk-dmg{padding:1px 6px; border-radius:3px; border:1px solid currentColor; font:600 10.5px var(--mono);}
+  .lk-dmg.em{color:#9fbfee;} .lk-dmg.therm{color:#ee9a8e;} .lk-dmg.kin{color:#cdb595;} .lk-dmg.exp{color:#e6c766;}
+  .lk-dmg.lk-ammo{color:var(--text-dim); border-color:var(--line);}
+  button.lk-more{margin-top:8px; min-height:30px; padding:0 8px; border:none; background:transparent; color:var(--cyan); font-size:12.5px;}
+  .lk-att-msg{font-size:12px; color:var(--text-dim); padding:8px 0 0;}
+  @media (max-width: 599px){
+    .lk-body{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; max-height:82vh; border-radius:14px 14px 0 0;
+      padding:8px 16px 24px; box-shadow:0 0 0 100vmax rgba(0,0,0,0.55);}
+    .lk-head{align-items:center;}
+    button.lk-close{display:block;}
+    .lk-head{flex-wrap:wrap;} .lk-when{order:3; flex-basis:100%;}
+    .lk-actions .lk-toggle{flex:1 1 auto; min-height:44px;}
+    .lk-att-row{display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; padding:8px 0;}
+    .lk-att-who{flex:1 0 calc(100% - 90px); order:1;} .lk-att-dmg{order:2; min-width:84px;}   /* fills the first line, so hull + weapon always start the second */
+    .lk-att-ship, .lk-att-weapon{order:3; font-size:12px; color:var(--text-dim);}
+    .lk-att-weapon{order:4;} .lk-att-weapon.none{display:none;}
+    .lk-att-ship:has(+ .lk-att-weapon:not(.none))::after{content:" ·";}
+    button.lk-more{min-height:44px;}
+  }
+  .lastkill:not(.lk-compact){background:none; border:none; padding:0; margin:0; font-size:12.5px; color:var(--text-dim);}
+  .assess-tabs{display:flex; align-items:flex-end; justify-content:space-between; gap:8px; margin-top:16px;}
+  .assess-tabs .subtabs-list{display:flex; gap:2px; flex-wrap:wrap;}
+  .assess-tabs .subtab-btn{min-height:38px; padding:0 18px; margin:0 0 -1px; position:relative; border:1px solid transparent; border-radius:8px 8px 0 0; color:var(--text-dim); font-size:13px;}
+  .assess-tabs .subtab-btn:hover{color:var(--text);}
+  .assess-tabs .subtab-btn.active{background:#0e1216; border-color:var(--line); border-bottom-color:#0e1216; color:var(--heading);}
+  .assess-tabs .fit-menu{margin-bottom:4px;}
+  .assess-box{background:#0e1216; border:1px solid var(--line); border-radius:0 10px 10px 10px; padding:16px;}
+  .assess-box.assess-solo{border-radius:10px; margin-top:14px;}
+  .assess-box .mys-fa-head{margin-bottom:12px;}
+  .assess-box .fit-layout-wrap{margin-top:0;}
+  /* The matchup scoreboard (mysBoardHtml): amber half = the threat, cyan half = my ship; the pressed half is the
+     ship the cards below describe. Numbers in the text colour, amber when they differ from your pasted fit (M6). */
+  .mys-switch-host{margin:0 0 14px;}
   .mys-switch-host[hidden]{display:none;}
-  .mys-switch{display:inline-flex; padding:4px; gap:4px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; max-width:100%; box-sizing:border-box;}
-  button.mys-sw-btn{display:flex; flex-direction:column; align-items:flex-start; justify-content:center; min-width:200px; max-width:340px; min-height:52px; padding:6px 14px;
-    background:transparent; border:1px solid transparent; border-radius:7px; color:var(--text); font-weight:600; letter-spacing:0; text-align:left;}
-  button.mys-sw-btn:hover{background:var(--panel); border-color:var(--line);}
-  .mys-sw-k{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); font-weight:600;}
-  .mys-sw-v{font-size:14px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  button.mys-sw-btn[aria-pressed="false"] .mys-sw-v{color:var(--text);}
-  button.mys-sw-btn.is-threat[aria-pressed="true"]{background:#2a2114; border-color:var(--amber); color:var(--heading);}
-  button.mys-sw-btn.is-threat[aria-pressed="true"] .mys-sw-k{color:var(--amber);}
-  button.mys-sw-btn.is-mine[aria-pressed="true"]{background:#0f2a31; border-color:var(--cyan); color:var(--heading);}
-  button.mys-sw-btn.is-mine[aria-pressed="true"] .mys-sw-k{color:var(--cyan);}
-  .mys-mine-view{border-top:2px solid var(--cyan); padding-top:12px; margin-top:12px;}
+  .mys-board{display:grid; grid-template-columns:minmax(0, 1fr) 190px minmax(0, 1fr); background:var(--bg); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  button.mys-half{display:flex; flex-direction:column; gap:8px; min-width:0; padding:12px 18px; background:transparent; border:none; border-radius:0; color:var(--text);
+    font-weight:400; letter-spacing:0; text-align:left; cursor:pointer; box-shadow:inset 0 3px 0 transparent;}
+  button.mys-half.is-threat{border-right:1px solid var(--line);}
+  button.mys-half.is-mine{border-left:1px solid var(--line); align-items:flex-end; text-align:right;}
+  button.mys-half:hover{background:var(--panel);}
+  button.mys-half:focus-visible{outline:2px solid var(--cyan); outline-offset:-2px;}
+  button.mys-half.is-threat[aria-pressed="true"]{background:#2a2114; box-shadow:inset 0 3px 0 var(--amber);}
+  button.mys-half.is-mine[aria-pressed="true"]{background:#0f2a31; box-shadow:inset 0 3px 0 var(--cyan);}
+  .mys-half-head{display:flex; align-items:baseline; gap:10px; min-width:0; max-width:100%;}
+  .mys-sw-k{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; font-weight:600; flex:none;}
+  .is-threat .mys-sw-k{color:var(--amber);}
+  .is-mine .mys-sw-k{color:var(--cyan);}
+  .mys-sw-v{font-size:15px; font-weight:600; color:var(--heading); min-width:0; overflow-wrap:anywhere;}
+  .mys-half-nums{display:flex; gap:28px; flex-wrap:wrap;}
+  .is-mine .mys-half-nums{justify-content:flex-end;}
+  .mys-cell{display:flex; flex-direction:column; min-width:0;}
+  .mys-cell-v{font:600 22px var(--mono); color:var(--heading); overflow-wrap:anywhere;}
+  .mys-cell-k{font-size:11.5px; color:var(--text-dim);}
+  .mys-cell.is-changed .mys-cell-v, .is-changed{color:var(--amber) !important;}
+  .mys-mid{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:8px 10px; text-align:center; color:var(--text-dim);}
+  .mys-mid .mys-cell-v{font:400 11.5px var(--sans); color:var(--text-dim);}
+  .mys-edge{padding:3px 10px; border-radius:10px; border:1px solid var(--line); color:var(--text-dim); font:600 11px var(--mono); white-space:nowrap;}
+  .mys-edge[data-edge="threat"]{background:#2a2114; border-color:var(--amber-dim); color:#e6b770;}
+  .mys-edge[data-edge="you"]{background:#0f2a31; border-color:#1f6f80; color:#8fdcea;}
+  .mys-strip-note{margin-top:6px; font-size:11.5px; color:var(--text-dim);}
+  .mys-strip-msg{font-size:12px; color:var(--text-dim); padding:8px 0;}
+  /* WEAKNESS PICKS (v2026.10.14.42, my-ship-plan.md phase 2b) -- see wpFill(). .mys-picks-on is set by the switch
+     on the threat / My ship view while a ship is saved and "Use in assessments" is on. Tags as in the mockup:
+     cyan "your guns" (threat view), amber "their guns" (My ship view). */
+  .weak-head{display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;}
+  .weak-head button.cc-toggle{margin:0;}
+  .wp-tag{display:none; padding:2px 8px; border-radius:10px; font:500 11px var(--mono); white-space:nowrap;}
+  .wp-tag-yours{background:#0f2a31; border:1px solid #1f6f80; color:#8fdcea;}
+  .wp-tag-theirs{background:#2a2114; border:1px solid #8a6529; color:#e6b770;}
+  .mys-threat-view.mys-picks-on .wp-tag-yours, .mys-mine-view.mys-picks-on .wp-tag-theirs{display:inline-block;}
+  .weak-picks, .wp-sum{display:none;}
+  .mys-picks-on .weak-picks{display:block;}
+  .mys-picks-on .weak-generic{display:none;}
+  .mys-picks-on button.cc-row[data-card="weak"] .cc-sum{display:none;}
+  .mys-picks-on .wp-sum{display:block; flex:1 1 auto; min-width:0; text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--text-dim); line-height:1.45;}   /* wraps like .cc-sum (LESSON #33) */
+  .wp-head{font-size:12px; color:var(--text-dim); margin:2px 0 8px;}
+  .wp-value{overflow-wrap:anywhere;}
+  .wp-stat.wp-none .wp-value{color:var(--text-dim);}
+  .wp-note{margin-top:8px; font-size:11px; color:var(--text-faint); line-height:1.5;}
+  .wp-msg{font-size:12px; color:var(--text-dim); padding:4px 0;}
+  @media (max-width: 899px){
+    .mys-board{grid-template-columns:minmax(0, 1fr) minmax(0, 1fr);}
+    .mys-mid{grid-column:1 / -1; grid-row:2; flex-direction:row; flex-wrap:wrap; gap:6px 10px; border-top:1px solid var(--line);}
+    .mys-mid-icon{display:none;}
+    button.mys-half.is-mine{border-left:none;}
+  }
+  /* v2026.10.14.46 (bug list #1, Erik: "maybe the amber card edges become that light blue that's at the top of the
+     'my ship' perspective but the blue line at the top goes away"): no bar over the My Ship Perspective; its cards
+     carry the cyan left edge instead of amber, the same colours as the two halves of the Matchup. */
+  .mys-mine-view .fit-summary, .mys-mine-view .ewar-card{border-left-color:var(--cyan);}
   .mys-mine-view[hidden], .mys-threat-view[hidden]{display:none;}
   .mys-mine-view .status{margin-top:0;}
   @media (max-width: 599px){
@@ -1226,10 +1480,19 @@
     .mys-backdrop{display:block; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,0.5);}
     .mys-backdrop[hidden]{display:none;}
     .mys-tiles{grid-template-columns:repeat(2, minmax(0, 1fr));}
-    .mys-switch-host{position:sticky; top:0; z-index:20; background:var(--bg); padding:8px 0; margin-top:8px;}
-    .mys-switch{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); width:100%;}
-    button.mys-sw-btn{min-width:0; max-width:none; min-height:48px; padding:4px 10px;}
+    .mys-switch-host{position:sticky; top:0; z-index:20; background:#0e1216; padding:6px 0; margin:-6px 0 10px;}
+    button.mys-half{padding:10px 12px; gap:6px; min-height:96px;}
+    .mys-half-head{flex-direction:column; gap:0;}
+    .is-mine .mys-half-head{align-items:flex-end;}
+    .mys-half-nums{gap:6px 14px;}
+    .is-mine .mys-cell{align-items:flex-end;}
+    .mys-cell-v{font-size:16px; white-space:nowrap;} .mys-cell-k{font-size:11px;}
+    #lastKillInfo{flex-basis:100%; padding-left:0; border-left:none;}
     .mys-sw-v{font-size:13px;}
+    .mys-strip-note{display:none;}
+    .assess-box{padding:10px;}
+    .assess-tabs .subtab-btn{padding:0 12px; min-height:44px;}
+    .hull-pick-btn, .lk-sum{min-height:44px;}
     .mys-banner .mys-actions{width:100%;}
     .mys-banner .mys-actions button{flex:1 1 0;}
   }
@@ -1252,7 +1515,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.35</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.47</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1314,8 +1577,13 @@
       <button type="button" id="refreshLossesBtn" style="border-color:var(--line); color:var(--text-dim);">Refresh losses</button>
     </div>
     <div class="status" id="fitStatus"></div>
-    <div id="lastKillInfo"></div>
-    <div id="fitCandidates"></div>
+    <!-- v2026.10.14.43 (Erik: "the UI is just too busy"): one header line -- pilot, hull dropdown, last kill -->
+    <div class="pilot-head">
+      <span class="ph-name" id="pilotHeadName"></span>
+      <div id="fitCandidates"></div>
+      <div id="lastKillInfo"></div>
+    </div>
+    <div class="busy-bar" id="pilotBusy" role="status" aria-live="polite" hidden><span class="busy-spin" aria-hidden="true"></span><span class="busy-label"></span><span class="busy-detail"></span></div>
     <div id="fitResults"></div>
   </section>
   </div>
@@ -1329,6 +1597,7 @@
       <button id="fitAnalyzerBtn">Analyze fit</button>
       <span class="status" id="fitAnalyzerStatus"></span>
     </div>
+    <div class="busy-bar" id="fitAnalyzerBusy" role="status" aria-live="polite" hidden><span class="busy-spin" aria-hidden="true"></span><span class="busy-label"></span><span class="busy-detail"></span></div>
     <div id="fitAnalyzerResults"></div>
   </section>
   </div>
@@ -1338,6 +1607,34 @@
 <script>
 const ESI = 'https://esi.evetech.net/latest';
 const ZKB = 'https://zkillboard.com/api';
+
+// CARD NAMES (v2026.10.14.45, roadmap/card-names.md). Erik 2026-10-23: "i see a recurring issue with not having
+// definitive names for each card. it results in subtext and explanatory info referencing card titles that should be
+// interchangeable." This is the one place a card or page part is named: titles, collapsed rows, notes and tooltips
+// call cardName(<key>); ERROR_CODES writes {card:key} (tools/gen_errors_md.py fills the name in). Renaming a card
+// is one edit here plus the same row in roadmap/card-names.md. tools/check_card_names.py (in the update-check chain)
+// fails when a name is typed by hand anywhere the page shows text. Title Case (Erik: "card names should use my
+// structure"). JSON on purpose, so the Python tools can read it.
+const CARD_NAMES = {
+ "weak": "Weaknesses",
+ "ewar": "EWAR / Misc",
+ "fp": "Firepower",
+ "rs": "Resistance",
+ "nav": "Navigation & Targeting",
+ "cp": "Capacitor",
+ "fit": "Fit",
+ "dmg": "Damage Application",
+ "board": "Matchup",
+ "lastkill": "Last Kill",
+ "perspective.threat": "Threat Perspective",
+ "perspective.mine": "My Ship Perspective",
+ "myshippage": "Viewing My Ship"
+};
+function cardName(key){
+  const n = CARD_NAMES[key];
+  if(!n) throw new Error(`cardName: no name for "${key}" (add it to CARD_NAMES and roadmap/card-names.md)`);
+  return n;
+}
 
 // v2026.10.14.32 (Erik: "should we have identifiers for custom error codes that point back to why we implemented
 // them?" -> "ok do it"): every error the page writes carries a short code at its end, e.g. "... (ZKB-01)". This
@@ -1402,7 +1699,7 @@ const ERROR_CODES = {
  },
  "ZKB-01": {
   "title": "zKillboard's API isn't answering",
-  "where": "Pilot Analyzer status line and last-kill box",
+  "where": "Pilot Analyzer status line and the {card:lastkill} line",
   "trigger": "A zKillboard API call took over 20 s (ZKB_TIMEOUT_MS) or answered 5xx. Since 2026-10-22 zKillboard queues API requests and answers 503 'API result unavailable' when its worker doesn't answer within 60 s. Further zKillboard calls fail at once for 60 s (ZKB_COOLDOWN_MS).",
   "check": "Open a zkillboard.com/api/... URL in a browser. If it shows 'API result unavailable', the problem is on zKillboard's side.",
   "why": "The page used to wait a full minute and then tell the user to check their network.",
@@ -1420,7 +1717,7 @@ const ERROR_CODES = {
  },
  "ZKB-03": {
   "title": "zKillboard kills lookup failed",
-  "where": "Pilot Analyzer last-kill box",
+  "where": "Pilot Analyzer, the {card:lastkill} line",
   "trigger": "zKillboard's /api/kills/characterID/... answered a non-5xx error status (5xx is ZKB-01).",
   "check": "The status in the message.",
   "why": "ARCH-4.",
@@ -1510,7 +1807,7 @@ const ERROR_CODES = {
  },
  "PILOT-07": {
   "title": "Pilot not among the attackers of their last kill",
-  "where": "Pilot Analyzer last-kill box",
+  "where": "Pilot Analyzer, the {card:lastkill} line",
   "trigger": "zKillboard's latest kill for the pilot doesn't list them as an attacker in ESI's killmail.",
   "check": "The killmail on zkillboard.com.",
   "why": "",
@@ -1546,7 +1843,7 @@ const ERROR_CODES = {
  },
  "FIT-04": {
   "title": "Some fit lines weren't recognized",
-  "where": "Fit Analyzer, note under the fit; My Ship panel and its views",
+  "where": "Fit Analyzer, note under the fit; My Ship panel, the \"{card:myshippage}\" page and the {card:perspective.mine}",
   "trigger": "Item names that don't resolve in ESI; they're left out of the fit.",
   "check": "Spelling, SKIN variants, renamed or removed items.",
   "why": "The rest of the fit is still analyzed; the note lists what was dropped.",
@@ -1564,12 +1861,30 @@ const ERROR_CODES = {
  },
  "MYSHIP-02": {
   "title": "The saved ship couldn't be loaded",
-  "where": "My Ship panel, the Fit Analyzer's \"Viewing my ship\" page, the threat / my ship switch",
+  "where": "My Ship panel, the Fit Analyzer's \"{card:myshippage}\" page, the {card:board}",
   "trigger": "The saved fit is recomputed from its EFT text when first needed, and that failed (the message includes the underlying code, e.g. ESI-01), or the stored copy is damaged.",
   "check": "The underlying code in the message. If an item was renamed or removed from the game, Replace the fit.",
   "why": "Recomputing on load lets tool fixes and game patches apply to a saved ship; when it fails, the saved text is kept rather than dropped.",
   "since": "v2026.10.14.33",
   "doc": "2026-10-23_my-ship-phase1.html"
+ },
+ "DMG-01": {
+  "title": "No ship to apply their damage to",
+  "where": "{card:dmg} card (Fit Analyzer and Pilot losses)",
+  "trigger": "The typical-class preset fit (a hull with its MWD, built from EFT text like any pasted fit) failed to build (the message includes the underlying code, e.g. ESI-01), or your saved ship's hull has no dogma effects, so pyfa's speed and signature can't be worked out for it.",
+  "check": "The underlying code in the message; pick another class, or set your own ship.",
+  "why": "The chart needs a real target fit (speed, signature, what their scram switches off); it says so rather than charting against made-up numbers.",
+  "since": "v2026.10.14.36",
+  "doc": "2026-10-23_their-damage-on-you-chart.html"
+ },
+ "WP-01": {
+  "title": "Weaknesses picks not worked out",
+  "where": "{card:weak} card, with My Ship saved and \"Use in assessments\" on (the {card:perspective.threat} and the {card:perspective.mine})",
+  "trigger": "Running the fit again with one of its carried charges or drone types failed, usually because a charge or drone type couldn't be fetched (the message includes the underlying code, e.g. ESI-01).",
+  "check": "The underlying code in the message; pick the other side on the {card:board} or move a slider to try again.",
+  "why": "The picks are pyfa numbers for each charge and drone aboard; when one can't be worked out the card says so instead of ranking what's left.",
+  "since": "v2026.10.14.42",
+  "doc": "2026-10-23_weaknesses-your-guns-their-guns.html"
  }
 };
 function withCode(text, code){ return code ? `${text} (${code})` : text; }
@@ -1634,6 +1949,12 @@ function describeEsiFailure(context, status, detail){
 }
 
 const DMG = ['em','therm','kin','exp'];
+// v2026.10.14.41 (My Ship phase 2a, time to kill by damage type): adds dps split by per-type weights w into acc.
+function addTypeDps(acc, dps, w){
+  const tot = DMG.reduce((s, d) => s + (w[d] || 0), 0);
+  for(const d of DMG) acc[d] = (acc[d] || 0) + (tot > 0 ? dps * (w[d] || 0) / tot : 0);
+  return acc;
+}
 const DMG_LABEL = {em:'EM', therm:'Therm', kin:'Kin', exp:'Exp'};
 const DMG_FULL = {em:'EM', therm:'Thermal', kin:'Kinetic', exp:'Explosive'};
 
@@ -2706,8 +3027,10 @@ function pyfaMissileMaxRangeData(maxVelocity, explosionDelayMs, shipRadius, mass
 // Each weapon w (estimate.application.weapons) carries pyfa's modified attributes: turret optimal / falloff /
 // trackingSpeed / optimalSigRadius; launcher missileMaxRangeData (lower, higher, higherChance) and the
 // charge's aoeCloudSize / aoeVelocity / aoeDamageReductionFactor; Vorton maxRange and the module's aoe
-// attributes; smartbomb range. Drones and fighters (getDroneMult / getFighterAbilityMult) are not ported yet
-// (D5); bombs and doomsdays deal no DPS in this tool. Checked by tools/independent_checks/check_application.py,
+// attributes; smartbomb range. Since v2026.10.14.40 (D5 drones, Erik 2026-10-23 "port drone application first")
+// also drones in space, getDroneMult (estimate.application.drones: each drone type's DPS and pyfa's modified
+// maxVelocity / radius / Drone.maxRange / Drone.falloff / trackingSpeed / optimalSigRadius, from the PROJ_DRONE_*
+// handler table). Fighters (getFighterAbilityMult) are not ported yet; bombs and doomsdays deal no DPS here. Checked by tools/independent_checks/check_application.py,
 // which runs pyfa's own getApplicationPerKey, lifted unmodified, on the same inputs over a grid.
 function pyfaCalculateRangeFactor(srcOptimalRange, srcFalloffRange, distance, restrictedRange = true){
   if(distance === null || distance === undefined) return 1;
@@ -2797,11 +3120,36 @@ function pyfaApplicationMult(w, p){
   // Ensure consistent results - round off a little to avoid float errors
   return pyfaFloatUnerr(mult);
 }
-// pyfa applyDamage(): sum of each weapon's DPS x its multiplier (graph setting 'ignoreResists' defaults to
-// true, so no target resists here).
+// getApplicationPerKey's drone loop + getDroneMult (v2026.10.14.40). d = {dps, speed, radius, optimal, falloff,
+// tracking, optimalSigRadius} (one entry per drone type in space, its DPS for all of them). Graph settings
+// 'ignoreDCR' (default false) and 'mobileDroneMode' (default auto) come in p (ignoreDCR, droneMode).
+function pyfaGetDroneMult(app, d, p){
+  const dist = p.distance, dcr = (app.projected && app.projected.droneControlRange) || 0;
+  const inLockRange = (dist === null || dist === undefined) || !!p.ignoreLockRange || dist <= app.lockRange;
+  const inDroneRange = (dist === null || dist === undefined) || !!p.ignoreDCR || dist <= dcr;
+  if(!(inLockRange && inDroneRange)) return 0;
+  // (getDroneMult repeats the same two range checks first)
+  const mode = p.droneMode || GRAPH_DRONE_MODE.auto;
+  let cth;
+  // Hard to simulate drone behavior, so assume chance to hit is 1 for mobile drones which catch up with target
+  if(d.speed > 1 && ((mode === GRAPH_DRONE_MODE.auto && d.speed >= p.tgtSpeed) || mode === GRAPH_DRONE_MODE.followTarget)){
+    cth = 1;
+  }else{
+    // Otherwise put the drone into center of the ship, move it at its max speed or ship's speed (whichever is
+    // lower) towards direction of attacking ship and see how well it projects. As distance is ship surface to
+    // ship surface, we adjust it according to attacker ship's radiuses to have drone surface to ship surface distance
+    const cthDistance = (dist === null || dist === undefined) ? null : dist + app.radius - d.radius;
+    cth = pyfaCalcTurretChanceToHit(Math.min(p.atkSpeed, d.speed), p.atkAngle, d.radius, d.optimal || 0, d.falloff || 0, d.tracking,
+      d.optimalSigRadius, cthDistance, p.tgtSpeed, p.tgtAngle, p.tgtRadius, p.tgtSigRadius);
+  }
+  return pyfaFloatUnerr(pyfaCalcTurretMult(cth));
+}
+// pyfa applyDamage(): sum of each weapon's and drone's DPS x its multiplier (graph setting 'ignoreResists'
+// defaults to true, so no target resists here).
 function pyfaAppliedDps(app, p){
   let total = 0;
   for(const w of app.weapons) total += w.dps * pyfaApplicationMult(w, Object.assign({atkRadius: app.radius, lockRange: app.lockRange}, p));
+  for(const d of app.drones || []) total += d.dps * pyfaGetDroneMult(app, d, p);
   return total;
 }
 // ==== PYFA CORE END application ====
@@ -2825,10 +3173,10 @@ function pyfaAppliedDps(app, p){
 const PROJ_TARGET_EFFECTS = {"6581":[["disallowOffensiveModifiers","force",872,1,0.0,null]],"6658":[["targetPainterResistance","boost",2424,1,0.0,null]],"8517":[["stasisWebifierResistance","boost",3422,1,0.0,null]],"12192":[["stasisWebifierResistance","boost",729,5,0.0,null]],"12193":[["stasisWebifierResistance","boost",748,5,0.0,null]]};
 const PROJ_TARGET_ATTRS = {"disallowOffensiveModifiers":872,"stasisWebifierResistance":2115,"targetPainterResistance":2114};
 const PROJ_TARGET_DEFAULTS = {"872":0.0,"2115":1.0,"2114":1.0};
-const PROJ_DRONE_EFFECTS = {"2013":[["maxVelocity","boost",591,1,0.0,"default",[3436],null]],"booster:2013":[["maxVelocity","boost",591,1,0.0,null,[3436],null]],"implant:2013":[["maxVelocity","boost",591,1,0.0,null,[3436],null]],"2014":[["maxRange","boost",294,1,0.0,"default",[3436],null]],"4575":[["maxVelocity","boost",2584,1,0.0,"default",[3436],null]],"4579":[["speedFactor","boost",1619,1,0.0,null,[12305],null]],"5165":[["maxVelocity","boost",793,1,0.0,null,[3436],null]],"5212":[["maxVelocity","boost",1864,1,0.0,null,null,null]],"5428":[["maxRange","boost",500,5,0.0,null,[3436],null]],"5555":[["maxVelocity","boost",486,5,5.0,null,[3441],null]],"6176":[["maxVelocity","boost",2043,1,0.0,null,[3436],null]],"6555":[["maxVelocity","boost",20,1,1.0,"default",[3436],null]],"6557":[["falloff","boost",349,1,0.0,"default",[3436],null],["maxRange","boost",351,1,0.0,"default",[3436],null]],"6559":[["falloff","boost",349,1,0.0,"default",[3436],null],["maxRange","boost",351,1,0.0,"default",[3436],null]],"implant:6664":[["maxRange","boost",294,1,0.0,null,[3436],null]],"booster:6667":[["maxVelocity","boost",2603,1,0.0,null,[3436],null]],"implant:6667":[["maxVelocity","boost",2603,1,0.0,null,[3436],null]],"6670":[["maxRange","boost",294,1,0.0,"default",[3436],null]],"6671":[["maxVelocity","boost",591,1,0.0,"default",[3436],null]],"6925":[["maxVelocity","boost",1521,5,0.0,null,[3436],null]],"implant:8024":[["maxRange","boost",3029,1,0.0,null,[3436],null],["falloff","boost",3029,1,0.0,null,[3436],null]],"8071":[["maxRange","boost",1000,5,0.0,null,[3436],null]],"8119":[["maxVelocity","boost",2584,1,0.0,"default",[3436],null]],"8154":[["maxRange","boost",1258,5,0.0,null,[3436],null]],"booster:8479":[["maxRange","boost",294,1,0.0,null,[3436],null],["falloff","boost",349,1,0.0,null,[3436],null]],"11060":[["speedFactor","boost",5046,5,0.0,null,[3436],null]],"11518":[["maxVelocity","boost",5318,1,0.0,null,[3435],null]],"11519":[["speedFactor","boost",5319,1,0.0,null,[3436],null]],"12566":[["maxVelocity","boost",2303,1,0.0,null,[3436],null]],"12810":[["speedFactor","boost",738,5,0.0,null,[3436],null]]};
+const PROJ_DRONE_EFFECTS = {"2013":[["maxVelocity","boost",591,1,0.0,"default",[3436],null]],"booster:2013":[["maxVelocity","boost",591,1,0.0,null,[3436],null]],"implant:2013":[["maxVelocity","boost",591,1,0.0,null,[3436],null]],"2014":[["maxRange","boost",294,1,0.0,"default",[3436],null]],"4575":[["maxVelocity","boost",2584,1,0.0,"default",[3436],null]],"4579":[["speedFactor","boost",1619,1,0.0,null,[12305],null]],"5111":[["trackingSpeed","boost",462,5,0.0,null,[3436],null]],"5165":[["maxVelocity","boost",793,1,0.0,null,[3436],null]],"5212":[["maxVelocity","boost",1864,1,0.0,null,null,null]],"5427":[["trackingSpeed","boost",500,5,0.0,null,[3436],null]],"5428":[["maxRange","boost",500,5,0.0,null,[3436],null]],"5555":[["maxVelocity","boost",486,5,5.0,null,[3441],null]],"5556":[["trackingSpeed","boost",486,5,5.0,null,[3441],null]],"5557":[["maxRange","boost",693,5,0.0,null,[23594],null]],"5558":[["trackingSpeed","boost",693,5,0.0,null,[23594],null]],"6176":[["maxVelocity","boost",2043,1,0.0,null,[3436],null]],"6555":[["maxVelocity","boost",20,1,1.0,"default",[3436],null]],"6557":[["trackingSpeed","boost",767,1,0.0,"default",[3436],null],["falloff","boost",349,1,0.0,"default",[3436],null],["maxRange","boost",351,1,0.0,"default",[3436],null]],"6559":[["falloff","boost",349,1,0.0,"default",[3436],null],["maxRange","boost",351,1,0.0,"default",[3436],null],["trackingSpeed","boost",767,1,0.0,"default",[3436],null]],"implant:6664":[["maxRange","boost",294,1,0.0,null,[3436],null]],"booster:6667":[["maxVelocity","boost",2603,1,0.0,null,[3436],null]],"implant:6667":[["maxVelocity","boost",2603,1,0.0,null,[3436],null]],"6670":[["maxRange","boost",294,1,0.0,"default",[3436],null]],"6671":[["maxVelocity","boost",591,1,0.0,"default",[3436],null]],"6925":[["maxVelocity","boost",1521,5,0.0,null,[3436],null],["trackingSpeed","boost",1521,5,0.0,null,[3436],null]],"7230":[["trackingSpeed","boost",658,5,0.0,null,[3436],null]],"implant:8023":[["trackingSpeed","boost",3028,1,0.0,null,[3436],null]],"implant:8024":[["maxRange","boost",3029,1,0.0,null,[3436],null],["falloff","boost",3029,1,0.0,null,[3436],null]],"8071":[["maxRange","boost",1000,5,0.0,null,[3436],null]],"8119":[["maxVelocity","boost",2584,1,0.0,"default",[3436],null]],"8154":[["maxRange","boost",1258,5,0.0,null,[3436],null],["trackingSpeed","boost",1258,5,0.0,null,[3436],null]],"booster:8477":[["trackingSpeed","boost",3353,1,0.0,null,[3436],null]],"booster:8479":[["maxRange","boost",294,1,0.0,null,[3436],null],["falloff","boost",349,1,0.0,null,[3436],null]],"11060":[["speedFactor","boost",5046,5,0.0,null,[3436],null]],"11419":[["trackingSpeed","boost",561,5,0.0,null,[3436],null]],"11518":[["maxVelocity","boost",5318,1,0.0,null,[3435],null]],"11519":[["speedFactor","boost",5319,1,0.0,null,[3436],null]],"12252":[["trackingSpeed","boost",999,5,0.0,null,[3441,24241,33699],null]],"12253":[["trackingSpeed","boost",5772,5,0.0,null,[23594],null]],"12565":[["trackingSpeed","boost",747,5,0.0,null,[3436],null]],"12566":[["maxVelocity","boost",2303,1,0.0,null,[3436],null]],"12810":[["speedFactor","boost",738,5,0.0,null,[3436],null]],"13026":[["trackingSpeed","boost",586,5,0.0,null,[3436],null]]};
 const PROJ_DRONE_SKILL_ROWS = [[12305,"maxVelocity","boost",25.0,null,[3436],null],[23606,"maxRange","boost",25.0,null,[3436],null]];
-const PROJ_DRONE_ATTRS = {"speedFactor":20,"signatureRadiusBonus":554,"maxVelocity":37,"shieldTransferRange":87,"powerTransferRange":91,"empFieldRange":99,"ecmBurstRange":142,"maxRange":54,"ECMRangeOptimal":936,"falloff":158,"falloffEffectiveness":2044,"radius":162};
-const PROJ_DRONE_DEFAULTS = {"20":1.0,"554":0.0,"37":0.0,"87":0.0,"91":0.0,"99":0.0,"142":0.0,"54":0.0,"936":0.0,"158":1.0,"2044":0.0,"162":0.0};
+const PROJ_DRONE_ATTRS = {"speedFactor":20,"signatureRadiusBonus":554,"maxVelocity":37,"shieldTransferRange":87,"powerTransferRange":91,"empFieldRange":99,"ecmBurstRange":142,"maxRange":54,"ECMRangeOptimal":936,"falloff":158,"falloffEffectiveness":2044,"radius":162,"trackingSpeed":160,"optimalSigRadius":620};
+const PROJ_DRONE_DEFAULTS = {"20":1.0,"554":0.0,"37":0.0,"87":0.0,"91":0.0,"99":0.0,"142":0.0,"54":0.0,"936":0.0,"158":1.0,"2044":0.0,"162":0.0,"160":0.0,"620":1000.0};
 // cache/projected.py: the effects that make a module a web or a painter (by effect id, SDE)
 const PROJ_WEB_EFFECTS = [6426, 6682];          // remoteWebifierFalloff, structureModuleEffectStasisWebifier
 const PROJ_TP_EFFECTS = [6425, 6683];           // remoteTargetPaintFalloff, structureModuleEffectTargetPainter
@@ -6476,6 +6824,44 @@ async function clearDscanCache(){
 function setStatus(el, msg, isErr){
   el.textContent = msg || '';
   el.classList.toggle('err', !!isErr);
+  const bar = el.id && BUSY_BARS && BUSY_BARS[el.id] ? document.getElementById(BUSY_BARS[el.id].bar) : null;   // v2026.10.14.39
+  if(bar && !bar.hidden) bar.querySelector('.busy-detail').textContent = isErr ? '' : (msg || '');
+}
+
+// ==== BUSY INDICATOR (v2026.10.14.39; todo-inbox 2026-10-23: "add a thinking or loading visual to display while
+// waiting on the results of an api call. sometimes, switching between hull type or fits on the pilot analyzer tab,
+// cards take time to update and it looks like nothing happened after a click.") ====
+// While a run waits on zKillboard / ESI: a bar stays in view above the results (sticky) with a spinner, what is
+// loading and the status line's current step; the old results dim and can't be clicked; the button that started it
+// shows a spinner; the other run buttons are disabled, so a second click can't start a run that races the first
+// (before this, two hull buttons clicked in turn could finish in the wrong order and show the first hull).
+// Presentation only. The bar waits 250 ms before it appears, so a cached answer doesn't flash it.
+var BUSY_BARS = { // var, not const: setStatus() may run before this line (no temporal dead zone)
+  fitStatus: {bar: 'pilotBusy', results: 'fitResults', scope: 'tabPilot'},
+  fitAnalyzerStatus: {bar: 'fitAnalyzerBusy', results: 'fitAnalyzerResults', scope: 'tabFit'}
+};
+const busyRuns = {}; // status id -> true while a run is in flight
+function isBusy(statusId){ return !!busyRuns[statusId]; }
+async function withBusy(statusId, trigger, label, fn){
+  const cfg = BUSY_BARS[statusId];
+  if(busyRuns[statusId]) return;           // a run is already going: ignore the extra click
+  busyRuns[statusId] = true;
+  const bar = document.getElementById(cfg.bar), res = document.getElementById(cfg.results), scope = document.getElementById(cfg.scope);
+  const status = document.getElementById(statusId);
+  bar.querySelector('.busy-label').textContent = label;
+  bar.querySelector('.busy-detail').textContent = status && !status.classList.contains('err') ? status.textContent : '';
+  bar.hidden = false;
+  scope.classList.add('is-busy');
+  res.classList.add('is-busy'); res.setAttribute('aria-busy', 'true');
+  if(trigger){ trigger.classList.add('is-loading'); trigger.setAttribute('aria-busy', 'true'); }
+  try{ return await fn(); }
+  finally{
+    busyRuns[statusId] = false;
+    bar.hidden = true;
+    scope.classList.remove('is-busy');
+    res.classList.remove('is-busy'); res.removeAttribute('aria-busy');
+    if(trigger){ trigger.classList.remove('is-loading'); trigger.removeAttribute('aria-busy'); }
+  }
 }
 
 function parseDscan(text){
@@ -7360,8 +7746,9 @@ document.getElementById('refreshLossesBtn').addEventListener('click', async () =
   const statusEl = document.getElementById('fitStatus');
   if(!lastFitRun){ setStatus(statusEl, 'Run a pilot analysis first.', true); return; }
   const btn = document.getElementById('refreshLossesBtn');
+  if(isBusy('fitStatus')) return;
   btn.disabled = true;
-  try{
+  await withBusy('fitStatus', btn, 'Refreshing losses from zKillboard…', async () => { try{
     // forceRefresh=true: bypasses lossStubCache for exactly the lookup
     // currently on screen (speculate-and-rank, or one specific hull) and
     // re-fetches it live from zKillboard, picking up any loss that landed
@@ -7374,7 +7761,7 @@ document.getElementById('refreshLossesBtn').addEventListener('click', async () =
     setStatus(statusEl, withCode('Error: ' + e.message + '.', errorCodeOf(e)), true);
   }finally{
     btn.disabled = false;
-  }
+  } });
 });
 
 let currentPilotName = '';
@@ -7683,11 +8070,11 @@ function resistanceCardHtml(f, estimate){
         <div class="repairs-note">Break Point = DPS sustained to outpace repair/regen (hover a value for its breakdown). Assumes max-trained Repair Systems / Capital Repair Systems (armor/hull rep cycle time) and max-trained Shield Operation (shield passive regen); rep cycle times also include fitted rigs and hull bonuses. A Shield Booster's own output per cycle doesn't train up at all. A dash means that layer has no repair module fitted at all (pure buffer), not a missing calculation.</div>
       </div>`;
 
-  if(!cardIsOpen(f, 'rs')) return collapsedCardHtml('rs', 'Resistance', `${estimate.totalHP.toLocaleString()} EHP`);
+  if(!cardIsOpen(f, 'rs')) return collapsedCardHtml('rs', `${estimate.totalHP.toLocaleString()} EHP`);
   return `
     <div class="fit-summary">
       <div class="resistance-head">
-        ${cardLabelHtml('rs', 'Resistance', 'fit-subsection-label', 'margin:0;')}
+        ${cardLabelHtml('rs', 'fit-subsection-label', 'margin:0;')}
         <span class="resistance-total">${f.tacticalModes ? `<span class="td-mode-badge" title="${TACTICAL_MODE_LABEL[f.activeMode]} active">${tacticalModeIconSvg(f.activeMode)}</span> ` : ''}Total <b>${estimate.totalHP.toLocaleString()} ehp</b></span>
       </div>
       <div class="resistance-collabels">
@@ -7817,12 +8204,12 @@ function ewarCardHtml(f, estimate){
   const typeCount = new Set(sorted.map(m => m.name)).size + miscSorted.length; // v.11: a type listed twice (two scripts) counts once
   if(!cardIsOpen(f, 'ewar')){
     const names = [...sorted, ...miscSorted].map(m => m.name + (m.qty > 1 ? ' ×' + m.qty : ''));
-    return collapsedCardHtml('ewar', 'EWAR / Misc', [...new Set(names)].join(' · '), 'ewar-card');
+    return collapsedCardHtml('ewar', [...new Set(names)].join(' · '), 'ewar-card');
   }
   return `
     <div class="ewar-card">
       <div class="ewar-card-header">
-        ${cardLabelHtml('ewar', 'EWAR / Misc', 'ewar-card-title')}
+        ${cardLabelHtml('ewar', 'ewar-card-title')}
         <span class="ewar-card-count">${moduleCount} module${moduleCount > 1 ? 's' : ''}${typeCount > 1 ? `, ${typeCount} types` : ''}</span>
       </div>
       <div class="ewar-chip-row">${chipsHtml}${miscChipsHtml}</div>
@@ -7926,10 +8313,10 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
       </div>`).join('');
   const stripHtml = (weaponRowsHtml || droneRowsHtml) ? `<div class="firepower-strip">${weaponRowsHtml}${droneRowsHtml}</div>` : '';
 
-  if(!cardIsOpen(f, 'fp')) return collapsedCardHtml('fp', 'Firepower', `${totalDisplay} DPS · ${estimate.volleyFixed.toLocaleString()} volley`);
+  if(!cardIsOpen(f, 'fp')) return collapsedCardHtml('fp', `${totalDisplay} DPS · ${estimate.volleyFixed.toLocaleString()} volley`);
   return `
     <div class="fit-summary">
-      ${cardLabelHtml('fp', 'Firepower')}
+      ${cardLabelHtml('fp')}
       <div class="estimate-box">
         <div class="estimate-stat">
           <span class="estimate-label">Total DPS</span>
@@ -7951,6 +8338,7 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
           <span class="estimate-sub">one-shot damage from every confirmed weapon/drone/fighter firing at once, not sustained over time</span>
         </div>
       </div>
+      <div class="dmg-fp-slot"></div>
       ${stripHtml}
       ${hasCargoGuess ? `
       <div class="ammo-dps-list">
@@ -8038,13 +8426,13 @@ function navCardHtml(f, estimate){
   if(alignHasBoost) alignEntries.push({val: estimate.alignTime.boosted, html: `<span class="estimate-sub">${navModBadgeHtml(estimate.alignTime.propModType)}${estimate.alignTime.boosted.toFixed(1)} s with prop mod on</span>`});
   if(alignHasSecondary) alignEntries.push({val: estimate.alignTime.secondaryBoosted, html: `<span class="estimate-sub">${navModBadgeHtml(estimate.alignTime.secondaryPropModType)}${estimate.alignTime.secondaryBoosted.toFixed(1)} s also fitted</span>`});
   alignEntries.sort((a, b) => a.val - b.val);
-  if(!cardIsOpen(f, 'nv')){
+  if(!cardIsOpen(f, 'nav')){
     const spd = speedHasBoost ? estimate.speed.boosted : estimate.speed.cruising;
-    return collapsedCardHtml('nv', 'Navigation & targeting', `${spd.toLocaleString()} m/s · align ${estimate.alignTime.base.toFixed(1)} s · ${kmText(estimate.exact ? estimate.exact.targetingRange : estimate.targetingRange)} km`);
+    return collapsedCardHtml('nav', `${spd.toLocaleString()} m/s · align ${estimate.alignTime.base.toFixed(1)} s · ${kmText(estimate.exact ? estimate.exact.targetingRange : estimate.targetingRange)} km`);
   }
   return `
     <div class="fit-summary">
-      ${cardLabelHtml('nv', 'Navigation & targeting')}
+      ${cardLabelHtml('nav')}
       <div class="estimate-box">
         <div class="estimate-stat">
           <span class="estimate-label">Speed</span>
@@ -8231,10 +8619,10 @@ function capacitorCardHtml(f, estimate){
   const capRingTitle = `pyfa capacitor simulation (6 h, modules staggered, Capacitor Boosters injecting when needed)${displayResult.eveStablePct !== null && displayResult.eveStablePct !== undefined ? ` — the in-game fitting window's formula (pyfa's "EVE stability value") gives ${displayResult.eveStablePct > 0 ? displayResult.eveStablePct + '%' : 'unstable'}` : ''}`;
   const netSub = `${cap.peakRechargeRate.toLocaleString()} GJ/s peak recharge − ${displayActiveDrain.toLocaleString()} GJ/s active drain${cap.injectionPerSec > 0 ? ` + ${cap.injectionPerSec.toLocaleString()} GJ/s Capacitor Booster injection` : ''} — the average behind the state above. The state itself comes from pyfa's own capacitor simulation (every module firing on its real cycle, boosters injecting when needed), so it can differ from what this average suggests`;
 
-  if(!cardIsOpen(f, 'cp')) return collapsedCardHtml('cp', 'Capacitor', `${capCardStateText(displayResult)} · ${displayNetRate >= 0 ? '+' : ''}${displayNetRate.toLocaleString()} GJ/s`);
+  if(!cardIsOpen(f, 'cp')) return collapsedCardHtml('cp', `${capCardStateText(displayResult)} · ${displayNetRate >= 0 ? '+' : ''}${displayNetRate.toLocaleString()} GJ/s`);
   return `
     <div class="fit-summary">
-      ${cardLabelHtml('cp', 'Capacitor')}
+      ${cardLabelHtml('cp')}
       <div class="estimate-box">
         <div class="estimate-stat">
           <span class="estimate-label">Capacitor state</span>
@@ -8261,7 +8649,7 @@ function capacitorCardHtml(f, estimate){
         <div class="estimate-stat">
           <span class="estimate-label">Drain resistance</span>
           <span class="estimate-value">${cap.warfareResistPct}%</span>
-          <span class="estimate-sub">Capacitor Battery fitted — cuts incoming Energy Neutralizer/Nosferatu effectiveness against this ship by this much (a defensive stat about this ship; not applied to its own outgoing neut/nos figures in the EWAR card, which assume an unresisted target)</span>
+          <span class="estimate-sub">Capacitor Battery fitted — cuts incoming Energy Neutralizer/Nosferatu effectiveness against this ship by this much (a defensive stat about this ship; not applied to its own outgoing neut/nos figures in the ${cardName('ewar')} card, which assume an unresisted target)</span>
         </div>` : ''}
       </div>
     </div>`;
@@ -8305,19 +8693,43 @@ async function renderLastKill(character, pilotName, statusEl){
     const killDate = km.killmail_time ? new Date(km.killmail_time).toLocaleString() : '';
     const otherCount = (km.attackers || []).length - 1;
 
+    // v2026.10.14.43: one line in the header (what they flew, what they killed, when).
+    // v2026.10.14.44 (Erik picked option A of the "Last kill details" mockup): the details open in a panel that
+    // floats under that line (a sheet from the bottom on a phone), so the header and the loss box never move.
+    // The weapon line is left out when zKillboard only names the hull as the weapon (weapon_type_id = the ship).
+    const killDay = km.killmail_time ? new Date(km.killmail_time).toLocaleDateString() : '';
+    const killTime = km.killmail_time ? new Date(km.killmail_time).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}) : '';
+    const realWeapon = weaponName && attacker.weapon_type_id !== attacker.ship_type_id;
     el.innerHTML = `
-      <div class="lastkill">
-        <div class="lk-label">Last kill${killDate ? ' · ' + escapeHtml(killDate) : ''}</div>
-        Flying a <b>${escapeHtml(flownName)}</b>, ${escapeHtml(pilotName)} killed a <b>${escapeHtml(targetName)}</b>${weaponName ? ` using <b>${escapeHtml(weaponName)}</b>` : ''}.
-        ${weaponName ? `<div style="margin-top:6px;">${damageBadgesHtml(weaponInfo)}</div>` : ''}
-        <div style="margin-top:6px;"><a href="https://zkillboard.com/kill/${stub.killmail_id}/" target="_blank" rel="noopener">view on zKillboard</a></div>
-        <div style="margin-top:6px;">
-          ${attacker.ship_type_id ? `<button type="button" class="lk-toggle" id="lkPivotBtn">See ${escapeHtml(pilotName)}'s recent losses flying a ${escapeHtml(flownName)}</button>` : ''}
-          ${otherCount > 0 ? `<button type="button" class="lk-toggle" id="attackerToggle">Show ${otherCount} other attacker${otherCount > 1 ? 's' : ''}</button>` : ''}
+      <details class="lastkill lk-compact lk-pop">
+        <summary class="lk-sum"><span class="lk-label">${escapeHtml(cardName('lastkill'))}</span> <b>${escapeHtml(flownName)}</b>${killDay ? ` · ${escapeHtml(killDay)}` : ''} · ${escapeHtml(targetName)}<span class="lk-caret" aria-hidden="true">▾</span></summary>
+        <div class="lk-body" role="dialog" aria-label="${escapeHtml(cardName('lastkill'))} details">
+          <div class="lk-head">
+            <div class="lk-title"><b>${escapeHtml(flownName)}</b> killed a <b>${escapeHtml(targetName)}</b></div>
+            <div class="lk-when">${escapeHtml([killDay, killTime].filter(Boolean).join(' · '))}</div>
+            <button type="button" class="lk-close" aria-label="Close">×</button>
+          </div>
+          ${realWeapon ? `<div class="lk-weapon">using <b>${escapeHtml(weaponName)}</b> ${lkDamageTagHtml(weaponInfo)}</div>` : ''}
+          <div class="lk-actions">
+            ${attacker.ship_type_id ? `<button type="button" class="lk-toggle" id="lkPivotBtn">See ${escapeHtml(pilotName)}'s ${escapeHtml(flownName)} losses</button>` : ''}
+            <a href="https://zkillboard.com/kill/${stub.killmail_id}/" target="_blank" rel="noopener">view on zKillboard ↗</a>
+          </div>
+          ${otherCount > 0 ? `<div class="lk-att-head"><span class="lk-label">${otherCount} other attacker${otherCount > 1 ? 's' : ''}</span><span class="lk-att-order">final blow first</span></div>
+          <div id="attackerList" class="lk-att-list" role="table" aria-label="Other attackers"><div class="lk-att-msg">Loading…</div></div>` : '<div class="lk-att-msg">No other attackers: a solo kill.</div>'}
         </div>
-        <div id="attackerList"></div>
-      </div>
+      </details>
     `;
+    const lkDet = el.querySelector('details.lk-pop');
+    el.querySelector('.lk-close').addEventListener('click', () => { lkDet.open = false; lkDet.querySelector('summary').focus(); });
+    // Keep the floating panel on screen: aligned with the line that opened it, shifted left if it would run past
+    // the right edge (a phone shows it as a sheet instead, positioned by CSS).
+    lkDet.addEventListener('toggle', () => {
+      const body = lkDet.querySelector('.lk-body');
+      body.style.left = '';
+      if(!lkDet.open || getComputedStyle(body).position !== 'absolute') return;
+      const over = body.getBoundingClientRect().right - (document.documentElement.clientWidth - 16);
+      if(over > 0) body.style.left = `${body.offsetLeft - over}px`;
+    });
 
     // Pivot button (2026-10-10): the pilot's last KILL shows what hull they
     // were FLYING when they killed someone -- a separate data point from the
@@ -8331,46 +8743,26 @@ async function renderLastKill(character, pilotName, statusEl){
     // input so the visible search state matches what actually ran (matters
     // for the "Refresh losses" button, which just re-invokes lastFitRun).
     if(attacker.ship_type_id){
-      document.getElementById('lkPivotBtn').addEventListener('click', async () => {
+      document.getElementById('lkPivotBtn').addEventListener('click', async (ev) => {
+        if(isBusy('fitStatus')) return;
+        const pivotBtn = ev.currentTarget;
+        const lkDetails = pivotBtn.closest('details'); if(lkDetails) lkDetails.open = false;   // v.43: back to one line
         document.getElementById('manualShip').value = flownName;
         document.getElementById('shipSelect').value = '';
         document.getElementById('fitCandidates').innerHTML = '';
         lastFitRun = (force) => runFitForShip(character, attacker.ship_type_id, flownName, statusEl, force);
-        await lastFitRun();
+        await withBusy('fitStatus', pivotBtn, `Loading ${flownName} losses…`, () => lastFitRun());
       });
     }
 
+    // v.44: the attackers load the first time the panel opens (their names and weapons need a lookup).
     if(otherCount > 0){
-      const toggleBtn = document.getElementById('attackerToggle');
       let loaded = false;
-      toggleBtn.addEventListener('click', async () => {
-        const listEl = document.getElementById('attackerList');
-        const showing = listEl.classList.contains('attacker-list');
-        if(showing){
-          // BUG FIX (2026-10-10): this used to also clear listEl.innerHTML on
-          // hide, which discarded the already-rendered attacker rows -- but
-          // never reset `loaded` back to false, so the NEXT "Show" click saw
-          // loaded === true, skipped the `if(!loaded)` re-render below
-          // entirely, and left the container empty while still flipping the
-          // button text to "Hide other attackers". Reproduced in a real
-          // browser (show -> hide -> show again left the list permanently
-          // empty from the second show onward). Fixed by hiding via
-          // display:none instead of discarding the content, so `loaded`
-          // stays true exactly when the DOM still actually has it cached --
-          // re-opening after a hide is now also instant, no re-fetch.
-          listEl.className = '';
-          listEl.style.display = 'none';
-          toggleBtn.textContent = `Show ${otherCount} other attacker${otherCount > 1 ? 's' : ''}`;
-          return;
-        }
-        toggleBtn.textContent = 'Hide other attackers';
-        if(!loaded){
-          listEl.innerHTML = 'Loading…';
-          await renderOtherAttackers(km, character.id, listEl);
-          loaded = true;
-        }
-        listEl.className = 'attacker-list';
-        listEl.style.display = '';
+      lkDet.addEventListener('toggle', async () => {
+        if(!lkDet.open || loaded) return;
+        loaded = true;
+        try{ await renderOtherAttackers(km, character.id, document.getElementById('attackerList')); }
+        catch(e){ loaded = false; document.getElementById('attackerList').innerHTML = `<div class="lk-att-msg">${escapeHtml(withCode(`Could not load the other attackers: ${e.message}.`, errorCodeOf(e)))}</div>`; }
       });
     }
   }catch(e){
@@ -8378,10 +8770,22 @@ async function renderLastKill(character, pilotName, statusEl){
   }
 }
 
+// v2026.10.14.44: the last kill's other attackers as a compact table -- pilot, hull, weapon, damage tag -- final
+// blow first, then by damage done; the first LK_ATTACKERS_SHOWN rows, the rest behind "… N more". Up to 20 are
+// looked up (names and weapons); a larger fleet says how many more there were. The weapon reads "—" when
+// zKillboard names no weapon or only the hull. Damage tag: the weapon's own damage types, or "ammo" when they
+// depend on what it loads.
+const LK_ATTACKERS_SHOWN = 5;
+function lkDamageTagHtml(info){
+  if(!info) return '';
+  if(info.mode === 'fixed') return info.types.map(d => `<span class="lk-dmg ${d}">${DMG_LABEL[d]}</span>`).join('');
+  if(info.mode === 'variable') return '<span class="lk-dmg lk-ammo" title="Its damage type depends on the ammo loaded">ammo</span>';
+  return '';
+}
 async function renderOtherAttackers(km, mainCharacterId, container){
   const others = (km.attackers || [])
     .filter(a => a.character_id !== mainCharacterId)
-    .sort((a,b) => (b.damage_done || 0) - (a.damage_done || 0))
+    .sort((a,b) => ((b.final_blow ? 1 : 0) - (a.final_blow ? 1 : 0)) || ((b.damage_done || 0) - (a.damage_done || 0)))
     .slice(0, 20);
 
   const idSet = new Set();
@@ -8393,29 +8797,34 @@ async function renderOtherAttackers(km, mainCharacterId, container){
   const names = await resolveIdsToNames([...idSet]);
   const idToName = new Map(names.map(n => [n.id, n.name]));
 
-  const uniqueWeapons = [...new Set(others.map(a => a.weapon_type_id).filter(Boolean))];
+  const realWeapon = (a) => a.weapon_type_id && a.weapon_type_id !== a.ship_type_id;
+  const uniqueWeapons = [...new Set(others.filter(realWeapon).map(a => a.weapon_type_id))];
   const weaponInfos = await analyzeChunks(uniqueWeapons, getWeaponDamageInfo, 4);
   const weaponInfoMap = new Map(uniqueWeapons.map((w, i) => [w, weaponInfos[i]]));
 
   const totalAttackers = (km.attackers || []).length - 1;
-  const truncated = totalAttackers > others.length;
-
-  let html = '';
-  for(const a of others){
+  const rows = others.map((a, i) => {
     const who = a.character_id ? (idToName.get(a.character_id) || `character ${a.character_id}`) : 'NPC';
     const ship = a.ship_type_id ? (idToName.get(a.ship_type_id) || `type ${a.ship_type_id}`) : 'unknown ship';
-    const weapon = a.weapon_type_id ? (idToName.get(a.weapon_type_id) || `type ${a.weapon_type_id}`) : null;
-    const info = a.weapon_type_id ? (weaponInfoMap.get(a.weapon_type_id) || {mode:'unknown', types:[]}) : {mode:'unknown', types:[]};
-    html += `
-      <div class="attacker-row ${a.final_blow ? 'finalblow' : ''}">
-        <span class="a-who"><b>${escapeHtml(who)}</b> — ${escapeHtml(ship)}${weapon ? ' — ' + escapeHtml(weapon) : ''}${a.final_blow ? ' (final blow)' : ''}</span>
-        <span class="a-dmg">${damageBadgesHtml(info)}</span>
+    const weapon = realWeapon(a) ? (idToName.get(a.weapon_type_id) || `type ${a.weapon_type_id}`) : null;
+    return `<div class="lk-att-row${a.final_blow ? ' finalblow' : ''}" role="row"${i >= LK_ATTACKERS_SHOWN ? ' hidden' : ''}>
+        <span class="lk-att-who" role="cell">${escapeHtml(who)}</span>
+        <span class="lk-att-ship" role="cell">${escapeHtml(ship)}</span>
+        <span class="lk-att-weapon${weapon ? '' : ' none'}" role="cell">${weapon ? escapeHtml(weapon) : '—'}${a.final_blow ? '<span class="lk-fb"> · final blow</span>' : ''}</span>
+        <span class="lk-att-dmg" role="cell">${realWeapon(a) ? lkDamageTagHtml(weaponInfoMap.get(a.weapon_type_id)) : ''}</span>
       </div>`;
-  }
-  if(truncated){
-    html += `<div class="cmeta" style="padding-top:6px;">…and ${totalAttackers - others.length} more attacker(s) not shown.</div>`;
-  }
-  container.innerHTML = html;
+  }).join('');
+  const hiddenCount = Math.max(0, others.length - LK_ATTACKERS_SHOWN);
+  container.innerHTML = rows
+    + (hiddenCount ? `<button type="button" class="lk-more" aria-expanded="false">… ${hiddenCount} more ▾</button>` : '')
+    + (totalAttackers > others.length ? `<div class="lk-att-msg">…and ${totalAttackers - others.length} more not listed.</div>` : '');
+  const more = container.querySelector('.lk-more');
+  if(more) more.addEventListener('click', () => {
+    const open = more.getAttribute('aria-expanded') !== 'true';
+    container.querySelectorAll('.lk-att-row').forEach((r, i) => { if(i >= LK_ATTACKERS_SHOWN) r.hidden = !open; });
+    more.setAttribute('aria-expanded', String(open));
+    more.textContent = open ? 'Show fewer ▴' : `… ${hiddenCount} more ▾`;
+  });
 }
 
 async function runFitCheck(){
@@ -8423,6 +8832,7 @@ async function runFitCheck(){
   document.getElementById('fitResults').innerHTML = '';
   document.getElementById('fitCandidates').innerHTML = '';
   document.getElementById('lastKillInfo').innerHTML = '';
+  document.getElementById('pilotHeadName').textContent = '';
   lastFitRun = null;
   const pilotName = document.getElementById('pilotName').value.trim();
   const shipName = (document.getElementById('manualShip').value.trim()) || document.getElementById('shipSelect').value;
@@ -8430,10 +8840,11 @@ async function runFitCheck(){
   if(!pilotName){ setStatus(statusEl, 'Enter a pilot name.', true); return; }
 
   const btn = document.getElementById('fitBtn');
+  if(isBusy('fitStatus')) return;
   btn.disabled = true;
   currentPilotName = pilotName;
 
-  try{
+  return withBusy('fitStatus', btn, `Analyzing ${pilotName}…`, async () => { try{
     setStatus(statusEl, 'Resolving pilot…');
     const idsRes = await resolveNamesToIds([pilotName]);
     const character = (idsRes.characters || [])[0];
@@ -8442,6 +8853,7 @@ async function runFitCheck(){
       return;
     }
     currentCharacter = character;
+    document.getElementById('pilotHeadName').textContent = character.name || pilotName;
     await renderLastKill(character, pilotName, statusEl);
 
     if(shipName){
@@ -8472,7 +8884,7 @@ async function runFitCheck(){
     setStatus(statusEl, withCode('Error: ' + e.message + (e.zkbUnavailable ? '.' : '. Check your network connection to zkillboard.com and esi.evetech.net.'), errorCodeOf(e)), true);
   }finally{
     btn.disabled = false;
-  }
+  } });
 }
 
 async function speculateShip(character, statusEl, forceRefresh){
@@ -8529,25 +8941,42 @@ async function speculateShip(character, statusEl, forceRefresh){
   await runFitForShip(character, ranked[0].id, ranked[0].name, statusEl, forceRefresh);
 }
 
+// v2026.10.14.44: the header's pop-ups (hull dropdown, last-kill panel) close on Escape or a press outside them.
+// One listener pair for the whole page, installed once (renderLastKill / renderCandidates replace their HTML on
+// every analysis, so per-render document listeners would pile up -- see the .fit-menu note).
+(function headerPopClose(){
+  if(typeof document === 'undefined' || !document.addEventListener) return;   // LESSON #36: suites run this file against a stub DOM
+  const openOnes = () => [...document.querySelectorAll('details.lk-pop[open], details.hull-pick[open]')];
+  document.addEventListener('pointerdown', (e) => { for(const d of openOnes()) if(!d.contains(e.target)) d.open = false; }, true);
+  document.addEventListener('keydown', (e) => {
+    if(e.key !== 'Escape') return;
+    for(const d of openOnes()){ d.open = false; const s = d.querySelector('summary'); if(s) s.focus(); }
+  });
+})();
+// v2026.10.14.43 (Erik: "the UI is just too busy with all of the hulls from their losses"): the most-flown hulls
+// are a dropdown in the header line (<details>, like the fit-actions menu: no document-level listener to leak on
+// re-render). The summary shows the hull on screen and its share of their losses; picking one closes the menu and
+// loads that hull (the summary carries the busy spinner).
 function renderCandidates(ranked, sampleSize, character, statusEl){
   const el = document.getElementById('fitCandidates');
-  let html = `<div class="candidates-note">Most flown across their last ${sampleSize} recorded losses (any ship, capsules excluded) — pick one to see its typical fit:</div>`;
-  html += `<div class="candidates">`;
-  ranked.forEach((r, i) => {
-    html += `<button type="button" class="candidate-btn ${i===0 ? 'active' : ''}" data-id="${r.id}" data-name="${escapeHtml(r.name)}">
-      <span>${escapeHtml(r.name)}</span>
-      <span class="cfreq">${r.count}/${sampleSize} losses</span>
-    </button>`;
-  });
-  html += `</div>`;
-  el.innerHTML = html;
-
+  const label = (r) => `<span class="hp-name">${escapeHtml(r.name)}</span><span class="hp-freq">${r.count} of ${sampleSize} losses</span>`;
+  el.innerHTML = `<details class="hull-pick">
+      <summary class="hull-pick-btn" title="Hulls they lose most often: pick one to see its losses">${label(ranked[0])}<span class="hp-caret" aria-hidden="true">▾</span></summary>
+      <div class="hull-menu" role="menu">
+        <div class="candidates-note">Most flown across their last ${sampleSize} recorded losses (capsules excluded)</div>
+        ${ranked.map((r, i) => `<button type="button" role="menuitemradio" aria-checked="${i === 0}" class="candidate-btn ${i===0 ? 'active' : ''}" data-id="${r.id}" data-name="${escapeHtml(r.name)}" data-count="${r.count}">
+          <span>${escapeHtml(r.name)}</span><span class="cfreq">${r.count}/${sampleSize} losses</span></button>`).join('')}
+      </div>
+    </details>`;
+  const pick = el.querySelector('.hull-pick'), sum = el.querySelector('.hull-pick-btn');
   el.querySelectorAll('.candidate-btn').forEach(b => {
     b.addEventListener('click', async () => {
-      el.querySelectorAll('.candidate-btn').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
+      if(isBusy('fitStatus')) return;
+      el.querySelectorAll('.candidate-btn').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-checked', String(x === b)); });
+      sum.innerHTML = label({name: b.dataset.name, count: b.dataset.count}) + '<span class="hp-caret" aria-hidden="true">▾</span>';
+      pick.open = false;
       lastFitRun = (force) => runFitForShip(character, Number(b.dataset.id), b.dataset.name, statusEl, force);
-      await lastFitRun();
+      await withBusy('fitStatus', sum, `Loading ${b.dataset.name} losses…`, () => lastFitRun());
     });
   });
 }
@@ -8866,8 +9295,9 @@ async function runFitAnalyzer(){
   if(!text.trim()){ setStatus(statusEl, 'Paste a fit first.', true); return; }
 
   const btn = document.getElementById('fitAnalyzerBtn');
+  if(isBusy('fitAnalyzerStatus')) return;
   btn.disabled = true;
-  try{
+  await withBusy('fitAnalyzerStatus', btn, 'Analyzing fit…', async () => { try{
     const {parsed, f} = await buildFitFromEft(text, msg => setStatus(statusEl, msg));
     renderFitAnalyzerResult(parsed.shipName, parsed.fitName, f, parsed.idToName, parsed.unresolved, parsed.implantsNotApplied);
 
@@ -8879,7 +9309,7 @@ async function runFitAnalyzer(){
     setStatus(statusEl, withCode('Error: ' + e.message + '.', errorCodeOf(e)), true);
   }finally{
     btn.disabled = false;
-  }
+  } });
 }
 
 // Renders a single pasted fit using the exact same cards as the Pilot
@@ -8907,18 +9337,21 @@ function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, imp
   const nameHtml = `${escapeHtml(shipName)}${fitName ? ' — ' + escapeHtml(fitName) : ''}`;
   const headHtml = mine ? myShipBannerHtml()
     : `<div class="mys-fa-head"><div class="cmeta">${nameHtml}</div>${myShipSetButtonHtml(f)}</div>`;
+  // v2026.10.14.43: the result is one assessment box: its name, the matchup scoreboard (also the threat / my ship
+  // switch), then the threat's cards or my ship's.
+  el.dataset.mysScope = '1'; el.dataset.mysView = 'threat';
   el.innerHTML = `
-    ${mine ? '' : mysSwitchHostHtml(fitName ? `${shipName} · ${fitName}` : shipName)}
-    <div class="mys-threat-view">
-    <div style="margin-top:14px;">
+    <div class="assess-box assess-solo">
       ${headHtml}
-      <div class="fit-layout-wrap" id="fit-analyzer-layout-wrap">${fitLayoutHtml(f, idToName)}</div>
+      ${mine ? '' : mysSwitchHostHtml(fitName ? `${shipName} · ${fitName}` : shipName)}
+      <div class="mys-threat-view">
+      <div class="fit-layout-wrap" id="fit-analyzer-layout-wrap">${fitLayoutHtml(f, idToName, {dmg: !mine})}</div>
       ${unresolvedHtml}
       ${slotClashHtml}
       ${hpDpsMethodologyHtml()}
+      </div>
+      ${mine ? '' : '<div class="mys-mine-view" hidden></div>'}
     </div>
-    </div>
-    ${mine ? '' : '<div class="mys-mine-view" hidden></div>'}
   `;
   if(mine) wireMyShipBanner(el); else { wireMyShipSetButton(el, f, shipName, fitName); mysWireSwitchHosts(el); }
 
@@ -8930,7 +9363,7 @@ function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, imp
   function redraw(){
     const wrap = layoutWrap();
     if(!wrap) return;
-    wrap.innerHTML = fitLayoutHtml(f, idToName);
+    wrap.innerHTML = fitLayoutHtml(f, idToName, {dmg: !mine});
     wireAll();
   }
   function rerenderAll(){
@@ -11660,6 +12093,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     const droneSkillDmgMult = MAX_DRONE_DAMAGE_MULT * droneSizeClassMult * droneRacialSpecMult;
     const hd = hullDroneMods(hullDamageRows, {dogma: dmgDogma, group: ''}); // v2026.10.14.3 generated hull/subsystem drone rows
     const dmgPerCycle = info.types.reduce((sum, d) => sum + attrVal(dmgDogma, DAMAGE_DEALT_ATTR[d], 0) * hd[d], 0) * droneOwnMult * droneSkillDmgMult * droneCatMod.dmgMult * siegeDroneDamageMult; // v.26: x0 in triage
+    droneRec.typeWeights = Object.fromEntries(info.types.map(d => [d, attrVal(dmgDogma, DAMAGE_DEALT_ATTR[d], 0) * hd[d]])); // v.41: damage type shares
     const cycleMs = attrVal(dmgDogma, RATE_OF_FIRE_ATTR, 0);
     if(!cycleMs) continue;
     const effectiveCycleSec = (cycleMs / 1000) * MAX_DRONE_ROF_MULT * droneCatMod.rofMult;
@@ -11890,6 +12324,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         const aw = applicationWeapons.get(key) || {kind: 'smartbomb', name: weaponCls.type.name, weaponTypeId: weaponItem.id, qty: 0, dps: 0,
           maxRange: attrVal(dmgDogma, TURRET_OPTIMAL_RANGE_ATTR, 0) || attrVal(dmgDogma, SMARTBOMB_RANGE_ATTR, 0) || null};
         aw.qty += qty; aw.dps += dps;
+        aw.typeDps = addTypeDps(aw.typeDps || {}, dps, Object.fromEntries(weaponCls.dmgTypes.map(d => [d, attrVal(dmgDogma, DAMAGE_DEALT_ATTR[d], 0)])));
         applicationWeapons.set(key, aw);
       }else{
         unappliedFixedDps += dps;
@@ -12081,6 +12516,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         applicationWeapons.set(appKey, aw);
       }
       aw.qty += qty; aw.dps += dps;
+      aw.typeDps = addTypeDps(aw.typeDps || {}, dps, Object.fromEntries(DMG.map(d => [d, attrVal(chargeDogma, DAMAGE_DEALT_ATTR[d], 0) * hw.dmg[d] * mw.dmg[d]])));
     }else{
       unresolvedWeapons.push({id: weaponItem.id, qty});
     }
@@ -12567,6 +13003,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   }
 
   let projectedSrc = null, projectedTarget = null;   // v2026.10.14.35 PYFA CORE projected (set below, hulls with effects)
+  let appDrones = null;   // v2026.10.14.40 damage drones for PYFA CORE application (hulls with effects; else they stay unapplied)
   // v2026.10.14.11 (hand-tables P4): every number on the EWAR / Misc card is the module's own attribute
   // after pyfa's handlers (PYFA CORE ewar-calc: skills, hull, subsystems, rigs, other modules, the ship
   // mode and the script loaded in that copy). The hand tables above (EWAR_UNIVERSAL_SKILL_BONUS,
@@ -12699,6 +13136,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // first, as everywhere in this engine.
     const shipRadiusM = attrVal(shipDogma, RADIUS_ATTR, shipType.radius || 0);
     const projWebMods = [], projTpMods = [], projWebDrones = [], projTpDrones = [];
+    appDrones = [];   // v2026.10.14.40: damage drones in space for PYFA CORE application (getDroneMult)
     let projScramRange = null;
     for(const m of ewarCarriers){
       const effs = m.effectIds;
@@ -12729,7 +13167,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     for(const d of droneAllInfo){
       const n = droneActiveByType.get(d.typeId) || 0;
       const effs = (d.type.dogma_effects || []).map(e => e.effect_id);
-      if(!n || !(effs.includes(PROJ_WEB_DRONE_EFFECT) || effs.includes(PROJ_TP_DRONE_EFFECT))) continue;
+      const deals = d.perDroneDps > 0;
+      if(!n || !(effs.includes(PROJ_WEB_DRONE_EFFECT) || effs.includes(PROJ_TP_DRONE_EFFECT) || deals)) continue;
       const dogma = d.type.dogma_attributes || [];
       const group = await getGroup(d.type.group_id);
       const a = projDroneAttrs({attr: (x, dflt) => x === RADIUS_ATTR ? attrVal(dogma, x, d.type.radius || 0) : attrVal(dogma, x, dflt),
@@ -12740,6 +13179,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         if(effs.includes(PROJ_WEB_DRONE_EFFECT)) projWebDrones.push(Object.assign({boost: a.speedFactor}, entry));
         if(effs.includes(PROJ_TP_DRONE_EFFECT)) projTpDrones.push(Object.assign({boost: a.signatureRadiusBonus}, entry));
       }
+      if(deals) appDrones.push({typeId: d.typeId, name: d.name, qty: n, dps: d.perDroneDps * n, typeDps: addTypeDps({}, d.perDroneDps * n, d.typeWeights || {}), speed: a.maxVelocity, radius: a.radius,
+        optimal: entry.optimal, falloff: entry.falloff, tracking: a.trackingSpeed, optimalSigRadius: a.optimalSigRadius});
     }
     projectedSrc = {scramRange: projScramRange, webMods: projWebMods, tpMods: projTpMods, webDrones: projWebDrones, tpDrones: projTpDrones,
       webFighters: [], tpFighters: [], droneControlRange};
@@ -12759,6 +13200,25 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
           scrammed: runningMwd ? [{group: 'postMul', mult: running.postMul}] : []},
         signatureRadius: {base: sigRadiusFlatBase, pool: {mult: sigHullMult * sigActiveUnpenalizedMult, pen: sigPen, forced: null, preInc: 0, postInc: 0},
           scrammed: [...(runningMwd && effectiveMwdSigBonusPct ? [{group: 'default', mult: 1 + effectiveMwdSigBonusPct / 100}] : []), ...projScrammedSig]}};
+      // v2026.10.14.36 (Phase 2b): the same fit with its prop module running ('on', decision D4: the chart's default)
+      // and with no prop module running ('off', the chart's "Your MWD / afterburner" switch). The prop for 'on' is the
+      // running one, else the fit's primary (the boosted figure's: the highest speedFactor of the preferred kind).
+      const propVariant = (pp) => {
+        const mwd = !!pp && pp.kind === 'mwd';
+        const pen = {};
+        const def = [...sigDefaultMults, ...(mwd && effectiveMwdSigBonusPct ? [1 + effectiveMwdSigBonusPct / 100] : [])];
+        if(def.length) pen.default = def;
+        if(sigPostMulMults.length) pen.postMul = sigPostMulMults.slice();
+        if(sigPostDivMults.length) pen.postDiv = sigPostDivMults.slice();
+        return {
+          maxVelocity: {base: pyfaSpeed.baseVelocity, pool: pp ? pp.velocityPool : pyfaSpeed.velocityPool, scrammed: mwd ? [{group: 'postMul', mult: pp.postMul}] : []},
+          signatureRadius: {base: sigRadiusFlatBase, pool: {mult: sigHullMult * sigActiveUnpenalizedMult, pen, forced: null, preInc: 0, postInc: 0},
+            scrammed: [...(mwd && effectiveMwdSigBonusPct ? [{group: 'default', mult: 1 + effectiveMwdSigBonusPct / 100}] : []), ...projScrammedSig]}};
+      };
+      const preferred = pyfaSpeed.props.filter(pp => pp.kind === propModType);
+      const onProp = running || (preferred.length ? preferred : pyfaSpeed.props).reduce((a, b) => (!a || b.speed > a.speed) ? b : a, null);
+      projectedTarget.variants = {propTypeId: onProp ? onProp.module.typeId : null, propKind: onProp ? onProp.kind : null, running: !!running,
+        on: onProp ? propVariant(onProp) : null, off: propVariant(null)};
     }
   }
 
@@ -13023,7 +13483,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       radius: attrVal(shipDogma, RADIUS_ATTR, shipType.radius || 0),
       lockRange: targetingRange,
       weapons: [...applicationWeapons.values()],
-      unapplied: {droneDps: droneDps, fighterDps: fighterDps, otherFixedDps: unappliedFixedDps, cargoGuessWeapons: cargoResolvedWeaponCount},
+      drones: appDrones || [],   // v2026.10.14.40 (D5 drones): getDroneMult inputs, one entry per drone type in space
+      unapplied: {droneDps: appDrones ? ((x) => x > 1e-6 ? x : 0)(droneDps - appDrones.reduce((s, d) => s + d.dps, 0)) : droneDps, fighterDps: fighterDps, otherFixedDps: unappliedFixedDps, cargoGuessWeapons: cargoResolvedWeaponCount},
       projected: projectedSrc   // v2026.10.14.35 (Phase 2a): this fit's webs / painters / scram as pyfa's damage graph applies them
     },
     projectedTarget,            // v2026.10.14.35 (Phase 2a): this fit as the target of someone else's webs / painters / scram
@@ -13358,7 +13819,7 @@ function chargesMissingFlagHtml(cap){
 // the open card shows, computed in the card's own function). Open/closed is kept per fit on f.cardOpen and
 // survives every re-render (mode, states, drones). Default: all open; on a phone (< 600px) only Weaknesses
 // stays open (the "how to beat it" answer), as in the layout mockup. Presentation only.
-const CARD_PHONE_CLOSED = new Set(['ewar', 'fp', 'rs', 'nv', 'cp']);
+const CARD_PHONE_CLOSED = new Set(['ewar', 'fp', 'rs', 'nav', 'cp', 'dmg']);
 // v2026.10.14.20 (Erik: "please have all bays except the drone bay collapsed by default"): closed at every width.
 const CARD_ALWAYS_CLOSED = new Set(['bay:fighter', 'bay:fleet', 'bay:cargo']);
 const CC_CHEV = '<svg class="cc-chev" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5 L7 9 L11 5" fill="none" stroke-width="1.6"></path></svg>';
@@ -13370,11 +13831,12 @@ function cardIsOpen(f, key){
   }
   return f.cardOpen[key];
 }
-function cardLabelHtml(key, title, cls = 'fit-subsection-label', style = ''){
-  return `<button type="button" class="cc-toggle ${cls}" data-card="${key}" aria-expanded="true" title="Collapse"${style ? ` style="${style}"` : ''}>${CC_CHEV}${escapeHtml(title)}</button>`;
+// v2026.10.14.45: the title comes from CARD_NAMES by key (no title argument, so a card can't be named by hand).
+function cardLabelHtml(key, cls = 'fit-subsection-label', style = ''){
+  return `<button type="button" class="cc-toggle ${cls}" data-card="${key}" aria-expanded="true" title="Collapse"${style ? ` style="${style}"` : ''}>${CC_CHEV}${escapeHtml(cardName(key))}</button>`;
 }
-function collapsedCardHtml(key, title, summary, shell = 'fit-summary', extraCls = ''){
-  return `<div class="${shell} cc-closed"><button type="button" class="cc-toggle cc-row${extraCls ? ' ' + extraCls : ''}" data-card="${key}" aria-expanded="false" title="Expand">${CC_CHEV}<span class="cc-title">${escapeHtml(title)}</span><span class="cc-sum">${escapeHtml(summary)}</span></button></div>`;
+function collapsedCardHtml(key, summary, shell = 'fit-summary', extraCls = '', extraHtml = ''){
+  return `<div class="${shell} cc-closed"><button type="button" class="cc-toggle cc-row${extraCls ? ' ' + extraCls : ''}" data-card="${key}" aria-expanded="false" title="Expand">${CC_CHEV}<span class="cc-title">${escapeHtml(cardName(key))}</span><span class="cc-sum">${escapeHtml(summary)}</span>${extraHtml}</button></div>`;
 }
 // Wires every card toggle inside `wrap`; rerender() rebuilds the layout (and re-wires). Focus returns to
 // the same toggle so a keyboard user stays in place.
@@ -13413,9 +13875,14 @@ function fitSummaryParts(f){
   const fighterOrDroneNote = [droneNote, fighterNote].filter(Boolean).join(' · ') || null;
 
   const weakSummary = `${DMG_FULL[estimate.weakest]} weakest (${100 - estimate.weaknessPct}% resist) · drone ${estimate.drones.primary.name}`;
-  const weaknessesCardHtml = !cardIsOpen(f, 'weak') ? collapsedCardHtml('weak', 'Weaknesses', weakSummary) : `
+  // v2026.10.14.42 (My Ship phase 2b): with a ship saved and "Use in assessments" on, the switch puts
+  // .mys-picks-on on the threat / My ship view and CSS swaps the generic tiles (.weak-generic) for the picks
+  // (.weak-picks, filled by wpFill: your guns on them / their guns on you) and the tag in the header. Without a
+  // saved ship, or in the Fit Analyzer's "Viewing my ship", the card is as before. The picks keep their own
+  // classes, so mysMarkChanged (M6) never compares them.
+  const weaknessesCardHtml = !cardIsOpen(f, 'weak') ? collapsedCardHtml('weak', weakSummary, 'fit-summary', '', '<span class="wp-sum"></span>') : `
     <div class="fit-summary">
-      ${cardLabelHtml('weak', 'Weaknesses')}
+      <div class="weak-head">${cardLabelHtml('weak')}<span class="wp-tag wp-tag-yours">your guns</span><span class="wp-tag wp-tag-theirs">their guns</span></div>
       <div class="weakness-highlight">
         <div class="weakness-badge-row">
           <span class="dmg-badge lg ${estimate.weakest}">${DMG_FULL[estimate.weakest]}</span>
@@ -13423,7 +13890,8 @@ function fitSummaryParts(f){
         </div>
         ${estimate.capacitor.weak ? capWeakGaugeHtml(estimate.capacitor) : ''}
         ${chargesMissingFlagHtml(estimate.capacitor)}
-        <div class="rec-grid">
+        <div class="weak-picks" aria-live="polite"></div>
+        <div class="rec-grid weak-generic">
           <div class="rec-stat">
             <span class="rec-label">Drone</span>
             <span class="rec-value">${estimate.drones.primary.name} (${estimate.drones.primary.size})</span>
@@ -13456,17 +13924,18 @@ function fitSummaryParts(f){
   // own overlapping card treatment later). Pure layout move, same as the
   // TD-Mode-selector move above -- no calculation involved, markup/listeners
   // unchanged.
-  return {
-    beat: `
-    ${tacticalDestroyerModeSelectorHtml(f)}
-    ${weaknessesCardHtml}
-    ${ewarCardHtml(f, estimate)}`,
-    stats: `
-    ${firepowerCardHtml(f, estimate, fighterOrDroneNote)}
-    ${resistanceCardHtml(f, estimate)}
-    ${navCardHtml(f, estimate)}
-    ${capacitorCardHtml(f, estimate)}`
+  // v2026.10.14.37: one entry per card; which column each stacks in, and in what order, is FIT_LAYOUT.stacks.
+  const cards = {
+    tdmode: tacticalDestroyerModeSelectorHtml(f),
+    weak: weaknessesCardHtml,
+    ewar: ewarCardHtml(f, estimate),
+    fp: firepowerCardHtml(f, estimate, fighterOrDroneNote),
+    rs: resistanceCardHtml(f, estimate),
+    nav: navCardHtml(f, estimate),
+    cp: capacitorCardHtml(f, estimate)
   };
+  const stack = (name) => FIT_LAYOUT.stacks[name].filter(k => k in cards).map(k => '\n    ' + cards[k]).join('');
+  return {cards, beat: stack('beat'), stats: stack('stats')};
 }
 function renderFitSummaryHtml(f){
   const parts = fitSummaryParts(f);
@@ -13476,15 +13945,58 @@ function renderFitSummaryHtml(f){
 // grid (columns per screen width: see the LAYOUT block in the stylesheet). Both the Fit Analyzer and each
 // Pilot Analyzer loss render through this, and every re-render (mode, ASB charges, module or drone state)
 // rebuilds the whole layout, so all three column wirings must be re-run after it.
+// v2026.10.14.37: the cards come from fitSummaryParts and the stacks / bands of FIT_LAYOUT; the grid that places
+// them per screen width is the stylesheet fitLayoutGridCss() writes from the same table.
 function fitLayoutHtml(f, idToName, cardOpts = {}){
   const parts = fitSummaryParts(f) || {beat: '', stats: ''};
+  const bands = {dmg: cardOpts.dmg ? dmgCardShellHtml(f) : ''};
   return `
-    <div class="fit-layout">
+    <div class="fit-layout">${FIT_LAYOUT.bands.filter(k => bands[k]).map(k => `
+      <div class="fl-${k}">${bands[k]}</div>`).join('')}
       <div class="fl-beat">${parts.beat}</div>
       <div class="fl-fit">${fitCardHtml(f, idToName, cardOpts)}</div>
       <div class="fl-stats">${parts.stats}</div>
     </div>`;
 }
+
+// ==== FIT LAYOUT TABLE (v2026.10.14.37) ====
+// Erik 2026-10-23: "place the new card for applied damage at the top above the other cards", option B (two
+// columns at 1280 px and up), "built on a layout table" so a later "Edit layout" mode (backlog) only has to
+// change this table. Layout only: no numbers.
+//   stacks: the cards stacked in each column, top to bottom (the same at every width).
+//   bands:  cards that sit in their own grid area and may span columns (rendered only when the view has them;
+//           an empty area takes no height).
+//   grid:   per minimum screen width, the column sizes and the rows of areas (repeat a name to span columns).
+// RULE (LESSON #38): from 900 px up the Fit column is sticky, and a sticky grid item is held by the whole grid, so
+// no area may sit BELOW the last row that holds 'fit' -- it would be covered while scrolling. fitLayoutGridCss()
+// throws if a row breaks this, and tools/page_checks/layout_check.py checks it on the page.
+const FIT_LAYOUT = {
+  stacks: {beat: ['tdmode', 'weak', 'ewar'], fit: ['fit'], stats: ['fp', 'rs', 'nav', 'cp']},
+  bands: ['dmg'],
+  grid: [
+    {minWidth: 0, columns: 'minmax(0, 1fr)', rowSizes: 'auto', rows: [['dmg'], ['beat'], ['fit'], ['stats']]},
+    {minWidth: 900, columns: 'minmax(0, 1fr) minmax(0, 1fr)', rowSizes: 'auto auto 1fr', rows: [['dmg', 'dmg'], ['fit', 'beat'], ['fit', 'stats']]},
+    {minWidth: 1280, columns: 'minmax(300px, 340px) minmax(0, 1fr) minmax(380px, 460px)', rowSizes: 'auto 1fr', rows: [['beat', 'dmg', 'dmg'], ['beat', 'fit', 'stats']]}
+  ]
+};
+function fitLayoutGridCss(layout = FIT_LAYOUT){
+  return layout.grid.map(g => {
+    const n = g.rows[0].length;
+    if(g.rows.some(r => r.length !== n)) throw new Error(`FIT_LAYOUT ${g.minWidth}px: rows of different lengths (one area per column in every row)`);
+    const lastFit = g.rows.map(r => r.includes('fit')).lastIndexOf(true);
+    if(g.minWidth >= 900 && lastFit !== g.rows.length - 1) throw new Error(`FIT_LAYOUT ${g.minWidth}px: nothing may sit below the sticky Fit column (LESSON #38)`);
+    const rule = `.fit-layout{grid-template-columns:${g.columns}; grid-template-rows:${g.rowSizes}; grid-template-areas:${g.rows.map(r => `"${r.join(' ')}"`).join(' ')};}`;
+    return g.minWidth ? `@media (min-width: ${g.minWidth}px){ ${rule} }` : rule;
+  }).join('\n');
+}
+// Written once at load. Guarded: the regression suites run this script with a stub document (LESSON #36).
+(function(){
+  if(typeof document === 'undefined' || !document.head || typeof document.head.appendChild !== 'function') return;
+  const st = document.createElement('style');
+  st.id = 'fitLayoutGrid';
+  st.textContent = fitLayoutGridCss();
+  document.head.appendChild(st);
+})();
 
 // Tactical Destroyer Mode selector (P2, Erik 2026-10-11) -- extracted out of
 // renderFitSummaryHtml()'s old inline weaknessesCardHtml block (unchanged
@@ -13540,7 +14052,7 @@ function hpDpsMethodologyHtml(){
   return `
       <details class="info-disclosure">
         <summary>${infoIconSvg()} How effective HP and DPS are calculated</summary>
-        <div class="note">Effective HP folds in every resistance source pyfa applies to this fit, computed with pyfa's own rules: Damage Control, hardeners, amplifiers, membranes and resistance rigs, a Bastion Module, hardener scripts, a Tactical Destroyer's Defense Mode, the hull's own resistance bonuses (special-edition hulls included) and max-level (V) Shield and Armor Compensation skills, averaged across all four damage types. Stacking penalties follow pyfa's groups: hardeners, amplifiers and rigs penalize each other; Damage Control, a Bastion Module and a Reactive Armor Hardener penalize each other in a separate group; hull bonuses aren't penalized. A Reactive Armor Hardener is simulated exactly as pyfa does by default, against an even 25%-per-type incoming profile and after every other resistance source; its real split depends on the incoming damage, which a killmail can't reveal. A fitted Polarized weapon sets every resistance to 0%, as in the game. Base HP is also boosted by fitted plates, shield extenders, and Reinforced Bulkheads/Nanofiber Internal Structure (flat HP or a straight multiplier, whichever that module uses), by Trimark Armor Pump and Core Defense Field Extender rigs, and by max-level (V) Shield Management, Hull Upgrades, and Mechanics skills — every capsuleer's baseline HP training, assumed maxed like everything else here. On a Strategic Cruiser (Tengu/Legion/Proteus/Loki), fitted subsystems are folded in the same way as any other module — flat shield/hull HP grants and any hardener-style resistance a Defensive subsystem carries. DPS is calculated per turret/launcher: first from the exact charge that was loaded into that specific weapon at time of death (same killmail flag as the gun itself), falling back to a category-matched guess from spare ammo sitting in cargo or the fleet hangar only when a gun had no identifiable loaded charge — plus drones, fighters, and any fixed-damage weapons (smartbombs cycle 25% faster at max-level (V) Energy Pulse Weapons). EDENCOM's Vorton Projector trains on its own separate three-skill tree rather than the usual turret skills, and is scored against that instead. Drone DPS only counts however many of the bay's drones this hull can actually have in space at once (the lower of its max active drones and drone bandwidth), launching the hardest-hitting types first — not every drone sitting in the bay. Fighter DPS works the same way for carriers, supercarriers, and FAXes: only as many squadrons as the hull's launch tubes and per-class (light/support/heavy) limits allow are counted, picking the hardest-hitting squadrons in the fighter bay first. All of it assumes max-level (V) damage and rate-of-fire skills for turrets and missiles (Surgical Strike/Rapid Firing or Warhead Upgrades/Rapid Launch plus the matching weapon-size-class and T2 Specialization skills), max-level (V) damage-only skills for drones (Drone Interfacing, plus the weapon-size-class skill — Light/Medium/Heavy Drone Operation or Sentry Drone Interfacing — plus racial Drone Specialization on T2 drones), and max-level (V) damage-only skills for fighters (Fighters, Drone Interfacing's separate fighter-damage bonus, Heavy Fighters on heavy-class squadrons, and racial Fighter Specialization on T2 light-class squadrons) — drones and fighters have no rate-of-fire skill at all, unlike turrets and missiles — on top of two more sources folded in the same way: fitted damage/rate-of-fire modules and rigs (Gyrostabilizer, Magnetic Field Stabilizer, Heat Sink, Ballistic Control System, Drone Damage Amplifier, the weapon rate-of-fire rigs, Bay Loading Accelerator and Warhead Calefaction Catalyst missile rigs, and Sentry Damage Augmentor rigs on sentries — stacking-penalized against others of their own kind, same as resistance mods above), and this hull's own intrinsic role/skill bonuses at max skill level (e.g. a Vexor's hybrid damage bonus or a Drake's kinetic missile bonus) — or, on a Strategic Cruiser, whichever fitted subsystem's own damage bonus applies, since T3 hulls get theirs from subsystems rather than a fixed hull trait. A Bastion Module (Marauders) doubles turret/launcher rate of fire while active, and is assumed active whenever fitted. A Dreadnought's own Siege Module gives a much larger flat damage bonus instead (turrets get damage only; missile launchers get both a damage and a rate-of-fire bonus), also assumed active whenever fitted. An Industrial Core (Rorqual/Orca/Porpoise) doesn't touch turrets or launchers, but while active it adds a large stacking-penalized drone damage bonus (+100% on a Capital Industrial Core II), boosts and speeds up the ship's own local shield boosters, and multiplies scan resolution — also assumed active whenever fitted. A Triage Module (Carriers) has no effect on weapon damage or rate of fire. All four of these modules immobilize the ship while running, so a fitted one shows 0 m/s cruising speed (and Siege/Triage/Industrial Core also multiply the ship's mass by 10, which shows up in align time). A fitted Shield Booster/Armor Repair Unit/Hull Repair Unit also gets a "DPS required to break this tank" figure, from that module's own repair-amount and cycle-time attributes — armor and hull assume max-level (V) Repair Systems (25% faster cycling), while Shield Booster gets no such skill bonus at all (its required skill, Shield Operation, only speeds up passive shield regen, not the booster itself) — a real asymmetry, not an oversight. An Ancillary Armor Repairer additionally shows a separate burst figure for while its loaded Nanite Repair Paste lasts, since its repair amount roughly triples during that window; Ancillary Shield Boosters don't get this treatment because, unlike the armor version, their Cap Booster charges change only where the activation cost is drawn from, not the repair amount. Each turret/launcher with a confirmed loaded charge also gets an effective-range figure: optimal range and falloff for turrets (scaled by whatever ammo was actually loaded, and assuming max-level (V) Sharpshooter/Trajectory Analysis — except on EDENCOM's Vorton Projector, which doesn't train on those skills at all), or a single max-travel-distance figure for missiles, computed as pyfa does (flight time plus the ship-radius bonus, flown in whole seconds, with acceleration, measured from the ship's surface, and capped for auto-targeting missiles; hover it for the two possible distances), assuming max-level (V) Missile Projection/Missile Bombardment. Both also include the hull's or subsystem's own range bonuses, Tracking Enhancers and Tracking Computers (including a loaded Optimal Range or Tracking Speed script), Missile Guidance Enhancers and Computers (with their scripts), range rigs, a Bastion Module, and a Tactical Destroyer's Sharpshooter Mode, stacking-penalized the way pyfa does; Vorton Projectors get the Vorton Arc Extension skill (V) instead of Sharpshooter — this is how far it can reach, not how much of its damage lands on a given target at that range, which depends on the target's own signature radius and speed and isn't modeled. Range isn't shown for weapons only resolved via the cargo-ammo guess, or for drones, whose engagement range is entirely up to the pilot. Volley damage is the one-shot total across every one of those same certain sources firing simultaneously, exactly mirroring pyfa/eos's own Volley stat (confirmed via its real source: every damage-dealing item counts, drones and fighters included, not just turrets/missiles) — it's the instantaneous alpha, not a sustained rate, so it doesn't account for the different cycle times between weapon types. Module states follow pyfa: a module's bonuses apply only in the state that turns them on (a hardener, repairer, weapon or propulsion module only while running; most other modules while online), and only running modules use capacitor. A killmail doesn't say what was running, so every module is assumed to be running if the game allows it — one propulsion module at a time (the fastest), and only as many Command Bursts or similar as the hull permits — except cloaks, Micro Jump Drives and Field Generators, a Signature Suppressor's burst, Entosis Links, Capital Sensor Arrays and an Assault Damage Control's burst, which are assumed fitted and online but not running. You can switch any module off, online or active on the Fit card, and every number recalculates; the game's rules still apply (one propulsion module running at a time, Bastion blocks the Micro Jump Drive, and so on). Treat every number here as a ceiling, not a guarantee — a less-trained pilot with fewer damage mods hits considerably softer.</div>
+        <div class="note">Effective HP folds in every resistance source pyfa applies to this fit, computed with pyfa's own rules: Damage Control, hardeners, amplifiers, membranes and resistance rigs, a Bastion Module, hardener scripts, a Tactical Destroyer's Defense Mode, the hull's own resistance bonuses (special-edition hulls included) and max-level (V) Shield and Armor Compensation skills, averaged across all four damage types. Stacking penalties follow pyfa's groups: hardeners, amplifiers and rigs penalize each other; Damage Control, a Bastion Module and a Reactive Armor Hardener penalize each other in a separate group; hull bonuses aren't penalized. A Reactive Armor Hardener is simulated exactly as pyfa does by default, against an even 25%-per-type incoming profile and after every other resistance source; its real split depends on the incoming damage, which a killmail can't reveal. A fitted Polarized weapon sets every resistance to 0%, as in the game. Base HP is also boosted by fitted plates, shield extenders, and Reinforced Bulkheads/Nanofiber Internal Structure (flat HP or a straight multiplier, whichever that module uses), by Trimark Armor Pump and Core Defense Field Extender rigs, and by max-level (V) Shield Management, Hull Upgrades, and Mechanics skills — every capsuleer's baseline HP training, assumed maxed like everything else here. On a Strategic Cruiser (Tengu/Legion/Proteus/Loki), fitted subsystems are folded in the same way as any other module — flat shield/hull HP grants and any hardener-style resistance a Defensive subsystem carries. DPS is calculated per turret/launcher: first from the exact charge that was loaded into that specific weapon at time of death (same killmail flag as the gun itself), falling back to a category-matched guess from spare ammo sitting in cargo or the fleet hangar only when a gun had no identifiable loaded charge — plus drones, fighters, and any fixed-damage weapons (smartbombs cycle 25% faster at max-level (V) Energy Pulse Weapons). EDENCOM's Vorton Projector trains on its own separate three-skill tree rather than the usual turret skills, and is scored against that instead. Drone DPS only counts however many of the bay's drones this hull can actually have in space at once (the lower of its max active drones and drone bandwidth), launching the hardest-hitting types first — not every drone sitting in the bay. Fighter DPS works the same way for carriers, supercarriers, and FAXes: only as many squadrons as the hull's launch tubes and per-class (light/support/heavy) limits allow are counted, picking the hardest-hitting squadrons in the fighter bay first. All of it assumes max-level (V) damage and rate-of-fire skills for turrets and missiles (Surgical Strike/Rapid Firing or Warhead Upgrades/Rapid Launch plus the matching weapon-size-class and T2 Specialization skills), max-level (V) damage-only skills for drones (Drone Interfacing, plus the weapon-size-class skill — Light/Medium/Heavy Drone Operation or Sentry Drone Interfacing — plus racial Drone Specialization on T2 drones), and max-level (V) damage-only skills for fighters (Fighters, Drone Interfacing's separate fighter-damage bonus, Heavy Fighters on heavy-class squadrons, and racial Fighter Specialization on T2 light-class squadrons) — drones and fighters have no rate-of-fire skill at all, unlike turrets and missiles — on top of two more sources folded in the same way: fitted damage/rate-of-fire modules and rigs (Gyrostabilizer, Magnetic Field Stabilizer, Heat Sink, Ballistic Control System, Drone Damage Amplifier, the weapon rate-of-fire rigs, Bay Loading Accelerator and Warhead Calefaction Catalyst missile rigs, and Sentry Damage Augmentor rigs on sentries — stacking-penalized against others of their own kind, same as resistance mods above), and this hull's own intrinsic role/skill bonuses at max skill level (e.g. a Vexor's hybrid damage bonus or a Drake's kinetic missile bonus) — or, on a Strategic Cruiser, whichever fitted subsystem's own damage bonus applies, since T3 hulls get theirs from subsystems rather than a fixed hull trait. A Bastion Module (Marauders) doubles turret/launcher rate of fire while active, and is assumed active whenever fitted. A Dreadnought's own Siege Module gives a much larger flat damage bonus instead (turrets get damage only; missile launchers get both a damage and a rate-of-fire bonus), also assumed active whenever fitted. An Industrial Core (Rorqual/Orca/Porpoise) doesn't touch turrets or launchers, but while active it adds a large stacking-penalized drone damage bonus (+100% on a Capital Industrial Core II), boosts and speeds up the ship's own local shield boosters, and multiplies scan resolution — also assumed active whenever fitted. A Triage Module (Carriers) has no effect on weapon damage or rate of fire. All four of these modules immobilize the ship while running, so a fitted one shows 0 m/s cruising speed (and Siege/Triage/Industrial Core also multiply the ship's mass by 10, which shows up in align time). A fitted Shield Booster/Armor Repair Unit/Hull Repair Unit also gets a "DPS required to break this tank" figure, from that module's own repair-amount and cycle-time attributes — armor and hull assume max-level (V) Repair Systems (25% faster cycling), while Shield Booster gets no such skill bonus at all (its required skill, Shield Operation, only speeds up passive shield regen, not the booster itself) — a real asymmetry, not an oversight. An Ancillary Armor Repairer additionally shows a separate burst figure for while its loaded Nanite Repair Paste lasts, since its repair amount roughly triples during that window; Ancillary Shield Boosters don't get this treatment because, unlike the armor version, their Cap Booster charges change only where the activation cost is drawn from, not the repair amount. Each turret/launcher with a confirmed loaded charge also gets an effective-range figure: optimal range and falloff for turrets (scaled by whatever ammo was actually loaded, and assuming max-level (V) Sharpshooter/Trajectory Analysis — except on EDENCOM's Vorton Projector, which doesn't train on those skills at all), or a single max-travel-distance figure for missiles, computed as pyfa does (flight time plus the ship-radius bonus, flown in whole seconds, with acceleration, measured from the ship's surface, and capped for auto-targeting missiles; hover it for the two possible distances), assuming max-level (V) Missile Projection/Missile Bombardment. Both also include the hull's or subsystem's own range bonuses, Tracking Enhancers and Tracking Computers (including a loaded Optimal Range or Tracking Speed script), Missile Guidance Enhancers and Computers (with their scripts), range rigs, a Bastion Module, and a Tactical Destroyer's Sharpshooter Mode, stacking-penalized the way pyfa does; Vorton Projectors get the Vorton Arc Extension skill (V) instead of Sharpshooter — this is how far it can reach, not how much of its damage lands on a given target at that range, which depends on the target's own signature radius and speed and isn't modeled. Range isn't shown for weapons only resolved via the cargo-ammo guess, or for drones, whose engagement range is entirely up to the pilot. Volley damage is the one-shot total across every one of those same certain sources firing simultaneously, exactly mirroring pyfa/eos's own Volley stat (confirmed via its real source: every damage-dealing item counts, drones and fighters included, not just turrets/missiles) — it's the instantaneous alpha, not a sustained rate, so it doesn't account for the different cycle times between weapon types. Module states follow pyfa: a module's bonuses apply only in the state that turns them on (a hardener, repairer, weapon or propulsion module only while running; most other modules while online), and only running modules use capacitor. A killmail doesn't say what was running, so every module is assumed to be running if the game allows it — one propulsion module at a time (the fastest), and only as many Command Bursts or similar as the hull permits — except cloaks, Micro Jump Drives and Field Generators, a Signature Suppressor's burst, Entosis Links, Capital Sensor Arrays and an Assault Damage Control's burst, which are assumed fitted and online but not running. You can switch any module off, online or active on the ${cardName('fit')} card, and every number recalculates; the game's rules still apply (one propulsion module running at a time, Bastion blocks the Micro Jump Drive, and so on). Treat every number here as a ceiling, not a guarantee — a less-trained pilot with fewer damage mods hits considerably softer.</div>
       </details>`;
 }
 
@@ -14008,12 +14520,12 @@ function fitCardHtml(f, idToName, opts = {}){
   if(!cardIsOpen(f, 'fit')){
     // Erik: "'Fit' header row should show the name of the fit when collapsed. Similar font as 'Total DPS'":
     // f.fitTitle (ship — fit name, or ship — loss date in the Pilot Analyzer), in the stat-label style (.cc-fit).
-    return collapsedCardHtml('fit', 'Fit', f.fitTitle || `${moduleCount} module${moduleCount === 1 ? '' : 's'}`, 'fit-summary', 'cc-fit');
+    return collapsedCardHtml('fit', f.fitTitle || `${moduleCount} module${moduleCount === 1 ? '' : 's'}`, 'fit-summary', 'cc-fit');
   }
   if(!hasStates){
     return `
     <div class="fit-summary">
-      ${cardLabelHtml('fit', 'Fit')}
+      ${cardLabelHtml('fit')}
       ${renderModuleListHtml(f.tally, idToName)}
     </div>`;
   }
@@ -14034,7 +14546,7 @@ function fitCardHtml(f, idToName, opts = {}){
     : `Click a module's state to switch it off, online or active, and a drone square to put drones in space or take them back; every card recalculates.`;
   return `
     <div class="fit-summary${busy}">
-      <div class="fit-card-head">${cardLabelHtml('fit', 'Fit')}<div class="ms-head-right">${right}</div></div>
+      <div class="fit-card-head">${cardLabelHtml('fit')}<div class="ms-head-right">${right}</div></div>
       ${msg}
       ${modulesHtml}
       <div class="ms-legend">${legend} ${f.moduleStateBusy ? 'Recalculating…' : ''}</div>
@@ -14138,7 +14650,7 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   if(!fits.length){ el.innerHTML = ''; return; }
 
   const tabsHtml = fits.map((f, i) => `
-    <button type="button" class="subtab-btn ${i===0 ? 'active' : ''}" data-idx="${i}">${escapeHtml(fitTabLabel(f.km, i))}</button>
+    <button type="button" role="tab" aria-selected="${i===0}" class="subtab-btn ${i===0 ? 'active' : ''}" data-idx="${i}">${escapeHtml(fitTabLabel(f.km, i))}</button>
   `).join('');
 
   // v2026.10.14.15: each loss is one .fit-layout (fitLayoutHtml). The Fit card stays collapsible here (a
@@ -14147,45 +14659,54 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   const wideScreen = !!(window.matchMedia && window.matchMedia('(min-width: 900px)').matches);
   for(const f of fits) if(!f.cardOpen || f.cardOpen.fit === undefined) f.cardOpen = {...(f.cardOpen || {}), fit: wideScreen}; // v.21: Fit card toggle (was f.fitCardOpen / <details>)
   fits.forEach((f, i) => { f.fitTitle = `${shipName} — ${fitTabLabel(f.km, i)} loss`; }); // v.21: shown on the collapsed Fit card
+  // v2026.10.14.43 (Erik picked option B of the "Matchup placement" mockup): each loss is one panel of the
+  // assessment box under the loss tabs, and holds everything about that loss: the matchup scoreboard (which is
+  // also the threat / my ship switch, mysSwitchHost), the threat's cards and the My ship view. The side shown
+  // (threat / my ship) is shared by all the tabs (data-mys-view on the results element), so changing tabs keeps it.
   const panelsHtml = fits.map((f, i) => `
-    <div class="subtab-panel" data-idx="${i}"${i===0 ? '' : ' style="display:none;"'}>
-      <div class="fit-layout-wrap" id="fit-layout-wrap-${i}">${fitLayoutHtml(f, idToName, {collapsible: true})}</div>
+    <div class="subtab-panel" role="tabpanel" data-idx="${i}"${i===0 ? '' : ' style="display:none;"'}>
+      ${mysSwitchHostHtml(`${shipName} · ${pilotName}`)}
+      <div class="mys-threat-view">
+      <div class="fit-layout-wrap" id="fit-layout-wrap-${i}">${fitLayoutHtml(f, idToName, {collapsible: true, dmg: true})}</div>
       <div class="lossrow"><span>killmail ${f.killmailId}</span><a href="https://zkillboard.com/kill/${f.killmailId}/" target="_blank" rel="noopener">view on zKillboard</a></div>
       ${hpDpsMethodologyHtml()}
+      </div>
+      <div class="mys-mine-view" hidden></div>
     </div>
   `).join('');
 
-  // v2026.10.14.33: the threat <-> my ship switch sits above the loss tabs (mysSwitchHost); "My ship" hides
-  // all of them and shows the saved ship instead. Each loss keeps its own states while hidden.
+  el.dataset.mysScope = '1'; el.dataset.mysView = 'threat';
+  const fc = document.getElementById('fitCandidates');   // no hull dropdown (ship typed or picked from the last kill): name the hull
+  if(fc && !fc.querySelector('.hull-pick')) fc.innerHTML = `<span class="hull-static">${escapeHtml(shipName)}</span>`;
+  const phn = document.getElementById('pilotHeadName');
+  if(phn && !phn.textContent) phn.textContent = pilotName;
   el.innerHTML = `
-    ${mysSwitchHostHtml(`${shipName} · ${pilotName}`)}
-    <div class="mys-threat-view">
-    <div style="margin-top:14px;">
-      <div class="cmeta" style="margin-bottom:10px;">${escapeHtml(pilotName)} — ${escapeHtml(shipName)} — ${fits.length} most recent loss${fits.length>1?'es':''}, each shown as its own fit</div>
-      <div class="subtabs">
-        <div class="subtabs-list">${tabsHtml}</div>
-        <details class="fit-menu">
-          <summary class="fit-menu-btn" title="Fit actions">&#8942;</summary>
-          <div class="fit-menu-dropdown">
-            <button type="button" class="fit-menu-item" data-action="export-eft">Export fit to clipboard (EFT)</button>
-          </div>
-        </details>
-      </div>
-      <div class="subtab-panels">${panelsHtml}</div>
-      <div class="note">Each tab is one specific loss — weakest damage type, effective HP, and DPS are all calculated from that fit by itself, never combined with modules from any other loss.</div>
+    <div class="assess-tabs">
+      <div class="subtabs-list" role="tablist" aria-label="${escapeHtml(shipName)} losses">${tabsHtml}</div>
+      <details class="fit-menu">
+        <summary class="fit-menu-btn" title="Fit actions">&#8942;</summary>
+        <div class="fit-menu-dropdown">
+          <button type="button" class="fit-menu-item" data-action="export-eft">Export fit to clipboard (EFT)</button>
+        </div>
+      </details>
     </div>
-    </div>
-    <div class="mys-mine-view" hidden></div>
+    <div class="assess-box">${panelsHtml}</div>
+    <div class="note">Each tab is one specific loss — weakest damage type, effective HP, and DPS are all calculated from that fit by itself, never combined with modules from any other loss.</div>
   `;
   mysWireSwitchHosts(el);
 
   el.querySelectorAll('.subtab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = btn.dataset.idx;
-      el.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      el.querySelectorAll('.subtab-btn').forEach(b => { b.classList.toggle('active', b === btn); b.setAttribute('aria-selected', String(b === btn)); });
       el.querySelectorAll('.subtab-panel').forEach(p => {
-        p.style.display = (p.dataset.idx === idx) ? 'block' : 'none';
+        const on = p.dataset.idx === idx;
+        p.style.display = on ? 'block' : 'none';
+        const mv = p.querySelector(':scope > .mys-mine-view');
+        if(!on && mv){ mv.innerHTML = ''; }   // only the visible loss draws my ship
       });
+      const host = el.querySelector(`.subtab-panel[data-idx="${idx}"] > .mys-switch-host`);
+      if(host) mysRenderSwitch(host, {redrawMine: true});   // the scoreboard and the side shown follow the visible loss
     });
   });
 
@@ -14228,7 +14749,7 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   function rerenderTab(i){
     const wrap = el.querySelector(`#fit-layout-wrap-${i}`);
     if(!wrap) return;
-    wrap.innerHTML = fitLayoutHtml(fits[i], idToName, {collapsible: true});
+    wrap.innerHTML = fitLayoutHtml(fits[i], idToName, {collapsible: true, dmg: true});
     wireTab(i);
   }
   function wireTab(i){
@@ -14238,6 +14759,841 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   }
   fits.forEach((f, i) => wireTab(i));
 }
+// ==== THEIR DAMAGE ON YOU (v2026.10.14.36, turret-application-plan.md Phase 2b) ====
+// Erik 2026-10-23, after the "Their damage on you — chart mockup" canvas: Option B (its own full-width card under
+// the three columns), the signature slider scales your fit's own signature, the engagement range starts at their
+// optimal + falloff, and until a ship is saved a class preset stands in, treated as a FIT (so their scram switches
+// its MWD off as it would yours; DMG_CLASS_PRESETS, chosen by tools/select_class_presets.py).
+// Presentation and inputs only. Every number is PYFA CORE: pyfaProjectedPoint (their webs / painters / scram on the
+// target) then pyfaAppliedDps (their weapons' application), on the attacker's estimate.application and the
+// target's estimate.projectedTarget.variants (decision D4: the target's prop module running; the switch turns it
+// off). pyfa's graph defaults: lock range ignored, resists ignored, drones follow-or-catch ("auto").
+// Moving a control redraws this card only: the fit engine never runs for it (a module-state change does, as before).
+// Their drones and fighters are not charted yet (D5): their raw DPS is named under the chart.
+const DMG_CLASS_PRESETS = [ // tools/select_class_presets.py --check (update-check chain): the class-median hulls
+  {key: 'frigate', label: 'Frigate', hull: 'Navitas', prop: '5MN Microwarpdrive II'},
+  {key: 'destroyer', label: 'Destroyer', hull: 'Cormorant', prop: '5MN Microwarpdrive II'},
+  {key: 'cruiser', label: 'Cruiser', hull: 'Caracal', prop: '50MN Microwarpdrive II'},
+  {key: 'battlecruiser', label: 'Battlecruiser', hull: 'Harbinger', prop: '50MN Microwarpdrive II'},
+  {key: 'battleship', label: 'Battleship', hull: 'Raven', prop: '500MN Microwarpdrive II'}];
+const DMG_PRESET_KEY = 'dscanDmgPreset';
+const dmgPresets = {}; // key -> {loading, f, error}
+const DMG_EMPTY_PROJECTED = {scramRange: null, webMods: [], tpMods: [], webDrones: [], tpDrones: [], webFighters: [], tpFighters: [], droneControlRange: 0};
+const DMG_SAMPLES = 120;
+
+function dmgPresetKey(){
+  try{ const v = localStorage.getItem(DMG_PRESET_KEY); if(DMG_CLASS_PRESETS.some(p => p.key === v)) return v; }catch(e){}
+  return 'cruiser';
+}
+function dmgPresetEft(p){ return `[${p.hull}, Typical ${p.label.toLowerCase()}]\n\n${p.prop}\n`; }
+function dmgLoadPreset(key){
+  const slot = dmgPresets[key] || (dmgPresets[key] = {loading: null, f: null, error: ''});
+  if(slot.f) return Promise.resolve(slot);
+  if(slot.loading) return slot.loading;
+  const p = DMG_CLASS_PRESETS.find(x => x.key === key);
+  slot.loading = (async () => {
+    try{ const {f} = await buildFitFromEft(dmgPresetEft(p)); slot.f = f; slot.error = ''; }
+    catch(e){ slot.error = withCode(`The typical ${p.label.toLowerCase()} couldn't be loaded (${errorCodeOf(e)}: ${e.message}). Try again later, or set your own ship.`, 'DMG-01'); }
+    finally{ slot.loading = null; }
+    return slot;
+  })();
+  return slot.loading;
+}
+// Whose speed and signature the chart uses: my ship (saved and "Use in assessments" on), else the chosen class preset.
+async function dmgResolveTarget(){
+  if(myShip.rec && myShip.rec.use){
+    const f = await myShipEnsureFit();
+    if(!f) return {kind: 'mine', error: myShip.error || 'Your ship could not be loaded.'};
+    const pt = f.estimate && f.estimate.projectedTarget;
+    if(!pt) return {kind: 'mine', error: withCode("Your ship's hull record has no dogma effects, so pyfa's speed and signature can't be worked out for it.", 'DMG-01')};
+    const propName = pt.variants.propTypeId && myShip.parsed && myShip.parsed.idToName ? (myShip.parsed.idToName.get(pt.variants.propTypeId) || '') : '';
+    return {kind: 'mine', label: myShipLabel(), pt, propName, version: myShip.version};
+  }
+  const key = dmgPresetKey(), p = DMG_CLASS_PRESETS.find(x => x.key === key);
+  const slot = await dmgLoadPreset(key);
+  if(!slot.f) return {kind: 'preset', presetKey: key, error: slot.error};
+  const pt = slot.f.estimate.projectedTarget;
+  return {kind: 'preset', presetKey: key, label: `a typical ${p.label.toLowerCase()}`, pt, propName: p.prop, preset: p};
+}
+
+// ---- the numbers ----
+function dmgWeaponRange(w){
+  if(w.kind === 'turret') return (w.optimal || 0) + (w.falloff || 0);
+  if(w.kind === 'missile'){ if(!w.missileMaxRangeData) return 0; const [lo, hi, ch] = w.missileMaxRangeData; return lo * (1 - ch) + hi * ch; } // pyfa Module.maxRange
+  return w.maxRange || 0;
+}
+// Decision 2026-10-23: start at their optimal + falloff -- of the weapon group with the most raw DPS (turrets: optimal +
+// falloff; missiles: their flight range; Vorton: maxRange; smartbombs: blast radius), its highest-DPS weapon.
+// v2026.10.14.40 (drones applied): sentry drones count as a group with their optimal + falloff; mobile drones
+// (they fly to you, so they set no engagement range) only when nothing else deals damage: then 10 km.
+const dmgIsSentry = (d) => !(d.speed > 1);
+function dmgDefaultRangeM(app){
+  const byKind = {};
+  for(const w of app.weapons) byKind[w.kind] = (byKind[w.kind] || 0) + w.dps;
+  const sentries = (app.drones || []).filter(dmgIsSentry);
+  if(sentries.length) byKind.sentry = sentries.reduce((s, d) => s + d.dps, 0);
+  const kind = Object.keys(byKind).sort((a, b) => byKind[b] - byKind[a])[0];
+  if(!kind) return 10000;
+  if(kind === 'sentry'){ const d = sentries.sort((a, b) => b.dps - a.dps)[0]; return (d.optimal || 0) + (d.falloff || 0) || 10000; }
+  const w = app.weapons.filter(x => x.kind === kind).sort((a, b) => b.dps - a.dps)[0];
+  return dmgWeaponRange(w) || 10000;
+}
+function dmgReachM(app){
+  let r = 0;
+  for(const w of app.weapons) r = Math.max(r, w.kind === 'turret' ? (w.optimal || 0) + 3 * (w.falloff || 0)
+    : w.kind === 'missile' ? (w.missileMaxRangeData ? w.missileMaxRangeData[1] : 0) : (w.maxRange || 0));
+  const dcr = (app.projected && app.projected.droneControlRange) || 0;   // v.40: drones reach as far as their control range
+  for(const d of app.drones || []) r = Math.max(r, Math.min(dcr * 1.1, dmgIsSentry(d) ? (d.optimal || 0) + 3 * (d.falloff || 0) : dcr * 1.1));
+  return r;
+}
+function dmgNiceKm(km){
+  const steps = [2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 120, 150, 200, 250, 300, 400, 500];
+  return steps.find(s => s >= km) || Math.ceil(km / 100) * 100;
+}
+function dmgNiceY(v){
+  if(!(v > 0)) return 100;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  for(const m of [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if(m * p >= v) return m * p;
+  return 10 * p;
+}
+function dmgFmt(v){ return Math.round(v).toLocaleString('en-US'); }
+function dmgKm(m){ const km = m / 1000; return (km >= 100 ? km.toFixed(0) : km >= 10 ? km.toFixed(1) : km.toFixed(2)).replace(/\.?0+$/, '') + ' km'; }
+function dmgTopSpeed(estimate){
+  const pt = estimate && estimate.projectedTarget;
+  // v.41: their top speed in their current states (their prop module only if it is running)
+  const v = pt && pt.variants ? ((pt.variants.running && pt.variants.on) || pt.variants.off) : null;
+  if(v) return pyfaTargetValue({isFit: true, resist: pt.resist, maxVelocity: v.maxVelocity, signatureRadius: v.signatureRadius}, 'maxVelocity', null, false);
+  return (estimate && estimate.speed && (estimate.speed.boosted || estimate.speed.cruising)) || 0;
+}
+function dmgDefaults(app){
+  return {range: Math.round(dmgDefaultRangeM(app) / 100) * 100, mode: 'orbit', speedPct: 100, prop: true, sigPct: 100, theirPct: 0, theirMode: 'toward', axis: 'distance'};
+}
+// One target as PYFA CORE projected wants it, for the chosen prop state and signature scale.
+function dmgTargetObj(pt, prop, sigScale){
+  const v = (prop && pt.variants.on) ? pt.variants.on : pt.variants.off;
+  return {isFit: true, radius: pt.radius, disallowOffensiveModifiers: pt.disallowOffensiveModifiers, resist: pt.resist,
+    maxVelocity: v.maxVelocity, signatureRadius: {base: v.signatureRadius.base * sigScale, pool: v.signatureRadius.pool, scrammed: v.signatureRadius.scrammed}};
+}
+// The default graph at one point: their tackle on you first, then their weapons at your tackled speed and painted signature.
+function dmgPoint(app, tgt, q){
+  const p = {distance: q.d, tgtSpeed: q.ySpeed, tgtAngle: q.yAngle, atkSpeed: q.tSpeed, atkAngle: q.tAngle, ignoreLockRange: true};
+  const pt = pyfaProjectedPoint(app, tgt, p);
+  return {dps: pyfaAppliedDps(app, Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius})), speed: pt.tgtSpeed, sig: pt.tgtSigRadius};
+}
+// Everything one draw needs, from the card state st.
+function dmgModel(f, T, st){
+  const est = f.estimate, app0 = est.application;
+  const app = Object.assign({}, app0, {projected: app0.projected || DMG_EMPTY_PROJECTED});
+  const tgt = dmgTargetObj(T.pt, st.prop, st.sigPct / 100);
+  const hasProp = !!T.pt.variants.on;
+  const maxU = pyfaTargetValue(tgt, 'maxVelocity', null, false);
+  const sigFit = pyfaTargetValue(dmgTargetObj(T.pt, st.prop, 1), 'signatureRadius', null, false);
+  const ySpeed = st.mode === 'still' ? 0 : st.speedPct / 100 * maxU, yAngle = st.mode === 'orbit' ? 90 : 0;
+  const theirTop = dmgTopSpeed(est), tSpeed = st.theirPct / 100 * theirTop, tAngle = st.theirMode === 'orbit' ? 90 : 0;
+  const xMax = dmgNiceKm(Math.max(dmgReachM(app), dmgDefaultRangeM(app) * 1.25, 1000) / 1000) * 1000;
+  const base = {d: st.range, ySpeed, yAngle, tSpeed, tAngle};
+  const pointAt = (over, tg = tgt) => dmgPoint(app, tg, Object.assign({}, base, over));
+  const cur = pointAt({}), still = pointAt({ySpeed: 0, yAngle: 0});
+  let axis;
+  if(st.axis === 'speed') axis = {lo: 0, hi: maxU, title: `your speed at ${dmgKm(st.range)}`, fmt: (x) => dmgFmt(x) + ' m/s', eng: ySpeed,
+    q: (x) => ({ySpeed: x, yAngle: st.mode === 'straight' ? 0 : 90})};
+  else if(st.axis === 'sig') axis = {lo: 25, hi: Math.max(1500, dmgNiceY(sigFit * 3)), title: `your signature radius at ${dmgKm(st.range)}`, fmt: (x) => dmgFmt(x) + ' m', eng: sigFit * st.sigPct / 100,
+    q: (x) => ({tg: dmgTargetObj(T.pt, st.prop, x / sigFit)})};
+  else axis = {lo: 0, hi: xMax, title: 'distance, surface to surface', fmt: dmgKm, eng: st.range, q: (x) => ({d: x})};
+  const xs = Array.from({length: DMG_SAMPLES + 1}, (_, i) => axis.lo + (axis.hi - axis.lo) * i / DMG_SAMPLES);
+  const at = (x) => { const q = axis.q(x); const tg = q.tg || tgt; delete q.tg; return pointAt(q, tg); };
+  const line2 = xs.map(x => at(x).dps);
+  const line1 = st.axis === 'distance' ? xs.map(x => pointAt({d: x, ySpeed: 0, yAngle: 0}).dps) : null;
+  const yMax = dmgNiceY(Math.max(...line2, ...(line1 || []), cur.dps, 1) * 1.05);
+  const markers = [];
+  if(st.axis === 'distance'){
+    const pr = app.projected;
+    if(pr.scramRange !== null && pr.scramRange <= xMax) markers.push({x: pr.scramRange, label: (hasProp && st.prop && T.pt.variants.propKind === 'mwd') ? 'scram: your MWD off' : 'scram'});
+    const webs = [...pr.webMods, ...pr.webDrones].map(w => w.optimal).filter(x => x > 0 && x <= xMax);
+    if(webs.length) markers.push({x: Math.max(...webs), label: 'web'});
+    if(app.lockRange && app.lockRange <= xMax) markers.push({x: app.lockRange, label: 'their lock range'});
+    if((app.drones || []).length && pr.droneControlRange && pr.droneControlRange <= xMax) markers.push({x: pr.droneControlRange, label: 'their drone range'});
+  }
+  const moveText = st.mode === 'still' ? 'you still' : `${st.mode === 'orbit' ? 'you orbiting' : 'you flying straight at them'} at ${dmgFmt(ySpeed)} m/s`;
+  const line2Label = st.axis !== 'distance' ? `At ${dmgKm(st.range)}, ${st.axis === 'speed' ? (st.mode === 'straight' ? 'flying at them' : 'orbiting') : moveText.replace(/^you /, '')}`
+    : (st.mode === 'still' ? 'You still' : `You ${st.mode === 'orbit' ? 'orbiting' : 'flying at them'}, ${dmgFmt(ySpeed)} m/s`);
+  return {app, tgt, T, st, hasProp, maxU, sigFit, ySpeed, theirTop, tSpeed, cur, still, axis, xs, line1, line2, yMax, markers, moveText, line2Label, at, pointAt,
+    raw: app.weapons.reduce((s, w) => s + w.dps, 0) + (app.drones || []).reduce((s, d) => s + d.dps, 0)};
+}
+
+// ---- drawing ----
+function dmgChartSvg(m, W, H, hoverIdx){
+  const L = 46, Tp = 22, B = 26, R = 12, pw = W - L - R, ph = H - Tp - B;
+  const xOf = (x) => L + (m.axis.hi > m.axis.lo ? (x - m.axis.lo) / (m.axis.hi - m.axis.lo) : 0) * pw;
+  const yOf = (v) => Tp + ph - Math.min(v, m.yMax) / m.yMax * ph;
+  const pts = (arr) => arr.map((v, i) => `${xOf(m.xs[i]).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => f * m.yMax);
+  // round tick steps (1, 2, 2.5, 5 x 10^n), at most 4 gaps on a phone and 6 on a wide card; the last tick is the axis end
+  const nX = W < 480 ? 4 : 6, span = m.axis.hi - m.axis.lo;
+  const p10 = Math.pow(10, Math.floor(Math.log10(Math.max(span, 1e-9) / nX)));
+  const step = [1, 2, 2.5, 5, 10].map(k => k * p10).find(s => span / s <= nX + 1e-9) || span / nX;
+  const xTicks = [];
+  for(let x = Math.ceil(m.axis.lo / step - 1e-9) * step; x < m.axis.hi - step * 0.4; x += step) xTicks.push(x);
+  xTicks.push(m.axis.hi);
+  const tickLabel = (x) => m.st.axis === 'distance' ? String(+(x / 1000).toFixed(2)) : dmgFmt(x);
+  let s = `<svg class="dmg-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(`DPS applied to you across ${m.axis.title}, ${m.st.axis === 'distance' ? 'you still and ' + m.line2Label.toLowerCase() : m.line2Label.toLowerCase()}. Headline ${dmgFmt(m.cur.dps)} DPS.`)}">`;
+  for(const v of yTicks){
+    const y = yOf(v).toFixed(1);
+    s += `<line x1="${L}" y1="${y}" x2="${L + pw}" y2="${y}" class="${v === 0 ? 'dmg-axis' : 'dmg-gridline'}"></line><text x="${L - 6}" y="${(+y + 4).toFixed(1)}" class="dmg-tick" text-anchor="end">${dmgFmt(v)}</text>`;
+  }
+  xTicks.forEach((x, i) => {
+    const last = i === xTicks.length - 1;
+    s += `<text x="${xOf(x).toFixed(1)}" y="${H - 8}" class="dmg-tick" text-anchor="${xOf(x) - L < 12 ? 'start' : last ? 'end' : 'middle'}">${tickLabel(x)}${last ? (m.st.axis === 'distance' ? ' km' : m.st.axis === 'speed' ? ' m/s' : ' m') : ''}</text>`;
+  });
+  let lastLabelEnd = -Infinity;
+  for(const mk of m.markers.sort((a, b) => a.x - b.x)){
+    const x = xOf(mk.x);
+    s += `<line x1="${x.toFixed(1)}" y1="${Tp}" x2="${x.toFixed(1)}" y2="${Tp + ph}" class="dmg-marker"></line>`;
+    const w = mk.label.length * 6.2;
+    const right = x + 4 + w <= L + pw && x + 4 > lastLabelEnd;
+    const tx = right ? x + 4 : x - 4;
+    if(right || x - 4 - w > lastLabelEnd){ s += `<text x="${tx.toFixed(1)}" y="${Tp - 6}" class="dmg-tick" text-anchor="${right ? 'start' : 'end'}">${escapeHtml(mk.label)}</text>`; lastLabelEnd = right ? x + 4 + w : x; }
+  }
+  const ex = xOf(m.axis.eng);
+  s += `<line x1="${ex.toFixed(1)}" y1="${Tp}" x2="${ex.toFixed(1)}" y2="${Tp + ph}" class="dmg-eng"></line>`;
+  if(m.line1) s += `<polyline points="${pts(m.line1)}" class="dmg-line dmg-still"></polyline>`;
+  s += `<polyline points="${pts(m.line2)}" class="dmg-line dmg-move"></polyline>`;
+  const engMove = m.st.axis === 'distance' ? m.cur.dps : m.at(m.axis.eng).dps;
+  if(m.line1) s += `<circle cx="${ex.toFixed(1)}" cy="${yOf(m.still.dps).toFixed(1)}" r="4" class="dmg-dot dmg-still"></circle>`;
+  s += `<circle cx="${ex.toFixed(1)}" cy="${yOf(engMove).toFixed(1)}" r="4" class="dmg-dot dmg-move"></circle>`;
+  if(hoverIdx !== null && hoverIdx !== undefined){
+    const hx = xOf(m.xs[hoverIdx]).toFixed(1);
+    s += `<line x1="${hx}" y1="${Tp}" x2="${hx}" y2="${Tp + ph}" class="dmg-hover"></line>`;
+    if(m.line1) s += `<circle cx="${hx}" cy="${yOf(m.line1[hoverIdx]).toFixed(1)}" r="3.5" class="dmg-dot dmg-still"></circle>`;
+    s += `<circle cx="${hx}" cy="${yOf(m.line2[hoverIdx]).toFixed(1)}" r="3.5" class="dmg-dot dmg-move"></circle>`;
+  }
+  s += `<rect x="${L}" y="${Tp}" width="${pw}" height="${ph}" class="dmg-hit"></rect></svg>`;
+  return {svg: s, L, pw, Tp, ph};
+}
+function dmgTipHtml(m, i){
+  const x = m.xs[i], p2 = m.at(x);
+  const rows = m.line1 ? [['You still', m.line1[i]], [m.line2Label.split(',')[0], m.line2[i]]] : [['DPS applied to you', m.line2[i]]];
+  const d = m.st.axis === 'distance' ? x : m.st.range;
+  const scrammed = m.app.projected.scramRange !== null && d <= m.app.projected.scramRange && m.st.prop && m.T.pt.variants.propKind === 'mwd' && m.hasProp;
+  const yourSpeed = m.st.axis === 'speed' ? x : m.ySpeed;
+  const note = (scrammed ? 'Scrammed: your MWD is off. ' : '') + (p2.speed < yourSpeed - 0.5 ? `Webbed to ${dmgFmt(p2.speed)} m/s` : `Speed ${dmgFmt(p2.speed)} m/s`) + `, signature ${dmgFmt(p2.sig)} m.`;
+  return `<div class="dmg-tip-t">${escapeHtml(m.axis.fmt(x))}</div>${rows.map(([k, v]) => `<div class="dmg-tip-r"><span>${escapeHtml(k)}</span><span class="dmg-num">${dmgFmt(v)}</span></div>`).join('')}<div class="dmg-tip-n">${escapeHtml(note)}</div>`;
+}
+function dmgTableHtml(m){
+  const nX = 6, rows = Array.from({length: nX + 1}, (_, i) => Math.round(i * DMG_SAMPLES / nX));
+  return `<table class="dmg-table"><thead><tr><th scope="col">${escapeHtml(m.st.axis === 'distance' ? 'Distance' : m.st.axis === 'speed' ? 'Your speed' : 'Your signature')}</th>${m.line1 ? '<th scope="col">You still</th>' : ''}<th scope="col">${escapeHtml(m.line1 ? m.line2Label.split(',')[0] : 'DPS applied to you')}</th></tr></thead><tbody>${
+    rows.map(i => `<tr><td>${escapeHtml(m.axis.fmt(m.xs[i]))}</td>${m.line1 ? `<td>${dmgFmt(m.line1[i])}</td>` : ''}<td>${dmgFmt(m.line2[i])}</td></tr>`).join('')}</tbody></table>`;
+}
+function dmgUnappliedText(app){
+  const u = app.unapplied || {}, parts = [];
+  if(u.droneDps > 0) parts.push(`their drones (${dmgFmt(u.droneDps)} DPS raw)`);
+  if(u.fighterDps > 0) parts.push(`their fighters (${dmgFmt(u.fighterDps)} DPS raw)`);
+  if(u.otherFixedDps > 0) parts.push(`other fixed-damage modules (${dmgFmt(u.otherFixedDps)} DPS raw)`);
+  if(u.cargoGuessWeapons > 0) parts.push(`weapons with no loaded charge (their DPS is a range from cargo ammo)`);
+  return parts.length ? `Not in the chart yet: ${parts.join(', ')}.` : '';
+}
+
+// ---- the card ----
+function dmgCardShellHtml(f){
+  if(!cardIsOpen(f, 'dmg')) return collapsedCardHtml('dmg', f._dmgSummary || DMG_SUMMARY_NONE);
+  return `<div class="fit-summary dmg-card">
+      <div class="dmg-top">${cardLabelHtml('dmg')}<span class="dmg-vs"></span><button type="button" class="dmg-reset" hidden>Reset to my ship</button></div>
+      <div class="dmg-body"><div class="status">Loading the ship to chart against…</div></div>
+    </div>`;
+}
+function dmgControlsHtml(m, T){
+  const st = m.st;
+  const seg = (name, list, cur) => `<div class="dmg-seg" role="group" aria-label="${escapeHtml(name)}">${list.map(([k, l]) => `<button type="button" data-seg="${escapeHtml(name)}" data-v="${k}" aria-pressed="${k === cur}">${escapeHtml(l)}</button>`).join('')}</div>`;
+  const rangeMax = m.st.axis === 'distance' ? m.axis.hi : dmgNiceKm(Math.max(dmgReachM(m.app), dmgDefaultRangeM(m.app) * 1.25, 1000) / 1000) * 1000;
+  const propLabel = T.pt.variants.propKind === 'afterburner' ? 'Your afterburner' : 'Your MWD';
+  return `
+      <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Engagement range</span><span class="dmg-num" data-out="range">${dmgKm(st.range)}</span></span>
+        <input type="range" data-in="range" min="0" max="${rangeMax}" step="${rangeMax <= 50000 ? 100 : 500}" value="${st.range}"></label>
+      <div class="dmg-ctl"><span class="dmg-ctl-row"><span>You</span></span>${seg('You', [['still', 'Still'], ['straight', 'Straight at them'], ['orbit', 'Orbiting']], st.mode)}</div>
+      <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Your speed</span><span class="dmg-num" data-out="speed"></span></span>
+        <input type="range" data-in="speedPct" min="0" max="100" step="1" value="${st.speedPct}"></label>
+      ${m.hasProp ? `<label class="dmg-ctl dmg-ctl-sw"><span>${propLabel}${T.propName ? ` <span class="dmg-faint">(${escapeHtml(T.propName)})</span>` : ''}</span><input type="checkbox" class="dmg-sw" data-in="prop"${st.prop ? ' checked' : ''}></label>` : '<div class="dmg-ctl dmg-faint">No prop module fitted.</div>'}
+      <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Your signature</span><span class="dmg-num" data-out="sig"></span></span>
+        <input type="range" data-in="sigPct" min="25" max="300" step="5" value="${st.sigPct}"></label>
+      <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Their speed</span><span class="dmg-num" data-out="their"></span></span>
+        <input type="range" data-in="theirPct" min="0" max="100" step="1" value="${st.theirPct}"></label>
+      <div class="dmg-ctl">${seg('Their heading', [['toward', 'They fly at you'], ['orbit', 'They orbit you']], st.theirMode)}</div>
+      <div class="dmg-ctl"><span class="dmg-ctl-row"><span>Chart across</span></span>${seg('Chart across', [['distance', 'Distance'], ['speed', 'Your speed'], ['sig', 'Your signature']], st.axis)}</div>`;
+}
+function dmgPresetPickerHtml(T){
+  return `<div class="dmg-presets"><span class="dmg-faint">No ship of yours is in use. Charting against a typical:</span>
+      <div class="dmg-chips">${DMG_CLASS_PRESETS.map(p => `<button type="button" class="dmg-chip" data-preset="${p.key}" aria-pressed="${p.key === T.presetKey}">${escapeHtml(p.label)}</button>`).join('')}</div>
+      ${T.preset ? `<div class="dmg-faint">${escapeHtml(T.preset.hull)} with a ${escapeHtml(T.preset.prop)}, nothing else fitted (the hull nearest the class median of MWD speed and signature).</div>` : ''}
+      <button type="button" class="dmg-link" data-act="dmg-set-ship">Set my ship for exact numbers</button></div>`;
+}
+// Fills a card for fit f once its target is known; every control redraws in place (dmgDraw).
+async function dmgFill(host, f){
+  const card = host.querySelector('.dmg-card');
+  if(!card) return dmgFillCollapsed(host, f);
+  const token = {};
+  host._dmgToken = token;
+  const app = f.estimate && f.estimate.application;
+  const body = card.querySelector('.dmg-body');
+  if(!app || (!app.weapons.length && !(app.drones || []).length)){
+    const un = app ? dmgUnappliedText(app) : '';
+    body.innerHTML = `<p class="dmg-note">No turrets, missiles, Vorton projectors, smartbombs or drones to chart.${un ? ' ' + escapeHtml(un) : ''}</p>`;
+    card.querySelector('.dmg-vs').textContent = '';
+    return;
+  }
+  const T = await dmgResolveTarget();
+  if(host._dmgToken !== token || !host.isConnected) return;
+  if(T.error){ body.innerHTML = `<div class="status err">${escapeHtml(T.error)}</div>${T.kind === 'preset' ? dmgPresetPickerHtml(T) : ''}`; dmgWirePresets(card); return; }
+  if(!f.dmg) f.dmg = dmgDefaults(app);
+  card.querySelector('.dmg-vs').innerHTML = `${T.kind === 'mine' ? MY_SHIP_HULL_SVG(14) : ''}<span>applied to ${escapeHtml(T.kind === 'mine' ? 'your ' : '')}${escapeHtml(T.label)}</span>`;
+  const m0 = dmgModel(f, T, f.dmg);
+  const unapplied = dmgUnappliedText(app);
+  const phone = host.clientWidth < 720; // a narrow card: Adjust folds under the chart, closed (same 720 px as its container query)
+  body.innerHTML = `
+      ${T.kind === 'preset' ? dmgPresetPickerHtml(T) : ''}
+      <div class="dmg-grid">
+        <div class="dmg-main">
+          <div class="dmg-head"><span class="dmg-big" data-out="head"></span><span data-out="headText"></span><span class="dmg-faint" data-out="headSub"></span></div>
+          <div class="dmg-legend" data-out="legend"></div>
+          <div class="dmg-chart"><div data-out="chart"></div><div class="dmg-tip" hidden></div></div>
+          <p class="dmg-note">As pyfa's damage graph: their webs, target painters and scram applied, resists not counted, their lock range ignored; their drones hit fully when faster than you, otherwise track like turrets from their ship, out to their drone control range. A close, perfect hit chance averages 1.5% above raw DPS (wrecking hits), as in pyfa.${unapplied ? ' ' + escapeHtml(unapplied) : ''}</p>
+          <details class="dmg-values"><summary>Show values</summary><div data-out="table"></div></details>
+        </div>
+        <details class="dmg-adjust"${phone ? '' : ' open'}><summary>Adjust</summary><div class="dmg-controls">${dmgControlsHtml(m0, T)}</div></details>
+      </div>`;
+  card._dmg = {f, T, hover: null};
+  dmgWirePresets(card);
+  dmgWireControls(card);
+  dmgDraw(card);
+}
+// The collapsed row's headline. v2026.10.14.47 (bug list #1, Erik via the inbox: collapse the card, switch "Use in
+// assessments" off, and the row "still shows old text (out of sync w/ user's change)"): the row was only written by
+// dmgDraw, which runs while the card is open, so a collapsed card kept the headline of the last time it was open.
+// Now dmgFill also works the headline out for a collapsed card (same target, same settings, same dmgModel) and
+// writes it into the row, and dmgRefreshAll refills collapsed cards as well as open ones. LESSON #43.
+function dmgSummaryText(m, T, st){
+  return `${dmgFmt(m.cur.dps)} DPS applied to ${T.kind === 'mine' ? 'you' : T.label} at ${dmgKm(st.range)}, ${m.moveText.replace(/^you /, '')}`;
+}
+const DMG_SUMMARY_NONE = 'damage applied to you, by distance';
+async function dmgFillCollapsed(host, f){
+  const sum = host.querySelector('.cc-row[data-card="dmg"] .cc-sum');
+  if(!sum) return;
+  const token = {};
+  host._dmgToken = token;
+  const app = f.estimate && f.estimate.application;
+  let text = DMG_SUMMARY_NONE;
+  if(app && (app.weapons.length || (app.drones || []).length)){
+    const T = await dmgResolveTarget();
+    if(host._dmgToken !== token || !host.isConnected) return;
+    if(!T.error){
+      if(!f.dmg) f.dmg = dmgDefaults(app);
+      text = dmgSummaryText(dmgModel(f, T, f.dmg), T, f.dmg);
+    }
+  }
+  f._dmgSummary = text === DMG_SUMMARY_NONE ? '' : text;
+  sum.textContent = text;
+}
+function dmgDraw(card){
+  const c = card._dmg;
+  if(!c) return;
+  const {f, T} = c, st = f.dmg;
+  const m = dmgModel(f, T, st);
+  c.m = m;
+  const out = (k) => card.querySelector(`[data-out="${k}"]`);
+  out('head').textContent = dmgFmt(m.cur.dps);
+  out('headText').textContent = `DPS applied at ${dmgKm(st.range)}, ${m.moveText}`;
+  out('headSub').textContent = `${st.mode === 'still' ? '' : `${dmgFmt(m.still.dps)} if you sit still · `}${dmgFmt(m.raw)} raw`;
+  out('legend').innerHTML = `${m.line1 ? '<span class="dmg-key"><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" class="dmg-line dmg-still"></line></svg>You still</span>' : ''}<span class="dmg-key"><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" class="dmg-line dmg-move"></line></svg>${escapeHtml(m.line2Label)}</span>`;
+  const box = out('chart');
+  const W = Math.max(280, Math.floor(box.clientWidth || card.clientWidth || 700)), H = W < 480 ? 200 : 280;
+  const g = dmgChartSvg(m, W, H, c.hover);
+  box.innerHTML = g.svg;
+  c.geom = {W, H, L: g.L, pw: g.pw};
+  out('table').innerHTML = dmgTableHtml(m);
+  const set = (k, v) => { const el = out(k); if(el) el.textContent = v; };
+  set('range', dmgKm(st.range));
+  set('speed', st.mode === 'still' ? 'still' : `${dmgFmt(m.ySpeed)} m/s · ${st.speedPct}%`);
+  set('sig', `${dmgFmt(m.sigFit * st.sigPct / 100)} m${st.sigPct === 100 ? ' · from the fit' : ` · ${st.sigPct}%`}`);
+  set('their', `${dmgFmt(m.tSpeed)} of ${dmgFmt(m.theirTop)} m/s`);
+  const reset = card.querySelector('.dmg-reset');
+  const d = dmgDefaults(m.app);
+  reset.hidden = Object.keys(d).every(k => d[k] === st[k]);
+  reset.textContent = T.kind === 'mine' ? 'Reset to my ship' : 'Reset';
+  const tip = card.querySelector('.dmg-tip');
+  if(c.hover === null){ tip.hidden = true; }
+  else{
+    tip.hidden = false; tip.innerHTML = dmgTipHtml(m, c.hover);
+    const x = g.L + c.hover / DMG_SAMPLES * g.pw;
+    tip.style.left = Math.max(0, Math.min(W - 230, x - 115)) + 'px';
+  }
+  f._dmgSummary = dmgSummaryText(m, T, st);
+  const tview = card.closest('.mys-threat-view'), shost = tview && tview.parentElement && tview.parentElement.querySelector(':scope > .mys-switch-host');
+  if(shost && !shost.hidden) mysRenderStrip(shost);   // v.41: the strip follows the card's settings
+  const wrap = card.closest('.fit-layout');
+  const slot = wrap && wrap.querySelector('.dmg-fp-slot');
+  if(slot) slot.innerHTML = `<button type="button" class="dmg-link" data-act="dmg-jump">${escapeHtml(dmgFmt(m.cur.dps))} DPS applied to ${escapeHtml(T.kind === 'mine' ? 'you' : T.label)} at ${escapeHtml(dmgKm(st.range))} ${slot.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_PRECEDING ? '↑' : '↓'}</button>`;
+  const jump = slot && slot.querySelector('[data-act="dmg-jump"]');
+  if(jump) jump.addEventListener('click', () => card.scrollIntoView({block: 'start', behavior: 'smooth'}));
+}
+function dmgWireControls(card){
+  const c = card._dmg, f = c.f;
+  card.querySelectorAll('input[data-in]').forEach(inp => inp.addEventListener('input', () => {
+    const k = inp.dataset.in;
+    f.dmg[k] = k === 'prop' ? inp.checked : Number(inp.value);
+    c.hover = null;
+    dmgDraw(card);
+  }));
+  card.querySelectorAll('button[data-seg]').forEach(b => b.addEventListener('click', () => {
+    const key = {'You': 'mode', 'Their heading': 'theirMode', 'Chart across': 'axis'}[b.dataset.seg];
+    f.dmg[key] = b.dataset.v;
+    card.querySelectorAll(`button[data-seg="${b.dataset.seg}"]`).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    c.hover = null;
+    dmgDraw(card);
+  }));
+  card.querySelector('.dmg-reset').addEventListener('click', () => {
+    f.dmg = dmgDefaults(c.m.app);
+    const host = card.closest('.fl-dmg');
+    if(host) dmgFill(host, f);
+  });
+  const chart = card.querySelector('[data-out="chart"]');
+  const hoverAt = (e) => {
+    const g = c.geom; if(!g) return;
+    const r = chart.getBoundingClientRect();
+    const i = Math.round((e.clientX - r.left - g.L) / g.pw * DMG_SAMPLES);
+    const idx = Math.max(0, Math.min(DMG_SAMPLES, i));
+    if(idx !== c.hover){ c.hover = idx; dmgDraw(card); }
+  };
+  chart.addEventListener('pointermove', hoverAt);
+  chart.addEventListener('pointerdown', hoverAt);
+  chart.addEventListener('pointerleave', (e) => { if(e.pointerType === 'mouse'){ c.hover = null; dmgDraw(card); } });
+  if(window.ResizeObserver){
+    let w = chart.clientWidth;
+    const ro = new ResizeObserver(() => { if(!card.isConnected){ ro.disconnect(); return; } if(Math.abs(chart.clientWidth - w) > 4){ w = chart.clientWidth; dmgDraw(card); } });
+    ro.observe(chart);
+  }
+}
+function dmgWirePresets(card){
+  card.querySelectorAll('button[data-preset]').forEach(b => b.addEventListener('click', () => {
+    try{ localStorage.setItem(DMG_PRESET_KEY, b.dataset.preset); }catch(e){}
+    dmgRefreshAll();
+  }));
+  const set = card.querySelector('[data-act="dmg-set-ship"]');
+  if(set) set.addEventListener('click', () => openMyShipPanel('paste'));
+}
+// Called from wireFitLayout for every threat layout that has the card's slot.
+function dmgWire(wrap, f){
+  const host = wrap.querySelector('.fl-dmg');
+  if(!host) return;
+  host._dmgF = f;
+  dmgFill(host, f);
+  // v.41: the matchup strip reads this fit even while the card is collapsed (phone)
+  const tview = host.closest('.mys-threat-view'), shost = tview && tview.parentElement && tview.parentElement.querySelector(':scope > .mys-switch-host');
+  if(shost && !shost.hidden) mysRenderStrip(shost);
+}
+// My ship saved, replaced, deleted, switched on or off, its states changed, or another preset chosen: every card
+// redraws, open or collapsed (v2026.10.14.47: collapsed ones were skipped, bug list #1).
+function dmgRefreshAll(){
+  document.querySelectorAll('.fl-dmg').forEach(host => { if(host._dmgF) dmgFill(host, host._dmgF); });
+}
+
+// ==== MATCHUP STRIP (v2026.10.14.41, roadmap/my-ship-plan.md phase 2a) ====
+// Erik 2026-10-23 (P1-P4): their DPS on you, your DPS on them, how long each of you lasts, who's faster, for the
+// fight the "Their damage on you" card describes (its range and movement; your DPS on them uses the mirror: your
+// speed as the attacker's, theirs as the target's). Shown with the threat / my ship switch, so it stays in place in
+// both views. Numbers that differ from your pasted fit's own module states are amber (M6).
+// The DPS numbers are PYFA CORE (pyfaProjectedPoint, then pyfaApplicationMult / pyfaGetDroneMult per weapon and
+// drone, summed by damage type). "You last" / "They last" is NOT a pyfa number (pyfa has no time to kill; DEVIATIONS.md):
+// the incoming applied DPS by damage type against each layer's resonances (shield, then armor, then hull), minus
+// that layer's local reps (pyfa's per-layer repair rates, exact.*RepHpPerSec) and the shield's peak passive regen
+// (2.5 x HP / recharge time, as the Break Point uses), with the reps stopping when the capacitor runs out (pyfa's
+// capacitor simulation, timeToEmptyExactSec); "holds" when the incoming damage never gets through.
+function dmgTypedPoint(app, tgt, q){
+  const p = {distance: q.d, tgtSpeed: q.ySpeed, tgtAngle: q.yAngle, atkSpeed: q.tSpeed, atkAngle: q.tAngle, ignoreLockRange: true};
+  const pt = pyfaProjectedPoint(app, tgt, p);
+  const p2 = Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius});
+  const typed = {em: 0, therm: 0, kin: 0, exp: 0};
+  const add = (typeDps, mult) => { for(const d of DMG) typed[d] += ((typeDps || {})[d] || 0) * mult; };
+  for(const w of app.weapons) add(w.typeDps, pyfaApplicationMult(w, Object.assign({atkRadius: app.radius, lockRange: app.lockRange}, p2)));
+  for(const d of app.drones || []) add(d.typeDps, pyfaGetDroneMult(app, d, p2));
+  return {dps: DMG.reduce((s, d) => s + typed[d], 0), typed, speed: pt.tgtSpeed, sig: pt.tgtSigRadius};
+}
+function ttkDefense(est){
+  const x = est.exact || {}, r = est.resonance || {}, cap = est.capacitor || {};
+  const passive = (x.shieldHP > 0 && x.shieldRechargeTimeSec > 0) ? 2.5 * x.shieldHP / x.shieldRechargeTimeSec : 0;
+  return {layers: [
+    {key: 'shield', hp: x.shieldHP || 0, res: r.shield || {}, rep: x.shieldRepHpPerSec || 0, passive},
+    {key: 'armor', hp: x.armorHP || 0, res: r.armor || {}, rep: x.armorRepHpPerSec || 0, passive: 0},
+    {key: 'hull', hp: x.hullHP || 0, res: r.hull || {}, rep: x.hullRepHpPerSec || 0, passive: 0}],
+    capSec: cap.stable ? Infinity : (cap.timeToEmptyExactSec !== null && cap.timeToEmptyExactSec !== undefined ? cap.timeToEmptyExactSec : Infinity)};
+}
+// Seconds until hull is gone, Infinity if a layer holds. Layer by layer; the reps run until capSec, passive regen always.
+function ttkSeconds(def, typed){
+  let t = 0;
+  for(const l of def.layers){
+    if(!(l.hp > 0)) continue;
+    const incoming = DMG.reduce((s, d) => s + (typed[d] || 0) * (l.res[d] === undefined ? 1 : l.res[d]), 0);
+    let hp = l.hp;
+    if(t < def.capSec){
+      const net = incoming - l.rep - l.passive;
+      if(net > 0){
+        const left = def.capSec - t;
+        if(hp / net <= left){ t += hp / net; continue; }
+        hp -= net * left;
+      }
+      if(def.capSec === Infinity) return Infinity;
+      t = def.capSec;
+    }
+    const net2 = incoming - l.passive;
+    if(!(net2 > 0)) return Infinity;
+    t += hp / net2;
+  }
+  return t;
+}
+function ttkText(s){
+  if(s === Infinity) return 'holds';
+  if(s < 60) return `${Math.max(1, Math.round(s))} s`;
+  if(s < 3600){ const m = Math.floor(s / 60), r = Math.round(s - m * 60); return r === 60 ? `${m + 1} min` : `${m} min ${r} s`; }
+  return 'over an hour';
+}
+// The strip's numbers for threat fit tf against my ship fit mf, at the card state st.
+// The fight the card describes, both ways: tApp on me at qIn (their DPS on you), mApp on them at qOut (the mirror).
+// v2026.10.14.42: shared with the Weaknesses picks (wpRank), so both rank the same fight.
+function mysFight(tf, mf, st){
+  const tEst = tf.estimate, mEst = mf.estimate, tApp0 = tEst.application, mApp0 = mEst.application;
+  if(!tApp0 || !mApp0 || !tEst.projectedTarget || !mEst.projectedTarget) return null;
+  const tApp = Object.assign({}, tApp0, {projected: tApp0.projected || DMG_EMPTY_PROJECTED});
+  const mApp = Object.assign({}, mApp0, {projected: mApp0.projected || DMG_EMPTY_PROJECTED});
+  const me = dmgTargetObj(mEst.projectedTarget, st.prop, st.sigPct / 100);
+  const myTop = pyfaTargetValue(me, 'maxVelocity', null, false);
+  const ySpeed = st.mode === 'still' ? 0 : st.speedPct / 100 * myTop, yAngle = st.mode === 'orbit' ? 90 : 0;
+  const tv = tEst.projectedTarget.variants;
+  const them = dmgTargetObj(tEst.projectedTarget, !!(tv && tv.running), 1);
+  const theirTop = dmgTopSpeed(tEst), tSpeed = st.theirPct / 100 * theirTop, tAngle = st.theirMode === 'orbit' ? 90 : 0;
+  return {tEst, mEst, tApp, mApp, me, them, myTop, theirTop,
+    qIn: {d: st.range, ySpeed, yAngle, tSpeed, tAngle},
+    qOut: {d: st.range, ySpeed: tSpeed, yAngle: tAngle, tSpeed: ySpeed, tAngle: yAngle}};
+}
+function mysMatchup(tf, mf, st){
+  const F = mysFight(tf, mf, st);
+  if(!F) return null;
+  const {tEst, mEst, tApp, mApp, me, them, myTop, theirTop} = F;
+  const inc = dmgTypedPoint(tApp, me, F.qIn);
+  const out = dmgTypedPoint(mApp, them, F.qOut);
+  const youLast = ttkSeconds(ttkDefense(mEst), inc.typed), theyLast = ttkSeconds(ttkDefense(tEst), out.typed);
+  const diff = myTop - theirTop;
+  // v2026.10.14.43 scoreboard: the edge goes to whoever outlasts the other (both "holds": neither breaks the other).
+  const edge = youLast === theyLast ? (youLast === Infinity ? 'none' : 'even') : (youLast > theyLast ? 'you' : 'threat');
+  return {theirDps: inc.dps, yourDps: out.dps, youLast, theyLast, myTop, theirTop, edge,
+    cells: [
+      {key: 'their', label: 'DPS applied to you', value: dmgFmt(inc.dps)},
+      {key: 'theyLast', label: 'they last', value: ttkText(theyLast)},
+      {key: 'youLast', label: 'you last', value: ttkText(youLast)},
+      {key: 'your', label: 'DPS applied to them', value: dmgFmt(out.dps)},
+      {key: 'edge', label: 'edge', value: {you: 'edge: you', threat: 'edge: threat', even: 'even', none: 'neither breaks'}[edge]},
+      {key: 'faster', label: 'faster', value: Math.abs(diff) < 0.5 ? 'same top speed' : `${diff > 0 ? "you're" : "they're"} ${dmgFmt(Math.abs(diff))} m/s faster`}]};
+}
+// My ship with the pasted fit's own module states (the M6 baseline), computed once per saved fit.
+const mysBaseline = {eft: null, f: null, loading: null};
+function mysHasCustomStates(){
+  const r = myShip.rec;
+  return !!(r && ((r.moduleStates && Object.keys(r.moduleStates).length) || r.droneStates || r.activeMode || r.asbDry));
+}
+function mysEnsureBaseline(){
+  const r = myShip.rec;
+  if(!r) return Promise.resolve(null);
+  if(mysBaseline.eft === r.eft && mysBaseline.f) return Promise.resolve(mysBaseline.f);
+  if(mysBaseline.eft === r.eft && mysBaseline.loading) return mysBaseline.loading;
+  mysBaseline.eft = r.eft; mysBaseline.f = null;
+  const eft = r.eft;
+  mysBaseline.loading = (async () => {
+    try{ const {f} = await buildFitFromEft(eft); if(mysBaseline.eft === eft) mysBaseline.f = f; return f; }
+    catch(e){ return null; }
+    finally{ if(mysBaseline.eft === eft) mysBaseline.loading = null; }
+  })();
+  return mysBaseline.loading;
+}
+// The threat fit the strip describes: the visible loss tab's (Pilot Analyzer) or the one fit (Fit Analyzer).
+function mysStripThreatF(host){
+  const tv = host.parentElement && host.parentElement.querySelector(':scope > .mys-threat-view');
+  if(!tv) return null;
+  const panels = [...tv.querySelectorAll('.subtab-panel')];
+  const panel = panels.find(p => p.style.display !== 'none') || tv;
+  const d = panel.querySelector('.fl-dmg');
+  return d && d._dmgF ? d._dmgF : null;
+}
+// v2026.10.14.43: the numbers go into the scoreboard mysRenderSwitch drew (cells by data-cell); a loss tab that
+// isn't shown is skipped (it is filled when its tab is opened). M6: a number that differs from your pasted fit's
+// own states is amber, with the pasted value on hover.
+function mysPanelHidden(host){ const p = host.closest('.subtab-panel'); return !!(p && p.style.display === 'none'); }
+async function mysRenderStrip(host){
+  const board = host.querySelector(':scope > .mys-board');
+  if(!board || !(myShip.rec && myShip.rec.use) || mysPanelHidden(host)) return;
+  const note = host.querySelector(':scope > .mys-strip-note');
+  const setAll = (txt) => board.querySelectorAll('[data-cell] .mys-cell-v, .mys-edge').forEach(e => { e.textContent = txt; });
+  const tf = mysStripThreatF(host);
+  if(!tf || !tf.estimate || !tf.estimate.application){ setAll('–'); return; }
+  const token = {}; host._token = token;
+  const mf = (myShip.f && myShip.f.eftText === myShip.rec.eft) ? myShip.f : await myShipEnsureFit();
+  if(host._token !== token || !host.isConnected) return;
+  if(!mf){ setAll('–'); if(note) note.textContent = myShip.error || 'Your ship could not be loaded.'; return; }
+  const st = tf.dmg || dmgDefaults(tf.estimate.application);
+  const m = mysMatchup(tf, mf, st);
+  if(!m){ setAll('–'); if(note) note.textContent = "No matchup: one of the hull records has no dogma effects, so pyfa's numbers can't be worked out for it."; return; }
+  let base = null;
+  if(mysHasCustomStates()){
+    const bf = mysBaseline.f && mysBaseline.eft === myShip.rec.eft ? mysBaseline.f : null;
+    if(bf) base = mysMatchup(tf, bf, st);
+    else mysEnsureBaseline().then(() => { if(host.isConnected && host._token === token) mysRenderStrip(host); });
+  }
+  const fight = `at ${dmgKm(st.range)}, ${st.mode === 'still' ? 'you still' : st.mode === 'orbit' ? 'you orbiting' : 'you flying at them'}${st.theirPct ? `, they ${st.theirMode === 'orbit' ? 'orbit' : 'fly at you'} at ${st.theirPct}%` : ''}`;
+  for(const c of m.cells){
+    const cell = board.querySelector(`[data-cell="${c.key}"]`);
+    if(!cell) continue;
+    const v = cell.classList.contains('mys-edge') ? cell : cell.querySelector('.mys-cell-v');
+    v.textContent = c.value;
+    const bc = base && base.cells.find(x => x.key === c.key);
+    const changed = !!(bc && bc.value !== c.value);
+    cell.classList.toggle('is-changed', changed);
+    if(changed) cell.title = `Your pasted fit: ${bc.value}`; else cell.removeAttribute('title');
+  }
+  const edgeEl = board.querySelector('.mys-edge');
+  if(edgeEl) edgeEl.dataset.edge = m.edge;
+  if(note) note.textContent = `At${fight.slice(2)}, as set on "${cardName('dmg')}". Time to kill: damage by type against resists layer by layer, minus reps while the capacitor lasts.`;
+  host._m = m;
+  wpFill(host, tf, mf, st, `${fight}, as set on "${cardName('dmg')}".`);   // v.42 phase 2b: the Weaknesses picks, same fight
+}
+function mysRefreshStrips(){ document.querySelectorAll('.mys-switch-host:not([hidden])').forEach(h => mysRenderStrip(h)); }
+// M6 in the My ship view: every number that differs from your pasted fit's own states is amber.
+async function mysMarkChanged(wrap, idToName){
+  if(!mysHasCustomStates()) return;
+  const bf = await mysEnsureBaseline();
+  if(!bf || !wrap.isConnected) return;
+  const base = document.createElement('div');
+  const saveOpen = bf.cardOpen; bf.cardOpen = Object.assign({}, (wrap.closest('.mys-mine-view') && myShip.f && myShip.f.cardOpen) || {});
+  base.innerHTML = fitLayoutHtml(bf, idToName);
+  bf.cardOpen = saveOpen;
+  const SEL = '.estimate-value, .resistance-cell-pct, .resistance-row-ehp, .resistance-total, .repairs-cell, .repairs-bp-val, .cc-sum';
+  const cardsOf = (root) => [...root.querySelectorAll('.fit-layout > div > .fit-summary, .fit-layout > div > .ewar-card')]
+    .map(c => { const t = c.querySelector('[data-card]'); return [t ? t.dataset.card : '', c]; }).filter(([k]) => k && k !== 'fit');
+  const baseCards = new Map(cardsOf(base));
+  for(const [k, card] of cardsOf(wrap)){
+    const bc = baseCards.get(k); if(!bc) continue;
+    const a = [...card.querySelectorAll(SEL)], b = [...bc.querySelectorAll(SEL)];
+    if(a.length !== b.length) continue;
+    a.forEach((el, i) => { if(el.textContent.trim() !== b[i].textContent.trim()){ el.classList.add('is-changed'); el.title = `Your pasted fit: ${b[i].textContent.trim()}`; } });
+  }
+}
+
+// ==== WEAKNESS PICKS (v2026.10.14.42, roadmap/my-ship-plan.md phase 2b) ====
+// Erik 2026-10-23: with a ship saved and "Use in assessments" on, Weaknesses flips its point of view with the
+// threat / my ship switch. Threat view ("your guns"): the ammo and drones YOUR ship carries, best first by how long
+// they last against it. My ship view ("their guns"): the threat's own ammo and drones, best first by how long you last.
+// Erik's decisions (B1-B4): only what the ship carries (charges loaded + compatible charges in cargo; the drone
+// types in its bay); ranked in the fight the "Their damage on you" card describes (mysFight, the strip's fight);
+// these tiles replace the generic Drone / Missile / Laser / Hybrid / Projectile tiles; built from the mockup.
+// The DPS numbers are pyfa's; the order uses the strip's time to kill (not a pyfa number, DEVIATIONS.md section 3)
+// so that their resists count. A charge candidate is loaded into ALL active copies of that weapon type and the fit is
+// run through the engine again (estimateHpAndDps: pyfa's handlers give that charge's damage, range, tracking and
+// explosion stats), then pyfaApplicationMult at the point. A drone candidate is a flight of that one type (as many
+// as the bay, the drone limit and the bandwidth allow), then pyfaGetDroneMult. Webs, painters and scram are the
+// fit's CURRENT ones (its application.projected) whatever is being ranked.
+const WP_CACHE = new WeakMap();   // estimate -> Promise of its candidates (a state change makes a new estimate)
+function wpCandidates(f){
+  const est = f && f.estimate;
+  if(!est || !est.application || !f.input) return Promise.resolve(null);
+  if(WP_CACHE.has(est)) return WP_CACHE.get(est);
+  const p = wpBuildCandidates(f, est).catch(e => { WP_CACHE.delete(est); throw e; });
+  WP_CACHE.set(est, p);
+  return p;
+}
+// The fit's input with every flag of a weapon type in `assign` (weaponTypeId -> chargeTypeId) loading that charge.
+// The tally's High slots counts follow: the new charge gets the quantity of the one it replaces (1 on an empty flag).
+function wpInputWithCharges(x, assign, kindOf){
+  const tally = JSON.parse(JSON.stringify(x.tally || {}));
+  const hi = tally['High slots'] || (tally['High slots'] = {});
+  const hs = new Map();
+  for(const [flag, list] of x.highSlotByFlag){
+    const w = list.find(it => kindOf(it.id) === 'variable-weapon');
+    if(!w || !assign.has(w.id)){ hs.set(flag, list); continue; }
+    const c = assign.get(w.id);
+    let q = 1;
+    for(const it of list){
+      if(kindOf(it.id) !== 'ammo') continue;
+      q = it.qty || 1;
+      const e = hi[it.id];
+      if(e){ e.totalQty -= (it.qty || 1); if(!(e.totalQty > 1e-9)) delete hi[it.id]; }
+    }
+    hs.set(flag, [...list.filter(it => kindOf(it.id) !== 'ammo'), {id: c, qty: q}]);
+    const e = hi[c] || (hi[c] = {lossCount: 1, totalQty: 0});
+    e.totalQty += q;
+  }
+  return Object.assign({}, x, {tally, highSlotByFlag: hs});
+}
+async function wpBuildCandidates(f, est){
+  const x = f.input;
+  const ids = new Set(), cargo = [...(x.cargoItemIds || [])];
+  for(const list of x.highSlotByFlag.values()) for(const it of list) ids.add(it.id);
+  for(const id of cargo) ids.add(id);
+  const cls = new Map();
+  await Promise.all([...ids].map(async id => { try{ cls.set(id, await classifyHighSlotItem(id)); }catch(e){ /* unknown type: not a candidate */ } }));
+  const kindOf = (id) => (cls.get(id) || {}).kind;
+  const activeOf = new Map(((est.moduleStates && est.moduleStates.items) || []).map(i => [i.typeId, i.active]));
+  const byWeapon = new Map();
+  for(const list of x.highSlotByFlag.values()){
+    const w = list.find(it => kindOf(it.id) === 'variable-weapon');
+    if(!w) continue;
+    const c = list.find(it => kindOf(it.id) === 'ammo');
+    const g = byWeapon.get(w.id) || {weaponTypeId: w.id, name: cls.get(w.id).type.name, loaded: [], emptyFlag: false};
+    if(c){ if(!g.loaded.includes(c.id)) g.loaded.push(c.id); } else g.emptyFlag = true;
+    byWeapon.set(w.id, g);
+  }
+  // v2026.10.14.43: only weapons that fire damage charges (turrets, launchers, Vorton projectors): probe, bomb and
+  // interdiction sphere launchers are weapon-like groups but weaponCategoryFromGroup leaves them out, as the engine does.
+  const groups = [...byWeapon.values()].filter(g => weaponCategoryFromGroup((cls.get(g.weaponTypeId).group || {}).name)
+    && (activeOf.has(g.weaponTypeId) ? activeOf.get(g.weaponTypeId) : 1) > 0);
+  for(const g of groups){
+    const wd = cls.get(g.weaponTypeId).type.dogma_attributes || [];
+    const opts = g.loaded.slice();
+    for(const id of cargo){
+      const c = cls.get(id);
+      // pyfa Module.isValidCharge: chargeGroup1-5 and chargeSize (isChargeCompatibleWithWeapon), and the charge's
+      // volume must fit the weapon's capacity
+      const wt = cls.get(g.weaponTypeId).type, fitsIn = !(c && c.type.volume > 0 && wt.capacity !== undefined && wt.capacity !== null && c.type.volume > wt.capacity);
+      if(c && c.kind === 'ammo' && !opts.includes(id) && fitsIn && isChargeCompatibleWithWeapon(wd, c.type.group_id, c.type.dogma_attributes || [])) opts.push(id);
+    }
+    const uniform = !g.emptyFlag && g.loaded.length === 1;   // every copy already holds this one charge: the fit as it is
+    g.options = [];
+    g.todo = [];
+    for(const c of opts){
+      const aw = uniform && c === g.loaded[0] ? est.application.weapons.find(w => w.weaponTypeId === g.weaponTypeId && w.ammoTypeId === c) : null;
+      if(aw) g.options.push({chargeTypeId: c, name: aw.ammoName, aw, loaded: true});
+      else g.todo.push(c);
+    }
+    g.qty = activeOf.has(g.weaponTypeId) ? activeOf.get(g.weaponTypeId) : null;
+  }
+  const dItems = (((est.droneStates || {}).items) || []).filter(d => d.dpsEach > 0 && d.bayQty >= 1);
+  const drones = [];
+  const rounds = Math.max(0, dItems.length, ...groups.map(g => g.todo.length));
+  const mode = f.tacticalModes ? (f.activeMode || 'sharpshooter') : 'sharpshooter';
+  const states = (f.moduleStates && Object.keys(f.moduleStates).length) ? f.moduleStates : null;
+  for(let k = 0; k < rounds; k++){
+    // One engine run per round: round k loads each weapon type's k-th untried charge and flies the k-th drone type.
+    // Charges change only their own weapon and drones only themselves, so one run serves them all
+    // (tools/independent_checks/check_weakness_picks.py builds every candidate on its own).
+    const assign = new Map(groups.filter(g => g.todo[k] !== undefined).map(g => [g.weaponTypeId, g.todo[k]]));
+    const dk = dItems[k];
+    const input = assign.size ? wpInputWithCharges(x, assign, kindOf) : x;
+    const e = await estimateHpAndDps(input.shipTypeId, input.tally, input.cargoItemIds, input.highSlotByFlag, mode, input.midSlotByFlag,
+      states, dk ? {[String(dk.typeId)]: Math.floor(dk.bayQty + 1e-9)} : (f.droneStates || null), {fitSource: x.fitSource || null});
+    const ea = e.application || {weapons: [], drones: []};
+    for(const [wid, c] of assign){
+      const aw = ea.weapons.find(w => w.weaponTypeId === wid && w.ammoTypeId === c);
+      const g = groups.find(gg => gg.weaponTypeId === wid);
+      if(aw) g.options.push({chargeTypeId: c, name: aw.ammoName, aw, loaded: g.loaded.includes(c)});
+    }
+    if(dk){
+      const ad = (ea.drones || []).find(d => d.typeId === dk.typeId);
+      if(ad) drones.push({typeId: dk.typeId, name: ad.name, count: ad.qty, ad});
+    }
+  }
+  return {groups: groups.map(g => ({weaponTypeId: g.weaponTypeId, name: g.name, qty: g.qty, options: g.options})), drones,
+    inSpace: (est.application.drones || []).map(d => ({typeId: d.typeId, name: d.name, count: d.qty})),
+    fighters: !!(est.application.unapplied && est.application.unapplied.fighterDps > 0)};
+}
+// Every candidate at one point. app: the attacker's CURRENT application (radius, lock range, webs / painters / scram,
+// and its weapons and drones as they are); tgt and q: the target and the point (mysFight's them+qOut or me+qIn);
+// tgtEst: the target's estimate (its HP, resonances, reps and capacitor, for the time to kill).
+// dps: pyfa's applied DPS of that weapon type's copies (or that drone flight) alone, the number shown (pyfa's damage
+// graph default, resists ignored). Best first by what the pick is for -- beating THEIR resists: the strip's time to
+// kill (ttkSeconds) of the whole fit with this swap (the other weapons as loaded, the drones in space; a drone pick
+// replaces the drones in space), then, when every choice holds, the same time with no reps (their buffer alone),
+// then the charge already loaded. LESSON #40: pyfa's graph number ignores resists, so it can't be the sort key.
+function wpRank(cands, app, tgt, q, tgtEst){
+  const pt = (ws, ds) => dmgTypedPoint(Object.assign({}, app, {weapons: ws, drones: ds}), tgt, q);
+  const def = ttkDefense(tgtEst);
+  const buf = {layers: def.layers.map(l => Object.assign({}, l, {rep: 0, passive: 0})), capSec: Infinity};
+  const score = (o, ws, ds, own) => Object.assign({}, o, {dps: own.dps, ttk: ttkSeconds(def, pt(ws, ds).typed), ttkBuffer: ttkSeconds(buf, pt(ws, ds).typed)});
+  const cmp = (x, y) => (x === y ? 0 : x - y);   // Infinity === Infinity: equal, go to the next key
+  const order = (a, b) => cmp(a.ttk, b.ttk) || cmp(a.ttkBuffer, b.ttkBuffer) || ((b.loaded ? 1 : 0) - (a.loaded ? 1 : 0));
+  const sorted = (list) => list.sort(order);
+  const wsAll = app.weapons || [], dsAll = app.drones || [];
+  return {
+    groups: cands.groups.map(g => {
+      const others = wsAll.filter(w => w.weaponTypeId !== g.weaponTypeId);
+      return Object.assign({}, g, {ranked: sorted(g.options.map(o => score(o, [...others, o.aw], dsAll, pt([o.aw], []))))});
+    }),
+    drones: sorted(cands.drones.map(d => score(d, wsAll, [d.ad], pt([], [d.ad])))),
+    inSpace: cands.inSpace, fighters: cands.fighters};
+}
+function wpTileHtml(label, value, sub, alts, extraCls = ''){
+  return `<div class="rec-stat wp-stat${extraCls}"><span class="rec-label">${escapeHtml(label)}</span><span class="rec-value wp-value">${escapeHtml(value)}</span>`
+    + (sub ? `<span class="rec-sub wp-sub">${escapeHtml(sub)}</span>` : '') + (alts ? `<span class="rec-sub wp-alts">${escapeHtml(alts)}</span>` : '') + '</div>';
+}
+// side 'yours' (threat view: your guns on them) or 'theirs' (My ship view: their guns on you).
+function wpCardHtml(r, side, threatName, where){
+  const you = side === 'yours', who = you ? 'Your' : 'Their', on = you ? 'applied to them' : 'applied to you', lasts = you ? 'they last' : 'you last';
+  const last = (o) => o.ttk === Infinity ? (you ? 'they hold' : 'you hold') : `${lasts} ${ttkText(o.ttk)}`;
+  const alt = (o, name) => `${name} ${dmgFmt(o.dps)}${o.ttk === Infinity ? '' : ` (${ttkText(o.ttk)})`}${o.loaded ? ' loaded' : ''}`;
+  const tiles = [];
+  for(const g of r.groups){
+    const label = `${who} ${g.name}${g.qty > 1 ? ` ×${g.qty}` : ''}`;
+    if(!g.ranked.length){ tiles.push(wpTileHtml(label, 'No ammo aboard', `nothing ${you ? 'you carry' : 'they carry'} loads into it`, '', ' wp-none')); continue; }
+    const best = g.ranked[0];
+    const rest = g.ranked.slice(1, 4).map(o => alt(o, o.name)).join(' · ');
+    if(!(best.dps >= 0.5)){ tiles.push(wpTileHtml(label, 'Out of reach', `none of the ammo aboard applies here`, '', ' wp-none')); continue; }
+    tiles.push(wpTileHtml(label, best.name, `${dmgFmt(best.dps)} DPS ${on}, ${last(best)} · ${best.loaded ? 'loaded' : 'in cargo'}`, rest ? `then ${rest}` : 'the only ammo aboard'));
+  }
+  if(r.drones.length){
+    const best = r.drones[0];
+    const rest = r.drones.slice(1, 4).map(d => alt(d, d.name)).join(' · ');
+    if(!(best.dps >= 0.5)) tiles.push(wpTileHtml(`${who} drones`, 'Out of reach', 'none of the drones aboard applies here', '', ' wp-none'));
+    else tiles.push(wpTileHtml(`${who} drones`, `${best.name} ×${best.count}`, `${dmgFmt(best.dps)} DPS ${on}, ${last(best)}`, rest ? `then ${rest}` : 'the only combat drones aboard'));
+  }
+  const head = you ? `Your ammo and drones against the ${threatName}, best first` : `What the ${threatName} should use against you`;
+  const body = tiles.length ? `<div class="rec-grid wp-grid">${tiles.join('')}</div>`
+    : `<div class="wp-msg">${you ? 'Your ship has' : 'They have'} no turrets, launchers, Vorton projectors or combat drones to rank.</div>`;
+  const notes = [`Applied DPS ${where}`, `Best first by how long ${you ? 'they last' : 'you last'} with it loaded (damage by type against ${you ? 'their' : 'your'} resists, the rest of the fit as it is).`, 'Only the ammo and drones aboard.'];
+  if(r.fighters) notes.push('Fighters are not applied yet, so they are not ranked.');
+  return `<div class="wp-head">${escapeHtml(head)}</div>${body}<div class="wp-note">${escapeHtml(notes.join(' '))}</div>`;
+}
+function wpSummary(r){
+  const parts = r.groups.filter(g => g.ranked.length && g.ranked[0].dps >= 0.5).map(g => g.ranked[0].name);
+  if(r.drones.length && r.drones[0].dps >= 0.5) parts.push(r.drones[0].name);
+  return parts.length ? parts.join(', ') : 'nothing aboard applies';
+}
+// Fills the Weaknesses picks of the visible threat (threat view) and of my ship (My ship view) under one switch host.
+async function wpFill(host, tf, mf, st, where){
+  const root = host.parentElement;
+  if(!root) return;
+  const tv = root.querySelector(':scope > .mys-threat-view'), mv = root.querySelector(':scope > .mys-mine-view');
+  const F = mysFight(tf, mf, st);
+  const threatName = (host.dataset.threat || 'threat').split(' · ')[0];
+  const jobs = [];
+  if(tv && !tv.hidden){
+    const panel = [...tv.querySelectorAll('.subtab-panel')].find(p => p.style.display !== 'none') || tv;
+    jobs.push({scope: panel, side: 'yours', f: mf, app: F && F.mApp, tgt: F && F.them, q: F && F.qOut, tgtEst: tf.estimate});
+  }
+  if(mv && !mv.hidden) jobs.push({scope: mv, side: 'theirs', f: tf, app: F && F.tApp, tgt: F && F.me, q: F && F.qIn, tgtEst: mf.estimate});
+  await Promise.all(jobs.map(async j => {
+    const slot = j.scope.querySelector('.weak-picks'), sum = j.scope.querySelector('button.cc-row[data-card="weak"] .wp-sum');
+    if(!slot && !sum) return;
+    const token = {};
+    if(slot){ slot._wpToken = token; if(!slot.dataset.filled) slot.innerHTML = '<div class="wp-msg">Working out the picks…</div>'; }
+    if(sum) sum._wpToken = token;
+    const done = (html, text) => {
+      if(slot && slot._wpToken === token && slot.isConnected){ slot.innerHTML = html; slot.dataset.filled = '1'; }
+      if(sum && sum._wpToken === token && sum.isConnected) sum.textContent = text;
+    };
+    if(!F){ done('<div class="wp-msg">No picks: one of the hull records has no dogma effects, so pyfa\'s numbers can\'t be worked out for it.</div>', 'no picks'); return; }
+    let cands;
+    try{ cands = await wpCandidates(j.f); }
+    catch(e){ done(`<div class="wp-msg">${escapeHtml(withCode(`The picks couldn't be worked out (${errorCodeOf(e)}: ${e.message}).`, 'WP-01'))}</div>`, 'no picks'); return; }
+    if(!cands){ done('<div class="wp-msg">No picks for this fit.</div>', 'no picks'); return; }
+    const r = wpRank(cands, j.app, j.tgt, j.q, j.tgtEst);
+    if(slot) slot._wpRanked = r;
+    done(wpCardHtml(r, j.side, threatName, where), `${j.side === 'yours' ? 'your' : 'their'} ${wpSummary(r)}`);
+  }));
+}
+
 // ==== MY SHIP (v2026.10.14.33, phase 1) ====
 // Erik: "a 'my ship' feature that can be utilized on ALL tabs ... set by providing an EFT fit ... persist until a
 // new one is uploaded or the user chooses to delete it ... a simple toggle ... whether any assessments will use
@@ -14319,6 +15675,7 @@ function wireFitLayout(wrap, f, rerender){
   });
   wireModuleStateControls(wrap.querySelector('.fl-fit'), f, rerender);
   wireCardToggles(wrap, f, rerender); // v.18 collapsible cards
+  dmgWire(wrap, f); // v.36: "Their damage on you" (fills itself once the ship to chart against is known)
 }
 
 // The fit for my ship, computed once per page load (and again after Replace). Stored states are applied
@@ -14372,6 +15729,8 @@ function myShipChanged(el, f){
   if(!myShipStoreStates(f)) return;
   myShip.version++;
   if(el) el.dataset.mysVer = String(myShip.version);
+  dmgRefreshAll(); // v.36: the damage charts use my ship's speed and signature
+  mysRefreshStrips(); // v.41
 }
 function mysTrackView(el, redraw){
   if(!el) return;
@@ -14404,7 +15763,7 @@ function renderMyShipChip(){
   chip.title = myShipLabel();
   use.disabled = false; use.checked = !!r.use;
   lab.classList.remove('is-off');
-  lab.title = r.use ? 'On: the Pilot and Fit Analyzers can switch between the threat and your ship' : 'Off: assessments leave your ship out';
+  lab.title = r.use ? `On: the Pilot and Fit Analyzers show the ${cardName('board')}, to switch between the ${cardName('perspective.threat')} and the ${cardName('perspective.mine')}` : 'Off: assessments leave your ship out';
 }
 
 // ---- panel ----
@@ -14488,8 +15847,8 @@ function renderMyShipPanel(){
     const icon = `${MY_SHIP_HULL_SVG(26, 1.6)}${r.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(r.shipTypeId)}/icon?size=64" alt="" loading="lazy" style="position:absolute; inset:0;" onerror="this.remove();">` : ''}`;
     const statesLine = !myShip.f ? (myShip.loading ? 'Calculating…' : '')
       : myShipCustomStates(myShip.f)
-        ? '<b>Module states changed</b> from the paste, and kept with your ship. The reset icon on its Fit card returns to the pasted states.'
-        : 'Module states as pasted. Changes you make on its Fit card are kept with your ship.';
+        ? `<b>Module states changed</b> from the paste, and kept with your ship. The reset icon on its ${cardName('fit')} card returns to the pasted states.`
+        : `Module states as pasted. Changes you make on its ${cardName('fit')} card are kept with your ship.`;
     const confirm = myShip.panelMode === 'confirmDelete' ? `
       <div class="mys-confirm" role="alertdialog" aria-label="Delete my ship">
         Delete ${escapeHtml(myShipLabel())}? Its fit and module states are removed from this browser.
@@ -14603,6 +15962,8 @@ function myShipAfterChange(){
   document.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h, {redrawMine: true}));
   document.querySelectorAll('.mys-set-slot').forEach(slot => mysRenderSetSlot(slot));
   if(myShip.faViewing && myShip.rec && myShip.faEft !== myShip.rec.eft) showMyShipInFitAnalyzer({keepPanel: true, noTab: true});
+  dmgRefreshAll(); // v.36
+  mysRefreshStrips(); // v.41
 }
 
 // ---- Fit Analyzer: "Set as my ship", "Viewing my ship" ----
@@ -14633,7 +15994,7 @@ function mysRenderSetSlot(slot){
 }
 function myShipBannerHtml(){
   return `<div class="mys-banner">
-      <div class="mys-banner-id">${MY_SHIP_HULL_SVG(20)}<span class="mys-banner-k">Viewing my ship</span><span class="mys-banner-v">${escapeHtml(myShipLabel())}</span></div>
+      <div class="mys-banner-id">${MY_SHIP_HULL_SVG(20)}<span class="mys-banner-k">${escapeHtml(cardName('myshippage'))}</span><span class="mys-banner-v">${escapeHtml(myShipLabel())}</span></div>
       <div class="mys-actions">
         <button type="button" class="mys-quiet" data-act="mys-replace">Replace fit</button>
         <button type="button" class="mys-quiet" data-act="mys-another">Analyze another fit</button>
@@ -14671,11 +16032,39 @@ async function showMyShipInFitAnalyzer(o = {}){
 // A host sits before .mys-threat-view and .mys-mine-view in the same parent. Hidden unless a ship is saved
 // and "Use in assessments" is on; "My ship" hides the threat (its states stay on its own fit objects) and
 // draws my ship in .mys-mine-view, fresh every time it is shown.
+// v2026.10.14.43 (Erik picked option B, "Matchup placement" mockup): the host IS the matchup scoreboard, inside
+// the loss (or the Fit Analyzer result) it describes. Each half is a button that shows that ship below and carries
+// that ship's two numbers: the threat half its DPS on you and how long they last, the my-ship half how long you last
+// and your DPS on them. The middle says who has the edge (who outlasts the other) and who is faster. The side shown
+// is shared by every host under one results element (data-mys-scope / data-mys-view), so changing loss tabs keeps it.
 function mysSwitchHostHtml(threatLabel){
   return `<div class="mys-switch-host" data-threat="${escapeHtml(threatLabel)}" data-view="threat" hidden></div>`;
 }
 function mysWireSwitchHosts(root){
   root.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h));
+}
+function mysViewOf(host){
+  const scope = host.closest('[data-mys-scope]');
+  return ((scope ? scope.dataset.mysView : host.dataset.view) === 'mine') ? 'mine' : 'threat';
+}
+function mysBoardHtml(host){
+  const cell = (key, label, numFirst = true) => `<span class="mys-cell mys-cell-${key}" data-cell="${key}">${numFirst ? `<span class="mys-cell-v">…</span><span class="mys-cell-k">${label}</span>` : `<span class="mys-cell-k">${label}</span><span class="mys-cell-v">…</span>`}</span>`;
+  return `<div class="mys-board" role="group" aria-label="${escapeHtml(cardName('board'))}: pick a side to show that ship">
+      <button type="button" class="mys-sw-btn mys-half is-threat" data-view="threat" aria-pressed="false" title="Show the ${escapeHtml(cardName('perspective.threat'))}">
+        <span class="mys-half-head"><span class="mys-sw-k">Threat</span><span class="mys-sw-v">${escapeHtml(host.dataset.threat || '')}</span></span>
+        <span class="mys-half-nums">${cell('their', 'DPS applied to you')}${cell('theyLast', 'they last')}</span>
+      </button>
+      <div class="mys-mid">
+        <span class="mys-edge" data-cell="edge" data-edge="">…</span>
+        <svg class="mys-mid-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h12l-3-3"></path><path d="M17 17H5l3 3"></path></svg>
+        <span class="mys-cell mys-cell-faster" data-cell="faster"><span class="mys-cell-v">…</span></span>
+      </div>
+      <button type="button" class="mys-sw-btn mys-half is-mine" data-view="mine" aria-pressed="false" title="Show the ${escapeHtml(cardName('perspective.mine'))}">
+        <span class="mys-half-head"><span class="mys-sw-v">${escapeHtml(myShipLabel())}</span><span class="mys-sw-k">My ship</span></span>
+        <span class="mys-half-nums">${cell('youLast', 'you last')}${cell('your', 'DPS applied to them')}</span>
+      </button>
+    </div>
+    <div class="mys-strip-note"></div>`;
 }
 function mysRenderSwitch(host, o = {}){
   const root = host.parentElement;
@@ -14683,30 +16072,46 @@ function mysRenderSwitch(host, o = {}){
   if(!tv || !mv) return;
   if(!(myShip.rec && myShip.rec.use)){
     host.hidden = true; host.innerHTML = ''; host.dataset.view = 'threat';
+    const scope = host.closest('[data-mys-scope]'); if(scope) scope.dataset.mysView = 'threat';
     tv.hidden = false; mv.hidden = true; mv.innerHTML = '';
+    tv.classList.remove('mys-picks-on'); mv.classList.remove('mys-picks-on');   // v.42: generic Weaknesses tiles
     return;
   }
-  const view = host.dataset.view === 'mine' ? 'mine' : 'threat';
+  tv.classList.add('mys-picks-on'); mv.classList.add('mys-picks-on');   // v.42 phase 2b: Weaknesses picks (wpFill)
+  const view = mysViewOf(host);
+  host.dataset.view = view;
   host.hidden = false;
-  host.innerHTML = `<div class="mys-switch" role="group" aria-label="Show fit">
-      <button type="button" class="mys-sw-btn is-threat" data-view="threat" aria-pressed="${view === 'threat'}"><span class="mys-sw-k">Threat</span><span class="mys-sw-v">${escapeHtml(host.dataset.threat || '')}</span></button>
-      <button type="button" class="mys-sw-btn is-mine" data-view="mine" aria-pressed="${view === 'mine'}"><span class="mys-sw-k">My ship</span><span class="mys-sw-v">${escapeHtml(myShipLabel())}</span></button>
-    </div>`;
-  host.querySelectorAll('button.mys-sw-btn').forEach(b => b.addEventListener('click', () => {
-    if(b.dataset.view === host.dataset.view) return;
-    host.dataset.view = b.dataset.view;
-    mysRenderSwitch(host, {redrawMine: true});
-    const again = host.querySelector(`button.mys-sw-btn[data-view="${b.dataset.view}"]`);
-    if(again) again.focus({preventScroll: true});
-    // on a phone the switch is sticky: bring the top of the newly shown fit back under it
-    if(host.getBoundingClientRect().top <= 1) (b.dataset.view === 'mine' ? mv : tv).scrollIntoView({block: 'start'});
-  }));
+  // Draw the board once per label set; later calls only move the pressed side (no flicker while numbers refresh).
+  const sig = (host.dataset.threat || '') + '|' + myShipLabel();
+  if(host.dataset.boardSig !== sig || !host.querySelector(':scope > .mys-board')){
+    host.dataset.boardSig = sig;
+    host.innerHTML = mysBoardHtml(host);
+    host.querySelectorAll('button.mys-sw-btn').forEach(b => b.addEventListener('click', () => {
+      if(b.dataset.view === mysViewOf(host)) return;
+      const scope = host.closest('[data-mys-scope]');
+      if(scope) scope.dataset.mysView = b.dataset.view;
+      host.dataset.view = b.dataset.view;
+      mysRenderSwitch(host, {redrawMine: true});
+      b.focus({preventScroll: true});
+      // on a phone the board is sticky: bring the top of the newly shown fit back under it
+      const r = root.querySelector(`:scope > ${b.dataset.view === 'mine' ? '.mys-mine-view' : '.mys-threat-view'}`);
+      if(host.getBoundingClientRect().top <= 1 && r) r.scrollIntoView({block: 'start'});
+    }));
+  }
+  host.querySelectorAll('button.mys-sw-btn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+  host.dataset.side = view;
+  if(mysPanelHidden(host)){ tv.hidden = view !== 'threat'; mv.hidden = view !== 'mine'; return; }   // drawn when its tab opens
   // Keep the page height while the other fit is drawn, so the browser doesn't clamp the scroll position.
   const keep = (view === 'mine' ? tv : mv).offsetHeight;
   if(view === 'threat') mv.innerHTML = '';
   else if(o.redrawMine || !mv.firstChild){ mv.style.minHeight = keep + 'px'; mysRenderMineView(mv); }
   tv.hidden = view !== 'threat';
   mv.hidden = view !== 'mine';
+  mysRenderStrip(host);   // the scoreboard's numbers (and the Weaknesses picks), the same in both views
+}
+function mysStripAfterMineDraw(mv){
+  const host = mv.parentElement && mv.parentElement.querySelector(':scope > .mys-switch-host');
+  if(host && !host.hidden) mysRenderStrip(host);
 }
 async function mysRenderMineView(mv){
   const token = {};
@@ -14722,10 +16127,12 @@ async function mysRenderMineView(mv){
   const left = (p.unresolved && p.unresolved.length) ? `<div class="note" style="margin-top:10px;">Not recognized, so left out of your ship: ${p.unresolved.map(n => escapeHtml(n)).join(', ')}. (FIT-04)</div>` : '';
   mv.innerHTML = `<div class="fit-layout-wrap mys-mine-wrap">${fitLayoutHtml(f, p.idToName)}</div>${left}`;
   const wrap = mv.firstElementChild;
-  const redraw = () => { wrap.innerHTML = fitLayoutHtml(f, p.idToName); wireFitLayout(wrap, f, rerender); };
+  const redraw = () => { wrap.innerHTML = fitLayoutHtml(f, p.idToName); wireFitLayout(wrap, f, rerender); mysMarkChanged(wrap, p.idToName); mysStripAfterMineDraw(mv); };
   const rerender = () => { redraw(); myShipChanged(wrap, f); };
   wireFitLayout(wrap, f, rerender);
+  mysMarkChanged(wrap, p.idToName);   // v.41 M6: numbers that differ from your pasted fit's states are amber
   mysTrackView(wrap, redraw);
+  mysStripAfterMineDraw(mv);          // v.42: the Weaknesses picks (their guns on you) need the drawn card
 }
 
 (function myShipInit(){

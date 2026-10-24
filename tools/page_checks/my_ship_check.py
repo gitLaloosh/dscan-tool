@@ -128,7 +128,7 @@ def main_desktop(b):
     # Open in Fit Analyzer, change a module, reload, reset
     open_panel(pg); pg.click('#myShipPanel [data-act="open"]')
     pg.wait_for_selector('#fitAnalyzerResults .mys-banner')
-    check(pg.is_visible('#tabFit') and 'Vexor' in pg.inner_text('#fitAnalyzerResults .mys-banner'), 'Open in Fit Analyzer: "Viewing my ship" banner')
+    check(pg.is_visible('#tabFit') and 'Vexor' in pg.inner_text('#fitAnalyzerResults .mys-banner') and pg.evaluate("document.querySelector('#fitAnalyzerResults .mys-banner-k').textContent === CARD_NAMES.myshippage"), 'Open in Fit Analyzer: the Viewing My Ship banner (name from CARD_NAMES)')
     check(pg.locator('#fitAnalyzerResults .mys-switch-host').count() == 0 and pg.locator('#fitAnalyzerResults .mys-set').count() == 0, 'my ship view: no switch and no "Set as my ship"')
     R = '#fitAnalyzerResults'
     btn = pg.locator(first_state_btn(R)).first
@@ -150,7 +150,7 @@ def main_desktop(b):
     pg.click('#fitAnalyzerResults [data-act="mys-another"]')
     check(pg.inner_html('#fitAnalyzerResults').strip() == '', '"Analyze another fit" clears the view')
     pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .mys-threat-view .fit-layout')
-    check(pg.is_visible(f'{R} .mys-switch') and 'Hecate' in pg.inner_text(f'{R} .mys-sw-btn.is-threat') and 'Vexor' in pg.inner_text(f'{R} .mys-sw-btn.is-mine'), 'Fit Analyzer threat: switch shows Threat (Hecate) and My ship (Vexor)')
+    check(pg.is_visible(f'{R} .mys-board') and 'Hecate' in pg.inner_text(f'{R} .mys-sw-btn.is-threat') and 'Vexor' in pg.inner_text(f'{R} .mys-sw-btn.is-mine'), 'Fit Analyzer threat: switch shows Threat (Hecate) and My ship (Vexor)')
     check(pg.is_visible(f'{R} button.mys-set'), 'Fit Analyzer threat: "Set as my ship" button')
     T = f'{R} .mys-threat-view'
     tb = pg.locator(first_state_btn(T)).first; t_id, t_to = tb.get_attribute('data-type-id'), tb.get_attribute('data-to')
@@ -170,7 +170,7 @@ def main_desktop(b):
     pg.click('#myShipUseLabel'); pg.wait_for_timeout(150)
     check(pg.is_hidden(f'{R} .mys-switch-host') and stored(pg).get('use') is False, '"Use in assessments" off: switch hidden, stored')
     pg.click('#myShipUseLabel'); pg.wait_for_timeout(150)
-    check(pg.is_visible(f'{R} .mys-switch') and pg.get_attribute(f'{R} .mys-sw-btn.is-threat', 'aria-pressed') == 'true', '"Use in assessments" on again: switch back, on the threat')
+    check(pg.is_visible(f'{R} .mys-board') and pg.get_attribute(f'{R} .mys-sw-btn.is-threat', 'aria-pressed') == 'true', '"Use in assessments" on again: switch back, on the threat')
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{M} .fit-layout')
     # Pilot Analyzer threat
     pg.click('#tabBtnPilot')
@@ -181,9 +181,10 @@ def main_desktop(b):
         renderFitTabs('Test Pilot', 'Hecate', [await mk('2026-10-01T00:00:00Z'), await mk('2026-10-02T00:00:00Z')], parsed.idToName);
         return document.querySelectorAll('#fitResults .mys-threat-view .fit-layout').length; }""", HECATE)
     P = '#fitResults'
-    check(n == 2 and pg.is_visible(f'{P} .mys-switch') and 'Test Pilot' in pg.inner_text(f'{P} .mys-sw-btn.is-threat'), 'Pilot Analyzer: switch above the loss tabs (Hecate · Test Pilot)')
+    check(n == 2 and pg.locator(f'{P} .assess-box > .subtab-panel[data-idx="0"] > .mys-switch-host > .mys-board').is_visible() and 'Test Pilot' in pg.inner_text(f'{P} .mys-sw-btn.is-threat'),
+          'Pilot Analyzer: the scoreboard is inside the visible loss (Hecate · Test Pilot)')   # v2026.10.14.43
     pg.click(f'{P} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{P} .mys-mine-view .fit-layout')
-    check(pg.is_hidden(f'{P} .subtabs'), 'Pilot Analyzer my ship: loss tabs hidden')
+    check(pg.is_visible(f'{P} .assess-tabs') and pg.is_hidden(f'{P} .subtab-panel[data-idx="0"] > .mys-threat-view'), 'Pilot Analyzer my ship: loss tabs stay, the loss shows my ship')
     st = pg.evaluate(f"(id) => [...document.querySelectorAll('{P} .mys-mine-view .fl-fit .ms-state[data-type-id=\"' + id + '\"]')].map(b => b.dataset.from)", m_id)
     check(len(st) > 0 and st == pg.evaluate("(id) => moduleCopyStates(myShip.f.estimate.moduleStates.items.find(i => i.typeId == id), (myShip.f.moduleCopyOrder || {})[id])", m_id),
           f'Pilot Analyzer my ship shows the change made in the Fit Analyzer ({st})')
@@ -256,7 +257,7 @@ def phone(b):
     check(pg.is_hidden('#myShipPanel'), 'phone: tapping the backdrop closes the sheet')
     pg.tap('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.tap('#fitAnalyzerBtn'); pg.wait_for_selector('#fitAnalyzerResults .mys-threat-view .fit-layout')
     sb = [pg.locator(f'#fitAnalyzerResults .mys-sw-btn.{c}').bounding_box() for c in ('is-threat', 'is-mine')]
-    check(abs(sb[0]['y'] - sb[1]['y']) < 1 and sb[0]['height'] >= 44, f'phone: switch is two side-by-side buttons ({sb[0]["height"]:.0f}px)')
+    check(abs(sb[0]['y'] - sb[1]['y']) < 1 and sb[0]['height'] >= 44, f'phone: scoreboard is two side-by-side buttons ({sb[0]["height"]:.0f}px)')
     pg.tap('#fitAnalyzerResults .mys-sw-btn.is-mine'); pg.wait_for_selector('#fitAnalyzerResults .mys-mine-view .fit-layout')
     pg.evaluate('window.scrollTo(0, 1600)'); pg.wait_for_timeout(200)
     top = pg.locator('#fitAnalyzerResults .mys-switch-host').bounding_box()['y']

@@ -23,11 +23,12 @@ Table (JSON between `const PROJ_TARGET_EFFECTS = ` and `;`):
 A handler that filters, branches on a condition, or reads a pilot-dependent value fails the generator
 (model it first).
 
-Second table: the attacker's web and target painter DRONES (pyfa cache/projected.py getProjDroneData reads
-each drone's modified speedFactor / signatureRadiusBonus, Drone.maxRange, Drone.falloff, maxVelocity and
-radius). Every handler that modifies one of those on a drone, from every carrier pyfa runs (hull, module /
-rig / subsystem, skill at V, implant, booster), with its filter as (any of skills) AND (any of groups) on the
-drone, asserted exact against every published web / painter drone:
+Second table: the attacker's DRONES -- web and target painter drones (pyfa cache/projected.py getProjDroneData
+reads each drone's modified speedFactor / signatureRadiusBonus, Drone.maxRange, Drone.falloff, maxVelocity and
+radius) and, since v2026.10.14.40, every damage drone (calc/application.py getDroneMult also reads
+trackingSpeed and optimalSigRadius). Every handler that modifies one of those on a drone, from every carrier
+pyfa runs (hull, module / rig / subsystem, skill at V, implant, booster), with its filter as (any of skills)
+AND (any of groups) on the drone, asserted exact against every published web / painter / damage drone:
   PROJ_DRONE_EFFECTS {effectId: [[attr, op, srcAttrId, perLevel, default, penaltyGroup, skills, groups], ...]}
   PROJ_DRONE_SKILL_ROWS [[skillId, attr, op, valueAtV, penaltyGroup, skills, groups], ...]
   PROJ_DRONE_ATTRS {name: attributeId} and their SDE defaults in PROJ_DRONE_DEFAULTS.
@@ -102,10 +103,14 @@ def build():
     return dict(sorted(table.items(), key=lambda kv: int(kv[0]))), ctxs, skipped
 
 DRONE_ATTRS = ('speedFactor', 'signatureRadiusBonus', 'maxVelocity', 'shieldTransferRange', 'powerTransferRange', 'empFieldRange',
-               'ecmBurstRange', 'maxRange', 'ECMRangeOptimal', 'falloff', 'falloffEffectiveness', 'radius')
+               'ecmBurstRange', 'maxRange', 'ECMRangeOptimal', 'falloff', 'falloffEffectiveness', 'radius',
+               'trackingSpeed', 'optimalSigRadius')   # v2026.10.14.40: + what getDroneMult reads for damage drones
 DRONE_ATTRS = tuple(a for a in DRONE_ATTRS if a in attrId)   # energyDestabilizationRange is not an SDE attribute
 def _effs(t): return {e['effectID'] for e in td.get(str(t), {}).get('dogmaEffects', [])}
-projDrones = sorted(t for t, v in types.items() if v.get('published') and cat(t) == 18 and _effs(t) & {6690, 6692})
+DMG_ATTR_IDS = {114, 116, 117, 118}   # em / explosive / kinetic / thermal damage: pyfa Drone.dealsDamage
+def _deals(t): return any(x['value'] > 0 for x in td.get(str(t), {}).get('dogmaAttributes', []) if x['attributeID'] in DMG_ATTR_IDS)
+# v2026.10.14.40 (D5, drone damage application): web / painter drones AND every damage drone
+projDrones = sorted(t for t, v in types.items() if v.get('published') and cat(t) == 18 and (_effs(t) & {6690, 6692} or _deals(t)))
 projDrones = [int(t) for t in projDrones]
 def _dsig(t): return (frozenset(reqs(t)), gname(t))
 droneReps = list({_dsig(t): t for t in projDrones}.values())
@@ -172,7 +177,7 @@ def build_drones():
         for ctx in sorted({ctx_of(t) for t in carriers[eid]} - {None}):
             calls, err = run(eid, ctx, None, carrier=next((t for t in sorted(carriers[eid]) if ctx_of(t) == 'skill'), None) if ctx == 'skill' else None, rich=True)
             if err: raise AssertionError(f'Effect{eid} touches a drone attribute but the recorder could not run it: {err}')
-        skipped[f'touches a drone attribute, no web / painter drone passes its filter: Effect{eid} {ename(eid)}'] += 1
+        skipped[f'touches a drone attribute, no web / painter / damage drone passes its filter: Effect{eid} {ename(eid)}'] += 1
     for eid in {e for e, _ in byCtx}:
         variants = {json.dumps(r) for (e, c), r in byCtx.items() if e == eid}
         if len(variants) > 1: raise AssertionError(f"effect {eid}: drone rows differ by context: {variants}")
@@ -184,7 +189,7 @@ if __name__ == '__main__':
     for e, rows in table.items(): print(' ', e, ename(int(e)), ctxs[e], rows)
     for k, v in sorted(skipped.items()): print('  skipped:', k)
     dtable, dskill, dskipped = build_drones()
-    print(f'PROJ_DRONE_EFFECTS: {len(dtable)} effects, {sum(map(len, dtable.values()))} rows; PROJ_DRONE_SKILL_ROWS: {len(dskill)} (over {len(projDrones)} web / painter drones)')
+    print(f'PROJ_DRONE_EFFECTS: {len(dtable)} effects, {sum(map(len, dtable.values()))} rows; PROJ_DRONE_SKILL_ROWS: {len(dskill)} (over {len(projDrones)} web / painter / damage drones)')
     for e, rows in dtable.items(): print(' ', e, ename(int(e.split(':')[-1])), rows)
     for r in dskill: print('  skill', name(r[0]), r[1:])
     for k, v in sorted(dskipped.items()): print('  skipped:', k)

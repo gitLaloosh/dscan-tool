@@ -89,9 +89,14 @@ if '--run' in sys.argv:
         ('display rounding vs Python round', 'node tools/check_py_round.mjs index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('damage application vs pyfa getApplicationPerKey', env + 'python3 -I tools/independent_checks/check_application.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.34
         ('projected webs / painters / scram vs pyfa', env + 'python3 -I tools/independent_checks/check_projected.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.35
+        ('damage chart vs pyfa', env + 'python3 -I tools/independent_checks/check_damage_chart.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.36
+        ('matchup strip vs pyfa', env + 'python3 -I tools/independent_checks/check_matchup.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.41
+        ('Weaknesses picks vs pyfa', env + 'python3 -I tools/independent_checks/check_weakness_picks.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.42
+        ('class presets (damage chart)', env + 'python3 -I tools/select_class_presets.py --check index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.36
         ('missile application skills + ranking', env + 'python3 -I tools/independent_checks/check_missile_application.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('drone recommendation rule', env + 'python3 -I tools/independent_checks/check_drone_recommendation.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('error codes registry and ERRORS.md', 'python3 -I tools/gen_errors_md.py index.html', lambda o: o.strip().splitlines()[-1].endswith('ERRORS.md is up to date')),
+        ('card names from one list', 'python3 -I tools/check_card_names.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.45
         ('pasted names, either apostrophe', env + 'python3 -I tools/independent_checks/check_apostrophe_names.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 misses')),
     ]
     bad = 0

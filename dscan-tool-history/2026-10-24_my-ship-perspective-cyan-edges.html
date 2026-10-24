@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — My Ship Perspective: cyan card edges</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>My Ship Perspective: no top bar, cyan card edges</h1>
+<p><span class="tag">Bug list #1</span><span class="tag">Styling</span> 2026-10-24 &middot; <code>v2026.10.14.45</code> &rarr; <code>v2026.10.14.46</code>.</p>
+<p>Erik's screenshot (2026-10-23) showed a problem. In the My Ship Perspective, a 2px cyan bar ran across the top of the cards, and the Threat Perspective has no such bar. His suggestion: "maybe the amber card edges become that light blue that's at the top of the 'my ship' perspective but the blue line at the top goes away".</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The bar is gone: <code>.mys-mine-view</code> has no top border and no extra 12px padding. The cards now start at the same height in both perspectives.</li>
+<li>In the My Ship Perspective, the cards' 3px left edge is cyan (<code>--cyan</code>, the same light blue the bar used) instead of amber. This applies to every card (Weaknesses, EWAR / Misc, Fit, Firepower, Resistance, Navigation &amp; Targeting, Capacitor), open or collapsed.</li>
+<li>The Threat Perspective is unchanged, with amber edges. The colours now match the Matchup: the threat half is amber and the my-ship half is cyan.</li>
+</ul>
+<p>Not changed on purpose:</p>
+<ul>
+<li>the T3D Mode card keeps its plain grey edge in both perspectives;</li>
+<li>the amber outline on module tiles keeps its own meaning;</li>
+<li>the "fallback estimate" amber mark on stat tiles keeps its own meaning;</li>
+<li>the Fit Analyzer's "Viewing My Ship" page shows the ship on its own, with no Matchup, so it keeps the amber edges.</li>
+</ul>
+<p>One CSS rule changed. No calculation changed.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>matchup_strip_check.py</code> has two new checks.
+<ul>
+<li>My Ship Perspective: no top border, no top padding, and every card edge is cyan (7 cards).</li>
+<li>Threat Perspective: every card edge stays amber (8 cards; the Mode card is left out).</li>
+</ul>
+Both read the computed styles, so they cover the hidden perspective without switching back to it.</li>
+<li>All other page checks show 0 failures. The regression suite passes and the update-check chain is all OK.</li>
+<li>Screenshot of a Hecate against a saved Vexor in the My Ship Perspective, open and collapsed.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When two views show the same cards for two different ships, tell them apart with the same visual device in both. Here that's the left edge colour, matching the halves of the Matchup. Don't add an extra element to only one of them, like a bar on top. An extra element moves the layout and reads as something new rather than "the other side". A test of the computed style catches this kind of drift. A screenshot alone does not.</p>
+</body>
+</html>

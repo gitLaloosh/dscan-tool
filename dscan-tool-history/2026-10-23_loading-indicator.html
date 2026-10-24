@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — Loading indicator while waiting on zKillboard / ESI</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>A loading indicator while the page waits on zKillboard or ESI</h1>
+<p><span class="tag">UI</span><span class="tag">Bug fix</span> 2026-10-23 &middot; <code>v2026.10.14.38</code> &rarr; <code>v2026.10.14.39</code> &middot; From Erik's todo-inbox: "add a thinking or loading visual to display while waiting on the results of an api call. sometimes, switching between hull type or fits on the pilot analyzer tab, cards take time to update and it looks like nothing happened after a click." Erik approved doing this first, then My Ship phase 2.</p>
+
+<h2>Why it looked like nothing happened</h2>
+<p>Clicking a hull button (or the last-kill pivot, or Refresh losses) left the old results on screen, unchanged, until the new losses were fetched and calculated. The only sign of activity was the small grey status line at the top of the panel, often out of view.</p>
+<p>A second problem showed up along the way. Nothing stopped a second click while the first run was still going. Two hulls clicked in quick succession could finish in the wrong order and leave the first hull's fits on screen.</p>
+
+<h2>What changed (presentation only)</h2>
+<ul>
+<li><b>A bar</b> appears above the results while a run is waiting:
+<ul>
+<li>it shows a spinner, what is loading ("Loading Curse losses…") and the current step from the status line ("Pulling fit details from the 3 most recent losses…");</li>
+<li>it is pinned to the top of the screen if you have scrolled down;</li>
+<li>it waits 250 ms before showing, so an answer that is already cached doesn't make it flash.</li>
+</ul></li>
+<li><b>The old results</b> dim and can't be clicked until the new ones arrive. The button you clicked spins.</li>
+<li><b>One run at a time:</b> while a run is going, the other run buttons (Analyze Pilot, Refresh losses, the hull buttons, the last-kill pivot) ignore clicks. This fixes the race.</li>
+<li><b>Fit Analyzer:</b> "Analyze fit" has its own bar.</li>
+<li><b>Reduced motion:</b> with reduced motion set in the system, the spinner stays still.</li>
+<li><b>Not changed:</b> switching between loss tabs, modes and module states. Those don't wait on the network; module states already had their own busy state.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li>New <code>tools/page_checks/busy_check.py</code>: 18 checks, 0 failures. zKillboard is served by the script with the answers deliberately held back.
+<ul>
+<li>The bar stays hidden for the first 250 ms, then shows with the right label and the status line's step.</li>
+<li>Scrolled 1,500 px down, it is pinned 8 px from the top of the screen.</li>
+<li>The old results are dimmed and unclickable, and the clicked hull spins.</li>
+<li>A second hull clicked meanwhile is ignored, so the first one is shown.</li>
+<li>A cached switch never shows the bar.</li>
+<li>Refresh losses and the Fit Analyzer work the same way, and reduced motion stops the spinner.</li>
+</ul>
+v.38 has no bar, so the check errors out on it.</li>
+<li>All other page checks (layout, damage chart, My Ship, missing charges, zKillboard outage, card widths) pass. The regression suite and D-scan parse tests pass, and the update-check chain is all OK.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When a click starts work that takes time, show the user it started, near where they are looking. A status line at the top of the panel doesn't count. Also block a second click until the first one finishes: without that, two runs can finish in either order, and the screen can end up showing the answer to the earlier click. Check it with a test that holds the network answer back on purpose. With an instant mock, both bugs go unseen.</p>
+</body>
+</html>
