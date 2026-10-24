@@ -118,8 +118,8 @@ Subtext rule first, then the fight setup on top of it (turret-application-plan.m
 
 | Phase | What |
 |---|---|
-| S1 | Shared pieces: single-line context slot (`ctxHtml`, ≤ 40 chars, full text on hover), ⓘ button + info panel (reuse the Last Kill panel and its Escape / outside-press closer, bottom sheet on a phone), `CARD_INFO` registry, set-width number boxes, Reset as a reserved icon. Checks: `check_subtext.py` lint (chain step) and the "nothing moves" page check, report-only at first. Also the "Adjust with no sliders" fix (hidden loss tab). |
-| S2 | Damage Application, Weaknesses, EWAR / Misc, Mode, Fit moved to the rule; their long text into `CARD_INFO`. |
+| S1 **DONE v2026.10.14.48** | Shared pieces: single-line context slot (`ctxHtml`, ≤ 40 chars, full text on hover), ⓘ button + info panel (reuse the Last Kill panel and its Escape / outside-press closer, bottom sheet on a phone), `CARD_INFO` registry, set-width number boxes, Reset as a reserved icon. Checks: `check_subtext.py` lint (chain step) and the "nothing moves" page check, report-only at first. Also the "Adjust with no sliders" fix (hidden loss tab). |
+| S2 | (S1 already moved the Damage Application method note behind ⓘ, as the first user of the pieces.) Damage Application headline (number + one context line; on a phone it still re-wraps as the sentence changes), Weaknesses, EWAR / Misc, Mode, Fit moved to the rule; their long text into `CARD_INFO`. |
 | S3 | Firepower, Resistance, Navigation & Targeting, Capacitor. "Nothing moves" becomes a hard fail. |
 | F1 | Option C strip under the Matchup, in-game movement names for both ships, one shared fight; the Matchup and picks notes removed. |
 | F2 | Keep at Range (pyfa input mapping, unavailable inside their web/scram or when slower), with an independent check of the inputs. |

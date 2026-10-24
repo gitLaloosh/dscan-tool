@@ -22,6 +22,8 @@ against pyfa by tools/independent_checks/check_damage_chart.py; this checks the 
   * Pilot losses: each loss tab has its own card; the "My ship" view has none;
   * collapsed: the row's headline follows "Use in assessments" (v2026.10.14.47, bug list #1) and is there from
     the start on a phone;
+  * v2026.10.14.48: Reset is a reserved icon (disabled at the defaults); the method text is behind the info button
+    (panel over the page, Escape / outside press close it); Adjust is open on a loss tab that was hidden when drawn;
   * phone (375 px): the card starts collapsed, opens to a chart no wider than the screen, Adjust starts closed,
     no sideways scrolling. No page errors anywhere.
 """
@@ -184,10 +186,27 @@ def desktop(b):
     pg.click(f'{C} input[data-in="prop"]'); b_off = cur()
     check(a_on == a_off and b_on[0] > b_off[0] and b_on[1] > b_off[1], f'MWD switch: no change inside the scram ({a_on} / {a_off}), a change outside ({b_on} / {b_off}) [speed, signature]')
     check(pg.evaluate(COUNT_ENGINE) == n0, f'no fit-engine run for any control ({pg.evaluate(COUNT_ENGINE) - n0} runs)')
-    check(pg.is_visible(f'{C} .dmg-reset'), 'Reset shown once a control moved')
+    # v2026.10.14.48 (subtext rule 4): Reset is an icon that is always there, enabled once a control moved
+    check(pg.is_visible(f'{C} .dmg-reset') and pg.is_enabled(f'{C} .dmg-reset'), 'Reset enabled once a control moved')
     pg.click(f'{C} .dmg-reset'); ready(pg)
     st2 = pg.evaluate(f"() => document.querySelector('{C}')._dmg.f.dmg")
-    check(st2 == st and pg.is_hidden(f'{C} .dmg-reset') and head(pg) == h0, f'Reset: the defaults back ({head(pg)})')
+    check(st2 == st and pg.is_visible(f'{C} .dmg-reset') and pg.is_disabled(f'{C} .dmg-reset') and head(pg) == h0, f'Reset: the defaults back, the icon stays (disabled) ({head(pg)})')
+    # v2026.10.14.48: how the card works is behind its info button, in a panel over the page
+    info0 = pg.evaluate("CARD_INFO.dmg[0]")
+    h_before = pg.locator(C).bounding_box()['height']
+    check(info0 not in pg.inner_text(C), 'the method text is not on the card any more')
+    pg.click(f'{C} summary.info-btn'); pg.wait_for_timeout(200)
+    panel = pg.locator(f'{C} .info-body')
+    check(panel.is_visible() and info0 in panel.inner_text() and pg.evaluate("CARD_INFO.dmg[2]") in panel.inner_text(),
+          'info button opens the panel with the card\'s CARD_INFO text')
+    pb = panel.bounding_box()
+    check(pb['x'] >= 0 and pb['x'] + pb['width'] <= pg.viewport_size['width'], f"the open panel is inside the window ({pb['x']:.0f} to {pb['x'] + pb['width']:.0f} of {pg.viewport_size['width']})")
+    check(abs(pg.locator(C).bounding_box()['height'] - h_before) < 1 and pg.evaluate(f"getComputedStyle(document.querySelector('{C} .info-body')).position") == 'absolute',
+          'the panel floats over the page (the card keeps its height)')
+    pg.keyboard.press('Escape'); pg.wait_for_timeout(150)
+    check(not panel.is_visible(), 'Escape closes the panel')
+    pg.click(f'{C} summary.info-btn'); pg.wait_for_timeout(150); pg.mouse.click(5, 5); pg.wait_for_timeout(150)
+    check(not panel.is_visible(), 'a press outside closes the panel')
     # a module-state change keeps the card state and redraws
     set_range(pg, f'{C} input[data-in="range"]', 5000)
     pg.locator(f'{R} .fl-fit button.ms-state:not([disabled])').first.click()
@@ -238,7 +257,8 @@ def desktop(b):
     # v2026.10.14.40: drones are charted (pyfa getDroneMult): a Vexor threat's raw DPS counts its Hammerheads,
     # the chart marks its drone control range, and the note no longer lists drones as missing
     pg.fill('#fitAnalyzerInput', VEXOR); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); ready(pg)
-    sub, note, chart = pg.inner_text(f'{C} [data-out="headSub"]'), pg.inner_text(f'{C} .dmg-note'), pg.inner_text(f'{C} .dmg-chart')
+    sub, chart = pg.inner_text(f'{C} [data-out="headSub"]'), pg.inner_text(f'{C} .dmg-chart')
+    note = pg.inner_text(f'{C} .dmg-note') if pg.locator(f'{C} .dmg-note').count() else ''   # v.48: only shown when something isn't charted
     raw = pg.evaluate(f"() => {{ const a = document.querySelector('{C}')._dmg.f.estimate.application; return Math.round(a.weapons.reduce((s, w) => s + w.dps, 0) + a.drones.reduce((s, d) => s + d.dps, 0)); }}")
     check(f'{raw:,} raw' in sub and 'their drone range' in chart and 'Not in the chart yet' not in note and head(pg) == pg.evaluate(EXPECT, C),
           f'drone ship: raw {raw} incl. drones ({sub}), drone range marked, drones not listed as missing, headline {head(pg)}')
@@ -255,6 +275,12 @@ def desktop(b):
         return document.querySelectorAll('#fitResults .mys-threat-view .fl-dmg').length; }""", HECATE)
     pg.wait_for_selector('#fitResults .fl-dmg [data-out="head"]:not(:empty)', timeout=60000)
     check(n == 2 and 'your Vexor' in pg.inner_text('#fitResults .fl-dmg .dmg-vs'), f'Pilot losses: a card per loss tab, applied to your Vexor ({n})')
+    # v2026.10.14.48 (Erik's screenshot: "Adjust" with no sliders): the second loss tab's card was drawn while its
+    # tab was hidden (no width), which closed Adjust; on the wide layout it must be open
+    pg.locator('#fitResults .assess-tabs button').nth(1).click(); pg.wait_for_timeout(400)
+    adj = pg.evaluate("[...document.querySelectorAll('#fitResults .mys-threat-view .fl-dmg .dmg-adjust')].map(d => ({open: d.open, shown: d.offsetParent !== null}))")
+    check(len(adj) == 2 and all(a['open'] for a in adj), f'Pilot losses: Adjust open on every loss tab, also one that was hidden when drawn ({adj})')
+    pg.locator('#fitResults .assess-tabs button').nth(0).click(); pg.wait_for_timeout(300)
     # Erik's repro (bug list #1) on the Pilot Analyzer itself: collapse the card on the shown loss, switch "Use in
     # assessments" off -> the row follows the preset
     P = '#fitResults .subtab-panel:not([hidden]) .mys-threat-view .fl-dmg'
@@ -297,6 +323,12 @@ def phone(b):
     check(pg.is_visible(f'{C} .dmg-tip'), 'phone: tapping the chart shows the values')
     pg.locator(f'{C}').scroll_into_view_if_needed()
     pg.screenshot(path=os.path.join(os.environ.get('SHOTS', '/tmp'), 'dmg_phone.png'), full_page=True)
+    # v2026.10.14.48: on a phone the info panel is a sheet from the bottom with a close button
+    pg.tap(f'{C} summary.info-btn'); pg.wait_for_timeout(250)
+    pos = pg.evaluate(f"getComputedStyle(document.querySelector('{C} .info-body')).position")
+    check(pos == 'fixed' and pg.is_visible(f'{C} button.info-close'), f'phone: the info panel is a sheet with a close button ({pos})')
+    pg.tap(f'{C} button.info-close'); pg.wait_for_timeout(200)
+    check(not pg.is_visible(f'{C} .info-body'), 'phone: the close button closes the sheet')
     check(not errs, f'phone: no page errors {errs}')
     ctx.close()
 

@@ -82,6 +82,7 @@ LAB = """([sel, widths]) => {
 MEASURE = """() => [...document.querySelectorAll('#cwLab .cw-box')].map(box => {
   const r = box.getBoundingClientRect(), out = [], lone = [], split = [];
   box.querySelectorAll('*').forEach(el => { const e = el.getBoundingClientRect();
+    if(el.closest('.info-body')) return;   // v2026.10.14.48: the info panel floats over the page by design (damage_chart_check keeps it on screen)
     if(e.width && (e.right > r.right + 1 || e.left < r.left - 1)) out.push((typeof el.className === 'string' && el.className ? el.className.split(' ')[0] : el.tagName) + ' ' + Math.round(Math.max(e.right - r.right, r.left - e.left)) + 'px'); });
   box.querySelectorAll('.estimate-box').forEach(eb => {
     const tiles = [...eb.children].filter(t => t.getBoundingClientRect().width > 0); if(tiles.length < 2) return;

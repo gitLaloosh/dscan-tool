@@ -1,0 +1,110 @@
+"""Nothing moves unless you open or close something (subtext rule 4, v2026.10.14.48, roadmap/subtext-plan.md).
+
+    PYFA_SRC=... python3 tools/page_checks/no_shift_check.py [index.html]
+
+Erik (2026-10-24): "when making changes to the damage application slider, numbers change on multiple cards which
+causes the content to shuffle and move elements on the page ... this redesign should also address that."
+
+The real page (Fit Analyzer, a Hecate threat against a saved Vexor, ESI served from the SDE) at 1440, 1100 and
+375 px. Every Damage Application control is used in turn: each slider at several values, every movement button,
+the chart-axis buttons, the prop toggle. After each, every card's top edge and height is compared with the start.
+FAILS when a part that the rule already covers moves by more than 1 px (phase S1: the Matchup board and the
+Damage Application card; S2/S3 add the rest). Everything else that moves is REPORTED with how far, so the next
+phases can see what is left.
+"""
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The two fits and helpers from matchup_strip_check.py, without running that check: only its top part (before the
+# browser block) is executed.
+import types
+_src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'matchup_strip_check.py'), encoding='utf-8').read()
+M = types.SimpleNamespace(); _ns = {'__file__': os.path.join(os.path.dirname(os.path.abspath(__file__)), 'matchup_strip_check.py')}
+exec(compile(_src.split('\nwith sync_playwright()')[0], 'matchup_strip_check.py', 'exec'), _ns)
+M.HTML, M.HECATE, M.VEXOR, M.settle = _ns['HTML'], _ns['HECATE'], _ns['VEXOR'], _ns['settle']
+from esi_from_sde import route_all
+from playwright.sync_api import sync_playwright
+
+HTML = M.HTML
+R = '#fitAnalyzerResults'
+# phase S1: these must not move. Grows as S2/S3 move cards to the rule. On a phone the Damage Application headline
+# still wraps differently as its sentence changes ("you still" vs "you orbiting at 1,691 m/s"): phase S2 splits it
+# into a number + one context line, then 'dmg' joins the phone list.
+HARD = {1440: {'board', 'dmg'}, 1100: {'board', 'dmg'}, 375: {'board'}}
+failures = []
+def check(ok, msg):
+    print(('OK   ' if ok else 'FAIL ') + msg)
+    if not ok: failures.append(msg)
+
+BOXES = r"""() => {
+  const out = {};
+  const b = document.querySelector('#fitAnalyzerResults .mys-board');
+  // the board is sticky on a phone (it stays at the top while scrolling), so only its height is compared
+  if(b){ const r = b.getBoundingClientRect(); out['board'] = [getComputedStyle(b.closest('.mys-switch-host') || b).position === 'sticky' ? 0 : r.top + scrollY, r.height]; }
+  for(const el of document.querySelectorAll('#fitAnalyzerResults .mys-threat-view .fit-layout > div > *')){
+    if(el.offsetParent === null) continue;
+    const t = el.querySelector('button.cc-toggle[data-card]');
+    const key = el.classList.contains('dmg-card') || el.querySelector('.dmg-card') ? 'dmg' : t ? t.dataset.card : (el.className.toString().split(' ')[0] || 'part');
+    const r = el.getBoundingClientRect(); out[key] = [r.top + scrollY, r.height];
+  }
+  return out; }"""
+
+def set_input(pg, name, value):
+    pg.evaluate(f"""() => {{ const i = document.querySelector('{R} .fl-dmg input[data-in="{name}"]'); if(!i) return;
+        if(i.type === 'checkbox') i.checked = {str(bool(value)).lower()}; else i.value = {value};
+        i.dispatchEvent(new Event('input', {{bubbles: true}})); }}""")
+    pg.wait_for_timeout(200)
+
+def actions(pg):
+    """Yields (label, do) for every Damage Application control; each returns the page to a changed state."""
+    mx = float(pg.locator(f'{R} .fl-dmg input[data-in="range"]').get_attribute('max'))
+    for v in (0, mx * 0.1, mx * 0.3, mx * 0.6, mx):
+        yield f'range {v / 1000:g} km', lambda v=v: set_input(pg, 'range', v)
+    for v in (0, 50, 100):
+        yield f'your speed {v}%', lambda v=v: set_input(pg, 'speedPct', v)
+    for v in (25, 300, 100):
+        yield f'your signature {v}%', lambda v=v: set_input(pg, 'sigPct', v)
+    for v in (100, 50, 0):
+        yield f'their speed {v}%', lambda v=v: set_input(pg, 'theirPct', v)
+    for seg in ('You', 'Their heading', 'Chart across'):
+        for b in pg.locator(f'{R} .fl-dmg button[data-seg="{seg}"]').all():
+            v = b.get_attribute('data-v')
+            yield f'{seg}: {v}', lambda b=b: (b.click(), pg.wait_for_timeout(200))
+    if pg.locator(f'{R} .fl-dmg input[data-in="prop"]').count():
+        yield 'your MWD off', lambda: set_input(pg, 'prop', 0)
+        yield 'your MWD on', lambda: set_input(pg, 'prop', 1)
+
+with sync_playwright() as p:
+    b = p.chromium.launch()
+    for W in (1440, 1100, 375):
+        pg = b.new_context(viewport={'width': W, 'height': 1000}, is_mobile=W < 600, has_touch=W < 600).new_page()
+        errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+        route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
+        pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', M.HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); M.settle(pg)
+        pg.click('#myShipChip'); pg.fill('#myShipEft', M.VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+        pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); M.settle(pg, 800)
+        if pg.locator(f'{R} .fl-dmg .dmg-card').count() == 0:     # phone: the card starts collapsed
+            pg.click(f'{R} .fl-dmg .cc-toggle[data-card="dmg"]'); pg.wait_for_timeout(400)
+        pg.wait_for_selector(f'{R} .fl-dmg [data-out="head"]:not(:empty)')
+        if pg.get_attribute(f'{R} .fl-dmg .dmg-adjust', 'open') is None:
+            pg.click(f'{R} .fl-dmg .dmg-adjust > summary'); pg.wait_for_timeout(200)
+        M.settle(pg, 400)
+        base = pg.evaluate(BOXES)
+        worst = {}
+        for label, do in list(actions(pg)):
+            do(); M.settle(pg, 150)
+            now = pg.evaluate(BOXES)
+            for k, (y0, h0) in base.items():
+                if k not in now: continue
+                d = max(abs(now[k][0] - y0), abs(now[k][1] - h0))
+                if d > worst.get(k, (0, ''))[0]: worst[k] = (d, label)
+        for k in base:
+            d, why = worst.get(k, (0, ''))
+            if k in HARD[W]:
+                check(d <= 1, f'{W}: {k} stays put while every Damage Application control is used (moved {d:.0f} px{", worst at " + why if d > 1 else ""})')
+            elif d > 1:
+                print(f'NOTE {W}: {k} moves up to {d:.0f} px (worst at {why}) -- not covered by the rule yet')
+        check(not errs, f'{W}: no page errors {errs}')
+        pg.close()
+    b.close()
+print(f'FAILURES: {len(failures)}')
+sys.exit(1 if failures else 0)

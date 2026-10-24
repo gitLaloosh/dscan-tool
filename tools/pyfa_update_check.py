@@ -97,6 +97,7 @@ if '--run' in sys.argv:
         ('drone recommendation rule', env + 'python3 -I tools/independent_checks/check_drone_recommendation.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('error codes registry and ERRORS.md', 'python3 -I tools/gen_errors_md.py index.html', lambda o: o.strip().splitlines()[-1].endswith('ERRORS.md is up to date')),
         ('card names from one list', 'python3 -I tools/check_card_names.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.45
+        ('subtext rule (info panels, one-line context)', 'python3 -I tools/check_subtext.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.48
         ('pasted names, either apostrophe', env + 'python3 -I tools/independent_checks/check_apostrophe_names.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 misses')),
     ]
     bad = 0
