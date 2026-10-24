@@ -1,6 +1,6 @@
 # Plan: subtext, site-wide (one rule for every card)
 
-Status: **DECIDED 2026-10-24** (Erik: "works as written. info icon opens a panel over the page. the 40 character limit is fine."). Mockup: layout canvas page "Subtext rule". Build phases in section 5.
+Status: **BUILT 2026-10-24 (S1–S3, v2026.10.14.48–.50); DECIDED 2026-10-24** (Erik: "works as written. info icon opens a panel over the page. the 40 character limit is fine."). Mockup: layout canvas page "Subtext rule". Build phases in section 5.
 
 Erik (2026-10-24): "the subtext in the tool is a little overwhelming and distracts from important values ... come up
 with a solution that will address it across the entire tool, not just one card here and there. we need to address it
@@ -120,7 +120,7 @@ Subtext rule first, then the fight setup on top of it (turret-application-plan.m
 |---|---|
 | S1 **DONE v2026.10.14.48** | Shared pieces: single-line context slot (`ctxHtml`, ≤ 40 chars, full text on hover), ⓘ button + info panel (reuse the Last Kill panel and its Escape / outside-press closer, bottom sheet on a phone), `CARD_INFO` registry, set-width number boxes, Reset as a reserved icon. Checks: `check_subtext.py` lint (chain step) and the "nothing moves" page check, report-only at first. Also the "Adjust with no sliders" fix (hidden loss tab). |
 | S2 **DONE v2026.10.14.49** | Damage Application headline (the number, "DPS applied at 4.4 km", one context line "290 if you sit still · 755 raw"; the movement is in the legend), Weaknesses (one context line per value, warning rows, picks as three single lines per tile, one per row; ranking note → ⓘ), EWAR / Misc (one-line chips, short Misc lines, ⓘ), Mode (its "How this is handled" panel → ⓘ, name "Mode" in `CARD_NAMES`), Fit (legend and implant note → ⓘ / one line; drone rows one line). `CARD_INFO` keys may be `<card key>#<variant>` and name cards as `{card:key}`. The info panel is placed against its card, not its button (LESSON #46). "Nothing moves" is a hard fail for all of these at 1440, 1100 and 375 px; nothing else moves either (no notes left). |
-| S3 | Firepower, Resistance, Navigation & Targeting, Capacitor. "Nothing moves" becomes a hard fail. |
+| S3 **DONE v2026.10.14.50** | Firepower (one line under each tile; weapon rows = charge + "weapon · 2.8 + 1.6 km"; ⓘ), Resistance (Repairs note → ⓘ), Navigation & Targeting (one line per tile: "225 m/s without MWD", "8.7 s with MWD on", "20 base + 40 skills", "402 m with MWD on", "Magnetometric"; ⓘ), Capacitor (caption "best case · ASB on charges", "8.3 recharge − 8.6 drain"; ⓘ). Every text colour `--text-faint` → `--text-dim` except 3 disabled controls; `check_subtext.py` fails on it. "Nothing moves" is a hard fail for every card. The rule now covers the whole Fit Analyzer page. |
 | F1 | Option C strip under the Matchup, in-game movement names for both ships, one shared fight; the Matchup and picks notes removed. |
 | F2 | Keep at Range (pyfa input mapping, unavailable inside their web/scram or when slower), with an independent check of the inputs. |
 | F3 | Chart markers 5c: tackle shaded with the EWAR card's letters, tackle distances and your range on the x axis, DPS at your range on the y axis, range pins + key; chart frame fixed. |

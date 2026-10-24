@@ -11,8 +11,8 @@ limit is fine." The rule, enforced here as far as a static read can:
      for a variant of a card's text (v2026.10.14.49), every infoBtnHtml(key) has a CARD_INFO entry, every CARD_INFO
      entry is used, and every {card:key} in the text is a CARD_NAMES key;
   4. (nothing moves) is checked in the page: tools/page_checks/no_shift_check.py.
-Also REPORTED (not failed until phase S3): CSS rules that colour text with --text-faint (below 4.5:1 contrast on the
-cards), and literal context written outside ctxHtml in the classes the rule replaces.
+  6. (since v2026.10.14.50) no text coloured --text-faint (below 4.5:1 contrast on the cards), except a disabled
+     control marked "faint: disabled" on its line.
 """
 import sys, os, re, json
 
@@ -70,9 +70,15 @@ for mm in re.finditer(r'ctxHtml\(\s*([\'"`])', src):
     if len(buf) > CTX_MAX:
         problems.append(f'line {line_of(mm.start())}: context line of {len(buf)} characters (max {CTX_MAX}): {buf.replace(chr(0), "${…}")[:70]!r}')
 
-# reported, not failed (phase S3 turns these into failures)
-faint = [line_of(mm.start()) for mm in re.finditer(r'(?<![-\w])color\s*:\s*var\(--text-faint\)', src)]
-print(f'report: {len(faint)} CSS rules colour text with --text-faint (lines {", ".join(map(str, faint[:12]))}{" ..." if len(faint) > 12 else ""}); the rule moves them to --text-dim card by card')
+# 6. context text uses --text-dim (v2026.10.14.50, phase S3: a failure now). --text-faint (#4d5960) is under 4.5:1 on
+# the cards, so text may use it only on a disabled control (exempt from the contrast rule), marked on its line with
+# "faint: disabled". Borders (border-color) don't count.
+faint_ok = 0
+for mm in re.finditer(r'(?<![-\w])color\s*:\s*var\(--text-faint\)', src):
+    ln = src[src.rfind('\n', 0, mm.start()) + 1:src.find('\n', mm.end())]
+    if 'faint: disabled' in ln: faint_ok += 1; continue
+    problems.append(f'line {line_of(mm.start())}: text coloured --text-faint (too faint to read; use --text-dim, or mark a disabled control "faint: disabled"): {ln.strip()[:80]!r}')
+print(f'{faint_ok} disabled controls keep --text-faint')
 for p in problems: print('PROBLEM:', p)
 print(f'{len(INFO)} info panels ({", ".join(sorted(used))}), {ctx_n} context lines in the code; {len(problems)} problems')
 sys.exit(1 if problems else 0)
