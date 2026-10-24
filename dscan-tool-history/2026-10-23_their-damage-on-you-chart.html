@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — "Their damage on you" chart (turret plan Phase 2b)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:10px 0;} th,td{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>"Their damage on you": pyfa's damage graph against your ship, with sliders</h1>
+<p><span class="tag">Feature</span><span class="tag">Presentation</span> 2026-10-23 &middot; <code>v2026.10.14.35</code> &rarr; <code>v2026.10.14.36</code> &middot; the owner: "go ahead", after the mockup canvas and the Phase 2b decisions (Option B, signature slider scales your fit, engagement range starts at their optimal + falloff, class presets as fits). This is Phase 2b of <code>roadmap/turret-application-plan.md</code>. No PYFA CORE section changed: every number comes from the <code>projected</code> and <code>application</code> sections built in Phase 1 and 2a.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>New card "Their damage on you"</b>, full width under the three columns, in the Fit Analyzer and in every Pilot losses tab (not in the "My ship" view, where the threat is you).
+<ul>
+<li>Headline: their applied DPS on you at the engagement range, how you're flying, what it is if you sit still, and their raw DPS.</li>
+<li>Chart across distance with two lines, you still (solid, amber) and you moving (dashed, teal), markers for their scram range ("scram: your MWD off" when you run an MWD), their longest web and their lock range, and the engagement range. Hover or tap shows the values and your webbed speed and painted signature there.</li>
+<li>"Show values" opens a table of the same numbers.</li>
+<li>Adjust: engagement range; you still / straight at them / orbiting; your speed; your MWD or afterburner on or off; your signature (a share of your fit's own); their speed and heading; chart across distance, your speed or your signature.</li>
+<li>Reset (to my ship) appears once anything moved.</li>
+<li>The Firepower card gets one line: "290 DPS on a typical cruiser at 4.4 km &darr;", which scrolls to the card.</li>
+<li>Collapsible like every card; closed by default on a phone, where Adjust also starts closed.</li>
+</ul></li>
+<li><b>Who it charts against.</b> Your ship when one is saved and "Use in assessments" is on. Otherwise a typical ship of a class you pick (kept in the browser), each a real fit built from EFT text the same way as a paste:
+<table><tr><th>Class</th><th>Preset</th><th>MWD speed / signature</th></tr>
+<tr><td>Frigate</td><td>Navitas + 5MN Microwarpdrive II</td><td>3,026 m/s, 207 m</td></tr>
+<tr><td>Destroyer</td><td>Cormorant + 5MN Microwarpdrive II</td><td>1,671 m/s, 374 m</td></tr>
+<tr><td>Cruiser (default)</td><td>Caracal + 50MN Microwarpdrive II</td><td>1,913 m/s, 719 m</td></tr>
+<tr><td>Battlecruiser</td><td>Harbinger + 50MN Microwarpdrive II</td><td>1,239 m/s, 1,552 m</td></tr>
+<tr><td>Battleship</td><td>Raven + 500MN Microwarpdrive II</td><td>1,046 m/s, 2,358 m</td></tr></table>
+New error code DMG-01 if a preset can't be built, or your saved ship's hull has no dogma effects.</li>
+<li><b>The numbers.</b> At every point the card does what pyfa's damage graph does by default: their webs, target painters and scram on you first (<code>pyfaProjectedPoint</code>), then their turrets, missiles, Vorton projectors and smartbombs at your tackled speed and painted signature (<code>pyfaAppliedDps</code>). Lock range ignored and resists not counted, as in pyfa. Their drones and fighters aren't charted yet (D5); the card names their raw DPS.</li>
+<li><b>One engine input added:</b> <code>estimate.projectedTarget.variants</code>, the fit as a target with its prop module running and with it off (built next to <code>projectedTarget</code>). Moving a control only redraws the card; the fit engine doesn't run.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b>New <code>tools/independent_checks/check_damage_chart.py</code>.</b> It imports the pyfa harnesses of <code>check_projected.py</code> and <code>check_application.py</code> (pyfa's <code>calc/projected.py</code> and <code>calc/application.py</code>, unmodified) and runs them on pyfa's own attribute values for both ships.
+<ul>
+<li>Targets: the five presets (built by the real engine; pyfa side the hull with its MWD active / online) and 8 golden fits with a prop module. Attackers: 10 golden fits with tackle and 4 without.</li>
+<li>Grid: 486 points of distance &times; your speed and heading &times; their speed and heading &times; the signature slider, prop on and off.</li>
+<li>Result: 0 mismatches over 176,904 points (tackled speed, painted signature and applied DPS), 112,988 DPS values bit-identical.</li>
+<li>It can fail: applying their weapons at your untackled speed gives 234 mismatches; a non-linear signature slider gives 364.</li>
+</ul></li>
+<li><b><code>tools/select_class_presets.py --check</code></b> re-runs the class-median rule on pyfa's handlers and compares it with the page's presets: 0 mismatches. Both checks are now in the update-check chain (32 steps, all OK).</li>
+<li><b>New page check <code>tools/page_checks/damage_chart_check.py</code></b>: 39 checks at 1440 and 375 px, 0 failures. It covers the preset, defaults, headline, lines, table, markers, Firepower link, tooltip, every control (no fit-engine run), the MWD switch inside and outside their scram, Reset, presets kept after a reload, collapse, My Ship replacing the preset, Pilot losses, and the phone layout.</li>
+<li><b>Also run:</b> regression suite ALL PASS; <code>layout_check.py</code> (now includes the new card), <code>my_ship_check.py</code>, <code>missing_charges_check.py</code>, <code>zkb_outage_check.py</code> all 0 failures; PYFA CORE lock: 20 sections match the manifest.</li>
+<li><b>Colours</b> validated with the dataviz validator on both card surfaces: CVD &Delta;E 17.3, normal vision 21.5, contrast 3:1. The dash is the second cue.</li>
+</ul>
+
+<h2>Caught before delivery</h2>
+<p>The card was first a new row of the three-column grid. From 900 px up the Fit column is sticky, and a sticky grid item is held by the whole grid, so scrolling down to the card slid the Fit column over the chart. The page check passed, because it measured with the page at the top. A screenshot showed it. The card now sits after the grid, and the page check scrolls to the card and fails on the old layout (LESSON #38).</p>
+
+<h2>Lesson for future models</h2>
+<p>When you add something under a sticky element, check it scrolled into view, not at the top of the page, and look at a screenshot at every breakpoint before you call it done. A layout check that measures boxes at one scroll position can't see an overlap that only appears while scrolling.</p>
+</body>
+</html>

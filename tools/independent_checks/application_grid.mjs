@@ -10,12 +10,19 @@ const fakeEl = () => ({addEventListener(){}, get style(){return {};}, querySelec
 const sb = {fetch: async () => ({ok: false, status: 404}), document: {getElementById: fakeEl, createElement: fakeEl}, console: {log(){}, warn(){}, error(){}},
   Promise, Map, Set, Infinity, Math, JSON, Object, Array, Number, String};
 vm.createContext(sb); vm.runInContext(code, sb);
-const {fits, grid} = JSON.parse(fs.readFileSync(inPath, 'utf8'));
+const {fits, grid, dgrid} = JSON.parse(fs.readFileSync(inPath, 'utf8'));
 const out = {};
-for (const [id, app] of Object.entries(fits)) {
+// v2026.10.14.40: drones too (pyfaGetDroneMult, key "drone:<typeId>"), and a second grid for drone fits that also
+// varies the graph settings ignoreDCR and mobileDroneMode.
+const run = (app, g) => {
   const mults = {};
-  for (const w of app.weapons) mults[`${w.weaponTypeId}:${w.ammoTypeId ?? ''}`] = grid.map(p =>
+  for (const w of app.weapons) mults[`${w.weaponTypeId}:${w.ammoTypeId ?? ''}`] = g.map(p =>
     sb.pyfaApplicationMult(w, Object.assign({atkRadius: app.radius, lockRange: app.lockRange}, p)));
-  out[id] = {mults, total: grid.map(p => sb.pyfaAppliedDps(app, p))};
+  for (const d of app.drones || []) mults[`drone:${d.typeId}`] = g.map(p => sb.pyfaGetDroneMult(app, d, p));
+  return {mults, total: g.map(p => sb.pyfaAppliedDps(app, p))};
+};
+for (const [id, app] of Object.entries(fits)) {
+  out[id] = run(app, grid);
+  if ((app.drones || []).length && dgrid) out[id].drones = run(app, dgrid);
 }
 fs.writeFileSync(outPath, JSON.stringify(out));

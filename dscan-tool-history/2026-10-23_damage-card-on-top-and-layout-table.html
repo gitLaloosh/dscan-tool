@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — "Their damage on you" on top, and the layout table</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:10px 0;} th,td{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>"Their damage on you" moves to the top, placed by a layout table</h1>
+<p><span class="tag">Layout</span> 2026-10-23 &middot; <code>v2026.10.14.36</code> &rarr; <code>v2026.10.14.37</code> &middot; the owner: "place the new card for applied damage at the top above the other cards. we may have to consider options for something that fits in a single column or across two columns." I built the three placements in the real page and sent screenshots (full width, two columns, one column). the owner asked how hard it would be to go back, then whether players should be able to arrange the cards themselves. We agreed a staged plan (<code>roadmap/card-layout-plan.md</code>), and this is its step 1: option B, built on a layout table. No numbers change.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Where the card is now:</b>
+<table><tr><th>Width</th><th>Layout</th></tr>
+<tr><td>1280 px and up</td><td>at the top across the Fit and stats columns; Weaknesses and EWAR start beside it on the left</td></tr>
+<tr><td>900&ndash;1279 px</td><td>full width at the top, then Fit on the left and the other cards on the right</td></tr>
+<tr><td>phone</td><td>the first card, collapsed</td></tr></table>
+The Firepower card's link now points up (&uarr;). In the My ship view there is no card, and the columns start level.</li>
+<li><b>The layout table <code>FIT_LAYOUT</code></b> (block <code>// ==== FIT LAYOUT TABLE</code>):
+<ul>
+<li><code>stacks</code>: the cards in each column, top to bottom;</li>
+<li><code>bands</code>: cards that sit in their own area and can span columns (this card);</li>
+<li><code>grid</code>: per screen width, the column sizes and rows of areas.</li>
+</ul>
+<code>fitSummaryParts()</code> now returns each card on its own, <code>fitLayoutHtml()</code> stacks them from the table, and <code>fitLayoutGridCss()</code> writes the grid stylesheet from it at load. The old fixed grid rules are gone from the stylesheet. Moving a card, or changing how many columns it spans, is now an edit to the table. The table is also what a later "Edit layout" mode would change.</li>
+<li><b>LESSON #38 is enforced in code.</b> <code>fitLayoutGridCss()</code> throws if any area sits below the sticky Fit column from 900 px up, or if a row has the wrong number of areas. Both cases were tested.</li>
+<li><b>The card sizes itself by its own width</b> (a container query at 720 px). With room, the sliders sit beside the chart; in a narrow column they fold under "Adjust", closed. That makes any of the three placements work.</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b><code>damage_chart_check.py</code></b>: 45 checks, 0 failures. New:
+<ul>
+<li>the placement at 1440, 1100 and 375 px;</li>
+<li>at 1440 and 1100, scrolling through the whole layout 300 px at a time, the sticky Fit column never covers another area. A layout with the card below the columns fails this (4 hits at 1440);</li>
+<li>the My ship view's columns start level;</li>
+<li>the Firepower link points up.</li>
+</ul></li>
+<li><b><code>layout_check.py</code></b> (updated: at 1280+ Fit and stats now start level below the card; the pinned-column test scrolls to the Fit column) 0 failures. <code>my_ship_check.py</code>, <code>missing_charges_check.py</code>, <code>zkb_outage_check.py</code> 0 failures.</li>
+<li>Regression suite ALL PASS. PYFA CORE lock: 20 sections match. The update-check chain: all steps OK.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When a layout rule matters (here: nothing below a sticky column), put it where the layout is defined and make it fail loudly, not just in a document. Writing the grid from a table made that possible: the rule is a few lines in <code>fitLayoutGridCss()</code>, and the page check scrolls through the layout to catch anything the rule misses.</p>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — Cards sized by their own width (layout step 2)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:10px 0;} th,td{border:1px solid #ddd; padding:4px 10px; text-align:left; vertical-align:top;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Every card lays out by its own width</h1>
+<p><span class="tag">Layout</span> 2026-10-23 &middot; <code>v2026.10.14.37</code> &rarr; <code>v2026.10.14.38</code> &middot; the owner: "do step 2 now, then we'll worry about my ship phase 2". This is step 2 of <code>roadmap/card-layout-plan.md</code>. Each card now lays out by its own width, not the screen's, so a later "Edit layout" can put any card in any column or span. No numbers change.</p>
+
+<h2>How it was found</h2>
+<p>A new page check, <code>tools/page_checks/card_width_check.py</code>, opens every card of two fits and copies each one into containers of 300, 340, 460, 520, 700, 1000 and 1358 px. Those are the widths a card can get today: a phone, the left and right columns at 1280+ px, half of the tablet layout, two columns, and full width. On v.37 it found:</p>
+<table><tr><th>Card</th><th>Problem</th></tr>
+<tr><td>Firepower</td><td>four tiles went 3 + 1 at 520 px (Volley alone, stretched across the row)</td></tr>
+<tr><td>Navigation &amp; targeting</td><td>at 340 px the speed broke across two lines ("1,691 / m/s")</td></tr>
+<tr><td>Tactical Destroyer mode row</td><td>the "How this is handled" link reached 6 px outside the card at 300 px</td></tr>
+<tr><td>Capacitor</td><td>at 340&ndash;520 px the net cap rate's long explanation became a tall, narrow column next to a nearly empty capacity tile (seen in the screenshots)</td></tr></table>
+<p>Resistance, the Weaknesses tiles, EWAR, the Fit card and "Their damage on you" were already fine at every width.</p>
+
+<h2>What changed (CSS only)</h2>
+<ul>
+<li>Every column and band of the layout is a size container, so the rules below key on the card's width.</li>
+<li><b>Tile rows</b> are a grid: 1 column, 2 from 300 px, a row of 3 from 520 px and of 4 from 640 px. An odd last tile spans the row (2 + 1, never 3 + 1).</li>
+<li><b>Capacitor</b> has its own rule:
+<ul>
+<li>under 440 px: one tile per row;</li>
+<li>from 440 px: the ring tile spans the row and the others go two to a row;</li>
+<li>from 700 px: one row at 2 : 1 : 1.</li>
+</ul></li>
+<li><b>Tile values</b> wrap the MWD badge above the number instead of breaking the number.</li>
+<li><b>Mode row:</b> the Tactical Destroyer mode row wraps.</li>
+<li><b>Weaknesses</b> tiles go two to a row in a card under 400 px. This replaces a rule tied to the left column at 1280 px.</li>
+</ul>
+<p>What you see in today's layout, measured on the page:</p>
+<ul>
+<li><b>Tablet width (1100 px), right column:</b> Firepower 3 + 1 &rarr; 2 + 2; Navigation's bottom row 3 &rarr; 2 + 1 (the third tile spans); Capacitor puts the ring on its own row, then net rate and capacity side by side.</li>
+<li><b>1440 px:</b> tile rows unchanged except the Capacitor (ring row, then two). The speed value no longer breaks when the right column is narrow (1280&ndash;1439 px).</li>
+</ul>
+<p>Left for step 3: the Fit card's first view (Ring or List) is still chosen by screen width. That's right for today's layout, where the Fit card is never narrower than about 430 px from 600 px up.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>card_width_check.py</code>: 56 checks, 0 failures. At every width it checks that nothing reaches outside the card, that no tile row goes 3 + 1, and that no number breaks across lines. v.37 fails 5 of them.</li>
+<li><code>layout_check.py</code>, <code>damage_chart_check.py</code>, <code>my_ship_check.py</code>, <code>missing_charges_check.py</code>, <code>zkb_outage_check.py</code>: 0 failures each. Screenshots checked at 1440, 1100 and 390 px.</li>
+<li>Regression suite ALL PASS. PYFA CORE lock unchanged (no core change). Update-check chain: all steps OK.</li>
+</ul>
+
+<h2>Caught before delivery (LESSON #39)</h2>
+<p>The Capacitor's two-column override, written after the general three-column rule, still lost at 520 px. A <code>:has()</code> rule takes the specificity of its most specific argument, and the general rule's argument was more specific. The general rules now exclude the Capacitor row instead.</p>
+
+<h2>Lesson for future models</h2>
+<p>To make a component work at any width, test it at every width it can get, in isolation, before judging the page. The lab copies each card into fixed-width containers, so problems show up that the current layout happens to hide. Check its screenshots, not only its numbers: the Capacitor's tall, narrow column broke none of the rules, but it was plainly wrong when looked at.</p>
+</body>
+</html>

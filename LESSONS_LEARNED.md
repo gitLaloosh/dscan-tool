@@ -605,6 +605,87 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   an EFT paste (it assigns slots from the item itself), or copy the layout of a real killmail. When code pairs
   charges by slot, check the slot against the module's own slot attribute, not against the fixture.
 
+## 38. A new grid row under a sticky column gets covered when you scroll
+
+- **What happened (v2026.10.14.36, caught before delivery):** the "Their damage on you" card was first added as
+  a fourth grid area of `.fit-layout` ("dmg dmg dmg" under "beat fit stats"). The Fit column is
+  `position: sticky` from 900 px up. A sticky grid item is held inside the whole grid container, not inside
+  its own row, so when the page scrolled down to the card the Fit column slid down with it and covered the chart.
+- **How it was caught:** a screenshot of the card. The page check passed: it measured the boxes with the page
+  scrolled to the top, where nothing overlaps.
+- **Do this instead:** never put a grid area below the last row that holds the sticky column. Since
+  v2026.10.14.37 the grid is written from `FIT_LAYOUT` and `fitLayoutGridCss()` throws on such a row; content
+  that must come after the columns goes outside the grid. When a check measures layout next to anything sticky,
+  scroll through the whole layout and measure at each step (`damage_chart_check.py` `no_overlap`; a layout with
+  the card below the columns fails it). Look at a screenshot of every new card at 1440, 1100 and 375 px.
+
+## 39. An override inside `:has()` lost to the general rule it was overriding
+
+- **What happened (v2026.10.14.38, caught before delivery):** the tile rows got a general rule, "exactly three
+  tiles: three columns" (`.estimate-box:has(> .estimate-stat:nth-child(3):last-child)`), and the Capacitor row
+  an override, "two columns" (`.estimate-box:has(> .estimate-stat > .cap-ring-row)`), written later in the file.
+  At 520 px the Capacitor still showed three columns. `:has()` counts the specificity of its most specific
+  argument: the general rule's argument has three classes, the override's two, so the general rule won no
+  matter where it stood.
+- **How it was caught:** the card width lab's screenshot (`card_width_check.py --shots`).
+- **Do this instead:** when one rule must not apply to some elements, exclude them in that rule
+  (`:not(:has(> .estimate-stat > .cap-ring-row))`) rather than relying on a later override; do not count on
+  source order between rules with `:has()`, `:is()` or `:not()`. Look at the lab screenshots for every width
+  after a CSS change.
+
+## 40. A ranking metric that leaves out what the pick is for
+
+- **What happened (v2026.10.14.42, caught before delivery):** the first build of the Weaknesses picks ranked each
+  charge by its applied DPS, the number pyfa's damage graph shows. That graph ignores the target's resists by
+  default (`ignoreResists: True`). A card called "Weaknesses" then recommended the charge with the most raw DPS even
+  when the target resists its damage type: 204 of the checked fights had a different, better pick once resists
+  counted (Scourge vs Inferno missiles, Void vs Null, the drone race).
+- **How it was caught:** asking what pyfa's graph does with resists before writing the check (`graphs/data/
+  fitDamageStats/getter.py applyDamage`, `service/settings.py`), not after.
+- **Do this instead:** before you rank anything, write down what the ranking is FOR and check that the number you
+  sort by contains every input that decides it. Show pyfa's number, but sort by the quantity that answers the
+  question (here: how long they last, the strip's time to kill against their resists, with the rest of the fit as
+  it is). Add a mutation to the independent check that sorts by the naive number (`raw_dps_order`) and confirm it
+  fails.
+
+## 41. A mockup on a page the canvas doesn't open on
+
+- **What happened (2026-10-23):** the three matchup options went onto a NEW page of the existing My Ship canvas.
+  The canvas opens on its first page, so the owner saw the old phase-1 boards and asked whether he had the wrong file.
+- **Do this instead:** when you add boards to an existing canvas, either set its `launch` to the new page or name
+  the page in your message ("open the page list, pick X"). Before saying what a mockup shows, render the board
+  files yourself (strip the canvas markup, Playwright screenshot) and send the images too; the user then has the
+  options even when the canvas view goes wrong.
+
+## 42. A card's name typed in many places drifts apart
+
+- **What happened (fixed v2026.10.14.45):** each card's title was a string passed by hand at every call
+  (`cardLabelHtml('dmg', 'Their damage on you')`), and notes, tooltips and ERROR_CODES typed the names again. Over a
+  few builds they disagreed: "Navigation & targeting" vs the agreed "Navigation & Targeting", a Capacitor note
+  pointing at an "EWAR card" whose title is "EWAR / Misc", error codes naming a "last-kill box" and a "threat / my
+  ship switch" that no longer existed. the owner: "subtext and explanatory info referencing card titles that should be
+  interchangeable."
+- **Do this instead:** name each card or page part once, in `CARD_NAMES` (roadmap/card-names.md has the same
+  table), and refer to it by key: `cardName('dmg')` in text, `cardLabelHtml(key)` / `collapsedCardHtml(key, summary)`
+  for titles (they take no title), `{card:dmg}` in ERROR_CODES. `tools/check_card_names.py` (update-check chain)
+  reads every string the page can show and fails on a name typed by hand, a "<Name> card" that isn't a listed name,
+  an old name, or a key that doesn't exist. When you rename something, add the old name to its `RETIRED` list.
+- **A trap found on the way:** `${cardName('fit')}` inside a `'...'` string is printed literally, and in a `'...'`
+  string that also contains `'fit'` it is a syntax error that stops the whole script (the regression suite caught
+  it). Use backticks for any string with `${...}`; the check flags `${cardName(` inside quotes.
+
+## 43. A collapsed card that only updates while it's open
+
+- **What happened (fixed v2026.10.14.47, found by the owner):** the Damage Application card's collapsed row showed a
+  headline cached from the last time the card was drawn open. The refresh after a change ("Use in assessments" off,
+  a new saved ship, a preset) only redrew cards that were open, so a collapsed card kept its old numbers ("still
+  shows old text (out of sync w/ user's change)"). On a phone, where the card starts collapsed, the row never had
+  numbers until it was opened once.
+- **Do this instead:** anything a collapsed card shows is computed from the same inputs as the open card, and the
+  refresh path covers both states (`dmgFillCollapsed`, `dmgRefreshAll` refills every card). When you add a refresh
+  hook, ask what else on the page displays that value: a collapsed row, the Firepower link, the Matchup. A page
+  check that changes an input while the card is collapsed catches it; one that only tests the open card doesn't.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

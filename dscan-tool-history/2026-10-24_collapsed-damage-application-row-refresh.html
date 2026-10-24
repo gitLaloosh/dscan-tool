@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Collapsed Damage Application row follows changes</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The collapsed Damage Application row follows your changes</h1>
+<p><span class="tag">Bug list #1</span> 2026-10-24 &middot; <code>v2026.10.14.46</code> &rarr; <code>v2026.10.14.47</code>.</p>
+<p>the owner's report (todo-inbox): in the Pilot Analyzer with a ship saved, analyze a hull, collapse the Damage Application card, then switch "Use in assessments" off. Expected: the damage text and numbers update. Actual: it "still shows old text (out of sync w/ user's change)".</p>
+
+<h2>Cause</h2>
+<p>The collapsed row shows <code>f._dmgSummary</code>, a headline that only <code>dmgDraw</code> wrote, and <code>dmgDraw</code> only runs while the card is open. After a change, <code>dmgRefreshAll</code> redrew only the cards that were open, so a collapsed card kept the headline from the last time it was open. On a phone the card starts collapsed, so its row read "damage applied to you, by distance" until it was opened once.</p>
+
+<h2>Fix</h2>
+<ul>
+<li><code>dmgFill</code> handles a collapsed card with the new <code>dmgFillCollapsed</code>. It uses the same target (your ship, or the preset when your ship isn't in use), the same settings and the same <code>dmgModel</code>, and writes the headline into the row.</li>
+<li><code>dmgRefreshAll</code> now refills every card, open or collapsed.</li>
+<li>Open and collapsed share one sentence builder (<code>dmgSummaryText</code>), so they can't word it differently.</li>
+</ul>
+<p>Nothing else on the card changed, and no calculation changed.</p>
+
+<h2>Verification</h2>
+<ul>
+<li><code>damage_chart_check.py</code> has new checks. All of them fail on v.46 and pass now.
+<ul>
+<li>Fit Analyzer: collapse the card with your ship in use, switch "Use in assessments" off. The row moves to the typical battleship preset. Switch it back on and the row returns to your ship; reopening the card gives the same headline.</li>
+<li>Pilot Analyzer (the owner's repro): the same switch on a collapsed loss card updates its row.</li>
+<li>Phone: a card that starts collapsed shows its headline straight away ("290 DPS applied to a typical cruiser at 4.4 km&hellip;").</li>
+</ul></li>
+<li>All other page checks show 0 failures. The regression suite passes and the update-check chain is all OK.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When a card has an open state and a collapsed state, both show values from the same inputs. So every refresh has to reach both. A refresh hook written for the open card silently leaves the collapsed summary behind. Test by changing an input while the card is collapsed. (LESSON #43.)</p>
+</body>
+</html>

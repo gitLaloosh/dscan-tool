@@ -21,6 +21,9 @@ m = re.search(r'const ERROR_CODES = (\{.*?\n\});', src, re.S)
 if not m: sys.exit('ERROR_CODES not found in ' + html)
 reg = json.loads(m.group(1))
 rest = src[:m.start()] + src[m.end():]
+# v2026.10.14.45: fields name page parts as {card:key}; the names come from CARD_NAMES (roadmap/card-names.md).
+cn = re.search(r'const CARD_NAMES = (\{.*?\n\});', src, re.S)
+CARD_NAMES = json.loads(cn.group(1)) if cn else {}
 
 CODE = r'[A-Z]+-\d\d'
 used = set(re.findall(r"['\"](" + CODE + r")['\"]", rest)) | set(re.findall(r'\((' + CODE + r')\)', rest))
@@ -33,8 +36,12 @@ for c, r in sorted(reg.items()):
     for k in ('title', 'where', 'trigger', 'check', 'since'):
         if not r.get(k): problems.append(f'{c}: missing "{k}"')
     if not re.fullmatch(CODE, c): problems.append(f'{c}: code must look like ABC-01')
+    for k, v in r.items():
+        for key in re.findall(r'\{card:([\w.]+)\}', v if isinstance(v, str) else ''):
+            if key not in CARD_NAMES: problems.append(f'{c}.{k}: {{card:{key}}} is not in CARD_NAMES')
 
-def cell(t): return (t or '').replace('|', '\\|').replace('\n', ' ')
+def names(t): return re.sub(r'\{card:([\w.]+)\}', lambda mm: CARD_NAMES.get(mm.group(1), mm.group(0)), t or '')
+def cell(t): return names(t).replace('|', '\\|').replace('\n', ' ')
 groups = {'APP': 'The page itself', 'ESI': 'ESI (CCP\'s API)', 'ZKB': 'zKillboard', 'DSCAN': 'D-Scan Analyzer',
           'PILOT': 'Pilot Analyzer', 'FIT': 'Fit Analyzer', 'MYSHIP': 'My Ship'}
 order = list(groups)

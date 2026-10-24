@@ -74,7 +74,9 @@ with sync_playwright() as p:
         sw = pg.evaluate('document.documentElement.scrollWidth'); check(sw <= W, f'{W}: no sideways scroll (page width {sw})')
         areas = pg.evaluate("""() => ['fl-beat','fl-fit','fl-stats'].map(c => { const r = document.querySelector('#fitAnalyzerResults .'+c).getBoundingClientRect(); return [c, Math.round(r.x), Math.round(r.y + scrollY), Math.round(r.width)]; })""")
         print('  areas', areas)
-        if W >= 1280: check(areas[0][1] < areas[1][1] < areas[2][1] and abs(areas[0][2]-areas[1][2]) < 5, f'{W}: three columns side by side')
+        # v2026.10.14.37: "Their damage on you" (FIT_LAYOUT band) sits above Fit + stats from 1280 px, so Fit and
+        # stats start level with each other, below it; Weaknesses starts at the top beside it
+        if W >= 1280: check(areas[0][1] < areas[1][1] < areas[2][1] and abs(areas[1][2]-areas[2][2]) < 5 and areas[0][2] <= areas[1][2], f'{W}: three columns side by side')
         elif W >= 900: check(areas[1][1] < areas[0][1] and areas[0][1] == areas[2][1] and areas[2][2] > areas[0][2], f'{W}: fit left, beat above stats on the right')
         else: check(areas[0][2] < areas[1][2] < areas[2][2] and areas[0][1] == areas[1][1] == areas[2][1], f'{W}: one column beat > fit > stats')
         dps = lambda: total_dps(pg, R)
@@ -86,7 +88,7 @@ with sync_playwright() as p:
         pg.locator(R + ' .td-mode-btn').nth(0).click(); pg.wait_for_timeout(400)
         check(dps() == d0, f'{W}: back to the first mode gives the first DPS')
         # module state: switch the first blaster off, fit column must not move
-        if W >= 900: pg.evaluate("window.scrollTo(0, document.querySelector('#fitAnalyzerResults .fit-layout').getBoundingClientRect().top + scrollY + 250)"); pg.wait_for_timeout(200)
+        if W >= 900: pg.evaluate("window.scrollTo(0, document.querySelector('#fitAnalyzerResults .fl-fit').getBoundingClientRect().top + scrollY + 250)"); pg.wait_for_timeout(200)
         y0 = pg.evaluate("document.querySelector('#fitAnalyzerResults .fl-fit').getBoundingClientRect().top")
         btn = pg.locator(R + ' button.ms-state[data-from="active"]').first
         btn.click(); pg.wait_for_function("() => !document.querySelector('#fitAnalyzerResults .fit-card-busy') && document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom')", timeout=30000); pg.wait_for_timeout(300)
@@ -210,7 +212,7 @@ with sync_playwright() as p:
         ctx.close()
     b.close()
 
-CARD_KEYS = ['weak', 'ewar', 'fp', 'rs', 'nv', 'cp']
+CARD_KEYS = ['weak', 'ewar', 'fp', 'rs', 'nav', 'cp', 'dmg']   # dmg: Damage Application (v2026.10.14.36); nv -> nav v2026.10.14.45
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 375):
@@ -229,16 +231,22 @@ with sync_playwright() as p:
             if not state()[k]: pg.click(f'{R} button.cc-toggle[data-card="{k}"]'); pg.wait_for_timeout(150)
         stats = pg.inner_text(R + ' .fl-stats'); beat = pg.inner_text(R + ' .fl-beat')
         dps_open = total_dps(pg, R); ehp_open = stats.split('Total')[1].split('ehp')[0].strip()
+        # v2026.10.14.45: every title is its CARD_NAMES name (roadmap/card-names.md), open and collapsed
+        TITLES = "() => Object.fromEntries([...document.querySelectorAll('" + R + " button.cc-toggle:not(.bay-toggle)')].map(b => [b.dataset.card, (b.querySelector('.cc-title') || b).textContent.trim() === CARD_NAMES[b.dataset.card]]))"
+        t_open = pg.evaluate(TITLES)
+        check(set(CARD_KEYS) <= set(t_open) and all(t_open.values()), f'{W}: open card titles are their CARD_NAMES names {t_open}')
         for k in CARD_KEYS:
             pg.click(f'{R} button.cc-toggle[data-card="{k}"]'); pg.wait_for_timeout(150)
             focused = pg.evaluate("document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.card : null")
             check(focused == k, f'{W}: focus stays on the {k} toggle after collapsing ({focused})')
         sums = pg.evaluate(f"() => Object.fromEntries([...document.querySelectorAll('{R} button.cc-row:not(.bay-toggle):not([data-card=fit])')].map(b => [b.dataset.card, b.querySelector('.cc-sum').textContent]))")
         check(set(sums) == set(CARD_KEYS) and all(sums.values()), f'{W}: every card collapses to a summary row {sorted(sums)}')
+        t_closed = pg.evaluate(TITLES)
+        check(set(CARD_KEYS) <= set(t_closed) and all(t_closed.values()), f'{W}: collapsed card titles are their CARD_NAMES names {t_closed}')
         check(sums['fp'].startswith(dps_open + ' DPS'), f'{W}: Firepower summary "{sums["fp"]}" = open card total {dps_open}')
         check(sums['rs'] == ehp_open + ' EHP', f'{W}: Resistance summary "{sums["rs"]}" = open card total {ehp_open}')
         check('Warp Scrambler II' in sums['ewar'] and 'Stasis Webifier II' in sums['ewar'], f'{W}: EWAR summary names the modules "{sums["ewar"]}"')
-        check(('Drains in' in sums['cp'] or 'Stable at' in sums['cp']) and 'm/s' in sums['nv'] and 'align' in sums['nv'], f'{W}: Capacitor / Navigation summaries "{sums["cp"]}" / "{sums["nv"]}"')
+        check(('Drains in' in sums['cp'] or 'Stable at' in sums['cp']) and 'm/s' in sums['nav'] and 'align' in sums['nav'], f'{W}: Capacitor / Navigation summaries "{sums["cp"]}" / "{sums["nav"]}"')
         # a module state change keeps the cards collapsed, and the summary follows the new numbers
         pg.locator(R + ' button.ms-state[data-from="active"]').first.click()
         pg.wait_for_function("() => document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom') && !document.querySelector('#fitAnalyzerResults .fit-card-busy')", timeout=30000); pg.wait_for_timeout(300)

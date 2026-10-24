@@ -13,7 +13,10 @@ speeds and headings x target signature x lock range respected or ignored:
   * each weapon's multiplier (keyed weaponTypeId:chargeTypeId, identical weapons alike);
   * the applied DPS of the whole fit (sum of DPS x multiplier);
   * the inputs the multipliers don't cover: the attacker's radius and lock range.
-Drones and fighters are left out on both sides (D5: not ported yet). Tolerance 1e-6 relative (floatUnerr keeps
+Since v2026.10.14.40 also drones in space (getDroneMult; the fit's own resolved module states and drones, as
+compare_fit_stats.py), with every drone input (DPS, maxVelocity, radius, Drone.maxRange / falloff, trackingSpeed,
+optimalSigRadius) and a second grid for drone fits that also varies ignoreDCR and mobileDroneMode. Fighters are
+left out on both sides (not ported yet). Tolerance 1e-6 relative (floatUnerr keeps
 7 significant digits, so a value on a rounding edge may differ by one in the 7th digit).
 
 It also exposes applied(fitId, **params) for writing golden pins from pyfa's side.
@@ -53,6 +56,7 @@ APP = _exec('graphs/data/fitDamageStats/calc/application.py', {
     'Attribute': Attribute, 'GraphDpsDroneMode': _sconst['GraphDpsDroneMode'], 'GraphSettings': GraphSettings},
     drop=[r'^from (eos|graphs|service)\.\S+ import .*$'])
 getApplicationPerKey = APP['getApplicationPerKey']
+DroneMode = _sconst['GraphDpsDroneMode']
 FH = _const['FittingHardpoint']
 
 # ---- a pyfa-shaped fit from the oracle ----------------------------------------------------------------------
@@ -101,12 +105,34 @@ def module_dps(m):
         return sum(m.get(a) or 0 for a in DMG) / cyc
     return 0
 
+def drone_dps(d):
+    """pyfa Drone.getDps for the stack in space (as compare_implants.oracle_values sums it)."""
+    cyc = (d.get('speed') or d.get('duration') or 0) / 1000
+    return sum(d.get(a) or 0 for a in DMG) * _mult(d) * d.amountActive / cyc if cyc else 0
+class _DroneApp:
+    """eos Drone as getDroneMult reads it: modified attributes, Drone.maxRange, Drone.falloff (v2026.10.14.40)."""
+    def __init__(s, d):
+        s.d, s._dps = d, drone_dps(d); s.key = f'drone:{int(d.item.ID)}'
+    def isDealingDamage(s): return s._dps > 0
+    def getModifiedItemAttr(s, k, default=0):
+        v = s.d.get(k); return v if v is not None else default
+    @property
+    def maxRange(s):   # eos/saveddata/drone.py Drone.maxRange
+        for a in ("shieldTransferRange", "powerTransferRange", "energyDestabilizationRange", "empFieldRange", "ecmBurstRange", "maxRange", "ECMRangeOptimal"):
+            v = s.getModifiedItemAttr(a)
+            if v: return v
+    @property
+    def falloff(s):    # Drone.falloff
+        for a in ("falloff", "falloffEffectiveness"):
+            v = s.getModifiedItemAttr(a)
+            if v: return v
 class _Src:
     def __init__(s, o):
         s.o = o
         s.mods = [_Mod(o, m, module_dps(m)) for m in o.modules if m.state >= 2 and module_dps(m) > 0]
+        s.drones = [_DroneApp(d) for d in o.drones if d.amountActive > 0 and drone_dps(d) > 0]   # v2026.10.14.40 (D5 drones)
         class _It: pass
-        s.item = _It(); s.item.activeModulesIter = lambda: iter(s.mods); s.item.activeDronesIter = lambda: iter(())
+        s.item = _It(); s.item.activeModulesIter = lambda: iter(s.mods); s.item.activeDronesIter = lambda: iter(s.drones)
         s.item.activeFightersIter = lambda: iter(()); s.item.maxTargetRange = o.ship.get('maxTargetRange')
         s.item.extraAttributes = {'droneControlRange': o.ship.get('droneControlRange') or 0}
         s.isFit = True
@@ -117,11 +143,12 @@ class _Tgt:
 
 def pyfa_point(src, p):
     SETTINGS['ignoreLockRange'] = p['ignoreLockRange']
+    SETTINGS['ignoreDCR'] = p.get('ignoreDCR', False); SETTINGS['mobileDroneMode'] = DroneMode(p.get('droneMode', 1))
     am = getApplicationPerKey(src=src, tgt=_Tgt(p['tgtRadius']), atkSpeed=p['atkSpeed'], atkAngle=p['atkAngle'], distance=p['distance'],
                               tgtSpeed=p['tgtSpeed'], tgtAngle=p['tgtAngle'], tgtSigRadius=p['tgtSigRadius'])
     mults = {}
     for mod, v in am.items(): mults.setdefault(mod.key, v)
-    return mults, sum(mod._dps * am.get(mod, 0) for mod in src.mods)
+    return mults, sum(mod._dps * am.get(mod, 0) for mod in src.mods) + sum(d._dps * am.get(d, 0) for d in src.drones)
 
 def applied(fitId, **p):
     """pyfa's applied DPS for a golden fit at one point (for golden pins). Defaults: pyfa's graph defaults."""
@@ -134,40 +161,65 @@ GRID = [dict(distance=d, atkSpeed=a, atkAngle=aa, tgtSpeed=ts, tgtAngle=ta, tgtS
 
 def close(a, b): return abs(a - b) <= 1e-6 * max(1.0, abs(a), abs(b))
 
+DGRID = [dict(distance=d, atkSpeed=a, atkAngle=90, tgtSpeed=ts, tgtAngle=ta, tgtSigRadius=sig, tgtRadius=40, ignoreLockRange=il, ignoreDCR=dcr, droneMode=dm)
+         for d, a, ts, ta, sig, il, dcr, dm in itertools.product([0, 5000, 15000, 30000, 45000, 60000, 70000, 90000, 150000], [0, 500, 3000],
+                                                                [0, 500, 1500, 3000, 6000], [0, 90], [40, 400], [True, False], [False, True], [1, 2, 3])]
+
+def tool_states(t):
+    ms = (t.get('moduleStates') or {}).get('items') or []
+    states = {str(it['typeId']): {'active': round(it['active']), 'online': round(it['online']), 'offline': round(it['offline'])} for it in ms}
+    drones = [(it['typeId'], round(it['active'])) for it in ((t.get('droneStates') or {}).get('items') or []) if round(it['active']) > 0]
+    return states, drones
+
 if __name__ == '__main__':
     ROOT = os.path.join(HERE, '..', '..')
     html = next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(ROOT, 'index.html'))
     G = json.load(open(GOLDEN))
     tmp = tempfile.mkdtemp(); dump = os.path.join(tmp, 'd.json')
-    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, dump, 'application', '-', ','.join(G)], check=True, stdout=subprocess.DEVNULL)
-    apps = {k: v['application'] for k, v in json.load(open(dump)).items() if (v.get('application') or {}).get('weapons')}
+    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, dump, 'application,moduleStates,droneStates', '-', ','.join(G)], check=True, stdout=subprocess.DEVNULL)
+    dumped = json.load(open(dump))
+    apps = {k: v['application'] for k, v in dumped.items() if (v.get('application') or {}).get('weapons') or (v.get('application') or {}).get('drones')}
     gin, gout = os.path.join(tmp, 'in.json'), os.path.join(tmp, 'out.json')
-    json.dump({'fits': apps, 'grid': GRID}, open(gin, 'w'))
+    json.dump({'fits': apps, 'grid': GRID, 'dgrid': DGRID}, open(gin, 'w'))
     subprocess.run(['node', os.path.join(HERE, 'application_grid.mjs'), html, gin, gout], check=True)
     tool = json.load(open(gout))
-    bad = points = weapons = exact = compared = 0
+    bad = points = weapons = drones = exact = compared = dpoints = 0
     for k in G:
-        o = oracle_for(k)
+        # v2026.10.14.40: the tool's own resolved states and drones in space (inputs, as compare_fit_stats.py)
+        states, dr = tool_states(dumped[k])
+        o = oracle_for(k, states=states, drones=dr, group_limits=False)
         src = _Src(o)
-        if not src.mods and k not in apps: continue
-        app = apps.get(k) or {'weapons': [], 'radius': None, 'lockRange': None}
+        if not src.mods and not src.drones and k not in apps: continue
+        app = apps.get(k) or {'weapons': [], 'drones': [], 'radius': None, 'lockRange': None}
         t = tool.get(k, {'mults': {}, 'total': [0] * len(GRID)})
         diffs = []
-        if src.mods:
+        if src.mods or src.drones:
             if not close(app['radius'] or 0, src.getRadius()): diffs.append(f"radius tool {app['radius']} pyfa {src.getRadius()}")
             if not close(app['lockRange'] or 0, src.item.maxTargetRange): diffs.append(f"lockRange tool {app['lockRange']} pyfa {src.item.maxTargetRange}")
-        keys = {m.key for m in src.mods}
-        if keys != set(t['mults']): diffs.append(f"weapons tool {sorted(t['mults'])} pyfa {sorted(keys)}")
-        weapons += len(keys)
-        for i, p in enumerate(GRID):
-            mults, total = pyfa_point(src, p); points += 1
-            for key in keys:   # pyfa leaves a Vorton out of the map beyond lock range; its graph reads that as 0 (am.get(mod, 0))
-                v = mults.get(key, 0); compared += 1
-                tv = t['mults'].get(key, [None] * len(GRID))[i]
-                if tv is None or not close(tv, v):
-                    if len(diffs) < 8: diffs.append(f'{key} {p} tool {tv} pyfa {v}')
-                elif tv == v: exact += 1
-            if not close(t['total'][i], total) and len(diffs) < 8: diffs.append(f"applied DPS {p} tool {t['total'][i]} pyfa {total}")
+        # drone inputs: DPS and every attribute getDroneMult reads
+        td = {f"drone:{d['typeId']}": d for d in app.get('drones') or []}
+        for pd in src.drones:
+            x = td.get(pd.key)
+            if x is None: diffs.append(f'{pd.key} not in the tool'); continue
+            for name, tv, pv in (('dps', x['dps'], pd._dps), ('maxVelocity', x['speed'], pd.getModifiedItemAttr('maxVelocity')), ('radius', x['radius'], pd.getModifiedItemAttr('radius')),
+                                 ('maxRange', x['optimal'], pd.maxRange or 0), ('falloff', x['falloff'], pd.falloff or 0), ('trackingSpeed', x['tracking'], pd.getModifiedItemAttr('trackingSpeed')),
+                                 ('optimalSigRadius', x['optimalSigRadius'], pd.getModifiedItemAttr('optimalSigRadius'))):
+                if not close(tv or 0, pv or 0): diffs.append(f'{pd.key} {name} tool {tv} pyfa {pv}')
+        keys = {m.key for m in src.mods} | {d.key for d in src.drones}
+        if keys != set(t['mults']): diffs.append(f"weapons / drones tool {sorted(t['mults'])} pyfa {sorted(keys)}")
+        weapons += len(src.mods and {m.key for m in src.mods}); drones += len(src.drones)
+        for grid, tt in ((GRID, t), (DGRID, t.get('drones'))):
+            if grid is DGRID and not src.drones: continue
+            if tt is None: diffs.append('no drone grid from the tool'); continue
+            for i, p in enumerate(grid):
+                mults, total = pyfa_point(src, p); points += 1; dpoints += grid is DGRID
+                for key in keys:   # pyfa leaves a Vorton out of the map beyond lock range; its graph reads that as 0 (am.get(mod, 0))
+                    v = mults.get(key, 0); compared += 1
+                    tv = tt['mults'].get(key, [None] * len(grid))[i]
+                    if tv is None or not close(tv, v):
+                        if len(diffs) < 8: diffs.append(f'{key} {p} tool {tv} pyfa {v}')
+                    elif tv == v: exact += 1
+                if not close(tt['total'][i], total) and len(diffs) < 8: diffs.append(f"applied DPS {p} tool {tt['total'][i]} pyfa {total}")
         if diffs: bad += 1; print(f'{k}: ' + '; '.join(diffs))
-    print(f'{weapons} weapon + charge pairs, {points} fit x grid points, {exact} of {compared} multipliers bit-identical')
-    print(f'{bad} mismatches (golden fits with weapons vs pyfa getApplicationPerKey, grid of {len(GRID)})')
+    print(f'{weapons} weapon + charge pairs, {drones} drone types in space, {points} fit x grid points ({dpoints} on the drone grid), {exact} of {compared} multipliers bit-identical')
+    print(f'{bad} mismatches (golden fits with weapons or drones vs pyfa getApplicationPerKey, grids of {len(GRID)} and {len(DGRID)})')

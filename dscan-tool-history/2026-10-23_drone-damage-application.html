@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-23 — Drone damage application (pyfa getDroneMult)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Drones in damage application: pyfa's getDroneMult</h1>
+<p><span class="tag">Engine</span><span class="tag">PYFA CORE</span> 2026-10-23 &middot; <code>v2026.10.14.39</code> &rarr; <code>v2026.10.14.40</code> &middot; This is the first step of My Ship phase 2. the owner's decisions for the matchup strip: split it (strip, tags and amber first), "you last" by damage type with reps, port drone application first, and follow the damage card's settings. For a drone ship like the Vexor, drones are most of its DPS, so the strip would mislead without this.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>PYFA CORE <code>application</code></b> now has pyfa's drone loop and <code>getDroneMult</code>, ported line for line from <code>graphs/data/fitDamageStats/calc/application.py</code>:
+<ul>
+<li>nothing hits beyond the drone control range (graph setting <code>ignoreDCR</code>, off by default) or, when respected, the lock range;</li>
+<li>a drone faster than the target hits fully (<code>mobileDroneMode</code> auto, pyfa's default);</li>
+<li>otherwise it tracks like a turret from its ship's centre, with its own optimal, falloff, tracking and signature resolution, at the drone-surface distance.</li>
+</ul></li>
+<li><b>Inputs:</b> <code>estimate.application.drones</code> has one entry per drone type in space: its DPS and pyfa's modified <code>maxVelocity</code>, <code>radius</code>, <code>Drone.maxRange</code>, <code>Drone.falloff</code>, <code>trackingSpeed</code> and <code>optimalSigRadius</code>.</li>
+<li><b>Generator:</b> <code>tools/gen_projected_table.py</code> now records every pyfa handler on these attributes for every damage drone, not only web and painter drones. It adds tracking (Omnidirectional Tracking Links and Enhancers, hull bonuses, Hydra implants, boosters, the Gallente offensive subsystem). PYFA CORE <code>projected</code> changed only in that table.</li>
+<li><b>"Their damage on you"</b> now charts drones:
+<ul>
+<li>the raw DPS includes them, the chart marks their drone control range, and the note no longer lists them as missing;</li>
+<li>sentries count for the default range (their optimal + falloff); mobile drones fly to you, so they don't set it.</li>
+</ul></li>
+<li><b>Still not applied:</b> fighters, and drones on a hull record without dogma effects (DEVIATIONS.md).</li>
+</ul>
+
+<h2>Verification</h2>
+<ul>
+<li><b><code>check_application.py</code> extended.</b> pyfa's <code>getApplicationPerKey</code> runs unmodified on the oracle, now with the tool's own resolved states and drones in space. Every drone input is compared with pyfa's handlers: DPS, speed, radius, ranges, tracking and signature resolution. Drone fits get a second 6,480-point grid that also varies the drone control range setting and the drone mode.
+<ul>
+<li>39 drone types and 79 weapon pairs, 784,800 points: 0 mismatches. All 1,070,880 multipliers are bit-identical.</li>
+<li>The check catches broken drone maths. Mutations give:
+<ul>
+<li>speed rule wrong: 30 mismatches;</li>
+<li>drone-surface distance wrong: 35;</li>
+<li>drone control range ignored: 35;</li>
+<li>tracking handlers dropped: 7.</li>
+</ul></li>
+</ul></li>
+<li><b>Other checks against pyfa:</b>
+<ul>
+<li><code>check_damage_chart.py</code> now includes drone ships among the attackers: 18 attackers &times; 13 targets, 227,448 points, 0 mismatches against pyfa's <code>projected.py</code> + <code>application.py</code>.</li>
+<li><code>check_projected.py</code> 0 mismatches and <code>compare_fit_stats.py</code> 0 mismatches.</li>
+<li>The generator reports up to date, and the PYFA CORE lock was re-verified and updated (20 sections).</li>
+</ul></li>
+<li><b>Page and chain:</b> <code>damage_chart_check.py</code> has a new drone check: a Vexor threat's raw 531 includes its Hammerheads, and its drone range is marked. All page checks, the regression suite and the update-check chain pass.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>Before building a comparison feature on top of an engine, check what the engine leaves out for the inputs that matter. Here that was drones, which carry most of the DPS on a drone ship. A headline that silently drops them is worse than no headline. Port the missing piece first, and check it against pyfa with a grid that also varies the settings the new code reads (here the drone control range and the drone mode). A grid that only varies distance and speed would not test those branches.</p>
+</body>
+</html>

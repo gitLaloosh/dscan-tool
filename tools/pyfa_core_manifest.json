@@ -90,13 +90,13 @@
     },
     "application": {
       "kind": "port",
-      "mirrors": "graphs/data/fitDamageStats/calc/application.py getApplicationPerKey (turret / missile launcher / Vorton / smartbomb branches; lock range with pyfa's graph setting ignoreLockRange, FoF exempt), getTurretMult, _calcTurretChanceToHit, _calcAngularSpeed, _calcTrackingFactor, _calcTurretMult, getLauncherMult, getVortonMult, getSmartbombMult, _calcMissileFactor; eos/calc.py calculateRangeFactor; graphs/data/fitDamageStats/getter.py applyDamage (sum of DPS x multiplier, ignoreResists default). Drones, fighters, bombs, doomsdays, breachers not ported (turret-application-plan.md D5)",
+      "mirrors": "graphs/data/fitDamageStats/calc/application.py getApplicationPerKey (turret / missile launcher / Vorton / smartbomb branches; lock range with pyfa's graph setting ignoreLockRange, FoF exempt), getTurretMult, _calcTurretChanceToHit, _calcAngularSpeed, _calcTrackingFactor, _calcTurretMult, getLauncherMult, getVortonMult, getSmartbombMult, _calcMissileFactor; since v2026.10.14.40 the drone loop and getDroneMult (drone control range with ignoreDCR, mobileDroneMode auto / followTarget, drone surface distance); eos/calc.py calculateRangeFactor; graphs/data/fitDamageStats/getter.py applyDamage (sum of DPS x multiplier, ignoreResists default). Fighters, bombs, doomsdays, breachers not ported (turret-application-plan.md D5)",
       "verify": [
-        "python3 -I tools/independent_checks/check_application.py index.html (0 mismatches: pyfa's own getApplicationPerKey, run unmodified on oracle attributes and per-module DPS, vs the tool, every golden fit with weapons over a 6000-point grid)",
+        "python3 -I tools/independent_checks/check_application.py index.html (0 mismatches: pyfa's own getApplicationPerKey, run unmodified on oracle attributes and per-module DPS, vs the tool, every golden fit with weapons or drones over a 6000-point grid, plus every drone input and a 6480-point drone grid varying ignoreDCR and mobileDroneMode)",
         "python3 -I tools/independent_checks/compare_fit_stats.py index.html (0 mismatches: the application inputs per weapon vs pyfa's handlers)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "eca7aff91950378d52ba7434d291cb70cf9239362a32a5179b041a4eec7a7a85"
+      "sha256": "049b6e2de01aed73f92f015e5ce916a0bc5dfd13a640e3b644d7f401f4e21663"
     },
     "projected": {
       "kind": "generated + port",
@@ -106,7 +106,7 @@
         "python3 -I tools/independent_checks/check_projected.py index.html (0 mismatches: pyfa's calc/projected.py and cache/projected.py run unmodified on oracle attributes vs the tool, every attacker x every golden fit over a 156-point grid)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "9ae45f9bdaa341c2cec3da4c27f2b1d29b5969f543e2b39f384e0b10b657d779"
+      "sha256": "7b34927c6b2ec3ebe579746d5acf0740847ecb81aa69505e0f0bccbb8d0d1c6a"
     },
     "cap-rep-effect-tables": {
       "kind": "audited",
