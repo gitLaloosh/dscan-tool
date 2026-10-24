@@ -124,7 +124,7 @@ Subtext rule first, then the fight setup on top of it (turret-application-plan.m
 | F1 **DONE v2026.10.14.51** | Option C strip under the Matchup (`mysFightStripHtml`; menus edit the threat card's settings, `dmgSyncControls` keeps Adjust in step), in-game names Stopped / Approach / Orbit for both ships (their new Stopped state, `theirMode: 'still'`, is the default), one shared fight; the Matchup note removed (errors only), its method text in the board's ⓘ (`CARD_INFO.board`). Also the "How effective HP and DPS are calculated" note → `METHODOLOGY.md`. |
 | F2 **DONE v2026.10.14.53** | Keep at Range for both ships (`FIGHT_ANGLE` keep = 180°, `dmgYourSpeed` / `dmgTheirSpeed` = the other's closing speed capped at own top, `fightKeepState` = can it hold); offered only where it holds, chosen-and-no-longer-possible marked amber with the reason; `check_matchup.py` writes the inputs and the rule again. |
 | F3 **DONE v2026.10.14.54** | Chart markers 5c (`dmgRangeMarks`, `dmgChartSvg`, `dmgChartKeyHtml`; the y scale held while a slider is dragged, `dmgHoldY`): tackle shaded with the EWAR card's letters, tackle distances and your range on the x axis, DPS at your range on the y axis, range pins + key; chart frame fixed. |
-| F4 | Damage Application card in the My Ship Perspective (DPS applied to them, your tackle and ranges, two columns at 1280+). |
+| F4 **DONE v2026.10.14.55** | Damage Application card in the My Ship Perspective (`dmgModelMine`, `dmgFillMine`, `dmgAfterChange`; CARD_INFO `dmg#mine`; DMG-02) (DPS applied to them, your tackle and ranges, two columns at 1280+). |
 
 ## 6. Decisions (made 2026-10-24)
 

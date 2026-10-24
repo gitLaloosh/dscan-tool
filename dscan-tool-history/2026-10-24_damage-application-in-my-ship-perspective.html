@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Fight setup F4: Damage Application in the My Ship Perspective</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fight setup F4: your Damage Application card in the My Ship Perspective</h1>
+<p><span class="tag">Feature</span> 2026-10-24 &middot; <code>v2026.10.14.54</code> &rarr; <code>v2026.10.14.55</code>. Plan: <code>roadmap/turret-application-plan.md</code> "Fight setup mockup", board 4; <code>roadmap/subtext-plan.md</code> section 5 (phase F4). This completes the fight setup (F1&ndash;F4).</p>
+<p>the owner (2026-10-24): "we still need to add a damage application card to the 'my ship' perspective". It was decided with the fight setup: one shared fight for both perspectives, and the card spans two columns at 1280 px and up, like the threat's card.</p>
+
+<h2>What changed on the page</h2>
+<ul>
+<li><b>A Damage Application card in the My Ship Perspective</b>, on top like the threat's card: across the Fit and stats columns from 1280 px (Weaknesses beside it), full width below that, first on a phone. It has the cyan edge, and the tag "applied to the Hecate &middot; threat" is in the threat's amber.</li>
+<li><b>Your guns on them.</b>
+<ul>
+<li>The attacker is your ship and the target is the threat, as the Matchup board takes it: their fit's own speed and signature, with their prop module as it runs.</li>
+<li>Your webs, target painters and scram apply to them.</li>
+<li>The big number is the board's "DPS applied to them". The line under it reads "N if they sit still &middot; N raw" ("they're stopped" when they are).</li>
+</ul></li>
+<li><b>One line</b>, as on board 4, with the legend "Hecate stopped, you orbiting".</li>
+<li><b>The chart markers are yours</b> (F3 style):
+<ul>
+<li>zones: your scram ("their MWD off" when their MWD runs), web, painter, neuts and nos;</li>
+<li>pins: your drone range and lock range;</li>
+<li>your tackle distances on the x axis.</li>
+</ul></li>
+<li><b>One fight.</b>
+<ul>
+<li>The range and movements set on this card are the same settings as the strip under the board and the threat's card. Each one follows the others.</li>
+<li>A threat card left collapsed updates its row (LESSON #43).</li>
+<li>Reset puts the fight back.</li>
+<li>The strip's "More on Damage Application" opens this card when the My ship view is shown.</li>
+</ul></li>
+<li><b>Adjust</b> has no "Your signature" slider (your signature doesn't change what your guns apply). "Chart across" offers Distance and Your speed, and it is this card's own: the threat card keeps its axis.</li>
+<li>The card's ⓘ panel (<code>CARD_INFO["dmg#mine"]</code>) and <code>METHODOLOGY.md</code> explain it. A new error code, DMG-02, covers the case where either hull has no pyfa inputs.</li>
+</ul>
+<p>Inputs and presentation only: the point is <code>mysFight</code>'s "out" query, the same one the board's "DPS applied to them" uses, and that number is checked against pyfa by <code>check_matchup.py</code>. No PYFA CORE section changed.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/page_checks/mine_damage_check.py</code></b>, at 1440, 1100 and 375 px and on Pilot losses. It checks:
+<ul>
+<li>placement, edge and tag;</li>
+<li>the headline equals the board and the page's <code>mysMatchup</code>;</li>
+<li>one solid line, your key rows, Adjust, the info panel and the hover;</li>
+<li>the shared fight in every direction, including the collapsed threat row and Reset;</li>
+<li>Keep at Range inside their scram;</li>
+<li>nothing in the My ship view moves while the card's controls change;</li>
+<li>"More on" from the strip;</li>
+<li>a card per loss tab;</li>
+<li>the phone layout.</li>
+</ul></li>
+<li><b>Mutations:</b>
+<ul>
+<li>cross-card sync off: 4 failures;</li>
+<li>the strip's path to this card removed: 1 failure;</li>
+<li>the point taken from the threat's side: 3 failures.</li>
+</ul>
+Removing only the strip's fast path passed, because its fallback (a full refill) was also correct (LESSON #51, extended).</li>
+<li><code>damage_chart_check.py</code>: the My ship view now has your card, level with Weaknesses.</li>
+<li>Regression suite ALL PASS; update-check chain all 36 steps OK (PYFA CORE manifest unchanged; ERRORS.md regenerated with DMG-02); all 13 page checks 0 failures, one at a time (<code>mine_damage_check.py</code> 49 checks, including &ldquo;nothing in the My ship view moves&rdquo; at 1440 and 1100 px). The &ldquo;Execution context was destroyed&rdquo; stop didn&rsquo;t occur this run.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #52: an input's <code>value</code> attribute is where it started, not where it is. A check read the threat card's slider with <code>get_attribute('value')</code>, got the value the card was drawn with (4400), and failed a correct page. Read the live property instead (<code>el.value</code>, <code>input_value()</code>).</p>
+</body>
+</html>

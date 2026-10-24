@@ -135,6 +135,9 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
   optimal range). Darker where two reach. Numbered pins mark their lock range and drone control range. The x axis
   prints their tackle distances and your range, the y axis the DPS there. Markers are presentation only; the lines
   are pyfa's.
+- **Your card** (v2026.10.14.55, My Ship Perspective): the same chart for your guns on them: your ship as the attacker,
+  the threat as the target with its fit's own speed and signature (its prop module as it runs), your webs, painters
+  and scram applied, the same fight. Its number is the board's "DPS applied to them".
 - **One fight:** the strip under the Matchup and the card's Adjust panel set the same values, and both perspectives
   use them. The chart is a snapshot at that distance, as pyfa's graph: it doesn't play the fight out over time.
 - **They last / you last** (not a pyfa number): damage by type against each layer's resists, shield then armor then

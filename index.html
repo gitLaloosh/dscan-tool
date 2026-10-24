@@ -1112,6 +1112,8 @@
   .dmg-marker{stroke:#5b6872; stroke-width:1; stroke-dasharray:2 3;}
   /* v2026.10.14.54 (fight setup F3, boards 5b + 5c): their EWAR ranges shaded in the EWAR card's badge colours, range
      pins, and the values marked on the axes (tackle #f0c27a, your range white, DPS in each line's colour) */
+  .dmg-mine .dmg-line.dmg-move{stroke-dasharray:none;}   /* v.55: your card has one line (board 4) */
+  .dmg-mine .dmg-vs{color:#e6b770;}   /* v.55: "applied to the Hecate · threat" in the threat's colour (board 4) */
   .dmg-zone{fill-opacity:0.10;}
   .dmg-zone.tackle, .dmg-badge.tackle rect{fill:var(--tank-armor);}
   .dmg-zone.disrupt, .dmg-badge.disrupt rect{fill:var(--tank-shield);}
@@ -1599,7 +1601,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.54</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.55</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1738,6 +1740,13 @@ const CARD_INFO = {
   "Keep at Range: that ship moves straight away from the other at the other's closing speed (its approach speed; 0 when it sits still, orbits or keeps range too), up to its own top speed, so the distance holds; pyfa's graph gets that speed, at 180°. It isn't offered inside the other ship's scram or web range, or when the other ship closes faster than it can fly; chosen and then no longer possible, it's marked amber.",
   "Their drones hit fully when faster than you; otherwise they track like turrets from their ship, out to their drone control range.",
   "A close, perfect hit chance averages 1.5% above raw DPS (wrecking hits), as in pyfa."
+ ],
+ "dmg#mine": [
+  "The big number is the DPS your ship lands on them at the range and movement set under Adjust, the same number as the board's DPS applied to them; the line under it is the same with them sitting still, and your raw DPS. Hover it for the whole sentence.",
+  "One fight for both perspectives: Adjust here, the strip under the board and the {card:dmg} card in the {card:perspective.threat} set the same range and movements. Chart across is this card's own.",
+  "As pyfa's damage graph: your webs, target painters and scram applied to them, their resists not counted, your lock range ignored. Their speed and signature are their fit's own, with their prop module as it runs.",
+  "On the chart, your EWAR that reaches them is shaded from 0 out to its range, with the {card:ewar} card's letters and colours: T your scram and web, D your target painter, C your neuts and nosferatu; darker where two reach. Numbered pins are your lock range and drone range. Your tackle distances and the range are printed on the x axis, and the DPS there on the y axis.",
+  "Your drones hit fully when faster than them; otherwise they track like turrets from your ship, out to your drone control range. A close, perfect hit chance averages 1.5% above raw DPS (wrecking hits), as in pyfa."
  ],
  "weak": [
   "Least resisted: the damage type that gets through its resists best, averaged over shield, armor and hull by how many hit points each layer has (resists as fitted, max skills).",
@@ -2064,6 +2073,15 @@ const ERROR_CODES = {
   "why": "The chart needs a real target fit (speed, signature, what their scram switches off); it says so rather than charting against made-up numbers.",
   "since": "v2026.10.14.36",
   "doc": "2026-10-23_their-damage-on-you-chart.html"
+ },
+ "DMG-02": {
+  "title": "No chart of the damage applied to them",
+  "where": "{card:dmg} card in the {card:perspective.mine}",
+  "trigger": "Your ship's or the threat's hull record has no dogma effects (no application or no projected target), so pyfa's damage graph can't be worked out for your guns on them.",
+  "check": "Which hull it is; the {card:board} shows the same gap as dashes.",
+  "why": "This chart is the same fight as the board's \"DPS applied to them\"; without both ships' pyfa inputs it says so rather than charting made-up numbers.",
+  "since": "v2026.10.14.55",
+  "doc": "2026-10-24_damage-application-in-my-ship-perspective.html"
  },
  "WP-01": {
   "title": "Weaknesses picks not worked out",
@@ -14196,7 +14214,7 @@ function renderFitSummaryHtml(f){
 // them per screen width is the stylesheet fitLayoutGridCss() writes from the same table.
 function fitLayoutHtml(f, idToName, cardOpts = {}){
   const parts = fitSummaryParts(f) || {beat: '', stats: ''};
-  const bands = {dmg: cardOpts.dmg ? dmgCardShellHtml(f) : ''};
+  const bands = {dmg: cardOpts.dmg ? dmgCardShellHtml(f, cardOpts.dmg === 'mine') : ''};
   return `
     <div class="fit-layout">${FIT_LAYOUT.bands.filter(k => bands[k]).map(k => `
       <div class="fl-${k}">${bands[k]}</div>`).join('')}
@@ -15165,20 +15183,23 @@ function dmgPoint(app, tgt, q){
 // same projected inputs pyfa's graph applies), D their furthest target painter, C their furthest running neut and
 // nos. Ranges that aren't EWAR (their lock range, their drone range) are numbered pins. All come from the fit alone,
 // so the key under the chart keeps its rows whatever the settings (subtext rule 4). Presentation only.
-function dmgRangeMarks(app, est, xMax, mwdOff){
+// v2026.10.14.54 + v.55 (F4): who = 'their' (the threat card: the attacker is them) or 'your' (your card in the My
+// Ship Perspective); mwdOff: the target's MWD goes off inside the scram.
+function dmgRangeMarks(app, est, xMax, mwdOff, who = 'their'){
   const pr = app.projected, far = (arr) => Math.max(0, ...arr.filter(x => x > 0));
+  const W = who === 'your' ? 'Your' : 'Their', other = who === 'your' ? 'their' : 'your';
   const zones = [];
   const add = (x, cat, label, short) => { if(x > 0) zones.push({x, cat, letter: EWAR_BADGE_LETTER[cat], label, short}); };
-  add(pr.scramRange || 0, 'tackle', mwdOff ? 'Their scram (your MWD off)' : 'Their scram', 'scram');
-  add(far([...pr.webMods, ...pr.webDrones].map(w => w.optimal)), 'tackle', 'Their web', 'web');
-  add(far([...pr.tpMods, ...pr.tpDrones].map(w => w.optimal)), 'disrupt', 'Their target painter', 'painter');
+  add(pr.scramRange || 0, 'tackle', mwdOff ? `${W} scram (${other} MWD off)` : `${W} scram`, 'scram');
+  add(far([...pr.webMods, ...pr.webDrones].map(w => w.optimal)), 'tackle', `${W} web`, 'web');
+  add(far([...pr.tpMods, ...pr.tpDrones].map(w => w.optimal)), 'disrupt', `${W} target painter`, 'painter');
   const ew = (est.ewarModules || []).filter(m => m.running);
-  add(far(ew.filter(m => m.kind === 'neut').map(m => m.rangeM)), 'drain', 'Their neut', 'neut');
-  add(far(ew.filter(m => m.kind === 'nos').map(m => m.rangeM)), 'drain', 'Their nos', 'nos');
+  add(far(ew.filter(m => m.kind === 'neut').map(m => m.rangeM)), 'drain', `${W} neut`, 'neut');
+  add(far(ew.filter(m => m.kind === 'nos').map(m => m.rangeM)), 'drain', `${W} nos`, 'nos');
   zones.sort((a, b) => a.x - b.x);
   const pins = [];
-  if(app.lockRange && app.lockRange <= xMax) pins.push({x: app.lockRange, label: 'Their lock range'});
-  if((app.drones || []).length && pr.droneControlRange && pr.droneControlRange <= xMax) pins.push({x: pr.droneControlRange, label: 'Their drone range'});
+  if(app.lockRange && app.lockRange <= xMax) pins.push({x: app.lockRange, label: `${W} lock range`});
+  if((app.drones || []).length && pr.droneControlRange && pr.droneControlRange <= xMax) pins.push({x: pr.droneControlRange, label: `${W} drone range`});
   pins.sort((a, b) => a.x - b.x).forEach((p, i) => { p.n = i + 1; });
   return {zones, pins};
 }
@@ -15215,8 +15236,48 @@ function dmgModel(f, T, st){
   const moveText = st.mode === 'still' ? 'you still' : `you ${MOVING[st.mode]} at ${dmgFmt(ySpeed)} m/s`;
   const line2Label = st.axis !== 'distance' ? `At ${dmgKm(st.range)}, ${st.axis === 'speed' ? (MOVING[st.mode] || 'orbiting') : moveText.replace(/^you /, '')}`
     : (st.mode === 'still' ? 'You still' : `You ${MOVING[st.mode]}, ${dmgFmt(ySpeed)} m/s`);
-  return {app, tgt, T, st, hasProp, maxU, sigFit, ySpeed, theirTop, tSpeed, keep, cur, still, axis, xs, line1, line2, yMax, yWidest: dmgFmt(dmgNiceY((Math.ceil(dmgRawDps(app) * 1.02) + 1) * 1.05)), xMax, zones: marks.zones, pins: marks.pins, moveText, line2Label, at, pointAt,
+  return {side: 'threat', app, tgt, T, st, hasProp, maxU, sigFit, ySpeed, theirTop, tSpeed, keep, cur, still, axis, xs, line1, line2, yMax, yWidest: dmgFmt(dmgNiceY((Math.ceil(dmgRawDps(app) * 1.02) + 1) * 1.05)), xMax, zones: marks.zones, pins: marks.pins, moveText, line2Label, at, pointAt,
     raw: app.weapons.reduce((s, w) => s + w.dps, 0) + (app.drones || []).reduce((s, d) => s + d.dps, 0)};
+}
+
+// DAMAGE APPLICATION IN THE MY SHIP PERSPECTIVE (v2026.10.14.55, fight setup F4; turret-application-plan.md board 4).
+// the owner 2026-10-24: "we still need to add a damage application card to the 'my ship' perspective". Your guns on the
+// threat, in the SAME fight as the threat's card (its settings, tf.dmg: one fight for both perspectives): the
+// attacker is your ship, the target the threat as the Matchup board takes it (mysFight: their running prop, their
+// fit's signature), and the point is the board's "DPS applied to them" (qOut: your speed and angle as the
+// attacker's, theirs as the target's). Fields keep the threat card's meaning (ySpeed / maxU yours, tSpeed / theirTop
+// theirs, keep both), so the readouts and Keep at Range buttons are drawn by the same code. One line, as board 4;
+// the chart's axis (Distance / Your speed) is this card's own view, not part of the fight. Presentation only.
+function dmgModelMine(tf, mf, st, axisKey, threatName){
+  const F = mysFight(tf, mf, st);
+  if(!F) return null;
+  const app = F.mApp, tgt = F.them, mPt = mf.estimate.projectedTarget, tPt = tf.estimate.projectedTarget;
+  const T = {kind: 'threat', label: threatName, pt: tPt, app: F.tApp};
+  const theirMwd = !!(tPt.variants && tPt.variants.running && tPt.variants.propKind === 'mwd');
+  const reachMax = (a) => dmgNiceKm(Math.max(dmgReachM(a), dmgDefaultRangeM(a) * 1.25, 1000) / 1000) * 1000;
+  const rangeMax = reachMax(F.tApp), xMax = Math.max(reachMax(app), rangeMax);   // the range slider is the fight's (the threat card's and the strip's)
+  const ySpeed = F.qIn.ySpeed, tSpeed = F.qIn.tSpeed;
+  const pointAt = (over, tg = tgt) => dmgPoint(app, tg, Object.assign({}, F.qOut, over));
+  const cur = pointAt({}), still = pointAt({ySpeed: 0, yAngle: 0});
+  const axis = axisKey === 'speed'
+    ? {lo: 0, hi: F.myTop, title: `your speed at ${dmgKm(st.range)}`, fmt: (x) => dmgFmt(x) + ' m/s', eng: ySpeed,
+       q: (x) => ({tSpeed: x, tAngle: st.mode === 'straight' ? 0 : st.mode === 'keep' ? 180 : 90})}
+    : {lo: 0, hi: xMax, title: 'distance, surface to surface', fmt: dmgKm, eng: st.range, q: (x) => ({d: x})};
+  const xs = Array.from({length: DMG_SAMPLES + 1}, (_, i) => axis.lo + (axis.hi - axis.lo) * i / DMG_SAMPLES);
+  const at = (x) => pointAt(axis.q(x));
+  const line2 = xs.map(x => at(x).dps);
+  const yMax = dmgNiceY(Math.max(...line2, cur.dps, 1) * 1.05);
+  const marks = dmgRangeMarks(app, mf.estimate, xMax, theirMwd, 'your');
+  const MOVING = {orbit: 'orbiting', straight: 'approaching', keep: 'keeping range'};
+  const THEIRS = {still: 'stopped', toward: 'approaching', orbit: 'orbiting', keep: 'keeping range'};
+  const moveText = st.mode === 'still' ? 'you still' : `you ${MOVING[st.mode]} at ${dmgFmt(ySpeed)} m/s`;
+  const them = `${threatName || 'They'} ${THEIRS[st.theirMode] || 'stopped'}`;
+  const line2Label = axisKey === 'speed' ? `At ${dmgKm(st.range)}, ${them}` : `${them}, ${moveText.replace(/ at [\d,]+ m\/s$/, '')}`;
+  return {side: 'mine', app, tgt, T, st: Object.assign({}, st, {axis: axisKey}), hasProp: !!(mPt.variants && mPt.variants.on), maxU: F.myTop,
+    sigFit: pyfaTargetValue(dmgTargetObj(mPt, st.prop, 1), 'signatureRadius', null, false),
+    ySpeed, theirTop: F.theirTop, tSpeed, keep: F.keep, cur, still, axis, xs, line1: null, line2, yMax,
+    yWidest: dmgFmt(dmgNiceY((Math.ceil(dmgRawDps(app) * 1.02) + 1) * 1.05)), xMax, rangeMax, zones: marks.zones, pins: marks.pins,
+    moveText, line2Label, at, pointAt, theirMwd, raw: dmgRawDps(app)};
 }
 
 // ---- drawing ----
@@ -15276,7 +15337,7 @@ function dmgChartSvg(m, W, H, hoverIdx){
   for(let i = yl.length - 1; i >= 0; i--) yl[i].y = Math.min(yl[i].y, i === yl.length - 1 ? axisY + 2 : yl[i + 1].y - 12);
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(fr => fr * m.yMax);
   const rangesText = dist && (m.zones.length || m.pins.length) ? `; ${[...m.zones, ...m.pins].map(r => `${r.label.toLowerCase()} ${dmgKm(r.x)}`).join(', ')}` : '';
-  let s = `<svg class="dmg-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(`DPS applied to you across ${m.axis.title}, ${dist ? 'you still and ' + m.line2Label.toLowerCase() : m.line2Label.toLowerCase()}. Headline ${dmgFmt(m.cur.dps)} DPS${rangesText}.`)}">`;
+  let s = `<svg class="dmg-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeHtml(`DPS applied to ${m.side === 'mine' ? 'them' : 'you'} across ${m.axis.title}, ${dist ? 'you still and ' + m.line2Label.toLowerCase() : m.line2Label.toLowerCase()}. Headline ${dmgFmt(m.cur.dps)} DPS${rangesText}.`)}">`;
   // zones: each shaded from 0 to its range, so where two reach it is darker
   if(dist) for(const z of m.zones) s += `<rect x="${L}" y="${Tp}" width="${f1(xOf(z.x) - L)}" height="${ph}" class="dmg-zone ${z.cat}"></rect>`;
   for(const v of yTicks){
@@ -15337,14 +15398,21 @@ function dmgChartKeyHtml(m){
   const rows = m.zones.map(z => row(`<span class="ewar-badge ${z.cat}">${z.letter}</span><span class="dmg-ck-sw ${z.cat}"></span>`, z.label, z.x))
     .concat(m.pins.map(p => row(`<span class="dmg-ck-pin">${p.n}</span>`, p.label, p.x)));
   const dist = m.st.axis === 'distance';
-  const note = dist ? ctxHtml('Shaded: inside their range', 'dmg-ck-note', `Shaded: inside their EWAR range (letters as on ${cardName('ewar')}: T tackle, D disrupt, C cap drain), darker where two reach.${m.pins.length ? " Numbered: range limits that aren't EWAR." : ''}`)
+  const who = m.side === 'mine' ? 'your' : 'their';
+  const note = dist ? ctxHtml(`Shaded: inside ${who} range`, 'dmg-ck-note', `Shaded: inside ${who} EWAR range (letters as on ${cardName('ewar')}: T tackle, D disrupt, C cap drain), darker where two reach.${m.pins.length ? " Numbered: range limits that aren't EWAR." : ''}`)
     : ctxHtml('Marked when charting across distance', 'dmg-ck-note', 'These ranges are marked on the chart when it is charted across distance.');
   return `<div class="dmg-ck-rows">${rows.join('')}</div>${note}`;
 }
 function dmgTipHtml(m, i){
   const x = m.xs[i], p2 = m.at(x);
-  const rows = m.line1 ? [['You still', m.line1[i]], [m.line2Label.split(',')[0], m.line2[i]]] : [['DPS applied to you', m.line2[i]]];
+  const mine = m.side === 'mine';
+  const rows = m.line1 ? [['You still', m.line1[i]], [m.line2Label.split(',')[0], m.line2[i]]] : [[`DPS applied to ${mine ? 'them' : 'you'}`, m.line2[i]]];
   const d = m.st.axis === 'distance' ? x : m.st.range;
+  if(mine){   // v.55: your guns on them -- their speed after your webs, their signature after your painters
+    const scr = m.app.projected.scramRange !== null && d <= m.app.projected.scramRange && m.theirMwd;
+    const n = (scr ? 'Scrammed: their MWD is off. ' : '') + (p2.speed < m.tSpeed - 0.5 ? `They're webbed to ${dmgFmt(p2.speed)} m/s` : `Their speed ${dmgFmt(p2.speed)} m/s`) + `, signature ${dmgFmt(p2.sig)} m.`;
+    return `<div class="dmg-tip-t">${escapeHtml(m.axis.fmt(x))}</div>${rows.map(([k, v]) => `<div class="dmg-tip-r"><span>${escapeHtml(k)}</span><span class="dmg-num">${dmgFmt(v)}</span></div>`).join('')}<div class="dmg-tip-n">${escapeHtml(n)}</div>`;
+  }
   const scrammed = m.app.projected.scramRange !== null && d <= m.app.projected.scramRange && m.st.prop && m.T.pt.variants.propKind === 'mwd' && m.hasProp;
   const yourSpeed = m.st.axis === 'speed' ? x : m.ySpeed;
   const note = (scrammed ? 'Scrammed: your MWD is off. ' : '') + (p2.speed < yourSpeed - 0.5 ? `Webbed to ${dmgFmt(p2.speed)} m/s` : `Speed ${dmgFmt(p2.speed)} m/s`) + `, signature ${dmgFmt(p2.sig)} m.`;
@@ -15352,7 +15420,7 @@ function dmgTipHtml(m, i){
 }
 function dmgTableHtml(m){
   const nX = 6, rows = Array.from({length: nX + 1}, (_, i) => Math.round(i * DMG_SAMPLES / nX));
-  return `<table class="dmg-table"><thead><tr><th scope="col">${escapeHtml(m.st.axis === 'distance' ? 'Distance' : m.st.axis === 'speed' ? 'Your speed' : 'Your signature')}</th>${m.line1 ? '<th scope="col">You still</th>' : ''}<th scope="col">${escapeHtml(m.line1 ? m.line2Label.split(',')[0] : 'DPS applied to you')}</th></tr></thead><tbody>${
+  return `<table class="dmg-table"><thead><tr><th scope="col">${escapeHtml(m.st.axis === 'distance' ? 'Distance' : m.st.axis === 'speed' ? 'Your speed' : 'Your signature')}</th>${m.line1 ? '<th scope="col">You still</th>' : ''}<th scope="col">${escapeHtml(m.line1 ? m.line2Label.split(',')[0] : `DPS applied to ${m.side === 'mine' ? 'them' : 'you'}`)}</th></tr></thead><tbody>${
     rows.map(i => `<tr><td>${escapeHtml(m.axis.fmt(m.xs[i]))}</td>${m.line1 ? `<td>${dmgFmt(m.line1[i])}</td>` : ''}<td>${dmgFmt(m.line2[i])}</td></tr>`).join('')}</tbody></table>`;
 }
 function dmgUnappliedText(app){
@@ -15371,17 +15439,18 @@ const DMG_RESET_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="non
 function dmgRawDps(app){ return app.weapons.reduce((s, w) => s + w.dps, 0) + (app.drones || []).reduce((s, d) => s + d.dps, 0); }
 // The widest applied DPS a fit can show: raw plus wrecking hits (a close, perfect hit averages 1.5% above raw).
 function dmgWidestDps(app){ return dmgFmt(Math.ceil(dmgRawDps(app) * 1.02) + 1); }
-function dmgCardShellHtml(f){
-  if(!cardIsOpen(f, 'dmg')) return collapsedCardHtml('dmg', f._dmgSummary || DMG_SUMMARY_NONE);
-  return `<div class="fit-summary dmg-card">
-      <div class="dmg-top">${cardLabelHtml('dmg')}<span class="dmg-vs"></span><span class="card-tools"><button type="button" class="dmg-reset" disabled aria-label="Reset" title="Reset">${DMG_RESET_SVG}</button>${infoBtnHtml('dmg')}</span></div>
+// mine (v.55, F4): the card in the My Ship Perspective (your guns on the threat; dmgFillMine)
+function dmgCardShellHtml(f, mine = false){
+  if(!cardIsOpen(f, 'dmg')) return collapsedCardHtml('dmg', (mine ? f._dmgMineSummary : f._dmgSummary) || (mine ? DMG_MINE_SUMMARY_NONE : DMG_SUMMARY_NONE));
+  return `<div class="fit-summary dmg-card${mine ? ' dmg-mine' : ''}">
+      <div class="dmg-top">${cardLabelHtml('dmg')}<span class="dmg-vs"></span><span class="card-tools"><button type="button" class="dmg-reset" disabled aria-label="Reset" title="Reset">${DMG_RESET_SVG}</button>${mine ? infoBtnHtml('dmg#mine') : infoBtnHtml('dmg')}</span></div>
       <div class="dmg-body"><div class="status">Loading the ship to chart against…</div></div>
     </div>`;
 }
 function dmgControlsHtml(m, T){
-  const st = m.st;
+  const st = m.st, mine = m.side === 'mine';
   const seg = (name, list, cur) => `<div class="dmg-seg" role="group" aria-label="${escapeHtml(name)}">${list.map(([k, l]) => `<button type="button" data-seg="${escapeHtml(name)}" data-v="${k}" aria-pressed="${k === cur}">${escapeHtml(l)}</button>`).join('')}</div>`;
-  const rangeMax = m.st.axis === 'distance' ? m.axis.hi : dmgNiceKm(Math.max(dmgReachM(m.app), dmgDefaultRangeM(m.app) * 1.25, 1000) / 1000) * 1000;
+  const rangeMax = mine ? m.rangeMax : m.st.axis === 'distance' ? m.axis.hi : dmgNiceKm(Math.max(dmgReachM(m.app), dmgDefaultRangeM(m.app) * 1.25, 1000) / 1000) * 1000;
   const propLabel = T.pt.variants.propKind === 'afterburner' ? 'Your afterburner' : 'Your MWD';
   return `
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Engagement range</span><span class="dmg-num" data-out="range">${dmgKm(st.range)}</span></span>
@@ -15390,12 +15459,12 @@ function dmgControlsHtml(m, T){
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Your speed</span><span class="dmg-num" data-out="speed"></span></span>
         <input type="range" data-in="speedPct" min="0" max="100" step="1" value="${st.speedPct}"></label>
       ${m.hasProp ? `<label class="dmg-ctl dmg-ctl-sw"><span>${propLabel}${T.propName ? ` <span class="dmg-faint">(${escapeHtml(T.propName)})</span>` : ''}</span><input type="checkbox" class="dmg-sw" data-in="prop"${st.prop ? ' checked' : ''}></label>` : '<div class="dmg-ctl dmg-faint">No prop module fitted.</div>'}
-      <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Your signature</span><span class="dmg-num" data-out="sig"></span></span>
-        <input type="range" data-in="sigPct" min="25" max="300" step="5" value="${st.sigPct}"></label>
+      ${mine ? '' : `<label class="dmg-ctl"><span class="dmg-ctl-row"><span>Your signature</span><span class="dmg-num" data-out="sig"></span></span>
+        <input type="range" data-in="sigPct" min="25" max="300" step="5" value="${st.sigPct}"></label>`}
       <div class="dmg-ctl"><span class="dmg-ctl-row"><span>Them</span></span>${seg('Them', [['still', 'Stopped'], ['toward', 'Approach'], ['orbit', 'Orbit'], ['keep', 'Keep at Range']], st.theirMode)}</div>
       <label class="dmg-ctl"><span class="dmg-ctl-row"><span>Their speed</span><span class="dmg-num" data-out="their"></span></span>
         <input type="range" data-in="theirPct" min="0" max="100" step="1" value="${st.theirPct}"></label>
-      <div class="dmg-ctl"><span class="dmg-ctl-row"><span>Chart across</span></span>${seg('Chart across', [['distance', 'Distance'], ['speed', 'Your speed'], ['sig', 'Your signature']], st.axis)}</div>`;
+      <div class="dmg-ctl"><span class="dmg-ctl-row"><span>Chart across</span></span>${seg('Chart across', [['distance', 'Distance'], ['speed', 'Your speed'], ...(mine ? [] : [['sig', 'Your signature']])], st.axis)}</div>`;
 }
 function dmgPresetPickerHtml(T){
   return `<div class="dmg-presets"><span class="dmg-faint">No ship of yours is in use. Charting against a typical:</span>
@@ -15405,6 +15474,7 @@ function dmgPresetPickerHtml(T){
 }
 // Fills a card for fit f once its target is known; every control redraws in place (dmgDraw).
 async function dmgFill(host, f){
+  if(host._dmgMine) return dmgFillMine(host, f);
   const card = host.querySelector('.dmg-card');
   if(!card) return dmgFillCollapsed(host, f);
   const token = {};
@@ -15446,6 +15516,71 @@ async function dmgFill(host, f){
   dmgWireControls(card);
   dmgDraw(card);
 }
+// v.55 (F4): the card in the My Ship Perspective, for my ship mf; the fight is the visible threat's (tf.dmg).
+function dmgMineContext(host){
+  const view = host.closest('.mys-mine-view'), shost = view && view.parentElement && view.parentElement.querySelector(':scope > .mys-switch-host');
+  const tf = shost ? mysStripThreatF(shost) : null;
+  const label = (shost && shost.dataset.threat) || 'threat';
+  return {shost, tf, label, threatName: label.split(' · ')[0]};
+}
+async function dmgFillMine(host, mf){
+  const token = {};
+  host._dmgToken = token;
+  const {shost, tf, label, threatName} = dmgMineContext(host);
+  const app = mf.estimate && mf.estimate.application;
+  const none = !app || (!app.weapons.length && !(app.drones || []).length);
+  let m = null;
+  if(tf && tf.estimate && tf.estimate.application && !none){
+    if(!tf.dmg) tf.dmg = dmgDefaults(tf.estimate.application);
+    m = dmgModelMine(tf, mf, tf.dmg, tf.dmgMineAxis || 'distance', threatName);
+  }
+  const card = host.querySelector('.dmg-card');
+  if(!card){   // collapsed: the row's headline (LESSON #43)
+    const sum = host.querySelector('.cc-row[data-card="dmg"] .cc-sum');
+    mf._dmgMineSummary = m ? dmgMineSummaryText(m, threatName) : '';
+    if(sum) sum.textContent = mf._dmgMineSummary || DMG_MINE_SUMMARY_NONE;
+    return;
+  }
+  const body = card.querySelector('.dmg-body');
+  card.querySelector('.dmg-vs').innerHTML = `<span>applied to the ${escapeHtml(label)}</span>`;
+  if(none){
+    const un = app ? dmgUnappliedText(app) : '';
+    body.innerHTML = `<p class="dmg-note">Your ship has no turrets, missiles, Vorton projectors, smartbombs or drones to chart.${un ? ' ' + escapeHtml(un) : ''}</p>`;
+    return;
+  }
+  if(!tf){ body.innerHTML = '<div class="status">Waiting for the threat\'s fit…</div>'; return; }
+  if(!m){ body.innerHTML = `<div class="status err">${escapeHtml(withCode("No chart: your ship's or the threat's hull record has no dogma effects, so pyfa's damage graph can't be worked out for your guns on them.", 'DMG-02'))}</div>`; return; }
+  const mPt = mf.estimate.projectedTarget;
+  const me = {pt: mPt, propName: mPt.variants.propTypeId && myShip.parsed && myShip.parsed.idToName ? (myShip.parsed.idToName.get(mPt.variants.propTypeId) || '') : ''};
+  const unapplied = dmgUnappliedText(app).replace(/\btheir\b/g, 'your');
+  const phone = (host.clientWidth || window.innerWidth) < 720;
+  body.innerHTML = `
+      <div class="dmg-grid">
+        <div class="dmg-main">
+          <div class="dmg-head"><span class="dmg-big num-box" data-out="head" style="${numBoxStyle(dmgWidestDps(app))}"></span><span class="dmg-head-t" data-out="headText"></span></div>
+          <span class="ctx dmg-head-sub" data-out="headSub"></span>
+          <div class="dmg-legend" data-out="legend"></div>
+          <div class="dmg-chart"><div data-out="chart"></div><div class="dmg-tip" hidden></div><div class="dmg-ckey" data-out="ckey"></div></div>
+          ${unapplied ? `<p class="dmg-note">${escapeHtml(unapplied)}</p>` : ''}
+          <details class="dmg-values"><summary>Show values</summary><div data-out="table"></div></details>
+        </div>
+        <details class="dmg-adjust"${phone ? '' : ' open'}><summary>Adjust</summary><div class="dmg-controls">${dmgControlsHtml(m, me)}</div></details>
+      </div>`;
+  card._dmg = {f: tf, mf, side: 'mine', axis: tf.dmgMineAxis || 'distance', threatName, T: me, hover: null};
+  dmgWireControls(card);
+  dmgDraw(card);
+}
+// v.55: a change made on one card of a fight redraws the fight's other cards (the threat's card is in the hidden
+// view while yours is shown), and the board and strip follow. A collapsed card's row is refilled (LESSON #43).
+function dmgAfterChange(card){
+  const c = card._dmg;
+  if(!c || c.side !== 'mine') return;
+  const {shost, tf} = dmgMineContext(card);
+  const fl = shost && tf && mysFightCardHost(shost, tf), other = fl && fl.querySelector('.dmg-card');
+  if(other && other._dmg && other._dmg.f === c.f){ dmgSyncControls(other); other._dmg.hover = null; dmgDraw(other); }   // its draw renders the board
+  else{ if(fl) dmgFill(fl, tf); if(shost && !shost.hidden) mysRenderStrip(shost); }
+}
+
 // The collapsed row's headline. v2026.10.14.47 (bug list #1, the owner via the inbox: collapse the card, switch "Use in
 // assessments" off, and the row "still shows old text (out of sync w/ user's change)"): the row was only written by
 // dmgDraw, which runs while the card is open, so a collapsed card kept the headline of the last time it was open.
@@ -15455,6 +15590,10 @@ function dmgSummaryText(m, T, st){
   return `${dmgFmt(m.cur.dps)} DPS applied to ${T.kind === 'mine' ? 'you' : T.label} at ${dmgKm(st.range)}, ${m.moveText.replace(/^you /, '')}`;
 }
 const DMG_SUMMARY_NONE = 'damage applied to you, by distance';
+const DMG_MINE_SUMMARY_NONE = 'damage applied to them, by distance';
+function dmgMineSummaryText(m, threatName){
+  return `${dmgFmt(m.cur.dps)} DPS applied to the ${threatName} at ${dmgKm(m.st.range)}, ${m.moveText.replace(/^you /, '')}`;
+}
 async function dmgFillCollapsed(host, f){
   const sum = host.querySelector('.cc-row[data-card="dmg"] .cc-sum');
   if(!sum) return;
@@ -15476,8 +15615,9 @@ async function dmgFillCollapsed(host, f){
 function dmgDraw(card){
   const c = card._dmg;
   if(!c) return;
-  const {f, T} = c, st = f.dmg;
-  const m = dmgModel(f, T, st);
+  const {f, T} = c, st = f.dmg, mine = c.side === 'mine';
+  const m = mine ? dmgModelMine(f, c.mf, st, c.axis, c.threatName) : dmgModel(f, T, st);
+  if(!m) return;
   // v.54 (rule 4): while a slider is dragged the y scale only grows (dmgHoldY); it's worked out again on release
   if(c.yHold){ m.yMax = Math.max(m.yMax, c.yHold); c.yHold = m.yMax; }
   c.m = m;
@@ -15488,8 +15628,14 @@ function dmgDraw(card){
   // as it changed ("you still" vs "you orbiting at 1,691 m/s") and moved the page.
   out('headText').textContent = `DPS applied at ${dmgKm(st.range)}`;
   const sub = out('headSub');
+  if(mine){   // v.55: the same line from their side (m.still = them stopped)
+    const stopped = st.theirMode === 'still';
+    sub.textContent = `${stopped ? "they're stopped" : `${dmgFmt(m.still.dps)} if they sit still`} · ${dmgFmt(m.raw)} raw`;
+    sub.title = `${dmgFmt(m.cur.dps)} DPS applied to the ${c.threatName} at ${dmgKm(st.range)}, ${m.moveText}${stopped ? '' : `; ${dmgFmt(m.still.dps)} if they sit still`}; ${dmgFmt(m.raw)} raw (before range, speed and signature).`;
+  }else{
   sub.textContent = `${st.mode === 'still' ? 'you still' : `${dmgFmt(m.still.dps)} if you sit still`} · ${dmgFmt(m.raw)} raw`;
   sub.title = `${dmgFmt(m.cur.dps)} DPS applied at ${dmgKm(st.range)}, ${m.moveText}${st.mode === 'still' ? '' : `; ${dmgFmt(m.still.dps)} if you sit still`}; ${dmgFmt(m.raw)} raw (before range, speed and signature).`;
+  }
   out('legend').innerHTML = `${m.line1 ? '<span class="dmg-key"><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" class="dmg-line dmg-still"></line></svg>You still</span>' : ''}<span class="dmg-key"><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" class="dmg-line dmg-move"></line></svg><span class="dmg-key-t" title="${escapeHtml(m.line2Label)}">${escapeHtml(m.line2Label)}</span></span>`;
   const box = out('chart');
   const W = Math.max(280, Math.floor(box.clientWidth || card.clientWidth || 700)), H = W < 480 ? 200 : 280;
@@ -15519,9 +15665,9 @@ function dmgDraw(card){
     b.title = k.ok ? (side === 'you' ? 'Hold this range, moving straight away from them' : 'They hold this range, moving straight away from you') : `Can't keep range: ${k.reason}`;
   }
   const reset = card.querySelector('.dmg-reset');
-  const d = dmgDefaults(m.app);
-  reset.disabled = Object.keys(d).every(k => d[k] === st[k]);
-  const rl = T.kind === 'mine' ? 'Reset to my ship' : 'Reset';
+  const d = dmgDefaults(f.estimate.application);   // the fight's defaults (f is the threat on both cards)
+  reset.disabled = Object.keys(d).every(k => (mine && k === 'axis') || d[k] === st[k]) && (!mine || c.axis === 'distance');
+  const rl = !mine && T.kind === 'mine' ? 'Reset to my ship' : 'Reset';
   reset.setAttribute('aria-label', rl); reset.title = reset.disabled ? `${rl} (already at the defaults)` : rl;
   const tip = card.querySelector('.dmg-tip');
   if(c.hover === null){ tip.hidden = true; }
@@ -15530,12 +15676,15 @@ function dmgDraw(card){
     const x = g.L + c.hover / DMG_SAMPLES * g.pw;
     tip.style.left = Math.max(0, Math.min(W - 230, x - 115)) + 'px';
   }
-  f._dmgSummary = dmgSummaryText(m, T, st);
-  const tview = card.closest('.mys-threat-view'), shost = tview && tview.parentElement && tview.parentElement.querySelector(':scope > .mys-switch-host');
-  if(shost && !shost.hidden) mysRenderStrip(shost);   // v.41: the strip follows the card's settings
+  if(mine) c.mf._dmgMineSummary = dmgMineSummaryText(m, c.threatName);   // (v.55: the board follows through dmgAfterChange)
+  else{
+    f._dmgSummary = dmgSummaryText(m, T, st);
+    const tview = card.closest('.mys-threat-view'), shost = tview && tview.parentElement && tview.parentElement.querySelector(':scope > .mys-switch-host');
+    if(shost && !shost.hidden) mysRenderStrip(shost);   // v.41: the strip follows the card's settings
+  }
   const wrap = card.closest('.fit-layout');
   const slot = wrap && wrap.querySelector('.dmg-fp-slot');
-  if(slot) slot.innerHTML = `<button type="button" class="dmg-link" data-act="dmg-jump">${escapeHtml(dmgFmt(m.cur.dps))} DPS applied to ${escapeHtml(T.kind === 'mine' ? 'you' : T.label)} at ${escapeHtml(dmgKm(st.range))} ${slot.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_PRECEDING ? '↑' : '↓'}</button>`;
+  if(slot) slot.innerHTML = `<button type="button" class="dmg-link" data-act="dmg-jump">${escapeHtml(dmgFmt(m.cur.dps))} DPS applied to ${escapeHtml(mine ? `the ${c.threatName}` : T.kind === 'mine' ? 'you' : T.label)} at ${escapeHtml(dmgKm(st.range))} ${slot.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_PRECEDING ? '↑' : '↓'}</button>`;
   const jump = slot && slot.querySelector('[data-act="dmg-jump"]');
   if(jump) jump.addEventListener('click', () => card.scrollIntoView({block: 'start', behavior: 'smooth'}));
 }
@@ -15547,8 +15696,8 @@ function dmgSyncControls(card){
   const st = card._dmg && card._dmg.f.dmg;
   if(!st) return;
   card.querySelectorAll('input[data-in]').forEach(i => { if(i.type === 'checkbox') i.checked = !!st[i.dataset.in]; else i.value = st[i.dataset.in]; });
-  const segKey = {'You': 'mode', 'Them': 'theirMode', 'Chart across': 'axis'};
-  card.querySelectorAll('button[data-seg]').forEach(b => b.setAttribute('aria-pressed', String(st[segKey[b.dataset.seg]] === b.dataset.v)));
+  const segKey = {'You': 'mode', 'Them': 'theirMode', 'Chart across': 'axis'}, mine = card._dmg.side === 'mine';
+  card.querySelectorAll('button[data-seg]').forEach(b => b.setAttribute('aria-pressed', String((mine && b.dataset.seg === 'Chart across' ? card._dmg.axis : st[segKey[b.dataset.seg]]) === b.dataset.v)));
 }
 function dmgWireControls(card){
   const c = card._dmg, f = c.f;
@@ -15560,19 +15709,23 @@ function dmgWireControls(card){
       c.hover = null;
       if(slider) dmgHoldY(c, true);
       dmgDraw(card);
+      dmgAfterChange(card);
     });
     if(slider) inp.addEventListener('change', () => { dmgHoldY(c, false); dmgDraw(card); });
   });
   card.querySelectorAll('button[data-seg]').forEach(b => b.addEventListener('click', () => {
     const key = {'You': 'mode', 'Them': 'theirMode', 'Chart across': 'axis'}[b.dataset.seg];
-    f.dmg[key] = b.dataset.v;
+    if(c.side === 'mine' && key === 'axis'){ c.axis = b.dataset.v; f.dmgMineAxis = b.dataset.v; }   // v.55: this card's own view
+    else f.dmg[key] = b.dataset.v;
     card.querySelectorAll(`button[data-seg="${b.dataset.seg}"]`).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     c.hover = null;
     dmgDraw(card);
+    if(key !== 'axis') dmgAfterChange(card);
   }));
   card.querySelector('.dmg-reset').addEventListener('click', () => {
-    f.dmg = dmgDefaults(c.m.app);
+    f.dmg = dmgDefaults(f.estimate.application);
     const host = card.closest('.fl-dmg');
+    if(c.side === 'mine'){ f.dmgMineAxis = 'distance'; if(host) dmgFill(host, c.mf).then(() => dmgAfterChange(card)); return; }
     if(host) dmgFill(host, f);
   });
   const chart = card.querySelector('[data-out="chart"]');
@@ -15605,7 +15758,9 @@ function dmgWire(wrap, f){
   const host = wrap.querySelector('.fl-dmg');
   if(!host) return;
   host._dmgF = f;
+  host._dmgMine = !!wrap.closest('.mys-mine-view');   // v.55: your card in the My Ship Perspective
   dmgFill(host, f);
+  if(host._dmgMine) return;
   // v.41: the matchup strip reads this fit even while the card is collapsed (phone)
   const tview = host.closest('.mys-threat-view'), shost = tview && tview.parentElement && tview.parentElement.querySelector(':scope > .mys-switch-host');
   if(shost && !shost.hidden) mysRenderStrip(shost);
@@ -16550,6 +16705,10 @@ function mysFightSet(host, key, value, drag){   // drag: true while the strip's 
   const fl = mysFightCardHost(host, tf), card = fl && fl.querySelector('.dmg-card');
   if(card && card._dmg && card._dmg.f === tf){ dmgSyncControls(card); card._dmg.hover = null; if(drag !== undefined) dmgHoldY(card._dmg, drag); dmgDraw(card); }
   else{ if(fl) dmgFill(fl, tf); mysRenderStrip(host); }
+  // v.55: your card in the My Ship Perspective shows the same fight
+  const mh = host.parentElement && host.parentElement.querySelector(':scope > .mys-mine-view .fl-dmg'), mc = mh && mh.querySelector('.dmg-card');
+  if(mc && mc._dmg && mc._dmg.f === tf){ dmgSyncControls(mc); mc._dmg.hover = null; if(drag !== undefined) dmgHoldY(mc._dmg, drag); dmgDraw(mc); }
+  else if(mh && mh._dmgF) dmgFill(mh, mh._dmgF);
 }
 function mysWireFight(host){
   const strip = host.querySelector(':scope > .mys-fight');
@@ -16565,12 +16724,14 @@ function mysWireFight(host){
   strip.querySelectorAll('[data-act="fight-more"]').forEach(b => b.addEventListener('click', () => {
     const d = b.closest('details'); if(d) d.open = false;
     const tf = mysStripThreatF(host);
-    let fl = tf && mysFightCardHost(host, tf);
+    // v.55: in the My Ship Perspective, your own card
+    const find = () => host.dataset.view === 'mine' ? host.parentElement.querySelector(':scope > .mys-mine-view .fl-dmg') : (tf && mysFightCardHost(host, tf));
+    let fl = find();
     if(!fl) return;
     if(!fl.querySelector('.dmg-card')){ const t = fl.querySelector('.cc-toggle[data-card="dmg"]'); if(t) t.click(); }   // a collapsed card opens (the layout is redrawn)
     let tries = 0;
     const go = () => {   // the card fills asynchronously: wait for its Adjust panel
-      fl = mysFightCardHost(host, tf) || fl;
+      fl = find() || fl;
       const adj = fl.querySelector('.dmg-adjust');
       if(!adj && tries++ < 120) return requestAnimationFrame(go);
       if(adj) adj.open = true;
@@ -16682,9 +16843,9 @@ async function mysRenderMineView(mv){
   if(!f){ mv.innerHTML = `<div class="status err">${escapeHtml(myShip.error || '')}</div>`; return; }
   const p = myShip.parsed;
   const left = (p.unresolved && p.unresolved.length) ? `<div class="note" style="margin-top:10px;">Not recognized, so left out of your ship: ${p.unresolved.map(n => escapeHtml(n)).join(', ')}. (FIT-04)</div>` : '';
-  mv.innerHTML = `<div class="fit-layout-wrap mys-mine-wrap">${fitLayoutHtml(f, p.idToName)}</div>${left}`;
+  mv.innerHTML = `<div class="fit-layout-wrap mys-mine-wrap">${fitLayoutHtml(f, p.idToName, {dmg: 'mine'})}</div>${left}`;   // v.55 F4: your Damage Application card
   const wrap = mv.firstElementChild;
-  const redraw = () => { wrap.innerHTML = fitLayoutHtml(f, p.idToName); wireFitLayout(wrap, f, rerender); mysMarkChanged(wrap, p.idToName); mysStripAfterMineDraw(mv); };
+  const redraw = () => { wrap.innerHTML = fitLayoutHtml(f, p.idToName, {dmg: 'mine'}); wireFitLayout(wrap, f, rerender); mysMarkChanged(wrap, p.idToName); mysStripAfterMineDraw(mv); };
   const rerender = () => { redraw(); myShipChanged(wrap, f); };
   wireFitLayout(wrap, f, rerender);
   mysMarkChanged(wrap, p.idToName);   // v.41 M6: numbers that differ from your pasted fit's states are amber

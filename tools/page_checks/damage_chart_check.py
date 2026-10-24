@@ -19,7 +19,7 @@ against pyfa by tools/independent_checks/check_damage_chart.py; this checks the 
   * a saved ship (Use in assessments on) replaces the preset ("applied to your Vexor"), off brings the preset back;
   * drones charted (v2026.10.14.40): a Vexor's raw DPS counts its drones, its drone control range is marked;
   * a fit with no turrets / missiles / drones: the card says there is nothing to chart;
-  * Pilot losses: each loss tab has its own card; the "My ship" view has none;
+  * Pilot losses: each loss tab has its own card; the "My ship" view has your own card since v2026.10.14.55 (mine_damage_check.py);
   * collapsed: the row's headline follows "Use in assessments" (v2026.10.14.47, bug list #1) and is there from
     the start on a phone;
   * v2026.10.14.48: Reset is a reserved icon (disabled at the defaults); the method text is behind the info button
@@ -272,11 +272,10 @@ def desktop(b):
     check(ok and f'{mine_head} DPS applied to you' in pg.evaluate(ROW), f'collapsed, back on: the row follows my ship again ({pg.evaluate(ROW)!r})')
     pg.click(f'{R} .fl-dmg .cc-toggle[data-card="dmg"]'); ready(pg)
     check(head(pg) == mine_head, f'opened again: same headline ({head(pg)})')
-    # my ship view: no card
+    # my ship view: since v2026.10.14.55 (F4) your own card, on top beside Weaknesses (tools/page_checks/mine_damage_check.py checks it)
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{R} .mys-mine-view .fit-layout')
-    check(pg.locator(f'{R} .mys-mine-view .fl-dmg').count() == 0, 'my ship view: no damage card')
-    mb, mf = pg.locator(f'{R} .mys-mine-view .fl-beat').bounding_box(), pg.locator(f'{R} .mys-mine-view .fl-fit').bounding_box()
-    check(abs(mb['y'] - mf['y']) < 2, f'my ship view: with no card the columns start level (the empty band takes no height; {mb["y"]:.0f} / {mf["y"]:.0f})')
+    mb, md = pg.locator(f'{R} .mys-mine-view .fl-beat').bounding_box(), pg.locator(f'{R} .mys-mine-view .fl-dmg').bounding_box()
+    check(pg.locator(f'{R} .mys-mine-view .fl-dmg').count() == 1 and abs(mb['y'] - md['y']) < 2, f'my ship view: your card on top, level with Weaknesses ({mb["y"]:.0f} / {md["y"]:.0f})')
     pg.click(f'{R} .mys-sw-btn.is-threat')
     # v2026.10.14.40: drones are charted (pyfa getDroneMult): a Vexor threat's raw DPS counts its Hammerheads,
     # the chart marks its drone control range, and the note no longer lists drones as missing

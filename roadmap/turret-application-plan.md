@@ -288,7 +288,8 @@ Proposed:
   Keep at Range as mapped below, for both ships; the example below is checked on the page (`fight_strip_check.py`).
   **F3 DONE v2026.10.14.54**: the chart markers 5b + 5c (zones T scram / web, D painter, C neut / nos; pins for their
   lock and drone range; the key; tackle distances and your range on the x axis, the DPS on the y axis; frame fixed,
-  the y scale held while a slider is dragged).
+  the y scale held while a slider is dragged). **F4 DONE v2026.10.14.55**: your Damage Application card in the My Ship
+  Perspective (board 4 with the 5c markers: your tackle and ranges; the same fight; one line). All fight-setup phases built.
 - **In-game names everywhere:** You and the threat each get Stopped / Approach / Orbit / Keep at Range (today: You
   Still / Straight at them / Orbiting; them They fly at you / They orbit you).
 - **One fight for both perspectives:** the Adjust panel edits the same settings on both cards.

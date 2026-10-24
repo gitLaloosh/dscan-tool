@@ -72,6 +72,7 @@ pilot name.", "Paste a fit first.") carry no code: they are instructions, not er
 | Code | What | Where | Cause | What to check | Why it exists | Since |
 |---|---|---|---|---|---|---|
 | DMG-01 | No ship to apply their damage to | Damage Application card (Fit Analyzer and Pilot losses) | The typical-class preset fit (a hull with its MWD, built from EFT text like any pasted fit) failed to build (the message includes the underlying code, e.g. ESI-01), or your saved ship's hull has no dogma effects, so pyfa's speed and signature can't be worked out for it. | The underlying code in the message; pick another class, or set your own ship. | The chart needs a real target fit (speed, signature, what their scram switches off); it says so rather than charting against made-up numbers. | v2026.10.14.36 ([2026-10-23_their-damage-on-you-chart.html](dscan-tool-history/2026-10-23_their-damage-on-you-chart.html)) |
+| DMG-02 | No chart of the damage applied to them | Damage Application card in the My Ship Perspective | Your ship's or the threat's hull record has no dogma effects (no application or no projected target), so pyfa's damage graph can't be worked out for your guns on them. | Which hull it is; the Matchup shows the same gap as dashes. | This chart is the same fight as the board's "DPS applied to them"; without both ships' pyfa inputs it says so rather than charting made-up numbers. | v2026.10.14.55 ([2026-10-24_damage-application-in-my-ship-perspective.html](dscan-tool-history/2026-10-24_damage-application-in-my-ship-perspective.html)) |
 
 ## WP
 

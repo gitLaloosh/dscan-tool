@@ -775,6 +775,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   a round tick, and to their scram distance), then switch the rule off in a copy of the page and see the check fail
   (`damage_chart_check.py`, `markers_at`). The same goes for any "nudge apart", "merge equal labels" or "clamp
   inside" rule: test it where it has to act, and prove the check bites with a mutation.
+- **Mutate the whole behaviour, not one branch (v2026.10.14.55):** turning off only the strip's fast path to your
+  card left its fallback (a full refill) in place, which was also right, so the check still passed. That pass
+  says nothing about the check. Remove everything that delivers the behaviour, then see the check fail.
+
+## 52. An input's value attribute is where it started, not where it is
+
+- **What happened (v2026.10.14.55):** a check read a range slider with `get_attribute('value')` after the page had
+  moved it, got the value it was drawn with (4400) instead of the current one (5000), and failed a correct page.
+- **Do this instead:** read the live value as a property (`el.value` in `evaluate`, or `input_value()`), and the
+  same for `checked`. The attribute only says what the HTML said when it was written.
 
 ## 9. Comparing different quantities with pyfa
 
