@@ -72,7 +72,8 @@ def actions(pg):
     for seg in ('You', 'Them', 'Chart across'):   # v.51: 'Them' (Stopped / Approach / Orbit) replaced 'Their heading'
         for b in pg.locator(f'{R} .fl-dmg button[data-seg="{seg}"]').all():
             v = b.get_attribute('data-v')
-            yield f'{seg}: {v}', lambda b=b: (b.click(), pg.wait_for_timeout(200))
+            # v.53: Keep at Range is disabled where it can't hold; a disabled button is skipped (it can't be used)
+            yield f'{seg}: {v}', lambda b=b: (b.click(), pg.wait_for_timeout(200)) if b.is_enabled() else None
     if pg.locator(f'{R} .fl-dmg input[data-in="prop"]').count():
         yield 'your MWD off', lambda: set_input(pg, 'prop', 0)
         yield 'your MWD on', lambda: set_input(pg, 'prop', 1)
@@ -80,12 +81,15 @@ def actions(pg):
     # chosen and closed again (an open menu floats over the page; only what's left after closing is compared)
     def strip_pick(part, v):
         pg.click(f'{R} .mys-fight details.mys-fpart-{part} > summary'); pg.wait_for_timeout(150)
-        pg.click(f'{R} .mys-fight details.mys-fpart-{part} button.mys-fopt[data-v="{v}"]'); pg.wait_for_timeout(200)
+        opt = pg.locator(f'{R} .mys-fight details.mys-fpart-{part} button.mys-fopt[data-v="{v}"]')
+        if opt.is_enabled(): opt.click()
+        else: pg.keyboard.press('Escape')   # v.53: Keep at Range not offered here
+        pg.wait_for_timeout(200)
     def strip_range(v):
         pg.click(f'{R} .mys-fight details.mys-fpart-range > summary'); pg.wait_for_timeout(150)
         pg.evaluate(f"""() => {{ const i = document.querySelector('{R} .mys-fight input[data-fset="range"]'); i.value = {v}; i.dispatchEvent(new Event('input', {{bubbles: true}})); }}""")
         pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
-    for part, vals in (('them', ('toward', 'orbit', 'still')), ('you', ('still', 'straight', 'orbit'))):
+    for part, vals in (('them', ('toward', 'orbit', 'keep', 'still')), ('you', ('still', 'straight', 'keep', 'orbit'))):
         for v in vals:
             yield f'strip {part}: {v}', lambda part=part, v=v: strip_pick(part, v)
     for v in (mx * 0.2, mx * 0.8):

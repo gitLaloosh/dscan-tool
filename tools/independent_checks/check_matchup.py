@@ -39,12 +39,37 @@ const out = {};
 const fin = (x) => x === Infinity ? 'inf' : x;
 for (const [t, m] of pairs) out[t + '|' + m] = grid.map(st => {
   const r = sb.mysMatchup({estimate: fits[t]}, {estimate: fits[m]}, st);
-  return r && [r.theirDps, r.yourDps, fin(r.youLast), fin(r.theyLast), r.myTop, r.theirTop];
+  return r && [r.theirDps, r.yourDps, fin(r.youLast), fin(r.theyLast), r.myTop, r.theirTop, r.keep.you.ok, r.keep.them.ok];
 });
 fs.writeFileSync(outPath, JSON.stringify(out));
 '''
 GRID = [dict(range=r, mode=mo, speedPct=sp, prop=pr, sigPct=100, theirPct=tp, theirMode=tm, axis='distance')
         for r, mo, sp, pr, tp, tm in itertools.product([2000, 7500, 15000, 30000], ['still', 'orbit', 'straight'], [100, 50], [True, False], [0, 100], ['toward', 'orbit', 'still'])]   # v.51: their Stopped
+# v2026.10.14.53 (F2): Keep at Range for either ship, against every movement of the other one (and both keeping)
+GRID += [dict(range=r, mode=mo, speedPct=sp, prop=pr, sigPct=100, theirPct=tp, theirMode=tm, axis='distance')
+         for r, (mo, tm), sp, pr, tp in itertools.product([2000, 7500, 15000, 30000],
+             [('keep', x) for x in ('toward', 'orbit', 'still', 'keep')] + [(x, 'keep') for x in ('straight', 'orbit', 'still')], [100, 60], [True, False], [100, 40])]
+
+def keep_rule(st, my_top, their_top, their_reach, my_reach):
+    """Keep at Range, written again from turret-application-plan.md "Keep at Range in pyfa's inputs": the keeper moves
+    straight away (180 deg) at the other ship's closing speed (its speed when it approaches, else 0), capped at its own
+    top speed; it can't hold inside the other's scram or web range or when the other closes faster than its top.
+    Returns (your speed, your angle, their speed, their angle, you can hold, they can hold)."""
+    y_close = st['speedPct'] / 100 * my_top if st['mode'] == 'straight' else 0.0
+    t_close = st['theirPct'] / 100 * their_top if st['theirMode'] == 'toward' else 0.0
+    ang = {'still': 0, 'straight': 0, 'toward': 0, 'orbit': 90, 'keep': 180}
+    def spd(mode, pct, top, other_close):
+        if mode == 'still': return 0.0
+        if mode == 'keep': return min(other_close, top)
+        return pct / 100 * top
+    y = spd(st['mode'], st['speedPct'], my_top, t_close); t = spd(st['theirMode'], st['theirPct'], their_top, y_close)
+    holds = lambda reach, close, top: not any(x > 0 and st['range'] <= x for x in reach) and close <= top + 1e-9
+    return y, ang[st['mode']], t, ang[st['theirMode']], holds(their_reach, t_close, my_top), holds(my_reach, y_close, their_top)
+def reach(k):
+    """scram range and furthest web (modules, web drones): the tool's projected data, itself checked against pyfa by check_projected.py"""
+    pr = (tool[k].get('application') or {}).get('projected') or {}
+    webs = [w.get('optimal') or 0 for w in (pr.get('webMods') or []) + (pr.get('webDrones') or [])]
+    return (pr.get('scramRange') or 0, max(webs) if webs else 0)
 
 def close(a, b):
     if a == 'inf' or b == math.inf or a == math.inf or b == 'inf': return (a in ('inf', math.inf)) and (b in ('inf', math.inf))
@@ -144,6 +169,7 @@ if __name__ == '__main__':
     subprocess.run(['node', js, html, gin, gout], check=True)
     out = json.load(open(gout))
     bad, notes, points, inf_seen, finite_cut = 0, [], 0, 0, 0
+    keep_seen = [0, 0]
     capsec = lambda k: math.inf if tool[k]['capacitor'].get('stable') else (tool[k]['capacitor'].get('timeToEmptyExactSec') if tool[k]['capacitor'].get('timeToEmptyExactSec') is not None else math.inf)
     for t, m in pairs:
         tf_fit = CP._Fit(orc(t)); tf_app = CA._Src(orc(t)); t_inp = CP.pyfa_inputs(tf_fit)
@@ -151,21 +177,23 @@ if __name__ == '__main__':
         for i, st in enumerate(GRID):
             me_o = orc(m, bool(st['prop'])); me = CP._Fit(me_o)
             my_top = me.getMaxVelocity(); their_top = tf_fit.getMaxVelocity()
-            y_frac = 0 if st['mode'] == 'still' else st['speedPct'] / 100; y_ang = 90 if st['mode'] == 'orbit' else 0
-            t_frac = 0 if st['theirMode'] == 'still' else st['theirPct'] / 100; t_ang = 90 if st['theirMode'] == 'orbit' else 0   # v.51: a stopped ship has speed 0
+            y_spd, y_ang, t_spd, t_ang, y_holds, t_holds = keep_rule(st, my_top, their_top, reach(t), reach(m))   # v.51 Stopped, v.53 Keep at Range
+            y_frac = y_spd / my_top if my_top else 0.0; t_frac = t_spd / their_top if their_top else 0.0
             inc = pyfa_typed(tf_fit, tf_app, t_inp, me, st['range'], y_frac, y_ang, t_frac * their_top, t_ang)
             m_src_fit = CP._Fit(me_o); m_app = CA._Src(me_o); m_inp = CP.pyfa_inputs(m_src_fit)
             outd = pyfa_typed(m_src_fit, m_app, m_inp, tf_fit, st['range'], t_frac, t_ang, y_frac * my_top, y_ang)
             you_last = ttk(orc(m), capsec(m), inc); they_last = ttk(orc(t), capsec(t), outd)
-            exp = [sum(inc.values()), sum(outd.values()), you_last, they_last, my_top, their_top]
+            exp = [sum(inc.values()), sum(outd.values()), you_last, they_last, my_top, their_top, y_holds, t_holds]
             got = out[t + '|' + m][i]; points += 1
             inf_seen += (you_last == math.inf) + (they_last == math.inf)
             finite_cut += sum(1 for x, k in ((you_last, m), (they_last, t)) if x != math.inf and x > capsec(k))
             if got is None: diffs.append(f'{st}: tool gave no matchup'); continue
-            names = ('theirDps', 'yourDps', 'youLast', 'theyLast', 'myTop', 'theirTop')
+            names = ('theirDps', 'yourDps', 'youLast', 'theyLast', 'myTop', 'theirTop', 'youCanKeep', 'theyCanKeep')
+            keep_seen[0] += (st['mode'] == 'keep') + (st['theirMode'] == 'keep'); keep_seen[1] += (not y_holds) + (not t_holds)
             for n, g, e in zip(names, got, exp):
                 if not close(g, e) and len(diffs) < 4: diffs.append(f'{n} {st} tool {g} independent {e}')
         if diffs: bad += 1; notes.append(f'{t} -> {m}: ' + '; '.join(diffs))
     for n in notes[:30]: print(n)
     print(f'{len(threats)} threats x {len(mine)} of my ships ({", ".join(mine)}), {points} points over {len(GRID)} card settings: {2 * points - inf_seen} finite times ({finite_cut} after the capacitor ran out), {inf_seen} "holds"')
+    print(f'Keep at Range: {keep_seen[0]} keeping ships; the "can hold" verdict compared for both ships at every point ({keep_seen[1]} can\'t)')
     print(f'{bad} mismatches (strip numbers vs pyfa projected.py + application.py by damage type, and the time-to-kill rule)')

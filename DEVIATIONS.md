@@ -54,6 +54,14 @@ introduces a difference.
   isValidCharge rule for what loads); a drone pick is one type at a time (as many as the bay, 5 drones and the
   bandwidth allow), not mixed flights; the fight's webs, painters and scram are the fit's current ones, whatever
   is being ranked. Fighters aren't ranked (not applied yet). Checked by `check_weakness_picks.py`.
+- Keep at Range on the Damage Application card and the fight strip (v2026.10.14.53, fight setup F2; Erik 2026-10-24).
+  pyfa's damage graph has no such movement; it is mapped onto the graph's own inputs. The ship keeping range moves
+  straight away along the line of sight (angle 180°, so no transversal, pyfa `_calcAngularSpeed`) at the other ship's
+  closing speed (its speed when it approaches; 0 when it sits still, orbits or keeps range too), capped at its own
+  top speed. It isn't offered inside the other ship's scram or web range or when the other ship closes faster than
+  it can fly; chosen and then no longer possible, it stays chosen, marked, with the speed capped. The chart stays a
+  snapshot at one distance, as pyfa's graph. Checked by `check_matchup.py` (the inputs and the "can hold" rule, written
+  again) and `fight_strip_check.py`.
 - EVE's closed-form capacitor stability, on ring hover (pyfa computes it as `cap_stable_eve` but doesn't display it).
 - Rounding of the tool's own values (missile application % and applied DPS in the ammo ranking, the ring's drawing geometry) stays JavaScript's `Math.round`. Every pyfa stat the tool shows is rounded with `pyRound` (Python `round()`, ties to even) since v2026.10.14.22.
 
