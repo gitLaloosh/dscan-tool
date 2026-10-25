@@ -815,6 +815,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Also:** CSS margin isn't a space. "Threat" in its own span next to "Weaknesses" looked right, but the text read
   "ThreatWeaknesses" (what a screen reader names the button). Put a real space between words in separate spans.
 
+## 55. Flex items are centred, not set on a baseline
+
+- **What happened (v2026.10.14.58, the owner's screenshot "alignment issue"):** the open Weaknesses card's toggle is an
+  `inline-flex` button with `align-items: center`. "Threat" / "Your" (small capitals) and "Weaknesses" (13 px) became
+  two flex items, each centred on its own, so the small word sat 1.5 px above the name's baseline. The collapsed row
+  looked right because there the words were inline in one span. No check measured it.
+- **Do this instead:** words meant to read as one line go in one inline box (here `.cc-name`) so they share a line
+  and a baseline. To check alignment, compare baselines, not boxes: a text's Range rect bottom less its font's
+  descent (canvas `measureText(...).fontBoundingBoxDescent`). A 0x0 probe placed after the text gives the baseline
+  only in an inline context; next to a flex item it becomes a flex item itself and reports the centre.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

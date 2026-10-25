@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — Weaknesses title: "Threat" / "Your" on the name's baseline</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fix: "Threat" / "Your" sat above the line of "Weaknesses"</h1>
+<p><span class="tag">Fix</span> 2026-10-25 &middot; <code>v2026.10.14.58</code> &rarr; <code>v2026.10.14.59</code>.</p>
+<p>the owner (2026-10-25, a screenshot of "YOUR Weaknesses" on the open card): "alignment issue".</p>
+
+<h2>Cause</h2>
+<p>The card's title is a button laid out as a flex row, with each item centred (<code>align-items: center</code>). In v.58 "Threat" / "Your" (small capitals) and "Weaknesses" (13 px) became two items of that row, each centred on its own. Their baselines didn't line up: the small word sat 1.5 px high. The collapsed row was fine, because there both words were inline in one span.</p>
+
+<h2>Fix</h2>
+<p>On the open card the word and the name now sit in one inline span (<code>.cc-name</code>), as in the collapsed row, so they share a baseline. The name itself didn't move (its baseline is where it was), and the button's height and the chevron are unchanged. Presentation only.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><code>ttk_why_check.py</code> now measures both baselines on the open card (threat view and My ship view), the collapsed card and Viewing My Ship. The method works for flex and inline layout alike: each text's box less its font's descent. v.58 fails 3 (1.5 px); v.59 passes.</li>
+<li>Regression suite, pyfa update-check chain and every page check: see the delivery note.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #55: flex items are centred, not set on a baseline. Words meant to read as one line belong in one inline box. To check alignment, compare baselines, not boxes. A 0x0 probe placed after a text gives its baseline only in inline layout; next to a flex item it becomes a flex item and reports the centre. That was this check's first, misleading, reading.</p>
+</body>
+</html>

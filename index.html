@@ -1523,7 +1523,7 @@
   .weak-head{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
   .weak-head button.cc-toggle{margin:0;}
   /* v2026.10.14.58: "Threat Weaknesses" / "Your Weaknesses" (cardWhoHtml) replace the "your guns" / "their guns" tags */
-  .wk-who{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; font-weight:600; margin-right:2px;}   /* + the toggle's 6 px gap, or the space */
+  .wk-who{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; font-weight:600; margin-right:2px;}   /* + the space after it */
   .wk-threat{color:var(--amber);}
   .wk-mine{color:var(--cyan); display:none;}
   .mys-mine-view .wk-threat, .assess-mine .wk-threat{display:none;}
@@ -1609,7 +1609,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.58</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.59</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -14119,7 +14119,9 @@ function cardIsOpen(f, key){
 }
 // v2026.10.14.45: the title comes from CARD_NAMES by key (no title argument, so a card can't be named by hand).
 function cardLabelHtml(key, cls = 'fit-subsection-label', style = ''){
-  return `<button type="button" class="cc-toggle ${cls}" data-card="${key}" aria-expanded="true" title="Collapse"${style ? ` style="${style}"` : ''}>${CC_CHEV}${cardWhoHtml(key)}${escapeHtml(cardName(key))}</button>`;
+  // v.59: "Threat" / "Your" and the name in one inline span, so they share a baseline (as flex items the small word was centred, 3.5 px low)
+  const name = cardWhoHtml(key) ? `<span class="cc-name">${cardWhoHtml(key)}${escapeHtml(cardName(key))}</span>` : escapeHtml(cardName(key));
+  return `<button type="button" class="cc-toggle ${cls}" data-card="${key}" aria-expanded="true" title="Collapse"${style ? ` style="${style}"` : ''}>${CC_CHEV}${name}</button>`;
 }
 function collapsedCardHtml(key, summary, shell = 'fit-summary', extraCls = '', extraHtml = ''){
   return `<div class="${shell} cc-closed"><button type="button" class="cc-toggle cc-row${extraCls ? ' ' + extraCls : ''}" data-card="${key}" aria-expanded="false" title="Expand">${CC_CHEV}<span class="cc-title">${cardWhoHtml(key)}${escapeHtml(cardName(key))}</span><span class="cc-sum">${escapeHtml(summary)}</span>${extraHtml}</button></div>`;

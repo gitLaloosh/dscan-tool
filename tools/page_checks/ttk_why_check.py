@@ -12,7 +12,7 @@ the page, with the owner's two fits (tools/independent_checks/fits/) at 48.9 km,
     still switches the view; Tab onto a half shows its time's panel, Tab off hides it; Escape hides it; the halves
     are described by the same words for a screen reader; nothing on the page moves when the panel shows;
   * Weaknesses: "Threat Weaknesses" (amber) on the threat's view, "Your Weaknesses" (cyan) on the My ship view and
-    on "Viewing my ship", open and collapsed; no "your guns" / "their guns" tags; the capacitor row comes after the
+    on "Viewing my ship", open and collapsed, the word and the name on one baseline (v.59); no "your guns" / "their guns" tags; the capacitor row comes after the
     picks and the generic tiles;
   * phone (375 px, touch): a tap on the number opens the panel as a sheet and doesn't switch the view; its close
     button and a tap outside close it; a tap on the label under it, or elsewhere on the half, still switches; no
@@ -62,6 +62,17 @@ def who_color(pg, scope):
     return pg.evaluate(f"""() => {{ const v = [...document.querySelectorAll('{scope} button.cc-toggle[data-card="weak"] .wk-who')].find(e => getComputedStyle(e).display !== 'none');
         const probe = document.createElement('span'); probe.style.color = v && v.classList.contains('wk-mine') ? 'var(--cyan)' : 'var(--amber)'; document.body.appendChild(probe);
         const want = getComputedStyle(probe).color; probe.remove(); return v ? [v.textContent, getComputedStyle(v).color === want] : null; }}""")
+def baselines(pg, scope):
+    """v.59 (the owner's screenshot: "alignment issue"): the baseline of the shown "Threat" / "Your" and of "Weaknesses":
+    each text's box (a Range) less its font's descent (canvas measureText, the same font), so it doesn't matter whether
+    the text is a flex item or inline"""
+    return pg.evaluate(f"""() => {{ const b = document.querySelector('{scope} button.cc-toggle[data-card="weak"]'); if(!b) return null;
+        const ctx = document.createElement('canvas').getContext('2d');
+        const at = (node) => {{ const st = getComputedStyle(node.parentElement); ctx.font = `${{st.fontWeight}} ${{st.fontSize}} ${{st.fontFamily}}`;
+          const r = document.createRange(); r.selectNodeContents(node); return r.getBoundingClientRect().bottom - ctx.measureText(node.textContent).fontBoundingBoxDescent; }};
+        const who = [...b.querySelectorAll('.wk-who')].find(e => getComputedStyle(e).display !== 'none');
+        const name = [...b.querySelectorAll('*'), b].flatMap(e => [...e.childNodes]).find(n => n.nodeType === 3 && /Weaknesses/.test(n.textContent));
+        return who && name ? [Math.round(at(who.firstChild) * 10) / 10, Math.round(at(name) * 10) / 10] : null; }}""")
 def order_ok(pg, scope):
     """the capacitor rows after the picks and the generic tiles (DOCUMENT_POSITION_FOLLOWING = 4)"""
     return pg.evaluate(f"""() => {{ const c = document.querySelector('{scope} .fl-beat .weak-cap'), p = document.querySelector('{scope} .fl-beat .weak-picks'), g = document.querySelector('{scope} .fl-beat .weak-generic');
@@ -76,6 +87,8 @@ def desktop(b):
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', ORTHRUS); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
     check(title(pg, TV) == 'threat weaknesses' and who_color(pg, TV) == ['Threat', True], f'no ship saved: "{title(pg, TV)}", {who_color(pg, TV)}')
+    bl = baselines(pg, TV)
+    check(bl and abs(bl[0] - bl[1]) < 0.5, f'"Threat" and "Weaknesses" on one baseline (open card: {bl})')
     pg.click('#myShipChip'); pg.fill('#myShipEft', OSPREY); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
     pg.wait_for_selector(f'{HOST} .mys-board'); settle(pg, 800)
     pg.evaluate(SETUP_RANGE); settle(pg, 1200)
@@ -109,6 +122,8 @@ def desktop(b):
     pg.mouse.move(5, 5); pg.wait_for_timeout(150)
     pg.wait_for_selector(f'{MV} .fl-beat .weak-picks .wp-stat', timeout=60000); settle(pg)
     check(title(pg, MV) == 'your weaknesses' and who_color(pg, MV) == ['Your', True], f'My ship view: "{title(pg, MV)}", {who_color(pg, MV)}')
+    bl = baselines(pg, MV)
+    check(bl and abs(bl[0] - bl[1]) < 0.5, f'"Your" and "Weaknesses" on one baseline (open card: {bl})')
     cap_m = order_ok(pg, MV)
     check(cap_m is not None, f'My ship view: the capacitor ({cap_m}) after the picks and the tiles')
     pg.click(f'{R} .mys-sw-btn.is-threat'); settle(pg, 900); pg.wait_for_selector(f'{TV} .fl-beat .weak-picks .wp-stat', timeout=60000)
@@ -126,11 +141,14 @@ def desktop(b):
     check(not shown(pg), 'Tab on: hidden')
     # collapsed card titles
     pg.locator(f'{TV} button.cc-toggle[data-card="weak"]').first.click(); pg.wait_for_timeout(400)
-    check(title(pg, TV).startswith('threat weaknesses') and who_color(pg, TV) == ['Threat', True], f'collapsed: "{title(pg, TV)[:20]}"')
+    bl = baselines(pg, TV)
+    check(title(pg, TV).startswith('threat weaknesses') and who_color(pg, TV) == ['Threat', True] and bl and abs(bl[0] - bl[1]) < 0.5, f'collapsed: "{title(pg, TV)[:20]}", one baseline ({bl})')
     pg.locator(f'{TV} button.cc-toggle[data-card="weak"]').first.click(); pg.wait_for_timeout(300)
     # Viewing my ship
     pg.click('#myShipChip'); pg.click('#myShipPanel [data-act="open"]'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg); pg.keyboard.press('Escape')
-    check(title(pg, R) == 'your weaknesses' and who_color(pg, R) == ['Your', True] and pg.locator(f'{R} .mys-board').count() == 0, f'"Viewing my ship": "{title(pg, R)}", no board')
+    bl = baselines(pg, R)
+    check(title(pg, R) == 'your weaknesses' and who_color(pg, R) == ['Your', True] and pg.locator(f'{R} .mys-board').count() == 0 and bl and abs(bl[0] - bl[1]) < 0.5,
+          f'"Viewing my ship": "{title(pg, R)}", no board, one baseline ({bl})')
     check(not errs, f'desktop: no page errors {errs}')
     ctx.close()
 
