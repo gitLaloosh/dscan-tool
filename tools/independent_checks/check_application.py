@@ -160,15 +160,18 @@ class _Ability:
         return dmg * s.fighter.amount * g(f'{s.attrPrefix}DamageMultiplier', 1) / (cyc / 1000) if cyc else 0
 class _FighterApp:
     """eos Fighter as getFighterAbilityMult reads it, over an oracle fighter (pyfa's handlers on fit.fighters).
-    Abilities: every effect of the item, in SDE order (ascending id, as pyfa's database lists them), switched on as
-    eos Fighter.__init__ does."""
+    Abilities: every effect of the item, in SDE order (ascending id, as pyfa's database lists them). s.defaults = the ones
+    eos Fighter.__init__ switches on; the abilities ACTIVE here are the oracle squadron's (v2026.10.14.66: the tool's
+    choice from the Fighter bay, an input; the defaults when it made none -- checked against s.defaults below)."""
     def __init__(s, f):
         s.f, s.amount = f, f.amount
         s.abilities = [_Ability(s, e) for e in sorted(f.item.effectIds)]
         standard = False
+        s.defaults = set()
         for a in s.abilities:
-            if a.effect.isImplemented and a.effect.name == 'fighterAbilityAttackM': a.active = True; standard = True
-            elif a.effect.isImplemented and not standard and a.effect.name not in ('fighterAbilityMicroWarpDrive', 'fighterAbilityEvasiveManeuvers'): a.active = True
+            if a.effect.isImplemented and a.effect.name == 'fighterAbilityAttackM': s.defaults.add(a.effectID); standard = True
+            elif a.effect.isImplemented and not standard and a.effect.name not in ('fighterAbilityMicroWarpDrive', 'fighterAbilityEvasiveManeuvers'): s.defaults.add(a.effectID)
+        for a in s.abilities: a.active = a.effectID in f.activeAbilities
         s.typeId = int(f.item.ID)
     def isDealingDamage(s): return any(a.getDps() > 0 for a in s.abilities)
     def getModifiedItemAttr(s, k, default=0):
@@ -238,11 +241,12 @@ FGRID = [dict(distance=d, atkSpeed=0, atkAngle=0, tgtSpeed=ts, tgtAngle=90, tgtS
                                                           [0, 300, 900, 1500, 2200, 3200, 6000], [15, 120, 400, 3000], [True, False], [1, 2, 3], list(FIGHTER_TARGETS))]
 
 def tool_fighters(app):
-    """[(typeId, squadron size)] per squadron the tool launched (one entry per squadron, as pyfa's fit.fighters)."""
+    """[(typeId, squadron size, active ability ids)] per squadron the tool launched (one entry per squadron, as pyfa's
+    fit.fighters). v.66: with the abilities the tool has on (the Fighter bay; an input like the launch itself)."""
     seen, out = set(), []
     for f in (app or {}).get('fighters') or []:
         if f['typeId'] in seen: continue
-        seen.add(f['typeId']); out += [(f['typeId'], f['squadronSize'])] * f['squadrons']
+        seen.add(f['typeId']); out += [(f['typeId'], f['squadronSize'], f.get('activeAbilities'))] * f['squadrons']
     return out
 
 def tool_states(t):
@@ -311,6 +315,11 @@ if __name__ == '__main__':
                                  ('drf', x['drf'], drf), ('drs', x['drs'], drs), ('resistAttrId', x['resistAttrId'] or 0, int(g(pre + 'ResistanceID') or 0)),
                                  ('squadronSize', x['squadronSize'], g('fighterSquadronMaxSize'))):
                 if not close(tv or 0, pv or 0): diffs.append(f'{key} {name} tool {tv} pyfa {pv}')
+        # v.66: with no Fighter bay choice made, the tool's abilities on are pyfa's defaults (eos Fighter.__init__)
+        if not G[k].get('fighterStates'):
+            for f in src.fighters:
+                ton = {a.effectID for a in f.abilities if a.active}
+                if ton != f.defaults: diffs.append(f'fighter {f.typeId} abilities on tool {sorted(ton)} pyfa default {sorted(f.defaults)}')
         # the launch is the tool's input, but every fighter DPS must be in the application (none left 'unapplied')
         if ((app.get('unapplied') or {}).get('fighterDps') or 0) > 0: diffs.append(f"fighters left out of the application: {app['unapplied']['fighterDps']} DPS")
         fighters += len(pf)

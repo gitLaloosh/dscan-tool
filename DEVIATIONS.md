@@ -26,8 +26,8 @@ introduces a difference.
 | Ancillary Shield Booster | Has charges (icon toggles "out of charges"), except a pasted fit with no charge loaded or in cargo: it runs on capacitor and is flagged (v2026.10.14.24) |
 | Ancillary Armor Repairer paste | v2026.10.14.61: Nanite Repair Paste loaded, else in cargo or fleet hangar. A killmail with none seen in the module assumes a full clip (its paste may have run out in the fight; the owner). A pasted fit with none anywhere repairs its plain amount, and the Weaknesses card flags "No paste for its ...". The Repairs strip's burst shows only with paste aboard (or assumed). pyfa uses only the paste in the fit. |
 | Drones in space | Hardest-hitting combat drones up to bandwidth and 5 drones; changeable per type |
-| Fighters | Automatic by tubes and class limits (backlog: selectable). An EFT line `Firbolg I x18` is read as 18 fighters in the bay, launched as 3 squadrons; pyfa loads it as one squadron (capped at 6). |
-| Fighter abilities | pyfa's defaults (`Fighter.__init__`): Attack Missile + every ability before it except MWD / Evasive Maneuvers — light fighters fire Missiles too, heavy bombers' bombs stay off. DPS ignores rearm time, as pyfa does unless "factor in reload time" is on. (v2026.10.14.4) |
+| Fighters | Changeable per type in the Fighter bay since v2026.10.14.66. Default (the owner 2026-10-25, "Damage first"): damage squadrons hardest-first within the tubes and class limits, then support squadrons in the tubes left, webs first. pyfa adds a squadron in space only while a tube and a slot of its class are free (`gui/fitCommands/calc/fighter/localAdd.py`), in the order they are added. An EFT line `Firbolg I x18` is read as 18 fighters in the bay, launched as 3 squadrons (the owner kept the bay count); pyfa loads it as one squadron (capped at 6). A structure fighter can't be launched from a ship (pyfa: `Fighter.fits()` is false); before v.66 the tool launched one. |
+| Fighter abilities | pyfa's defaults (`Fighter.__init__`): Attack Missile + every ability before it except MWD / Evasive Maneuvers — light fighters fire Missiles too, heavy bombers' bombs stay off, a support squadron's EWAR and afterburner are on. DPS ignores rearm time, as pyfa does unless "factor in reload time" is on. (v2026.10.14.4) Since v2026.10.14.66 each can be switched in the Fighter bay: a damage ability off adds nothing, a speed ability on (MWD, afterburner, evasive maneuvers) changes the squadron's speed as pyfa's handler does. Bombs can't be switched on yet (a later delivery). |
 | RAH damage profile | Uniform 25% each, which is pyfa's default profile too |
 | Ship mode (Tactical Destroyers incl. the Skua; the Anhinga) | Tactical Destroyers: **Sharpshooter**, switchable. pyfa's default is the hull's first mode item (Defense on every Tactical Destroyer); the tool keeps Sharpshooter because it shows the hull's damage. Anhinga: **Primary**, pyfa's default too (the owner's choice, 2026-10-14). Every mode effect is pyfa's own handler (`MODE_EFFECT_ROWS`, `gen_mode_table.py`; v2026.10.14.6). |
 | Hardener scripts | Read from a mid-slot module's flag-paired charge (Capital Flex Shield Hardener). A killmail's low-slot charges aren't paired, so a Capital Flex **Armor** Hardener's script is ignored. |
@@ -63,8 +63,8 @@ introduces a difference.
   then the charge already loaded. Choices: only ammo and drones aboard (loaded, cargo, drone bay; pyfa's
   isValidCharge rule for what loads); a drone pick is one type at a time (as many as the bay, 5 drones and the
   bandwidth allow), not mixed flights; the fight's webs, painters and scram are the fit's current ones, whatever
-  is being ranked. Fighters aren't ranked (which squadrons to launch is its own backlog item), but they count in
-  the rest of the fit since v2026.10.14.64. Checked by `check_weakness_picks.py`.
+  is being ranked. Fighters aren't ranked yet (the last of the fighter-gaps deliveries, roadmap/fighter-gaps-plan.md),
+  but they count in the rest of the fit since v2026.10.14.64. Checked by `check_weakness_picks.py`.
 - Keep at Range on the Damage Application card and the fight strip (v2026.10.14.53, fight setup F2; the owner 2026-10-24).
   pyfa's damage graph has no such movement; it is mapped onto the graph's own inputs. The ship keeping range moves
   straight away along the line of sight (angle 180°, so no transversal, pyfa `_calcAngularSpeed`) at the other ship's
@@ -97,8 +97,8 @@ Each is in a backlog:
   has pyfa's `applyProjected` (on by default in pyfa's graph): the attacker's own webs, target painters, web /
   painter drones, burst projectors and warp scramblers (a scrammed target's MWD, MJD and MJFG are ignored)
   slowing and growing the target fit or profile. One part of it is not applied: **support fighters' webs**
-  (Dromi, pyfa `getProjFighterData`). The tool never launches support fighters (their squadrons deal no damage,
-  so the fighter step skips them), so `webFighters` is always empty. Nothing on the page uses any of this yet
+  (Dromi, pyfa `getProjFighterData`). Support squadrons are launched since v2026.10.14.66 (the Fighter bay), but
+  their webs aren't passed yet, so `webFighters` is still empty (the next fighter-gaps delivery). Nothing on the page uses any of this yet
   (Phase 2b, the chart)
 - mode effects on stats the tool doesn't show: remote repair and remote shield boost amounts (Confessor / Svipul Defense; their capacitor need *is* applied), weapon-disruption and sensor-dampener resistance (every Sharpshooter mode)
 

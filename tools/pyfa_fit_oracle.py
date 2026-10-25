@@ -31,6 +31,10 @@ its amount; every carrier's handlers reach them through fit.fighters (filters on
 own ability effects run no handler here: pyfa runs only ACTIVE abilities (eos/saveddata/fighter.py
 calculateModifiedAttributes), its default actives are the damage / EWAR abilities (no handler for the damage ones; the
 generator asserts it) and the MWD / afterburner / evasive maneuvers abilities, which change maxVelocity, are off.
+Since v2026.10.14.66 (Fighter bay states) a squadron may name its active abilities (fighters=[(type, amount, activeIds)]);
+without them it has pyfa's defaults (Fighter.__init__, fighter_default_actives -- a support squadron's afterburner IS on
+by default). Each active ability's handler runs as Fighter.calculateModifiedAttributes runs it: in its runTime, if
+activeByDefault, context ('fighter',), once when the effect is grouped, else once per fighter.
 Since v2026.10.14.35: Attrs.afflictions (who made each modifier, eos __afflict) and Attrs.extended, a hand port of
 getExtended / __calculateValue (extra multipliers, ignored afflictors) for pyfa's damage graph (check_projected.py).
 """
@@ -263,13 +267,27 @@ class Pattern:
 SHIP_EXTRA_ATTRIBUTES = {'armorRepair': 0, 'armorRepairPreSpool': 0, 'armorRepairFullSpool': 0, 'hullRepair': 0, 'shieldRepair': 0,
                          'maxActiveDrones': 0, 'maxTargetsLockedFromSkills': 2, 'droneControlRange': 20000, 'cloaked': False}
 
+def fighter_default_actives(effectIds):
+    """eos/saveddata/fighter.py Fighter.__init__: 'fighterAbilityAttackM' on; every implemented ability before it on too,
+    except the MWD and evasive maneuvers; nothing after it. Abilities in the item's effect order (ascending id)."""
+    out, standard = set(), False
+    for e in sorted(effectIds):
+        if e not in EFFECTS: continue   # not implemented in pyfa
+        n = name_of_effect(e)
+        if n == 'fighterAbilityAttackM': out.add(e); standard = True
+        elif not standard and n not in ('fighterAbilityMicroWarpDrive', 'fighterAbilityEvasiveManeuvers'): out.add(e)
+    return out
+def name_of_effect(e):
+    from pyfa_sde import ename
+    return ename(e)
+
 class OracleFit:
     def __init__(self, ship, modules=(), mode=None, implants=(), boosters=(), drones=(), fighters=()):
         """ship: name or typeId; modules: [(name or id, state, charge name or id or None)];
         mode: Tactical Destroyer mode item name (e.g. 'Skua Defense Mode') or None;
         implants / boosters: [name or typeId] (pyfa's fit implants, ImplantLocation.FIT);
         drones: [(name or typeId, amountActive)] -- drones in space (v2026.10.14.13);
-        fighters: [(name or typeId, amount)] -- one entry per squadron in space (v2026.10.14.64)."""
+        fighters: [(name or typeId, amount[, activeIds])] -- one entry per squadron in space (v2026.10.14.64; activeIds v.66)."""
         tid = lambda x: int(x) if isinstance(x, int) or str(x).isdigit() else int(T(x))
         self.ship = Item(tid(ship), self, 'online')
         self.modules = HList()
@@ -281,8 +299,11 @@ class OracleFit:
         self.drones = HList(); self.fighters = HList()
         for d, n in drones:   # eos/saveddata/drone.py: amountActive copies in space
             it = Item(tid(d), self); it.amountActive = n; self.drones.append(it)
-        for fi, n in fighters:   # eos/saveddata/fighter.py: one Fighter per squadron, amount fighters in it
-            it = Item(tid(fi), self); it.amount = n; self.fighters.append(it)
+        for fx in fighters:   # eos/saveddata/fighter.py: one Fighter per squadron, amount fighters in it
+            fi, n = fx[0], fx[1]
+            it = Item(tid(fi), self); it.amount = n
+            it.activeAbilities = set(fx[2]) if len(fx) > 2 and fx[2] is not None else fighter_default_actives(it.item.effectIds)
+            self.fighters.append(it)
         # pyfa's database has no expired event boosters (db_update.py deletes them; pyfa_sde.pyfa_removed_types),
         # so pyfa can't load them: dropped here and listed in notLoaded (v2026.10.14.13, LESSON #32).
         from pyfa_sde import pyfa_removed_types
@@ -323,6 +344,10 @@ class OracleFit:
                 for e in d.item.effectIds:
                     if e in EFFECTS and _runtime(e) == rt and 'passive' in _etype(e) and _active_by_default(e):
                         for _ in range(d.amountActive): self._run(e, d, ('drone',))
+            for fi in self.fighters:   # v.66: fighter.py calculateModifiedAttributes -- the squadron's ACTIVE abilities, local context
+                for e in sorted(fi.item.effectIds):
+                    if e in fi.activeAbilities and e in EFFECTS and _runtime(e) == rt and _active_by_default(e):
+                        for _ in range(1 if getattr(EFFECTS[e], 'grouped', False) else fi.amount): self._run(e, fi, ('fighter',))
             for b in self.boosters:   # booster.py: passive effects; side effects off (pyfa default)
                 for e in b.item.effectIds:
                     if e in EFFECTS and _runtime(e) == rt and 'passive' in _etype(e): self._run(e, b, ('booster',))

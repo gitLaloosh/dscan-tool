@@ -812,3 +812,19 @@ inputs are now emitted the same way (`app:drone:<name>:<field>`).
   gave the drones the link's unscripted bonuses.
 
 v2026.10.14.63 fails every applied@ pin of the three carriers (no fighters in the application) and the Vexor's.
+
+## Fighter bay states (v2026.10.14.66, roadmap/fighter-gaps-plan.md delivery 1)
+
+A golden fit may carry `fighterStates` (`{typeId: {n: squadrons in space, ab: {effectId: on}}}`, the Fighter bay's
+request), passed to `estimateHpAndDps` as `options.fighterStates`. Expected values from pyfa's side, as above, with those
+squadrons in space and those abilities active (pyfa_fit_oracle.py runs an active speed ability's handler as eos
+`Fighter.calculateModifiedAttributes` does).
+
+- `nidhoggur_constructed_fighter_bay_states`: 1 Einherji II squadron (the default launch puts 2 out) with Missiles off
+  and MWD on (its boost stacks with 2 Drone Navigation Computers in 'default'), 1 Gram II with Evasive Maneuvers on,
+  1 Dromi II and 1 Siren II.
+- `hel_constructed_fighter_bay_abilities`: the Hel fit above with 3 Einherji II on MWD (with Fighter Support Units'
+  postMul) and 2 Mantis II with Attack off.
+
+v2026.10.14.65 ignores `fighterStates` and fails 21 pins; a break that ignores the requested squadron counts fails 6, one
+that drops the speed ability's handler 4, one that leaves its boost unpenalized 4, one that ignores the toggles 14.

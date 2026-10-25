@@ -875,6 +875,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 61. A golden fit that tests an input must set it to something the default wouldn't give
+
+- **What happened (v2026.10.14.66):** the first Fighter bay golden fit asked for 2 Einherji squadrons, 1 Gram, 1 Dromi
+  and no Siren. The default launch (damage first, then support) gives exactly that for this bay. A deliberate break that
+  ignored the requested squadron counts passed every pin.
+- **Do this instead:** for every input a fit pins (a state, a launch, a toggle), check that the default would differ,
+  then break the code that reads it and see a pin fail. Here the fit asks for 1 Einherji squadron (the default puts 2
+  out) and a Siren; the same break now fails 6 pins.
+- **The same miss, one level down:** `dump_results.mjs` (which feeds the independent checks) didn't pass the new
+  `fighterStates`, so `check_application.py` compared tool and pyfa both at the defaults and passed a break that
+  dropped the MWD handler. A new input must reach every harness that runs the engine: grep for `estimateHpAndDps(`
+  in `regression_suite/` and `tools/`.
+
 ## 60. A marker the checks wait on is a contract: new text in that element must not contain it
 
 - **What happened (v2026.10.14.65):** the board's new ship menu ended in "Manage My Ships…". Five page checks wait for the

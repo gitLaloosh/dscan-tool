@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — Fighter bay: squadrons and abilities you choose</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fighter bay: squadrons and abilities you choose</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-25 &middot; <code>v2026.10.14.65</code> &rarr; <code>v2026.10.14.66</code>. Mockup: the real page, desktop and phone, first with text chips, then with the game's icons.</p>
+<p>the owner: "Ok lets get the fighter gaps closed. Carriers need to be accurately assessed in the tool." This is the first of four deliveries (<code>roadmap/fighter-gaps-plan.md</code>). His decisions:</p>
+<ul>
+<li>Default launch: "Damage first".</li>
+<li>Bombs: "Off, toggle per type".</li>
+<li>Support EWAR: "Webs applied, rest shown".</li>
+<li>EFT lines: "Keep bay count".</li>
+<li>On the mockup: "can you use the actual fighter ability icons from the game? they should be available to you." Then "Icon + short label".</li>
+<li>The Fighter bay: "Open by default".</li>
+<li>Weaknesses picks: "Include fighters" (the last delivery).</li>
+</ul>
+
+<h2>What you see</h2>
+<ul>
+<li><b>The Fighter bay section</b> of the Fit card works like the drone bay.
+<ul>
+<li>One square per squadron the hull could have in space of that type (the squadrons in the bay, its tubes and that class's limit). Click to launch, or click the last filled square to take one back.</li>
+<li>A square the free tubes or class room won't allow is dashed, with the reason (e.g. "all 4 tubes are in use").</li>
+<li>The heading reads "Tubes 4 / 4 &middot; Light 3 / 3 &middot; Support 1 / 2", with a bar for the tubes.</li>
+</ul></li>
+<li><b>Ability buttons</b> under each type. Each shows the game's own icon and a short name (Attack, Missiles, Bomb, Web, Neut, Point, ECM, MWD, AB, Evasive), lit when on. They come in the order damage, EWAR, propulsion, and each hover says what it does to the numbers.
+<ul>
+<li>A damage ability switched off adds nothing.</li>
+<li>A speed ability switched on makes the squadron faster in Damage Application.</li>
+<li>Support EWAR is "not in the numbers yet (a coming update)".</li>
+<li>Bombs are disabled for now, with "Bombs are counted in a coming update".</li>
+</ul></li>
+<li><b>The default launch</b> (the owner's "Damage first"): damage squadrons hardest-first within the tubes and class limits, then support squadrons in the tubes left, webs first. A Nidhoggur with Einherji II x24, Dromi II x3 and Siren II x3 puts out 3 Einherji (the light limit), then the Dromi; the Siren waits.</li>
+<li><b>Open by default</b> when the hull can launch what the bay holds; collapsed, its row says "4 / 4 tubes".</li>
+<li><b>Kept like the other states:</b>
+<ul>
+<li>the reset button clears it;</li>
+<li>My Ships stores it (<code>fighterStates</code>);</li>
+<li>the Pilot Analyzer's losses have it too.</li>
+</ul></li>
+<li><b>Structure fighters</b> in a ship's bay are listed but can't be launched (pyfa: <code>Fighter.fits()</code> is false). Before this version the tool launched one into a free tube.</li>
+</ul>
+
+<h2>Where the icons come from</h2>
+<p>Neither pyfa nor the SDE has fighter ability icons:</p>
+<ul>
+<li>pyfa's dogma effects carry no iconID;</li>
+<li><code>images.evetech.net</code> serves only item icons and renders;</li>
+<li>the sites that mirror the client's files were blocked from the workspace.</li>
+</ul>
+<p>the owner connected his EVE client's shared cache (<code>C:\CCP\EVE</code>) to the session, read only. The new <code>tools/gen_fighter_ability_icons.py</code> reads the client's own data through <code>tq/resfileindex.txt</code>:</p>
+<ul>
+<li><code>res:/staticdata/fighterabilitiesbytype.static</code>: per fighter, its ability slots;</li>
+<li><code>res:/staticdata/fighterabilities.static</code>: per ability, its iconID;</li>
+<li>pyfa's <code>iconids.0.json</code>: the icon file.</li>
+</ul>
+<p>Both <code>.static</code> files are SQLite. Each slot is mapped to pyfa's ability effect (slot 0 primary, 1 propulsion, 2 secondary). The generator asserts that every ability ID is the same effect on every fighter, and that every ability pyfa implements on all 94 fighters has an icon. Abilities pyfa doesn't implement get no button, as in pyfa: the superiority fighters' tackle, the Shadow's kamikaze and the heavy fighters' MJD.</p>
+<p>The output is <code>FIGHTER_ABILITY_ICONS</code> and 26 PNGs in <code>img/fighter-abilities/</code>, copied unchanged. <code>--check</code> needs no client and is in the update-check chain: a fighter added by a game update shows up there.</p>
+
+<h2>What pyfa does, and how it's matched</h2>
+<ul>
+<li><b>Defaults:</b> <code>Fighter.__init__</code> (already ported as <code>pyfaDefaultFighterAbilities</code>). A support squadron's EWAR and afterburner are on, MWDs and evasive maneuvers off.</li>
+<li><b>Active abilities run their handler on their own squadron</b> (<code>Fighter.calculateModifiedAttributes</code>), in their runTime. A grouped effect runs once, otherwise once per fighter.
+<ul>
+<li>The three speed abilities are grouped.</li>
+<li>Each boosts <code>maxVelocity</code> by the squadron's own MODIFIED bonus attribute, stacking-penalized in 'default': the same group as Drone Navigation Computers and Capital Drone Speed Augmentors.</li>
+<li>Evasive maneuvers also changes the squadron's signature and shield resonances, which the damage graph doesn't read.</li>
+</ul>
+The generator parses that from pyfa's source and asserts each part. It writes <code>PROJ_FIGHTER_SELF_EFFECTS</code> and adds the three bonus attributes to the fighter handler table: e.g. the Thanatos's support-fighter afterburner bonus (Effect12594) and the Nidhoggur's support fighter velocity (Effect12890), now recorded because the filters run over every fighter.</li>
+<li><b>PYFA CORE <code>projected</code>:</b> <code>pyfaProjFighterSetup</code> takes the squadron's active ability ids and adds those rows to its pools. <code>pyfaProjDroneSetup</code>'s attribute function takes an item's own extra rows.</li>
+<li><b>Engine:</b> <code>options.fighterStates = {typeId: {n, ab: {effectId: on}}}</code>.
+<ul>
+<li>Every fighter type in the bay is listed in <code>estimate.fighterStates</code>.</li>
+<li>Requests are granted in the launch order, as far as tubes and class allow; refusals are listed.</li>
+<li>Each <code>application.fighters</code> entry carries <code>activeAbilities</code>.</li>
+</ul></li>
+</ul>
+<table>
+<tr><th>Example (pyfa's numbers, pinned)</th><th>speed</th></tr>
+<tr><td>Nidhoggur + 2x Drone Navigation Computer II, Einherji II, MWD off</td><td>2,075 m/s</td></tr>
+<tr><td>the same, MWD on</td><td>14,140 m/s</td></tr>
+<tr><td>Hel (Fighter Support Units, Drone Navigation Computer, Valdimar implants), Einherji II with MWD on</td><td>16,606 m/s</td></tr>
+</table>
+<p>A squadron that fast keeps up with almost any target, so it applies its full range in pyfa's graph rather than from the carrier's centre.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>pyfa_fit_oracle.py</code></b>: a squadron may name its active abilities. Without them it gets pyfa's defaults (<code>fighter_default_actives</code>). Each active ability's handler runs as <code>calculateModifiedAttributes</code> runs it.</li>
+<li><b><code>check_application.py</code></b>: the tool's active abilities are inputs, like the launch. A fit without <code>fighterStates</code> must have exactly pyfa's defaults on.
+<ul>
+<li><code>dump_results.mjs</code> now passes a golden fit's <code>fighterStates</code>.</li>
+<li>Result: 0 mismatches, 1,452,768 of 1,452,768 multipliers bit-identical, 32 fighter abilities in space.</li>
+<li>With the speed ability's handler dropped, both new fits fail (the squadrons' speed, then the multipliers).</li>
+</ul></li>
+<li><b>Golden fits</b> <code>nidhoggur_constructed_fighter_bay_states</code> and <code>hel_constructed_fighter_bay_abilities</code>:
+<ul>
+<li>MWD on with the computers;</li>
+<li>evasive on a Gram;</li>
+<li>Missiles off, Attack off;</li>
+<li>1 Einherji squadron where the default puts 2 out;</li>
+<li>a Siren and a Dromi in space.</li>
+</ul>
+Pins are from pyfa's side. v.65 fails 21. The deliberate breaks fail:
+<ul>
+<li>ignoring the squadron counts: 6;</li>
+<li>dropping the speed handler: 4;</li>
+<li>leaving it unpenalized: 4;</li>
+<li>ignoring the toggles: 14.</li>
+</ul></li>
+<li><b>New <code>tools/page_checks/fighter_bay_check.py</code></b> (21 checks):
+<ul>
+<li>open by default, the budget, the default launch, the Siren's reason;</li>
+<li>the abilities' order, defaults and loaded icons;</li>
+<li>MWD on (faster, the headline still PYFA CORE's) and Missiles off (Firepower = the Attack DPS);</li>
+<li>take back / launch, reset, the collapsed row;</li>
+<li>My Ships storage and restore after a reload;</li>
+<li>a bomber's disabled Bomb;</li>
+<li>phone: 44 px buttons, no sideways scroll.</li>
+</ul>
+It fails on v.65 and on the toggle break.</li>
+<li>PYFA CORE <code>projected</code> re-verified (<code>gen_projected_table.py</code> up to date, <code>check_projected.py</code> 0 mismatches, regression) and re-locked. All 18 page checks: 0 failures. The update-check chain: all 37 steps OK, plus the firepower audit (new step: the icons cover every fighter).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #61: a golden fit that tests an input must set it to something the default wouldn't give. The first Fighter bay fit asked for exactly the squadrons the default launch puts out, so a break that ignored the request passed every pin.</p>
+<ul>
+<li>For every input a fit pins, check that the default would differ.</li>
+<li>Then break the code that reads it and see a pin fail.</li>
+<li>Check that every harness passes the new input. <code>dump_results.mjs</code> didn't pass <code>fighterStates</code>, so <code>check_application.py</code> first compared both sides at the defaults and caught nothing.</li>
+</ul>
+</body>
+</html>

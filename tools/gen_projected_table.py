@@ -32,8 +32,9 @@ AND (any of groups) on the drone, asserted exact against every published web / p
   PROJ_DRONE_EFFECTS {effectId: [[attr, op, srcAttrId, perLevel, default, penaltyGroup, skills, groups], ...]}
   PROJ_DRONE_SKILL_ROWS [[skillId, attr, op, valueAtV, penaltyGroup, skills, groups], ...]
   PROJ_DRONE_ATTRS {name: attributeId} and their SDE defaults in PROJ_DRONE_DEFAULTS.
-Fighters (getProjFighterData, Dromi webs) are not here: the tool never launches support fighters
-(DEVIATIONS.md).
+Third table (v2026.10.14.64): the attacker's FIGHTERS (getFighterAbilityMult's inputs), PROJ_FIGHTER_*; since
+v2026.10.14.66 over every fighter (support squadrons launch too) with the squadron's own speed abilities
+(PROJ_FIGHTER_SELF_EFFECTS). Support fighters' webs (getProjFighterData) aren't passed yet (roadmap/fighter-gaps-plan.md).
 """
 import sys, os, re, json, collections
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -212,11 +213,45 @@ FIGHTER_ABILITY_PREFIX = _fighter_ability_prefixes()
 FIGHTER_ATTRS = ('maxVelocity', 'radius') + tuple(p + s for p in FIGHTER_PREFIXES for s in (
     'RangeOptimal', 'Range', 'RangeFalloff', 'ExplosionRadius', 'ExplosionVelocity', 'ReductionFactor', 'DamageReductionFactor',
     'ReductionSensitivity', 'DamageReductionSensitivity', 'ResistanceID'))
+# v2026.10.14.66 (Fighter bay: squadrons and abilities you choose): the squadron's own speed abilities -- MWD, afterburner,
+# evasive maneuvers, off by default -- boost its maxVelocity by these attributes when switched on (FIGHTER_SELF below).
+FIGHTER_SPEED_BONUS = ('fighterAbilityMicroWarpDriveSpeedBonus', 'fighterAbilityAfterburnerSpeedBonus', 'fighterAbilityEvasiveManeuversSpeedBonus')
+FIGHTER_ATTRS = FIGHTER_ATTRS + FIGHTER_SPEED_BONUS
 FIGHTER_ATTRS = tuple(a for a in FIGHTER_ATTRS if a in attrId)
 FIGHTER_DMG = {attrId[p + d] for p in FIGHTER_PREFIXES for d in ('DamageEM', 'DamageTherm', 'DamageKin', 'DamageExp') if p + d in attrId}
 def _fdeals(t): return any(x['value'] > 0 for x in td.get(str(t), {}).get('dogmaAttributes', []) if x['attributeID'] in FIGHTER_DMG)
 dmgFighters = [int(t) for t in sorted(t for t, v in types.items() if v.get('published') and cat(t) == 87 and _fdeals(t))]
-fighterReps = list({_dsig(t): t for t in dmgFighters}.values())
+# v2026.10.14.66: the filters are asserted over every fighter with an ability pyfa implements (support fighters launch now)
+FIGHTER_ABILITY_IDS = {e for e in EFFECTS if (effs.get(str(e), {}).get('effectName') or '').startswith('fighterAbility')}
+allFighters = [int(t) for t in sorted(t for t, v in types.items() if v.get('published') and cat(t) == 87
+               and any(e['effectID'] in FIGHTER_ABILITY_IDS for e in td.get(str(t), {}).get('dogmaEffects', [])))]
+fighterReps = list({_dsig(t): t for t in allFighters}.values())
+
+def build_fighter_self():
+    """pyfa eos/saveddata/fighter.py calculateModifiedAttributes runs each ACTIVE ability's handler on the squadron itself
+    (context ('fighter',)); the ones with a local handler are the speed abilities. Each must be grouped (run once, not
+    once per fighter) and boost only maxVelocity / signatureRadius by one of the squadron's own attributes, stacking-
+    penalized in 'default' (asserted on pyfa's source). Signature radius isn't read by the damage graph on the attacker's
+    side, so only maxVelocity rows are kept: {effectId: [['maxVelocity', 'boost', srcAttrId, penaltyGroup]]}."""
+    src = open(os.path.join(PYFA_SRC, 'eos', 'effects.py')).read()
+    out = {}
+    for e in sorted(FIGHTER_ABILITY_IDS):
+        cls = EFFECTS.get(e)
+        if cls is None or 'handler' not in vars(cls) or getattr(cls, 'dealsDamage', False): continue
+        body = re.search(r'\nclass Effect' + str(e) + r'\(BaseEffect\):(.*?)(?=\nclass |\Z)', src, re.S).group(1)
+        if "'projected' not in context" in body: continue   # EWAR: runs only when projected (getProjFighterData's side)
+        if getattr(cls, 'grouped', False) is not True: raise AssertionError(f'Effect{e}: local fighter ability not grouped -- model it')
+        calls = re.findall(r"\w+\.(boost|multiply)ItemAttr\(\s*'(\w+)',\s*\w+\.getModifiedItemAttr\(\s*'(\w+)'\s*\),\s*stackingPenalties=True,\s*\*\*kwargs\)", body)
+        allCalls = [c for c in re.findall(r'\.(\w+ItemAttr)\(', body) if c != 'getModifiedItemAttr']
+        if len(allCalls) != len(calls) or not calls: raise AssertionError(f'Effect{e}: unexpected handler body -- model it')
+        for op, tgt, srcAttr in calls:
+            # the squadron's own signature radius and shield resonances (evasive maneuvers) aren't read by the damage graph
+            if tgt == 'signatureRadius' or re.fullmatch(r'shield\w+DamageResonance', tgt): continue
+            if (op, tgt) != ('boost', 'maxVelocity') or srcAttr not in FIGHTER_SPEED_BONUS: raise AssertionError(f'Effect{e}: {op} {tgt} by {srcAttr} -- model it')
+            if tgt == 'maxVelocity': out.setdefault(str(e), []).append(['maxVelocity', 'boost', attrId[srcAttr], 'default'])
+    if sorted(out) != sorted(str(e) for e in FIGHTER_ABILITY_IDS if ename(e) in ('fighterAbilityMicroWarpDrive', 'fighterAbilityAfterburner', 'fighterAbilityEvasiveManeuvers')):
+        raise AssertionError(f'fighter speed abilities changed: {out}')
+    return out
 
 def fighter_filter(lam):
     REC.clear(); hits = []
@@ -322,7 +357,7 @@ if __name__ == '__main__':
            'PROJ_DRONE_DEFAULTS': {str(attrId[n]): DEFAULT.get(n, 0.0) for n in DRONE_ATTRS},
            'PROJ_FIGHTER_EFFECTS': ftable, 'PROJ_FIGHTER_SKILL_ROWS': fskill, 'PROJ_FIGHTER_ATTRS': {n: attrId[n] for n in FIGHTER_ATTRS},
            'PROJ_FIGHTER_DEFAULTS': {str(attrId[n]): DEFAULT.get(n, 0.0) for n in FIGHTER_ATTRS},
-           'PROJ_FIGHTER_ABILITY_PREFIX': FIGHTER_ABILITY_PREFIX}
+           'PROJ_FIGHTER_ABILITY_PREFIX': FIGHTER_ABILITY_PREFIX, 'PROJ_FIGHTER_SELF_EFFECTS': build_fighter_self()}
     changed = False
     for k, v in new.items():
         m = re.search(r'const ' + k + r' = (.*?);\n', s)

@@ -62,7 +62,10 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
 - **Drones:** only as many as the hull can have in space at once (the lower of max active drones and drone
   bandwidth), hardest-hitting first, not every drone in the bay.
 - **Fighters** (carriers, supercarriers, FAXes): only as many squadrons as the hull's launch tubes and per-class
-  (light / support / heavy) limits allow, hardest-hitting first.
+  (light / support / heavy) limits allow, hardest-hitting first, then support squadrons in the tubes left (webs
+  first). Since v2026.10.14.66 you choose them in the Fighter bay: one square per squadron, and each type's
+  abilities (the game's icons) on or off. A damage ability switched off adds nothing; a speed ability switched on
+  makes the squadron faster in the fight, as pyfa's handler does. Support squadrons' EWAR isn't in the numbers yet.
 - **Skills, all at V:**
   - Turrets and missiles: damage and rate-of-fire skills (Surgical Strike / Rapid Firing, or Warhead Upgrades /
     Rapid Launch), plus the weapon-size and T2 Specialization skills.
@@ -127,7 +130,9 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
   - a squadron at least as fast as you follows you and has its full range; a slower one is put at the carrier's
     centre and hits only within its ability's range of it (Attack: optimal + falloff; Missiles: a hard limit). Its
     speed is pyfa's, with its MWD ability off (pyfa's default; the owner 2026-10-25), after skills (Light Fighters,
-    Drone Navigation), hull bonuses, Drone Navigation Computers, Fighter Support Units and rigs;
+    Drone Navigation), hull bonuses, Drone Navigation Computers, Fighter Support Units and rigs; switched on in the
+    Fighter bay (v2026.10.14.66), the MWD, afterburner or evasive maneuvers adds its own speed bonus, stacking-
+    penalized with the computers as in pyfa;
   - then the explosion maths of missiles against your signature and speed;
   - superiority fighters' missiles deal 5% to a ship, heavy fighters' torpedoes 10% to anything that isn't a
     capital or freighter (the target ship's anti-fighter / anti-capital missile resistance; a hull without it has the
