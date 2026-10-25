@@ -770,6 +770,7 @@ if (lastSandbox && lastSandbox.ttkWhy) {
   const S = lastSandbox;
   const L = (key, hp, reps = [], passive = 0) => ({key, hp, res: {}, rep: 0, reps: reps.map(r => Object.assign({layer: key, qty: 1}, r)), passive});
   const asb = (rate, clip, cyc, reload, cycles, o = {}) => Object.assign({name: 'X-Large Ancillary Shield Booster', rate, asb: {cycleSec: cyc, clip, reloadSec: reload, cycles, chargeRate: 1}}, o);
+  const aar = (rate, clip, cyc, reload, cycles, o = {}) => ({name: 'Medium Ancillary Armor Repairer', rate, aar: Object.assign({cycleSec: cyc, clip, reloadSec: reload, cycles, chargeRate: 4, mult: 3, assumed: false}, o)});
   const why = (side, layers, dps, capSec = Infinity) => S.ttkWhy(side, S.ttkTrace({layers, capSec}, {em: dps}), dps);
   const cases = [
     ['one clip, then spent', why('you', [L('shield', 1000, [asb(100, 2, 5, 10, 2)]), L('armor', 300), L('hull', 150)], 150),
@@ -796,6 +797,17 @@ if (lastSandbox && lastSandbox.ttkWhy) {
       'You hold', ['Their weapons and drones apply nothing to you at this range, so nothing breaks.']],
     ['all buffer', why('you', [L('shield', 100), L('armor', 100), L('hull', 100)], 100),
       'You last 3 s', ['With no local repairer, your shield, armor and hull go in 3 s.']],
+    // v2026.10.14.61: Ancillary Armor Repairer (paste x3 for a clip from the armor's start, reloads, plain once spent, all on the capacitor)
+    ['AAR: breaks in its second reload', why('you', [L('armor', 2000, [aar(20, 2, 5, 10, 6)])], 90),
+      'You last 36 s', ["Your armor breaks at 0:36, 6 s into your Medium Ancillary Armor Repairer's second reload: with paste it repairs 60 HP/s for 10 s, then reloads for 10 s."]],
+    ['AAR: paste runs out, then its plain amount (clip from the armor\'s start)', why('you', [L('shield', 400), L('armor', 3000, [aar(20, 2, 5, 10, 2)])], 40),
+      'You last 2 min 50 s', ['With no shield repairer, your shield goes in 10 s.', 'Your Medium Ancillary Armor Repairer has paste for one clip: it repairs 60 HP/s for 10 s; the paste runs out at 0:20, and since then it repairs 20 HP/s.', 'Your armor breaks at 2:50 even with your Medium Ancillary Armor Repairer repairing 20 HP/s.']],
+    ['AAR: capacitor runs dry with paste in it, killmail assumed', why('them', [L('armor', 2000, [aar(20, 4, 5, 10, 8, {assumed: true})])], 100, 10),
+      'They last 26 s', ['Their capacitor runs dry at 0:10, and their Medium Ancillary Armor Repairer (60 HP/s with paste) stops.', 'Their armor breaks at 0:26.', 'No paste shows on the killmail, so a full clip is assumed.']],
+    ['AAR: breaks while its paste is on', why('you', [L('armor', 1000, [aar(20, 8, 5, 10, 8)])], 120),
+      'You last 17 s', ['Your armor breaks at 0:17 even with your Medium Ancillary Armor Repairer repairing 60 HP/s with paste.']],
+    ['AAR: holds on its plain amount', why('you', [L('armor', 1000, [aar(50, 2, 5, 10, 2)])], 40),
+      'You hold', ['Your Medium Ancillary Armor Repairer has paste for one clip: it repairs 150 HP/s for 10 s; the paste runs out at 0:10, and since then it repairs 50 HP/s.', 'Your armor holds: your Medium Ancillary Armor Repairer repairs 50 HP/s, more than the 40 HP/s that gets through.']],
     ['repairer with no name (an estimate without localReps)', S.ttkWhy('you', S.ttkTrace(S.ttkDefense({exact: {shieldHP: 1000, armorHP: 0, hullHP: 0, shieldRepHpPerSec: 50}, resonance: {}, capacitor: {stable: true}}), {em: 100}), 100),
       'You last 20 s', ['Your shield breaks at 0:20 even with your shield repairers repairing 50 HP/s.']],
   ];

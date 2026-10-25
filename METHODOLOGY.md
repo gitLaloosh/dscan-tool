@@ -146,7 +146,10 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
   hull, minus that layer's local repairs and the shield's peak passive regen, with the repairs stopping when pyfa's
   capacitor simulation runs dry. An Ancillary Shield Booster on charges (v2026.10.14.57) doesn't need the capacitor:
   it reps for a clip (an X-Large with Navy Cap Booster 400s: 9 cycles, 45 s), reloads for 60 s, and repeats while
-  charges last (loaded plus hold), then stops. "holds" means the damage never gets through.
+  charges last (loaded plus hold), then stops. An Ancillary Armor Repairer with Nanite Repair Paste (v2026.10.14.61)
+  repairs 3x for its clip (8 cycles; a Medium with Repair Systems V: 72 s) from when the armor starts taking damage,
+  reloads for 60 s with no repair, repeats while paste lasts, then repairs its plain amount; it needs the capacitor
+  either way. A killmail with no paste seen assumes a full clip. "holds" means the damage never gets through.
   - Not used, kept here so it can be brought back: pyfa's "factor in reload" average for an ASB, its rate x
     (clip x cycle) / (clip x cycle + reload) for the whole fight (84 HP/s instead of 196 for an X-Large with
     Navy Cap Booster 400s). It hides the reload gap, which is where a ship running an ASB usually breaks.

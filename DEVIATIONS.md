@@ -24,6 +24,7 @@ introduces a difference.
 | Module states | Plan defaults: siege family **active**; cloak, MJD, MJFG, Signature Suppressor, Entosis, Capital Sensor Arrays, Cynosural Field Generators (v2026.10.14.8: a lit cyno immobilises the ship), Zero-Point Mass Entanglers (v2026.10.14.30: active, it pins the Heavy Interdictor in place; it's run only once tackled) **online**; Assault Damage Control burst online; everything else as pyfa's default. The user can change them in the module list. |
 | Capacitor Booster charge | Loaded, else found in cargo or fleet hangar. If none: a killmail (Pilot Analyzer) assumes the largest compatible charge ("assumed", amber icon), since its charges may have run out in the fight; a pasted fit (Fit Analyzer) has none, so the booster injects nothing and the Weaknesses card flags "no charges" (the owner, v2026.10.14.24). pyfa uses only the charge in the fit, like the pasted-fit rule. |
 | Ancillary Shield Booster | Has charges (icon toggles "out of charges"), except a pasted fit with no charge loaded or in cargo: it runs on capacitor and is flagged (v2026.10.14.24) |
+| Ancillary Armor Repairer paste | v2026.10.14.61: Nanite Repair Paste loaded, else in cargo or fleet hangar. A killmail with none seen in the module assumes a full clip (its paste may have run out in the fight; the owner). A pasted fit with none anywhere repairs its plain amount, and the Weaknesses card flags "No paste for its ...". The Repairs strip's burst shows only with paste aboard (or assumed). pyfa uses only the paste in the fit. |
 | Drones in space | Hardest-hitting combat drones up to bandwidth and 5 drones; changeable per type |
 | Fighters | Automatic by tubes and class limits (backlog: selectable). An EFT line `Firbolg I x18` is read as 18 fighters in the bay, launched as 3 squadrons; pyfa loads it as one squadron (capped at 6). |
 | Fighter abilities | pyfa's defaults (`Fighter.__init__`): Attack Missile + every ability before it except MWD / Evasive Maneuvers — light fighters fire Missiles too, heavy bombers' bombs stay off. DPS ignores rearm time, as pyfa does unless "factor in reload time" is on. (v2026.10.14.4) |
@@ -47,8 +48,11 @@ introduces a difference.
   while charges last (a full loaded clip plus the same charge in the hold, also if a Capacitor Booster shares them),
   then stops. pyfa itself would either ignore the reload (its default) or average it over the fight ("factor in
   reload": rate x clip time / (clip time + reload)); a time to kill needs the gap. An ASB with no charge seen on a
-  killmail (assumed charged) runs until the capacitor runs dry, as before. An Ancillary Armor Repairer's paste boost
-  and reload are not followed yet (its plain rate, until the capacitor runs dry). Not counted: their neuts on your capacitor, remote
+  killmail (assumed charged) runs until the capacitor runs dry, as before. An Ancillary Armor Repairer (v2026.10.14.61)
+  with Nanite Repair Paste repairs chargedArmorDamageMultiplier (3) times its amount for a clip (pyfa numShots, 8 cycles),
+  starting when the armor starts taking damage, reloads for 60 s with no repair, and so on while paste lasts (a full clip
+  per copy plus the hold), then repairs its plain amount; unlike an ASB it needs the capacitor either way. pyfa would
+  show the 3x rate throughout (peak) or average it with the reload ("factor in reload"). Not counted: their neuts on your capacitor, remote
   repairs, overheating, the card's MWD switch on your capacitor (it changes your speed and signature only).
   "holds" when the damage never gets through. Checked by `check_matchup.py` against an independent build of the
   same rule on pyfa's numbers.

@@ -27,7 +27,7 @@ No page errors anywhere.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from esi_from_sde import route_all
+from esi_from_sde import route_all, run_async
 from playwright.sync_api import sync_playwright
 
 HTML = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')),
@@ -208,7 +208,7 @@ def pilot(b):
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     save_ship(pg); settle(pg, 300)
     pg.click('#tabBtnPilot')
-    pg.evaluate("""async ([a, b]) => {
+    run_async(pg, """async ([a, b]) => {
         const mk = async (text, day) => { const parsed = await parseEftFit(text);
           const est = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag);
           return {parsed, loss: { km: {killmail_time: day}, killmailId: 1, tally: parsed.tally, highSlotByFlag: parsed.highSlotByFlag, estimate: est,

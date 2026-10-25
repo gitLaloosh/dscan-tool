@@ -16,7 +16,9 @@ the page, with the owner's two fits (tools/independent_checks/fits/) at 48.9 km,
     picks and the generic tiles;
   * phone (375 px, touch): a tap on the number opens the panel as a sheet and doesn't switch the view; its close
     button and a tap outside close it; a tap on the label under it, or elsewhere on the half, still switches; no
-    sideways scrolling.
+    sideways scrolling;
+  * v2026.10.14.61: an Ancillary Armor Repairer with paste as my ship: the panel's words are the page's own and say what
+    the repairer did with its paste.
 No page errors anywhere.
 """
 import sys, os
@@ -152,6 +154,25 @@ def desktop(b):
     check(not errs, f'desktop: no page errors {errs}')
     ctx.close()
 
+def aar(b):
+    """v2026.10.14.61: an Ancillary Armor Repairer with paste (fits/vexor_aar_paste_loaded.eft) as my ship: the panel's
+    words are the page's own and say what the repairer did with its paste (the times: check_matchup.py)."""
+    vex = open(os.path.join(FITS, 'vexor_aar_paste_loaded.eft'), encoding='utf-8').read()
+    ctx = b.new_context(viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page()
+    errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
+    pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', ORTHRUS); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
+    pg.click('#myShipChip'); pg.fill('#myShipEft', vex); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+    pg.wait_for_selector(f'{HOST} .mys-board'); settle(pg, 800)
+    pg.evaluate(f"() => mysFightSet(document.querySelector('{HOST}'), 'range', 30000, false)"); settle(pg, 1200)
+    words = pg.evaluate(f"() => document.querySelector('{HOST}')._why.you")
+    pg.locator(f'{HOST} [data-cell="youLast"] .mys-cell-v').hover(); pg.wait_for_timeout(250)
+    p = panel(pg); txt = ' '.join(words['text'])
+    check(shown(pg) and p['title'] == words['title'] and p['text'] == words['text'] and 'Medium Ancillary Armor Repairer' in txt and ('with paste' in txt or 'paste runs out' in txt),
+          f'AAR with paste as my ship (30 km): the panel says what it did with its paste ({txt[:160]}...)')
+    check(not errs, f'AAR: no page errors {errs}')
+    ctx.close()
+
 def phone(b):
     W = 375
     ctx = b.new_context(viewport={'width': W, 'height': 760}, is_mobile=True, has_touch=True); pg = ctx.new_page()
@@ -184,6 +205,6 @@ def phone(b):
 
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=os.environ.get('CHROMIUM', '/opt/pw-browsers/chromium'))
-    desktop(b); phone(b)
+    desktop(b); aar(b); phone(b)
     b.close()
 print(f'FAILURES: {fails}')

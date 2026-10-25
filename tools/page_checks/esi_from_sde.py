@@ -31,3 +31,19 @@ def route_all(page):
     page.route(re.compile(r'https://esi\.evetech\.net/.*'), handle)
     page.route(re.compile(r'https://images\.evetech\.net/.*'), img)
     page.route(re.compile(r'https://fonts\..*'), img)
+
+def run_async(page, fn, arg=None, timeout=90000):
+    """Runs an async page function that builds a fit and draws it (parseEftFit / estimateHpAndDps / renderFitTabs), and
+    returns its result. v2026.10.14.61 (LESSON #57): `page.evaluate` on such a function stopped now and then with
+    "Execution context was destroyed", with no navigation, reload or crash. Chrome had answered the evaluate with
+    "Promise was collected" (seen in the protocol log, DEBUG=pw:protocol): the promise Playwright waits on was garbage
+    collected while the page drew a big fit synchronously inside it. Started from a timer, with the result kept on
+    window and polled, nothing is waiting on a collectable promise."""
+    page.evaluate("""([src, arg]) => { window.__runAsync = {done: false};
+        setTimeout(() => { Promise.resolve().then(() => (0, eval)('(' + src + ')')(arg)).then(
+          v => { window.__runAsync.value = v; window.__runAsync.done = true; },
+          e => { window.__runAsync.error = String((e && e.stack) || e); window.__runAsync.done = true; }); }, 0); }""", [fn, arg])
+    page.wait_for_function("() => window.__runAsync && window.__runAsync.done", timeout=timeout)
+    r = page.evaluate("() => window.__runAsync")
+    if r.get('error'): raise RuntimeError('page function failed: ' + r['error'])
+    return r.get('value')

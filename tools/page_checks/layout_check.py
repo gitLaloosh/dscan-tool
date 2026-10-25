@@ -26,7 +26,7 @@ LESSON #33: check layout at a real phone width with mobile emulation, not only a
 """
 import sys, os, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from esi_from_sde import route_all
+from esi_from_sde import route_all, run_async
 from playwright.sync_api import sync_playwright
 HECATE = """[Hecate, mode test]
 Magnetic Field Stabilizer II
@@ -128,7 +128,7 @@ with sync_playwright() as p:
         check(dps() == d0, f'{W}: reset to best case restores DPS')
         # Pilot Analyzer path: renderFitTabs with two "losses" built from the same paste
         pg.click('#tabBtnPilot')
-        res = pg.evaluate("""async (text) => {
+        res = run_async(pg, """async (text) => {
           const parsed = await parseEftFit(text);
           const mk = async (day) => { const modes = {}; const order = hullModeOrder(parsed.shipTypeId); const active = resolveModeKey(parsed.shipTypeId, null);
             for (const m of order) modes[m] = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, m, parsed.midSlotByFlag);
@@ -304,7 +304,7 @@ with sync_playwright() as p:
         sw = pg.evaluate('document.documentElement.scrollWidth'); check(sw <= W, f'{W}: collapsed cards, no sideways scroll ({sw})')
         # Pilot Analyzer: each loss keeps its own open / closed cards
         pg.click('#tabBtnPilot')
-        pg.evaluate("""async (text) => { const parsed = await parseEftFit(text);
+        run_async(pg, """async (text) => { const parsed = await parseEftFit(text);
           const mk = async (day) => { const est = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag);
             return { km: {killmail_time: day}, killmailId: 1, tally: parsed.tally, highSlotByFlag: parsed.highSlotByFlag, estimate: est,
               input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag} }; };
@@ -430,7 +430,7 @@ with sync_playwright() as p:
         check(len(tops) >= 4 and len({t[0] for t in tops}) == 1 and all(abs(t[1]) <= 4 for t in tops), f'{W}: drone squares right-aligned on the name line in every row {tops}')
         # Pilot Analyzer header with a 37-character pilot name (EVE's maximum)
         pg.click('#tabBtnPilot')
-        pg.evaluate("""async (text) => { const parsed = await parseEftFit(text);
+        run_async(pg, """async (text) => { const parsed = await parseEftFit(text);
           const est = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag);
           renderFitTabs('Abcdefghijklmnopqrstuvwxyz Abcdefghij', 'Stratios Emergency Responder', [{ km: {killmail_time: '2026-10-01T00:00:00Z'}, killmailId: 123456789, tally: parsed.tally, highSlotByFlag: parsed.highSlotByFlag, estimate: est,
             input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag} }], parsed.idToName); }""", long_eft(LONG_FIT_NAME))

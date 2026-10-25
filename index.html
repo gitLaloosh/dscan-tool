@@ -1609,7 +1609,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.60</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.61</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1762,7 +1762,7 @@ const CARD_INFO = {
  "weak": [
   "Least resisted: the damage type that gets through its resists best, averaged over shield, armor and hull by how many hit points each layer has (resists as fitted, max skills).",
   "The title says whose weaknesses these are: the threat's, or yours (Your Weaknesses, in {card:perspective.mine} and on {card:myshippage}).",
-  "Capacitor drains: its capacitor runs out with every running module cycling, even at best case (a fitted Capacitor Booster or Ancillary Shield Booster on charges). The ring is how long it lasts; hover it for the numbers. No charges: a booster with none loaded and none in cargo (pasted fits only).",
+  "Capacitor drains: its capacitor runs out with every running module cycling, even at best case (a fitted Capacitor Booster or Ancillary Shield Booster on charges). The ring is how long it lasts; hover it for the numbers. No charges: a booster with none loaded and none in cargo (pasted fits only). No paste: an Ancillary Armor Repairer with no Nanite Repair Paste loaded or in cargo (pasted fits only), so no 3x boost.",
   "Without your ship: the ammo and drone type for each weapon system that hits that weakness hardest. A turret system that can't deal it falls back to the next weakest type.",
   "With your ship saved and Use in assessments on: your own ammo and drones against it, best first by how long it lasts with that loaded (damage by type against its resists, layer by layer, minus its reps while its capacitor lasts; the rest of your fit as it is). Only the ammo and drones aboard count. The DPS is pyfa's applied DPS at the range and movement set on {card:dmg}. Hover a pick for the next best. In {card:perspective.mine} the same, for their ammo against you."
  ],
@@ -1799,7 +1799,7 @@ const CARD_INFO = {
   "Resists per layer and damage type, with every resist source pyfa applies: hardeners, Damage Control, rigs, max skills (V), the hull's bonuses, a mode, and a Reactive Armor Hardener as pyfa simulates it against an even damage mix.",
   "EHP: each layer's hit points against an even mix of the four damage types.",
   "Repairs: what each layer gets back per second: passive shield regen (its peak, reached near 25% shield), a shield booster, an armor repairer, a hull repairer. Max-trained Repair Systems / Capital Repair Systems (cycle time) and Shield Operation (passive regen); cycle times include rigs and hull bonuses. A Shield Booster's own output per cycle doesn't train up.",
-  "Break Point: the DPS an attacker has to sustain to outpace that layer's repair or regen (hover a value for its breakdown). A dash means the layer has no repair module (pure buffer), not a missing number. An Ancillary Armor Repairer also shows its burst while its Nanite Repair Paste lasts."
+  "Break Point: the DPS an attacker has to sustain to outpace that layer's repair or regen (hover a value for its breakdown). A dash means the layer has no repair module (pure buffer), not a missing number. An Ancillary Armor Repairer also shows its burst when it has Nanite Repair Paste aboard (on a killmail with none seen, a full clip is assumed)."
  ],
  "nav": [
   "Speed: top speed with the fastest propulsion module running (assumed, as in a fight); the line under it is with it off. Align time: without the propulsion module, and with it on in the line under it. Both as pyfa: max skills, plates, rigs, the hull's bonuses.",
@@ -1815,7 +1815,7 @@ const CARD_INFO = {
  ],
  "board": [
   "DPS applied to you and to them: pyfa's applied DPS for the fight set in the strip under the board (the range and how each ship moves), as on {card:dmg}. The DPS applied to them uses the same fight, seen from your side.",
-  "They last / you last is not a pyfa number: the damage by type against each layer's resists (shield, then armor, then hull), minus that layer's local repairs and passive shield regen, with the repairs stopping when the capacitor runs out. An Ancillary Shield Booster on charges keeps going without the capacitor: it reps for its clip, reloads for 60 s, and repeats until its charges (loaded and in the hold) run out. \"holds\" means the damage never gets through. Hover a time (tap it on a phone) for why it breaks when it does.",
+  "They last / you last is not a pyfa number: the damage by type against each layer's resists (shield, then armor, then hull), minus that layer's local repairs and passive shield regen, with the repairs stopping when the capacitor runs out. An Ancillary Shield Booster on charges keeps going without the capacitor: it reps for its clip, reloads for 60 s, and repeats until its charges (loaded and in the hold) run out. An Ancillary Armor Repairer with Nanite Repair Paste repairs three times as much for its clip from when the armor starts taking damage, reloads for 60 s, repeats while its paste lasts, then repairs its plain amount; it needs the capacitor either way (a killmail with no paste seen: a full clip assumed). \"holds\" means the damage never gets through. Hover a time (tap it on a phone) for why it breaks when it does.",
   "Edge: who outlasts the other. Faster: the two top speeds. An amber number differs from your pasted fit's own module states; hover it for the pasted value (for a time, it's at the end of its why).",
   "The strip under the board sets one fight for both perspectives: each ship's movement, with the in-game names (Stopped, Approach, Orbit, Keep at Range), and the range between you. Adjust on {card:dmg} changes the same settings."
  ]
@@ -4273,6 +4273,12 @@ const SHIELD_BOOST_AMOUNT_ATTR = 68;
 // amount as a whole, not each contributing module's own figure.
 const SHIELD_BOOST_MULTIPLIER_ATTR = 548;
 const ARMOR_REPAIR_AMOUNT_ATTR = 84;
+// v2026.10.14.61 (the owner 2026-10-25: "let's start on #1", the AAR in "you last" / "they last"; then the clip rule, a killmail
+// with no paste seen assumes a full clip, a pasted fit with none is flagged, the Repairs burst only with paste). Nanite
+// Repair Paste is the only charge an Ancillary Armor Repairer takes (its chargeGroup 916 has one type in the SDE); pyfa
+// Effect5275 / calculateSustainableTank boost the repair only while it is loaded (x chargedArmorDamageMultiplier, 3).
+const NANITE_REPAIR_PASTE_TYPE_ID = 28668;
+const ANCILLARY_ARMOR_REPAIRER_GROUP_NAME = 'ancillary armor repairer';
 const HULL_REPAIR_AMOUNT_ATTR = 83;
 const REP_CYCLE_DURATION_ATTR = 73;
 const ANCILLARY_ARMOR_BOOST_MULT_ATTR = 1886;
@@ -8265,7 +8271,7 @@ function resistanceCardHtml(f, estimate){
             bpDps = l.rep.sustainedDps;
             if(l.rep.burstDps){
               burstDps = l.rep.burstDps;
-              bpTitle = `${l.rep.burstDps.toLocaleString()} DPS during its Nanite Repair Paste burst`;
+              bpTitle = `${l.rep.burstDps.toLocaleString()} DPS during its Nanite Repair Paste burst${l.rep.burstAssumed ? ' (no paste shows on the killmail, so a full clip is assumed)' : ''}`;
             }
           } else {
             hullVal = l.rep.sustainedDps.toLocaleString();
@@ -10518,6 +10524,19 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     if(moduleEntry && chargeEntry) capBoosterChargeIdByModuleId.set(moduleEntry.id, chargeEntry.id);
     if(asbModuleEntry && chargeEntry) asbChargeIdByModuleId.set(asbModuleEntry.id, chargeEntry.id);
   }
+  // v2026.10.14.61: Nanite Repair Paste aboard for Ancillary Armor Repairers. Loaded = paste in a low slot (a killmail's
+  // shared flag, or an EFT ", Nanite Repair Paste" on the module line); hold = cargo + fleet hangar (per loss, as the ASB's).
+  // A killmail with none seen loaded assumes a full clip (the owner: its paste may have run out in the fight); a pasted fit uses
+  // what it lists, and with none anywhere repairs unboosted and is flagged (aarPasteMissing).
+  const tallyPerLoss = (g, id) => { const d = (tally[g] || {})[id]; return d ? (d.totalQty || 1) / (d.lossCount || 1) : 0; };
+  const aarPaste = {
+    loadedSeen: tallyPerLoss('Low slots', NANITE_REPAIR_PASTE_TYPE_ID) > 0,
+    hold: tallyPerLoss('Cargo', NANITE_REPAIR_PASTE_TYPE_ID) + tallyPerLoss('Fleet hangar', NANITE_REPAIR_PASTE_TYPE_ID),
+    dt: typeAndGroupById.get(NANITE_REPAIR_PASTE_TYPE_ID) || null
+  };
+  aarPaste.loaded = aarPaste.loadedSeen || !fitHasNoChargeAlibi;          // killmail: a full clip assumed
+  aarPaste.assumed = !aarPaste.loadedSeen && !fitHasNoChargeAlibi;
+  aarPaste.boost = aarPaste.loaded || aarPaste.hold > 0;
 
   // qtyById / module states: built further up, right after defensiveTypesFiltered.
 
@@ -11121,7 +11140,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // only (what's fitted), same honest scope as the Propulsion badge --
   // the repair RATE/amount (needed for "how much DPS breaks this tank") is
   // explicitly a separate, not-yet-built follow-up.
-  let hasShieldRep = false, hasArmorRep = false, hasHullRep = false;
+  let hasShieldRep = false, hasArmorRep = false, hasHullRep = false, hasAncillaryArmorRepairer = false;
   // HP/s accumulators for the "DPS required to break this tank" numbers --
   // summed across every qualifying module fitted (a fit COULD carry more
   // than one of the same rep type), using the verified attributes/skill
@@ -11645,9 +11664,14 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
           const effectiveCycleSec = cycleSec;
           const amount = attrVal(dogma, ARMOR_REPAIR_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'armorDamageAmount'); // v.15 hull/subsystem/rig/Bastion/Siege bonuses
           const boostMult = attrVal(dogma, ANCILLARY_ARMOR_BOOST_MULT_ATTR, 1);
+          const isAar = groupName === ANCILLARY_ARMOR_REPAIRER_GROUP_NAME;
+          if(isAar) hasAncillaryArmorRepairer = true;
           armorRepHpPerSec += qty * (amount / effectiveCycleSec);
-          armorRepBurstHpPerSec += qty * ((amount * boostMult) / effectiveCycleSec);
-          localReps.push({layer: 'armor', rate: qty * (amount / effectiveCycleSec), qty, name: dt.type.name});   // (an Ancillary Armor Repairer's paste boost and reload: not modelled yet)
+          // v.61: the burst only with paste aboard (or assumed on a killmail)
+          armorRepBurstHpPerSec += qty * ((amount * (isAar && !aarPaste.boost ? 1 : boostMult)) / effectiveCycleSec);
+          localReps.push({layer: 'armor', rate: qty * (amount / effectiveCycleSec), qty, name: dt.type.name, aar: isAar, cycleSec: effectiveCycleSec,
+            boostMult, capacity: attrVal(dogma, CAP_BOOSTER_MODULE_CAPACITY_ATTR, 0) || dt.type.capacity || 0, chargeRate: attrVal(dogma, ASB_CHARGE_RATE_ATTR, 1) || 1,
+            reloadSec: attrVal(dogma, CAP_BOOSTER_RELOAD_TIME_ATTR, 0) / 1000});
         }
       }else if(groupName.includes('hull repair')){
         hasHullRep = true;
@@ -13625,6 +13649,13 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   };
   // v2026.10.14.24: a pasted fit's ASB with no charge anywhere runs on capacitor (see fitHasNoChargeAlibi).
   const asbChargesMissing = fitHasNoChargeAlibi && hasAncillaryShieldBooster && !asbChargeConfirmed;
+  // v2026.10.14.61: a pasted fit's Ancillary Armor Repairer with no paste anywhere (flagged on Weaknesses, repairs unboosted)
+  const aarPasteMissing = (fitHasNoChargeAlibi && !aarPaste.boost)
+    ? [...new Set(localReps.filter(r => r.aar).map(r => r.name))].map(name => ({kind: 'aar', name})) : [];
+  // the paste's type (its volume sets the clip); a killmail that assumes a clip, or paste only in the hold, hasn't fetched it
+  if(hasAncillaryArmorRepairer && aarPaste.boost && !aarPaste.dt){
+    try{ const type = await getType(NANITE_REPAIR_PASTE_TYPE_ID); aarPaste.dt = {id: NANITE_REPAIR_PASTE_TYPE_ID, type}; }catch(e){ aarPaste.dt = null; }
+  }
   const capSimInputs = {
     capacity: baseCapacitorCapacity, rechargeMs: capRechargeMs,
     withoutBoosts: capModuleDrains(true),
@@ -13855,7 +13886,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       } : null,
       armor: hasArmorRep ? {
         sustainedDps: pyRound(armorRepHpPerSec),
-        burstDps: armorRepBurstHpPerSec > armorRepHpPerSec ? pyRound(armorRepBurstHpPerSec) : null
+        burstDps: armorRepBurstHpPerSec > armorRepHpPerSec ? pyRound(armorRepBurstHpPerSec) : null,
+        burstAssumed: armorRepBurstHpPerSec > armorRepHpPerSec && hasAncillaryArmorRepairer && aarPaste.assumed   // v.61: no paste seen on the killmail
       } : null,
       hull: hasHullRep ? {sustainedDps: pyRound(hullRepHpPerSec)} : null,
     },
@@ -13866,7 +13898,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // unrounded, for tools/independent_checks/compare_implants.py (v2026.10.14.12)
     exact: {shieldHP, armorHP, hullHP, capacitorCapacity: baseCapacitorCapacity, capRechargeTimeSec: capacitorRechargeTimeSec,
       shieldRechargeTimeSec, sigBase: baseSignatureRadius, targetingRange, scanResolution, sensorStrength: sensorStrengthValue,
-      shieldRepHpPerSec, armorRepHpPerSec, hullRepHpPerSec, localReps: ttkLocalReps(localReps, asbChargeIdByModuleId, typeAndGroupById, asbCargoChargeDt, asbChargesMissing, tally),
+      shieldRepHpPerSec, armorRepHpPerSec, hullRepHpPerSec, localReps: ttkLocalReps(localReps, asbChargeIdByModuleId, typeAndGroupById, asbCargoChargeDt, asbChargesMissing, tally, aarPaste),
       weaponDps: confirmedDps, smartbombDps: fixedHighSlotDps, droneDps, droneControlRange}, // v2026.10.14.13
     implantsApplied: implantCarriers.map(c => ({id: c.id, kind: c.ctx})),
     shieldResPct: Object.fromEntries(DMG.map(d => [d, pyRound((1 - adjShieldRes[d]) * 100)])),
@@ -13951,7 +13983,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       simInputs: capSimInputs, // for tools/cap_sim_oracle.py (regression_suite/compare_cap_sim.mjs)
       boosts: capBoostIcons,
       // v2026.10.14.24: pasted-fit boosters with no charge anywhere (Weaknesses card flag)
-      chargesMissing: capBoostIcons.filter(b => b.source === 'none').map(b => ({kind: b.kind, typeId: b.typeId, name: b.name})),
+      chargesMissing: [...capBoostIcons.filter(b => b.source === 'none').map(b => ({kind: b.kind, typeId: b.typeId, name: b.name})),
+        ...aarPasteMissing],   // v.61: a pasted fit's Ancillary Armor Repairer with no paste anywhere
       asbDry: capAsbDrySim ? {
         activeDrainPerSec: pyRound(capDrainPerSec, 1),
         netRate: pyRound((peakCapRechargeRate - capDrainPerSec + capBestInjectionPerSec), 1),
@@ -14090,8 +14123,10 @@ function chargesMissingFlagHtml(cap){
   return missing.map(m => `
         <div class="weakness-badge-row charges-missing-row" style="margin-top:8px;">
           <span class="ewar-badge danger">!</span>
-          <span class="warn-text"><span class="warn-title" title="No charges for its ${escapeHtml(m.name)}">No charges for its ${escapeHtml(m.name)}</span>${m.kind === 'capBooster'
+          <span class="warn-text"><span class="warn-title" title="No ${m.kind === 'aar' ? 'paste' : 'charges'} for its ${escapeHtml(m.name)}">No ${m.kind === 'aar' ? 'paste' : 'charges'} for its ${escapeHtml(m.name)}</span>${m.kind === 'capBooster'
             ? ctxHtml('none aboard: no cap injection', '', 'None loaded and none in cargo, so it can\'t inject capacitor.')
+            : m.kind === 'aar'   // v.61
+            ? ctxHtml('none aboard: no 3x paste boost', '', 'No Nanite Repair Paste loaded and none in cargo, so it repairs its plain amount, a third of what it does with paste.')
             : ctxHtml('none aboard: repairs from capacitor', '', 'None loaded and none in cargo, so it repairs from capacitor instead.')}</span>
         </div>`).join('');
 }
@@ -15839,10 +15874,11 @@ function dmgTypedPoint(app, tgt, q){
 // capacitor, as every other local repairer (until the capacitor simulation's empty time, which then counts its drain). The alternative not taken: pyfa's "factor in
 // reload" average, rate x numShots x cycle / (numShots x cycle + reload) for the whole fight, which hides the gap.
 // Inputs only; the time to kill is not a pyfa number (DEVIATIONS.md section 3).
-function ttkLocalReps(reps, pairedById, tgById, cargoDt, missing, tally){
+function ttkLocalReps(reps, pairedById, tgById, cargoDt, missing, tally, aarPaste){
   const cargoQty = (id) => ['Cargo', 'Fleet hangar'].reduce((s, g) => { const d = (tally[g] || {})[id]; return s + (d ? (d.totalQty || 1) / (d.lossCount || 1) : 0); }, 0);
   return reps.map(r => {
     const base = {layer: r.layer, rate: r.rate, name: r.name, qty: r.qty};   // v.58: name and count, for the "why" panel
+    if(r.aar) return ttkAarRep(r, base, aarPaste);   // v.61
     if(!r.asb) return base;
     const pid = pairedById.get(r.moduleId), cdt = pid !== undefined ? tgById.get(pid) : cargoDt;
     const vol = cdt && !cdt.error ? attrVal(cdt.type.dogma_attributes || [], CHARGE_VOLUME_ATTR, 0) || cdt.type.volume || 0 : 0;
@@ -15853,6 +15889,24 @@ function ttkLocalReps(reps, pairedById, tgById, cargoDt, missing, tally){
     const total = (pid !== undefined ? clip * r.qty : 0) + hold || clip * r.qty;
     return Object.assign(base, {asb: {cycleSec: r.cycleSec, clip, reloadSec: r.reloadSec, cycles: Math.floor(total / r.qty / r.chargeRate), chargeRate: r.chargeRate}});
   });
+}
+// ANCILLARY ARMOR REPAIRER CLIP (v2026.10.14.61; the owner 2026-10-25, the clip rule): with Nanite Repair Paste it repairs
+// chargedArmorDamageMultiplier (3) times its amount for a clip (pyfa numShots = floor(capacity / paste volume) /
+// chargeRate: 8 cycles for every size), reloads for reloadTime (60 s, no repair; EVE University: "an Ancil cannot be used
+// while reloading"), repeats while paste lasts, then repairs its plain amount ("a depleted Ancil repairs much slower").
+// Unlike an ASB it needs the capacitor either way, so all of it stops when the capacitor simulation runs dry. Its clip
+// starts when the armor starts taking damage (the layer's start): a pilot doesn't spend paste on full armor. Paste:
+// a full clip per copy when loaded (or assumed on a killmail) plus the hold (shared out between copies). Returns the
+// plain entry when there's no paste aboard or no paste type to size the clip.
+function ttkAarRep(r, base, aarPaste){
+  const p = aarPaste || {};
+  const vol = p.dt && p.dt.type ? attrVal(p.dt.type.dogma_attributes || [], CHARGE_VOLUME_ATTR, 0) || p.dt.type.volume || 0 : 0;
+  const clip = vol > 0 ? Math.floor(Math.floor(r.capacity / vol + 1e-9) / r.chargeRate) : 0;   // cycles per clip
+  if(!p.boost || !(clip > 0) || !(r.reloadSec >= 0) || !(r.boostMult > 1)) return base;
+  const paste = (p.loaded ? clip * r.chargeRate * r.qty : 0) + (p.hold || 0);                  // paste units aboard
+  const cycles = Math.floor(paste / r.qty / r.chargeRate);
+  if(!(cycles > 0)) return base;
+  return Object.assign(base, {aar: {cycleSec: r.cycleSec, clip, reloadSec: r.reloadSec, cycles, chargeRate: r.chargeRate, mult: r.boostMult, assumed: !!p.assumed}});
 }
 // Where an ASB on charges is at time t: cycling ('on'), reloading ('off'), or out of charges ('spent'); next = when that
 // changes. Spent, it stops: the capacitor simulation the fight uses had it on charges (no drain), and on the capacitor
@@ -15902,10 +15956,17 @@ function ttkTrace(def, typed){
 }
 function ttkLayerEnd(l, incoming, t, capSec){
   let hp = l.hp;
+  const t0 = t;   // v.61: an Ancillary Armor Repairer's clip starts when its layer starts taking damage
   for(let guard = 0; guard < 20000; guard++){
     let rep = 0, next = Infinity;
     for(const r of l.reps || []){
       let on, nx;
+      if(r.aar){   // v.61: on the capacitor while it lasts; boosted in its clip, nothing while reloading, plain once spent
+        const capOn = t < capSec - 1e-9, st = ttkAsbState(r.aar, t - t0);
+        if(capOn) rep += st.mode === 'on' ? r.rate * r.aar.mult : st.mode === 'spent' ? r.rate : 0;
+        next = Math.min(next, capOn ? Math.min(capSec, t0 + st.next) : Infinity);
+        continue;
+      }
       const st = r.asb ? ttkAsbState(r.asb, t) : {mode: 'cap'};
       if(st.mode === 'cap'){ on = t < capSec - 1e-9; nx = on ? capSec : Infinity; }   // runs on the capacitor while it lasts
       else{ on = st.mode === 'on'; nx = st.next; }
@@ -15967,9 +16028,18 @@ function ttkWhy(side, tr, dps){
       i = j + 1; continue;
     }
     const x = L[i++], hold = x.end === Infinity, t = x.end;
-    const on = [], capOff = [], spent = [];
+    const on = [], capOff = [], spent = [], aarSpent = [];
     let off = null;
     for(const r of x.reps){
+      if(r.aar){   // v.61: an Ancillary Armor Repairer needs the capacitor either way; then where its paste clip is
+        if(!(hold ? tr.capSec === Infinity : t < tr.capSec - 1e-9)){ capOff.push(r); continue; }
+        const st = ttkAsbState(r.aar, hold ? Infinity : t - x.start);   // its clip runs from the layer's start
+        if(st.mode === 'on') on.push(Object.assign({}, r, {rate: r.rate * r.aar.mult, pasteOn: true}));
+        else if(st.mode === 'off' && !off) off = r;
+        else if(st.mode === 'off') on.push(Object.assign({}, r, {rate: 0}));
+        else{ aarSpent.push(r); on.push(r); }   // paste gone: its plain amount
+        continue;
+      }
       if(r.asb){
         const st = ttkAsbState(r.asb, t);
         if(st.mode === 'on') on.push(r); else if(st.mode === 'spent') spent.push(r); else if(!off) off = r; else on.push(r);
@@ -15984,24 +16054,33 @@ function ttkWhy(side, tr, dps){
         text.push(`${P} ${nm(r)} ${has} ${chs}, ${full} clip${full > 1 ? 's' : ''}${rem ? ` and ${rem} more` : ''}: ${it} ${pl ? 'repair' : 'repairs'} ${hp(r.rate)} for ${ttkText(a.clip * a.cycleSec)} at a time with a ${ttkText(a.reloadSec)} reload between, and ${pl ? 'run' : 'runs'} out at ${ttkClock(ttkAsbSpentAt(a))}.`);
       }
     }
+    for(const r of aarSpent){   // v.61
+      const a = r.aar, pl = r.qty > 1, it = pl ? 'they' : 'it', has = pl ? 'have' : 'has', rp = pl ? 'repair' : 'repairs';
+      const full = Math.floor(a.cycles / a.clip), rem = a.cycles - full * a.clip;
+      const clips = a.cycles < a.clip ? `${a.cycles} cycle${a.cycles === 1 ? '' : 's'}` : `${full === 1 ? 'one clip' : `${full} clips`}${rem ? ` and ${rem} cycle${rem === 1 ? '' : 's'}` : ''}`;
+      text.push(`${P} ${nm(r)} ${has} paste for ${clips}${pl ? ' each' : ''}: ${it} ${rp} ${hp(r.rate * a.mult)} for ${ttkText(Math.min(a.cycles, a.clip) * a.cycleSec)}${a.cycles > a.clip ? ` at a time with a ${ttkText(a.reloadSec)} reload between` : ''}; the paste runs out at ${ttkClock(x.start + ttkAsbSpentAt(a))}, and since then ${it} ${rp} ${hp(r.rate)}.`);
+    }
     if(capOff.length){
-      const n = names(capOff, x.key), pl = many(capOff);
+      // v.61: an Ancillary Armor Repairer still on its paste when the capacitor goes says so
+      const n = list(capOff.map(r => r.aar && tr.capSec > x.start && ttkAsbState(r.aar, tr.capSec - x.start - 1e-6).mode === 'on' ? `${nm(r, x.key)} (${hp(r.rate * r.aar.mult)} with paste)` : nm(r, x.key)), 'and'), pl = many(capOff);
       text.push(tr.capSec <= x.start + 1e-9 ? `${P} capacitor ran dry at ${ttkClock(tr.capSec)}, so ${p} ${n} ${pl ? 'are' : 'is'} already off.`
         : `${P} capacitor runs dry at ${ttkClock(tr.capSec)}, and ${p} ${n} ${pl ? 'stop' : 'stops'}.`);
     }
     const rate = on.reduce((s, r) => s + r.rate, 0);
     if(off){
-      const a = off.asb, P2 = a.clip * a.cycleSec + a.reloadSec, j = Math.floor((t + 1e-9) / P2), into = t - j * P2 - a.clip * a.cycleSec, pl = off.qty > 1;
-      text.push(`${P} ${x.key} breaks at ${ttkClock(t)}, ${ttkText(into)} into ${pl ? `the ${ttkOrdinal(j + 1)} reload of ${p} ${nm(off)}` : `${p} ${nm(off)}'s ${ttkOrdinal(j + 1)} reload`}: ${pl ? 'they repair' : 'it repairs'} ${hp(off.rate)} for ${ttkText(a.clip * a.cycleSec)}, then ${pl ? 'reload' : 'reloads'} for ${ttkText(a.reloadSec)}.`);
+      const a = off.asb || off.aar, tl = off.aar ? t - x.start : t;   // an AAR's clip runs from its layer's start
+      const P2 = a.clip * a.cycleSec + a.reloadSec, j = Math.floor((tl + 1e-9) / P2), into = tl - j * P2 - a.clip * a.cycleSec, pl = off.qty > 1;
+      text.push(`${P} ${x.key} breaks at ${ttkClock(t)}, ${ttkText(into)} into ${pl ? `the ${ttkOrdinal(j + 1)} reload of ${p} ${nm(off)}` : `${p} ${nm(off)}'s ${ttkOrdinal(j + 1)} reload`}: ${off.aar ? 'with paste ' : ''}${pl ? 'they repair' : 'it repairs'} ${hp(off.aar ? off.rate * a.mult : off.rate)} for ${ttkText(a.clip * a.cycleSec)}, then ${pl ? 'reload' : 'reloads'} for ${ttkText(a.reloadSec)}.`);
       if(on.length) text.push(`${P} ${names(on, x.key)} ${many(on) ? 'keep' : 'keeps'} repairing ${hp(rate)}, not enough on ${many(on) ? 'their' : 'its'} own.`);
     }else if(hold){
       const more = rate + x.passive > x.incoming + 0.5 ? 'more than' : 'as much as';
       if(on.length) text.push(`${P} ${x.key} holds: ${p} ${names(on, x.key)} ${many(on) ? 'repair' : 'repairs'} ${hp(rate)}${x.passive > 0 ? ` and its regen ${hp(x.passive)}` : ''}, ${more} the ${hp(x.incoming)} that gets through.`);
       else if(x.passive > 0) text.push(`${P} ${x.key}'s regen, ${hp(x.passive)}, is ${more} the ${hp(x.incoming)} that gets through, so it holds.`);
       else text.push(`Nothing gets through ${p} ${x.key}'s resists, so it holds.`);
-    }else if(on.length) text.push(`${P} ${x.key} breaks at ${ttkClock(t)} even with ${p} ${names(on, x.key)} repairing ${hp(rate)}.`);
+    }else if(on.length) text.push(`${P} ${x.key} breaks at ${ttkClock(t)} even with ${p} ${names(on, x.key)} repairing ${hp(rate)}${on.some(r => r.pasteOn) ? ' with paste' : ''}.`);
     else if(x.passive > 0) text.push(`${P} ${x.key}'s regen alone can't keep up, and it breaks at ${ttkClock(t)}.`);
     else text.push(`${P} ${x.key} breaks at ${ttkClock(t)}.`);
+    if(x.reps.some(r => r.aar && r.aar.assumed)) text.push('No paste shows on the killmail, so a full clip is assumed.');   // v.61
   }
   return {title, text};
 }

@@ -837,6 +837,29 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Also:** to check that two things don't overlap, measure what's drawn. The header's `h1` box spans the whole
   width, so it always "overlapped" the version tag; the text's own Range rects are what can collide.
 
+## 57. "Execution context was destroyed" wasn't a navigation: read the protocol log
+
+- **What happened (v.51 to v.60, fixed v2026.10.14.61):** page checks stopped now and then with Playwright's
+  "Execution context was destroyed, most likely because of a navigation", always on a `page.evaluate` that built a fit
+  and drew it as Pilot losses (parseEftFit, estimateHpAndDps, renderFitTabs). It was written off as a browser hiccup
+  for ten versions: reruns passed, and logging navigations, loads and crashes showed nothing.
+- **How it was found:** a new check reproduced it every time. Running with `DEBUG=pw:protocol` showed what Chrome
+  had actually answered: `{"error": {"message": "Promise was collected"}}`. The promise the evaluate waited on was
+  garbage collected while the page drew a big fit synchronously inside it; nothing navigated (the page's own state was
+  intact afterwards). Starting the same function from a timer and polling for its result never failed.
+- **Do this instead:** `esi_from_sde.run_async(page, fn, arg)` for page functions that build and draw a fit. More
+  generally: when a tool's error message guesses at the cause ("most likely because of a navigation"), get the raw
+  answer underneath (the protocol log, the HTTP response, the exception's original message) before calling it a
+  flake. A flake that only ever happens at one kind of call is not random.
+
+## 58. A pipe write is asynchronous: don't exit right after it
+
+- **What happened (v2026.10.14.61):** `eft_engine.py`'s Node side wrote its whole result as one line, then called
+  `process.exit(0)`. With more fits the line passed 64 KB and was cut off: Python failed with JSONDecodeError
+  "Unterminated string". It had worked for months because the output had always been small.
+- **Do this instead:** exit in the write's callback (`process.stdout.write(text, () => process.exit(0))`), or let the
+  process end on its own.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

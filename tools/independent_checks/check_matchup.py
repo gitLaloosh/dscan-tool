@@ -110,31 +110,41 @@ def asb_windows(clip, cyc, reload, cycles):
         n = min(clip, left); out.append((t, t + n * cyc)); t += n * cyc; left -= n
         if left > 0: t += reload
     return out
-def ttk(o, cap_sec, typed, asb=None, ends=None):
+def ttk(o, cap_sec, typed, asb=None, ends=None, aar=None):
     """P2, written again from its description: layer by layer, reps while the capacitor lasts, passive shield regen always.
     asb (v.57): {'windows': [...]} for an Ancillary Shield Booster on charges -- it reps inside its windows only, whatever
     the capacitor; None with an ASB fitted = no charges aboard: it reps while the capacitor lasts like any booster.
-    ends (v.58): a list that gets each layer's end time (the "why" panel's clock times)."""
+    ends (v.58): a list that gets each layer's end time (the "why" panel's clock times).
+    aar (v.61): {'rate', 'mult', 'windows'} for an Ancillary Armor Repairer with paste aboard -- windows from the ARMOR
+    layer's start; rate x mult inside them, nothing in the reloads between, its plain rate after the last, and all of it
+    only while the capacitor lasts. None with an AAR fitted = no paste: its plain rate while the capacitor lasts."""
     sh = o.ship.get; res = resonances(o)
     asb_mods = [m for m in o.modules if m.state >= 2 and m.item.group.name == 'Ancillary Shield Booster']
     asb_rate = sum(m.get('shieldBonus') / (m.get('duration') / 1000) for m in asb_mods)
     rep_s = sum(m.get('shieldBonus') / (m.get('duration') / 1000) for m in o.modules if m.state >= 2 and 4 in m.item.effectIds) + (0 if asb else asb_rate)
-    rep_a = sum(m.get('armorDamageAmount') / (m.get('duration') / 1000) for m in o.modules if m.state >= 2 and 27 in m.item.effectIds)
+    aar_mods = [m for m in o.modules if m.state >= 2 and 5275 in m.item.effectIds]   # v.61: fueledArmorRepair
+    aar_rate = sum(m.get('armorDamageAmount') / (m.get('duration') / 1000) for m in aar_mods)
+    rep_a = sum(m.get('armorDamageAmount') / (m.get('duration') / 1000) for m in o.modules if m.state >= 2 and 27 in m.item.effectIds) + (0 if aar else aar_rate)
     rep_h = sum(m.get('structureDamageAmount') / (m.get('duration') / 1000) for m in o.modules if m.state >= 2 and 26 in m.item.effectIds)
     shield = sh('shieldCapacity') or 0; tau = (sh('shieldRechargeRate') or 0) / 1000
-    layers = [(shield, res['shield'], rep_s, 2.5 * shield / tau if shield > 0 and tau > 0 else 0, asb), (sh('armorHP') or 0, res['armor'], rep_a, 0, None), (sh('hp') or 0, res['hull'], rep_h, 0, None)]
+    layers = [(shield, res['shield'], rep_s, 2.5 * shield / tau if shield > 0 and tau > 0 else 0, asb, None), (sh('armorHP') or 0, res['armor'], rep_a, 0, None, aar), (sh('hp') or 0, res['hull'], rep_h, 0, None, None)]
     t = 0.0
-    for hp_max, r, rep, passive, a in layers:
+    for hp_max, r, rep, passive, a, aa in layers:
         if hp_max <= 0: continue
         incoming = sum(typed[k] * r[k] for k, _ in TYPES)
-        # the reps change only at the capacitor's empty time and at the ASB's window edges
-        edges = sorted({cap_sec} | {x for w in (a['windows'] if a else []) for x in w})
+        aw = [(t + w0, t + w1) for w0, w1 in aa['windows']] if aa else []   # the AAR's clip runs from this layer's start
+        def aar_part(mid):
+            if not aa or mid >= cap_sec: return 0.0
+            if any(w0 <= mid < w1 for w0, w1 in aw): return aa['rate'] * aa['mult']
+            return 0.0 if aw and mid < aw[-1][1] else aa['rate']
+        # the reps change only at the capacitor's empty time and at the ASB's / AAR's window edges
+        edges = sorted({cap_sec} | {x for w in (a['windows'] if a else []) for x in w} | {x for w in aw for x in w})
         hp = hp_max
         while True:
             later = [e for e in edges if e > t + 1e-9]
             nxt = later[0] if later else math.inf
             mid = t + 1e-6 if nxt == math.inf else (t + nxt) / 2
-            reps = (rep if mid < cap_sec else 0) + (asb_rate if a and any(w0 <= mid < w1 for w0, w1 in a['windows']) else 0)
+            reps = (rep if mid < cap_sec else 0) + (asb_rate if a and any(w0 <= mid < w1 for w0, w1 in a['windows']) else 0) + aar_part(mid)
             net = incoming - reps - passive
             if nxt == math.inf:
                 if net <= 0:
@@ -147,8 +157,27 @@ def ttk(o, cap_sec, typed, asb=None, ends=None):
     return t
 
 SIMPLE_REPS = lambda o: not any(m.item.group.name in ('Shield Boost Amplifier', 'Siege Module', 'Ancillary Shield Booster', 'Ancillary Armor Repairer') or {4936, 5275} & set(m.item.effectIds) for m in o.modules if m.state >= 1)
-# v2026.10.14.57: Ancillary Shield Boosters are checked too (their clip); Ancillary Armor Repairers, amplifiers and siege still not
-ASB_OK = lambda o: not any(m.item.group.name in ('Shield Boost Amplifier', 'Siege Module', 'Ancillary Armor Repairer') or 5275 in set(m.item.effectIds) for m in o.modules if m.state >= 1)
+# v2026.10.14.57: Ancillary Shield Boosters are checked too (their clip); v2026.10.14.61 Ancillary Armor Repairers too
+# (their paste clip); amplifiers and siege still not
+ASB_OK = lambda o: not any(m.item.group.name in ('Shield Boost Amplifier', 'Siege Module') for m in o.modules if m.state >= 1)
+PASTE = 'Nanite Repair Paste'
+def aar_input(o, loaded, hold):
+    """v2026.10.14.61: an Ancillary Armor Repairer's paste aboard, the rule as decided (METHODOLOGY.md "The fight"):
+    loaded (seen, or a killmail's assumed full clip) = a full clip per copy, plus the hold; the clip from pyfa's numbers
+    (capacity / paste volume / chargeRate = numShots, reloadTime), the boost chargedArmorDamageMultiplier."""
+    from pyfa_sde import types, T
+    mods = [m for m in o.modules if m.state >= 2 and 5275 in m.item.effectIds]
+    if not mods: return None
+    m = mods[0]; q = len(mods); cr = m.get('chargeRate') or 1
+    h = hold(int(T(PASTE)))
+    if not loaded and h <= 0: return None
+    vol = float(types[str(T(PASTE))]['volume'])
+    clip = int(int(m.get('capacity') / vol + 1e-9) // cr)
+    if clip <= 0: return None
+    cycles = int(((clip * cr * q if loaded else 0) + h) // q // cr)
+    if cycles <= 0: return None
+    return {'rate': sum(x.get('armorDamageAmount') / (x.get('duration') / 1000) for x in mods), 'mult': m.get('chargedArmorDamageMultiplier'),
+            'windows': asb_windows(clip, m.get('duration') / 1000, (m.get('reloadTime') or 0) / 1000, cycles)}
 def asb_input(o, cap_tool, hold):
     """The ASB's charges aboard, from the tool's INPUTS (capacitor.asb: loaded / taken from cargo / none, an input choice in
     DEVIATIONS.md) and the fit's hold; the clip from pyfa's numbers (capacity, charge volume, chargeRate, reloadTime)."""
@@ -174,6 +203,9 @@ if __name__ == '__main__':
     # v2026.10.14.57: the owner's own pair (2026-10-24, both with an X-Large Ancillary Shield Booster), run from their EFT text
     # through the tool's real engine (eft_engine) and through pyfa by item names
     EFT = {'eft:orthrus_threat': os.path.join(HERE, 'fits', 'orthrus_threat.eft'), 'eft:osprey_navy_issue_mine': os.path.join(HERE, 'fits', 'osprey_navy_issue_mine.eft')}
+    # v2026.10.14.61: an Ancillary Armor Repairer with its paste loaded, only in cargo, and none
+    EFT.update({f'eft:vexor_aar_paste_{v}': os.path.join(HERE, 'fits', f'vexor_aar_paste_{v}.eft') for v in ('loaded', 'cargo', 'none')})
+    EFT['km:vexor_aar_paste_none'] = EFT['eft:vexor_aar_paste_none']   # the same fit as a killmail: a full clip assumed
     from eft_engine import run_efts
     tool.update(run_efts(html, {k: open(v).read() for k, v in EFT.items()}))
     def eft_items(k):
@@ -198,6 +230,15 @@ if __name__ == '__main__':
             return lambda tid: sum(it.get('quantity_destroyed', 0) + it.get('quantity_dropped', 0) for it in items if it['item_type_id'] == tid)
         t = f.get('tally') or {}
         return lambda tid: sum((t.get(g) or {}).get(str(tid), {}).get('totalQty', 0) / max(1, (t.get(g) or {}).get(str(tid), {}).get('lossCount', 1)) for g in ('Cargo', 'Fleet hangar'))
+    def aar_loaded(k):
+        """paste in the AAR: a pasted fit (EFT, or a golden with fitSource eft) only when it lists it; a killmail or a
+        golden tally always (seen, or a full clip assumed)"""
+        from pyfa_sde import T
+        if k.startswith('km:'): return True
+        if k in EFT: return any(ch == PASTE for _, ch in eft_items(k)[0])
+        f = G[k]
+        if f.get('fitSource') == 'eft': return str(T(PASTE)) in ((f.get('tally') or {}).get('Low slots') or {})
+        return True
     def ok_fit(k):
         t = tool[k]
         return t.get('projectedTarget') and (t.get('application') or {}).get('weapons') is not None
@@ -241,6 +282,14 @@ if __name__ == '__main__':
     asb_threats = [k for k in asb_fits if tool[k]['application'].get('weapons') or tool[k]['application'].get('drones')]
     pairs += [(t, m) for t in asb_threats for m in mine[:2] if t != m] + [(t, m) for t in threats[:2] for m in asb_mine if t != m]
     pairs += [('eft:orthrus_threat', 'eft:osprey_navy_issue_mine'), ('eft:osprey_navy_issue_mine', 'eft:orthrus_threat')]
+    # v.61: fits with an Ancillary Armor Repairer (golden killmails: paste seen; the Vexors: loaded / cargo only / none), both ways
+    aar_fits = [k for k in cands if any(5275 in m.item.effectIds and m.state >= 2 for m in orc(k).modules) and ASB_OK(orc(k)) and not orc(k).errors and not orc(k).oracleGaps]
+    aar_mine = [k for k in aar_fits if (tool[k]['projectedTarget']['variants'] or {}).get('propTypeId')]
+    aar_threats = [k for k in aar_fits if tool[k]['application'].get('weapons') or tool[k]['application'].get('drones')]
+    pairs += [(t, m) for t in aar_threats for m in mine[:2] if t != m] + [(t, m) for t in threats[:2] for m in aar_mine if t != m]
+    VEX = [f'eft:vexor_aar_paste_{v}' for v in ('loaded', 'cargo', 'none')] + ['km:vexor_aar_paste_none']
+    # every threat against each Vexor (weaker ones make long fights: reloads, paste running out), and the Vexors as threats
+    pairs += [('eft:orthrus_threat', v) for v in VEX] + [(v, 'eft:osprey_navy_issue_mine') for v in VEX] + [(t, v) for t in threats for v in VEX] + [(v, m) for v in VEX for m in mine[:3]]
     gin, gout, js = os.path.join(tmp, 'in.json'), os.path.join(tmp, 'out.json'), os.path.join(tmp, 'run.js')
     open(js, 'w').write(NODE)
     json.dump({'fits': {k: tool[k] for k in {x for pr in pairs for x in pr}}, 'pairs': pairs, 'grid': GRID}, open(gin, 'w'))
@@ -264,8 +313,8 @@ if __name__ == '__main__':
             m_src_fit = CP._Fit(me_o); m_app = CA._Src(me_o); m_inp = CP.pyfa_inputs(m_src_fit)
             outd = pyfa_typed(m_src_fit, m_app, m_inp, tf_fit, st['range'], t_frac, t_ang, y_frac * my_top, y_ang)
             you_ends, they_ends = [], []
-            you_last = ttk(orc(m), capsec(m), inc, asb_input(orc(m), tool[m]['capacitor'], hold_of(m)), you_ends)
-            they_last = ttk(orc(t), capsec(t), outd, asb_input(orc(t), tool[t]['capacitor'], hold_of(t)), they_ends)
+            you_last = ttk(orc(m), capsec(m), inc, asb_input(orc(m), tool[m]['capacitor'], hold_of(m)), you_ends, aar_input(orc(m), aar_loaded(m), hold_of(m)))
+            they_last = ttk(orc(t), capsec(t), outd, asb_input(orc(t), tool[t]['capacitor'], hold_of(t)), they_ends, aar_input(orc(t), aar_loaded(t), hold_of(t)))
             exp = [sum(inc.values()), sum(outd.values()), you_last, they_last, my_top, their_top, y_holds, t_holds]
             got = out[t + '|' + m][i]; points += 1
             inf_seen += (you_last == math.inf) + (they_last == math.inf)
@@ -291,12 +340,13 @@ if __name__ == '__main__':
                     if c != cap_t and len(diffs) < 4: diffs.append(f'{side} why {st}: capacitor dry at {c}, independent {cap_t}')
                 want = 'You hold' if (side == 'you' and total == math.inf) else 'They hold' if total == math.inf else None
                 if want and why['title'] != want and len(diffs) < 4: diffs.append(f'{side} why title {why["title"]!r}')
-                kinds = re.findall(r"(reload:|nothing left to load|runs dry|ran dry|even with|regen alone|holds|With no)", words)
+                kinds = re.findall(r"(reload:|nothing left to load|runs dry|ran dry|even with|regen alone|holds|With no|with paste|paste runs out|full clip is assumed)", words)
                 for k_ in kinds: why_kinds[k_] = why_kinds.get(k_, 0) + 1
         if diffs: bad += 1; notes.append(f'{t} -> {m}: ' + '; '.join(diffs))
     for n in notes[:30]: print(n)
     print(f'{len(threats)} threats x {len(mine)} of my ships ({", ".join(mine)}), {points} points over {len(GRID)} card settings: {2 * points - inf_seen} finite times ({finite_cut} after the capacitor ran out), {inf_seen} "holds"')
     print(f'Keep at Range: {keep_seen[0]} keeping ships; the "can hold" verdict compared for both ships at every point ({keep_seen[1]} can\'t)')
     print(f'Ancillary Shield Boosters: {len(asb_threats)} as threats, {len(asb_mine)} as my ship ({", ".join(asb_fits)}), plus the owner\'s Orthrus / Osprey Navy Issue both ways')
+    print(f'Ancillary Armor Repairers: {len(aar_threats)} as threats, {len(aar_mine)} as my ship ({", ".join(aar_fits)}), plus 3 Vexors (paste loaded / cargo only / none) and the paste-less one as a killmail (a clip assumed), both ways')
     print(f'Why panel: {why_seen[0]} explanations, each layer\'s end compared; sentence kinds seen: {dict(sorted(why_kinds.items()))}')
     print(f'{bad} mismatches (strip numbers vs pyfa projected.py + application.py by damage type, and the time-to-kill rule)')

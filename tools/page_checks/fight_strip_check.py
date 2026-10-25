@@ -29,7 +29,7 @@ _src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'matchup_st
 _ns = {'__file__': os.path.join(os.path.dirname(os.path.abspath(__file__)), 'matchup_strip_check.py')}
 exec(compile(_src.split('\nwith sync_playwright()')[0], 'matchup_strip_check.py', 'exec'), _ns)
 HTML, HECATE, HECATE3, VEXOR, settle, EXPECT, cells = (_ns[k] for k in ('HTML', 'HECATE', 'HECATE3', 'VEXOR', 'settle', 'EXPECT', 'cells'))
-from esi_from_sde import route_all
+from esi_from_sde import route_all, run_async
 from playwright.sync_api import sync_playwright
 
 R = '#fitAnalyzerResults'
@@ -167,7 +167,7 @@ def desktop(b, W):
     # Pilot losses: each loss keeps its own fight
     if W == 1440:
         pg.click('#tabBtnPilot')
-        pg.evaluate("""async ([a, b]) => { const mk = async (text, day) => { const parsed = await parseEftFit(text);
+        run_async(pg, """async ([a, b]) => { const mk = async (text, day) => { const parsed = await parseEftFit(text);
             const est = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag);
             return {parsed, fit: { km: {killmail_time: day}, killmailId: 1, tally: parsed.tally, highSlotByFlag: parsed.highSlotByFlag, estimate: est,
               input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag} }}; };

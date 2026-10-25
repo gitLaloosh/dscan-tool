@@ -18,7 +18,7 @@ Loads the real page in Chromium (ESI served from pyfa's SDE, esi_from_sde.py) an
 """
 import sys, os, re, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from esi_from_sde import route_all
+from esi_from_sde import route_all, run_async
 from playwright.sync_api import sync_playwright
 
 HTML = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')),
@@ -174,7 +174,7 @@ def main_desktop(b):
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{M} .fit-layout')
     # Pilot Analyzer threat
     pg.click('#tabBtnPilot')
-    n = pg.evaluate("""async (text) => { const parsed = await parseEftFit(text);
+    n = run_async(pg, """async (text) => { const parsed = await parseEftFit(text);
         const mk = async (day) => { const est = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag);
           return { km: {killmail_time: day}, killmailId: 1, tally: parsed.tally, highSlotByFlag: parsed.highSlotByFlag, estimate: est,
             input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag} }; };

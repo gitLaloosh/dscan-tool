@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — Ancillary Armor Repairer paste in "you last" / "they last"</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fix: an Ancillary Armor Repairer's paste in "you last" / "they last"</h1>
+<p><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-25 &middot; <code>v2026.10.14.60</code> &rarr; <code>v2026.10.14.61</code>.</p>
+<p>the owner (2026-10-25), from the backlog list: "ok, let's start on #1". It was the open follow-up from the shield booster fix (v.57): an Ancillary Armor Repairer's paste boost and reload weren't followed. After the findings, he chose:</p>
+<ul>
+<li>the clip rule;</li>
+<li>a killmail with no paste seen assumes a full clip;</li>
+<li>a pasted fit with none is flagged;</li>
+<li>the Repairs burst shows only with paste.</li>
+</ul>
+
+<h2>What the sources say</h2>
+<ul>
+<li><b>pyfa</b> (v2.69.3):
+<ul>
+<li><code>Effect5275</code> (fueledArmorRepair) and <code>Fit.calculateSustainableTank</code> multiply the repair only while Nanite Repair Paste is loaded. The multiplier is <code>chargedArmorDamageMultiplier</code>, which is 3 on every Ancillary Armor Repairer in the SDE; Effect5275 hard-codes 3.</li>
+<li>The clip is <code>numShots</code> = floor(capacity &divide; paste volume) &divide; chargeRate. That is 8 cycles for every size: Small 0.08 m&sup3; at 1 paste a cycle, Medium 0.32 at 4, Large 0.64 at 8, Capital 1.28 at 16, with paste at 0.01 m&sup3;.</li>
+<li>The reload is <code>reloadTime</code>, 60 s.</li>
+</ul></li>
+<li><b>EVE University</b> (Armor Repairer page):
+<ul>
+<li>"Ancillary repair modules have a 60 second reload time to refresh their charges from your cargo hold."</li>
+<li>"an Ancil cannot be used while reloading."</li>
+<li>"A depleted Ancil repairs much slower", so it keeps working without paste.</li>
+</ul></li>
+<li><b>Capacitor:</b> unlike the shield booster, an Ancillary Armor Repairer uses capacitor with or without paste (its <code>capacitorNeed</code> stays).</li>
+</ul>
+
+<h2>The bug</h2>
+<p>In the Matchup's times, an Ancillary Armor Repairer always repaired its plain amount (a third of its paste rate), until the capacitor ran dry. The Repairs strip showed the 3&times; burst even for a fit with no paste. <code>check_matchup.py</code> left every fit with one out (LESSON #53 again), so the gap had never been compared.</p>
+
+<h2>Fix</h2>
+<ul>
+<li><b>Paste aboard</b> (an input choice, DEVIATIONS.md):
+<ul>
+<li>loaded = paste in a low slot (a killmail's shared flag, or ", Nanite Repair Paste" on the EFT line);</li>
+<li>hold = cargo plus fleet hangar;</li>
+<li>a killmail with none loaded assumes a full clip;</li>
+<li>a pasted fit with none anywhere repairs its plain amount and is flagged on Weaknesses: "No paste for its Medium Ancillary Armor Repairer", "none aboard: no 3x paste boost".</li>
+</ul></li>
+<li><b>The time to kill</b> (<code>ttkAarRep</code>, <code>ttkLayerEnd</code>):
+<ul>
+<li>with paste it repairs 3&times; for a clip, then 60 s with no repair, repeating while paste lasts (a full clip per copy when loaded, plus the hold);</li>
+<li>after that it repairs its plain amount;</li>
+<li>all of it only while the capacitor lasts;</li>
+<li>the clip starts when the armor starts taking damage, since a pilot doesn't spend paste on full armor.</li>
+</ul></li>
+<li><b>The "why" panel</b> says it in words. Two real examples, the loaded Vexor as my ship:
+<ul>
+<li>against a Caracal at 30 km: "Your armor breaks at 1:21, 3 s into your Medium Ancillary Armor Repairer's first reload: with paste it repairs 79 HP/s for 1 min 12 s, then reloads for 1 min.";</li>
+<li>against an Ishtar at 2 km: "Your armor breaks at 0:13 even with your Medium Ancillary Armor Repairer repairing 79 HP/s with paste."</li>
+</ul>
+Other cases:
+<ul>
+<li>once the paste is gone: "... the paste runs out at m:ss, and since then it repairs N HP/s";</li>
+<li>the capacitor running dry during a clip: "... and your Medium Ancillary Armor Repairer (69 HP/s with paste) stops";</li>
+<li>on a killmail with none seen: "No paste shows on the killmail, so a full clip is assumed."</li>
+</ul></li>
+<li><b>The Repairs strip</b> shows the burst only with paste aboard. On a killmail with none seen it shows the burst, and its hover says a full clip is assumed.</li>
+<li><b>Not followed:</b> the capacitor simulation (PYFA CORE) still runs the repairer through its reloads, as pyfa does by default. pyfa's own averages are written down in METHODOLOGY.md.</li>
+</ul>
+<table>
+<tr><th>Example (7.5 km, you orbiting)</th><th>v.60</th><th>v.61</th></tr>
+<tr><td>Curse killmail (28 paste loaded, 268 in cargo) against a Caracal</td><td>1 min 1 s</td><td>1 min 20 s</td></tr>
+<tr><td>Vedmak killmail (32 loaded, 264 in cargo) against a Megathron</td><td>37 s</td><td>47 s</td></tr>
+</table>
+<p>Both run out of capacitor early, which caps the gain. A capacitor-stable fit gains much more.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>check_matchup.py</code></b>:
+<ul>
+<li>The rule is written again independently on pyfa's numbers (<code>aar_input</code>, <code>ttk(..., aar=)</code>): <code>armorDamageAmount</code>, <code>duration</code>, <code>chargedArmorDamageMultiplier</code>, <code>capacity</code>, <code>chargeRate</code>, <code>reloadTime</code>, paste volume.</li>
+<li>Fits with an Ancillary Armor Repairer are no longer left out: 3 golden killmails, plus 3 new Vexors in <code>fits/</code> (paste loaded with a capacitor booster, paste only in cargo, no paste), plus the paste-less Vexor run as a killmail (<code>km:</code>, a clip assumed).</li>
+<li>Each Vexor is checked against every threat, and as a threat. 0 mismatches over 167,936 explanations.</li>
+<li>Mutations each fail it:
+<ul>
+<li>v.60: 39 pairs;</li>
+<li>the clip from the fight's start, not the armor's: 1;</li>
+<li>no killmail assumption: 11;</li>
+<li>repairing through the reload: 6;</li>
+<li>ignoring the capacitor: 18.</li>
+</ul></li>
+<li>The first version of the new pairs passed the reload mutation. Every fit in them ran out of capacitor before its first reload, so the reload code never ran. Weaker threats and a capacitor-stable Vexor fixed that (LESSON #53, extended).</li>
+</ul></li>
+<li><b>Regression suite:</b> 5 hand-worked "why" cases for the repairer (second reload, paste runs out, capacitor dry with paste plus the killmail note, breaking with paste on, holding on its plain amount).</li>
+<li><b><code>missing_charges_check.py</code>:</b> the flag, the burst with and without paste, and the killmail's assumed burst. <b><code>ttk_why_check.py</code>:</b> the panel's words with the loaded Vexor as my ship.</li>
+</ul>
+
+<h2>Found on the way</h2>
+<ul>
+<li><b>The "Execution context was destroyed" stop, at last.</b> The new page check reproduced it every time, so the protocol log could be read. Chrome had answered the evaluate with "Promise was collected": the promise Playwright waited on was garbage collected while the page drew a fit inside it. There was no navigation. New <code>esi_from_sde.run_async</code> runs such a page function from a timer and polls for its result; all 8 checks that drew Pilot losses this way use it (LESSON #57).</li>
+<li><b><code>eft_engine.py</code> cut its result at 64 KB</b> once the check ran more fits, because Node exited right after an asynchronous pipe write. It now exits in the write's callback (LESSON #58).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #57: when a tool's error message guesses at the cause ("most likely because of a navigation"), get the raw answer underneath before calling it a flake; here the protocol log said "Promise was collected". LESSON #58: a pipe write is asynchronous, so don't call <code>process.exit()</code> right after it. LESSON #53, extended: including a case isn't the same as running its branches. Count each branch the check reaches, and make the cases reach the rare ones (here, a reload).</p>
+</body>
+</html>

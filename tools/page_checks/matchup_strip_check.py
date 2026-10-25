@@ -17,7 +17,7 @@ The numbers are checked against pyfa by tools/independent_checks/check_matchup.p
 """
 import sys, os, re, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from esi_from_sde import route_all
+from esi_from_sde import route_all, run_async
 from playwright.sync_api import sync_playwright
 
 HTML = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')),
@@ -124,7 +124,7 @@ def desktop(b):
     pg.click('#myShipUseLabel'); pg.wait_for_selector(f'{R} .mys-board', timeout=60000)
     # Pilot losses: the strip follows the visible tab
     pg.click('#tabBtnPilot')
-    pg.evaluate("""async ([a, b]) => { const mk = async (text, day) => { const parsed = await parseEftFit(text);
+    run_async(pg, """async ([a, b]) => { const mk = async (text, day) => { const parsed = await parseEftFit(text);
         const est = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag);
         return {parsed, fit: { km: {killmail_time: day}, killmailId: 1, tally: parsed.tally, highSlotByFlag: parsed.highSlotByFlag, estimate: est,
           input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag} }}; };

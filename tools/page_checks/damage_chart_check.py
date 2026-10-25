@@ -38,7 +38,7 @@ against pyfa by tools/independent_checks/check_damage_chart.py; this checks the 
 """
 import sys, os, re, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from esi_from_sde import route_all
+from esi_from_sde import route_all, run_async
 from playwright.sync_api import sync_playwright
 
 HTML = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')),
@@ -290,7 +290,7 @@ def desktop(b):
     check('No turrets, missiles' in pg.inner_text(f'{C}'), 'a fit with no weapons: nothing to chart')
     # Pilot losses
     pg.click('#tabBtnPilot')
-    n = pg.evaluate("""async (text) => { const parsed = await parseEftFit(text);
+    n = run_async(pg, """async (text) => { const parsed = await parseEftFit(text);
         const mk = async (day) => { const est = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag);
           return { km: {killmail_time: day}, killmailId: 1, tally: parsed.tally, highSlotByFlag: parsed.highSlotByFlag, estimate: est,
             input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag} }; };

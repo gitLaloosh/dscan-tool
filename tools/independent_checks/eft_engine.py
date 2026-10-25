@@ -45,10 +45,16 @@ vm.createContext(sb); vm.runInContext(code, sb);
   const {fits, fields} = JSON.parse(fs.readFileSync(inPath, 'utf8'));
   const out = {};
   for (const [k, text] of Object.entries(fits)) {
-    try { const {f} = await sb.buildFitFromEft(text); const e = JSON.parse(JSON.stringify(f.estimate)); out[k] = fields ? Object.fromEntries(fields.map(x => [x, e[x]])) : e; }
+    // v2026.10.14.61: a key starting "km:" runs the fit as a killmail would (no {fitSource: 'eft'}: charges not seen are assumed)
+    try { let e;
+      if (k.startsWith('km:')) { const p = await sb.parseEftFit(text); e = JSON.parse(JSON.stringify(await sb.estimateHpAndDps(p.shipTypeId, p.tally, p.cargoItemIds, p.highSlotByFlag, 'sharpshooter', p.midSlotByFlag))); }
+      else { const {f} = await sb.buildFitFromEft(text); e = JSON.parse(JSON.stringify(f.estimate)); }
+      out[k] = fields ? Object.fromEntries(fields.map(x => [x, e[x]])) : e; }
     catch (e) { out[k] = {error: String(e && e.message || e)}; }
   }
-  process.stdout.write('R ' + JSON.stringify(out) + '\n'); process.exit(0);
+  // v2026.10.14.61: exit only once the result is written. A pipe write is asynchronous in Node, and process.exit() right
+  // after it cut the line at 64 KB once the check ran more fits (JSONDecodeError "Unterminated string").
+  process.stdout.write('R ' + JSON.stringify(out) + '\n', () => process.exit(0));
 })();
 '''
 

@@ -2,7 +2,9 @@
 Shield Booster has no charge loaded and none in cargo is EMPTY -- no injection / the ASB runs on capacitor --
 and the Weaknesses card flags "No charges for its <module>". Goes through the real page: EFT paste ->
 parseEftFit -> estimateHpAndDps(..., {fitSource: 'eft'}), then a module-state change (recomputeFitWithStates)
-must keep the rule. A charge in cargo counts (no flag).
+must keep the rule. A charge in cargo counts (no flag). v2026.10.14.61: an Ancillary Armor Repairer with no Nanite Repair
+Paste anywhere is flagged "No paste for its ..."; the Repairs strip's burst shows only with paste aboard, and on a killmail
+with none seen as an assumed full clip (in its hover).
 
     PYFA_SRC=/path/to/pyfa python3 tools/page_checks/missing_charges_check.py [index.html]
 
@@ -10,7 +12,7 @@ Ends with 'FAILURES: N' (must be 0).
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from esi_from_sde import route_all
+from esi_from_sde import route_all, run_async
 from playwright.sync_api import sync_playwright
 CB = """[Rifter, cap booster test]
 Small Armor Repairer II
@@ -64,6 +66,27 @@ with sync_playwright() as p:
     c = caption()
     check(c[0] == 'best case · ASB has no charges' and 'has no charges in the fit, running on capacitor' in c[1], f'ASB, no charges: Capacitor card caption {c}')
     check(pg.evaluate("() => !document.querySelector('#fitAnalyzerResults button.cap-asb-toggle')"), 'ASB, no charges: no out-of-charges toggle (it already is)')
+    # v2026.10.14.61: an Ancillary Armor Repairer with no Nanite Repair Paste anywhere is flagged; the Repairs strip's burst
+    # shows only with paste aboard (loaded or in cargo), and on a killmail with none seen, as an assumed full clip
+    FITS = os.path.join(ROOT, 'tools', 'independent_checks', 'fits')
+    vex = {v: open(os.path.join(FITS, f'vexor_aar_paste_{v}.eft'), encoding='utf-8').read() for v in ('loaded', 'cargo', 'none')}
+    BURST = "(sel) => { const b = document.querySelector(sel + ' .repairs-bp-burst'); return b ? [b.textContent.trim(), b.closest('.repairs-bp').title] : null; }"
+    for v in ('loaded', 'cargo', 'none'):
+        t = paste(vex[v]); burst = pg.evaluate(BURST, '#fitAnalyzerResults')
+        flag = pg.evaluate("() => { const r = [...document.querySelectorAll('#fitAnalyzerResults .charges-missing-row')].find(x => /paste/.test(x.textContent)); return r ? [r.querySelector('.warn-title').textContent, r.querySelector('.ctx').textContent] : null; }")
+        if v == 'none':
+            check(flag == ['No paste for its Medium Ancillary Armor Repairer', 'none aboard: no 3x paste boost'] and burst is None, f'AAR, no paste: flagged {flag}, no burst {burst}')
+        else:
+            check(flag is None and burst and burst[0].endswith('burst') and 'Nanite Repair Paste burst' in burst[1] and 'assumed' not in burst[1], f'AAR, paste {v}: no flag, burst {burst}')
+    # a killmail (no fitSource) with no paste seen: the burst, as an assumed full clip
+    pg.click('#tabBtnPilot')
+    run_async(pg, """async (text) => { const parsed = await parseEftFit(text);
+        const est = await estimateHpAndDps(parsed.shipTypeId, parsed.tally, parsed.cargoItemIds, parsed.highSlotByFlag, 'sharpshooter', parsed.midSlotByFlag);
+        renderFitTabs('Test Pilot', 'Vexor', [{ km: {killmail_time: '2026-10-01T00:00:00Z'}, killmailId: 1, tally: parsed.tally, highSlotByFlag: parsed.highSlotByFlag, estimate: est,
+          input: {shipTypeId: parsed.shipTypeId, tally: parsed.tally, cargoItemIds: parsed.cargoItemIds, highSlotByFlag: parsed.highSlotByFlag, midSlotByFlag: parsed.midSlotByFlag} }], parsed.idToName); }""", vex['none'])
+    pg.wait_for_selector('#fitResults .fit-layout', timeout=30000); pg.wait_for_timeout(500)
+    burst = pg.evaluate(BURST, '#fitResults')
+    check(burst and 'assumed' in burst[1] and 'No paste for its' not in pg.inner_text('#fitResults'), f'AAR on a killmail, no paste seen: burst as an assumed clip, no flag {burst}')
     check(not errs, f'no page errors {errs}')
     b.close()
 print(f'FAILURES: {len(bad)}')
