@@ -1,12 +1,14 @@
 """Weaknesses "your guns" / "their guns" (v2026.10.14.42; roadmap/my-ship-plan.md phase 2b, decisions B1-B4).
+v2026.10.14.58: the "your guns" / "their guns" tags are gone; the card's title says whose weaknesses it shows,
+"Threat Weaknesses" (the threat's view, and with no ship saved) or "Your Weaknesses" (My ship view, "Viewing my ship").
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/weakness_picks_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
 The numbers are checked against pyfa by tools/independent_checks/check_weakness_picks.py; this checks the page around them:
-  * no ship saved: the generic tiles, no picks, no tag;
-  * ship saved, "Use in assessments" on: the threat view shows "your guns" and your ammo / drones (the generic tiles
+  * no ship saved: the generic tiles, no picks, "Threat Weaknesses";
+  * ship saved, "Use in assessments" on: the threat view ("Threat Weaknesses") shows your ammo / drones (the generic tiles
     are hidden); every tile is the page's own wpRank of wpCandidates at the strip's fight; the range slider re-ranks;
-  * My ship view: "their guns", "What the <threat> should use against you" and the threat's own ammo;
+  * My ship view: "Your Weaknesses", "What the <threat> should use against you" and the threat's own ammo;
   * a collapsed Weaknesses card shows the picks in its summary row;
   * a state change on my ship: no amber inside the picks (they are not compared, M6) and the picks follow the change;
   * Pilot losses: the My ship view's picks follow the visible loss tab;
@@ -84,6 +86,9 @@ def tiles(pg, sel):
 def settle(pg, ms=400):
     pg.wait_for_timeout(ms); pg.wait_for_function("() => !document.querySelector('.fit-card-busy')", timeout=60000); pg.wait_for_timeout(ms)
 def vis(pg, sel): return pg.locator(sel).count() > 0 and pg.locator(sel).first.is_visible()
+def title(pg, scope):   # v.58: the Weaknesses card's title as shown (one of "Threat" / "Your" is hidden by CSS)
+    sel = f'{scope} button.cc-toggle[data-card="weak"]'
+    return ' '.join(pg.inner_text(sel).split()).lower() if pg.locator(sel).count() else '' 
 TV, MV = f'{R} .mys-threat-view', f'{R} .mys-mine-view'
 
 def desktop(b):
@@ -91,10 +96,11 @@ def desktop(b):
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
-    check(vis(pg, f'{TV} .weak-generic') and not vis(pg, f'{TV} .weak-picks') and not vis(pg, f'{TV} .wp-tag'), 'no ship saved: generic tiles, no picks, no tag')
+    check(vis(pg, f'{TV} .weak-generic') and not vis(pg, f'{TV} .weak-picks') and pg.locator(f'{R} .wp-tag').count() == 0 and title(pg, TV) == 'threat weaknesses',
+          f'no ship saved: generic tiles, no picks, no tag, "{title(pg, TV)}"')
     pg.click('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
     pg.wait_for_selector(f'{TV} .weak-picks .wp-stat', timeout=60000); settle(pg, 600)
-    check(vis(pg, f'{TV} .wp-tag-yours') and not vis(pg, f'{TV} .wp-tag-theirs') and not vis(pg, f'{TV} .weak-generic'), 'threat view: "your guns" tag, generic tiles hidden')
+    check(title(pg, TV) == 'threat weaknesses' and pg.locator(f'{R} .wp-tag').count() == 0 and not vis(pg, f'{TV} .weak-generic'), f'threat view: "{title(pg, TV)}", generic tiles hidden')
     t1 = tiles(pg, TV)
     check(t1 == pg.evaluate(EXPECT, [R, 'yours']) and len(t1) == 2 and t1[0][0].startswith('Your Heavy Neutron Blaster II') and t1[1][0] == 'Your drones',
           f'threat view: your blasters and your drones, each the page\'s own wpRank ({t1})')
@@ -113,8 +119,8 @@ def desktop(b):
     # My ship view: their guns
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{MV} .weak-picks .wp-stat', timeout=60000); settle(pg)
     m1 = tiles(pg, MV)
-    check(vis(pg, f'{MV} .wp-tag-theirs') and not vis(pg, f'{MV} .wp-tag-yours') and 'What the Hecate should use against you' in pg.inner_text(f'{MV} .wp-head'),
-          'My ship view: "their guns" tag and "What the Hecate should use against you"')
+    check(title(pg, MV) == 'your weaknesses' and pg.locator(f'{R} .wp-tag').count() == 0 and 'What the Hecate should use against you' in pg.inner_text(f'{MV} .wp-head'),
+          f'My ship view: "{title(pg, MV)}" and "What the Hecate should use against you"')
     check(m1 == pg.evaluate(EXPECT, [R, 'theirs']) and len(m1) == 1 and m1[0][0] == 'Their Light Neutron Blaster II ×5' and ' DPS · you ' in m1[0][2] and 'DPS applied to you' in (pg.get_attribute(f'{MV} .weak-picks .wp-stat', 'title') or ''),
           f'My ship view: their blasters, the page\'s own wpRank ({m1})')
     # a state change on my ship (Drone Damage Amplifier off): nothing amber inside the picks; back in the threat
@@ -133,12 +139,13 @@ def desktop(b):
     # collapsed card: the picks in the summary row
     pg.locator(f'{MV} button.cc-toggle[data-card="weak"]').first.click(); pg.wait_for_timeout(600)
     sumv = pg.inner_text(f'{MV} button.cc-row[data-card="weak"] .wp-sum') if pg.locator(f'{MV} button.cc-row[data-card="weak"] .wp-sum').count() else ''
-    check(sumv.startswith('their ') and m1[0][1] in sumv and not vis(pg, f'{MV} button.cc-row[data-card="weak"] .cc-sum'), f'collapsed Weaknesses: summary "{sumv}"')
+    check(sumv.startswith('their ') and m1[0][1] in sumv and not vis(pg, f'{MV} button.cc-row[data-card="weak"] .cc-sum') and title(pg, MV).startswith('your weaknesses'),
+          f'collapsed Weaknesses: "{title(pg, MV)[:16]}", summary "{sumv}"')
     pg.locator(f'{MV} button.cc-toggle[data-card="weak"]').first.click(); pg.wait_for_timeout(300)
     pg.click(f'{R} .mys-sw-btn.is-threat'); settle(pg)
     # Use in assessments off -> generic tiles
     pg.click('#myShipUseLabel'); pg.wait_for_timeout(400)
-    check(vis(pg, f'{TV} .weak-generic') and not vis(pg, f'{TV} .weak-picks') and not vis(pg, f'{TV} .wp-tag'), '"Use in assessments" off: generic tiles back')
+    check(vis(pg, f'{TV} .weak-generic') and not vis(pg, f'{TV} .weak-picks') and title(pg, TV) == 'threat weaknesses', '"Use in assessments" off: generic tiles back')
     pg.click('#myShipUseLabel'); pg.wait_for_selector(f'{TV} .weak-picks .wp-stat', timeout=60000)
     # Pilot losses: their picks follow the visible tab
     pg.click('#tabBtnPilot')
@@ -162,7 +169,7 @@ def desktop(b):
     # Viewing my ship (Fit Analyzer): no opponent, generic tiles
     pg.click('#tabBtnFit'); pg.click('#myShipChip'); pg.click('#myShipPanel [data-act="open"]'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
     pg.keyboard.press('Escape')
-    check(vis(pg, f'{R} .weak-generic') and not vis(pg, f'{R} .weak-picks'), '"Viewing my ship": generic tiles (no opponent)')
+    check(vis(pg, f'{R} .weak-generic') and not vis(pg, f'{R} .weak-picks') and title(pg, R) == 'your weaknesses', f'"Viewing my ship": generic tiles (no opponent), "{title(pg, R)}"')
     check(not errs, f'desktop: no page errors {errs}')
     ctx.close()
 

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-24 — Why "you last" / "they last", and Threat / Your Weaknesses</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+blockquote{margin:8px 0; padding:6px 12px; border-left:3px solid #ccc; color:#333;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Why "you last" / "they last", and Threat / Your Weaknesses</h1>
+<p><span class="tag">Feature</span><span class="tag">Design</span> 2026-10-24 &middot; <code>v2026.10.14.57</code> &rarr; <code>v2026.10.14.58</code>. Mockups: the chart canvas, page "Time to kill why + Weaknesses".</p>
+<p>the owner (2026-10-24), after the Ancillary Shield Booster fix: "the info you provided about when your shield breaks and why ... can we easily provide that info to users as well?" Then, on the mockups: "Option A works for the board. For the weaknesses card, it looks like longer hull names could cause some wrapping text. probably best if we just go with "Threat Weaknesses" and "Your Weaknesses". get rid of the "your guns" and "their guns" pill. instead, use the perspective specific color association on the "Threat" and "Your"."</p>
+
+<h2>The board: why a time is what it is</h2>
+<ul>
+<li><b>What you see:</b> "you last" and "they last" have a dotted underline.
+<ul>
+<li>With a mouse, hover the time: a panel under it gives a sentence or two. A click still switches the view, as before.</li>
+<li>On a phone, tap the time: the panel opens as a sheet from the bottom, with a close button, and the view doesn't switch. A tap on the label under it ("you last") or anywhere else on the half still switches.</li>
+<li>With a keyboard, the panel shows while the half has focus. A screen reader reads the same words as the half's description.</li>
+</ul></li>
+<li><b>The words</b> (the owner's fits at 48.9 km):
+<blockquote><b>You last 1 min 27 s.</b> Your shield breaks at 1:06, 21 s into your X-Large Ancillary Shield Booster's first reload: it repairs 196 HP/s for 45 s, then reloads for 1 min. With no armor or hull repairer, the rest goes in 21 s.</blockquote>
+<blockquote><b>They last 7 min 20 s.</b> Their X-Large Ancillary Shield Booster has 9 charges, one clip: it repairs 196 HP/s for 45 s, then has nothing left to load. Their shield's regen alone can't keep up, and it breaks at 5:40. With no armor or hull repairer, the rest goes in 1 min 40 s.</blockquote></li>
+<li><b>Where they come from:</b> the time to kill's own steps, kept layer by layer (<code>ttkTrace</code>; <code>ttkSeconds</code> is now its total), so the words can't disagree with the number. <code>ttkWhy</code> writes them:
+<ul>
+<li>layers with no repairer go together;</li>
+<li>a layer with one says what its repairers were doing when it broke: an ASB reloading, out of charges, the capacitor run dry (or already dry), or still repairing ("even with ...");</li>
+<li>a layer that holds says what out-repairs the damage, or that the regen does;</li>
+<li>no damage at all: "Their weapons and drones apply nothing to you at this range, so nothing breaks."</li>
+</ul>
+Clock times (1:06) count from the start of the fight.</li>
+<li>An amber time (different from your pasted fit) puts the pasted value at the end of its panel. A native tooltip would have covered the panel.</li>
+<li>Also: a whole minute now reads "1 min", not "1 min 0 s", everywhere <code>ttkText</code> is used.</li>
+</ul>
+
+<h2>Weaknesses</h2>
+<ul>
+<li>The title says whose weaknesses: "<b>Threat</b> Weaknesses" in amber on the threat's view (also with no ship saved), "<b>Your</b> Weaknesses" in cyan in the My Ship Perspective and on the Fit Analyzer's Viewing My Ship page, open and collapsed. Two short words never wrap, where a hull name could.</li>
+<li>The "your guns" / "their guns" tags are gone.</li>
+<li>The capacitor row (and the "No charges" row) now comes after the picks and the generic tiles: the answer first (backlog item, 2026-10-24).</li>
+<li>The word isn't part of the card's name (<code>CARD_NAMES</code>), so other text still says "Weaknesses" (<code>cardWhoHtml</code>, <code>roadmap/card-names.md</code>).</li>
+</ul>
+<p>Presentation only: no PYFA CORE section changed, and no number changed except the "1 min" wording.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>check_matchup.py</code></b> (update-check chain) now also checks the panel, over 94,208 explanations:
+<ul>
+<li>each layer's end against the rule written again in Python;</li>
+<li>every "breaks at m:ss" is a layer's end, and every "capacitor runs dry at m:ss" is the capacitor's time;</li>
+<li>no "undefined" / "NaN" anywhere;</li>
+<li>"You hold" / "They hold" when it holds.</li>
+</ul>
+Result: 0 mismatches.</li>
+<li><b>Regression suite:</b> a hand-worked case for every kind of sentence (13), plus <code>ttkText</code> at whole minutes.</li>
+<li><b>New <code>tools/page_checks/ttk_why_check.py</code></b>, with the owner's two fits: the exact words on hover; under the number and inside the page; nothing moves; mouse leave, Escape, a mouse click switches, Tab; the screen-reader text; Threat / Your titles and colours (open, collapsed, Viewing My Ship); no tags; the capacitor after the picks; on a phone, the sheet, close button, tap outside, and a tap on the label switches. Mutations fail 2 / 1 / 2 / 2 (tap switches the view, no hide on leave, capacitor back on top, the label opening the panel too).</li>
+<li>Updated: <code>mine_damage_check.py</code> and <code>my_ship_check.py</code> tapped the middle of the My ship half to switch, which on a phone is the time now; they tap the half's name instead (the first full run caught it). <code>weakness_picks_check.py</code> (titles instead of tags), <code>layout_check.py</code> (titles less the Threat / Your word), <code>matchup_strip_check.py</code> (an amber time's pasted value is in its panel).</li>
+<li>Regression suite ALL PASS; update-check chain and every page check: see the delivery note.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #54: "never" is a time too. The first draft decided whether a capacitor-run repairer was still on by comparing the break time with the capacitor's empty time. For a layer that holds, the break time is <code>Infinity</code>, so the words said "Your capacitor runs dry at Infinity:NaN:NaN" for a ship holding on its repairers. Two checks caught it before delivery: the hand-worked "holds with a repairer" case, and <code>check_matchup.py</code>'s scan for NaN and its check of every printed time (16 pairs failed). Give the never-ending case its own branch, and scan generated text for NaN, undefined and Infinity. Also: CSS margin isn't a space. "Threat" in its own span read "ThreatWeaknesses" to a screen reader until a real space was added.</p>
+</body>
+</html>

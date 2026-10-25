@@ -111,7 +111,8 @@ def desktop(b):
     rep_id = pg.evaluate("() => myShip.f.estimate.moduleStates.items.find(i => /Armor Repairer/.test(i.name)).typeId")
     pg.locator(f'{R} .mys-mine-view .fl-fit button.ms-state[data-type-id="{rep_id}"][data-from="active"]').first.click(); settle(pg, 900)
     c3 = cells(pg); ch = pg.locator(f'{R} .mys-board .is-changed').count(); chv = pg.locator(f'{R} .mys-mine-view .is-changed').count()
-    tip = pg.evaluate(f"() => {{ const c = document.querySelector('{R} .mys-board .is-changed'); return c ? c.title : ''; }}")
+    # v.58: a time's pasted value is at the end of its "why" panel (data-pasted), not in a native tooltip
+    tip = pg.evaluate(f"() => {{ const c = document.querySelector('{R} .mys-board .is-changed'); return c ? (c.title || (c.dataset.pasted ? 'Your pasted fit: ' + c.dataset.pasted : '')) : ''; }}")
     check(c3 == pg.evaluate(EXPECT, R) and ch >= 1 and 'Your pasted fit:' in tip, f'state change: {ch} board values amber, hover "{tip}" ({c2} -> {c3})')
     check(chv >= 1, f'state change: {chv} changed numbers amber in the My ship view')
     pg.locator(f'{R} .mys-mine-view button.ms-reset').first.click(); settle(pg, 900)

@@ -39,7 +39,9 @@ const out = {};
 const fin = (x) => x === Infinity ? 'inf' : x;
 for (const [t, m] of pairs) out[t + '|' + m] = grid.map(st => {
   const r = sb.mysMatchup({estimate: fits[t]}, {estimate: fits[m]}, st);
-  return r && [r.theirDps, r.yourDps, fin(r.youLast), fin(r.theyLast), r.myTop, r.theirTop, r.keep.you.ok, r.keep.them.ok];
+  // v2026.10.14.58: each layer's end (the "why" panel's times) and the words
+  return r && [r.theirDps, r.yourDps, fin(r.youLast), fin(r.theyLast), r.myTop, r.theirTop, r.keep.you.ok, r.keep.them.ok,
+    r.trace.you.layers.map(l => fin(l.end)), r.trace.them.layers.map(l => fin(l.end)), r.why.you, r.why.them];
 });
 fs.writeFileSync(outPath, JSON.stringify(out));
 '''
@@ -108,10 +110,11 @@ def asb_windows(clip, cyc, reload, cycles):
         n = min(clip, left); out.append((t, t + n * cyc)); t += n * cyc; left -= n
         if left > 0: t += reload
     return out
-def ttk(o, cap_sec, typed, asb=None):
+def ttk(o, cap_sec, typed, asb=None, ends=None):
     """P2, written again from its description: layer by layer, reps while the capacitor lasts, passive shield regen always.
     asb (v.57): {'windows': [...]} for an Ancillary Shield Booster on charges -- it reps inside its windows only, whatever
-    the capacitor; None with an ASB fitted = no charges aboard: it reps while the capacitor lasts like any booster."""
+    the capacitor; None with an ASB fitted = no charges aboard: it reps while the capacitor lasts like any booster.
+    ends (v.58): a list that gets each layer's end time (the "why" panel's clock times)."""
     sh = o.ship.get; res = resonances(o)
     asb_mods = [m for m in o.modules if m.state >= 2 and m.item.group.name == 'Ancillary Shield Booster']
     asb_rate = sum(m.get('shieldBonus') / (m.get('duration') / 1000) for m in asb_mods)
@@ -134,10 +137,13 @@ def ttk(o, cap_sec, typed, asb=None):
             reps = (rep if mid < cap_sec else 0) + (asb_rate if a and any(w0 <= mid < w1 for w0, w1 in a['windows']) else 0)
             net = incoming - reps - passive
             if nxt == math.inf:
-                if net <= 0: return math.inf
+                if net <= 0:
+                    if ends is not None: ends.append(math.inf)
+                    return math.inf
                 t += hp / net; break
             if net > 0 and hp / net <= nxt - t: t += hp / net; break
             hp = min(hp_max, hp - net * (nxt - t)); t = nxt
+        if ends is not None: ends.append(t)
     return t
 
 SIMPLE_REPS = lambda o: not any(m.item.group.name in ('Shield Boost Amplifier', 'Siege Module', 'Ancillary Shield Booster', 'Ancillary Armor Repairer') or {4936, 5275} & set(m.item.effectIds) for m in o.modules if m.state >= 1)
@@ -242,6 +248,9 @@ if __name__ == '__main__':
     out = json.load(open(gout))
     bad, notes, points, inf_seen, finite_cut = 0, [], 0, 0, 0
     keep_seen = [0, 0]
+    why_seen, why_kinds = [0], {}
+    def clock(x):
+        r = int(math.floor(x + 0.5)); return f'{r // 3600}:{r % 3600 // 60:02d}:{r % 60:02d}' if r >= 3600 else f'{r // 60}:{r % 60:02d}'
     capsec = lambda k: math.inf if tool[k]['capacitor'].get('stable') else (tool[k]['capacitor'].get('timeToEmptyExactSec') if tool[k]['capacitor'].get('timeToEmptyExactSec') is not None else math.inf)
     for t, m in pairs:
         tf_fit = CP._Fit(orc(t)); tf_app = CA._Src(orc(t)); t_inp = CP.pyfa_inputs(tf_fit)
@@ -254,8 +263,9 @@ if __name__ == '__main__':
             inc = pyfa_typed(tf_fit, tf_app, t_inp, me, st['range'], y_frac, y_ang, t_frac * their_top, t_ang)
             m_src_fit = CP._Fit(me_o); m_app = CA._Src(me_o); m_inp = CP.pyfa_inputs(m_src_fit)
             outd = pyfa_typed(m_src_fit, m_app, m_inp, tf_fit, st['range'], t_frac, t_ang, y_frac * my_top, y_ang)
-            you_last = ttk(orc(m), capsec(m), inc, asb_input(orc(m), tool[m]['capacitor'], hold_of(m)))
-            they_last = ttk(orc(t), capsec(t), outd, asb_input(orc(t), tool[t]['capacitor'], hold_of(t)))
+            you_ends, they_ends = [], []
+            you_last = ttk(orc(m), capsec(m), inc, asb_input(orc(m), tool[m]['capacitor'], hold_of(m)), you_ends)
+            they_last = ttk(orc(t), capsec(t), outd, asb_input(orc(t), tool[t]['capacitor'], hold_of(t)), they_ends)
             exp = [sum(inc.values()), sum(outd.values()), you_last, they_last, my_top, their_top, y_holds, t_holds]
             got = out[t + '|' + m][i]; points += 1
             inf_seen += (you_last == math.inf) + (they_last == math.inf)
@@ -265,9 +275,28 @@ if __name__ == '__main__':
             keep_seen[0] += (st['mode'] == 'keep') + (st['theirMode'] == 'keep'); keep_seen[1] += (not y_holds) + (not t_holds)
             for n, g, e in zip(names, got, exp):
                 if not close(g, e) and len(diffs) < 4: diffs.append(f'{n} {st} tool {g} independent {e}')
+            # v2026.10.14.58: each layer's end, and the "why" words: every clock time they print is a layer's end
+            for side, g_ends, e_ends, why, total in (('you', got[8], you_ends, got[10], you_last), ('them', got[9], they_ends, got[11], they_last)):
+                why_seen[0] += 1
+                if len(g_ends) != len(e_ends) or not all(close(a, b) for a, b in zip(g_ends, e_ends)):
+                    if len(diffs) < 4: diffs.append(f'{side} layer ends {st} tool {g_ends} independent {e_ends}')
+                words = ' '.join([why['title']] + why['text'])
+                if not why['text'] or re.search(r'undefined|NaN|null|\[object', words):
+                    if len(diffs) < 4: diffs.append(f'{side} why {st}: {words!r}')
+                ok_t = {clock(x) for x in e_ends if x != math.inf}
+                cap_t = clock(capsec(m if side == 'you' else t)) if capsec(m if side == 'you' else t) != math.inf else None
+                for c in re.findall(r'breaks at (\d+:\d\d(?::\d\d)?)', words):
+                    if c not in ok_t and len(diffs) < 4: diffs.append(f'{side} why {st}: "breaks at {c}" is no layer end ({sorted(ok_t)})')
+                for c in re.findall(r'capacitor (?:runs|ran) dry at (\d+:\d\d(?::\d\d)?)', words):
+                    if c != cap_t and len(diffs) < 4: diffs.append(f'{side} why {st}: capacitor dry at {c}, independent {cap_t}')
+                want = 'You hold' if (side == 'you' and total == math.inf) else 'They hold' if total == math.inf else None
+                if want and why['title'] != want and len(diffs) < 4: diffs.append(f'{side} why title {why["title"]!r}')
+                kinds = re.findall(r"(reload:|nothing left to load|runs dry|ran dry|even with|regen alone|holds|With no)", words)
+                for k_ in kinds: why_kinds[k_] = why_kinds.get(k_, 0) + 1
         if diffs: bad += 1; notes.append(f'{t} -> {m}: ' + '; '.join(diffs))
     for n in notes[:30]: print(n)
     print(f'{len(threats)} threats x {len(mine)} of my ships ({", ".join(mine)}), {points} points over {len(GRID)} card settings: {2 * points - inf_seen} finite times ({finite_cut} after the capacitor ran out), {inf_seen} "holds"')
     print(f'Keep at Range: {keep_seen[0]} keeping ships; the "can hold" verdict compared for both ships at every point ({keep_seen[1]} can\'t)')
     print(f'Ancillary Shield Boosters: {len(asb_threats)} as threats, {len(asb_mine)} as my ship ({", ".join(asb_fits)}), plus the owner\'s Orthrus / Osprey Navy Issue both ways')
+    print(f'Why panel: {why_seen[0]} explanations, each layer\'s end compared; sentence kinds seen: {dict(sorted(why_kinds.items()))}')
     print(f'{bad} mismatches (strip numbers vs pyfa projected.py + application.py by damage type, and the time-to-kill rule)')

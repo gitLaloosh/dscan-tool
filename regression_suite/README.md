@@ -593,6 +593,16 @@ re-derived as each stat's hand-table phase reaches them.
 Before adding a golden fit, run `refresh_golden_fixtures.py` in report mode. It
 must print `0 of N fits change`.
 
+## Time-to-kill "why" words (v2026.10.14.58)
+
+After the fits, `run_regression.mjs` runs `ttkWhy` on hand-built defenses (`ttkTrace` on layers with made-up hit
+points, repairers and incoming damage) and compares the title and every sentence with text worked out by hand: an
+Ancillary Shield Booster's one clip then spent, breaking in a reload (also the third reload of two copies), clips
+spent then regen, the capacitor running dry during or before a layer, "even with", a middle layer with no repairer,
+holding on a repairer or on regen, no damage at all, all buffer, and a repairer with no name (an estimate without
+`localReps`). Also `ttkText` at whole minutes ("1 min", not "1 min 0 s"). The times themselves are checked against
+pyfa's inputs by `tools/independent_checks/check_matchup.py`.
+
 ## PYFA CORE lock (2026-10-14)
 
 `run_regression.mjs` runs `tools/check_pyfa_core.mjs` before any fit. If a

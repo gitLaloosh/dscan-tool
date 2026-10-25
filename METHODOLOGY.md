@@ -150,3 +150,8 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
   - Not used, kept here so it can be brought back: pyfa's "factor in reload" average for an ASB, its rate x
     (clip x cycle) / (clip x cycle + reload) for the whole fight (84 HP/s instead of 196 for an X-Large with
     Navy Cap Booster 400s). It hides the reload gap, which is where a ship running an ASB usually breaks.
+  - **Why** (v2026.10.14.58): hover a time on the board (tap it on a phone) for a sentence or two from the same
+    steps: layers with no repairer together ("With no armor or hull repairer, the rest goes in 21 s."), and for a
+    layer with one, what its repairers were doing when it broke: an ASB reloading ("21 s into your X-Large Ancillary
+    Shield Booster's first reload"), out of charges ("then has nothing left to load"), the capacitor run dry, or still
+    repairing ("even with ..."). Clock times (1:06) count from the start of the fight.

@@ -15,7 +15,7 @@ types a name by hand.
 
 | Key | Name | Was / notes |
 |---|---|---|
-| `weak` | Weaknesses | |
+| `weak` | Weaknesses | v2026.10.14.58 (the owner 2026-10-24): its title starts with whose they are, "Threat" (amber) or "Your" (cyan, My Ship Perspective and Viewing My Ship), drawn by `cardWhoHtml`; other text still says "Weaknesses" |
 | `ewar` | EWAR / Misc | some text said "EWAR card" |
 | `fp` | Firepower | |
 | `rs` | Resistance | |

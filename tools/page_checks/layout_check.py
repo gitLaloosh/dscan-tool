@@ -280,7 +280,7 @@ with sync_playwright() as p:
         stats = pg.inner_text(R + ' .fl-stats'); beat = pg.inner_text(R + ' .fl-beat')
         dps_open = total_dps(pg, R); ehp_open = stats.split('Total')[1].split('ehp')[0].strip()
         # v2026.10.14.45: every title is its CARD_NAMES name (roadmap/card-names.md), open and collapsed
-        TITLES = "() => Object.fromEntries([...document.querySelectorAll('" + R + " button.cc-toggle:not(.bay-toggle)')].map(b => [b.dataset.card, (b.querySelector('.cc-title') || b).textContent.trim() === CARD_NAMES[b.dataset.card]]))"
+        TITLES = "() => Object.fromEntries([...document.querySelectorAll('" + R + " button.cc-toggle:not(.bay-toggle)')].map(b => [b.dataset.card, (() => { const c = (b.querySelector('.cc-title') || b).cloneNode(true); c.querySelectorAll('.wk-who').forEach(x => x.remove()); return c.textContent.trim(); })() === CARD_NAMES[b.dataset.card]]))"   # v.58: less the Weaknesses card's "Threat" / "Your"
         t_open = pg.evaluate(TITLES)
         check(set(CARD_KEYS) <= set(t_open) and all(t_open.values()), f'{W}: open card titles are their CARD_NAMES names {t_open}')
         for k in CARD_KEYS:

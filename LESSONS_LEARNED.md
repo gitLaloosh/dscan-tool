@@ -799,6 +799,22 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   output, not only a comment) and close it next, or check that case another way before trusting the number there.
   A user's own fits are the best test cases: keep them in the repo (`tools/independent_checks/fits/`) and check them.
 
+## 54. "Never" is a time too: give Infinity its own branch
+
+- **What happened (v2026.10.14.58, caught before delivery):** the "why" panel asks what each repairer was doing when a
+  layer broke, by comparing the break time with the capacitor's empty time. For a layer that holds, the break time is
+  `Infinity`, so every capacitor-run repairer looked switched off, and the words read "Your capacitor runs dry at
+  Infinity:NaN:NaN" and "Nothing gets through your armor's resists", for a ship that holds because its repairers run
+  for ever.
+- **How it was caught, twice:** a hand-worked case for every kind of sentence in the regression suite ("holds with a
+  repairer"), and `check_matchup.py` scanning 94,208 explanations for "NaN" and checking each printed time against
+  its own layer ends (16 pairs failed).
+- **Do this instead:** when a rule built for a moment (`t < capSec`) is reused at the end of something that may never
+  end, write the never-ending case on its own line (holding: only what runs for ever counts). Test it by name, and
+  scan generated text for `NaN`, `undefined` and `Infinity`.
+- **Also:** CSS margin isn't a space. "Threat" in its own span next to "Weaknesses" looked right, but the text read
+  "ThreatWeaknesses" (what a screen reader names the button). Put a real space between words in separate spans.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

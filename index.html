@@ -1505,6 +1505,11 @@
   .mys-cell-v{font:600 22px var(--mono); color:var(--heading); overflow-wrap:anywhere;}
   .mys-cell-k{font-size:11.5px; color:var(--text-dim);}
   .mys-cell.is-changed .mys-cell-v, .is-changed{color:var(--amber) !important;}
+  /* v2026.10.14.58: "you last" / "they last" open their "why" panel (ttkWhyWire): a dotted underline, as a hint */
+  .mys-cell-why .mys-cell-v{text-decoration:underline dotted var(--text-dim); text-decoration-thickness:1px; text-underline-offset:5px; cursor:help;}
+  .info-body.ttk-why{z-index:60;}
+  .info-body.ttk-why[hidden]{display:none;}
+  @media (min-width: 600px){ .info-body.ttk-why{position:absolute; right:auto; margin-top:0; width:360px;} }
   .mys-mid{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:8px 10px; text-align:center; color:var(--text-dim);}
   .mys-mid .mys-cell-v{font:400 11.5px var(--sans); color:var(--text-dim);}
   .mys-edge{padding:3px 10px; border-radius:10px; border:1px solid var(--line); color:var(--text-dim); font:600 11px var(--mono); white-space:nowrap;}
@@ -1513,14 +1518,17 @@
   .mys-strip-note{margin-top:6px; font-size:11.5px; color:var(--text-dim);}
   .mys-strip-msg{font-size:12px; color:var(--text-dim); padding:8px 0;}
   /* WEAKNESS PICKS (v2026.10.14.42, my-ship-plan.md phase 2b) -- see wpFill(). .mys-picks-on is set by the switch
-     on the threat / My ship view while a ship is saved and "Use in assessments" is on. Tags as in the mockup:
-     cyan "your guns" (threat view), amber "their guns" (My ship view). */
+     on the threat / My ship view while a ship is saved and "Use in assessments" is on. (The "your guns" / "their guns"
+     tags were replaced in v.58 by the card's "Threat" / "Your" title, .wk-who.) */
   .weak-head{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
   .weak-head button.cc-toggle{margin:0;}
-  .wp-tag{display:none; padding:2px 8px; border-radius:10px; font:500 11px var(--mono); white-space:nowrap;}
-  .wp-tag-yours{background:#0f2a31; border:1px solid #1f6f80; color:#8fdcea;}
-  .wp-tag-theirs{background:#2a2114; border:1px solid #8a6529; color:#e6b770;}
-  .mys-threat-view.mys-picks-on .wp-tag-yours, .mys-mine-view.mys-picks-on .wp-tag-theirs{display:inline-block;}
+  /* v2026.10.14.58: "Threat Weaknesses" / "Your Weaknesses" (cardWhoHtml) replace the "your guns" / "their guns" tags */
+  .wk-who{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; font-weight:600; margin-right:2px;}   /* + the toggle's 6 px gap, or the space */
+  .wk-threat{color:var(--amber);}
+  .wk-mine{color:var(--cyan); display:none;}
+  .mys-mine-view .wk-threat, .assess-mine .wk-threat{display:none;}
+  .mys-mine-view .wk-mine, .assess-mine .wk-mine{display:inline;}
+  .weak-cap{margin-top:4px;}   /* the capacitor (and charges-missing) rows, under the picks / tiles since v.58 */
   .weak-picks, .wp-sum{display:none;}
   .mys-picks-on .weak-picks{display:block;}
   .mys-picks-on .weak-generic{display:none;}
@@ -1601,7 +1609,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.57</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.58</span>
     <h1>D-Scan Analyzer</h1>
     <p>Paste a directional scan to see each contact's resistance profile and get a starting recommendation for weapons and drones. Resistance data is pulled live from ESI and cached locally for a week.</p>
     <div class="row" style="margin-top:14px;">
@@ -1750,6 +1758,7 @@ const CARD_INFO = {
  ],
  "weak": [
   "Least resisted: the damage type that gets through its resists best, averaged over shield, armor and hull by how many hit points each layer has (resists as fitted, max skills).",
+  "The title says whose weaknesses these are: the threat's, or yours (Your Weaknesses, in {card:perspective.mine} and on {card:myshippage}).",
   "Capacitor drains: its capacitor runs out with every running module cycling, even at best case (a fitted Capacitor Booster or Ancillary Shield Booster on charges). The ring is how long it lasts; hover it for the numbers. No charges: a booster with none loaded and none in cargo (pasted fits only).",
   "Without your ship: the ammo and drone type for each weapon system that hits that weakness hardest. A turret system that can't deal it falls back to the next weakest type.",
   "With your ship saved and Use in assessments on: your own ammo and drones against it, best first by how long it lasts with that loaded (damage by type against its resists, layer by layer, minus its reps while its capacitor lasts; the rest of your fit as it is). Only the ammo and drones aboard count. The DPS is pyfa's applied DPS at the range and movement set on {card:dmg}. Hover a pick for the next best. In {card:perspective.mine} the same, for their ammo against you."
@@ -1803,8 +1812,8 @@ const CARD_INFO = {
  ],
  "board": [
   "DPS applied to you and to them: pyfa's applied DPS for the fight set in the strip under the board (the range and how each ship moves), as on {card:dmg}. The DPS applied to them uses the same fight, seen from your side.",
-  "They last / you last is not a pyfa number: the damage by type against each layer's resists (shield, then armor, then hull), minus that layer's local repairs and passive shield regen, with the repairs stopping when the capacitor runs out. An Ancillary Shield Booster on charges keeps going without the capacitor: it reps for its clip, reloads for 60 s, and repeats until its charges (loaded and in the hold) run out. \"holds\" means the damage never gets through.",
-  "Edge: who outlasts the other. Faster: the two top speeds. An amber number differs from your pasted fit's own module states; hover it for the pasted value.",
+  "They last / you last is not a pyfa number: the damage by type against each layer's resists (shield, then armor, then hull), minus that layer's local repairs and passive shield regen, with the repairs stopping when the capacitor runs out. An Ancillary Shield Booster on charges keeps going without the capacitor: it reps for its clip, reloads for 60 s, and repeats until its charges (loaded and in the hold) run out. \"holds\" means the damage never gets through. Hover a time (tap it on a phone) for why it breaks when it does.",
+  "Edge: who outlasts the other. Faster: the two top speeds. An amber number differs from your pasted fit's own module states; hover it for the pasted value (for a time, it's at the end of its why).",
   "The strip under the board sets one fight for both perspectives: each ship's movement, with the in-game names (Stopped, Approach, Orbit, Keep at Range), and the range between you. Adjust on {card:dmg} changes the same settings."
  ]
 };
@@ -9605,7 +9614,7 @@ function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, imp
   // switch), then the threat's cards or my ship's.
   el.dataset.mysScope = '1'; el.dataset.mysView = 'threat';
   el.innerHTML = `
-    <div class="assess-box assess-solo">
+    <div class="assess-box assess-solo${mine ? ' assess-mine' : ''}">
       ${headHtml}
       ${mine ? '' : mysSwitchHostHtml(fitName ? `${shipName} · ${fitName}` : shipName)}
       <div class="mys-threat-view">
@@ -11625,7 +11634,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         // Siege, Triage, Industrial Core penalized together) -- moduleAttrMult.
         if(cycleSec > 0) shieldRepHpPerSec += qty * (attrVal(dogma, SHIELD_BOOST_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'shieldBonus') / cycleSec);
         if(cycleSec > 0) localReps.push({layer: 'shield', rate: qty * (attrVal(dogma, SHIELD_BOOST_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'shieldBonus') / cycleSec),
-          cycleSec, qty, moduleId: dt.id, asb: groupName === ANCILLARY_SHIELD_BOOSTER_GROUP_NAME,
+          cycleSec, qty, name: dt.type.name, moduleId: dt.id, asb: groupName === ANCILLARY_SHIELD_BOOSTER_GROUP_NAME,
           capacity: attrVal(dogma, CAP_BOOSTER_MODULE_CAPACITY_ATTR, 0), chargeRate: attrVal(dogma, ASB_CHARGE_RATE_ATTR, 1) || 1, reloadSec: attrVal(dogma, CAP_BOOSTER_RELOAD_TIME_ATTR, 0) / 1000});
       }else if(groupName.includes('armor repair')){
         hasArmorRep = true;
@@ -11635,12 +11644,12 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
           const boostMult = attrVal(dogma, ANCILLARY_ARMOR_BOOST_MULT_ATTR, 1);
           armorRepHpPerSec += qty * (amount / effectiveCycleSec);
           armorRepBurstHpPerSec += qty * ((amount * boostMult) / effectiveCycleSec);
-          localReps.push({layer: 'armor', rate: qty * (amount / effectiveCycleSec)});   // (an Ancillary Armor Repairer's paste boost and reload: not modelled yet)
+          localReps.push({layer: 'armor', rate: qty * (amount / effectiveCycleSec), qty, name: dt.type.name});   // (an Ancillary Armor Repairer's paste boost and reload: not modelled yet)
         }
       }else if(groupName.includes('hull repair')){
         hasHullRep = true;
         if(cycleSec > 0) hullRepHpPerSec += qty * (attrVal(dogma, HULL_REPAIR_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'structureDamageAmount') / cycleSec);
-        if(cycleSec > 0) localReps.push({layer: 'hull', rate: qty * (attrVal(dogma, HULL_REPAIR_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'structureDamageAmount') / cycleSec)});
+        if(cycleSec > 0) localReps.push({layer: 'hull', rate: qty * (attrVal(dogma, HULL_REPAIR_AMOUNT_ATTR, 0) * moduleAttrMult(dogma, dt.group.name, 'structureDamageAmount') / cycleSec), qty, name: dt.type.name});
       }
     }
     const dcEffIds = new Set((dt.type.dogma_effects || []).map(e => e.effect_id));
@@ -14110,10 +14119,18 @@ function cardIsOpen(f, key){
 }
 // v2026.10.14.45: the title comes from CARD_NAMES by key (no title argument, so a card can't be named by hand).
 function cardLabelHtml(key, cls = 'fit-subsection-label', style = ''){
-  return `<button type="button" class="cc-toggle ${cls}" data-card="${key}" aria-expanded="true" title="Collapse"${style ? ` style="${style}"` : ''}>${CC_CHEV}${escapeHtml(cardName(key))}</button>`;
+  return `<button type="button" class="cc-toggle ${cls}" data-card="${key}" aria-expanded="true" title="Collapse"${style ? ` style="${style}"` : ''}>${CC_CHEV}${cardWhoHtml(key)}${escapeHtml(cardName(key))}</button>`;
 }
 function collapsedCardHtml(key, summary, shell = 'fit-summary', extraCls = '', extraHtml = ''){
-  return `<div class="${shell} cc-closed"><button type="button" class="cc-toggle cc-row${extraCls ? ' ' + extraCls : ''}" data-card="${key}" aria-expanded="false" title="Expand">${CC_CHEV}<span class="cc-title">${escapeHtml(cardName(key))}</span><span class="cc-sum">${escapeHtml(summary)}</span>${extraHtml}</button></div>`;
+  return `<div class="${shell} cc-closed"><button type="button" class="cc-toggle cc-row${extraCls ? ' ' + extraCls : ''}" data-card="${key}" aria-expanded="false" title="Expand">${CC_CHEV}<span class="cc-title">${cardWhoHtml(key)}${escapeHtml(cardName(key))}</span><span class="cc-sum">${escapeHtml(summary)}</span>${extraHtml}</button></div>`;
+}
+// v2026.10.14.58 (the owner 2026-10-24: "probably best if we just go with "Threat Weaknesses" and "Your Weaknesses". get rid
+// of the "your guns" and "their guns" pill. instead, use the perspective specific color association on the "Threat"
+// and "Your""): whose weaknesses the card shows, before its name. Both words are drawn and CSS shows one: "Your"
+// (cyan) in the My Ship Perspective and on the Fit Analyzer's Viewing My Ship page, "Threat" (amber) everywhere else.
+// Not part of the name (CARD_NAMES), so every other place that names the card still says "Weaknesses".
+function cardWhoHtml(key){
+  return key === 'weak' ? '<span class="wk-who wk-threat">Threat</span><span class="wk-who wk-mine">Your</span> ' : '';   // the space: words apart for a screen reader (ignored between flex items)
 }
 // Wires every card toggle inside `wrap`; rerender() rebuilds the layout (and re-wires). Focus returns to
 // the same toggle so a keyboard user stays in place.
@@ -14154,19 +14171,18 @@ function fitSummaryParts(f){
   const weakSummary = `${DMG_FULL[estimate.weakest]} weakest (${100 - estimate.weaknessPct}% resist) · drone ${estimate.drones.primary.name}`;
   // v2026.10.14.42 (My Ship phase 2b): with a ship saved and "Use in assessments" on, the switch puts
   // .mys-picks-on on the threat / My ship view and CSS swaps the generic tiles (.weak-generic) for the picks
-  // (.weak-picks, filled by wpFill: your guns on them / their guns on you) and the tag in the header. Without a
-  // saved ship, or in the Fit Analyzer's "Viewing my ship", the card is as before. The picks keep their own
-  // classes, so mysMarkChanged (M6) never compares them.
+  // (.weak-picks, filled by wpFill: your guns on them / their guns on you). Without a saved ship, or in the Fit
+  // Analyzer's "Viewing my ship", the card is as before. The picks keep their own classes, so mysMarkChanged (M6)
+  // never compares them. v.58: the title says whose weaknesses ("Threat" / "Your", cardWhoHtml) and the capacitor
+  // rows come after the picks / tiles (the owner's backlog item: the answer first).
   const weaknessesCardHtml = !cardIsOpen(f, 'weak') ? collapsedCardHtml('weak', weakSummary, 'fit-summary', '', '<span class="wp-sum"></span>') : `
     <div class="fit-summary">
-      <div class="weak-head">${cardLabelHtml('weak')}<span class="card-tools"><span class="wp-tag wp-tag-yours">your guns</span><span class="wp-tag wp-tag-theirs">their guns</span>${infoBtnHtml('weak')}</span></div>
+      <div class="weak-head">${cardLabelHtml('weak')}<span class="card-tools">${infoBtnHtml('weak')}</span></div>
       <div class="weakness-highlight">
         <div class="weakness-badge-row">
           <span class="dmg-badge lg ${estimate.weakest}">${DMG_FULL[estimate.weakest]}</span>
           <span class="weak-least">${ctxHtml(`least resisted overall (${100 - estimate.weaknessPct}% resist)`)}</span>
         </div>
-        ${estimate.capacitor.weak ? capWeakGaugeHtml(estimate.capacitor) : ''}
-        ${chargesMissingFlagHtml(estimate.capacitor)}
         <div class="weak-picks" aria-live="polite"></div>
         <div class="rec-grid weak-generic">
           <div class="rec-stat">
@@ -14179,6 +14195,7 @@ function fitSummaryParts(f){
           ${turretRecTileHtml('Hybrid', estimate.turretRecs.hybrid, estimate.weakest, estimate.secondWeakest)}
           ${turretRecTileHtml('Projectile', estimate.turretRecs.projectile, estimate.weakest, estimate.secondWeakest)}
         </div>
+        ${estimate.capacitor.weak || chargesMissingFlagHtml(estimate.capacitor) ? `<div class="weak-cap">${estimate.capacitor.weak ? capWeakGaugeHtml(estimate.capacitor) : ''}${chargesMissingFlagHtml(estimate.capacitor)}</div>` : ''}
       </div>
     </div>`;
 
@@ -15820,24 +15837,29 @@ function dmgTypedPoint(app, tgt, q){
 function ttkLocalReps(reps, pairedById, tgById, cargoDt, missing, tally){
   const cargoQty = (id) => ['Cargo', 'Fleet hangar'].reduce((s, g) => { const d = (tally[g] || {})[id]; return s + (d ? (d.totalQty || 1) / (d.lossCount || 1) : 0); }, 0);
   return reps.map(r => {
-    if(!r.asb) return {layer: r.layer, rate: r.rate};
+    const base = {layer: r.layer, rate: r.rate, name: r.name, qty: r.qty};   // v.58: name and count, for the "why" panel
+    if(!r.asb) return base;
     const pid = pairedById.get(r.moduleId), cdt = pid !== undefined ? tgById.get(pid) : cargoDt;
     const vol = cdt && !cdt.error ? attrVal(cdt.type.dogma_attributes || [], CHARGE_VOLUME_ATTR, 0) || cdt.type.volume || 0 : 0;
     const clip = vol > 0 ? Math.floor(Math.floor(r.capacity / vol + 1e-9) / r.chargeRate) : 0;
-    if(missing || !(clip > 0) || !(r.reloadSec >= 0)) return {layer: r.layer, rate: r.rate};   // no charge aboard: on the capacitor
+    if(missing || !(clip > 0) || !(r.reloadSec >= 0)) return base;   // no charge aboard: on the capacitor
     // charges per copy: a full loaded clip (when loaded, or assumed with nothing in the hold) plus the hold
     const hold = cdt ? cargoQty(cdt.id) : 0;
     const total = (pid !== undefined ? clip * r.qty : 0) + hold || clip * r.qty;
-    return {layer: r.layer, rate: r.rate, asb: {cycleSec: r.cycleSec, clip, reloadSec: r.reloadSec, cycles: Math.floor(total / r.qty / r.chargeRate)}};
+    return Object.assign(base, {asb: {cycleSec: r.cycleSec, clip, reloadSec: r.reloadSec, cycles: Math.floor(total / r.qty / r.chargeRate), chargeRate: r.chargeRate}});
   });
 }
 // Where an ASB on charges is at time t: cycling ('on'), reloading ('off'), or out of charges ('spent'); next = when that
 // changes. Spent, it stops: the capacitor simulation the fight uses had it on charges (no drain), and on the capacitor
 // an ASB needs far more than a sub-capital recharges (an X-Large: 1,188 GJ a cycle).
+function ttkAsbSpentAt(a){   // when its last charge's cycle ends
+  const k = a.clip, P = k * a.cycleSec + a.reloadSec, full = Math.floor(a.cycles / k), rem = a.cycles - full * k;
+  return rem > 0 ? full * P + rem * a.cycleSec : Math.max(0, full * P - a.reloadSec);
+}
 function ttkAsbState(a, t){
   const k = a.clip, P = k * a.cycleSec + a.reloadSec, N = a.cycles;
   const full = Math.floor(N / k), rem = N - full * k;
-  const end = rem > 0 ? full * P + rem * a.cycleSec : Math.max(0, full * P - a.reloadSec);
+  const end = ttkAsbSpentAt(a);
   if(t >= end - 1e-9) return {mode: 'spent', next: Infinity};
   const j = Math.floor((t + 1e-9) / P), onLen = (j < full ? k : rem) * a.cycleSec;
   if(t - j * P < onLen - 1e-9) return {mode: 'on', next: Math.min(j * P + onLen, end)};
@@ -15857,15 +15879,21 @@ function ttkDefense(est){
 // Seconds until hull is gone, Infinity if a layer holds. Layer by layer; passive regen always; each repairer runs until
 // capSec (the capacitor simulation's empty time), except an Ancillary Shield Booster on charges, which runs its clip,
 // reloads, and stops once its charges are spent (v2026.10.14.57). A layer that's full stays full.
-function ttkSeconds(def, typed){
+function ttkSeconds(def, typed){ return ttkTrace(def, typed).total; }
+// v2026.10.14.58: the same steps kept layer by layer (when each layer starts and ends, what gets through it), for the
+// "why" panel, so its words can't disagree with the number.
+function ttkTrace(def, typed){
+  const layers = [];
   let t = 0;
   for(const l of def.layers){
     if(!(l.hp > 0)) continue;
     const incoming = DMG.reduce((s, d) => s + (typed[d] || 0) * (l.res[d] === undefined ? 1 : l.res[d]), 0);
+    const start = t;
     t = ttkLayerEnd(l, incoming, t, def.capSec);
-    if(t === Infinity) return Infinity;
+    layers.push({key: l.key, start, end: t, incoming, passive: l.passive, reps: l.reps || []});
+    if(t === Infinity) break;
   }
-  return t;
+  return {layers, total: t, capSec: def.capSec};
 }
 function ttkLayerEnd(l, incoming, t, capSec){
   let hp = l.hp;
@@ -15891,8 +15919,86 @@ function ttkLayerEnd(l, incoming, t, capSec){
 function ttkText(s){
   if(s === Infinity) return 'holds';
   if(s < 60) return `${Math.max(1, Math.round(s))} s`;
-  if(s < 3600){ const m = Math.floor(s / 60), r = Math.round(s - m * 60); return r === 60 ? `${m + 1} min` : `${m} min ${r} s`; }
+  if(s < 3600){ const m = Math.floor(s / 60), r = Math.round(s - m * 60); return r === 60 ? `${m + 1} min` : r === 0 ? `${m} min` : `${m} min ${r} s`; }   // v.58: "1 min", not "1 min 0 s"
   return 'over an hour';
+}
+
+// THE "WHY" BEHIND "YOU LAST" / "THEY LAST" (v2026.10.14.58; the owner 2026-10-24, on the shield-break explanation: "can we
+// easily provide that info to users as well?", then option A of the mockup: "Option A works for the board"). A sentence
+// or two from ttkTrace (the time to kill's own steps): layers with no repairer go together ("With no armor or hull
+// repairer, the rest goes in 21 s."); a layer with one says what its repairers were doing when it broke: an Ancillary
+// Shield Booster reloading ("21 s into your X-Large Ancillary Shield Booster's first reload: it repairs 196 HP/s for
+// 45 s, then reloads for 60 s"), out of charges, the capacitor run dry, or still repairing. Clock times (1:06) are
+// from the start of the fight, durations (21 s) as ttkText. Presentation only.
+function ttkClock(s){
+  const r = Math.round(s), two = (n) => String(n).padStart(2, '0');
+  return r >= 3600 ? `${Math.floor(r / 3600)}:${two(Math.floor(r % 3600 / 60))}:${two(r % 60)}` : `${Math.floor(r / 60)}:${two(r % 60)}`;
+}
+function ttkOrdinal(n){
+  const w = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'][n - 1];
+  if(w) return w;
+  const t = n % 100, u = n % 10;
+  return `${n}${t >= 11 && t <= 13 ? 'th' : u === 1 ? 'st' : u === 2 ? 'nd' : u === 3 ? 'rd' : 'th'}`;
+}
+function ttkWhy(side, tr, dps){
+  const you = side === 'you', P = you ? 'Your' : 'Their', p = you ? 'your' : 'their';
+  const title = tr.total === Infinity ? (you ? 'You hold' : 'They hold') : `${you ? 'You' : 'They'} last ${ttkText(tr.total)}`;
+  if(!(dps > 0)) return {title, text: [you ? 'Their weapons and drones apply nothing to you at this range, so nothing breaks.' : 'Your weapons and drones apply nothing to them at this range, so nothing breaks.']};
+  const list = (a, w) => a.length < 2 ? a[0] : `${a.slice(0, -1).join(', ')} ${w} ${a[a.length - 1]}`;
+  const hp = (x) => `${dmgFmt(x)} HP/s`;
+  const nm = (r, layer) => r.name ? (r.qty > 1 ? `${r.name} ×${r.qty}` : r.name) : `${layer} repairers`;
+  const many = (rs) => rs.length > 1 || rs.some(r => r.qty > 1 || !r.name);
+  const names = (rs, layer) => list(rs.map(r => nm(r, layer)), 'and');
+  const L = tr.layers, text = [];
+  const plain = (x) => !x.reps.length && x.end !== Infinity;
+  for(let i = 0; i < L.length;){
+    if(plain(L[i])){
+      let j = i;
+      while(j + 1 < L.length && plain(L[j + 1])) j++;
+      const keys = L.slice(i, j + 1).map(x => x.key), dur = ttkText(L[j].end - L[i].start), go = keys.length > 1 ? 'go' : 'goes';
+      if(i === 0) text.push(`With no ${j === L.length - 1 ? 'local' : list(keys, 'or')} repairer, ${p} ${list(keys, 'and')} ${go} in ${dur}.`);
+      else if(j === L.length - 1) text.push(`With no ${list(keys, 'or')} repairer, the rest goes in ${dur}.`);
+      else text.push(`With no ${list(keys, 'or')} repairer, ${p} ${list(keys, 'and')} ${go} in ${dur} more.`);
+      i = j + 1; continue;
+    }
+    const x = L[i++], hold = x.end === Infinity, t = x.end;
+    const on = [], capOff = [], spent = [];
+    let off = null;
+    for(const r of x.reps){
+      if(r.asb){
+        const st = ttkAsbState(r.asb, t);
+        if(st.mode === 'on') on.push(r); else if(st.mode === 'spent') spent.push(r); else if(!off) off = r; else on.push(r);
+      }else if(hold ? tr.capSec === Infinity : t < tr.capSec - 1e-9) on.push(r); else capOff.push(r);   // holding: only what runs for ever
+    }
+    for(const r of spent){
+      const a = r.asb, pl = r.qty > 1, it = pl ? 'they' : 'it', has = pl ? 'have' : 'has';
+      const ch = a.cycles * (a.chargeRate || 1), chs = `${ch} charge${ch === 1 ? '' : 's'}${pl ? ' each' : ''}`;
+      if(a.cycles <= a.clip) text.push(`${P} ${nm(r)} ${has} ${chs}${a.cycles === a.clip ? ', one clip' : ''}: ${it} ${pl ? 'repair' : 'repairs'} ${hp(r.rate)} for ${ttkText(a.cycles * a.cycleSec)}, then ${has} nothing left to load.`);
+      else{
+        const full = Math.floor(a.cycles / a.clip), rem = (a.cycles - full * a.clip) * (a.chargeRate || 1);
+        text.push(`${P} ${nm(r)} ${has} ${chs}, ${full} clip${full > 1 ? 's' : ''}${rem ? ` and ${rem} more` : ''}: ${it} ${pl ? 'repair' : 'repairs'} ${hp(r.rate)} for ${ttkText(a.clip * a.cycleSec)} at a time with a ${ttkText(a.reloadSec)} reload between, and ${pl ? 'run' : 'runs'} out at ${ttkClock(ttkAsbSpentAt(a))}.`);
+      }
+    }
+    if(capOff.length){
+      const n = names(capOff, x.key), pl = many(capOff);
+      text.push(tr.capSec <= x.start + 1e-9 ? `${P} capacitor ran dry at ${ttkClock(tr.capSec)}, so ${p} ${n} ${pl ? 'are' : 'is'} already off.`
+        : `${P} capacitor runs dry at ${ttkClock(tr.capSec)}, and ${p} ${n} ${pl ? 'stop' : 'stops'}.`);
+    }
+    const rate = on.reduce((s, r) => s + r.rate, 0);
+    if(off){
+      const a = off.asb, P2 = a.clip * a.cycleSec + a.reloadSec, j = Math.floor((t + 1e-9) / P2), into = t - j * P2 - a.clip * a.cycleSec, pl = off.qty > 1;
+      text.push(`${P} ${x.key} breaks at ${ttkClock(t)}, ${ttkText(into)} into ${pl ? `the ${ttkOrdinal(j + 1)} reload of ${p} ${nm(off)}` : `${p} ${nm(off)}'s ${ttkOrdinal(j + 1)} reload`}: ${pl ? 'they repair' : 'it repairs'} ${hp(off.rate)} for ${ttkText(a.clip * a.cycleSec)}, then ${pl ? 'reload' : 'reloads'} for ${ttkText(a.reloadSec)}.`);
+      if(on.length) text.push(`${P} ${names(on, x.key)} ${many(on) ? 'keep' : 'keeps'} repairing ${hp(rate)}, not enough on ${many(on) ? 'their' : 'its'} own.`);
+    }else if(hold){
+      const more = rate + x.passive > x.incoming + 0.5 ? 'more than' : 'as much as';
+      if(on.length) text.push(`${P} ${x.key} holds: ${p} ${names(on, x.key)} ${many(on) ? 'repair' : 'repairs'} ${hp(rate)}${x.passive > 0 ? ` and its regen ${hp(x.passive)}` : ''}, ${more} the ${hp(x.incoming)} that gets through.`);
+      else if(x.passive > 0) text.push(`${P} ${x.key}'s regen, ${hp(x.passive)}, is ${more} the ${hp(x.incoming)} that gets through, so it holds.`);
+      else text.push(`Nothing gets through ${p} ${x.key}'s resists, so it holds.`);
+    }else if(on.length) text.push(`${P} ${x.key} breaks at ${ttkClock(t)} even with ${p} ${names(on, x.key)} repairing ${hp(rate)}.`);
+    else if(x.passive > 0) text.push(`${P} ${x.key}'s regen alone can't keep up, and it breaks at ${ttkClock(t)}.`);
+    else text.push(`${P} ${x.key} breaks at ${ttkClock(t)}.`);
+  }
+  return {title, text};
 }
 // The strip's numbers for threat fit tf against my ship fit mf, at the card state st.
 // The fight the card describes, both ways: tApp on me at qIn (their DPS on you), mApp on them at qOut (the mirror).
@@ -15920,11 +16026,13 @@ function mysMatchup(tf, mf, st){
   const {tEst, mEst, tApp, mApp, me, them, myTop, theirTop} = F;
   const inc = dmgTypedPoint(tApp, me, F.qIn);
   const out = dmgTypedPoint(mApp, them, F.qOut);
-  const youLast = ttkSeconds(ttkDefense(mEst), inc.typed), theyLast = ttkSeconds(ttkDefense(tEst), out.typed);
+  const youTr = ttkTrace(ttkDefense(mEst), inc.typed), themTr = ttkTrace(ttkDefense(tEst), out.typed);   // v.58: the steps too
+  const youLast = youTr.total, theyLast = themTr.total;
   const diff = myTop - theirTop;
   // v2026.10.14.43 scoreboard: the edge goes to whoever outlasts the other (both "holds": neither breaks the other).
   const edge = youLast === theyLast ? (youLast === Infinity ? 'none' : 'even') : (youLast > theyLast ? 'you' : 'threat');
   return {theirDps: inc.dps, yourDps: out.dps, youLast, theyLast, myTop, theirTop, edge, keep: F.keep,
+    trace: {you: youTr, them: themTr}, why: {you: ttkWhy('you', youTr, inc.dps), them: ttkWhy('them', themTr, out.dps)},
     cells: [
       {key: 'their', label: 'DPS applied to you', value: dmgFmt(inc.dps)},
       {key: 'theyLast', label: 'they last', value: ttkText(theyLast)},
@@ -15995,8 +16103,14 @@ async function mysRenderStrip(host){
     const bc = base && base.cells.find(x => x.key === c.key);
     const changed = !!(bc && bc.value !== c.value);
     cell.classList.toggle('is-changed', changed);
-    if(changed) cell.title = `Your pasted fit: ${bc.value}`; else cell.removeAttribute('title');
+    // v.58: "you last" / "they last" show the pasted value in their "why" panel (a native tooltip would cover it)
+    const tipKey = cell.classList.contains('mys-cell-why') ? 'pasted' : null;
+    if(tipKey){ if(changed) cell.dataset.pasted = bc.value; else delete cell.dataset.pasted; }
+    else if(changed) cell.title = `Your pasted fit: ${bc.value}`; else cell.removeAttribute('title');
   }
+  host._why = m.why;   // v.58
+  board.querySelectorAll('.mys-why-sr').forEach(e => { const w = m.why[e.dataset.why]; e.textContent = `${w.title}. ${w.text.join(' ')}`; });
+  ttkWhyRefresh(host);
   // v2026.10.14.48 (subtext rule 4): each number keeps the width of the widest value it can show, so the second
   // number in a half doesn't slide when the first changes ("26 s" -> "1 min 7 s").
   const widest = {their: dmgWidestDps(tf.estimate.application), your: dmgWidestDps(mf.estimate.application), theyLast: 'over an hour', youLast: 'over an hour'};
@@ -16702,10 +16816,14 @@ function mysViewOf(host){
   const scope = host.closest('[data-mys-scope]');
   return ((scope ? scope.dataset.mysView : host.dataset.view) === 'mine') ? 'mine' : 'threat';
 }
+let mysWhySeq = 0;
 function mysBoardHtml(host){
-  const cell = (key, label, numFirst = true) => `<span class="mys-cell mys-cell-${key}" data-cell="${key}">${numFirst ? `<span class="mys-cell-v">…</span><span class="mys-cell-k">${label}</span>` : `<span class="mys-cell-k">${label}</span><span class="mys-cell-v">…</span>`}</span>`;
+  const why = (key) => key === 'theyLast' || key === 'youLast';   // v.58: the "why" panel on hover / tap (ttkWhyWire)
+  const cell = (key, label, numFirst = true) => `<span class="mys-cell mys-cell-${key}${why(key) ? ' mys-cell-why' : ''}" data-cell="${key}">${numFirst ? `<span class="mys-cell-v">…</span><span class="mys-cell-k">${label}</span>` : `<span class="mys-cell-k">${label}</span><span class="mys-cell-v">…</span>`}</span>`;
+  const id = `mysWhy${++mysWhySeq}`;
   return `<div class="mys-board" role="group" aria-label="${escapeHtml(cardName('board'))}: pick a side to show that ship">
-      <button type="button" class="mys-sw-btn mys-half is-threat" data-view="threat" aria-pressed="false" title="Show the ${escapeHtml(cardName('perspective.threat'))}">
+      <span class="mys-why-sr" id="${id}-them" data-why="them" hidden></span><span class="mys-why-sr" id="${id}-you" data-why="you" hidden></span>
+      <button type="button" class="mys-sw-btn mys-half is-threat" data-view="threat" aria-pressed="false" aria-describedby="${id}-them" title="Show the ${escapeHtml(cardName('perspective.threat'))}">
         <span class="mys-half-head"><span class="mys-sw-k">Threat</span><span class="mys-sw-v">${escapeHtml(host.dataset.threat || '')}</span></span>
         <span class="mys-half-nums">${cell('their', 'DPS applied to you')}${cell('theyLast', 'they last')}</span>
       </button>
@@ -16715,7 +16833,7 @@ function mysBoardHtml(host){
         <svg class="mys-mid-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h12l-3-3"></path><path d="M17 17H5l3 3"></path></svg>
         <span class="mys-cell mys-cell-faster" data-cell="faster"><span class="mys-cell-v">…</span></span>
       </div>
-      <button type="button" class="mys-sw-btn mys-half is-mine" data-view="mine" aria-pressed="false" title="Show the ${escapeHtml(cardName('perspective.mine'))}">
+      <button type="button" class="mys-sw-btn mys-half is-mine" data-view="mine" aria-pressed="false" aria-describedby="${id}-you" title="Show the ${escapeHtml(cardName('perspective.mine'))}">
         <span class="mys-half-head"><span class="mys-sw-v">${escapeHtml(myShipLabel())}</span><span class="mys-sw-k">My ship</span></span>
         <span class="mys-half-nums">${cell('youLast', 'you last')}${cell('your', 'DPS applied to them')}</span>
       </button>
@@ -16723,6 +16841,85 @@ function mysBoardHtml(host){
     ${mysFightStripHtml(host)}
     <div class="mys-strip-note" role="status"></div>`;
 }
+// v2026.10.14.58: the "why" panel (ttkWhy's words). One for the page. A mouse hovering "you last" / "they last" shows it
+// under the number, and a click still switches the view. A tap (touch or pen) on the number itself opens it instead
+// of switching (a sheet on a phone, with a close button); the rest of the half, its label included, still switches. A keyboard user gets it
+// while the half has focus, and a screen reader reads it as the half's description (.mys-why-sr).
+const ttkWhyPop = {el: null, cell: null, mode: null, pointer: 'mouse'};
+function ttkWhyEl(){
+  if(ttkWhyPop.el && ttkWhyPop.el.isConnected) return ttkWhyPop.el;
+  const el = document.createElement('div');
+  el.className = 'info-body ttk-why'; el.hidden = true;
+  el.innerHTML = '<div class="info-head"><span class="ttk-why-title"></span><button type="button" class="info-close" aria-label="Close">×</button></div><div class="ttk-why-text"></div>';
+  el.querySelector('.info-close').addEventListener('click', () => ttkWhyHide());
+  document.body.appendChild(el);
+  return (ttkWhyPop.el = el);
+}
+function ttkWhyFill(cell){
+  const host = cell.isConnected && cell.closest('.mys-switch-host');
+  const w = host && host._why && host._why[cell.dataset.cell === 'youLast' ? 'you' : 'them'];
+  if(!w) return false;
+  const el = ttkWhyEl();
+  el.querySelector('.ttk-why-title').textContent = w.title;
+  const box = el.querySelector('.ttk-why-text');
+  box.textContent = '';
+  for(const t of w.text.concat(cell.dataset.pasted ? [`Your pasted fit: ${cell.dataset.pasted}`] : [])){
+    const pe = document.createElement('p'); pe.textContent = t; box.appendChild(pe);
+  }
+  return true;
+}
+function ttkWhyPlace(cell){
+  const el = ttkWhyEl();
+  if(window.matchMedia && window.matchMedia('(max-width: 599px)').matches){ el.style.left = ''; el.style.top = ''; return; }   // a sheet (CSS)
+  const r = cell.getBoundingClientRect(), W = document.documentElement.clientWidth, w = el.offsetWidth || 360;
+  el.style.left = `${Math.max(16, Math.min(r.left + r.width / 2 - w / 2, W - w - 16)) + window.scrollX}px`;
+  el.style.top = `${r.bottom + window.scrollY + 8}px`;
+}
+function ttkWhyShow(cell, mode){
+  if(!ttkWhyFill(cell)) return;
+  const el = ttkWhyEl();
+  ttkWhyPop.cell = cell; ttkWhyPop.mode = mode;
+  el.setAttribute('role', mode === 'tap' ? 'dialog' : 'tooltip');
+  if(mode === 'tap') el.setAttribute('aria-label', el.querySelector('.ttk-why-title').textContent); else el.removeAttribute('aria-label');
+  el.hidden = false;
+  ttkWhyPlace(cell);
+}
+function ttkWhyHide(){
+  if(ttkWhyPop.el) ttkWhyPop.el.hidden = true;
+  ttkWhyPop.cell = null; ttkWhyPop.mode = null;
+}
+function ttkWhyRefresh(host){   // the numbers changed while the panel is open
+  const c = ttkWhyPop.cell;
+  if(c && ttkWhyPop.el && !ttkWhyPop.el.hidden && host.contains(c)){ if(ttkWhyFill(c)) ttkWhyPlace(c); else ttkWhyHide(); }
+}
+function ttkWhyWire(host){
+  host.querySelectorAll('.mys-cell-why').forEach(cell => {
+    cell.addEventListener('pointerenter', (e) => { if(e.pointerType === 'mouse') ttkWhyShow(cell, 'hover'); });
+    cell.addEventListener('pointerleave', (e) => { if(e.pointerType === 'mouse' && ttkWhyPop.cell === cell && ttkWhyPop.mode === 'hover') ttkWhyHide(); });
+    cell.addEventListener('pointerdown', (e) => { ttkWhyPop.pointer = e.pointerType || 'mouse'; });
+    cell.addEventListener('click', (e) => {
+      if(ttkWhyPop.pointer === 'mouse' || e.detail === 0) return;   // a mouse click (or a key) switches the view, as before
+      if(!e.target.closest('.mys-cell-v')) return;                    // a tap on the label under it ("you last") switches too
+      e.preventDefault(); e.stopPropagation();
+      if(ttkWhyPop.cell === cell && ttkWhyPop.mode === 'tap') ttkWhyHide(); else ttkWhyShow(cell, 'tap');
+    });
+  });
+  host.querySelectorAll('button.mys-sw-btn').forEach(b => {
+    b.addEventListener('focus', () => { const c = b.querySelector('.mys-cell-why'); if(c && b.matches(':focus-visible')) ttkWhyShow(c, 'focus'); });
+    b.addEventListener('blur', () => { if(ttkWhyPop.mode === 'focus') ttkWhyHide(); });
+  });
+}
+(function ttkWhyClose(){
+  if(typeof document === 'undefined' || !document.addEventListener) return;   // LESSON #36: suites run this file against a stub DOM
+  document.addEventListener('pointerdown', (e) => {
+    const el = ttkWhyPop.el;
+    if(!el || el.hidden || ttkWhyPop.mode !== 'tap') return;
+    if(el.contains(e.target) || (ttkWhyPop.cell && ttkWhyPop.cell.contains(e.target))) return;
+    ttkWhyHide();
+  }, true);
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && ttkWhyPop.el && !ttkWhyPop.el.hidden) ttkWhyHide(); });
+  window.addEventListener('resize', () => { if(ttkWhyPop.mode === 'hover' || ttkWhyPop.mode === 'focus') ttkWhyHide(); else if(ttkWhyPop.cell) ttkWhyPlace(ttkWhyPop.cell); });
+})();
 // ==== FIGHT STRIP (v2026.10.14.51, fight setup F1; turret-application-plan.md "Fight setup mockup", board 2b) ====
 // the owner 2026-10-24: "incorporate some of the subtext as visuals attached to the bottom of the matchup card" ... "a series
 // of little tabs" showing Orbit or Approach, tied to the Damage Application card's settings; then "option C is my
@@ -16870,6 +17067,7 @@ function mysRenderSwitch(host, o = {}){
     host.dataset.boardSig = sig;
     host.innerHTML = mysBoardHtml(host);
     mysWireFight(host);
+    ttkWhyWire(host);   // v.58
     host.querySelectorAll('button.mys-sw-btn').forEach(b => b.addEventListener('click', () => {
       if(b.dataset.view === mysViewOf(host)) return;
       const scope = host.closest('[data-mys-scope]');

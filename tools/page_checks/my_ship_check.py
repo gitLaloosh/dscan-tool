@@ -258,7 +258,7 @@ def phone(b):
     pg.tap('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.tap('#fitAnalyzerBtn'); pg.wait_for_selector('#fitAnalyzerResults .mys-threat-view .fit-layout')
     sb = [pg.locator(f'#fitAnalyzerResults .mys-sw-btn.{c}').bounding_box() for c in ('is-threat', 'is-mine')]
     check(abs(sb[0]['y'] - sb[1]['y']) < 1 and sb[0]['height'] >= 44, f'phone: scoreboard is two side-by-side buttons ({sb[0]["height"]:.0f}px)')
-    pg.tap('#fitAnalyzerResults .mys-sw-btn.is-mine'); pg.wait_for_selector('#fitAnalyzerResults .mys-mine-view .fit-layout')
+    pg.tap('#fitAnalyzerResults .mys-sw-btn.is-mine .mys-half-head'); pg.wait_for_selector('#fitAnalyzerResults .mys-mine-view .fit-layout')   # v.58: a tap on a time opens its why panel
     pg.evaluate('window.scrollTo(0, 1600)'); pg.wait_for_timeout(200)
     top = pg.locator('#fitAnalyzerResults .mys-switch-host').bounding_box()['y']
     check(abs(top) <= 1, f'phone: switch stays at the top when scrolling ({top:.0f})')

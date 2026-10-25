@@ -763,5 +763,52 @@ if (projPins.length) {
     if (!pass) anyFail = true;
   }
 }
+// v2026.10.14.58: the "why" words behind "you last" / "they last" (ttkWhy on ttkTrace), one case per kind of sentence,
+// worked out by hand. The times themselves are checked against pyfa's inputs by check_matchup.py.
+if (lastSandbox && lastSandbox.ttkWhy) {
+  console.log('\n=== time-to-kill "why" words (ttkWhy) ===');
+  const S = lastSandbox;
+  const L = (key, hp, reps = [], passive = 0) => ({key, hp, res: {}, rep: 0, reps: reps.map(r => Object.assign({layer: key, qty: 1}, r)), passive});
+  const asb = (rate, clip, cyc, reload, cycles, o = {}) => Object.assign({name: 'X-Large Ancillary Shield Booster', rate, asb: {cycleSec: cyc, clip, reloadSec: reload, cycles, chargeRate: 1}}, o);
+  const why = (side, layers, dps, capSec = Infinity) => S.ttkWhy(side, S.ttkTrace({layers, capSec}, {em: dps}), dps);
+  const cases = [
+    ['one clip, then spent', why('you', [L('shield', 1000, [asb(100, 2, 5, 10, 2)]), L('armor', 300), L('hull', 150)], 150),
+      'You last 16 s', ["Your X-Large Ancillary Shield Booster has 2 charges, one clip: it repairs 100 HP/s for 10 s, then has nothing left to load.", 'Your shield breaks at 0:13.', 'With no armor or hull repairer, the rest goes in 3 s.']],
+    ['breaks in a reload', why('you', [L('shield', 1000, [asb(100, 2, 5, 10, 6)])], 150),
+      'You last 13 s', ["Your shield breaks at 0:13, 3 s into your X-Large Ancillary Shield Booster's first reload: it repairs 100 HP/s for 10 s, then reloads for 10 s."]],
+    ['two copies, third reload', why('them', [L('shield', 4700, [asb(100, 1, 5, 10, 10, {qty: 2})])], 160),
+      'They last 39 s', ['Their shield breaks at 0:39, 4 s into the third reload of their X-Large Ancillary Shield Booster ×2: they repair 100 HP/s for 5 s, then reload for 10 s.']],
+    ['clips spent, then regen', why('you', [L('shield', 2000, [asb(100, 2, 5, 10, 3)], 20)], 110),
+      'You last 38 s', ['Your X-Large Ancillary Shield Booster has 3 charges, 1 clip and 1 more: it repairs 100 HP/s for 10 s at a time with a 10 s reload between, and runs out at 0:25.', "Your shield's regen alone can't keep up, and it breaks at 0:38."]],
+    ['capacitor runs dry', why('them', [L('shield', 0), L('armor', 1000, [{name: 'Medium Armor Repairer II', qty: 2, rate: 50}]), L('hull', 100)], 100, 10),
+      'They last 16 s', ['Their capacitor runs dry at 0:10, and their Medium Armor Repairer II ×2 stop.', 'Their armor breaks at 0:15.', 'With no hull repairer, the rest goes in 1 s.']],
+    ['capacitor already dry', why('you', [L('shield', 1000), L('armor', 1000, [{name: 'Medium Armor Repairer II', rate: 50}])], 100, 5),
+      'You last 20 s', ['With no shield repairer, your shield goes in 10 s.', 'Your capacitor ran dry at 0:05, so your Medium Armor Repairer II is already off.', 'Your armor breaks at 0:20.']],
+    ['even with', why('you', [L('armor', 1000, [{name: 'Medium Armor Repairer II', rate: 50}])], 100),
+      'You last 20 s', ['Your armor breaks at 0:20 even with your Medium Armor Repairer II repairing 50 HP/s.']],
+    ['a middle layer with no repairer', why('you', [L('shield', 500, [{name: 'Large Shield Booster II', rate: 50}]), L('armor', 500), L('hull', 500, [{name: 'Small Hull Repairer II', rate: 50}])], 100),
+      'You last 25 s', ['Your shield breaks at 0:10 even with your Large Shield Booster II repairing 50 HP/s.', 'With no armor repairer, your armor goes in 5 s more.', 'Your hull breaks at 0:25 even with your Small Hull Repairer II repairing 50 HP/s.']],
+    ['holds with a repairer', why('you', [L('shield', 1000, [{name: 'Large Shield Booster II', rate: 80}], 30)], 100),
+      'You hold', ['Your shield holds: your Large Shield Booster II repairs 80 HP/s and its regen 30 HP/s, more than the 100 HP/s that gets through.']],
+    ['holds on regen', why('them', [L('shield', 1000, [], 120)], 100),
+      'They hold', ["Their shield's regen, 120 HP/s, is more than the 100 HP/s that gets through, so it holds."]],
+    ['no damage', why('you', [L('shield', 1000)], 0),
+      'You hold', ['Their weapons and drones apply nothing to you at this range, so nothing breaks.']],
+    ['all buffer', why('you', [L('shield', 100), L('armor', 100), L('hull', 100)], 100),
+      'You last 3 s', ['With no local repairer, your shield, armor and hull go in 3 s.']],
+    ['repairer with no name (an estimate without localReps)', S.ttkWhy('you', S.ttkTrace(S.ttkDefense({exact: {shieldHP: 1000, armorHP: 0, hullHP: 0, shieldRepHpPerSec: 50}, resonance: {}, capacitor: {stable: true}}), {em: 100}), 100),
+      'You last 20 s', ['Your shield breaks at 0:20 even with your shield repairers repairing 50 HP/s.']],
+  ];
+  for (const [name, w, title, text] of cases) {
+    const pass = w.title === title && JSON.stringify(w.text) === JSON.stringify(text);
+    console.log(`  ${pass ? 'PASS' : 'FAIL'}  ${name}${pass ? '' : `: got ${JSON.stringify(w)}, expected ${JSON.stringify({title, text})}`}`);
+    if (!pass) anyFail = true;
+  }
+  for (const [s, want] of [[60, '1 min'], [119.6, '2 min'], [86.85, '1 min 27 s']]) {
+    const got = S.ttkText(s), pass = got === want;
+    console.log(`  ${pass ? 'PASS' : 'FAIL'}  ttkText(${s}): got ${got}, expected ${want}`);
+    if (!pass) anyFail = true;
+  }
+}
 console.log(anyFail ? '\n*** REGRESSION SUITE: FAIL — do not deliver this file until understood/fixed ***' : '\nREGRESSION SUITE: ALL PASS');
 process.exit(anyFail ? 1 : 0);
