@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 60. A marker the checks wait on is a contract: new text in that element must not contain it
+
+- **What happened (v2026.10.14.65):** the board's new ship menu ended in "Manage My Ships…". Five page checks wait for the
+  Matchup's numbers with `!/…/.test(board.textContent)` (the board shows "…" while it works them out), so with the menu
+  inside the board they waited forever. Hiding the half's own name with `visibility:hidden` also took it out of the
+  button's accessible name and out of `inner_text`, and a `.x{color:transparent}` rule written earlier in the file lost to
+  `.mys-sw-v{color:...}` written later (same specificity), so on a phone both names showed.
+- **Do this instead:** before adding text to an element the checks read, grep the checks for the patterns they test
+  (`…`, "holds", NaN). To hide text that must keep its size and its name, use `color:transparent` with a selector more
+  specific than the rule that colours it, and measure that the overlay sits exactly on it (`my_ships_check.py` ALIGN).
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

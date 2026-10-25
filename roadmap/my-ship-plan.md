@@ -122,3 +122,42 @@ placement"; the owner: "ok that looks better. do it" (B, the recommended one).
   other; "neither breaks" when both hold) and who is faster. Clicking a half shows that ship below. The side shown is
   shared by every loss tab. Phone: halves side by side, edge and speed under them, sticky.
 - Also fixed: probe / bomb / interdiction sphere launchers no longer get a Weaknesses tile (v.42 bug, the owner's screenshot).
+
+## My Ships: several saved fits (DONE v2026.10.14.65, `dscan-tool-history/2026-10-25_my-ships-saved-fits.html`)
+
+Backlog item "Several saved fits for My Ship" (the owner via todo-inbox 2026-10-24: "add ability to store multiple fits for
+'my ship'"). Decisions, 2026-10-25:
+
+| # | Question | Decision |
+|---|---|---|
+| S1 | Where do you switch which fit is in use? | The panel AND a menu on the Matchup board's my-ship name |
+| S2 | A view running every saved fit against the threat? | "Not needed" |
+| S3 | List order | Most recently used first |
+| S4 | A fit picked from the list | "should become the active ship everywhere" |
+| S5 | How many | "limit the list of fits they can save to 20 for now" (MYSHIP-03 beyond that) |
+
+As built:
+
+- **Storage:** `localStorage.dscanMyShips` = `{v: 2, inUse: id, use, fits: [...]}`. Each fit keeps its own EFT text and
+  module / drone / mode states, and gets an id. A ship saved by v.33–v.64 (`dscanMyShip`) becomes the first entry, and
+  `dscanMyShip` stays as a copy of the ship in use, so an older build still finds it. Numbers are still recomputed from
+  the EFT on each page load, once per fit (cached by id), so switching back is instant.
+- **Panel:**
+  - the list (In use / Use, the class and when each fit was last used) with "+ Add a fit";
+  - then the viewed fit's six numbers (a fit not in use is computed for the panel too), and Open in Fit Analyzer
+    (or "Use this ship"), Rename, Replace fit, Copy EFT, Delete.
+- **Adding and replacing:**
+  - Pasting a fit that's already saved adds nothing and uses the saved one.
+  - Replacing a fit that isn't in use keeps the ship in use.
+  - Deleting the ship in use passes to the next most recent; deleting the last one leaves none.
+- **Rename** changes the fit name shown everywhere and in Copy EFT's header; the stored EFT text is unchanged.
+- **The board:** the my-ship name is a menu of the saved fits (check on the one in use, "Manage My Ships"); on a phone
+  it's a bottom sheet "Your ship for this matchup". The half is a button, so the menu is laid over its head; the
+  button's own name stays underneath, invisible, for its size and its accessible name.
+- **The rest:**
+  - The chip shows "+N" for the other saved fits.
+  - The Fit Analyzer's "Set as my ship" adds the fit and uses it ("Use as my ship" when it's already saved; disabled with
+    MYSHIP-03 when 20 are saved).
+  - "Use in assessments" is one switch for whichever fit is in use.
+- **Checks:** new `tools/page_checks/my_ships_check.py`; `my_ship_check.py` (Delete now passes to the saved Vexor first)
+  and `mine_damage_check.py` (a phone tap on "My ship", since the name opens the menu) follow.

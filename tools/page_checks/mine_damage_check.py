@@ -239,7 +239,7 @@ def phone(b):
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     pg.tap('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.tap('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
     save_ship(pg); settle(pg, 800)
-    pg.tap(f'{R} .mys-sw-btn.is-mine .mys-half-head'); pg.wait_for_selector(f'{MV} .fl-dmg'); settle(pg, 600)   # v.58: a tap on a time opens its why panel
+    pg.tap(f'{R} .mys-sw-btn.is-mine .mys-sw-k'); pg.wait_for_selector(f'{MV} .fl-dmg'); settle(pg, 600)   # v.58: a tap on a time opens its why panel; v.65: one on the ship's name opens the ship menu
     check(pg.locator(f'{MV} .fl-dmg .cc-closed').count() == 1, 'phone: your card starts collapsed')
     try: pg.wait_for_function(f"() => /DPS applied to the Hecate at/.test(document.querySelector('{MV} .fl-dmg .cc-sum').textContent)", timeout=20000); ok = True
     except Exception: ok = False

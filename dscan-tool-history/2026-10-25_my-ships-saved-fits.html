@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — My Ships: several saved fits</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>My Ships: several saved fits</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-25 &middot; <code>v2026.10.14.64</code> &rarr; <code>v2026.10.14.65</code>. Mockup: four screenshots of the real page (panel and Matchup menu, desktop and phone).</p>
+<p>Backlog item "Several saved fits for My Ship" (the owner via the inbox, 2026-10-24: "add ability to store multiple fits for 'my ship'"). the owner's decisions, 2026-10-25:</p>
+<ul>
+<li>switch in the panel and on the Matchup;</li>
+<li>no "compare all my fits" view ("Not needed");</li>
+<li>most recently used first;</li>
+<li>picked from the list, "it should become the active ship everywhere";</li>
+<li>"let's limit the list of fits they can save to 20 for now".</li>
+</ul>
+
+<h2>What you see</h2>
+<ul>
+<li><b>The panel</b> (the chip) is now "My Ships":
+<ul>
+<li>the saved fits, most recently used first, each with its class and when it was last used;</li>
+<li>"In use" on the one in use, a Use button on the others, and "+ Add a fit".</li>
+</ul>
+Click a fit to see its six numbers. A fit that isn't in use is computed for the panel too, with "Use this ship". Then come Rename, Replace fit, Copy EFT and Delete.</li>
+<li><b>The chip</b> shows the ship in use and "+N" for the others.</li>
+<li><b>The Matchup board</b>: your ship's name is a menu of your saved fits, with a check on the one in use and "Manage My Ships". On a phone it's a bottom sheet, "Your ship for this matchup". Picking a fit there, or Use in the panel, makes it the ship in use everywhere:
+<ul>
+<li>the chip;</li>
+<li>every board and its numbers;</li>
+<li>the Damage Application cards;</li>
+<li>the Fit Analyzer's "Viewing my ship" page.</li>
+</ul>
+The side shown (threat or my ship) doesn't change.</li>
+<li><b>Each fit keeps its own module, drone and mode states.</b> "Use in assessments" is one switch for whichever fit is in use.</li>
+<li><b>Adding and replacing:</b>
+<ul>
+<li>pasting a fit that's already saved adds nothing; the saved one is used;</li>
+<li>"Set as my ship" in the Fit Analyzer adds the fit and uses it. It reads "Use as my ship" when that fit is already saved;</li>
+<li>replacing a fit that isn't in use keeps the ship in use;</li>
+<li>deleting the ship in use passes to the next most recent.</li>
+</ul></li>
+<li><b>Rename</b> changes the name everywhere and in Copy EFT's header. The stored EFT text stays as pasted.</li>
+<li><b>20 fits at most.</b> At 20, "+ Add a fit" and "Set as my ship" are disabled, and a paste is refused with the new error code <b>MYSHIP-03</b> ("My Ships holds 20 fits. Delete one to add another.").</li>
+</ul>
+
+<h2>How it's stored</h2>
+<ul>
+<li><code>localStorage.dscanMyShips</code> = <code>{v: 2, inUse: id, use, fits: [...]}</code>. Each fit is the v.33 record plus an id and the time it was last used.</li>
+<li>A ship saved by v.33&ndash;v.64 (<code>dscanMyShip</code>) is read as the first entry. <code>dscanMyShip</code> is still written as a copy of the ship in use, so an older build of the page still finds it.</li>
+<li>The numbers are still never stored. Each saved fit is computed from its EFT the first time it's needed in a page load, then cached by id, so switching back is instant.</li>
+</ul>
+<p>Presentation and inputs only. No calculation changed, and no PYFA CORE section was touched.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/page_checks/my_ships_check.py</code></b> (33 checks). It covers:
+<ul>
+<li>reading the v.33 ship, and both storage keys;</li>
+<li>add, order, "In use", "+N", duplicate paste;</li>
+<li>a fit's numbers when it isn't in use (equal to the engine's for that paste);</li>
+<li>Use, and per-fit states;</li>
+<li>the board menu: picking a fit, the board equal to <code>mysMatchup</code>, Escape, "Manage My Ships";</li>
+<li>the menu name sitting exactly on the half's name at 1440, 1100 and 375 px;</li>
+<li>Rename, Replace fit, Delete;</li>
+<li>the 20 limit (MYSHIP-03 three ways);</li>
+<li>the phone sheet with 44 px options, and that a tap on "My ship" still switches.</li>
+</ul></li>
+<li><b>It fails on the old build and on each deliberate break:</b> v.64 (no list), a limit of 21 (3), a board pick that doesn't switch (times out), and Replace making the replaced fit the one in use (1).</li>
+<li><b><code>my_ship_check.py</code>:</b> "Set as my ship" now adds a second fit, so Delete first passes to the saved Vexor, then leaves none. The phone switch is tapped on "My ship".</li>
+<li><b><code>mine_damage_check.py</code>:</b> the same phone tap.</li>
+<li><b>ERRORS.md</b> regenerated (29 codes).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #60: five page checks wait for the Matchup's numbers by testing that the board has no "&hellip;" in it. The first menu ended in "Manage My Ships&hellip;", and every one of them waited forever.</p>
+<ul>
+<li>Before adding text to an element the checks read, grep the checks for what they look for.</li>
+<li>To hide text that must keep its size and stay in a button's accessible name, use <code>color:transparent</code>, not <code>visibility:hidden</code>. The selector must be more specific than the rule that colours that text; a same-specificity rule earlier in the file loses.</li>
+<li>Measure that the overlay sits on it.</li>
+</ul>
+</body>
+</html>

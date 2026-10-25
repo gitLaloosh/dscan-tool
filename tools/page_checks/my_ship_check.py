@@ -10,7 +10,8 @@ Loads the real page in Chromium (ESI served from pyfa's SDE, esi_from_sde.py) an
   * a threat in the Fit Analyzer and in the Pilot Analyzer: the threat <-> my ship switch, the threat keeps its
     own state change while my ship is shown, the scroll position is kept, a change to my ship there is kept too, "Use in assessments" off
     hides the switch; "Set as my ship" (keeps that fit's states, the button turns into "This is my ship");
-  * Delete with the inline confirm; Escape and an outside click close the panel;
+  * Delete with the inline confirm (v2026.10.14.65: the next saved fit takes over; the last one leaves none); Escape and
+    an outside click close the panel (the list of saved fits: my_ships_check.py);
   * FIT-04 for a line that isn't recognized; MYSHIP-01 when the browser refuses storage, MYSHIP-02 (with FIT-03 inside) when the saved fit no longer
     resolves;
   * phone (375 px, mobile emulation): the chip above the tabs, the panel as a sheet at the bottom, the switch
@@ -204,7 +205,11 @@ def main_desktop(b):
     open_panel(pg); wait_tiles(pg)
     pg.click('#myShipPanel [data-act="delete"]')
     check(pg.is_visible('#myShipPanel .mys-confirm'), 'Delete asks first (inline)')
-    pg.click('#myShipPanel [data-act="delete-yes"]'); pg.wait_for_timeout(200)
+    pg.click('#myShipPanel [data-act="delete-yes"]'); pg.wait_for_timeout(300)
+    # v2026.10.14.65 (My Ships): "Set as my ship" ADDED the Hecate, so deleting it puts the Vexor back in use
+    check('Vexor' in pg.inner_text('#myShipChip') and (stored(pg) or {}).get('eft') == VEXOR and pg.is_visible(f'{R} .mys-board'), 'Delete the ship in use: the Vexor (still saved) is used again')
+    wait_tiles(pg)
+    pg.click('#myShipPanel [data-act="delete"]'); pg.click('#myShipPanel [data-act="delete-yes"]'); pg.wait_for_timeout(300)
     check(stored(pg) is None and 'Vexor' not in pg.inner_text('#myShipChip') and 'Hecate' not in pg.inner_text('#myShipChip') and pg.is_disabled('#myShipUse'), 'Delete: storage cleared, chip empty, switch disabled')
     check(pg.is_hidden(f'{R} .mys-switch-host') and pg.is_hidden(f'{P} .mys-switch-host') and pg.is_visible(f'{R} .mys-threat-view'), 'Delete: every switch hidden, threats shown')
     check('Deleted' in pg.inner_text('#myShipPanel'), 'Delete: panel says so and offers the paste box')
@@ -258,7 +263,7 @@ def phone(b):
     pg.tap('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.tap('#fitAnalyzerBtn'); pg.wait_for_selector('#fitAnalyzerResults .mys-threat-view .fit-layout')
     sb = [pg.locator(f'#fitAnalyzerResults .mys-sw-btn.{c}').bounding_box() for c in ('is-threat', 'is-mine')]
     check(abs(sb[0]['y'] - sb[1]['y']) < 1 and sb[0]['height'] >= 44, f'phone: scoreboard is two side-by-side buttons ({sb[0]["height"]:.0f}px)')
-    pg.tap('#fitAnalyzerResults .mys-sw-btn.is-mine .mys-half-head'); pg.wait_for_selector('#fitAnalyzerResults .mys-mine-view .fit-layout')   # v.58: a tap on a time opens its why panel
+    pg.tap('#fitAnalyzerResults .mys-sw-btn.is-mine .mys-sw-k'); pg.wait_for_selector('#fitAnalyzerResults .mys-mine-view .fit-layout')   # v.58: a tap on a time opens its why panel; v.65: one on the ship's name opens the ship menu
     pg.evaluate('window.scrollTo(0, 1600)'); pg.wait_for_timeout(200)
     top = pg.locator('#fitAnalyzerResults .mys-switch-host').bounding_box()['y']
     check(abs(top) <= 1, f'phone: switch stays at the top when scrolling ({top:.0f})')

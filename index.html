@@ -1326,6 +1326,49 @@
     font:12px/1.5 var(--mono); color:var(--text-dim); white-space:pre-wrap; overflow-wrap:anywhere;}
   .mys-confirm{margin-top:16px; padding:12px 14px; border:1px solid var(--danger); border-radius:8px; background:rgba(198,91,78,0.07); font-size:13px; line-height:1.5;}
   .mys-confirm .mys-actions{margin-top:10px;}
+  /* v2026.10.14.65: My Ships -- the saved list in the panel, the chip's count, the Matchup's ship menu */
+  .mys-list{margin:2px 0 14px; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
+  .mys-list-head{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 8px 6px 12px; background:var(--panel-2); border-bottom:1px solid var(--line);}
+  .mys-list-k{font-size:var(--label-size); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  button.mys-add{min-height:32px; padding:0 12px; border:1px dashed #2c3842; border-radius:6px; background:transparent; color:var(--text); font-size:13px; font-weight:500;}
+  button.mys-add:hover:not(:disabled){border-color:var(--cyan);}
+  button.mys-add:disabled{color:var(--text-dim); cursor:not-allowed;}
+  .mys-full{font-size:12px; color:var(--amber); margin:-6px 0 12px;}
+  .mys-row{display:flex; align-items:center; gap:8px; padding:0 10px 0 0; border-bottom:1px solid var(--line);}
+  .mys-row:last-child{border-bottom:0;}
+  .mys-row.is-sel{background:rgba(47,159,181,.10); box-shadow:inset 3px 0 0 var(--cyan);}
+  button.mys-row-main{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:10px; min-height:52px; padding:6px 0 6px 12px; background:transparent; border:none; border-radius:0; text-align:left; color:var(--text); font-weight:400;}
+  button.mys-row-main:hover{background:transparent;}
+  button.mys-row-main:focus-visible{outline:2px solid var(--cyan); outline-offset:-2px;}
+  .mys-row-icon{position:relative; width:32px; height:32px; border-radius:6px; background:var(--panel-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex:none; overflow:hidden;}
+  .mys-row-icon img{position:absolute; inset:0; width:100%; height:100%;}
+  .mys-row-name{display:flex; flex-direction:column; min-width:0;}
+  .mys-row-t{overflow-wrap:anywhere;} .mys-row-t b{color:var(--heading); font-weight:600;} .mys-row-t .mys-dim{color:var(--text-dim);}
+  .mys-row-sub{font-size:12px; color:var(--text-dim); margin-top:1px;}
+  .mys-inuse{flex:none; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--cyan); border:1px solid var(--cyan); border-radius:10px; padding:2px 8px;}
+  button.mys-use-btn{flex:none; min-height:32px; padding:0 14px;}
+  .mys-rename{margin-top:12px;}
+  .mys-rename input{width:100%; box-sizing:border-box;}
+  .mys-chip-more{flex:none; font-size:12px; color:var(--text-dim);}
+  .mys-half-wrap{position:relative; display:flex; min-width:0;}
+  .mys-half-wrap > button.mys-half{flex:1 1 auto; min-width:0; width:100%;}
+  .mys-sw-v.mys-pick-ghost{color:transparent;}   /* kept in the button's name (screen readers) and size; the menu's summary is drawn on top */
+  .mys-pick-row{position:absolute; top:0; left:0; right:0; padding:12px 18px; box-sizing:border-box; display:flex; justify-content:flex-end; pointer-events:none;}
+  .mys-pick-row .mys-sw-k{visibility:hidden;}
+  details.mys-pick{position:relative; min-width:0;}
+  details.mys-pick > summary{list-style:none; cursor:pointer; pointer-events:auto; display:block; text-align:right; text-decoration:underline dotted var(--text-dim); text-underline-offset:4px;}
+  .mys-pick-ghost{text-align:right;}
+  details.mys-pick > summary::-webkit-details-marker{display:none;}
+  details.mys-pick > summary:hover{color:var(--cyan);}
+  details.mys-pick > summary:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .mys-pick-chev{margin-left:4px; vertical-align:middle;}
+  .mys-pick-menu{position:absolute; right:0; top:calc(100% + 8px); z-index:45; width:300px; max-width:calc(100vw - 32px); box-sizing:border-box; padding:6px; background:var(--panel-2); border:1px solid #2c3842; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.5); pointer-events:auto; text-align:left; font-size:13px; font-weight:400;}
+  .mys-pick-head{display:none;}
+  button.mys-pick-opt{display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:6px 10px; background:transparent; border:none; border-radius:6px; color:var(--text); font-weight:400; text-align:left;}
+  button.mys-pick-opt:hover, button.mys-pick-opt[aria-checked="true"]{background:rgba(47,159,181,.10);}
+  .mys-pick-chk{width:14px; flex:none; color:var(--cyan);}
+  .mys-pick-name{min-width:0; overflow-wrap:anywhere;} .mys-pick-name b{color:var(--heading); font-weight:600;}
+  .mys-pick-sep{border-top:1px solid var(--line); margin:6px 0;}
   .mys-panel .status{margin-top:10px;}
   .mys-panel .note{margin-top:10px;}
   /* Fit Analyzer: "Set as my ship" beside the fit's name; the "Viewing my ship" banner (FitView screen). */
@@ -1598,6 +1641,12 @@
     .mys-fseg-name{min-width:0;}
     .mys-fchev{display:none;}
     .mys-fmenu{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; transform:none; border-radius:14px 14px 0 0; padding:8px 10px 24px; box-shadow:0 0 0 100vmax rgba(0,0,0,0.55);}
+    .mys-pick-row{padding:10px 12px;}
+    .mys-pick-menu{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; border-radius:14px 14px 0 0; padding:8px 10px 24px; box-shadow:0 0 0 100vmax rgba(0,0,0,0.55);}
+    .mys-pick-head{display:flex; align-items:center; justify-content:space-between; padding:4px 10px 8px; color:var(--heading); font-weight:600; font-size:14px;}
+    .mys-pick-head .info-close{display:inline-flex;}
+    button.mys-pick-opt{min-height:44px;}
+    button.mys-add, button.mys-use-btn{min-height:44px;}
     .mys-fpart-range .mys-fmenu{left:0; transform:none;}
     .mys-fmenu .info-close{display:block;}
     .assess-tabs .subtab-btn{padding:0 12px; min-height:44px;}
@@ -1624,7 +1673,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.64</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.65</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2095,6 +2144,15 @@ const ERROR_CODES = {
   "why": "Recomputing on load lets tool fixes and game patches apply to a saved ship; when it fails, the saved text is kept rather than dropped.",
   "since": "v2026.10.14.33",
   "doc": "2026-10-23_my-ship-phase1.html"
+ },
+ "MYSHIP-03": {
+  "title": "My Ships is full",
+  "where": "My Ship panel (+ Add a fit, the paste box), the Fit Analyzer's \"Set as my ship\"",
+  "trigger": "Adding a fit when 20 are already saved (MY_SHIPS_MAX; the owner 2026-10-25: \"limit the list of fits they can save to 20 for now\").",
+  "check": "Delete a saved fit you no longer fly, or Replace one, then add the new fit.",
+  "why": "A fixed limit keeps the list and the {card:board}'s ship menu short; the browser could hold far more.",
+  "since": "v2026.10.14.65",
+  "doc": "2026-10-25_my-ships-saved-fits.html"
  },
  "DMG-01": {
   "title": "No ship to apply their damage to",
@@ -9322,13 +9380,13 @@ async function speculateShip(character, statusEl, forceRefresh){
 // every analysis, so per-render document listeners would pile up -- see the .fit-menu note).
 (function headerPopClose(){
   if(typeof document === 'undefined' || !document.addEventListener) return;   // LESSON #36: suites run this file against a stub DOM
-  const openOnes = () => [...document.querySelectorAll('details.lk-pop[open], details.hull-pick[open], details.info-pop[open], details.mys-fpart[open]')];
+  const openOnes = () => [...document.querySelectorAll('details.lk-pop[open], details.hull-pick[open], details.info-pop[open], details.mys-fpart[open], details.mys-pick[open]')];
   document.addEventListener('pointerdown', (e) => { for(const d of openOnes()) if(!d.contains(e.target)) d.open = false; }, true);
   // v2026.10.14.48: an info panel's close button (shown on a phone, where the panel is a sheet)
   document.addEventListener('click', (e) => {
     const b = e.target.closest && e.target.closest('button.info-close');
     if(!b) return;
-    const d = b.closest('details.info-pop, details.mys-fpart'); if(d){ d.open = false; d.querySelector('summary').focus(); }
+    const d = b.closest('details.info-pop, details.mys-fpart, details.mys-pick'); if(d){ d.open = false; d.querySelector('summary').focus(); }
   });
   document.addEventListener('keydown', (e) => {
     if(e.key !== 'Escape') return;
@@ -16619,8 +16677,17 @@ async function wpFill(host, tf, mf, st, fight){
 //   * Phase 1 does not compare the two fits: no matchup strip, no "vs my ship" numbers. Those wait for the
 //     turret-application decisions (turret-application-plan.md D1-D6). M6 (changed numbers in amber) is
 //     for those numbers.
+//   * v2026.10.14.65 (My Ships): up to 20 saved fits (MY_SHIPS_KEY), one in use. The panel lists them (most recently
+//     used first; + Add a fit, Use, Rename, Replace fit, Copy EFT, Delete) and the Matchup's ship name is a menu of them;
+//     picking one there or in the panel makes it the ship in use everywhere. roadmap/my-ship-plan.md "My Ships".
 // Presentation and inputs only: the same buildFitFromEft() / recomputeFitWithStates() as the Fit Analyzer.
-const MY_SHIP_KEY = 'dscanMyShip';
+const MY_SHIP_KEY = 'dscanMyShip';   // v2026.10.14.33: the one ship; since v.65 a copy of the ship in use (an older build still finds it)
+// v2026.10.14.65 (the owner 2026-10-25: "storing multiple fits"; switch in the panel AND on the Matchup, most recently used
+// first, "let's limit the list of fits they can save to 20 for now"): every saved fit, {v: 2, inUse: id, use, fits: [...]}.
+// Each fit keeps its own EFT text and module / drone / mode states; one is in use (myShip.rec), and "Use in assessments"
+// is one switch for whichever it is. The v.33 record is read once and becomes the first saved fit.
+const MY_SHIPS_KEY = 'dscanMyShips';
+const MY_SHIPS_MAX = 20;
 const MY_SHIP_HULL_SVG = (size, sw = 1.8) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="${sw}" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l7-6h8l3 6-3 6h-8z"></path><path d="M10 6v12"></path></svg>`;
 const MY_SHIP_PLUS_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>';
 const MY_SHIP_CHEV_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>';
@@ -16628,30 +16695,68 @@ const MY_SHIP_X_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="non
 const MY_SHIP_ARROW_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>';
 // rec: what is stored. f / parsed: this page load's computed fit (null until first needed).
 // version: bumped on every change to my ship, so a view drawn earlier knows it is stale (myShipRefreshStale).
-const myShip = {rec: null, f: null, parsed: null, loading: null, error: '', storageOk: true, panelMode: 'paste', faViewing: false, faEft: null, version: 0, saveNote: ''};
+// list: every saved fit (records); rec: the one in use (an element of list); selId: the fit shown in the panel;
+// cache: id -> {eft, p: Promise<{f, parsed}>}, each saved fit computed at most once per page load; preview: the panel's
+// numbers for a fit that isn't in use; replaceId: the fit the paste box replaces.
+const myShip = {rec: null, list: [], selId: null, cache: new Map(), preview: null, replaceId: null, f: null, fId: null, parsed: null, loading: null, loadingId: null, error: '', storageOk: true, panelMode: 'paste', faViewing: false, faEft: null, version: 0, saveNote: ''};
 const mysViews = new Map(); // element showing my ship -> its redraw()
 
+function myShipValidRec(r){ return !!(r && r.v === 1 && typeof r.eft === 'string' && r.eft.trim() && r.shipName); }
+function myShipNewId(){ return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function myShipById(id){ return myShip.list.find(r => r.id === id) || null; }
+function myShipSorted(){ return [...myShip.list].sort((a, b) => String(b.usedAt || b.savedAt || '').localeCompare(String(a.usedAt || a.savedAt || ''))); }
+// Reads every saved fit into myShip.list and returns the one in use.
 function myShipReadStored(){
-  let raw;
-  try{ raw = localStorage.getItem(MY_SHIP_KEY); }catch(e){ myShip.storageOk = false; return null; }
-  if(!raw) return null;
-  try{
-    const r = JSON.parse(raw);
-    if(r && r.v === 1 && typeof r.eft === 'string' && r.eft.trim() && r.shipName) return r;
-  }catch(e){}
-  myShip.error = withCode("The saved My Ship couldn't be read (the stored copy is damaged). Paste your fit again to replace it.", 'MYSHIP-02');
-  return null;
+  let raw2, raw1;
+  try{ raw2 = localStorage.getItem(MY_SHIPS_KEY); raw1 = localStorage.getItem(MY_SHIP_KEY); }catch(e){ myShip.storageOk = false; myShip.list = []; return null; }
+  myShip.list = [];
+  const damaged = () => { myShip.error = withCode("The saved My Ship couldn't be read (the stored copy is damaged). Paste your fit again to replace it.", 'MYSHIP-02'); return null; };
+  if(raw2){
+    let s = null;
+    try{ s = JSON.parse(raw2); }catch(e){}
+    if(!(s && s.v === 2 && Array.isArray(s.fits))) return damaged();
+    const fits = s.fits.filter(myShipValidRec).slice(0, MY_SHIPS_MAX);
+    for(const r of fits){ if(!r.id) r.id = myShipNewId(); r.use = !!s.use; }
+    myShip.list = fits;
+    return fits.find(r => r.id === s.inUse) || myShipSorted()[0] || null;
+  }
+  if(!raw1) return null;
+  let r = null;
+  try{ r = JSON.parse(raw1); }catch(e){}
+  if(!myShipValidRec(r)) return damaged();
+  r.id = r.id || myShipNewId(); r.usedAt = r.usedAt || r.savedAt || new Date().toISOString();
+  myShip.list = [r];   // the v.33 ship: the first saved fit (written under the new key on the next change)
+  return r;
 }
 function myShipWriteStored(){
   try{
+    if(myShip.list.length) localStorage.setItem(MY_SHIPS_KEY, JSON.stringify({v: 2, inUse: myShip.rec ? myShip.rec.id : null,
+      use: myShip.rec ? !!myShip.rec.use : !!(myShip.list[0] && myShip.list[0].use), fits: myShip.list}));
+    else localStorage.removeItem(MY_SHIPS_KEY);
     if(myShip.rec) localStorage.setItem(MY_SHIP_KEY, JSON.stringify(myShip.rec));
     else localStorage.removeItem(MY_SHIP_KEY);
     myShip.storageOk = true;
   }catch(e){ myShip.storageOk = false; }
 }
-function myShipLabel(){
-  const r = myShip.rec;
+function myShipLabel(r = myShip.rec){
   return r ? `${r.shipName}${r.fitName ? ' · ' + r.fitName : ''}` : '';
+}
+// The panel's line under a saved fit: its class and when it was last used.
+function myShipRowSub(r){
+  const d = new Date(r.usedAt || r.savedAt || ''), now = new Date();
+  const when = isNaN(d) ? '' : (d.toDateString() === now.toDateString() ? 'used today'
+    : 'used ' + d.toLocaleDateString(undefined, d.getFullYear() === now.getFullYear() ? {month: 'short', day: 'numeric'} : {month: 'short', day: 'numeric', year: 'numeric'}));
+  return [r.shipGroup, when].filter(Boolean).join(' · ');
+}
+// A saved fit's EFT text with its current name in the header (a rename changes only the name, not the stored text).
+function myShipEftOut(r){
+  if(!r) return '';
+  const lines = r.eft.split(/\r?\n/);
+  const i = lines.findIndex(l => l.trim());
+  const m = i >= 0 && lines[i].trim().match(/^\[([^,\]]+)(?:,([^\]]*))?\]$/);
+  if(!m || (m[2] || '').trim() === (r.fitName || '')) return r.eft;
+  lines[i] = `[${m[1].trim()}${r.fitName ? ', ' + r.fitName : ''}]`;
+  return lines.join('\n');
 }
 
 // Shared wiring for one .fit-layout: mode buttons, the ASB out-of-charges toggle, module states, drone squares
@@ -16681,39 +16786,54 @@ function wireFitLayout(wrap, f, rerender){
   dmgWire(wrap, f); // v.36: "Their damage on you" (fills itself once the ship to chart against is known)
 }
 
-// The fit for my ship, computed once per page load (and again after Replace). Stored states are applied
-// through recomputeFitWithStates, which also brings a request the engine refuses back in line.
+// A saved fit computed from its EFT text with its stored states (recomputeFitWithStates brings a request the engine
+// refuses back in line), at most once per page load (v2026.10.14.65: cached by id, so switching back is instant).
+function myShipBuild(rec){
+  const c = myShip.cache.get(rec.id);
+  if(c && c.eft === rec.eft) return c.p;
+  const text = rec.eft, id = rec.id;
+  const p = (async () => {
+    const {parsed, f} = await buildFitFromEft(text);
+    const cur = myShipById(id) || rec;
+    if(cur.activeMode && f.tacticalModes && f.tacticalModes[cur.activeMode]){ f.activeMode = cur.activeMode; f.estimate = f.tacticalModes[cur.activeMode]; }
+    f.asbDry = !!cur.asbDry;
+    if((cur.moduleStates && Object.keys(cur.moduleStates).length) || cur.droneStates){
+      f.moduleStates = cur.moduleStates || null;
+      f.moduleCopyOrder = cur.moduleCopyOrder || null;
+      f.droneStates = cur.droneStates || null;
+      await recomputeFitWithStates(f);
+    }
+    f.fitTitle = cur.fitName ? `${cur.shipName} — ${cur.fitName}` : cur.shipName;
+    return {f, parsed};
+  })();
+  myShip.cache.set(id, {eft: text, p});
+  p.catch(() => { const x = myShip.cache.get(id); if(x && x.p === p) myShip.cache.delete(id); });
+  return p;
+}
+// The fit for the ship in use, computed when first needed.
 function myShipEnsureFit(){
   const r = myShip.rec;
   if(!r) return Promise.resolve(null);
-  if(myShip.f && myShip.f.eftText === r.eft) return Promise.resolve(myShip.f);
-  if(myShip.loading) return myShip.loading;
-  const text = r.eft;
-  myShip.loading = (async () => {
+  if(myShip.f && myShip.fId === r.id && myShip.f.eftText === r.eft) return Promise.resolve(myShip.f);
+  if(myShip.loading && myShip.loadingId === r.id) return myShip.loading;
+  const id = r.id, text = r.eft;
+  myShip.loadingId = id;
+  const p = (async () => {
     try{
-      const {parsed, f} = await buildFitFromEft(text);
-      if(!myShip.rec || myShip.rec.eft !== text) return null; // replaced or deleted meanwhile
-      const cur = myShip.rec;
-      if(cur.activeMode && f.tacticalModes && f.tacticalModes[cur.activeMode]){ f.activeMode = cur.activeMode; f.estimate = f.tacticalModes[cur.activeMode]; }
-      f.asbDry = !!cur.asbDry;
-      if((cur.moduleStates && Object.keys(cur.moduleStates).length) || cur.droneStates){
-        f.moduleStates = cur.moduleStates || null;
-        f.moduleCopyOrder = cur.moduleCopyOrder || null;
-        f.droneStates = cur.droneStates || null;
-        await recomputeFitWithStates(f);
-      }
-      f.fitTitle = parsed.fitName ? `${parsed.shipName} — ${parsed.fitName}` : parsed.shipName;
-      myShip.f = f; myShip.parsed = parsed; myShip.error = '';
+      const {parsed, f} = await myShipBuild(r);
+      if(!myShip.rec || myShip.rec.id !== id || myShip.rec.eft !== text) return null; // switched, replaced or deleted meanwhile
+      myShip.f = f; myShip.fId = id; myShip.parsed = parsed; myShip.error = '';
       myShipStoreStates(f);
       return f;
     }catch(e){
-      myShip.error = withCode(`Your saved ship couldn't be loaded (${errorCodeOf(e)}: ${e.message}). It is still saved; try again later, or Replace it.`, 'MYSHIP-02');
+      if(myShip.rec && myShip.rec.id === id) myShip.error = withCode(`Your saved ship couldn't be loaded (${errorCodeOf(e)}: ${e.message}). It is still saved; try again later, or Replace it.`, 'MYSHIP-02');
       return null;
     }finally{
-      myShip.loading = null;
+      if(myShip.loading === p){ myShip.loading = null; myShip.loadingId = null; }
     }
   })();
-  return myShip.loading;
+  myShip.loading = p;
+  return p;
 }
 function myShipStoreStates(f){
   const r = myShip.rec;
@@ -16761,8 +16881,9 @@ function renderMyShipChip(){
     return;
   }
   chip.classList.remove('is-empty');
-  chip.innerHTML = `${MY_SHIP_HULL_SVG(18)}<span class="mys-chip-k">My ship</span><span class="mys-chip-ship">${escapeHtml(r.shipName)}</span>${r.fitName ? `<span class="mys-chip-fit">· ${escapeHtml(r.fitName)}</span>` : ''}${MY_SHIP_CHEV_SVG}`;
-  chip.setAttribute('aria-label', `My Ship: ${myShipLabel()}. Open my ship`);
+  const more = myShip.list.length - 1;   // v2026.10.14.65: the other saved fits
+  chip.innerHTML = `${MY_SHIP_HULL_SVG(18)}<span class="mys-chip-k">My ship</span><span class="mys-chip-ship">${escapeHtml(r.shipName)}</span>${r.fitName ? `<span class="mys-chip-fit">· ${escapeHtml(r.fitName)}</span>` : ''}${more > 0 ? `<span class="mys-chip-more">+${more}</span>` : ''}${MY_SHIP_CHEV_SVG}`;
+  chip.setAttribute('aria-label', `My Ship: ${myShipLabel()}${more > 0 ? `, ${more} more saved` : ''}. Open My Ships`);
   chip.title = myShipLabel();
   use.disabled = false; use.checked = !!r.use;
   lab.classList.remove('is-off');
@@ -16772,9 +16893,12 @@ function renderMyShipChip(){
 // ---- panel ----
 function myShipPanelEl(){ return document.getElementById('myShipPanel'); }
 function myShipPanelIsOpen(){ return !myShipPanelEl().hidden; }
-function openMyShipPanel(mode){
+function openMyShipPanel(mode, opt = {}){   // opt.replaceId (v.65): the paste box replaces that saved fit
   const panel = myShipPanelEl();
-  myShip.panelMode = mode || (myShip.rec ? 'summary' : 'paste');
+  myShip.panelMode = mode || (myShip.list.length ? 'summary' : 'paste');
+  myShip.replaceId = (myShip.panelMode === 'paste' && opt.replaceId) || null;
+  if(myShip.panelMode === 'paste' && !myShip.replaceId && myShip.list.length >= MY_SHIPS_MAX) myShip.panelMode = 'summary';   // full: the list says so
+  myShip.selId = myShip.rec ? myShip.rec.id : null;
   panel.hidden = false;
   document.getElementById('myShipBackdrop').hidden = false;
   document.getElementById('myShipChip').setAttribute('aria-expanded', 'true');
@@ -16796,12 +16920,12 @@ function closeMyShipPanel(returnFocus = true){
   myShip.saveNote = '';
   if(returnFocus) chip.focus({preventScroll: true});
 }
-function myShipTilesHtml(){
-  const f = myShip.f, e = f && f.estimate;
+function myShipTilesHtml(src = myShip){   // src: {f, loading} (the ship in use, or the panel's preview of another)
+  const f = src.f, e = f && f.estimate;
   const keys = ['EHP', 'DPS', 'Capacitor', 'Speed', 'Signature', 'Lock range'];
   let tiles;
   if(!e){
-    const v = myShip.loading ? '…' : '—';
+    const v = src.loading ? '…' : '—';
     tiles = keys.map(k => [k, v]);
   }else{
     const guess = e.ammoEstimates.length > 0;
@@ -16828,80 +16952,141 @@ function renderMyShipPanel(){
   const x = `<button type="button" class="mys-x" data-act="close" aria-label="Close">${MY_SHIP_X_SVG}</button>`;
   const storageNote = myShip.storageOk ? ''
     : `<div class="note">${escapeHtml(withCode("This browser isn't letting the page store anything (a private window, blocked site data, or full storage), so My Ship is kept only until this page is closed.", 'MYSHIP-01'))}</div>`;
-  if(!r || myShip.panelMode === 'paste'){
+  const full = myShip.list.length >= MY_SHIPS_MAX;
+  const replacing = myShip.panelMode === 'paste' && myShip.replaceId ? myShipById(myShip.replaceId) : null;
+  if(!myShip.list.length || myShip.panelMode === 'paste'){
+    // v2026.10.14.65: the paste box adds a fit to My Ships (and uses it), or replaces the one being viewed
+    const title = replacing ? `Replace ${escapeHtml(myShipLabel(replacing))}` : (myShip.list.length ? 'Add a fit' : 'My Ship');
+    const what = replacing ? ` It replaces ${escapeHtml(myShipLabel(replacing))} and its module states.`
+      : (myShip.list.length ? ` It's added to My Ships (${myShip.list.length} of ${MY_SHIPS_MAX} saved) and used in assessments.` : '');
     panel.innerHTML = `
-      <div class="mys-panel-head"><h2>${r ? 'Replace my ship' : 'My Ship'}</h2>${x}</div>
-      <p class="mys-p">Paste the fit you fly, in EFT format (pyfa: Export to clipboard; in game: Copy to clipboard in the Fitting window).${r ? ` It replaces ${escapeHtml(myShipLabel())} and its module states.` : ''}</p>
+      <div class="mys-panel-head"><h2>${title}</h2>${x}</div>
+      <p class="mys-p">Paste the fit you fly, in EFT format (pyfa: Export to clipboard; in game: Copy to clipboard in the Fitting window).${what}</p>
       <label class="mys-label" for="myShipEft">EFT fit</label>
       <textarea id="myShipEft" rows="10" spellcheck="false" placeholder="[Vexor, Brawl]&#10;Damage Control II&#10;Medium Armor Repairer II&#10;...&#10;&#10;Hammerhead II x5"></textarea>
       <div class="mys-actions">
-        <button type="button" class="mys-primary" data-act="save">Save as my ship</button>
+        <button type="button" class="mys-primary" data-act="save">${replacing ? 'Replace fit' : (myShip.list.length ? 'Save to My Ships' : 'Save as my ship')}</button>
         <button type="button" class="mys-quiet" data-act="cancel">Cancel</button>
       </div>
       <div class="status" id="myShipPanelStatus"></div>
-      ${!r && myShip.error ? `<div class="status err">${escapeHtml(myShip.error)}</div>` : ''}
+      ${!myShip.list.length && myShip.error ? `<div class="status err">${escapeHtml(myShip.error)}</div>` : ''}
       ${myShip.saveNote ? `<div class="status">${escapeHtml(myShip.saveNote)}</div>` : ''}
       ${storageNote}
-      <p class="mys-fine">Saved in this browser only, until you replace or delete it. Implants and boosters in the paste count, as in the Fit Analyzer.</p>`;
-  }else{
-    const set = r.savedAt ? new Date(r.savedAt) : null;
-    const sub = [r.shipGroup, set && !isNaN(set) ? 'set ' + set.toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) : '',
-      myShip.storageOk ? 'stored in this browser' : 'kept until this page closes'].filter(Boolean).join(' · ');
-    const icon = `${MY_SHIP_HULL_SVG(26, 1.6)}${r.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(r.shipTypeId)}/icon?size=64" alt="" loading="lazy" style="position:absolute; inset:0;" onerror="this.remove();">` : ''}`;
-    const statesLine = !myShip.f ? (myShip.loading ? 'Calculating…' : '')
-      : myShipCustomStates(myShip.f)
-        ? `<b>Module states changed</b> from the paste, and kept with your ship. The reset icon on its ${cardName('fit')} card returns to the pasted states.`
-        : `Module states as pasted. Changes you make on its ${cardName('fit')} card are kept with your ship.`;
-    const confirm = myShip.panelMode === 'confirmDelete' ? `
-      <div class="mys-confirm" role="alertdialog" aria-label="Delete my ship">
-        Delete ${escapeHtml(myShipLabel())}? Its fit and module states are removed from this browser.
+      <p class="mys-fine">Saved in this browser only, up to ${MY_SHIPS_MAX} fits. Implants and boosters in the paste count, as in the Fit Analyzer.</p>`;
+    wireMyShipPanel(panel);
+    return;
+  }
+  // The list (most recently used first), then the viewed fit: its numbers and what you can do with it.
+  const sel = myShipById(myShip.selId) || r || myShipSorted()[0];
+  myShip.selId = sel.id;
+  const inUse = !!r && sel.id === r.id;
+  const rows = myShipSorted().map(s => {
+    const cur = r && s.id === r.id, on = s.id === sel.id;
+    const icon = `${MY_SHIP_HULL_SVG(18)}${s.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(s.shipTypeId)}/icon?size=64" alt="" loading="lazy" onerror="this.remove();">` : ''}`;
+    return `<div class="mys-row${on ? ' is-sel' : ''}" data-id="${escapeHtml(s.id)}">
+        <button type="button" class="mys-row-main" data-act="view" data-id="${escapeHtml(s.id)}" aria-current="${on ? 'true' : 'false'}" title="Show ${escapeHtml(myShipLabel(s))}">
+          <span class="mys-row-icon">${icon}</span>
+          <span class="mys-row-name"><span class="mys-row-t"><b>${escapeHtml(s.shipName)}</b>${s.fitName ? ` <span class="mys-dim">· ${escapeHtml(s.fitName)}</span>` : ''}</span><span class="mys-row-sub">${escapeHtml(myShipRowSub(s))}</span></span>
+        </button>
+        ${cur ? '<span class="mys-inuse">In use</span>' : `<button type="button" class="mys-quiet mys-use-btn" data-act="use" data-id="${escapeHtml(s.id)}" aria-label="Use ${escapeHtml(myShipLabel(s))}">Use</button>`}
+      </div>`;
+  }).join('');
+  const addTitle = full ? withCode(`My Ships holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03') : 'Paste another fit you fly';
+  const view = inUse ? myShip : (myShip.preview && myShip.preview.id === sel.id ? myShip.preview : {f: null, loading: true, error: ''});
+  const statesLine = !inUse ? (view.f ? 'Not in use. Its module states are kept with it.' : '')
+    : !myShip.f ? (myShip.loading ? 'Calculating…' : '')
+    : myShipCustomStates(myShip.f)
+      ? `<b>Module states changed</b> from the paste, and kept with your ship. The reset icon on its ${cardName('fit')} card returns to the pasted states.`
+      : `Module states as pasted. Changes you make on its ${cardName('fit')} card are kept with your ship.`;
+  const confirm = myShip.panelMode === 'confirmDelete' ? `
+      <div class="mys-confirm" role="alertdialog" aria-label="Delete ${escapeHtml(myShipLabel(sel))}">
+        Delete ${escapeHtml(myShipLabel(sel))}? Its fit and module states are removed from this browser.${inUse && myShip.list.length > 1 ? ` ${escapeHtml(myShipLabel(myShipSorted().find(s => s.id !== sel.id)))} will be used instead.` : ''}
         <div class="mys-actions">
           <button type="button" class="mys-danger" data-act="delete-yes">Delete</button>
           <button type="button" class="mys-quiet" data-act="delete-no">Keep it</button>
         </div>
       </div>` : '';
-    panel.innerHTML = `
-      <div class="mys-panel-head">
-        <div class="mys-ident">
-          <div class="mys-ident-icon" style="position:relative;">${icon}</div>
-          <div><h2>${escapeHtml(r.shipName)}${r.fitName ? ` <span class="mys-dim">· ${escapeHtml(r.fitName)}</span>` : ''}</h2><div class="mys-ident-sub">${escapeHtml(sub)}</div></div>
+  const rename = myShip.panelMode === 'rename' ? `
+      <div class="mys-rename">
+        <label class="mys-label" for="myShipRename">Fit name (the ship stays ${escapeHtml(sel.shipName)})</label>
+        <input id="myShipRename" type="text" maxlength="60" spellcheck="false" value="${escapeHtml(sel.fitName || '')}">
+        <div class="mys-actions">
+          <button type="button" class="mys-primary" data-act="rename-save">Save name</button>
+          <button type="button" class="mys-quiet" data-act="rename-cancel">Cancel</button>
         </div>
-        ${x}
+      </div>` : '';
+  const err = inUse ? (myShip.error && !myShip.f && !myShip.loading ? myShip.error : '') : (view.error || '');
+  panel.innerHTML = `
+      <div class="mys-panel-head"><h2>My Ships</h2>${x}</div>
+      <div class="mys-list">
+        <div class="mys-list-head"><span class="mys-list-k">${myShip.list.length} saved · most recent first</span>
+          <button type="button" class="mys-add" data-act="add"${full ? ' disabled' : ''} title="${escapeHtml(addTitle)}">+ Add a fit</button></div>
+        ${rows}
       </div>
-      ${myShipTilesHtml()}
+      ${full ? `<div class="mys-full">${escapeHtml(addTitle)}</div>` : ''}
+      ${myShipTilesHtml(view)}
       <div class="mys-states">${statesLine}</div>
-      ${myShip.error && !myShip.f && !myShip.loading ? `<div class="status err">${escapeHtml(myShip.error)}</div>` : ''}
+      ${err ? `<div class="status err">${escapeHtml(err)}</div>` : ''}
       ${myShip.saveNote ? `<div class="status">${escapeHtml(myShip.saveNote)}</div>` : ''}
       ${storageNote}
-      <details class="mys-eft"><summary>Fit and EFT text</summary><pre>${escapeHtml(r.eft)}</pre></details>
-      <button type="button" class="mys-primary mys-open" data-act="open">Open in Fit Analyzer ${MY_SHIP_ARROW_SVG}</button>
-      <div class="mys-actions">
-        <button type="button" class="mys-quiet" data-act="replace">Replace</button>
+      <details class="mys-eft"><summary>Fit and EFT text</summary><pre>${escapeHtml(myShipEftOut(sel))}</pre></details>
+      ${inUse ? `<button type="button" class="mys-primary mys-open" data-act="open">Open in Fit Analyzer ${MY_SHIP_ARROW_SVG}</button>`
+        : `<button type="button" class="mys-primary mys-open" data-act="use" data-id="${escapeHtml(sel.id)}">Use this ship</button>`}
+      ${rename || `<div class="mys-actions">
+        <button type="button" class="mys-quiet" data-act="rename">Rename</button>
+        <button type="button" class="mys-quiet" data-act="replace">Replace fit</button>
         <button type="button" class="mys-quiet" data-act="copy">Copy EFT</button>
         <button type="button" class="mys-danger mys-push" data-act="delete">Delete</button>
-      </div>
-      ${confirm}`;
-  }
+      </div>`}
+      ${confirm}
+      <p class="mys-fine">${myShip.storageOk ? `Saved in this browser only, up to ${MY_SHIPS_MAX} fits.` : 'Saved for this page only, kept until this page closes: this browser won\'t store it.'}</p>`;
   wireMyShipPanel(panel);
+  if(!inUse && !view.f && !view.error) myShipLoadPreview(sel);
+  if(inUse && !myShip.f && !myShip.error){   // the ship in use, computed when first shown (also right after a switch)
+    const id = sel.id;
+    myShipEnsureFit().then(() => { if(myShipPanelIsOpen() && myShip.selId === id && myShip.panelMode !== 'paste') renderMyShipPanel(); });
+  }
+}
+// The numbers of a saved fit that isn't in use, for the panel (computed once per page load, cached by id).
+function myShipLoadPreview(rec){
+  const id = rec.id;
+  if(myShip.preview && myShip.preview.id === id && (myShip.preview.f || myShip.preview.loading)) return;
+  myShip.preview = {id, f: null, loading: true, error: ''};
+  myShipBuild(rec).then(({f}) => { if(myShip.preview && myShip.preview.id === id) Object.assign(myShip.preview, {f, loading: false}); },
+    (e) => { if(myShip.preview && myShip.preview.id === id) Object.assign(myShip.preview, {loading: false,
+      error: withCode(`This saved ship couldn't be loaded (${errorCodeOf(e)}: ${e.message}). It is still saved; try again later, or Replace it.`, 'MYSHIP-02')}); })
+    .then(() => { if(myShipPanelIsOpen() && myShip.selId === id && myShip.panelMode !== 'paste') renderMyShipPanel(); });
 }
 function wireMyShipPanel(panel){
-  const on = (act, fn) => { const b = panel.querySelector(`[data-act="${act}"]`); if(b) b.addEventListener('click', fn); };
+  const on = (act, fn) => panel.querySelectorAll(`[data-act="${act}"]`).forEach(b => b.addEventListener('click', fn));
+  const focus = (sel) => { const el = panel.querySelector(sel); if(el) el.focus(); };
   on('close', () => closeMyShipPanel());
-  on('cancel', () => { if(myShip.rec){ myShip.panelMode = 'summary'; renderMyShipPanel(); panel.querySelector('button.mys-x').focus(); } else closeMyShipPanel(); });
+  on('cancel', () => { if(myShip.list.length){ myShip.replaceId = null; myShip.panelMode = 'summary'; renderMyShipPanel(); focus('button.mys-x'); } else closeMyShipPanel(); });
   on('save', myShipSaveFromPaste);
   on('open', () => showMyShipInFitAnalyzer());
-  on('replace', () => { myShip.saveNote = ''; myShip.panelMode = 'paste'; renderMyShipPanel(); panel.querySelector('#myShipEft').focus(); });
-  on('delete', () => { myShip.panelMode = 'confirmDelete'; renderMyShipPanel(); panel.querySelector('[data-act="delete-no"]').focus(); });
-  on('delete-no', () => { myShip.panelMode = 'summary'; renderMyShipPanel(); panel.querySelector('[data-act="delete"]').focus(); });
-  on('delete-yes', myShipDelete);
+  on('add', () => { if(myShip.list.length >= MY_SHIPS_MAX) return; myShip.saveNote = ''; myShip.replaceId = null; myShip.panelMode = 'paste'; renderMyShipPanel(); focus('#myShipEft'); });
+  on('replace', () => { myShip.saveNote = ''; myShip.replaceId = myShip.selId; myShip.panelMode = 'paste'; renderMyShipPanel(); focus('#myShipEft'); });
+  on('view', (e) => { myShip.selId = e.currentTarget.dataset.id; myShip.saveNote = ''; myShip.panelMode = 'summary'; renderMyShipPanel(); focus(`.mys-row-main[data-id="${CSS.escape(myShip.selId)}"]`); });
+  on('use', (e) => { const id = e.currentTarget.dataset.id; myShipUse(id); myShip.selId = id; myShip.panelMode = 'summary'; renderMyShipPanel(); focus('[data-act="open"]'); });
+  on('rename', () => { myShip.panelMode = 'rename'; renderMyShipPanel(); const i = panel.querySelector('#myShipRename'); if(i){ i.focus(); i.select(); } });
+  on('rename-cancel', () => { myShip.panelMode = 'summary'; renderMyShipPanel(); focus('[data-act="rename"]'); });
+  on('rename-save', () => { myShipRename(myShip.selId, panel.querySelector('#myShipRename').value); myShip.panelMode = 'summary'; renderMyShipPanel(); focus('[data-act="rename"]'); });
+  on('delete', () => { myShip.panelMode = 'confirmDelete'; renderMyShipPanel(); focus('[data-act="delete-no"]'); });
+  on('delete-no', () => { myShip.panelMode = 'summary'; renderMyShipPanel(); focus('[data-act="delete"]'); });
+  on('delete-yes', () => myShipDelete(myShip.selId));
   on('copy', async (e) => {
-    const b = e.currentTarget;
-    try{ await navigator.clipboard.writeText(myShip.rec.eft); b.textContent = 'Copied!'; }
+    const b = e.currentTarget, sel = myShipById(myShip.selId);
+    try{ await navigator.clipboard.writeText(myShipEftOut(sel)); b.textContent = 'Copied!'; }
     catch(err){ b.textContent = 'Copy failed'; }
     setTimeout(() => { if(b.isConnected) b.textContent = 'Copy EFT'; }, 1100);
   });
   const ta = panel.querySelector('#myShipEft');
   if(ta) ta.addEventListener('keydown', (e) => { if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); myShipSaveFromPaste(); } });
+  const rn = panel.querySelector('#myShipRename');
+  if(rn) rn.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); panel.querySelector('[data-act="rename-save"]').click(); }
+    else if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); panel.querySelector('[data-act="rename-cancel"]').click(); }
+  });
 }
 async function myShipSaveFromPaste(){
   const panel = myShipPanelEl();
@@ -16909,54 +17094,141 @@ async function myShipSaveFromPaste(){
   if(!ta || btn.disabled) return;
   const text = ta.value;
   if(!text.trim()){ setStatus(st, 'Paste a fit first.', true); ta.focus(); return; }
+  if(!myShip.replaceId && myShip.list.length >= MY_SHIPS_MAX && !myShip.list.some(r => r.eft === text)){
+    setStatus(st, withCode(`My Ships holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03'), true); return;
+  }
   btn.disabled = true;
   try{
     const {parsed, f} = await buildFitFromEft(text, m => setStatus(st, m));
-    await myShipAdopt(text, parsed, f, null);
-    myShip.saveNote = parsed.unresolved.length ? `Not recognized, so left out of your ship: ${parsed.unresolved.join(', ')}. (FIT-04)` : '';
+    myShip.saveNote = '';
+    await myShipAdopt(text, parsed, f, null, {replaceId: myShip.replaceId});
+    if(parsed.unresolved.length) myShip.saveNote = `Not recognized, so left out of your ship: ${parsed.unresolved.join(', ')}. (FIT-04)` + (myShip.saveNote ? ' ' + myShip.saveNote : '');
+    myShip.replaceId = null;
     myShip.panelMode = 'summary';
-    if(myShipPanelIsOpen()){ renderMyShipPanel(); panel.querySelector('[data-act="open"]').focus(); }
+    if(myShipPanelIsOpen()){ renderMyShipPanel(); const o = panel.querySelector('[data-act="open"]'); if(o) o.focus(); }
   }catch(e){
     if(st.isConnected) setStatus(st, withCode('Error: ' + e.message + '.', errorCodeOf(e)), true);
   }finally{
     if(btn.isConnected) btn.disabled = false;
   }
 }
-// Makes `text` my ship. With a computed fit (the panel's Save) it is used as is; without one (the Fit
-// Analyzer's "Set as my ship", which keeps that fit's states) it is computed when first needed, so the threat's
-// fit object is never shared with my ship (M7).
-async function myShipAdopt(text, meta, f, states){
-  let group = '';
-  try{ const t = await getType(meta.shipTypeId); const g = await getGroup(t.group_id); group = (g && g.name) || ''; }catch(e){}
-  myShip.rec = {v: 1, eft: text, shipName: meta.shipName, fitName: meta.fitName || '', shipTypeId: meta.shipTypeId, shipGroup: group,
-    savedAt: new Date().toISOString(), use: myShip.rec ? !!myShip.rec.use : true,
-    moduleStates: null, moduleCopyOrder: null, droneStates: null, activeMode: null, asbDry: false, ...(states || {})};
+// Saves `text` to My Ships and uses it (v2026.10.14.65: adds a fit; opt.replaceId replaces that saved fit instead -- used
+// only if it was the ship in use --
+// keeping its place). A fit already saved (the same EFT text) isn't added twice: that one is used, with `states` if
+// given. With a computed fit (the panel's Save) it is used as is; without one (the Fit Analyzer's "Set as my ship",
+// which keeps that fit's states) it is computed when first needed, so the threat's fit object is never shared with
+// my ship (M7). Throws MYSHIP-03 when adding to a full list.
+async function myShipAdopt(text, meta, f, states, opt = {}){
+  const dup = myShip.list.find(r => r.eft === text && r.id !== opt.replaceId);
+  if(dup){
+    if(states){ Object.assign(dup, states); myShip.cache.delete(dup.id); if(myShip.rec === dup){ myShip.f = null; myShip.fId = null; } }
+    myShip.saveNote = `${myShipLabel(dup)} is already in My Ships${opt.replaceId ? ', so nothing was replaced' : ''}; it's the ship in use now.`;
+    myShipUse(dup.id);
+    myShip.selId = dup.id;
+    return dup;
+  }
+  const target = opt.replaceId ? myShipById(opt.replaceId) : null;
+  if(target && target !== myShip.rec){   // replacing a saved fit that isn't in use: the ship in use stays
+    const g = await myShipGroupOf(meta.shipTypeId);
+    Object.assign(target, {eft: text, shipName: meta.shipName, fitName: meta.fitName || '', shipTypeId: meta.shipTypeId, shipGroup: g, savedAt: new Date().toISOString(),
+      moduleStates: null, moduleCopyOrder: null, droneStates: null, activeMode: null, asbDry: false, ...(states || {})});
+    myShip.cache.delete(target.id);
+    if(f){ f.fitTitle = meta.fitName ? `${meta.shipName} — ${meta.fitName}` : meta.shipName; myShip.cache.set(target.id, {eft: text, p: Promise.resolve({f, parsed: meta})}); }
+    if(myShip.preview && myShip.preview.id === target.id) myShip.preview = null;
+    myShip.selId = target.id;
+    myShipWriteStored();
+    renderMyShipChip();
+    document.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h));   // the board's menu
+    return target;
+  }
+  if(!target && myShip.list.length >= MY_SHIPS_MAX) throw codedError('MYSHIP-03', `My Ships holds ${MY_SHIPS_MAX} fits. Delete one to add another`);
+  const group = await myShipGroupOf(meta.shipTypeId);
+  const now = new Date().toISOString();
+  const use = myShip.rec ? !!myShip.rec.use : true;
+  const rec = {v: 1, id: target ? target.id : myShipNewId(), eft: text, shipName: meta.shipName, fitName: meta.fitName || '', shipTypeId: meta.shipTypeId, shipGroup: group,
+    savedAt: now, usedAt: now, use, moduleStates: null, moduleCopyOrder: null, droneStates: null, activeMode: null, asbDry: false, ...(states || {})};
+  if(target) myShip.list[myShip.list.indexOf(target)] = rec; else myShip.list.push(rec);
+  for(const r of myShip.list) r.use = use;
+  myShip.cache.delete(rec.id);
+  if(myShip.preview && myShip.preview.id === rec.id) myShip.preview = null;
+  myShip.rec = rec; myShip.selId = rec.id;
   if(f){
     f.fitTitle = meta.fitName ? `${meta.shipName} — ${meta.fitName}` : meta.shipName;
-    myShip.f = f; myShip.parsed = meta;
+    myShip.f = f; myShip.fId = rec.id; myShip.parsed = meta;
+    myShip.cache.set(rec.id, {eft: text, p: Promise.resolve({f, parsed: meta})});
   }else{
-    myShip.f = null; myShip.parsed = null;
+    myShip.f = null; myShip.fId = null; myShip.parsed = null;
   }
   myShip.error = '';
   myShip.version++;
   myShipWriteStored();
   myShipAfterChange();
+  return rec;
 }
-function myShipDelete(){
-  const label = myShipLabel();
-  myShip.rec = null; myShip.f = null; myShip.parsed = null; myShip.error = ''; myShip.version++;
+async function myShipGroupOf(typeId){
+  try{ const t = await getType(typeId); const g = await getGroup(t.group_id); return (g && g.name) || ''; }catch(e){ return ''; }
+}
+// v2026.10.14.65 (the owner 2026-10-25: picked from the list, "it should become the active ship everywhere"): the saved fit
+// `id` becomes the ship in use -- the chip, every Matchup, the Fit Analyzer's my-ship page -- with its own module states.
+function myShipUse(id){
+  const rec = myShipById(id);
+  if(!rec) return;
+  const use = myShip.rec ? !!myShip.rec.use : (myShip.list.length ? !!myShip.list[0].use : true);   // the switch carries over
+  for(const r of myShip.list) r.use = use;
+  rec.usedAt = new Date().toISOString();
+  if(myShip.rec === rec){ myShipWriteStored(); return; }
+  myShip.rec = rec;
+  myShip.f = null; myShip.fId = null; myShip.parsed = null;   // myShipEnsureFit takes it from the cache when it was computed
+  if(myShip.preview && myShip.preview.id === id) myShip.preview = null;
+  myShip.error = '';
+  myShip.version++;
   myShipWriteStored();
-  if(myShip.faViewing){
-    myShip.faViewing = false;
-    document.getElementById('fitAnalyzerResults').innerHTML = '';
-    setStatus(document.getElementById('fitAnalyzerStatus'), '');
-  }
   myShipAfterChange();
+}
+function myShipRename(id, name){
+  const rec = myShipById(id);
+  if(!rec) return;
+  rec.fitName = String(name || '').trim().slice(0, 60);
+  const title = rec.fitName ? `${rec.shipName} — ${rec.fitName}` : rec.shipName;
+  const c = myShip.cache.get(id);
+  if(c) c.p.then(({f}) => { f.fitTitle = title; }, () => {});
+  if(myShip.rec === rec){ if(myShip.f) myShip.f.fitTitle = title; myShip.version++; }
+  myShipWriteStored();
+  if(myShip.rec === rec) myShipAfterChange();
+  else{ renderMyShipChip(); document.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h)); }   // the board's menu
+}
+function myShipDelete(id){
+  const rec = myShipById(id);
+  if(!rec) return;
+  const label = myShipLabel(rec), wasInUse = myShip.rec === rec;
+  myShip.list = myShip.list.filter(r => r !== rec);
+  myShip.cache.delete(id);
+  if(myShip.preview && myShip.preview.id === id) myShip.preview = null;
+  if(wasInUse){
+    const next = myShipSorted()[0] || null;
+    myShip.rec = null; myShip.f = null; myShip.fId = null; myShip.parsed = null; myShip.error = '';
+    if(next) myShipUse(next.id);
+    else{
+      myShip.version++;
+      myShipWriteStored();
+      if(myShip.faViewing){
+        myShip.faViewing = false;
+        document.getElementById('fitAnalyzerResults').innerHTML = '';
+        setStatus(document.getElementById('fitAnalyzerStatus'), '');
+      }
+      myShipAfterChange();
+    }
+  }else{
+    myShipWriteStored();
+    renderMyShipChip();
+    document.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h));
+  }
+  myShip.selId = myShip.rec ? myShip.rec.id : null;
   myShip.saveNote = `Deleted ${label}.`;
-  myShip.panelMode = 'paste';
+  myShip.panelMode = myShip.list.length ? 'summary' : 'paste';
   renderMyShipPanel();
-  const ta = myShipPanelEl().querySelector('#myShipEft');
-  if(ta) ta.focus();
+  const t = myShipPanelEl().querySelector(myShip.list.length ? 'button.mys-x' : '#myShipEft');
+  if(t) t.focus();
 }
 // After my ship is set, replaced, deleted or switched on/off: the chip, every switch, the "Set as my ship"
 // buttons and (when it is showing) the Fit Analyzer's "Viewing my ship" page.
@@ -16984,15 +17256,22 @@ function mysRenderSetSlot(slot){
     slot.innerHTML = `<span class="mys-is-tag">${MY_SHIP_HULL_SVG(13)} This is my ship</span>`;
     return;
   }
-  slot.innerHTML = `<button type="button" class="mys-set" title="${myShip.rec ? `Replaces ${escapeHtml(myShipLabel())}. ` : ''}Keeps this fit's current module states">${MY_SHIP_HULL_SVG(14)} Set as my ship</button>`;
+  // v2026.10.14.65: adds the fit to My Ships and uses it (one already saved is just used); full list: MYSHIP-03
+  const saved = f.eftText ? myShip.list.find(r => r.eft === f.eftText) : null;
+  const full = !saved && myShip.list.length >= MY_SHIPS_MAX;
+  const title = saved ? `In My Ships as ${myShipLabel(saved)}: use it, with this fit's current module states`
+    : full ? withCode(`My Ships holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03')
+    : `Saves this fit to My Ships (${myShip.list.length + 1} of ${MY_SHIPS_MAX}) and uses it, with its current module states`;
+  slot.innerHTML = `<button type="button" class="mys-set"${full ? ' disabled' : ''} title="${escapeHtml(title)}">${MY_SHIP_HULL_SVG(14)} ${saved ? 'Use as my ship' : 'Set as my ship'}</button>`;
   slot.querySelector('button').addEventListener('click', async (e) => {
     const b = e.currentTarget;
     b.disabled = true;
-    await myShipAdopt(f.eftText, {shipName, fitName, shipTypeId: f.input.shipTypeId}, null, {
+    try{ await myShipAdopt(f.eftText, {shipName, fitName, shipTypeId: f.input.shipTypeId}, null, {
       moduleStates: (f.moduleStates && Object.keys(f.moduleStates).length) ? JSON.parse(JSON.stringify(f.moduleStates)) : null,
       moduleCopyOrder: f.moduleCopyOrder ? JSON.parse(JSON.stringify(f.moduleCopyOrder)) : null,
       droneStates: f.droneStates ? {...f.droneStates} : null,
-      activeMode: f.activeMode || null, asbDry: !!f.asbDry});
+      activeMode: f.activeMode || null, asbDry: !!f.asbDry});}
+    catch(err){ b.title = withCode(err.message + '.', errorCodeOf(err)); mysRenderSetSlot(slot); }
   });
 }
 function myShipBannerHtml(){
@@ -17006,7 +17285,7 @@ function myShipBannerHtml(){
 }
 function wireMyShipBanner(el){
   const rep = el.querySelector('[data-act="mys-replace"]'), other = el.querySelector('[data-act="mys-another"]');
-  if(rep) rep.addEventListener('click', () => openMyShipPanel('paste'));
+  if(rep) rep.addEventListener('click', () => openMyShipPanel('paste', {replaceId: myShip.rec && myShip.rec.id}));
   if(other) other.addEventListener('click', () => {
     myShip.faViewing = false;
     el.innerHTML = '';
@@ -17051,6 +17330,38 @@ function mysViewOf(host){
   return ((scope ? scope.dataset.mysView : host.dataset.view) === 'mine') ? 'mine' : 'threat';
 }
 let mysWhySeq = 0;
+// v2026.10.14.65 (the owner 2026-10-25: switch "in the panel AND on the Matchup"; a fit picked from the list "should become
+// the active ship everywhere"): your ship's name on the board is a menu of your saved fits. The half is a button (it
+// shows the My Ship Perspective) and can't hold another control, so the menu is laid over it: the same head, with the
+// name as the menu's summary, on top of the button's own head (whose name is kept, invisible, for its size). No "…" in
+// the menu: the page checks read a "…" in the board as numbers still being worked out.
+const MYS_PICK_CHEV = '<svg class="mys-pick-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>';
+function mysPickHtml(){
+  const r = myShip.rec;
+  const opts = myShipSorted().map(s => `<button type="button" class="mys-pick-opt" role="menuitemradio" aria-checked="${r && s.id === r.id}" data-id="${escapeHtml(s.id)}">
+      <span class="mys-pick-chk" aria-hidden="true">${r && s.id === r.id ? '✓' : ''}</span><span class="mys-pick-name"><b>${escapeHtml(s.shipName)}</b>${s.fitName ? ` · ${escapeHtml(s.fitName)}` : ''}</span></button>`).join('');
+  return `<div class="mys-pick-row"><span class="mys-half-head">
+      <details class="mys-pick"><summary class="mys-sw-v" aria-label="Your ship: ${escapeHtml(myShipLabel())}. Change it" title="Change your ship">${escapeHtml(myShipLabel())}${MYS_PICK_CHEV}</summary>
+        <div class="mys-pick-menu" role="menu" aria-label="Your ship for this matchup">
+          <div class="mys-pick-head"><span>Your ship for this matchup</span><button type="button" class="info-close" aria-label="Close">×</button></div>
+          ${opts}
+          <div class="mys-pick-sep"></div>
+          <button type="button" class="mys-pick-opt mys-pick-manage" role="menuitem"><span class="mys-pick-chk"></span><span class="mys-pick-name">Manage My Ships</span></button>
+        </div>
+      </details><span class="mys-sw-k" aria-hidden="true">My ship</span></span></div>`;
+}
+function mysWirePick(host){
+  const d = host.querySelector('details.mys-pick');
+  if(!d) return;
+  d.querySelectorAll('button.mys-pick-opt[data-id]').forEach(b => b.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    d.open = false;
+    myShipUse(b.dataset.id);   // the board redraws with the new ship (myShipAfterChange)
+  }));
+  const m = d.querySelector('button.mys-pick-manage');
+  if(m) m.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); d.open = false; openMyShipPanel('summary'); });
+  d.querySelector('summary').addEventListener('click', (e) => e.stopPropagation());
+}
 function mysBoardHtml(host){
   const why = (key) => key === 'theyLast' || key === 'youLast';   // v.58: the "why" panel on hover / tap (ttkWhyWire)
   const cell = (key, label, numFirst = true) => `<span class="mys-cell mys-cell-${key}${why(key) ? ' mys-cell-why' : ''}" data-cell="${key}">${numFirst ? `<span class="mys-cell-v">…</span><span class="mys-cell-k">${label}</span>` : `<span class="mys-cell-k">${label}</span><span class="mys-cell-v">…</span>`}</span>`;
@@ -17067,10 +17378,13 @@ function mysBoardHtml(host){
         <svg class="mys-mid-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h12l-3-3"></path><path d="M17 17H5l3 3"></path></svg>
         <span class="mys-cell mys-cell-faster" data-cell="faster"><span class="mys-cell-v">…</span></span>
       </div>
+      <div class="mys-half-wrap is-mine">
       <button type="button" class="mys-sw-btn mys-half is-mine" data-view="mine" aria-pressed="false" aria-describedby="${id}-you" title="Show the ${escapeHtml(cardName('perspective.mine'))}">
-        <span class="mys-half-head"><span class="mys-sw-v">${escapeHtml(myShipLabel())}</span><span class="mys-sw-k">My ship</span></span>
+        <span class="mys-half-head"><span class="mys-sw-v mys-pick-ghost">${escapeHtml(myShipLabel())}${MYS_PICK_CHEV}</span><span class="mys-sw-k">My ship</span></span>
         <span class="mys-half-nums">${cell('youLast', 'you last')}${cell('your', 'DPS applied to them')}</span>
       </button>
+      ${mysPickHtml()}
+      </div>
     </div>
     ${mysFightStripHtml(host)}
     <div class="mys-strip-note" role="status"></div>`;
@@ -17296,12 +17610,13 @@ function mysRenderSwitch(host, o = {}){
   host.dataset.view = view;
   host.hidden = false;
   // Draw the board once per label set; later calls only move the pressed side (no flicker while numbers refresh).
-  const sig = (host.dataset.threat || '') + '|' + myShipLabel();
+  const sig = (host.dataset.threat || '') + '|' + myShipLabel() + '|' + myShipSorted().map(r => r.id + ':' + myShipLabel(r)).join(',');   // v.65: and the saved list (the menu)
   if(host.dataset.boardSig !== sig || !host.querySelector(':scope > .mys-board')){
     host.dataset.boardSig = sig;
     host.innerHTML = mysBoardHtml(host);
     mysWireFight(host);
     ttkWhyWire(host);   // v.58
+    mysWirePick(host);  // v.65
     host.querySelectorAll('button.mys-sw-btn').forEach(b => b.addEventListener('click', () => {
       if(b.dataset.view === mysViewOf(host)) return;
       const scope = host.closest('[data-mys-scope]');
@@ -17359,7 +17674,7 @@ async function mysRenderMineView(mv){
   chip.addEventListener('click', () => { if(myShipPanelIsOpen()) closeMyShipPanel(); else openMyShipPanel(); });
   document.getElementById('myShipUse').addEventListener('change', (e) => {
     if(!myShip.rec) return;
-    myShip.rec.use = e.target.checked;
+    for(const r of myShip.list) r.use = e.target.checked;   // v.65: one switch for whichever saved fit is in use
     myShipWriteStored();
     myShipAfterChange();
   });
