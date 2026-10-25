@@ -5,7 +5,8 @@
 the owner 2026-10-25: "EVE Threat Assessment", tagline A, tab title with "(ETA)", only what users see renamed. Checks, at
 1440 and 375 px:
   * the browser tab title, the header's name and its one-line tagline; the ESI caching sentence is the Refresh item
-    data button's hover; the three tabs keep their names ("D-Scan Analyzer" is still the first tab's name);
+    data button's hover; the three tabs keep their names; v2026.10.14.62: in the order Pilot, Fit, D-Scan, the page
+    opening on the Pilot Analyzer;
   * the name doesn't run into the version tag, and nothing scrolls sideways;
   * a ship saved before the rename (localStorage "dscanMyShip", the key kept on purpose) is still there after a reload.
 No page errors.
@@ -34,7 +35,10 @@ def run(b, W):
     check(h['title'] == 'EVE Threat Assessment (ETA)' and h['h1'] == 'EVE Threat Assessment', f'{W}: tab title "{h["title"]}", header "{h["h1"]}"')
     check(h['p'] == ["Who's in system, what they fly, and how to beat them."], f'{W}: one tagline {h["p"]}')
     check('ESI' in h['btn'] and 'week' in h['btn'], f'{W}: the caching sentence is the Refresh button\'s hover ("{h["btn"]}")')
-    check(h['tabs'] == ['D-Scan Analyzer', 'Pilot Analyzer', 'Fit Analyzer'], f'{W}: the tabs keep their names {h["tabs"]}')
+    check(h['tabs'] == ['Pilot Analyzer', 'Fit Analyzer', 'D-Scan Analyzer'], f'{W}: the tabs keep their names, D-Scan last (v.62) {h["tabs"]}')
+    # v2026.10.14.62: the page opens on the Pilot Analyzer
+    shown = pg.evaluate("() => [...document.querySelectorAll('.tab-panel')].filter(p => getComputedStyle(p).display !== 'none').map(p => p.id).concat([document.querySelector('.tab-btn.active').id])")
+    check(shown == ['tabPilot', 'tabBtnPilot'], f'{W}: opens on the Pilot Analyzer {shown}')
     gap = pg.evaluate("""() => { const r = document.createRange(); r.selectNodeContents(document.querySelector('header.hero h1')); const t = document.querySelector('header.hero .build-tag').getBoundingClientRect();
         return [...r.getClientRects()].every(a => a.right <= t.left || t.right <= a.left || a.bottom <= t.top || t.bottom <= a.top) ? 1 : -1; }""")   # 1 = every line of the name's text clear of the tag
     sw = pg.evaluate('document.documentElement.scrollWidth')

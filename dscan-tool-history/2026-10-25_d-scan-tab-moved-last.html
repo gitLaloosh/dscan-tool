@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — D-Scan Analyzer tab moved last</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The D-Scan Analyzer tab moved last</h1>
+<p><span class="tag">Change</span> 2026-10-25 &middot; <code>v2026.10.14.61</code> &rarr; <code>v2026.10.14.62</code>.</p>
+<p>the owner (2026-10-25): "let's move the d-scan analyzer tab to last of the three". Asked which tab the page should open on, he chose the Pilot Analyzer.</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The tabs read Pilot Analyzer, Fit Analyzer, D-Scan Analyzer, and the page opens on the Pilot Analyzer.</li>
+<li>The Pilot Analyzer's intro said a ship type could come "from the scan above"; the scan is no longer above, so it now says "from a D-Scan".</li>
+<li>Presentation only: no number changed. Links into a tab (the Fit Analyzer's "Analyze it in the Fit Analyzer", "Set as my ship") switch tabs by name, so they are unaffected.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>header_check.py</code>: the tab order and the opening tab at 1440 and 375 px (v.61 fails 4).</li>
+<li><code>my_ship_check.py</code>: its phone check, "the chip above the tabs", now measures the first tab, not the D-Scan tab.</li>
+<li>Regression suite ALL PASS; every page check: see the delivery note.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When a layout changes, search the visible text for words that point at the old layout ("the scan above", "below", "on the left"). They don't fail any check, and they quietly become wrong.</p>
+</body>
+</html>

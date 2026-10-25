@@ -245,7 +245,7 @@ def phone(b):
     ctx = b.new_context(viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True)
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
-    chip, tab = pg.locator('#myShipChip').bounding_box(), pg.locator('#tabBtnDscan').bounding_box()
+    chip, tab = pg.locator('#myShipChip').bounding_box(), pg.locator('.tab-btn').first.bounding_box()   # v.62: the first tab
     check(chip['y'] + chip['height'] <= tab['y'] + 1 and chip['height'] >= 44, f'phone: chip above the tabs, finger-sized ({chip["height"]:.0f}px)')
     pg.tap('#myShipChip'); pg.wait_for_selector('#myShipPanel:not([hidden])')
     box = pg.locator('#myShipPanel').bounding_box()

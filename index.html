@@ -1609,7 +1609,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.61</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.62</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1622,9 +1622,11 @@
   </header>
 
   <div class="tabs">
-    <button type="button" class="tab-btn active" id="tabBtnDscan">D-Scan Analyzer</button>
-    <button type="button" class="tab-btn" id="tabBtnPilot">Pilot Analyzer</button>
+    <!-- v2026.10.14.62 (the owner 2026-10-25: "let's move the d-scan analyzer tab to last of the three", then "Pilot Analyzer" as the
+         tab the page opens on): Pilot, Fit, D-Scan. -->
+    <button type="button" class="tab-btn active" id="tabBtnPilot">Pilot Analyzer</button>
     <button type="button" class="tab-btn" id="tabBtnFit">Fit Analyzer</button>
+    <button type="button" class="tab-btn" id="tabBtnDscan">D-Scan Analyzer</button>
     <div class="mys-bar" id="myShipBar">
       <button type="button" class="mys-chip is-empty" id="myShipChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="myShipPanel"></button>
       <label class="mys-use is-off" id="myShipUseLabel" title="Save your ship first"><input type="checkbox" class="mys-sw" id="myShipUse" disabled aria-label="Use my ship in assessments"><span class="mys-use-long">Use in assessments</span><span class="mys-use-short">Use</span></label>
@@ -1633,7 +1635,7 @@
     </div>
   </div>
 
-  <div id="tabDscan" class="tab-panel">
+  <div id="tabDscan" class="tab-panel" style="display:none;">
   <section class="panel">
     <h2>Scan input</h2>
     <p class="sub">Copy your D-Scan window (Ctrl+A, Ctrl+C in the client) and paste it below — or just type a single ship name if you don't have a scan handy and want to check one hull directly.</p>
@@ -1662,10 +1664,10 @@
   </div>
   </div>
 
-  <div id="tabPilot" class="tab-panel" style="display:none;">
+  <div id="tabPilot" class="tab-panel">
   <section class="panel">
     <h2>Pilot Analyzer</h2>
-    <p class="sub">Enter a pilot's name and, optionally, a ship type (from the scan above, or typed manually). Leave the ship blank and it'll sample their recent losses to guess which hull they fly most.</p>
+    <p class="sub">Enter a pilot's name and, optionally, a ship type (from a D-Scan, or typed manually). Leave the ship blank and it'll sample their recent losses to guess which hull they fly most.</p>
     <div class="row">
       <input type="text" id="pilotName" placeholder="Pilot name">
       <select id="shipSelect"><option value="">— pick ship from scan (optional) —</option></select>
@@ -7524,7 +7526,7 @@ document.getElementById('debugToggle').addEventListener('click', () => {
 // Generalized to 3 tabs (2026-10-10, Fit Analyzer added) -- was a 2-way
 // dscan/not-dscan toggle before. Keyed by panel id suffix so a 4th tab later
 // is just one more entry in TAB_PANELS, not another rewrite of this function.
-const TAB_PANELS = ['dscan', 'pilot', 'fit'];
+const TAB_PANELS = ['pilot', 'fit', 'dscan'];   // v.62: the order of the tabs
 function switchTab(tab){
   for(const key of TAB_PANELS){
     const active = key === tab;
