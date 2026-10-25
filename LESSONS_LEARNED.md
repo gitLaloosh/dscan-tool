@@ -826,6 +826,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   descent (canvas `measureText(...).fontBoundingBoxDescent`). A 0x0 probe placed after the text gives the baseline
   only in an inline context; next to a flex item it becomes a flex item itself and reports the centre.
 
+## 56. A rename changes what people see, not where their data lives
+
+- **What happened (v2026.10.14.60, the rename to EVE Threat Assessment):** the old name is also in the browser
+  storage keys (`dscanMyShip`, `dscanDmgPreset`, `dscanFitView`), the item cache database (`dscan-tool-cache`), the
+  repo (and so the GitHub Pages address) and many file names. Renaming those would have wiped every user's saved
+  ship and cache and broken links, for no visible gain.
+- **Do this instead:** rename the visible text only, say in a comment where the old name stays and why, and check
+  that data saved before the rename is still read after it (`header_check.py` saves a ship, reloads, finds it).
+- **Also:** to check that two things don't overlap, measure what's drawn. The header's `h1` box spans the whole
+  width, so it always "overlapped" the version tag; the text's own Range rects are what can collide.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

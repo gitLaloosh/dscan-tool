@@ -1,6 +1,7 @@
 # Notes for AI assistants working on this repo
 
-D-Scan Analyzer is a single-file tool (`index.html`) that estimates EVE Online
+EVE Threat Assessment (ETA; called D-Scan Analyzer until v2026.10.14.60, and the repo, file and
+saved-data names still say dscan) is a single-file tool (`index.html`) that estimates EVE Online
 ship stats from killmails and EFT fits. Its calculations must match **pyfa**
 exactly, using primary sources only: pyfa's source code and CCP's SDE / live ESI.
 

@@ -46,7 +46,7 @@ groups = {'APP': 'The page itself', 'ESI': 'ESI (CCP\'s API)', 'ZKB': 'zKillboar
           'PILOT': 'Pilot Analyzer', 'FIT': 'Fit Analyzer', 'MYSHIP': 'My Ship'}
 order = list(groups)
 out = ['# Error codes', '',
-       'Every error the D-Scan Analyzer shows ends with a code, for example "... (ZKB-01)". To report a problem,',
+       'Every error EVE Threat Assessment shows ends with a code, for example "... (ZKB-01)". To report a problem,',
        'give the code and the version tag at the top right of the page.', '',
        'Generated from `ERROR_CODES` in `index.html` by `tools/gen_errors_md.py`; do not edit by hand. Rules: a code is',
        'never reused or renumbered; a retired error keeps its row, marked retired. Prompts for an empty box ("Enter a',

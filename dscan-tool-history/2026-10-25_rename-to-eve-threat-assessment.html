@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — Renamed: EVE Threat Assessment (ETA)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Renamed: D-Scan Analyzer &rarr; EVE Threat Assessment (ETA)</h1>
+<p><span class="tag">Change</span> 2026-10-25 &middot; <code>v2026.10.14.59</code> &rarr; <code>v2026.10.14.60</code>.</p>
+<p>the owner (backlog, via the inbox 2026-10-24): "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short). there is already a widely used web based tool for parsing d-scan results and many seem to know it as the dscan tool." On 2026-10-25 he chose the spelling "EVE Threat Assessment", to rename only what users see, tagline A, and "(ETA)" in the tab title.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Browser tab:</b> "EVE Threat Assessment (ETA)".</li>
+<li><b>Header:</b> "EVE Threat Assessment", with the tagline "Who's in system, what they fly, and how to beat them." The old text described only the D-Scan tab. Its ESI sentence is now the Refresh item data button's hover: "Item data comes live from ESI and is kept in your browser for a week. This fetches it again."</li>
+<li><b>Phone header:</b> 30 px at the top instead of 18, so the version tag sits above the longer name instead of over its end.</li>
+<li><b>Text:</b> ERRORS.md ("Every error EVE Threat Assessment shows ..."), CLAUDE.md and tools/README.md.</li>
+</ul>
+
+<h2>What stays, on purpose</h2>
+<ul>
+<li>The <b>D-Scan Analyzer tab</b> keeps its name: it is the part that reads directional scans.</li>
+<li>The <b>browser storage keys</b> (<code>dscanMyShip</code>, <code>dscanDmgPreset</code>, <code>dscanFitView</code>) and the <b>item cache database</b> (<code>dscan-tool-cache</code>). Renaming them would wipe everyone's saved ship and cache.</li>
+<li>The <b>repo</b> name <code>dscan-tool</code>, and so the GitHub Pages address, plus the file and folder names (<code>dscan-tool-history/</code>). Renaming the repo is the owner's call on GitHub. GitHub redirects the repo, but the Pages address changes and old links to the page break.</li>
+</ul>
+<p>Before deciding, a web search found two EVE forum tools with similar names, "EVE Threat Checker" and "Eve Threat for Blops". the owner kept "EVE Threat Assessment".</p>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/header_check.py</code> (1440 and 375 px):
+<ul>
+<li>the tab title, the name, the tagline and the button's hover;</li>
+<li>the tabs keep their names;</li>
+<li>the name's text clear of the version tag, and no sideways scroll;</li>
+<li>a ship saved under the kept key is still there after a reload.</li>
+</ul>
+v.59 fails 7.</li>
+<li>Regression suite ALL PASS; card names, subtext rule, ERRORS.md and the PYFA CORE lock all OK; every page check: see the delivery note.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #56: a rename changes what people see, not where their data lives. Rename the visible text, keep storage keys, database and repo names, say so in a comment, and check that data saved before the rename is still read. Also: to check two things don't overlap, measure what is drawn. The <code>h1</code>'s full-width box always "overlapped" the version tag; the text's own rects are what can collide.</p>
+</body>
+</html>
