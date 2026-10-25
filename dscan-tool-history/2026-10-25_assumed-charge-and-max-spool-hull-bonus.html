@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — Assumed charge for unloaded weapons + max spool-up hull bonus</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>A weapon with no charge loaded: the charge aboard that's their best against you</h1>
+<p><span class="tag">Fix</span><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-25 &middot; <code>v2026.10.14.66</code> &rarr; <code>v2026.10.14.67</code>.</p>
+<p>the owner reported it through the inbox: "the following fit shows zero dps" (a pasted Nergal). Then: "the zero was on the matchup card." The Nergal's Light Entropic Disintegrator II has no charge loaded, and four charges sit in cargo.</p>
+<ul>
+<li>pyfa computes a fit as it is given. With no charge, a weapon deals no damage (<code>eos Module.getVolleyParameters</code> reads the damage from the charge).</li>
+<li>The Matchup therefore said "0 DPS applied to you", "you last: holds" and "edge: you", while Firepower showed a range from the cargo ammo.</li>
+</ul>
+<p>the owner's decisions: "Assume a charge", and of which charge, "Their best against you".</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Which weapons:</b> a weapon type with no charge in any copy, and with a charge aboard that it loads (pyfa <code>isValidCharge</code>).</li>
+<li><b>Where:</b> the Damage Application card and the Matchup.</li>
+<li><b>Which charge:</b> the one the Weaknesses picks already rank first at the fight's point, which kills the target fastest.
+<ul>
+<li>It's ranked by the strip's time to kill against the target's resists, then by its buffer alone.</li>
+<li>The charge is loaded into every copy and the fit is run through the engine again (<code>wpCandidates</code>). The numbers are pyfa's for that fit.</li>
+<li>In the My Ship Perspective it is exactly the "What the Nergal should use against you" pick.</li>
+</ul></li>
+<li><b>Shown as:</b>
+<ul>
+<li>on the card, one amber line "Assumed loaded: Tetryon Exotic Plasma S", with the sentence on hover;</li>
+<li>on the board, "DPS applied to you" (or "to them" for your own ship) gets a dotted amber underline and the sentence on hover;</li>
+<li>the "you last" / "they last" why text names the charge.</li>
+</ul></li>
+<li><b>Firepower is unchanged:</b> it still shows the range over every charge aboard.</li>
+<li><b>Stable frame:</b> the chosen charge follows the fight point, as the picks do. The range slider's maximum, the default range and the number boxes are worked out from every candidate at once (<code>dmgSpanApp</code>, <code>dmgDefaultsFor</code>), so the card doesn't move when the charge changes.</li>
+<li><b>Code:</b> one block, <code>// ==== ASSUMED CHARGES</code>. <code>mysFight</code>'s attacker applications and <code>dmgModel</code> pass through <code>dmgAssumeApp</code>.</li>
+<li><b>DEVIATIONS.md:</b> a type with some copies loaded and some empty counts only its loaded copies.</li>
+</ul>
+<p>the owner's Nergal against his Osprey Navy Issue, at the default 7 km:</p>
+<ul>
+<li>before: 0 DPS, you hold;</li>
+<li>now: 506 DPS applied with Tetryon Exotic Plasma S assumed. You last 1 min 23 s; edge: you.</li>
+</ul>
+
+<h2>Found on the way: the Nergal's DPS was 40% low</h2>
+<p>The new check compared the tool with pyfa on the owner's Nergal and found a hull bonus the tool had missed.</p>
+<ul>
+<li><b>The bonus:</b> the Nergal, Ikitursa and Babaroga double their disintegrator's maximum spool-up, <code>damageMultiplierBonusMax</code> 2.125 &rarr; 4.25 (pyfa Effect7216 / 7211 / 12288).</li>
+<li><b>Why it was missed:</b> the hull damage generator only recorded handlers on <code>damageMultiplier</code> and <code>speed</code>. It now records <code>kind 'spool'</code> rows, and <code>hullWeaponMods</code> returns <code>spool</code>, which multiplies the spool-up on both damage paths (the loaded charge and cargo ammo).</li>
+<li><b>Effect:</b> Nergal + Occult S went from 382 to 642, exactly pyfa (641.54).</li>
+<li><b>PYFA CORE <code>hull-damage</code></b> was re-verified (generator up to date, <code>check_firepower.py</code>, <code>compare_fit_stats.py</code> 0 mismatches over 258 fits, regression) and re-locked.</li>
+<li><b>New golden fits:</b> nergal / ikitursa / babaroga <code>_constructed_max_spool_hull_bonus</code>, with pins from pyfa's side: 641.5 / 1,300.4 / 1,793.0. v.66 fails all 6 pins.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>check_weakness_picks.py</code></b> (independent, pyfa unmodified):
+<ul>
+<li>A weapon type with nothing loaded takes the charge the check's own order puts first.</li>
+<li>The rest of the fit, for the other picks and the drones, then has it loaded.</li>
+<li>The Matchup board's four numbers (the tool's <code>mysMatchup</code>) must equal the whole fit's.</li>
+</ul>
+New fits:
+<ul>
+<li>hecate_cold: blasters with nothing loaded;</li>
+<li>nergal: the owner's fit;</li>
+<li>rifter_cold: autocannons with four damage types in cargo, where the best charge is often not the one with the most DPS.</li>
+</ul>
+Result: 13 pairs, 0 mismatches. The deliberate breaks fail: no assumption fails 6 pairs, and "highest DPS" instead of "kills fastest" fails 2 (it passed until rifter_cold was added).</li>
+<li><b>New <code>tools/page_checks/assumed_charge_check.py</code></b> (11 checks), on the owner's Nergal (<code>fits/nergal_no_charge_loaded.eft</code>, fit renamed: public repo):
+<ul>
+<li>Firepower shows Occult S 642;</li>
+<li>the card's assumed line and the headline (= PYFA CORE);</li>
+<li>the box width holds when the range moves;</li>
+<li>the board is not 0 and equals the card; it is marked, and the why text names the charge;</li>
+<li>the assumed charge equals the My Ship Perspective pick;</li>
+<li>no page errors.</li>
+</ul>
+v.66 fails.</li>
+<li>Regression ALL PASS (261 fits), update chain all 37 steps OK, all 19 page checks 0 failures.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #62: a generated table covers only the attributes you listed.</p>
+<ul>
+<li>The disintegrator formula reads <code>damageMultiplierBonusMax</code>, but the hull table recorded only <code>damageMultiplier</code> and <code>speed</code>. Three hulls were about 40% low since the disintegrators were added (2026-10-08), and no golden fit used them.</li>
+<li>For every attribute a formula reads, grep pyfa's handlers and record them (or assert there are none).</li>
+<li>Add a golden fit for each hull that has a bonus specific to a weapon system.</li>
+</ul>
+</body>
+</html>

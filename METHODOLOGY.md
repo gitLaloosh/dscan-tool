@@ -125,6 +125,9 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
 
 - **Damage applied:** pyfa's damage graph, at one distance and one movement for each ship, with the attacker's own
   webs, target painters and scram applied (pyfa's default). Resists aren't counted there; lock range is ignored.
+- **A weapon with no charge loaded** (v2026.10.14.67): charted with the charge aboard that kills you fastest at this
+  fight (the one the Weaknesses picks name first), marked "Assumed loaded" on the card and in the Matchup's hover.
+  The Firepower card shows every charge aboard as a range.
 - **Fighters** (v2026.10.14.64): each damage ability of each squadron in space (Attack and Missiles; bombs stay off,
   as in pyfa), pyfa's `getFighterAbilityMult`:
   - a squadron at least as fast as you follows you and has its full range; a slower one is put at the carrier's

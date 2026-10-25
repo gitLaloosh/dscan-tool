@@ -198,7 +198,7 @@
         "python3 -I tools/independent_checks/check_firepower.py",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "f97d9f8f7b4599c0bbd528d436b0b364c51104dfebc86274fae830610c94fd7e"
+      "sha256": "9307b98820e4a7a5ff8c6fecb9d627d43bda60954ca332b7010814aa41de7d1c"
     }
   }
 }

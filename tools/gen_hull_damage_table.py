@@ -10,7 +10,8 @@ Row = [target, kind, srcAttrId, perLevel, op, default, skills, skillsOn, groups,
            charge's em/thermal/kinetic/explosiveDamage), 'drone', 'fighter' (the
            Attack Missile ability, pyfa 'Turret Attack'), 'fighterMissiles' (the
            Missiles ability, pyfa 'Missile Attack'; v2026.10.14.4)
-  kind     'damage' | 'rof' (rof rows multiply the CYCLE TIME, pyfa 'speed')
+  kind     'damage' | 'rof' (rof rows multiply the CYCLE TIME, pyfa 'speed') | 'spool' (v2026.10.14.67: the weapon's
+           damageMultiplierBonusMax, an Entropic Disintegrator's maximum spool-up -- Nergal, Ikitursa, Babaroga)
   srcAttr  attribute on the CARRIER (hull or subsystem); perLevel 5 when pyfa passes skill=
   op       'boost' (x(1 + v*perLevel/100)) | 'multiply' (x v)
   default  the attribute's SDE defaultValue (pyfa reads it when the carrier lacks it, LESSON #22)
@@ -71,7 +72,7 @@ def evaluate(coll, meth, a):
     if len(a) < 2 or not callable(a[0]): return None
     attr = str(a[1])
     if coll == 'modules' and 'Charge' in meth and attr in DMG: return ('charge', eval_pairs(a[0]))
-    if coll == 'modules' and 'Charge' not in meth and attr in ('damageMultiplier', 'speed'): return ('weapon', filter_hits(a[0], weaponReps))
+    if coll == 'modules' and 'Charge' not in meth and attr in ('damageMultiplier', 'speed', 'damageMultiplierBonusMax'): return ('weapon', filter_hits(a[0], weaponReps))
     if coll == 'drones' and (attr == 'damageMultiplier' or attr in DMG): return ('drone', filter_hits(a[0], droneReps))
     if coll == 'fighters' and attr in set(FTR_ATTR) | FTR_UNREAD: return ('fighter', filter_hits(a[0], fighterReps))
     return None
@@ -129,7 +130,8 @@ for eid in sorted(effectCarriers):
             if op == 'multiply' and perLevel != 1: raise AssertionError(f'effect {eid}: skill-scaled multiply')
             try: sk, sOn, gs, gOn = fit_filter(target, hits, rec)
             except AssertionError as ex: raise AssertionError(f'effect {eid} {ename(eid)} {attr}: {ex}')
-            kind = 'rof' if attr == 'speed' or FTR_ATTR.get(attr, (0, ''))[1] == 'rof' else 'damage'
+            kind = 'rof' if attr == 'speed' or FTR_ATTR.get(attr, (0, ''))[1] == 'rof' else 'spool' if attr == 'damageMultiplierBonusMax' else 'damage'
+            if kind == 'spool' and (op != 'boost' or pen): raise AssertionError(f'effect {eid}: spool row {op} pen={pen} -- model it')
             dmgType = DMG.get(attr) if target in ('charge', 'drone') else None
             row = [target, kind, attrId[m.group(1)], perLevel, op, DEFAULT.get(m.group(1), 0.0), sk, sOn, gs, gOn, dmgType, pen]
             if pen and not (target == 'weapon' and kind == 'rof'):   # the engine pools only weapon RoF rows (Claw)

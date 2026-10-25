@@ -21,6 +21,13 @@ answered from the SDE) with an independent build:
     its capacitor lasts (check_matchup.ttk, written from P2), then the same against its buffer alone (no reps, no
     regen), then the charge already loaded.
 Every candidate's DPS and both times must match (1e-6 relative, or both "holds"), and so must the order shown.
+v2026.10.14.67 (ASSUMED CHARGES; the owner: "Assume a charge", "Their best against you"): a weapon type with no charge loaded
+in any copy is taken as loaded with the charge this check ranks FIRST for it at that point (its own independent order);
+the rest of that fit (the other picks' "rest", the drones' "rest") then has that charge loaded, and the Matchup board's
+four numbers (DPS applied to you / them, you last / they last: the tool's mysMatchup) must equal the whole fit's, built
+the same way. Fits: hecate_cold (blasters with nothing loaded), nergal (the owner's pasted Nergal, a Light Entropic
+Disintegrator II with nothing loaded and four charges in cargo), rifter_cold (autocannons with nothing loaded, four damage
+types in cargo: against the Hecate / Caracal the best is often not the charge with the most DPS).
 --mutate NAME re-runs the tool with a deliberate mistake, to show what each kind of mistake looks like.
 """
 import sys, os, json, math, subprocess, tempfile, itertools
@@ -75,8 +82,24 @@ FITS = {
                       ('Heavy Assault Missile Launcher II', 'Scourge Rage Heavy Assault Missile'), ('Heavy Assault Missile Launcher II', 'Scourge Rage Heavy Assault Missile'),
                       ('Sisters Expanded Probe Launcher', 'Core Scanner Probe I')],   # v.43: a probe launcher is not a pick
             [('Hornet II', 5)], [('Scourge Javelin Heavy Assault Missile', 1000), ('Inferno Heavy Assault Missile', 1000), ('Scourge Heavy Missile', 100)]),
+  # v2026.10.14.67 (ASSUMED CHARGES): weapons with nothing loaded
+  'hecate_cold': ('Hecate', [('Magnetic Field Stabilizer II', None), ('Magnetic Field Stabilizer II', None), ('Damage Control II', None),
+                             ('5MN Microwarpdrive II', None), ('Warp Scrambler II', None), ('Stasis Webifier II', None),
+                             ('Light Neutron Blaster II', None), ('Light Neutron Blaster II', None), ('Light Neutron Blaster II', None), ('Light Neutron Blaster II', None), ('Light Neutron Blaster II', None)],
+                  [], [('Null S', 1000), ('Void S', 1000), ('Antimatter Charge S', 500), ('Caldari Navy Antimatter Charge S', 200)]),
+  'nergal': ('Nergal', [('Entropic Radiation Sink II', None), ('Multispectrum Energized Membrane II', None), ('Shadow Serpentis EM Armor Hardener', None), ('Corpii A-Type Small Armor Repairer', None),
+                        ('Stasis Webifier II', None), ('Cap Recharger II', None), ('Republic Fleet Small Cap Battery', None),
+                        ('Light Entropic Disintegrator II', None), ('Small Ghoul Compact Energy Nosferatu', None),
+                        ('Small Capacitor Control Circuit II', None), ('Small Capacitor Control Circuit II', None)],
+             [], [('Mystic S', 718), ('Tetryon Exotic Plasma S', 500), ('Occult S', 399), ('Meson Exotic Plasma S', 387)]),
+  # projectile charges of different damage types: their best against a target isn't always the one with the most DPS
+  # (LESSON #61: an input the check pins must sometimes differ from what a simpler rule gives -- here "highest DPS")
+  'rifter_cold': ('Rifter', [('Gyrostabilizer II', None), ('Damage Control II', None), ('1MN Afterburner II', None), ('Warp Scrambler II', None), ('Stasis Webifier II', None),
+                             ('200mm AutoCannon II', None), ('200mm AutoCannon II', None), ('200mm AutoCannon II', None)],
+                  [], [('Fusion S', 1000), ('Phased Plasma S', 1000), ('EMP S', 1000), ('Titanium Sabot S', 1000)]),
 }
-PAIRS = [('vexor', 'hecate'), ('hecate', 'vexor'), ('omen', 'caracal'), ('caracal', 'rupture'), ('rupture', 'thrasher'), ('thrasher', 'drake'), ('ishtar', 'drake'), ('drake', 'ishtar'), ('ishtar', 'omen')]
+PAIRS = [('vexor', 'hecate'), ('hecate', 'vexor'), ('omen', 'caracal'), ('caracal', 'rupture'), ('rupture', 'thrasher'), ('thrasher', 'drake'), ('ishtar', 'drake'), ('drake', 'ishtar'), ('ishtar', 'omen'),
+         ('vexor', 'hecate_cold'), ('hecate_cold', 'omen'), ('caracal', 'nergal'), ('nergal', 'vexor'), ('hecate', 'rifter_cold'), ('rifter_cold', 'caracal')]   # v.67
 GRID = [dict(range=r, mode=mo, speedPct=100, prop=pr, sigPct=100, theirPct=tp, theirMode=tm, axis='distance')
         for r, mo, pr, (tp, tm) in itertools.product([1500, 5000, 12000, 30000, 60000], ['still', 'orbit', 'straight'], [True, False], [(0, 'toward'), (100, 'toward'), (100, 'orbit'), (100, 'still'), (100, 'keep')])]   # v.51: their Stopped, v.53: Keep at Range
 # v2026.10.14.53: you keeping range from them approaching / orbiting
@@ -118,6 +141,7 @@ vm.createContext(sb); vm.runInContext(code, sb);
   for (const [k, text] of Object.entries(fits)) {
     const {f} = await sb.buildFitFromEft(text);
     F[k] = f;
+    await sb.dmgAssumeReady(f);   // v.67: the candidates the assumed charge is chosen from
     est[k] = JSON.parse(JSON.stringify({moduleStates: f.estimate.moduleStates, droneStates: f.estimate.droneStates, projectedTarget: f.estimate.projectedTarget, capacitor: {stable: f.estimate.capacitor.stable, timeToEmptyExactSec: f.estimate.capacitor.timeToEmptyExactSec}}));
   }
   const fin = (x) => x === Infinity ? 'inf' : x;
@@ -128,7 +152,9 @@ vm.createContext(sb); vm.runInContext(code, sb);
     const cm = await sb.wpCandidates(F[m]), ct = await sb.wpCandidates(F[t]);
     out[m + '|' + t] = grid.map(st => {
       const X = sb.mysFight(F[t], F[m], st);
-      return X && {yours: pack(sb.wpRank(cm, X.mApp, X.them, X.qOut, F[t].estimate)), theirs: pack(sb.wpRank(ct, X.tApp, X.me, X.qIn, F[m].estimate))};
+      const M = X && sb.mysMatchup(F[t], F[m], st);
+      return X && {yours: pack(sb.wpRank(cm, X.mApp, X.them, X.qOut, F[t].estimate)), theirs: pack(sb.wpRank(ct, X.tApp, X.me, X.qIn, F[m].estimate)),
+        board: [M.theirDps, fin(M.youLast), M.yourDps, fin(M.theyLast)], assumed: [(X.tApp.assumed || []).map(a => [a.weaponTypeId, a.chargeTypeId]), (X.mApp.assumed || []).map(a => [a.weaponTypeId, a.chargeTypeId])]};
     });
   }
   fs.writeFileSync(outPath, JSON.stringify({out, est})); process.stdout.write('R\n'); process.exit(0);
@@ -195,6 +221,8 @@ if __name__ == '__main__':
       'drone_flight_unclamped': [("const ad = (ea.drones || []).find(d => d.typeId === dk.typeId);", "const ad0 = (ea.drones || []).find(d => d.typeId === dk.typeId); const ad = ad0 && Object.assign({}, ad0, {typeDps: Object.fromEntries(Object.entries(ad0.typeDps).map(([kk, v]) => [kk, v / ad0.qty * Math.floor(dk.bayQty)])), qty: Math.floor(dk.bayQty)});")],
       'mirror_swapped': [("return X && {yours: pack(sb.wpRank(cm, X.mApp, X.them, X.qOut,", "return X && {yours: pack(sb.wpRank(cm, X.mApp, X.them, X.qIn,")],
       'raw_dps_order': [("const order = (a, b) => cmp(a.ttk, b.ttk) || cmp(a.ttkBuffer, b.ttkBuffer) ||", "const order = (a, b) => (b.dps - a.dps) ||")],
+      'no_assume': [("if(!cold.length || !tgtEst) return app;", "return app;")],   # v.67
+      'assume_highest_raw': [("const best = r.groups[0] && r.groups[0].ranked[0];", "const best = r.groups[0] && r.groups[0].ranked.slice().sort((a, b) => b.dps - a.dps)[0];")],
       'rest_of_fit_ignored': [("return Object.assign({}, g, {ranked: sorted(g.options.map(o => score(o, [...others, o.aw], dsAll, pt([o.aw], []))))});", "return Object.assign({}, g, {ranked: sorted(g.options.map(o => score(o, [o.aw], [], pt([o.aw], []))))});")],
     }
     mname = next((args[i + 1] for i, a in enumerate(args) if a == '--mutate'), None)
@@ -239,6 +267,7 @@ if __name__ == '__main__':
         dr = [int(T(d)) for d, n in drones]
         return g, dr
     bad, notes, points, opts_checked, flips, nvals, resist_flips = 0, [], 0, 0, 0, 0, 0
+    assumed_n = [0]   # v.67: points where a charge was assumed
     capsec = lambda k: math.inf if est[k]['capacitor'].get('stable') else (est[k]['capacitor'].get('timeToEmptyExactSec') if est[k]['capacitor'].get('timeToEmptyExactSec') is not None else math.inf)
     for m, t in PAIRS:
         gm, dm = candidates(m); gt, dt = candidates(t)
@@ -291,8 +320,17 @@ if __name__ == '__main__':
                 fin = lambda x: math.inf if x == 'inf' else x
                 g_got = {g['w']: g for g in got[side]['groups']}
                 if set(g_got) != set(G): diffs.append(f'{side} {st}: weapon types tool {sorted(g_got)} independent {sorted(G)}'); continue
+                # v.67: a weapon type with nothing loaded takes the charge ranked first for it here; it's ranked first
+                # (the rest of the fit as written), then everything else sees the fit with that charge loaded
+                cold = [w for w, (cand, loaded) in G.items() if cand and not loaded]
+                if len(cold) > 1: raise SystemExit(f'{k}: more than one weapon type with nothing loaded -- extend the check')
+                assume, cold_exp = {}, {}
+                order_w = cold + [w for w in G if w not in cold]
                 rest_drones = typed(cur, lambda dd_: dd_ in cur.drones)
-                for w, (cand, loaded) in G.items():
+                for w in order_w:
+                    cand, loaded = G[w]
+                    if assume and w not in assume:
+                        cur = orc(k, None, dict(assume)); rest_drones = typed(cur, lambda dd_: dd_ in cur.drones)
                     exp = []
                     rest = add(typed(cur, lambda mm: mm.item.ID != w and mm in cur.modules), rest_drones)
                     for c in cand:
@@ -312,8 +350,22 @@ if __name__ == '__main__':
                     # the order shown; equal keys (within 1e-6) may come in either order
                     order_t = [x[0] for x in tg]; order_e = [x[0] for x in exp]
                     if order_t != order_e and not all(tclose(dd[a][3], dd[b][3]) and tclose(dd[a][4], dd[b][4]) and dd[a][2] == dd[b][2] for a, b in zip(order_t, order_e)): diffs.append(f'{side} {st} {w}: order tool {order_t} independent {order_e}')
+                    if w in cold and exp: assume[w] = exp[0][0]; cold_exp[w] = {x[0]: x for x in exp}
                     if exp and loaded and exp[0][0] not in loaded: flips += 1
                     if exp and len(exp) > 1 and sorted(exp, key=lambda x: -x[1])[0][0] != exp[0][0]: resist_flips += 1
+                if assume: cur = orc(k, None, dict(assume))
+                # v.67: the Matchup board's numbers for this side: the whole fit (any assumed charge loaded)
+                whole = typed(cur, lambda x_: x_ in cur.modules or x_ in cur.drones)
+                bi = (0, 1) if side == 'theirs' else (2, 3)
+                wt1, _ = ttks(whole)
+                gb = got['board']
+                if not close(gb[bi[0]], sum(whole.values())) or not tclose(fin(gb[bi[1]]), wt1): diffs.append(f'{side} {st}: board tool {gb[bi[0]]} {gb[bi[1]]} independent {sum(whole.values())} {wt1}')
+                ga = dict(map(tuple, got['assumed'][0 if side == 'theirs' else 1]))
+                # equal keys (time, buffer time) may come in either order: the tool's choice must tie with the first
+                same = lambda w, a, b: tclose(cold_exp[w][a][3], cold_exp[w][b][3]) and tclose(cold_exp[w][a][4], cold_exp[w][b][4])
+                if set(ga) != set(assume) or any(ga[w] != c and not (ga[w] in cold_exp[w] and same(w, ga[w], c)) for w, c in assume.items()):
+                    diffs.append(f'{side} {st}: assumed tool {ga} independent {assume}')
+                assumed_n[0] += len(assume)
                 d_got = {d[0]: d for d in got[side]['drones']}
                 if set(d_got) != set(D): diffs.append(f'{side} {st}: drone types tool {sorted(d_got)} independent {sorted(D)}'); continue
                 rest_mods = typed(cur, lambda mm: mm in cur.modules)
@@ -336,4 +388,5 @@ if __name__ == '__main__':
         if diffs: bad += 1; notes.append(f'{m} vs {t}: {len(diffs)} differences, e.g. ' + ' | '.join(diffs[:3]))
     for n in notes[:30]: print(n)
     print(f'{len(PAIRS)} pairs x {len(GRID)} card settings x both sides: {points} points, {opts_checked} candidate DPS values compared, {flips} cases where a carried charge beats the loaded one, {resist_flips} where their resists change the pick from the highest-DPS charge')
+    print(f'{assumed_n[0]} assumed charges (weapons with nothing loaded) checked with the Matchup board')
     print(f'{bad} mismatches ({nvals} differing values; Weaknesses picks vs pyfa: isValidCharge, an oracle fit per candidate, projected.py + application.py)')

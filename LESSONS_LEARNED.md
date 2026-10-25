@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 62. A generated table covers only the attributes you listed: grep pyfa for every attribute your formula reads
+
+- **What happened (v2026.10.14.67):** the hull damage table (`gen_hull_damage_table.py`) recorded handlers on a weapon's
+  `damageMultiplier` and `speed`, but the Entropic Disintegrator formula also reads `damageMultiplierBonusMax` (its
+  maximum spool-up). Three hulls double it (Nergal, Ikitursa, Babaroga), so the tool showed them at about 60% of
+  pyfa's DPS since the disintegrators were added. No golden fit used those hulls, so nothing failed. It surfaced only
+  because the check for a new feature (assumed charges) used the owner's pasted Nergal.
+- **Do this instead:** for every attribute a DPS (or any) formula reads, grep pyfa's `eos/effects.py` for handlers that
+  modify it, and make the generator record each one (or assert there are none). When a weapon system has hull-specific
+  bonuses, add a golden fit on each of those hulls.
+
 ## 61. A golden fit that tests an input must set it to something the default wouldn't give
 
 - **What happened (v2026.10.14.66):** the first Fighter bay golden fit asked for 2 Einherji squadrons, 1 Gram, 1 Dromi
