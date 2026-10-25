@@ -179,6 +179,21 @@
     margin:0 0 6px;
     color:var(--heading);
   }
+  /* v2026.10.14.63: the name's row holds the refresh icon at its right; the icon's status shows where the version tag is */
+  .hero-title-row{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 6px;}
+  .hero-title-row h1{margin:0;}
+  button.hero-refresh{flex:none; width:30px; height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--text-dim); cursor:pointer;}
+  button.hero-refresh:hover{border-color:var(--cyan); color:var(--cyan); background:#0f2a31;}
+  button.hero-refresh:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  button.hero-refresh svg{display:block;}
+  .hero-status{position:absolute; top:10px; right:0; font-size:11.5px; color:var(--text-dim); white-space:nowrap;}
+  .hero-status[hidden], .build-tag[hidden]{display:none;}
+  @media (max-width: 599px){
+    button.hero-refresh{width:44px; height:44px;}
+    .hero-title-row{gap:8px;}
+    header.hero .hero-title-row h1{font-size:clamp(20px, 6.2vw, 26px);}   /* the name stays on one line beside the 44 px icon, down to 320 px */
+  }
   header.hero p{
     margin:0;
     color:var(--text-dim);
@@ -1609,16 +1624,18 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.62</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.63</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
-    <h1>EVE Threat Assessment</h1>
-    <p>Who's in system, what they fly, and how to beat them.</p>
-    <div class="row" style="margin-top:14px;">
-      <button type="button" id="refreshCacheBtn" title="Item data comes live from ESI and is kept in your browser for a week. This fetches it again." style="border-color:var(--line); color:var(--text-dim);">Refresh item data</button>
-      <span class="status" id="cacheStatus"></span>
+    <!-- v2026.10.14.63 (the owner 2026-10-25: "let's move the "refresh item data" button ... it's taking up an entire row", then option A):
+         an icon button at the right of the name's row; its short status briefly takes the version tag's place (heroRefreshStatus). -->
+    <div class="hero-title-row">
+      <h1>EVE Threat Assessment</h1>
+      <button type="button" id="refreshCacheBtn" class="hero-refresh" aria-label="Refresh item data" title="Refresh item data. Item data comes live from ESI and is kept in your browser for a week. This fetches it again."><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg></button>
     </div>
+    <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
+    <p>Who's in system, what they fly, and how to beat them.</p>
   </header>
 
   <div class="tabs">
@@ -7509,11 +7526,18 @@ async function analyzeChunks(items, worker, concurrency){
   return results;
 }
 
+// v2026.10.14.63: the status shows in the version tag's place for a few seconds, then the tag comes back.
+let heroRefreshTimer = null;
+function heroRefreshStatus(msg, hideAfterMs){
+  const el = document.getElementById('cacheStatus'), tag = document.querySelector('header.hero .build-tag');
+  clearTimeout(heroRefreshTimer);
+  setStatus(el, msg); el.hidden = false; if(tag) tag.hidden = true;
+  if(hideAfterMs) heroRefreshTimer = setTimeout(() => { el.hidden = true; setStatus(el, ''); if(tag) tag.hidden = false; }, hideAfterMs);
+}
 document.getElementById('refreshCacheBtn').addEventListener('click', async () => {
-  const el = document.getElementById('cacheStatus');
-  setStatus(el, 'Clearing cached item data…');
+  heroRefreshStatus('Clearing cached item data…');
   await clearDscanCache();
-  setStatus(el, 'Cleared — next analysis will re-fetch from ESI.');
+  heroRefreshStatus('Cleared — next analysis will re-fetch from ESI.', 5000);
 });
 document.getElementById('analyzeBtn').addEventListener('click', runAnalysis);
 document.getElementById('debugToggle').addEventListener('click', () => {

@@ -3,11 +3,13 @@
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/header_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
 the owner 2026-10-25: "EVE Threat Assessment", tagline A, tab title with "(ETA)", only what users see renamed. Checks, at
-1440 and 375 px:
+1440, 375 and 320 px (v.63):
   * the browser tab title, the header's name and its one-line tagline; the ESI caching sentence is the Refresh item
     data button's hover; the three tabs keep their names; v2026.10.14.62: in the order Pilot, Fit, D-Scan, the page
     opening on the Pilot Analyzer;
   * the name doesn't run into the version tag, and nothing scrolls sideways;
+  * v2026.10.14.63: the Refresh item data icon sits at the right of the name's row (30 px, 44 px on a phone); a press
+    shows its status where the version tag is, and the tag comes back 5 s later;
   * a ship saved before the rename (localStorage "dscanMyShip", the key kept on purpose) is still there after a reload.
 No page errors.
 """
@@ -43,6 +45,22 @@ def run(b, W):
         return [...r.getClientRects()].every(a => a.right <= t.left || t.right <= a.left || a.bottom <= t.top || t.bottom <= a.top) ? 1 : -1; }""")   # 1 = every line of the name's text clear of the tag
     sw = pg.evaluate('document.documentElement.scrollWidth')
     check(gap > 0 and sw <= W, f'{W}: the name doesn\'t overlap the version tag, nothing scrolls sideways ({sw})')
+    # v2026.10.14.63 (option A): the refresh icon at the right of the name's row, 30 px (44 px on a phone), its own row gone
+    rb = pg.evaluate("""() => { const b = document.getElementById('refreshCacheBtn'), h = document.querySelector('header.hero'), r = b.getBoundingClientRect(), t = h.querySelector('h1').getBoundingClientRect(), hr = h.getBoundingClientRect();
+        return {row: !!b.closest('.hero-title-row'), label: b.getAttribute('aria-label'), w: r.width, h: r.height, right: hr.right - r.right, mid: (r.top + r.bottom) / 2, h1: [t.top, t.bottom], text: b.textContent.trim()}; }""")
+    size = 44 if W < 600 else 30
+    lines = pg.evaluate("() => { const r = document.createRange(); r.selectNodeContents(document.querySelector('header.hero h1')); return new Set([...r.getClientRects()].map(x => Math.round(x.top))).size; }")
+    check(lines == 1, f'{W}: the name on one line beside the icon ({lines} lines)')
+    check(rb['row'] and rb['label'] == 'Refresh item data' and rb['text'] == '' and abs(rb['w'] - size) < 1 and abs(rb['h'] - size) < 1 and abs(rb['right']) < 1 and rb['h1'][0] <= rb['mid'] <= rb['h1'][1],
+          f'{W}: the refresh icon at the right of the name\'s row, {size} px ({rb})')
+    if W > 600:
+        # pressing it: the status takes the version tag's place, then the tag comes back
+        pg.click('#refreshCacheBtn'); pg.wait_for_timeout(300)
+        st = pg.evaluate("() => [document.getElementById('cacheStatus').hidden, document.getElementById('cacheStatus').textContent, document.querySelector('header.hero .build-tag').hidden]")
+        check(st[0] is False and st[1].startswith('Cleared') and st[2] is True, f'{W}: after a press the status shows in the version tag\'s place {st}')
+        pg.wait_for_timeout(5300)
+        st = pg.evaluate("() => [document.getElementById('cacheStatus').hidden, document.querySelector('header.hero .build-tag').hidden]")
+        check(st == [True, False], f'{W}: 5 s later the version tag is back {st}')
     if W > 600:
         # a ship saved under the old name's key is still there after a reload
         pg.click('#myShipChip'); pg.fill('#myShipEft', OSPREY); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
@@ -54,6 +72,6 @@ def run(b, W):
 
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=os.environ.get('CHROMIUM', '/opt/pw-browsers/chromium'))
-    run(b, 1440); run(b, 375)
+    run(b, 1440); run(b, 375); run(b, 320)
     b.close()
 print(f'FAILURES: {fails}')

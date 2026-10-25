@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — Refresh item data as an icon in the header</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Refresh item data: an icon in the header, not a row of its own</h1>
+<p><span class="tag">Design</span> 2026-10-25 &middot; <code>v2026.10.14.62</code> &rarr; <code>v2026.10.14.63</code>.</p>
+<p>the owner (2026-10-25): "let's move the "refresh item data" button. where is a good spot for it? it's taking up an entire row of the screen right now." Two options were mocked up on the real page: A, an icon at the right of the name; B, a text link on the tagline's line. He chose A: "let's go with option A. you may begin."</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The button is now a refresh icon at the right of the name's row. It is 30 px, and 44 px on a phone (a finger-sized target), in the same outlined style as the info and Reset icons. Hovering it shows "Refresh item data" and the ESI sentence; screen readers read "Refresh item data".</li>
+<li>Its row is gone, so the tabs and everything below move up 50 px.</li>
+<li>After a press, the short status ("Clearing cached item data…", then "Cleared — next analysis will re-fetch from ESI.") shows where the version tag is. The tag comes back 5 s later.</li>
+<li>On a phone the name shrinks a little (down to 20 px at 320 px wide) so it stays on one line beside the icon. At 375 px it wrapped to two lines at first.</li>
+</ul>
+<p>Presentation only. The refresh still does what it did: it clears the cached ESI item data.</p>
+
+<h2>Checks</h2>
+<ul>
+<li><code>header_check.py</code>, now at 1440, 375 and 320 px:
+<ul>
+<li>the icon is at the right of the name's row, at the right size, with its label;</li>
+<li>the name is on one line beside it;</li>
+<li>after a press, the status takes the version tag's place, and the tag is back 5 s later.</li>
+</ul>
+v.62 fails 4.</li>
+<li>Regression suite ALL PASS; every page check: see the delivery note.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>Something added to a row takes width from what's already there. The mockup used a 30 px icon. The real phone size, 44 px, pushed the name onto two lines at 375 px, and the mockup hadn't shown that. Check the real size at the narrowest width, and make "stays on one line" a check rather than an assumption.</p>
+</body>
+</html>
