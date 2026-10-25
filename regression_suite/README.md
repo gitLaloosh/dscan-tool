@@ -792,3 +792,23 @@ targeting 62.5 km, scan res 362 mm, sensor 18, capacitor 1.59k GJ). pyfa dropped
 event booster whose last injection date is before pyfa's data dump; `db_update.py` deletes those). The fixture
 keeps the booster in its tally, so the pins also guard the engine's skip of `PYFA_REMOVED_IMPLANT_IDS`;
 `compare_implants.py` and the oracle drop the same boosters (`pyfa_sde.pyfa_removed_types`).
+
+## Fighter damage application (v2026.10.14.64, turret-application-plan.md D5)
+
+pyfa's getFighterAbilityMult per damage ability. Expected values from pyfa's side (check_application.py's harness:
+pyfa's handlers on the oracle fit with the tool's launched squadrons, FighterAbility.getDps, getApplicationPerKey run
+unmodified), written before the tool's numbers were pinned. Each fighter ability's inputs are pinned as
+`app:fighter:<name>:<ability prefix>:<field>` (dps, speed, optimal, falloff, explosion radius / velocity); an
+`applied@...` point may name a target fit, `tgt=subcap` or `tgt=capital` (the fighter missile resistances). Drone
+inputs are now emitted the same way (`app:drone:<name>:<field>`).
+
+- `hel_constructed_fighter_application` (hull velocity, Fighter Support Units, Drone Navigation Computer, Omnidirectional
+  Tracking Link with an Optimal Range Script, Omnidirectional Tracking Enhancers, capital drone rigs, Valdimar implants;
+  Einherji II + Mantis II)
+- `revenant_constructed_fighter_application` (hull explosion bonuses, a Tracking Speed Script; Locust II superiority +
+  Cyclops II heavy)
+- `nidhoggur_constructed_fighter_velocity` (hull velocity; Gram II + Firbolg II)
+- `vexor_constructed_scripted_omni_link_drones`: a scripted Omnidirectional Tracking Link on drones (LESSON #59). v.63
+  gave the drones the link's unscripted bonuses.
+
+v2026.10.14.63 fails every applied@ pin of the three carriers (no fighters in the application) and the Vexor's.

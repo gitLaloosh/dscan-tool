@@ -41,6 +41,12 @@ from pyfa_effects import *
 
 ATTRS = ('disallowOffensiveModifiers', 'stasisWebifierResistance', 'targetPainterResistance')
 attrId = {v['name']: int(k) for k, v in attrs.items()}
+# v2026.10.14.64 (D5 fighters): getFighterAbilityMult multiplies a fighter ability's damage on a FIT by the target ship's
+# attribute its {prefix}ResistanceID names (fighterAbilityAntiFighterMissileResistance, ...AntiCapitalMissileResistance):
+# every id any published fighter carries, with pyfa's handlers on it (none today) and its SDE default.
+_resIds = sorted({int(x['value']) for t, v in types.items() if v.get('published') and cat(t) == 87
+                  for x in td.get(str(t), {}).get('dogmaAttributes', []) if attrs.get(str(x['attributeID']), {}).get('name', '').endswith('ResistanceID') and x['value']})
+ATTRS = ATTRS + tuple(attrs[str(i)]['name'] for i in _resIds)
 DEFAULT = {v['name']: v.get('defaultValue', 0.0) for v in attrs.values()}
 OPS = {'boost': 'boost', 'multiply': 'mul', 'increase': 'add', 'force': 'force'}
 
@@ -183,6 +189,116 @@ def build_drones():
         if len(variants) > 1: raise AssertionError(f"effect {eid}: drone rows differ by context: {variants}")
     return dict(sorted(table.items(), key=lambda kv: (int(kv[0].split(':')[-1]), kv[0]))), sorted(skillRows), skipped
 
+# v2026.10.14.64 (D5 fighters, the owner 2026-10-25 "let's tackle fighter damage application"): what pyfa's
+# getFighterAbilityMult (graphs/data/fitDamageStats/calc/application.py) reads on a fighter, for each damage ability
+# prefix: the squadron's maxVelocity and radius, the ability's range (RangeOptimal, else Range), RangeFalloff,
+# explosion radius / velocity, damage reduction factor / sensitivity (either spelling) and ResistanceID. Every handler
+# on fit.fighters that modifies one of them, from every carrier (hull, module / rig, skill at V, implant, booster),
+# filter asserted as (any of skills) AND (any of groups) over every published fighter with a damage ability.
+FIGHTER_PREFIXES = ('fighterAbilityAttackMissile', 'fighterAbilityMissiles')
+# pyfa FighterAbility.attrPrefix is the effect's own `prefix`; bombs (fighterAbilityLaunchBomb) are off by default and
+# not launched by the tool, so the table names the two missile-style damage abilities (asserted below).
+def _fighter_ability_prefixes():
+    out = {}
+    for t, v in types.items():
+        if not (v.get('published') and cat(t) == 87): continue
+        for e in td.get(str(t), {}).get('dogmaEffects', []):
+            cls = EFFECTS.get(e['effectID'])
+            if cls is not None and getattr(cls, 'dealsDamage', False) and getattr(cls, 'prefix', None) != 'fighterAbilityLaunchBomb':
+                out[ename(e['effectID'])] = cls.prefix
+    if sorted(set(out.values())) != sorted(FIGHTER_PREFIXES): raise AssertionError(f'fighter damage abilities changed: {out}')
+    return dict(sorted(out.items()))
+FIGHTER_ABILITY_PREFIX = _fighter_ability_prefixes()
+FIGHTER_ATTRS = ('maxVelocity', 'radius') + tuple(p + s for p in FIGHTER_PREFIXES for s in (
+    'RangeOptimal', 'Range', 'RangeFalloff', 'ExplosionRadius', 'ExplosionVelocity', 'ReductionFactor', 'DamageReductionFactor',
+    'ReductionSensitivity', 'DamageReductionSensitivity', 'ResistanceID'))
+FIGHTER_ATTRS = tuple(a for a in FIGHTER_ATTRS if a in attrId)
+FIGHTER_DMG = {attrId[p + d] for p in FIGHTER_PREFIXES for d in ('DamageEM', 'DamageTherm', 'DamageKin', 'DamageExp') if p + d in attrId}
+def _fdeals(t): return any(x['value'] > 0 for x in td.get(str(t), {}).get('dogmaAttributes', []) if x['attributeID'] in FIGHTER_DMG)
+dmgFighters = [int(t) for t in sorted(t for t, v in types.items() if v.get('published') and cat(t) == 87 and _fdeals(t))]
+fighterReps = list({_dsig(t): t for t in dmgFighters}.values())
+
+def fighter_filter(lam):
+    REC.clear(); hits = []
+    for t in fighterReps:
+        try:
+            if lam(Probe(t)): hits.append(t)
+        except Exception: pass
+    rec = sorted(set(REC))
+    if any(x[0] == 'skill?' for x in rec): raise AssertionError('filter tests the carrying skill -- pass carrier=')
+    sk = sorted({skillId[x[1]] for x in rec if x[0] == 'skill' and x[1] in skillId}); gs = sorted({x[1] for x in rec if x[0] == 'eq'})
+    calc = [t for t in fighterReps if (not sk or any(x in reqs(t) for x in sk)) and (not gs or gname(t) in gs)]
+    if set(calc) != set(hits): raise AssertionError(f'fighter filter not expressible as skills AND groups ({sk}, {gs})')
+    return sk or None, gs or None, hits
+
+def build_fighters():
+    table, skillRows, byCtx, skipped = {}, [], {}, collections.Counter()
+    for eid in sorted(carriers):
+        if eid not in EFFECTS: continue
+        for ctx in sorted({ctx_of(t) for t in carriers[eid]} - {None}):
+            skillCarriers = sorted(t for t in carriers[eid] if ctx_of(t) == 'skill') if ctx == 'skill' else [None]
+            for carrier in skillCarriers:
+                def ev(coll, meth, a):
+                    if not (coll == 'fighters' and a and callable(a[0])): return None
+                    try: return fighter_filter(a[0])
+                    except AssertionError as ex: return ('ERR', str(ex))
+                calls, err = run(eid, ctx, ev, carrier=carrier, rich=True)
+                if err: continue
+                for coll, meth, a, kw in calls:
+                    if coll != 'fighters' or len(a) < 3 or str(a[1]) not in FIGHTER_ATTRS: continue
+                    e = kw.get('_eval')
+                    if e is None: raise AssertionError(f'effect {eid}: unfiltered fighter call')
+                    if e[0] == 'ERR': raise AssertionError(f'effect {eid}: {e[1]}')
+                    sk, gs, hits = e
+                    if not hits: continue
+                    if 'Charge' in meth: raise AssertionError(f'effect {eid}: fighter charge call')
+                    if 'pyfa_effects.Any' in repr(a[2]): raise AssertionError(f'effect {eid}: pilot-dependent value on a fighter -- model it')
+                    src, lvl = value(a[2])
+                    if kw.get('skill'): lvl = 5
+                    op = opname(re.sub(r'^filteredItem', '', meth) + 'ItemAttr')
+                    if ctx == 'skill':
+                        v = {aname(x['attributeID']): x['value'] for x in td.get(str(carrier), {}).get('dogmaAttributes', [])}.get(src, DEFAULT.get(src, 0.0)) * lvl
+                        row = [carrier, str(a[1]), op, v, penalty(kw), sk, gs]
+                        if row not in skillRows: skillRows.append(row)
+                        continue
+                    row = [str(a[1]), op, attrId[src], lvl, DEFAULT.get(src, 0.0), penalty(kw), sk, gs]
+                    key = f'{ctx}:{eid}' if ctx in ('implant', 'booster') else str(eid)
+                    byCtx.setdefault((key, ctx), [])
+                    if row not in byCtx[(key, ctx)]: byCtx[(key, ctx)].append(row)
+                    rows = table.setdefault(key, [])
+                    if row not in rows: rows.append(row)
+    # every handler that touches one of the attributes on fit.fighters must have been recorded (no silent miss)
+    recorded = {int(k.split(':')[-1]) for k in table} | {e for e in carriers if any(r[0] in carriers[e] for r in skillRows)}
+    src = open(os.path.join(PYFA_SRC, 'eos', 'effects.py')).read()
+    pat = re.compile(r"fit\.fighters\.filtered\w+\((?:[^()]|\([^()]*\))*?'(" + '|'.join(FIGHTER_ATTRS) + r")'", re.S)
+    for m in re.finditer(r'\nclass Effect(\d+)\(BaseEffect\):(.*?)(?=\nclass |\Z)', src, flags=re.S):
+        eid, body = int(m.group(1)), m.group(2)
+        if eid in recorded: continue
+        if not ({ctx_of(t) for t in carriers.get(eid, ())} - {None}):
+            # e.g. Effect8114 systemPlasmaStorm (a wormhole / environment effect on fighter explosion radius): no hull,
+            # module, skill, implant or booster carries it, and the tool models no system effects (DEVIATIONS.md)
+            if re.search(r"fit\.fighters", body): skipped[f'environment effect, no fit carrier: Effect{eid} {ename(eid)}'] += 1
+            continue
+        loops = re.search(r"for attr in \(([^()]*)\):\s*fit\.fighters", body, re.S)
+        if loops and any(f"'{a}'" in loops.group(0) for a in FIGHTER_ATTRS): raise AssertionError(f'Effect{eid} loops over a fighter attribute but was not recorded')
+        if not pat.search(body): continue
+        if eid not in carriers: skipped[f'no SDE carrier: Effect{eid}'] += 1; continue
+        for ctx in sorted({ctx_of(t) for t in carriers[eid]} - {None}):
+            calls, err = run(eid, ctx, None, carrier=next((t for t in sorted(carriers[eid]) if ctx_of(t) == 'skill'), None) if ctx == 'skill' else None, rich=True)
+            if err: raise AssertionError(f'Effect{eid} touches a fighter attribute but the recorder could not run it: {err}')
+        skipped[f'touches a fighter attribute, no damage fighter passes its filter: Effect{eid} {ename(eid)}'] += 1
+    for eid in {e for e, _ in byCtx}:
+        variants = {json.dumps(r) for (e, c), r in byCtx.items() if e == eid}
+        if len(variants) > 1: raise AssertionError(f"effect {eid}: fighter rows differ by context: {variants}")
+    # The squadron's own default abilities (pyfa Fighter.__init__) run no handler: a damage ability effect has none, and
+    # the MWD / afterburner / evasive abilities that change maxVelocity are off by default (eos/saveddata/fighter.py).
+    for t in dmgFighters:
+        for e in td.get(str(t), {}).get('dogmaEffects', []):
+            cls = EFFECTS.get(e['effectID'])
+            if cls is not None and getattr(cls, 'dealsDamage', False) and 'handler' in vars(cls):
+                raise AssertionError(f'damage ability Effect{e["effectID"]} has its own handler -- model it')
+    return dict(sorted(table.items(), key=lambda kv: (int(kv[0].split(':')[-1]), kv[0]))), sorted(skillRows), skipped
+
 if __name__ == '__main__':
     table, ctxs, skipped = build()
     print(f'PROJ_TARGET_EFFECTS: {len(table)} effects, {sum(map(len, table.values()))} rows')
@@ -193,12 +309,20 @@ if __name__ == '__main__':
     for e, rows in dtable.items(): print(' ', e, ename(int(e.split(':')[-1])), rows)
     for r in dskill: print('  skill', name(r[0]), r[1:])
     for k, v in sorted(dskipped.items()): print('  skipped:', k)
+    ftable, fskill, fskipped = build_fighters()
+    print(f'PROJ_FIGHTER_EFFECTS: {len(ftable)} effects, {sum(map(len, ftable.values()))} rows; PROJ_FIGHTER_SKILL_ROWS: {len(fskill)} (over {len(dmgFighters)} damage fighters)')
+    for e, rows in ftable.items(): print(' ', e, ename(int(e.split(':')[-1])), rows)
+    for r in fskill: print('  skill', name(r[0]), r[1:])
+    for k, v in sorted(fskipped.items()): print('  skipped:', k)
     html = next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'index.html'))
     s = open(html, encoding='utf-8').read()
     new = {'PROJ_TARGET_EFFECTS': table, 'PROJ_TARGET_ATTRS': {n: attrId[n] for n in ATTRS},
            'PROJ_TARGET_DEFAULTS': {str(attrId[n]): DEFAULT.get(n, 0.0) for n in ATTRS},
            'PROJ_DRONE_EFFECTS': dtable, 'PROJ_DRONE_SKILL_ROWS': dskill, 'PROJ_DRONE_ATTRS': {n: attrId[n] for n in DRONE_ATTRS},
-           'PROJ_DRONE_DEFAULTS': {str(attrId[n]): DEFAULT.get(n, 0.0) for n in DRONE_ATTRS}}
+           'PROJ_DRONE_DEFAULTS': {str(attrId[n]): DEFAULT.get(n, 0.0) for n in DRONE_ATTRS},
+           'PROJ_FIGHTER_EFFECTS': ftable, 'PROJ_FIGHTER_SKILL_ROWS': fskill, 'PROJ_FIGHTER_ATTRS': {n: attrId[n] for n in FIGHTER_ATTRS},
+           'PROJ_FIGHTER_DEFAULTS': {str(attrId[n]): DEFAULT.get(n, 0.0) for n in FIGHTER_ATTRS},
+           'PROJ_FIGHTER_ABILITY_PREFIX': FIGHTER_ABILITY_PREFIX}
     changed = False
     for k, v in new.items():
         m = re.search(r'const ' + k + r' = (.*?);\n', s)

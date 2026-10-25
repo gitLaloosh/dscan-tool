@@ -618,12 +618,27 @@ for (const [fitId, fit] of Object.entries(golden)) {
       if (w.missileMaxRangeData) ['lower', 'higher', 'higherChance'].forEach((f, i) => { result[base + f] = w.missileMaxRangeData[i]; });
     }
     result.appLockRange = result.application.lockRange;
+    // v2026.10.14.64 (D5 fighters): each fighter ability's inputs as "app:fighter:<name>:<ability prefix>:<field>"; an
+    // applied@ point may name a target FIT, "tgt=subcap" (a ship without the fighter missile resistances: their SDE
+    // defaults) or "tgt=capital" (anti-capital resistance 1, as every capital and freighter hull carries)
+    for (const d of result.application.drones || []) {   // v2026.10.14.64: drone inputs too, "app:drone:<name>:<field>"
+      const base = `app:drone:${d.name}:`;
+      for (const [k, v] of Object.entries(d)) if (typeof v === 'number') result[base + k] = v;
+    }
+    for (const f of result.application.fighters || []) {
+      const base = `app:fighter:${f.name}:${f.ability}:`;
+      for (const [k, v] of Object.entries(f)) if (typeof v === 'number') result[base + k] = v;
+    }
+    const TD = vm.runInContext('PROJ_TARGET_DEFAULTS', sandbox);   // a top-level const isn't a property of the sandbox
+    const FT = {subcap: {2189: TD['2189'], 2244: TD['2244']}, capital: {2189: TD['2189'], 2244: 1}};
     for (const key of Object.keys(fit.expected || {})) {
       if (!key.startsWith('applied@')) continue;
       const q = {distance: 0, atkSpeed: 0, atkAngle: 0, tgtSpeed: 0, tgtAngle: 0, tgtSigRadius: 40, tgtRadius: 50, ignoreLockRange: true};
       for (const kv of key.slice(8).split(',')) {
         const [k, v] = kv.split('=');
-        if (k === 'lock') q.ignoreLockRange = v !== '1'; else q[k] = Number(v);
+        if (k === 'lock') q.ignoreLockRange = v !== '1';
+        else if (k === 'tgt') { q.tgtIsFit = true; q.tgtFighterResist = FT[v]; }
+        else q[k] = Number(v);
       }
       result[key] = sandbox.pyfaAppliedDps(result.application, q);
     }

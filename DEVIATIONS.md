@@ -63,7 +63,8 @@ introduces a difference.
   then the charge already loaded. Choices: only ammo and drones aboard (loaded, cargo, drone bay; pyfa's
   isValidCharge rule for what loads); a drone pick is one type at a time (as many as the bay, 5 drones and the
   bandwidth allow), not mixed flights; the fight's webs, painters and scram are the fit's current ones, whatever
-  is being ranked. Fighters aren't ranked (not applied yet). Checked by `check_weakness_picks.py`.
+  is being ranked. Fighters aren't ranked (which squadrons to launch is its own backlog item), but they count in
+  the rest of the fit since v2026.10.14.64. Checked by `check_weakness_picks.py`.
 - Keep at Range on the Damage Application card and the fight strip (v2026.10.14.53, fight setup F2; the owner 2026-10-24).
   pyfa's damage graph has no such movement; it is mapped onto the graph's own inputs. The ship keeping range moves
   straight away along the line of sight (angle 180°, so no transversal, pyfa `_calcAngularSpeed`) at the other ship's
@@ -88,9 +89,11 @@ Each is in a backlog:
   the "Their damage on you" card since v2026.10.14.36, turret-application-plan.md Phase 2b): pyfa's damage graph is ported for turrets, missile
   launchers, Vorton Projectors and smartbombs with pyfa's graph defaults (lock range ignored unless asked,
   target resists ignored). Drones since v2026.10.14.40 (getDroneMult; the owner "port drone application first").
-  Not yet: fighters (their DPS stays raw, `application.unapplied`; the "Their damage on you" chart names it under
-  the chart), drones on a hull record without dogma effects (fallback path, raw like fighters),
-  bombs, doomsdays and breacher pods. Since v2026.10.14.35 (Phase 2a, PYFA CORE `projected`) the engine also
+  Fighters since v2026.10.14.64 (getFighterAbilityMult per damage ability; the owner 2026-10-25, the fighters' MWD
+  ability off as pyfa's default). Not yet: drones and fighters on a hull record without dogma effects (fallback path,
+  their DPS stays raw, `application.unapplied`, named under the chart), bombs, doomsdays and breacher pods. Effect
+  beacons that change fighters (a Metaliminal Plasma Firestorm's explosion radius, pyfa Effect8114) aren't modelled,
+  like every system effect. Since v2026.10.14.35 (Phase 2a, PYFA CORE `projected`) the engine also
   has pyfa's `applyProjected` (on by default in pyfa's graph): the attacker's own webs, target painters, web /
   painter drones, burst projectors and warp scramblers (a scrammed target's MWD, MJD and MJFG are ignored)
   slowing and growing the target fit or profile. One part of it is not applied: **support fighters' webs**

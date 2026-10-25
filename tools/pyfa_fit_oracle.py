@@ -25,7 +25,12 @@ What is pyfa's own code and what is a hand port:
     effects only when switched on -- pyfa's default is off, so none here);
   * Skill and HandledList semantics: eos/saveddata/character.py Skill, eos/effectHandlerHelpers.py.
 Damage pattern: pyfa's default uniform pattern (25 each), which the Reactive Armor Hardener reads.
-Not modelled: fighters, projected and command effects. Drones (v2026.10.14.13): the ones passed in, in space.
+Not modelled: projected and command effects. Drones (v2026.10.14.13): the ones passed in, in space.
+Fighters (v2026.10.14.64, D5 fighter application): the squadrons passed in, in space, each an item in fit.fighters with
+its amount; every carrier's handlers reach them through fit.fighters (filters on the fighter's own item). A squadron's
+own ability effects run no handler here: pyfa runs only ACTIVE abilities (eos/saveddata/fighter.py
+calculateModifiedAttributes), its default actives are the damage / EWAR abilities (no handler for the damage ones; the
+generator asserts it) and the MWD / afterburner / evasive maneuvers abilities, which change maxVelocity, are off.
 Since v2026.10.14.35: Attrs.afflictions (who made each modifier, eos __afflict) and Attrs.extended, a hand port of
 getExtended / __calculateValue (extra multipliers, ignored afflictors) for pyfa's damage graph (check_projected.py).
 """
@@ -259,11 +264,12 @@ SHIP_EXTRA_ATTRIBUTES = {'armorRepair': 0, 'armorRepairPreSpool': 0, 'armorRepai
                          'maxActiveDrones': 0, 'maxTargetsLockedFromSkills': 2, 'droneControlRange': 20000, 'cloaked': False}
 
 class OracleFit:
-    def __init__(self, ship, modules=(), mode=None, implants=(), boosters=(), drones=()):
+    def __init__(self, ship, modules=(), mode=None, implants=(), boosters=(), drones=(), fighters=()):
         """ship: name or typeId; modules: [(name or id, state, charge name or id or None)];
         mode: Tactical Destroyer mode item name (e.g. 'Skua Defense Mode') or None;
         implants / boosters: [name or typeId] (pyfa's fit implants, ImplantLocation.FIT);
-        drones: [(name or typeId, amountActive)] -- drones in space (v2026.10.14.13)."""
+        drones: [(name or typeId, amountActive)] -- drones in space (v2026.10.14.13);
+        fighters: [(name or typeId, amount)] -- one entry per squadron in space (v2026.10.14.64)."""
         tid = lambda x: int(x) if isinstance(x, int) or str(x).isdigit() else int(T(x))
         self.ship = Item(tid(ship), self, 'online')
         self.modules = HList()
@@ -275,6 +281,8 @@ class OracleFit:
         self.drones = HList(); self.fighters = HList()
         for d, n in drones:   # eos/saveddata/drone.py: amountActive copies in space
             it = Item(tid(d), self); it.amountActive = n; self.drones.append(it)
+        for fi, n in fighters:   # eos/saveddata/fighter.py: one Fighter per squadron, amount fighters in it
+            it = Item(tid(fi), self); it.amount = n; self.fighters.append(it)
         # pyfa's database has no expired event boosters (db_update.py deletes them; pyfa_sde.pyfa_removed_types),
         # so pyfa can't load them: dropped here and listed in notLoaded (v2026.10.14.13, LESSON #32).
         from pyfa_sde import pyfa_removed_types

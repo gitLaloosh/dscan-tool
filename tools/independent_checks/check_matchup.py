@@ -87,6 +87,12 @@ def typed_dps_mod(m):
         return {k: (m.charge.get(a) or 0) * _mult(m) * (1 + spool) / cyc for k, a in TYPES}
     if g == 'Smart Bomb': return {k: (m.get(a) or 0) / cyc for k, a in TYPES}
     return {}
+def typed_dps_fighter_ability(f, a):
+    """v2026.10.14.64: one fighter ability's DPS by damage type (pyfa FighterAbility.getVolley / getDps on the oracle's attributes)"""
+    if not a.dealsDamage or not a.active or a.attrPrefix == 'fighterAbilityLaunchBomb': return {}
+    g = f.getModifiedItemAttr; cyc = g(f'{a.attrPrefix}Duration') / 1000
+    m = f.amount * g(f'{a.attrPrefix}DamageMultiplier', 1)
+    return {k: g(f'{a.attrPrefix}Damage{n}', 0) * m / cyc for k, n in (('em', 'EM'), ('therm', 'Therm'), ('kin', 'Kin'), ('exp', 'Exp'))} if cyc else {}
 def typed_dps_drone(d):
     cyc = (d.get('speed') or d.get('duration') or 0) / 1000
     return {k: (d.get(a) or 0) * _mult(d) * d.amountActive / cyc for k, a in TYPES} if cyc else {}
@@ -100,6 +106,9 @@ def pyfa_typed(src_fit, src_app, inp, tgt, distance, speedFrac, tgtAngle, atkSpe
         for k, v in typed_dps_mod(mod.m).items(): typed[k] += v * am.get(mod, 0)
     for d in src_app.drones:
         for k, v in typed_dps_drone(d.d).items(): typed[k] += v * am.get(d, 0)
+    for f in src_app.fighters:   # v2026.10.14.64 (D5 fighters)
+        for a in f.abilities:
+            for k, v in typed_dps_fighter_ability(f, a).items(): typed[k] += v * am.get((f, a.effectID), 0)
     return typed
 
 def asb_windows(clip, cyc, reload, cycles):
@@ -259,23 +268,29 @@ if __name__ == '__main__':
                 for tid, ch in eft_items(k)[0]:
                     st_ = states.get(str(tid)) or {'active': 0, 'online': 1, 'offline': 0}; i = seen.get(tid, 0); seen[tid] = i + 1
                     mods.append((tid, 'active' if i < st_['active'] else 'online' if i < st_['active'] + st_['online'] else 'offline', ch))
-                oracles[key] = OracleFit(open(EFT[k]).read().split('\n')[0][1:].split(',')[0], mods, drones=drones).calculate()
-            else: oracles[key] = oracle_for(k, states=states, drones=drones, group_limits=False)
+                oracles[key] = OracleFit(open(EFT[k]).read().split('\n')[0][1:].split(',')[0], mods, drones=drones, fighters=CA.tool_fighters(tool[k].get('application'))).calculate()
+            else: oracles[key] = oracle_for(k, states=states, drones=drones, group_limits=False, fighters=CA.tool_fighters(tool[k].get('application')))
         return oracles[key]
     cands = [k for k in G if ok_fit(k)]
     # my ships: armor / shield reps with the capacitor running out at different times, stable reps, drones, buffer
     MINE = ['rifter_constructed_states_dual_prop_default', 'abaddon_constructed_armor_implants_boosters', 'drake_constructed_shield_implants_boosters',
             'muninn_zkb138989886_rolebonus_audit', 'vexor_constructed_p3_cap_booster_online', 'rifter_user']
-    THREATS = ['megathron_owner', 'dominix_navyissue_buffer', 'ishtar_zkb137694046', 'vargur_zkb138983121_bastion', 'caracal_zkb136427798', 'hecate_constructed_defense_armor_repairer']
+    THREATS = ['megathron_owner', 'dominix_navyissue_buffer', 'ishtar_zkb137694046', 'vargur_zkb138983121_bastion', 'caracal_zkb136427798', 'hecate_constructed_defense_armor_repairer',
+               # v2026.10.14.64 (D5 fighters): carriers -- light, superiority and heavy squadrons; a capital as the TARGET too
+               'hel_constructed_fighter_application', 'revenant_constructed_fighter_application', 'nidhoggur_constructed_fighter_velocity']
     # (an ancillary booster's rate isn't a plain amount / duration, so such fits are not TARGETS here: hawk_user etc.)
     mine = [k for k in cands if (tool[k]['projectedTarget']['variants'] or {}).get('propTypeId') and SIMPLE_REPS(orc(k)) and not orc(k).errors and not orc(k).oracleGaps]
     mine = mine[::max(1, len(mine) // 6)][:6]
-    threats = [k for k in cands if ((tool[k]['application'].get('weapons') or tool[k]['application'].get('drones'))) and SIMPLE_REPS(orc(k)) and not orc(k).errors and not orc(k).oracleGaps]
+    threats = [k for k in cands if ((tool[k]['application'].get('weapons') or tool[k]['application'].get('drones') or tool[k]['application'].get('fighters'))) and SIMPLE_REPS(orc(k)) and not orc(k).errors and not orc(k).oracleGaps]
     tack = [k for k in threats if (tool[k]['application'].get('projected') or {}).get('scramRange') is not None or any((tool[k]['application'].get('projected') or {}).get(x) for x in ('webMods', 'webDrones', 'tpMods'))]
     threats = (tack[:5] + [k for k in threats if k not in tack][::7][:4])
     mine = [k for k in MINE if k in cands and SIMPLE_REPS(orc(k)) and not orc(k).errors and not orc(k).oracleGaps] + [k for k in mine if k not in MINE][:2]
     threats = [k for k in THREATS if k in cands and SIMPLE_REPS(orc(k)) and not orc(k).errors and not orc(k).oracleGaps] + [k for k in threats if k not in THREATS][:5]
     pairs = [(t, m) for t in threats for m in mine if t != m]
+    # v2026.10.14.64: a capital as the target (anti-capital torpedoes at full damage) and a subcapital threat against a carrier
+    pairs += [(t, m) for t, m in (('revenant_constructed_fighter_application', 'hel_constructed_fighter_application'),
+                                  ('hel_constructed_fighter_application', 'thanatos_constructed_dda_fighters'),
+                                  ('megathron_owner', 'nidhoggur_constructed_fighter_velocity')) if t in cands and m in cands]
     # v.57: fits with an Ancillary Shield Booster, both ways (charges loaded, from cargo, none), and the owner's pair
     asb_fits = [k for k in cands if any(m.item.group.name == 'Ancillary Shield Booster' and m.state >= 2 for m in orc(k).modules) and ASB_OK(orc(k)) and not orc(k).errors and not orc(k).oracleGaps]
     asb_mine = [k for k in asb_fits if (tool[k]['projectedTarget']['variants'] or {}).get('propTypeId')]

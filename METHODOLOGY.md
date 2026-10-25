@@ -122,6 +122,16 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
 
 - **Damage applied:** pyfa's damage graph, at one distance and one movement for each ship, with the attacker's own
   webs, target painters and scram applied (pyfa's default). Resists aren't counted there; lock range is ignored.
+- **Fighters** (v2026.10.14.64): each damage ability of each squadron in space (Attack and Missiles; bombs stay off,
+  as in pyfa), pyfa's `getFighterAbilityMult`:
+  - a squadron at least as fast as you follows you and has its full range; a slower one is put at the carrier's
+    centre and hits only within its ability's range of it (Attack: optimal + falloff; Missiles: a hard limit). Its
+    speed is pyfa's, with its MWD ability off (pyfa's default; the owner 2026-10-25), after skills (Light Fighters,
+    Drone Navigation), hull bonuses, Drone Navigation Computers, Fighter Support Units and rigs;
+  - then the explosion maths of missiles against your signature and speed;
+  - superiority fighters' missiles deal 5% to a ship, heavy fighters' torpedoes 10% to anything that isn't a
+    capital or freighter (the target ship's anti-fighter / anti-capital missile resistance; a hull without it has the
+    attribute's default). The raw DPS on the Firepower card is pyfa's raw number (full damage); its hover says so.
 - **Movements** (in-game names, for both ships):
   - **Stopped:** speed 0.
   - **Approach:** straight at the other ship (no transversal), at the chosen share of top speed.
@@ -138,8 +148,9 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
 - **Your card** (v2026.10.14.55, My Ship Perspective): the same chart for your guns on them: your ship as the attacker,
   the threat as the target with its fit's own speed and signature (its prop module as it runs), your webs, painters
   and scram applied, the same fight. Its number is the board's "DPS applied to them".
-- **The range** (v2026.10.14.56) runs to whichever ship reaches farther (weapons, drone control range, or 1.25 × its
-  default range), on both cards and the strip; with no ship saved, to the threat's reach.
+- **The range** (v2026.10.14.56) runs to whichever ship reaches farther (weapons, drone control range, a fighter
+  ability's range from the carrier's centre (v2026.10.14.64), or 1.25 × its default range), on both cards and the
+  strip; with no ship saved, to the threat's reach.
 - **One fight:** the strip under the Matchup and the card's Adjust panel set the same values, and both perspectives
   use them. The chart is a snapshot at that distance, as pyfa's graph: it doesn't play the fight out over time.
 - **They last / you last** (not a pyfa number): damage by type against each layer's resists, shield then armor then

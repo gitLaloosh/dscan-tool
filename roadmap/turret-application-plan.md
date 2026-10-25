@@ -1,6 +1,9 @@
 # Plan: how much of their damage actually lands (turret application)
 
 Status: **PHASE 1 DONE** (v2026.10.14.34, 2026-10-23; `dscan-tool-history/2026-10-23_damage-application-engine.html`).
+**D5 FIGHTERS DONE** (v2026.10.14.64, 2026-10-25; `dscan-tool-history/2026-10-25_fighter-damage-application.html`): pyfa's
+getFighterAbilityMult per damage ability; the owner chose pyfa's default for the fighters' MWD (off) and a Firepower hover note
+for the 5% / 10% fighter missile resistances. Drones and fighters both follow-ups are now done.
 **PHASE 2a DONE** (v2026.10.14.35, 2026-10-23; `dscan-tool-history/2026-10-23_projected-webs-painters-scram.html`).
 **PHASE 2b DONE** (v2026.10.14.36, 2026-10-23; `dscan-tool-history/2026-10-23_their-damage-on-you-chart.html`).
 All six decisions in section 4 made. the owner 2026-10-23: Phase 2 split into 2a (pyfa's `applyProjected`, engine only)
@@ -105,7 +108,7 @@ your applied DPS vs their tank, and theirs vs yours).
 | D2 | Where do "your" sig, speed and radius come from? | (a) **a fit you've analyzed, saved as "my ship"** (one click in the Fit Analyzer, remembered in your browser); (b) class presets (frigate / cruiser / battleship); (c) typed in by hand | **Decided 2026-10-23: (a)**, My Ship (built in v2026.10.14.33), with (b) class presets until a ship is saved. Why: the numbers come from the tool's own pyfa-exact stats, MWD or AB included. |
 | D3 | What movement do we assume? | (a) two lines: you sitting still and you orbiting at full speed (90°, the worst case for them); (b) orbiting only; (c) a speed slider | **Decided 2026-10-23: (a) as the default view, plus sliders** for range, both ships' speed and heading, your sig, prop on/off and the horizontal axis (section 3, Display). Still = their range-only damage, orbiting = with tracking; the gap between the lines is what speed tanking buys you. |
 | D4 | Prop module for "you" | (a) **your fit's prop active** (AB or MWD, with the MWD's sig bloom); (b) cruising | **Decided 2026-10-23: (a)**, your fit's prop active, MWD sig bloom included (a slider can switch it off). Why: Real orbits run the prop, and the MWD's sig bloom is exactly the trade-off the chart should show. |
-| D5 | Their drones and fighters | (a) **include now** (needs drone speed and tracking: more engine work); (b) turrets, missiles, Vorton and smartbombs first, drones in a follow-up | **Decided 2026-10-23: (b)**, turrets, missiles, Vorton and smartbombs first; drones and fighters in a follow-up, raw drone DPS labelled as raw until then. **Drones DONE v2026.10.14.40** (the owner, for My Ship phase 2: "port drone application first"): getDroneMult in PYFA CORE application. Fighters still open. |
+| D5 | Their drones and fighters | (a) **include now** (needs drone speed and tracking: more engine work); (b) turrets, missiles, Vorton and smartbombs first, drones in a follow-up | **Decided 2026-10-23: (b)**, turrets, missiles, Vorton and smartbombs first; drones and fighters in a follow-up, raw drone DPS labelled as raw until then. **Drones DONE v2026.10.14.40** (the owner, for My Ship phase 2: "port drone application first"): getDroneMult in PYFA CORE application. **Fighters DONE v2026.10.14.64** (getFighterAbilityMult; fighter MWD off as pyfa's default; Firepower hover for the 5% / 10% missile resistances). |
 | D6 | Pilot Analyzer as well as Fit Analyzer? | (a) **both**; (b) Fit Analyzer only | **Decided 2026-10-23: (a)**, both the Pilot and Fit Analyzers. Why: Same engine; killmail fits get the same card. |
 
 ## 5. Risks and how they're handled

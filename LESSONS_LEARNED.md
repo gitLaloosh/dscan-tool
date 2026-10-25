@@ -860,6 +860,21 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Do this instead:** exit in the write's callback (`process.stdout.write(text, () => process.exit(0))`), or let the
   process end on its own.
 
+## 59. A handler's source value is the source's MODIFIED attribute: a script changes it
+
+- **What happened (found v2026.10.14.64, there since v2026.10.14.40):** the drone (and new fighter) handler rows read
+  the carrying module's RAW attribute (`m.attr`). pyfa reads `src.getModifiedItemAttr(...)`, and a script loaded in
+  the module changes exactly those attributes: an Omnidirectional Tracking Link with an Optimal Range Script doubles
+  its drone range / falloff bonus and zeroes its tracking and explosion bonuses. So a scripted link gave drones its
+  UNSCRIPTED bonuses. Nothing caught it: every golden drone fit had an unscripted link.
+- **How it was caught:** the new fighter fits were built to reach every handler on the generated list, scripts
+  included (LESSON #53); the scripted link failed `check_application.py` at once. A drone twin
+  (`vexor_constructed_scripted_omni_link_drones`) then failed the old page too.
+- **Do this instead:** when a generated row says "value from the carrier's attribute X", feed it the carrier's
+  attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
+  copies first. When building golden fits for a handler table, give every module that takes a script one scripted
+  copy.
+
 ## 9. Comparing different quantities with pyfa
 
 - **What happened:**

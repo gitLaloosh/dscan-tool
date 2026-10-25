@@ -1624,7 +1624,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.63</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.64</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -3267,7 +3267,10 @@ function pyfaMissileMaxRangeData(maxVelocity, explosionDelayMs, shipRadius, mass
 // attributes; smartbomb range. Since v2026.10.14.40 (D5 drones, the owner 2026-10-23 "port drone application first")
 // also drones in space, getDroneMult (estimate.application.drones: each drone type's DPS and pyfa's modified
 // maxVelocity / radius / Drone.maxRange / Drone.falloff / trackingSpeed / optimalSigRadius, from the PROJ_DRONE_*
-// handler table). Fighters (getFighterAbilityMult) are not ported yet; bombs and doomsdays deal no DPS here. Checked by tools/independent_checks/check_application.py,
+// handler table). Since v2026.10.14.64 (D5 fighters, the owner 2026-10-25) also fighters, getFighterAbilityMult per damage ability
+// (estimate.application.fighters: one entry per squadron type and ability, its DPS for the squadrons launched and pyfa's
+// modified maxVelocity / radius / range / falloff / explosion / reduction / ResistanceID, from the PROJ_FIGHTER_* table);
+// bombs (off by default in pyfa) and doomsdays deal no DPS here. Checked by tools/independent_checks/check_application.py,
 // which runs pyfa's own getApplicationPerKey, lifted unmodified, on the same inputs over a grid.
 function pyfaCalculateRangeFactor(srcOptimalRange, srcFalloffRange, distance, restrictedRange = true){
   if(distance === null || distance === undefined) return 1;
@@ -3381,14 +3384,44 @@ function pyfaGetDroneMult(app, d, p){
   }
   return pyfaFloatUnerr(pyfaCalcTurretMult(cth));
 }
-// pyfa applyDamage(): sum of each weapon's and drone's DPS x its multiplier (graph setting 'ignoreResists'
-// defaults to true, so no target resists here).
+// getApplicationPerKey's fighter loop + getFighterAbilityMult (v2026.10.14.64). f = {dps, ability (attrPrefix), speed,
+// radius, optimal ('{prefix}RangeOptimal' or '{prefix}Range'), falloff, explosionRadius, explosionVelocity, drf, drs,
+// resistAttrId} (one entry per squadron type and damage ability). The target: p.tgtIsFit and p.tgtFighterResist
+// {attrId: the target ship's value} (pyfa reads tgt.item.ship's attribute named by the ability's ResistanceID, only
+// when the target is a fit; a ship without it has the attribute's SDE default). Bombs aren't counted (off by default).
+function pyfaGetFighterAbilityMult(app, f, p){
+  const dist = p.distance;
+  const inLockRange = (dist === null || dist === undefined) || !!p.ignoreLockRange || dist <= app.lockRange;
+  if(!inLockRange) return 0;
+  const droneOpt = p.droneMode || GRAPH_DRONE_MODE.auto;
+  let rangeFactor;
+  // It's regular missile-based attack
+  if((droneOpt === GRAPH_DRONE_MODE.auto && f.speed >= p.tgtSpeed) || droneOpt === GRAPH_DRONE_MODE.followTarget){
+    rangeFactor = 1;
+  }else{
+    // Same as with drones, if fighters are slower - put them to center of the ship and see how they apply
+    const rangeFactorDistance = (dist === null || dist === undefined) ? null : dist + app.radius - f.radius;
+    rangeFactor = pyfaCalculateRangeFactor(f.optimal || 0, f.falloff || 0, rangeFactorDistance);
+  }
+  const missileFactor = pyfaCalcMissileFactor(f.explosionRadius, f.explosionVelocity, Math.log(f.drf) / Math.log(f.drs), p.tgtSpeed, p.tgtSigRadius);
+  let resistMult = 1;
+  if(p.tgtIsFit && f.resistAttrId){
+    const v = (p.tgtFighterResist || {})[f.resistAttrId];
+    if(v !== undefined && v !== null) resistMult = v;
+  }
+  return pyfaFloatUnerr(rangeFactor * missileFactor * resistMult);
+}
+// pyfa applyDamage(): sum of each weapon's, drone's and fighter ability's DPS x its multiplier (graph setting
+// 'ignoreResists' defaults to true, so no target resists here; the fighter missile resistances above are not those).
 function pyfaAppliedDps(app, p){
   let total = 0;
   for(const w of app.weapons) total += w.dps * pyfaApplicationMult(w, Object.assign({atkRadius: app.radius, lockRange: app.lockRange}, p));
   for(const d of app.drones || []) total += d.dps * pyfaGetDroneMult(app, d, p);
+  for(const f of app.fighters || []) total += f.dps * pyfaGetFighterAbilityMult(app, f, p);
   return total;
 }
+// The target side of getFighterAbilityMult as point parameters (tgt: estimate.projectedTarget, or a preset built the same way).
+function pyfaFighterTargetParams(tgt){ return {tgtIsFit: !!(tgt && tgt.isFit), tgtFighterResist: (tgt && tgt.fighterResist) || null}; }
 // ==== PYFA CORE END application ====
 // ==== PYFA CORE BEGIN projected ==== mirrors pyfa; change only to match pyfa (PYFA_CORE.md, tools/pyfa_core_manifest.json)
 // v2026.10.14.35 (turret-application-plan.md Phase 2a). pyfa's damage graph applies the ATTACKER's own webs,
@@ -3408,12 +3441,21 @@ function pyfaAppliedDps(app, p){
 // Generated by tools/gen_projected_table.py (pyfa handlers on the target ship's disallowOffensiveModifiers /
 // stasisWebifierResistance / targetPainterResistance, and on a web / painter drone's attributes):
 const PROJ_TARGET_EFFECTS = {"6581":[["disallowOffensiveModifiers","force",872,1,0.0,null]],"6658":[["targetPainterResistance","boost",2424,1,0.0,null]],"8517":[["stasisWebifierResistance","boost",3422,1,0.0,null]],"12192":[["stasisWebifierResistance","boost",729,5,0.0,null]],"12193":[["stasisWebifierResistance","boost",748,5,0.0,null]]};
-const PROJ_TARGET_ATTRS = {"disallowOffensiveModifiers":872,"stasisWebifierResistance":2115,"targetPainterResistance":2114};
-const PROJ_TARGET_DEFAULTS = {"872":0.0,"2115":1.0,"2114":1.0};
+const PROJ_TARGET_ATTRS = {"disallowOffensiveModifiers":872,"stasisWebifierResistance":2115,"targetPainterResistance":2114,"fighterAbilityAntiFighterMissileResistance":2189,"fighterAbilityAntiCapitalMissileResistance":2244,"fighterAbilityKamikazeResistance":2433};
+const PROJ_TARGET_DEFAULTS = {"872":0.0,"2115":1.0,"2114":1.0,"2189":0.05000000074505806,"2244":0.10000000149011612,"2433":0.0};
 const PROJ_DRONE_EFFECTS = {"2013":[["maxVelocity","boost",591,1,0.0,"default",[3436],null]],"booster:2013":[["maxVelocity","boost",591,1,0.0,null,[3436],null]],"implant:2013":[["maxVelocity","boost",591,1,0.0,null,[3436],null]],"2014":[["maxRange","boost",294,1,0.0,"default",[3436],null]],"4575":[["maxVelocity","boost",2584,1,0.0,"default",[3436],null]],"4579":[["speedFactor","boost",1619,1,0.0,null,[12305],null]],"5111":[["trackingSpeed","boost",462,5,0.0,null,[3436],null]],"5165":[["maxVelocity","boost",793,1,0.0,null,[3436],null]],"5212":[["maxVelocity","boost",1864,1,0.0,null,null,null]],"5427":[["trackingSpeed","boost",500,5,0.0,null,[3436],null]],"5428":[["maxRange","boost",500,5,0.0,null,[3436],null]],"5555":[["maxVelocity","boost",486,5,5.0,null,[3441],null]],"5556":[["trackingSpeed","boost",486,5,5.0,null,[3441],null]],"5557":[["maxRange","boost",693,5,0.0,null,[23594],null]],"5558":[["trackingSpeed","boost",693,5,0.0,null,[23594],null]],"6176":[["maxVelocity","boost",2043,1,0.0,null,[3436],null]],"6555":[["maxVelocity","boost",20,1,1.0,"default",[3436],null]],"6557":[["trackingSpeed","boost",767,1,0.0,"default",[3436],null],["falloff","boost",349,1,0.0,"default",[3436],null],["maxRange","boost",351,1,0.0,"default",[3436],null]],"6559":[["falloff","boost",349,1,0.0,"default",[3436],null],["maxRange","boost",351,1,0.0,"default",[3436],null],["trackingSpeed","boost",767,1,0.0,"default",[3436],null]],"implant:6664":[["maxRange","boost",294,1,0.0,null,[3436],null]],"booster:6667":[["maxVelocity","boost",2603,1,0.0,null,[3436],null]],"implant:6667":[["maxVelocity","boost",2603,1,0.0,null,[3436],null]],"6670":[["maxRange","boost",294,1,0.0,"default",[3436],null]],"6671":[["maxVelocity","boost",591,1,0.0,"default",[3436],null]],"6925":[["maxVelocity","boost",1521,5,0.0,null,[3436],null],["trackingSpeed","boost",1521,5,0.0,null,[3436],null]],"7230":[["trackingSpeed","boost",658,5,0.0,null,[3436],null]],"implant:8023":[["trackingSpeed","boost",3028,1,0.0,null,[3436],null]],"implant:8024":[["maxRange","boost",3029,1,0.0,null,[3436],null],["falloff","boost",3029,1,0.0,null,[3436],null]],"8071":[["maxRange","boost",1000,5,0.0,null,[3436],null]],"8119":[["maxVelocity","boost",2584,1,0.0,"default",[3436],null]],"8154":[["maxRange","boost",1258,5,0.0,null,[3436],null],["trackingSpeed","boost",1258,5,0.0,null,[3436],null]],"booster:8477":[["trackingSpeed","boost",3353,1,0.0,null,[3436],null]],"booster:8479":[["maxRange","boost",294,1,0.0,null,[3436],null],["falloff","boost",349,1,0.0,null,[3436],null]],"11060":[["speedFactor","boost",5046,5,0.0,null,[3436],null]],"11419":[["trackingSpeed","boost",561,5,0.0,null,[3436],null]],"11518":[["maxVelocity","boost",5318,1,0.0,null,[3435],null]],"11519":[["speedFactor","boost",5319,1,0.0,null,[3436],null]],"12252":[["trackingSpeed","boost",999,5,0.0,null,[3441,24241,33699],null]],"12253":[["trackingSpeed","boost",5772,5,0.0,null,[23594],null]],"12565":[["trackingSpeed","boost",747,5,0.0,null,[3436],null]],"12566":[["maxVelocity","boost",2303,1,0.0,null,[3436],null]],"12810":[["speedFactor","boost",738,5,0.0,null,[3436],null]],"13026":[["trackingSpeed","boost",586,5,0.0,null,[3436],null]]};
 const PROJ_DRONE_SKILL_ROWS = [[12305,"maxVelocity","boost",25.0,null,[3436],null],[23606,"maxRange","boost",25.0,null,[3436],null]];
 const PROJ_DRONE_ATTRS = {"speedFactor":20,"signatureRadiusBonus":554,"maxVelocity":37,"shieldTransferRange":87,"powerTransferRange":91,"empFieldRange":99,"ecmBurstRange":142,"maxRange":54,"ECMRangeOptimal":936,"falloff":158,"falloffEffectiveness":2044,"radius":162,"trackingSpeed":160,"optimalSigRadius":620};
 const PROJ_DRONE_DEFAULTS = {"20":1.0,"554":0.0,"37":0.0,"87":0.0,"91":0.0,"99":0.0,"142":0.0,"54":0.0,"936":0.0,"158":1.0,"2044":0.0,"162":0.0,"160":0.0,"620":1000.0};
+// v2026.10.14.64 (turret-application-plan.md D5 fighters): every pyfa handler on what getFighterAbilityMult reads on a
+// fighter -- maxVelocity, radius and each damage ability's range / falloff / explosion / reduction / ResistanceID --
+// in the PROJ_DRONE_* row shapes, filters on the fighter (any of skills) AND (any of groups). Same generator.
+const PROJ_FIGHTER_EFFECTS = {"6555":[["maxVelocity","boost",20,1,1.0,"default",[23069],null]],"6557":[["fighterAbilityMissilesExplosionVelocity","boost",847,1,0.0,"default",[23069],null],["fighterAbilityAttackMissileExplosionRadius","boost",848,1,0.0,"default",[23069],null],["fighterAbilityMissilesExplosionRadius","boost",848,1,0.0,"default",[23069],null],["fighterAbilityMissilesRange","boost",351,1,0.0,"default",[23069],null],["fighterAbilityAttackMissileRangeOptimal","boost",351,1,0.0,"default",[23069],null],["fighterAbilityAttackMissileExplosionVelocity","boost",847,1,0.0,"default",[23069],null],["fighterAbilityAttackMissileRangeFalloff","boost",349,1,0.0,"default",[23069],null]],"6559":[["fighterAbilityAttackMissileExplosionRadius","boost",848,1,0.0,"default",[23069],null],["fighterAbilityAttackMissileRangeOptimal","boost",351,1,0.0,"default",[23069],null],["fighterAbilityMissilesExplosionRadius","boost",848,1,0.0,"default",[23069],null],["fighterAbilityAttackMissileRangeFalloff","boost",349,1,0.0,"default",[23069],null],["fighterAbilityMissilesExplosionVelocity","boost",847,1,0.0,"default",[23069],null],["fighterAbilityAttackMissileExplosionVelocity","boost",847,1,0.0,"default",[23069],null],["fighterAbilityMissilesRange","boost",351,1,0.0,"default",[23069],null]],"6566":[["maxVelocity","mul",2336,1,0.0,"postMul",[23069],null]],"6612":[["fighterAbilityMissilesExplosionVelocity","boost",2376,5,0.0,null,[23069],null],["fighterAbilityAttackMissileExplosionVelocity","boost",2376,5,0.0,null,[23069],null]],"6624":[["maxVelocity","boost",2391,5,0.0,null,[23069],null]],"6639":[["fighterAbilityMissilesExplosionRadius","boost",2378,5,0.0,null,[23069],null],["fighterAbilityAttackMissileExplosionRadius","boost",2378,5,0.0,null,[23069],null]],"6661":[["maxVelocity","boost",2373,5,0.0,null,[23069],null]],"implant:6664":[["fighterAbilityMissilesRange","boost",294,1,0.0,null,[23069],null],["fighterAbilityAttackMissileRangeOptimal","boost",294,1,0.0,null,[23069],null]],"booster:6667":[["maxVelocity","boost",2603,1,0.0,null,[23069],null]],"implant:6667":[["maxVelocity","boost",2603,1,0.0,null,[23069],null]],"6670":[["fighterAbilityMissilesRange","boost",294,1,0.0,"default",[23069],null],["fighterAbilityAttackMissileRangeOptimal","boost",294,1,0.0,"default",[23069],null]],"6671":[["maxVelocity","boost",591,1,0.0,"default",[23069],null]],"12869":[["maxVelocity","mul",6183,1,1.0,null,[23069],null]]};
+const PROJ_FIGHTER_SKILL_ROWS = [[12305,"maxVelocity","boost",25.0,null,[23069],null],[23606,"fighterAbilityAttackMissileRangeOptimal","boost",25.0,null,[23069],null],[23606,"fighterAbilityMissilesRange","boost",25.0,null,[23069],null],[40572,"maxVelocity","boost",25.0,null,[40572],null]];
+const PROJ_FIGHTER_ATTRS = {"maxVelocity":37,"radius":162,"fighterAbilityAttackMissileRangeOptimal":2236,"fighterAbilityAttackMissileRangeFalloff":2237,"fighterAbilityAttackMissileExplosionRadius":2234,"fighterAbilityAttackMissileExplosionVelocity":2235,"fighterAbilityAttackMissileReductionFactor":2231,"fighterAbilityAttackMissileReductionSensitivity":2232,"fighterAbilityMissilesRange":2149,"fighterAbilityMissilesExplosionRadius":2125,"fighterAbilityMissilesExplosionVelocity":2126,"fighterAbilityMissilesDamageReductionFactor":2127,"fighterAbilityMissilesDamageReductionSensitivity":2128,"fighterAbilityMissilesResistanceID":2170};
+const PROJ_FIGHTER_DEFAULTS = {"37":0.0,"162":0.0,"2236":0.0,"2237":0.0,"2234":0.0,"2235":0.0,"2231":0.0,"2232":0.0,"2149":0.0,"2125":0.0,"2126":0.0,"2127":0.0,"2128":0.0,"2170":0.0};
+// pyfa FighterAbility.attrPrefix (the effect's own prefix) of each damage ability the tool counts (bombs stay off):
+const PROJ_FIGHTER_ABILITY_PREFIX = {"fighterAbilityAttackM":"fighterAbilityAttackMissile","fighterAbilityMissiles":"fighterAbilityMissiles"};
 // cache/projected.py: the effects that make a module a web or a painter (by effect id, SDE)
 const PROJ_WEB_EFFECTS = [6426, 6682];          // remoteWebifierFalloff, structureModuleEffectStasisWebifier
 const PROJ_TP_EFFECTS = [6425, 6683];           // remoteTargetPaintFalloff, structureModuleEffectTargetPainter
@@ -3607,7 +3649,7 @@ function pyfaProjectedPoint(app, tgt, p){
 // pyfaAppliedDps (PYFA CORE application) at the tackled speed and painted signature, the target's own radius.
 function pyfaAppliedDpsProjected(app, tgt, p){
   const pt = pyfaProjectedPoint(app, tgt, p);
-  return pyfaAppliedDps(app, Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius}));
+  return pyfaAppliedDps(app, Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius}, pyfaFighterTargetParams(tgt)));
 }
 // ---- inputs (pyfa's attribute values, as eos computes them) ----
 // eos/saveddata/module.py Module.maxRange / Module.falloff for one module copy. a(name) = its modified
@@ -3640,25 +3682,40 @@ function pyfaDroneFalloff(a){
 }
 // A drone's attributes after every handler on it (PROJ_DRONE_EFFECTS / PROJ_DRONE_SKILL_ROWS):
 // ship / modules as for pyfaShipSpeed; implantCarriers as the engine builds them ({ctx, attr, effectIds}).
-function pyfaProjDroneSetup(ship, modules, implantCarriers){
+// v2026.10.14.64: the same for a fighter squadron with the PROJ_FIGHTER_* tables (pyfaProjFighterSetup).
+function pyfaProjDroneSetup(ship, modules, implantCarriers, T = {effects: PROJ_DRONE_EFFECTS, skillRows: PROJ_DRONE_SKILL_ROWS, attrs: PROJ_DRONE_ATTRS, defaults: PROJ_DRONE_DEFAULTS}){
   const mods = [];
-  for(const [, attr, op, v, pg, skills, groups] of PROJ_DRONE_SKILL_ROWS) mods.push({attr, op, v, pg, skills, groups, w: 1});
+  for(const [, attr, op, v, pg, skills, groups] of T.skillRows) mods.push({attr, op, v, pg, skills, groups, w: 1});
   const addRows = (key, valueOf, w) => {
     if(!(w > 0)) return;
-    for(const [attr, op, src, perLevel, dflt, pg, skills, groups] of PROJ_DRONE_EFFECTS[key] || []) mods.push({attr, op, v: valueOf(src, dflt) * perLevel, pg, skills, groups, w});
+    for(const [attr, op, src, perLevel, dflt, pg, skills, groups] of T.effects[key] || []) mods.push({attr, op, v: valueOf(src, dflt) * perLevel, pg, skills, groups, w});
   };
   for(const e of ship.effectIds) addRows(String(e), (a, d) => ship.attr(a, d), 1);
   for(const m of modules) for(const e of m.effectIds) addRows(String(e), (a, d) => m.attr(a, d), m.weightOf(e));
   for(const c of implantCarriers || []) for(const e of c.effectIds) addRows(c.ctx + ':' + e, (a, d) => c.attr(a, d), 1);
   return (drone) => {   // drone: {attr(id, dflt), reqs, group}
     const out = {};
-    for(const [name, id] of Object.entries(PROJ_DRONE_ATTRS)){
+    for(const [name, id] of Object.entries(T.attrs)){
       const pool = pyfaModPool();
       for(const x of mods) if(x.attr === name && speedRowFilterOk(x.skills, x.groups, drone)) pyfaModAdd(pool, x.op, x.v, x.pg, x.w);
-      out[name] = pyfaModValue(drone.attr(id, PROJ_DRONE_DEFAULTS[String(id)]), pool);
+      out[name] = pyfaModValue(drone.attr(id, T.defaults[String(id)]), pool);
     }
     return out;
   };
+}
+function pyfaProjFighterSetup(ship, modules, implantCarriers){
+  return pyfaProjDroneSetup(ship, modules, implantCarriers, {effects: PROJ_FIGHTER_EFFECTS, skillRows: PROJ_FIGHTER_SKILL_ROWS, attrs: PROJ_FIGHTER_ATTRS, defaults: PROJ_FIGHTER_DEFAULTS});
+}
+// getFighterAbilityMult's inputs for one damage ability of a squadron, from its modified attributes a (pyfaProjFighterSetup):
+// '{prefix}RangeOptimal' or '{prefix}Range'; the reduction factor / sensitivity under either spelling (pyfa tries
+// '{prefix}ReductionFactor' first; an attribute the SDE doesn't define is None there, so the other one is read).
+function pyfaFighterAbilityInputs(a, prefix){
+  const g = (n) => (prefix + n) in PROJ_FIGHTER_ATTRS ? a[prefix + n] : undefined;
+  const drf = g('ReductionFactor') !== undefined ? g('ReductionFactor') : g('DamageReductionFactor');
+  const drs = g('ReductionSensitivity') !== undefined ? g('ReductionSensitivity') : g('DamageReductionSensitivity');
+  return {speed: a.maxVelocity, radius: a.radius, optimal: g('RangeOptimal') || g('Range') || 0, falloff: g('RangeFalloff') || 0,
+    explosionRadius: g('ExplosionRadius') || 0, explosionVelocity: g('ExplosionVelocity') || 0, drf: drf || 0, drs: drs || 0,
+    resistAttrId: Math.trunc(g('ResistanceID') || 0) || null};
 }
 // The target ship's disallowOffensiveModifiers and web / painter resistances (PROJ_TARGET_EFFECTS).
 function pyfaProjTargetAttrs(ship, modules, implantCarriers){
@@ -8481,6 +8538,23 @@ function firepowerIconSvg(kind){
   if(kind === 'weapon') return '<svg class="fp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>';
   return '<svg class="fp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><line x1="9" y1="9.5" x2="6.3" y2="7.3"/><line x1="15" y1="9.5" x2="17.7" y2="7.3"/><line x1="9" y1="14.5" x2="6.3" y2="16.7"/><line x1="15" y1="14.5" x2="17.7" y2="16.7"/></svg>'; // drone/fighter
 }
+// v2026.10.14.64 (D5 fighters; the owner 2026-10-25: "Hover on Firepower"): a squadron whose damage ability names a ship
+// resistance (pyfa getFighterAbilityMult) says so on its row's hover. The raw DPS stays pyfa's (full damage); the
+// percentage is the attribute's SDE default, what a ship without it takes (capitals and freighters carry 1).
+const FIGHTER_RESIST_WORDS = {fighterAbilityAntiFighterMissileResistance: ['missiles are anti-fighter', 'a ship'],
+                              fighterAbilityAntiCapitalMissileResistance: ['torpedoes are anti-capital', 'a ship that isn\'t a capital or freighter']};
+function fighterResistNote(estimate, typeId){
+  const fs = ((estimate.application || {}).fighters || []).filter(f => f.typeId === typeId && f.resistAttrId);
+  const out = [];
+  for(const f of fs){
+    const name = Object.keys(PROJ_TARGET_ATTRS).find(n => PROJ_TARGET_ATTRS[n] === f.resistAttrId);
+    const w = FIGHTER_RESIST_WORDS[name], pct = PROJ_TARGET_DEFAULTS[String(f.resistAttrId)];
+    if(!w || !(pct >= 0)) continue;
+    const s = `Its ${w[0]}: ${w[1]} takes ${+(pct * 100).toFixed(1)}% of their damage (counted in ${cardName('dmg')}, not in this raw number).`;
+    if(!out.includes(s)) out.push(s);
+  }
+  return out.join(' ');
+}
 function firepowerCardHtml(f, estimate, fighterOrDroneNote){
   // hasCargoGuess already drove this card's own Total/Weapon DPS tiles as
   // a range (totalLow/totalHigh below) -- the per-ammo breakdown list that
@@ -8561,7 +8635,7 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
 
   const droneRows = [
     ...estimate.droneDpsBreakdown.map(d => ({name: d.name, qty: d.qty, dps: d.dps, iconId: d.typeId})),
-    ...estimate.fighterDpsBreakdown.map(g => ({name: g.name, qty: g.qty, dps: g.dps, iconId: g.typeId}))
+    ...estimate.fighterDpsBreakdown.map(g => ({name: g.name, qty: g.qty, dps: g.dps, iconId: g.typeId, note: fighterResistNote(estimate, g.typeId)}))
   ].sort((a, b) => b.dps - a.dps);
 
   // v2026.10.14.50 (subtext rule 1): a row is the charge (or weapon) and one context line -- the weapon and its range
@@ -8578,7 +8652,7 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
   const droneRowsHtml = droneRows.map(d => `
       <div class="firepower-row">
         ${d.iconId ? eveTypeIconHtml(d.iconId, d.name, 'fp-eve-icon', firepowerIconSvg('drone')) : firepowerIconSvg('drone')}
-        <span class="fp-name"><span class="fp-name-t" title="${escapeHtml(d.name)}">${escapeHtml(d.name)}${d.qty > 1 ? ` ×${d.qty}` : ''}</span>${ctxHtml('range set by its pilot', 'fp-sub', 'A drone or fighter engages at whatever range its pilot sends it to; not tracked.')}</span>
+        <span class="fp-name"><span class="fp-name-t" title="${escapeHtml(d.name)}">${escapeHtml(d.name)}${d.qty > 1 ? ` ×${d.qty}` : ''}</span>${ctxHtml('range set by its pilot', 'fp-sub', 'A drone or fighter engages at whatever range its pilot sends it to; not tracked.' + (d.note ? ' ' + d.note : ''))}</span>
         <span class="fp-dps">${d.dps.toLocaleString()}</span>
       </div>`).join('');
   const stripHtml = (weaponRowsHtml || droneRowsHtml) ? `<div class="firepower-strip">${weaponRowsHtml}${droneRowsHtml}</div>` : '';
@@ -12518,7 +12592,9 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       : [FIGHTER_ABILITY_EFFECTS[6465] || ['fighterAbilityAttackM', 'fighter', [2227, 2228, 2229, 2230, 2226, 2233]]];
     const abilityParts = abilities.map(ab => {
       const [em, therm, kin, exp, multAttr, durAttr] = ab[2];
-      return {target: ab[1], perFighterDmg: [em, therm, kin, exp].reduce((sum, a) => sum + attrVal(dmgDogma, a, 0), 0),
+      // v2026.10.14.64: the ability's pyfa attrPrefix and damage-type split, for PYFA CORE application (getFighterAbilityMult)
+      return {target: ab[1], prefix: PROJ_FIGHTER_ABILITY_PREFIX[ab[0]] || null, perFighterDmg: [em, therm, kin, exp].reduce((sum, a) => sum + attrVal(dmgDogma, a, 0), 0),
+              weights: {em: attrVal(dmgDogma, em, 0), therm: attrVal(dmgDogma, therm, 0), kin: attrVal(dmgDogma, kin, 0), exp: attrVal(dmgDogma, exp, 0)},
               ownMult: attrVal(dmgDogma, multAttr, 1), cycleMs: attrVal(dmgDogma, durAttr, 0)};
     }).filter(a => a.perFighterDmg > 0 && a.cycleMs > 0);
     if(!abilityParts.length) continue; // EWAR/non-attack squadron -- correctly 0 DPS, not a bug
@@ -12543,17 +12619,19 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // Units scale every ability Duration (pyfa postMul pool).
     const fsuDurMult = fighterDurationPostMul.length ? pyfaPenalizedProduct(fighterDurationPostMul) : 1;
     let dmgPerCycle = 0, perSquadronDps = 0;
+    const appParts = [];   // v2026.10.14.64: each ability's own DPS per squadron (pyfa getDpsPerEffect), for application
     for(const part of abilityParts){
       const hf = hullFighterMods(hullDamageRows, {dogma: dmgDogma, group: ''}, part.target);
       const volley = part.perFighterDmg * squadronSize * part.ownMult * fighterSkillDmgMult * fighterCatMod.dmgMult * hf.dmg;
       const cycleSec = (part.cycleMs / 1000) * MAX_FIGHTER_ROF_MULT * fighterCatMod.rofMult * hf.cycle * fsuDurMult;
       dmgPerCycle += volley;           // pyfa getVolley sums the active abilities' volleys
       perSquadronDps += volley / cycleSec;
+      appParts.push({prefix: part.prefix, dps: volley / cycleSec, weights: part.weights});
     }
     const bayQty = data.totalQty / data.lossCount;
     const squadronsAvailable = Math.floor(bayQty / squadronSize);
     if(squadronsAvailable <= 0) continue;
-    fighterTypesInfo.push({typeId: Number(id), name: type.name, perSquadronDps, dmgPerCycle, squadronSize, squadronsAvailable, squadronClass});
+    fighterTypesInfo.push({typeId: Number(id), name: type.name, perSquadronDps, dmgPerCycle, squadronSize, squadronsAvailable, squadronClass, type, appParts, deployed: 0});
     fighterBayCount += bayQty;
   }
 
@@ -12584,6 +12662,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     tubesUsed += squadronsDeployable;
     if(f.squadronClass !== 'other') fighterClassUsed[f.squadronClass] += squadronsDeployable;
     fighterSquadronCount += squadronsDeployable;
+    f.deployed = squadronsDeployable;   // v2026.10.14.64: the squadrons launched, for application
     const dps = f.perSquadronDps * squadronsDeployable;
     fighterDps += dps;
     fighterVolley += f.dmgPerCycle * squadronsDeployable;
@@ -13342,6 +13421,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
 
   let projectedSrc = null, projectedTarget = null;   // v2026.10.14.35 PYFA CORE projected (set below, hulls with effects)
   let appDrones = null;   // v2026.10.14.40 damage drones for PYFA CORE application (hulls with effects; else they stay unapplied)
+  let appFighters = null; // v2026.10.14.64 fighter damage abilities, likewise (getFighterAbilityMult)
   // v2026.10.14.11 (hand-tables P4): every number on the EWAR / Misc card is the module's own attribute
   // after pyfa's handlers (PYFA CORE ewar-calc: skills, hull, subsystems, rigs, other modules, the ship
   // mode and the script loaded in that copy). The hand tables above (EWAR_UNIVERSAL_SKILL_BONUS,
@@ -13501,7 +13581,23 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       }
     }
     const projShip = {attr: (a, d) => attrVal(shipDogma, a, d), effectIds: shipEffectIds, reqs: shipRequiredSkills.filter(Boolean)};
-    const projDroneAttrs = pyfaProjDroneSetup(projShip, ewarCarriers, implantCarriers);
+    // v2026.10.14.64 (found with D5 fighters): a scripted copy (an Omnidirectional Tracking Link with an Optimal Range or
+    // Tracking Speed Script) gives drones and fighters its SCRIPTED bonuses -- pyfa's handlers read the module's modified
+    // attribute, which the script's own effects change (scriptTrackingComputer*BonusBonus). Before, the raw module value was
+    // read, so a scripted link applied its unscripted bonuses to drones. Scripted copies first, as everywhere in this engine.
+    const projModCarriers = [];
+    const ewarAttrIdName = Object.fromEntries(Object.entries(EWAR_ATTRS).map(([n, id]) => [id, n]));
+    for(const m of ewarCarriers){
+      const scripts = ewarScriptsByModuleId.get(m.dt.id) || [];
+      if(!scripts.length){ projModCarriers.push(m); continue; }
+      scripts.forEach((sc, k) => {
+        const a = ewarAttrsFor(m, {attr: (x, d) => attrVal(sc.type.dogma_attributes || [], x, d), effectIds: (sc.type.dogma_effects || []).map(e => e.effect_id)});
+        projModCarriers.push(Object.assign({}, m, {attr: (x, d) => (x in ewarAttrIdName ? a[ewarAttrIdName[x]] : m.attr(x, d)),
+          weightOf: (e) => Math.min(1, Math.max(0, m.weightOf(e) - k))}));
+      });
+      projModCarriers.push(Object.assign({}, m, {weightOf: (e) => Math.max(0, m.weightOf(e) - scripts.length)}));
+    }
+    const projDroneAttrs = pyfaProjDroneSetup(projShip, projModCarriers, implantCarriers);
     for(const d of droneAllInfo){
       const n = droneActiveByType.get(d.typeId) || 0;
       const effs = (d.type.dogma_effects || []).map(e => e.effect_id);
@@ -13522,6 +13618,24 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     }
     projectedSrc = {scramRange: projScramRange, webMods: projWebMods, tpMods: projTpMods, webDrones: projWebDrones, tpDrones: projTpDrones,
       webFighters: [], tpFighters: [], droneControlRange};
+    // v2026.10.14.64 (D5 fighters): every damage ability of each squadron type launched, with pyfa's modified attributes
+    // (PROJ_FIGHTER_* handlers: skills at V, hull, modules / rigs, implants, boosters). One entry per type and ability;
+    // its DPS is that ability's (pyfa getDpsPerEffect) for all the squadrons of that type in space.
+    appFighters = [];
+    const projFighterAttrs = pyfaProjFighterSetup(projShip, projModCarriers, implantCarriers);
+    for(const f of fighterTypesInfo){
+      if(!(f.deployed > 0)) continue;
+      const dogma = f.type.dogma_attributes || [];
+      const group = await getGroup(f.type.group_id);
+      const a = projFighterAttrs({attr: (x, dflt) => x === RADIUS_ATTR ? attrVal(dogma, x, f.type.radius || 0) : attrVal(dogma, x, dflt),
+        reqs: REQUIRED_SKILL_ATTRS.map(x => attrVal(dogma, x, 0)).filter(Boolean), group: group.name});
+      for(const part of f.appParts){
+        if(!part.prefix) continue;
+        const dps = part.dps * f.deployed;
+        appFighters.push(Object.assign({typeId: f.typeId, name: f.name, squadrons: f.deployed, squadronSize: f.squadronSize, ability: part.prefix,
+          dps, typeDps: addTypeDps({}, dps, part.weights)}, pyfaFighterAbilityInputs(a, part.prefix)));
+      }
+    }
     if(pyfaSpeed){
       const running = pyfaSpeed.props.find(pp => pp.module.activeCopies > 0) || null;
       const runningMwd = running && running.kind === 'mwd';
@@ -13534,6 +13648,9 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       projectedTarget = {isFit: true, radius: shipRadiusM, disallowOffensiveModifiers: !!tAttrs[PROJ_TARGET_ATTRS.disallowOffensiveModifiers],
         resist: {[PROJ_TARGET_ATTRS.stasisWebifierResistance]: tAttrs[PROJ_TARGET_ATTRS.stasisWebifierResistance],
                  [PROJ_TARGET_ATTRS.targetPainterResistance]: tAttrs[PROJ_TARGET_ATTRS.targetPainterResistance]},
+        // v2026.10.14.64 (D5 fighters): the ship attributes fighter abilities' ResistanceID name (anti-fighter / anti-capital
+        // missile resistance), SDE default when the hull has none (pyfa getFighterAbilityMult, the target being a fit)
+        fighterResist: Object.fromEntries(Object.entries(PROJ_TARGET_ATTRS).filter(([n]) => /ResistanceID$|Resistance$/.test(n) && n.startsWith('fighterAbility')).map(([, id]) => [id, tAttrs[id]])),
         maxVelocity: {base: pyfaSpeed.baseVelocity, pool: running ? running.velocityPool : pyfaSpeed.velocityPool,
           scrammed: runningMwd ? [{group: 'postMul', mult: running.postMul}] : []},
         signatureRadius: {base: sigRadiusFlatBase, pool: {mult: sigHullMult * sigActiveUnpenalizedMult, pen: sigPen, forced: null, preInc: 0, postInc: 0},
@@ -13829,7 +13946,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       lockRange: targetingRange,
       weapons: [...applicationWeapons.values()],
       drones: appDrones || [],   // v2026.10.14.40 (D5 drones): getDroneMult inputs, one entry per drone type in space
-      unapplied: {droneDps: appDrones ? ((x) => x > 1e-6 ? x : 0)(droneDps - appDrones.reduce((s, d) => s + d.dps, 0)) : droneDps, fighterDps: fighterDps, otherFixedDps: unappliedFixedDps, cargoGuessWeapons: cargoResolvedWeaponCount},
+      fighters: appFighters || [],   // v2026.10.14.64 (D5 fighters): getFighterAbilityMult inputs, one entry per squadron type and ability
+      unapplied: {droneDps: appDrones ? ((x) => x > 1e-6 ? x : 0)(droneDps - appDrones.reduce((s, d) => s + d.dps, 0)) : droneDps, fighterDps: appFighters ? ((x) => x > 1e-6 ? x : 0)(fighterDps - appFighters.reduce((s, f) => s + f.dps, 0)) : fighterDps, otherFixedDps: unappliedFixedDps, cargoGuessWeapons: cargoResolvedWeaponCount},
       projected: projectedSrc   // v2026.10.14.35 (Phase 2a): this fit's webs / painters / scram as pyfa's damage graph applies them
     },
     projectedTarget,            // v2026.10.14.35 (Phase 2a): this fit as the target of someone else's webs / painters / scram
@@ -15194,6 +15312,8 @@ function dmgReachM(app){
     : w.kind === 'missile' ? (w.missileMaxRangeData ? w.missileMaxRangeData[1] : 0) : (w.maxRange || 0));
   const dcr = (app.projected && app.projected.droneControlRange) || 0;   // v.40: drones reach as far as their control range
   for(const d of app.drones || []) r = Math.max(r, Math.min(dcr * 1.1, dmgIsSentry(d) ? (d.optimal || 0) + 3 * (d.falloff || 0) : dcr * 1.1));
+  // v2026.10.14.64: a fighter ability slower than you hits within its range of the carrier's centre (getFighterAbilityMult)
+  for(const f of app.fighters || []) r = Math.max(r, (f.optimal || 0) + 3 * (f.falloff || 0) + (app.radius || 0));
   return r;
 }
 // v2026.10.14.56 (the owner 2026-10-24: "engagement range appears to be capped for both perspectives by the threat's range.
@@ -15267,14 +15387,14 @@ function fightKeepState(side, st, myTop, theirTop, otherReach){
 // One target as PYFA CORE projected wants it, for the chosen prop state and signature scale.
 function dmgTargetObj(pt, prop, sigScale){
   const v = (prop && pt.variants.on) ? pt.variants.on : pt.variants.off;
-  return {isFit: true, radius: pt.radius, disallowOffensiveModifiers: pt.disallowOffensiveModifiers, resist: pt.resist,
+  return {isFit: true, radius: pt.radius, disallowOffensiveModifiers: pt.disallowOffensiveModifiers, resist: pt.resist, fighterResist: pt.fighterResist || null,
     maxVelocity: v.maxVelocity, signatureRadius: {base: v.signatureRadius.base * sigScale, pool: v.signatureRadius.pool, scrammed: v.signatureRadius.scrammed}};
 }
 // The default graph at one point: their tackle on you first, then their weapons at your tackled speed and painted signature.
 function dmgPoint(app, tgt, q){
   const p = {distance: q.d, tgtSpeed: q.ySpeed, tgtAngle: q.yAngle, atkSpeed: q.tSpeed, atkAngle: q.tAngle, ignoreLockRange: true};
   const pt = pyfaProjectedPoint(app, tgt, p);
-  return {dps: pyfaAppliedDps(app, Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius})), speed: pt.tgtSpeed, sig: pt.tgtSigRadius};
+  return {dps: pyfaAppliedDps(app, Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius}, pyfaFighterTargetParams(tgt))), speed: pt.tgtSpeed, sig: pt.tgtSigRadius};
 }
 // CHART MARKERS (v2026.10.14.54, fight setup F3; turret-application-plan.md "Chart markers", boards 5b + 5c). the owner
 // 2026-10-24: "the shading really makes it clear when you're inside of tackle range", with "the same letter codes
@@ -15337,7 +15457,7 @@ function dmgModel(f, T, st){
   const line2Label = st.axis !== 'distance' ? `At ${dmgKm(st.range)}, ${st.axis === 'speed' ? (MOVING[st.mode] || 'orbiting') : moveText.replace(/^you /, '')}`
     : (st.mode === 'still' ? 'You still' : `You ${MOVING[st.mode]}, ${dmgFmt(ySpeed)} m/s`);
   return {side: 'threat', app, tgt, T, st, hasProp, maxU, sigFit, ySpeed, theirTop, tSpeed, keep, cur, still, axis, xs, line1, line2, yMax, yWidest: dmgFmt(dmgNiceY((Math.ceil(dmgRawDps(app) * 1.02) + 1) * 1.05)), xMax, zones: marks.zones, pins: marks.pins, moveText, line2Label, at, pointAt,
-    raw: app.weapons.reduce((s, w) => s + w.dps, 0) + (app.drones || []).reduce((s, d) => s + d.dps, 0)};
+    raw: dmgRawDps(app)};
 }
 
 // DAMAGE APPLICATION IN THE MY SHIP PERSPECTIVE (v2026.10.14.55, fight setup F4; turret-application-plan.md board 4).
@@ -15535,7 +15655,9 @@ function dmgUnappliedText(app){
 // v2026.10.14.48 (subtext rule 4): Reset is an icon that is always there, disabled at the defaults. It used to
 // appear as a text button once a setting moved, which made the card 16 px taller and pushed the page down.
 const DMG_RESET_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>';
-function dmgRawDps(app){ return app.weapons.reduce((s, w) => s + w.dps, 0) + (app.drones || []).reduce((s, d) => s + d.dps, 0); }
+function dmgRawDps(app){ return app.weapons.reduce((s, w) => s + w.dps, 0) + (app.drones || []).reduce((s, d) => s + d.dps, 0) + (app.fighters || []).reduce((s, f) => s + f.dps, 0); }
+// v2026.10.14.64: a fit deals damage on the card when it has weapons, drones or fighters (D5) in the application.
+function dmgHasDamage(app){ return !!app && (app.weapons.length > 0 || (app.drones || []).length > 0 || (app.fighters || []).length > 0); }
 // The widest applied DPS a fit can show: raw plus wrecking hits (a close, perfect hit averages 1.5% above raw).
 function dmgWidestDps(app){ return dmgFmt(Math.ceil(dmgRawDps(app) * 1.02) + 1); }
 // mine (v.55, F4): the card in the My Ship Perspective (your guns on the threat; dmgFillMine)
@@ -15580,7 +15702,7 @@ async function dmgFill(host, f){
   host._dmgToken = token;
   const app = f.estimate && f.estimate.application;
   const body = card.querySelector('.dmg-body');
-  if(!app || (!app.weapons.length && !(app.drones || []).length)){
+  if(!dmgHasDamage(app)){
     const un = app ? dmgUnappliedText(app) : '';
     body.innerHTML = `<p class="dmg-note">No turrets, missiles, Vorton projectors, smartbombs or drones to chart.${un ? ' ' + escapeHtml(un) : ''}</p>`;
     card.querySelector('.dmg-vs').textContent = '';
@@ -15627,7 +15749,7 @@ async function dmgFillMine(host, mf){
   host._dmgToken = token;
   const {shost, tf, label, threatName} = dmgMineContext(host);
   const app = mf.estimate && mf.estimate.application;
-  const none = !app || (!app.weapons.length && !(app.drones || []).length);
+  const none = !dmgHasDamage(app);
   let m = null;
   if(tf && tf.estimate && tf.estimate.application && !none){
     if(!tf.dmg) tf.dmg = dmgDefaults(tf.estimate.application);
@@ -15700,7 +15822,7 @@ async function dmgFillCollapsed(host, f){
   host._dmgToken = token;
   const app = f.estimate && f.estimate.application;
   let text = DMG_SUMMARY_NONE;
-  if(app && (app.weapons.length || (app.drones || []).length)){
+  if(dmgHasDamage(app)){
     const T = await dmgResolveTarget();
     if(host._dmgToken !== token || !host.isConnected) return;
     if(!T.error){
@@ -15884,11 +16006,12 @@ function dmgRefreshAll(){
 function dmgTypedPoint(app, tgt, q){
   const p = {distance: q.d, tgtSpeed: q.ySpeed, tgtAngle: q.yAngle, atkSpeed: q.tSpeed, atkAngle: q.tAngle, ignoreLockRange: true};
   const pt = pyfaProjectedPoint(app, tgt, p);
-  const p2 = Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius});
+  const p2 = Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius}, pyfaFighterTargetParams(tgt));
   const typed = {em: 0, therm: 0, kin: 0, exp: 0};
   const add = (typeDps, mult) => { for(const d of DMG) typed[d] += ((typeDps || {})[d] || 0) * mult; };
   for(const w of app.weapons) add(w.typeDps, pyfaApplicationMult(w, Object.assign({atkRadius: app.radius, lockRange: app.lockRange}, p2)));
   for(const d of app.drones || []) add(d.typeDps, pyfaGetDroneMult(app, d, p2));
+  for(const f of app.fighters || []) add(f.typeDps, pyfaGetFighterAbilityMult(app, f, p2));   // v2026.10.14.64 (D5 fighters)
   return {dps: DMG.reduce((s, d) => s + typed[d], 0), typed, speed: pt.tgtSpeed, sig: pt.tgtSigRadius};
 }
 // ANCILLARY SHIELD BOOSTER CLIP (v2026.10.14.57; the owner 2026-10-24, Orthrus vs his Osprey Navy Issue, both with an X-Large
@@ -16369,7 +16492,7 @@ async function wpBuildCandidates(f, est){
   }
   return {groups: groups.map(g => ({weaponTypeId: g.weaponTypeId, name: g.name, qty: g.qty, options: g.options})), drones,
     inSpace: (est.application.drones || []).map(d => ({typeId: d.typeId, name: d.name, count: d.qty})),
-    fighters: !!(est.application.unapplied && est.application.unapplied.fighterDps > 0)};
+    fighters: (est.application.fighters || []).length > 0 || !!(est.application.unapplied && est.application.unapplied.fighterDps > 0)};
 }
 // Every candidate at one point. app: the attacker's CURRENT application (radius, lock range, webs / painters / scram,
 // and its weapons and drones as they are); tgt and q: the target and the point (mysFight's them+qOut or me+qIn);
@@ -16380,7 +16503,8 @@ async function wpBuildCandidates(f, est){
 // replaces the drones in space), then, when every choice holds, the same time with no reps (their buffer alone),
 // then the charge already loaded. LESSON #40: pyfa's graph number ignores resists, so it can't be the sort key.
 function wpRank(cands, app, tgt, q, tgtEst){
-  const pt = (ws, ds) => dmgTypedPoint(Object.assign({}, app, {weapons: ws, drones: ds}), tgt, q);
+  // v2026.10.14.64: the rest of the fit includes its fighters (D5); a pick's own number (fs = []) doesn't
+  const pt = (ws, ds, fs = app.fighters || []) => dmgTypedPoint(Object.assign({}, app, {weapons: ws, drones: ds, fighters: fs}), tgt, q);
   const def = ttkDefense(tgtEst);
   const buf = {layers: def.layers.map(l => Object.assign({}, l, {rep: 0, reps: [], passive: 0})), capSec: Infinity};   // v.57: reps cleared too (ttkSeconds reads l.reps)
   const score = (o, ws, ds, own) => Object.assign({}, o, {dps: own.dps, ttk: ttkSeconds(def, pt(ws, ds).typed), ttkBuffer: ttkSeconds(buf, pt(ws, ds).typed)});
@@ -16391,9 +16515,9 @@ function wpRank(cands, app, tgt, q, tgtEst){
   return {
     groups: cands.groups.map(g => {
       const others = wsAll.filter(w => w.weaponTypeId !== g.weaponTypeId);
-      return Object.assign({}, g, {ranked: sorted(g.options.map(o => score(o, [...others, o.aw], dsAll, pt([o.aw], []))))});
+      return Object.assign({}, g, {ranked: sorted(g.options.map(o => score(o, [...others, o.aw], dsAll, pt([o.aw], [], []))))});
     }),
-    drones: sorted(cands.drones.map(d => score(d, wsAll, [d.ad], pt([], [d.ad])))),
+    drones: sorted(cands.drones.map(d => score(d, wsAll, [d.ad], pt([], [d.ad], [])))),
     inSpace: cands.inSpace, fighters: cands.fighters};
 }
 // v2026.10.14.49 (subtext rule 1 and 4): every tile is the same three lines -- label, pick, one context line -- so a

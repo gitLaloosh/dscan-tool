@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — Fighter damage application</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fighter damage application</h1>
+<p><span class="tag">Feature</span><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-25 &middot; <code>v2026.10.14.63</code> &rarr; <code>v2026.10.14.64</code>.</p>
+<p>the owner (2026-10-25), from the backlog: "strategy hints is important but i feel like we need to have more of the tool fleshed out first. let's tackle fighter damage application." This was the last open part of turret-application-plan.md D5. Before this version, fighters were left out of the Damage Application chart and the Matchup times entirely: the chart said "Not in the chart yet: their fighters", and a carrier's "you last" ignored its main weapon. After the findings, he chose:</p>
+<ul>
+<li>the fighters' MWD: "pyfa default" (off);</li>
+<li>the fighter missile resistances: "Hover on Firepower".</li>
+</ul>
+
+<h2>What pyfa does</h2>
+<p>pyfa v2.69.3, <code>graphs/data/fitDamageStats/calc/application.py</code>, read in the source:</p>
+<ul>
+<li><b>Per ability.</b> <code>getApplicationPerKey</code> takes each default-active damage ability of each squadron separately (Attack and Missiles; bombs are off by default). Lock range works as for the other weapons. There is no control-range limit like the drones'.</li>
+<li><b>Range</b> (<code>getFighterAbilityMult</code>): with the graph's default drone mode (auto), a squadron at least as fast as the target follows it and has full range. A slower one is put at the carrier's centre: distance + carrier radius &minus; fighter radius, against the ability's range (<code>RangeOptimal</code>, else <code>Range</code>, and <code>RangeFalloff</code>). Missiles have no falloff, so it's a hard limit.</li>
+<li><b>Explosion:</b> <code>_calcMissileFactor</code>, with the reduction factor and sensitivity combined as log(drf) / log(drs).</li>
+<li><b>A resistance most people don't know about.</b> When the target is a fit, pyfa multiplies by the target ship's attribute named by the ability's <code>ResistanceID</code>. A ship without it gets the attribute's SDE default:
+<ul>
+<li>superiority fighters' missiles (Equite / Locust / Satyr / Gram): <code>fighterAbilityAntiFighterMissileResistance</code>, default 0.05, and no ship carries it. EVE University says the same ("-95% damage" to real ships);</li>
+<li>heavy fighters' torpedoes (Cyclops / Malleus / Tyrfing / Mantis): <code>fighterAbilityAntiCapitalMissileResistance</code>, default 0.1. The 59 capital and freighter hulls carry 1.</li>
+</ul></li>
+<li><b>Speed:</b> the squadron's modified <code>maxVelocity</code>. Its MWD, afterburner and evasive abilities are off by default (<code>Fighter.__init__</code>), so they don't count.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Generated table</b> (<code>tools/gen_projected_table.py</code>). <code>PROJ_FIGHTER_EFFECTS</code> / <code>PROJ_FIGHTER_SKILL_ROWS</code> hold every pyfa handler on what the function reads, from these sources:
+<ul>
+<li>skills at V: Light Fighters, Drone Navigation, Drone Sharpshooting;</li>
+<li>hulls: Hel, Vendetta, Nidhoggur, Revenant, and the carriers' <code>fighterGenericModifiers</code>;</li>
+<li>modules and rigs: Drone Navigation Computer, Omnidirectional Tracking Link / Enhancer, Fighter Support Unit, Capital Drone Scope Chip and Speed Augmentor;</li>
+<li>implants: the Valdimar implants.</li>
+</ul>
+The table has 14 effects, 30 rows and 4 skill rows. Also generated:
+<ul>
+<li><code>PROJ_FIGHTER_ABILITY_PREFIX</code>, each damage ability's pyfa prefix;</li>
+<li>in <code>PROJ_TARGET_ATTRS</code>, the ship attributes the resistances name.</li>
+</ul>
+The generator asserts:
+<ul>
+<li>every filter, over all 74 damage fighters;</li>
+<li>that no handler on these attributes is missed;</li>
+<li>that a damage ability runs no handler of its own.</li>
+</ul>
+Two environment effects (Effect4906, Effect8114 plasma storm) are skipped and listed.</li>
+<li><b>PYFA CORE <code>application</code>:</b> <code>pyfaGetFighterAbilityMult</code>, ported line for line, is now in <code>pyfaAppliedDps</code>. The target's fit flag and resistances are passed with each point (<code>pyfaFighterTargetParams</code>).</li>
+<li><b>Engine inputs.</b> <code>estimate.application.fighters</code> has one entry per squadron type and damage ability: its DPS for the squadrons launched (pyfa getDpsPerEffect), its damage-type split, and pyfa's modified speed, radius, range, falloff, explosion radius / velocity, reduction factor / sensitivity and ResistanceID. <code>projectedTarget.fighterResist</code> holds the target's side.</li>
+<li><b>On the page:</b>
+<ul>
+<li>the Damage Application chart, the Matchup times, the "why" text and both perspectives now count fighters;</li>
+<li>the "Not in the chart yet" note no longer names fighters;</li>
+<li>the chart's range reaches a fighter ability's range from the carrier's centre;</li>
+<li>in the Weaknesses picks, the rest of the fit includes its fighters (a pick's own number doesn't). They still say "Fighters aren't ranked yet."; which squadrons to launch is its own backlog item.</li>
+</ul></li>
+<li><b>Firepower hover</b> (the owner's choice), on a squadron's row:
+<ul>
+<li>"Its missiles are anti-fighter: a ship takes 5% of their damage (counted in Damage Application, not in this raw number).";</li>
+<li>for heavy fighters: "Its torpedoes are anti-capital: a ship that isn't a capital or freighter takes 10% of their damage ...".</li>
+</ul>
+The raw number stays pyfa's raw DPS.</li>
+</ul>
+<table>
+<tr><th>Real numbers, against the typical cruiser (Caracal + 50MN MWD II, 1,913 m/s)</th><th>raw</th><th>you still</th><th>you orbiting, 10 km</th><th>20 km</th></tr>
+<tr><td>Thanatos + 3x DDA II, 3 squadrons of Firbolg I (1,116 m/s)</td><td>2,494</td><td>2,494</td><td>274</td><td>0</td></tr>
+<tr><td>Revenant, 3 squadrons of Locust II + 2 of Cyclops II</td><td>8,562</td><td>1,513</td><td>82</td><td>73</td></tr>
+</table>
+<p>Two things show in the table:</p>
+<ul>
+<li>A fast MWD target outruns the squadrons (pyfa's default, MWD off), so they fall back to the carrier's range.</li>
+<li>The superiority and heavy fighters' missile resistance cuts the Revenant even against a target that sits still.</li>
+</ul>
+
+<h2>Found on the way: a scripted Omnidirectional Tracking Link (drones too, since v.40)</h2>
+<p>The drone handler rows read the link's raw attributes. pyfa reads the module's modified ones, and a script changes exactly those:</p>
+<ul>
+<li>an Optimal Range Script doubles the range / falloff bonus and zeroes the tracking and explosion bonuses;</li>
+<li>a Tracking Speed Script does the reverse.</li>
+</ul>
+<p>So a scripted link gave drones its unscripted bonuses. Now each scripted copy feeds its script-modified attributes (<code>ewarAttrsFor</code>), scripted copies first, for drones and fighters alike. A new golden fit, <code>vexor_constructed_scripted_omni_link_drones</code>, fails v.63: optimal 5,644 m vs pyfa's 6,037 m, tracking 0.800 vs 0.696 (LESSON #59).</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>check_application.py</code></b>:
+<ul>
+<li>The oracle now runs pyfa's handlers on fighter squadrons (<code>pyfa_fit_oracle.py</code> <code>fighters=</code>). pyfa-shaped Fighter / FighterAbility stand-ins switch abilities on as <code>Fighter.__init__</code> does.</li>
+<li>Compared: every ability's DPS (so the tool's fighter DPS is checked against pyfa's handlers for the first time: 13 carrier fits, all equal) and every input. A 5,544-point fighter grid varies the drone mode and the target: a profile, a subcapital fit and a capital fit.</li>
+<li>Result: 0 mismatches, 1,395,048 of 1,395,048 multipliers bit-identical.</li>
+<li>A fit with fighter DPS left unapplied fails. v.63 fails 14 fits.</li>
+</ul></li>
+<li><b>Mutations</b>, each fails:
+<ul>
+<li>no resistance: 7 fits;</li>
+<li>always following: 13;</li>
+<li>no carrier radius: 11;</li>
+<li>the raw link in the fighter setup: 2;</li>
+<li>fighters zeroed: <code>check_matchup.py</code> 39 pairs.</li>
+</ul></li>
+<li><b><code>check_damage_chart.py</code></b> now has 4 carriers among 22 attackers, and the application's target is the fit (pyfa's graph target). <b><code>check_matchup.py</code></b> has 3 carriers as threats, carrier-vs-carrier pairs (a capital target) and a battleship against a carrier. Both: 0 mismatches.</li>
+<li><b>Golden fits:</b> Hel, Revenant and Nidhoggur fits built to reach every handler on the list (scripts included), plus the scripted-link Vexor. Pins are from pyfa's side, including <code>applied@...tgt=subcap / capital</code>.</li>
+<li><b>New <code>tools/page_checks/fighter_application_check.py</code>:</b>
+<ul>
+<li>the chart counts the fighters;</li>
+<li>the Firepower hovers;</li>
+<li>the board equals the headline;</li>
+<li>no NaN;</li>
+<li>the picks note.</li>
+</ul></li>
+<li>PYFA CORE <code>application</code> and <code>projected</code> were re-verified (the commands in the manifest), then re-locked.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #59: a generated row's "value from the carrier's attribute X" means the carrier's MODIFIED attribute, after its own script and self effects. Reading the raw one is right only until someone loads a script. When you build golden fits to cover a handler table, give every module that takes a script a scripted copy. This bug had sat unnoticed in the drone path for 24 versions, because every drone fit's link was unscripted.</p>
+</body>
+</html>

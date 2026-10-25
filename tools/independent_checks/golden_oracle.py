@@ -56,8 +56,9 @@ def implants_of(f):
         return [it['item_type_id'] for it in f['killmail']['victim'].get('items', []) if it['flag'] == 89], []
     t = f.get('tally') or {}
     return [int(x) for x in (t.get('Implants') or {})], [int(x) for x in (t.get('Boosters') or {})]
-def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True):
+def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True, fighters=()):
     """drones: [(typeId, inSpace)] -- the tool's own choice of drones in space (an input, DEVIATIONS.md).
+    fighters: [(typeId, amount)] per squadron in space -- likewise the tool's own launch (v2026.10.14.64).
     group_limits=False: the states given are already legal (the tool's own resolved states, which apply the
     hull's maxGroupActive modifiers this stand-in doesn't), so apply_group_limits is skipped."""
     global _G
@@ -89,7 +90,7 @@ def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True):
             else: s = st if isinstance(st, str) else pyfa_default_state(mod)
             mods.append((mod, s, ch))
         imps, boos = implants_of(f)
-        return OracleFit(int(f['shipTypeId']), apply_group_limits(mods) if group_limits else mods, mode=mode, implants=imps, boosters=boos, drones=drones).calculate()
+        return OracleFit(int(f['shipTypeId']), apply_group_limits(mods) if group_limits else mods, mode=mode, implants=imps, boosters=boos, drones=drones, fighters=fighters).calculate()
     # A slot flag lists its module and loaded charge in either order (the killmail's item order).
     from pyfa_sde import cat
     charges = {}
@@ -111,4 +112,4 @@ def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True):
                 ch = charges.get(int(tid), [])
                 mods.append((int(tid), s, ch[i] if i < len(ch) else None))
     imps, boos = implants_of(f)
-    return OracleFit(int(f['shipTypeId']), apply_group_limits(mods) if group_limits else mods, mode=mode, implants=imps, boosters=boos, drones=drones).calculate()
+    return OracleFit(int(f['shipTypeId']), apply_group_limits(mods) if group_limits else mods, mode=mode, implants=imps, boosters=boos, drones=drones, fighters=fighters).calculate()

@@ -15,8 +15,13 @@ speeds and headings x target signature x lock range respected or ignored:
   * the inputs the multipliers don't cover: the attacker's radius and lock range.
 Since v2026.10.14.40 also drones in space (getDroneMult; the fit's own resolved module states and drones, as
 compare_fit_stats.py), with every drone input (DPS, maxVelocity, radius, Drone.maxRange / falloff, trackingSpeed,
-optimalSigRadius) and a second grid for drone fits that also varies ignoreDCR and mobileDroneMode. Fighters are
-left out on both sides (not ported yet). Tolerance 1e-6 relative (floatUnerr keeps
+optimalSigRadius) and a second grid for drone fits that also varies ignoreDCR and mobileDroneMode.
+Since v2026.10.14.64 (D5 fighters) also fighters in space (getFighterAbilityMult, every default-active damage ability of
+every squadron the tool launches): each ability's DPS (pyfa FighterAbility.getDps: amount x {prefix}DamageMultiplier x the
+damage attributes / {prefix}Duration, on the oracle's modified attributes -- so the tool's fighter DPS is checked too) and
+every input the function reads, over a third grid that also varies mobileDroneMode and the TARGET: a target profile
+(isFit False), a subcapital fit and a capital fit (pyfa reads the target ship's attribute named by the ability's
+ResistanceID only for a fit). Tolerance 1e-6 relative (floatUnerr keeps
 7 significant digits, so a value on a rounding edge may differ by one in the 7th digit).
 
 It also exposes applied(fitId, **params) for writing golden pins from pyfa's side.
@@ -28,6 +33,7 @@ from pyfa_sde import PYFA_SRC, ename
 from golden_oracle import oracle_for, GOLDEN
 from compare_implants import is_weapon, _mult, DMG
 from check_missile_range import pyfa_missile_range
+from pyfa_effects import EFFECTS
 
 # ---- pyfa's own code ----------------------------------------------------------------------------------------
 SETTINGS = {'mobileDroneMode': 1, 'ignoreDCR': False, 'ignoreResists': True, 'ignoreLockRange': True, 'applyProjected': True}
@@ -36,9 +42,16 @@ class GraphSettings:   # service/settings.py stand-in: only .get() of the graph 
     def getInstance(cls): return cls
     @classmethod
     def get(cls, k): return SETTINGS[k]
-class Attribute:       # used only for fighter resists (fighters are not checked)
+class _AttrInfo:
+    def __init__(s, n): s.name = n
+class Attribute:       # eos.gamedata Attribute stand-in: fighter resists name the target ship attribute by id
     @classmethod
-    def getInstance(cls): return None
+    def getInstance(cls): return cls
+    @classmethod
+    def getAttributeInfo(cls, attrID):
+        from pyfa_sde import attrs
+        a = attrs.get(str(int(attrID)))
+        return _AttrInfo(a['name']) if a else None
 
 def _exec(rel, ns, drop=()):
     src = open(os.path.join(PYFA_SRC, rel), encoding='utf-8').read()
@@ -126,14 +139,62 @@ class _DroneApp:
         for a in ("falloff", "falloffEffectiveness"):
             v = s.getModifiedItemAttr(a)
             if v: return v
+class _Effect:
+    def __init__(s, eid): s.ID = eid; s.name = ename(eid); s.cls = EFFECTS.get(eid)
+    @property
+    def isImplemented(s): return s.cls is not None
+class _Ability:
+    """eos/saveddata/fighterAbility.py FighterAbility, the parts getApplicationPerKey and getDps read (v2026.10.14.64)."""
+    def __init__(s, fighter, eid):
+        s.fighter, s.effectID, s.effect, s.active = fighter, eid, _Effect(eid), False
+    @property
+    def attrPrefix(s): return getattr(s.effect.cls, 'prefix', None)
+    @property
+    def dealsDamage(s):   # "{prefix}DamageMultiplier" in itemModifiedAttributes (or a charge: bombs, not launched)
+        return f'{s.attrPrefix}DamageMultiplier' in s.fighter.f.attrs
+    def getDps(s):        # getVolley / getDps (factorReload off: every ability at its own cycle time)
+        if not s.dealsDamage or not s.active or s.attrPrefix == 'fighterAbilityLaunchBomb': return 0
+        g = s.fighter.getModifiedItemAttr
+        dmg = sum(g(f'{s.attrPrefix}Damage{t}', 0) for t in ('EM', 'Therm', 'Kin', 'Exp'))
+        cyc = g(f'{s.attrPrefix}Duration')
+        return dmg * s.fighter.amount * g(f'{s.attrPrefix}DamageMultiplier', 1) / (cyc / 1000) if cyc else 0
+class _FighterApp:
+    """eos Fighter as getFighterAbilityMult reads it, over an oracle fighter (pyfa's handlers on fit.fighters).
+    Abilities: every effect of the item, in SDE order (ascending id, as pyfa's database lists them), switched on as
+    eos Fighter.__init__ does."""
+    def __init__(s, f):
+        s.f, s.amount = f, f.amount
+        s.abilities = [_Ability(s, e) for e in sorted(f.item.effectIds)]
+        standard = False
+        for a in s.abilities:
+            if a.effect.isImplemented and a.effect.name == 'fighterAbilityAttackM': a.active = True; standard = True
+            elif a.effect.isImplemented and not standard and a.effect.name not in ('fighterAbilityMicroWarpDrive', 'fighterAbilityEvasiveManeuvers'): a.active = True
+        s.typeId = int(f.item.ID)
+    def isDealingDamage(s): return any(a.getDps() > 0 for a in s.abilities)
+    def getModifiedItemAttr(s, k, default=0):
+        v = s.f.attrs.get(k); return v if v is not None else default
+    def getModifiedChargeAttr(s, k, default=0): return default
+class _ShipItem:
+    def __init__(s, o): s.o = o
+    def getModifiedItemAttr(s, k, default=0):
+        v = s.o.ship.attrs.get(k); return v if v is not None else default
+class _TgtFit:
+    """A target FIT (v2026.10.14.64): getFighterAbilityMult reads tgt.isFit and tgt.item.ship.getModifiedItemAttr."""
+    def __init__(s, o, r): s.o = o; s.r = r; s.isFit = True; s.isProfile = False
+    @property
+    def item(s):
+        class _It: pass
+        it = _It(); it.ship = _ShipItem(s.o); return it
+    def getRadius(s): return s.r
 class _Src:
     def __init__(s, o):
         s.o = o
         s.mods = [_Mod(o, m, module_dps(m)) for m in o.modules if m.state >= 2 and module_dps(m) > 0]
         s.drones = [_DroneApp(d) for d in o.drones if d.amountActive > 0 and drone_dps(d) > 0]   # v2026.10.14.40 (D5 drones)
+        s.fighters = [_FighterApp(f) for f in o.fighters]   # v2026.10.14.64 (D5 fighters): the tool's launched squadrons
         class _It: pass
         s.item = _It(); s.item.activeModulesIter = lambda: iter(s.mods); s.item.activeDronesIter = lambda: iter(s.drones)
-        s.item.activeFightersIter = lambda: iter(()); s.item.maxTargetRange = o.ship.get('maxTargetRange')
+        s.item.activeFightersIter = lambda: iter(s.fighters); s.item.maxTargetRange = o.ship.get('maxTargetRange')
         s.item.extraAttributes = {'droneControlRange': o.ship.get('droneControlRange') or 0}
         s.isFit = True
     def getRadius(s): return s.o.ship.get('radius')
@@ -141,14 +202,18 @@ class _Tgt:
     def __init__(s, r): s.r = r; s.isFit = False; s.isProfile = True
     def getRadius(s): return s.r
 
-def pyfa_point(src, p):
+def fighter_key(f, eid): return f'fighter:{f.typeId}:{next(a.attrPrefix for a in f.abilities if a.effectID == eid)}'
+def pyfa_point(src, p, tgt=None):
     SETTINGS['ignoreLockRange'] = p['ignoreLockRange']
     SETTINGS['ignoreDCR'] = p.get('ignoreDCR', False); SETTINGS['mobileDroneMode'] = DroneMode(p.get('droneMode', 1))
-    am = getApplicationPerKey(src=src, tgt=_Tgt(p['tgtRadius']), atkSpeed=p['atkSpeed'], atkAngle=p['atkAngle'], distance=p['distance'],
+    am = getApplicationPerKey(src=src, tgt=tgt or _Tgt(p['tgtRadius']), atkSpeed=p['atkSpeed'], atkAngle=p['atkAngle'], distance=p['distance'],
                               tgtSpeed=p['tgtSpeed'], tgtAngle=p['tgtAngle'], tgtSigRadius=p['tgtSigRadius'])
     mults = {}
-    for mod, v in am.items(): mults.setdefault(mod.key, v)
-    return mults, sum(mod._dps * am.get(mod, 0) for mod in src.mods) + sum(d._dps * am.get(d, 0) for d in src.drones)
+    for mod, v in am.items():
+        if isinstance(mod, tuple): mults.setdefault(fighter_key(*mod), v)   # (fighter, ability effect id)
+        else: mults.setdefault(mod.key, v)
+    fdps = sum(a.getDps() * am.get((f, a.effectID), 0) for f in src.fighters for a in f.abilities)
+    return mults, sum(mod._dps * am.get(mod, 0) for mod in src.mods) + sum(d._dps * am.get(d, 0) for d in src.drones) + fdps
 
 def applied(fitId, **p):
     """pyfa's applied DPS for a golden fit at one point (for golden pins). Defaults: pyfa's graph defaults."""
@@ -165,6 +230,21 @@ DGRID = [dict(distance=d, atkSpeed=a, atkAngle=90, tgtSpeed=ts, tgtAngle=ta, tgt
          for d, a, ts, ta, sig, il, dcr, dm in itertools.product([0, 5000, 15000, 30000, 45000, 60000, 70000, 90000, 150000], [0, 500, 3000],
                                                                 [0, 500, 1500, 3000, 6000], [0, 90], [40, 400], [True, False], [False, True], [1, 2, 3])]
 
+# v2026.10.14.64 (D5 fighters): the fighter grid. Speeds around the squadrons' (fighters keep up or are left at the
+# carrier), distances inside and beyond every ability's range from the carrier's centre, and three targets.
+FIGHTER_TARGETS = {'profile': None, 'subcap': 'vexor_constructed_web_painter_drones_in_space', 'capital': 'thanatos_constructed_dda_fighters'}
+FGRID = [dict(distance=d, atkSpeed=0, atkAngle=0, tgtSpeed=ts, tgtAngle=90, tgtSigRadius=sig, tgtRadius=40, ignoreLockRange=il, droneMode=dm, tgt=tg)
+         for d, ts, sig, il, dm, tg in itertools.product([0, 2000, 5000, 9000, 14000, 20000, 30000, 45000, 70000, 150000, 400000],
+                                                          [0, 300, 900, 1500, 2200, 3200, 6000], [15, 120, 400, 3000], [True, False], [1, 2, 3], list(FIGHTER_TARGETS))]
+
+def tool_fighters(app):
+    """[(typeId, squadron size)] per squadron the tool launched (one entry per squadron, as pyfa's fit.fighters)."""
+    seen, out = set(), []
+    for f in (app or {}).get('fighters') or []:
+        if f['typeId'] in seen: continue
+        seen.add(f['typeId']); out += [(f['typeId'], f['squadronSize'])] * f['squadrons']
+    return out
+
 def tool_states(t):
     ms = (t.get('moduleStates') or {}).get('items') or []
     states = {str(it['typeId']): {'active': round(it['active']), 'online': round(it['online']), 'offline': round(it['offline'])} for it in ms}
@@ -176,24 +256,28 @@ if __name__ == '__main__':
     html = next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(ROOT, 'index.html'))
     G = json.load(open(GOLDEN))
     tmp = tempfile.mkdtemp(); dump = os.path.join(tmp, 'd.json')
-    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, dump, 'application,moduleStates,droneStates', '-', ','.join(G)], check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, dump, 'application,moduleStates,droneStates,projectedTarget', '-', ','.join(G)], check=True, stdout=subprocess.DEVNULL)
     dumped = json.load(open(dump))
-    apps = {k: v['application'] for k, v in dumped.items() if (v.get('application') or {}).get('weapons') or (v.get('application') or {}).get('drones')}
+    apps = {k: v['application'] for k, v in dumped.items() if any((v.get('application') or {}).get(x) for x in ('weapons', 'drones', 'fighters'))
+            or (((v.get('application') or {}).get('unapplied') or {}).get('fighterDps') or 0) > 0}
     gin, gout = os.path.join(tmp, 'in.json'), os.path.join(tmp, 'out.json')
-    json.dump({'fits': apps, 'grid': GRID, 'dgrid': DGRID}, open(gin, 'w'))
+    # the tool's own target side for the fighter grid: each target fit's projectedTarget (isFit, fighterResist)
+    ftargets = {n: (None if fid is None else {'isFit': True, 'fighterResist': dumped[fid]['projectedTarget'].get('fighterResist')}) for n, fid in FIGHTER_TARGETS.items()}
+    pyfaTargets = {n: (None if fid is None else oracle_for(fid)) for n, fid in FIGHTER_TARGETS.items()}
+    json.dump({'fits': apps, 'grid': GRID, 'dgrid': DGRID, 'fgrid': FGRID, 'ftargets': ftargets}, open(gin, 'w'))
     subprocess.run(['node', os.path.join(HERE, 'application_grid.mjs'), html, gin, gout], check=True)
     tool = json.load(open(gout))
-    bad = points = weapons = drones = exact = compared = dpoints = 0
+    bad = points = weapons = drones = fighters = exact = compared = dpoints = fpoints = 0
     for k in G:
         # v2026.10.14.40: the tool's own resolved states and drones in space (inputs, as compare_fit_stats.py)
         states, dr = tool_states(dumped[k])
-        o = oracle_for(k, states=states, drones=dr, group_limits=False)
+        o = oracle_for(k, states=states, drones=dr, group_limits=False, fighters=tool_fighters(apps.get(k)))
         src = _Src(o)
-        if not src.mods and not src.drones and k not in apps: continue
+        if not src.mods and not src.drones and not src.fighters and k not in apps: continue
         app = apps.get(k) or {'weapons': [], 'drones': [], 'radius': None, 'lockRange': None}
         t = tool.get(k, {'mults': {}, 'total': [0] * len(GRID)})
         diffs = []
-        if src.mods or src.drones:
+        if src.mods or src.drones or src.fighters:
             if not close(app['radius'] or 0, src.getRadius()): diffs.append(f"radius tool {app['radius']} pyfa {src.getRadius()}")
             if not close(app['lockRange'] or 0, src.item.maxTargetRange): diffs.append(f"lockRange tool {app['lockRange']} pyfa {src.item.maxTargetRange}")
         # drone inputs: DPS and every attribute getDroneMult reads
@@ -205,14 +289,41 @@ if __name__ == '__main__':
                                  ('maxRange', x['optimal'], pd.maxRange or 0), ('falloff', x['falloff'], pd.falloff or 0), ('trackingSpeed', x['tracking'], pd.getModifiedItemAttr('trackingSpeed')),
                                  ('optimalSigRadius', x['optimalSigRadius'], pd.getModifiedItemAttr('optimalSigRadius'))):
                 if not close(tv or 0, pv or 0): diffs.append(f'{pd.key} {name} tool {tv} pyfa {pv}')
-        keys = {m.key for m in src.mods} | {d.key for d in src.drones}
+        # v2026.10.14.64: fighter inputs -- each damage ability's DPS (all squadrons of the type) and what getFighterAbilityMult reads
+        tf = {f"fighter:{f['typeId']}:{f['ability']}": f for f in app.get('fighters') or []}
+        pf = {}
+        for f in src.fighters:
+            if not f.isDealingDamage(): continue
+            for a in f.abilities:
+                if not (a.dealsDamage and a.active) or a.attrPrefix == 'fighterAbilityLaunchBomb': continue
+                key = f'fighter:{f.typeId}:{a.attrPrefix}'
+                pf.setdefault(key, [f, a, 0]); pf[key][2] += a.getDps()
+        if set(tf) != set(pf): diffs.append(f'fighter abilities tool {sorted(tf)} pyfa {sorted(pf)}')
+        for key, (f, a, dps) in pf.items():
+            x = tf.get(key)
+            if x is None: continue
+            pre = a.attrPrefix; g = f.getModifiedItemAttr
+            drf = g(pre + 'ReductionFactor', None); drf = g(pre + 'DamageReductionFactor') if drf is None else drf
+            drs = g(pre + 'ReductionSensitivity', None); drs = g(pre + 'DamageReductionSensitivity') if drs is None else drs
+            for name, tv, pv in (('dps', x['dps'], dps), ('maxVelocity', x['speed'], g('maxVelocity')), ('radius', x['radius'], g('radius')),
+                                 ('optimal', x['optimal'], g(pre + 'RangeOptimal') or g(pre + 'Range')), ('falloff', x['falloff'], g(pre + 'RangeFalloff')),
+                                 ('explosionRadius', x['explosionRadius'], g(pre + 'ExplosionRadius')), ('explosionVelocity', x['explosionVelocity'], g(pre + 'ExplosionVelocity')),
+                                 ('drf', x['drf'], drf), ('drs', x['drs'], drs), ('resistAttrId', x['resistAttrId'] or 0, int(g(pre + 'ResistanceID') or 0)),
+                                 ('squadronSize', x['squadronSize'], g('fighterSquadronMaxSize'))):
+                if not close(tv or 0, pv or 0): diffs.append(f'{key} {name} tool {tv} pyfa {pv}')
+        # the launch is the tool's input, but every fighter DPS must be in the application (none left 'unapplied')
+        if ((app.get('unapplied') or {}).get('fighterDps') or 0) > 0: diffs.append(f"fighters left out of the application: {app['unapplied']['fighterDps']} DPS")
+        fighters += len(pf)
+        keys = {m.key for m in src.mods} | {d.key for d in src.drones} | set(pf)
         if keys != set(t['mults']): diffs.append(f"weapons / drones tool {sorted(t['mults'])} pyfa {sorted(keys)}")
         weapons += len(src.mods and {m.key for m in src.mods}); drones += len(src.drones)
-        for grid, tt in ((GRID, t), (DGRID, t.get('drones'))):
+        for grid, tt in ((GRID, t), (DGRID, t.get('drones')), (FGRID, t.get('fighters'))):
             if grid is DGRID and not src.drones: continue
-            if tt is None: diffs.append('no drone grid from the tool'); continue
+            if grid is FGRID and not pf: continue
+            if tt is None: diffs.append('no drone / fighter grid from the tool'); continue
             for i, p in enumerate(grid):
-                mults, total = pyfa_point(src, p); points += 1; dpoints += grid is DGRID
+                tg = p.get('tgt'); tgtObj = _TgtFit(pyfaTargets[tg], p['tgtRadius']) if tg and pyfaTargets.get(tg) is not None else None
+                mults, total = pyfa_point(src, p, tgtObj); points += 1; dpoints += grid is DGRID; fpoints += grid is FGRID
                 for key in keys:   # pyfa leaves a Vorton out of the map beyond lock range; its graph reads that as 0 (am.get(mod, 0))
                     v = mults.get(key, 0); compared += 1
                     tv = tt['mults'].get(key, [None] * len(grid))[i]
@@ -221,5 +332,5 @@ if __name__ == '__main__':
                     elif tv == v: exact += 1
                 if not close(tt['total'][i], total) and len(diffs) < 8: diffs.append(f"applied DPS {p} tool {tt['total'][i]} pyfa {total}")
         if diffs: bad += 1; print(f'{k}: ' + '; '.join(diffs))
-    print(f'{weapons} weapon + charge pairs, {drones} drone types in space, {points} fit x grid points ({dpoints} on the drone grid), {exact} of {compared} multipliers bit-identical')
-    print(f'{bad} mismatches (golden fits with weapons or drones vs pyfa getApplicationPerKey, grids of {len(GRID)} and {len(DGRID)})')
+    print(f'{weapons} weapon + charge pairs, {drones} drone types in space, {fighters} fighter abilities in space, {points} fit x grid points ({dpoints} on the drone grid, {fpoints} on the fighter grid), {exact} of {compared} multipliers bit-identical')
+    print(f'{bad} mismatches (golden fits with weapons, drones or fighters vs pyfa getApplicationPerKey, grids of {len(GRID)}, {len(DGRID)} and {len(FGRID)})')

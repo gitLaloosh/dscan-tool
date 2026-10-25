@@ -67,8 +67,9 @@ def pyfa_chart_point(src_fit, src_app, inp, tgt, g):
     """getter.py _calculatePoint: tackled speed and painted signature (projected.py), then application.py."""
     speed, sig = CP.pyfa_point(src_fit, tgt, inp, dict(distance=g['distance'], speedFrac=g['speedFrac'], ignoreLockRange=True, ignoreDCR=False, droneMode=1))
     sig *= g['sigScale']
+    # v2026.10.14.64: the application's target is the fit itself (pyfa's graph target; fighters read its resistances)
     _, dps = CA.pyfa_point(src_app, dict(distance=g['distance'], atkSpeed=g['atkSpeed'], atkAngle=g['atkAngle'], tgtSpeed=speed,
-                                         tgtAngle=g['tgtAngle'], tgtSigRadius=sig, tgtRadius=tgt.getRadius(), ignoreLockRange=True))
+                                         tgtAngle=g['tgtAngle'], tgtSigRadius=sig, tgtRadius=tgt.getRadius(), ignoreLockRange=True), tgt)
     return speed, sig, dps
 
 if __name__ == '__main__':
@@ -116,10 +117,13 @@ if __name__ == '__main__':
     # v2026.10.14.40 (drones applied): drone ships among the attackers, every one with damage drones in space
     withd = [k for k in G if (tool[k].get('application') or {}).get('drones') and k not in attackers]
     attackers += withd[::max(1, len(withd) // 4)][:4]
+    # v2026.10.14.64 (D5 fighters): carriers, every one with fighters in space (light, superiority, heavy; hull and module bonuses)
+    withf = [k for k in G if (tool[k].get('application') or {}).get('fighters') and k not in attackers]
+    attackers += [k for k in ('hel_constructed_fighter_application', 'revenant_constructed_fighter_application', 'nidhoggur_constructed_fighter_velocity', 'thanatos_constructed_dda_fighters') if k in withf]
     src_fit, src_app, inputs = {}, {}, {}
     for a in attackers:
         states, drones = CP.tool_states(tool[a])
-        o = oracle_for(a, states=states, drones=drones, group_limits=False)
+        o = oracle_for(a, states=states, drones=drones, group_limits=False, fighters=CA.tool_fighters(tool[a].get('application')))
         if o.errors or o.oracleGaps: bad += 1; notes.append(f'{a}: ORACLE errors {o.errors} gaps {o.oracleGaps}'); continue
         src_fit[a] = CP._Fit(o); src_app[a] = CA._Src(o); inputs[a] = CP.pyfa_inputs(src_fit[a])
     pairs = [(a, t) for a in src_fit for t in targets]
