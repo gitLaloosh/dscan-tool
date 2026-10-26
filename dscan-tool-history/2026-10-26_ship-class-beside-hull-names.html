@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — A hull's ship class beside its name</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>A hull's ship class beside its name</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.73</code> &rarr; <code>v2026.10.14.74</code>.</p>
+<p>Backlog item (the owner via the inbox): "need to add something to tell the user what class a hull is in. if they dont know the hulls from memory, knowing the ship class would be nice." From a mockup of the real page with two options, the owner picked "A: beside every name".</p>
+
+<h2>What you see</h2>
+<p>The hull's class is shown in muted text right after its name. The class is the game's group name: Strategic Cruiser, Combat Recon Ship, Heavy Interdiction Cruiser, Battleship. The D-Scan cards and the My Ships list already showed it.</p>
+<ul>
+<li><b>Pilot Analyzer:</b>
+<ul>
+<li>the hull button ("Loki Strategic Cruiser &middot; 2 of 5 losses") and every row of the hull menu;</li>
+<li>the Last Kill line, for both ships ("Vedmak Cruiser &middot; 9/1/2026 &middot; Curse Combat Recon Ship");</li>
+<li>the attackers' ships in the Last Kill panel, as a hover (that column has no room).</li>
+</ul></li>
+<li><b>Fit Analyzer:</b> the name line ("Megathron Battleship &mdash; Battleship target") and the "Viewing my ship" banner.</li>
+<li><b>The Matchup board:</b> the threat, your ship, and the rows of your ship menu.</li>
+<li><b>Narrow screens:</b> the hull button and the menu rows stay on one line; on the narrowest phones a long class in the button is cut with "&hellip;" (the menu shows it whole).</li>
+</ul>
+
+<h2>How it works</h2>
+<ul>
+<li><b>Written at once when it's known:</b> <code>hullClassHtml(typeId)</code> writes the class straight away when the hull's type and group are already loaded, which they are for the hull being assessed.</li>
+<li><b>Otherwise filled in later:</b> for other hulls (the rest of the hull menu, a last kill's ships), <code>fillHullClasses</code> looks them up after the page changes. This uses the same type and group cache as everything else, including the 7-day IndexedDB cache.</li>
+<li><b>A lookup that fails</b> leaves the class out; the name is still there, with no error.</li>
+<li><b>Screen readers and copying:</b> the name and the class are two words.</li>
+<li>No calculation changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/page_checks/ship_class_check.py</code>:</b> the expected class comes from the SDE, not the page. zKillboard and ESI are mocked as in <code>last_kill_check.py</code>. At 1440, 390 and 320 px it covers:
+<ul>
+<li>every place listed above;</li>
+<li>the one-line button and rows;</li>
+<li>the board's menu still lying exactly on its invisible twin;</li>
+<li>a group ESI can't return (no class, no error).</li>
+</ul>
+v.73 fails 27. A visible class in the twin fails 3; classes never filled in fail 23.</li>
+<li><b>Checks that read these names were confirmed unaffected</b> (LESSON #65): <code>busy_check</code>, <code>last_kill_check</code> (the headline and the attackers' ship text are unchanged) and <code>my_ships_check</code>.</li>
+<li>Regression ALL PASS (263 fits), update chain all 38 steps OK, all 25 page checks 0 failures. No PYFA CORE change.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #60, extended. The board draws your ship's name twice: an invisible twin in the button keeps the size, and the menu is drawn on top of it.</p>
+<ul>
+<li>The class added inside the twin is a span with its own colour. <code>color:transparent</code> on a parent doesn't reach a child that sets its own colour, so on a phone the class showed twice.</li>
+<li>Anything new inside a hidden twin needs its own transparent rule. The check reads its computed colour.</li>
+</ul>
+</body>
+</html>

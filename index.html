@@ -1436,6 +1436,16 @@
   .hull-pick-btn:hover, .hull-pick[open] .hull-pick-btn{border-color:var(--amber-dim);}
   .hull-pick-btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
   .hp-freq{font:400 12px var(--mono); color:var(--text-dim);}
+  /* v2026.10.14.74: a hull's class beside its name (hullClassHtml), muted */
+  .hull-cls{font:400 12px var(--sans); color:var(--text-dim); margin-left:0.3em; white-space:nowrap; letter-spacing:normal; text-transform:none;}
+  .hull-cls:empty{display:none;}
+  .hull-pick-btn .hull-cls{margin:0; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:0 1 auto;}
+  .hull-pick-btn .hp-name, .hull-pick-btn .hp-freq, .hull-pick-btn .hp-caret{flex:none; white-space:nowrap;}
+  .hull-menu .cand-name{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .hull-menu .cfreq{flex:none; white-space:nowrap; margin-left:10px;}
+  .mys-pick-ghost .hull-cls{color:transparent;}   /* the ghost is invisible; the menu's summary draws the class */
+  .cmeta .hull-cls, .mys-banner-v .hull-cls{font-size:0.9em;}
+  .mys-sw-v .hull-cls{font-size:12px; font-weight:400;}
   .hp-caret{color:var(--text-dim);}
   .hull-menu{position:absolute; left:0; top:calc(100% + 4px); z-index:30; min-width:240px; padding:6px; display:flex; flex-direction:column; gap:4px;
     background:var(--panel-2); border:1px solid var(--line); border-radius:6px; box-shadow:0 6px 16px rgba(0,0,0,0.45);}
@@ -1713,7 +1723,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.73</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.74</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -7652,6 +7662,54 @@ async function getGroup(groupId){
   return data;
 }
 
+// SHIP CLASS (v2026.10.14.74; the owner: "need to add something to tell the user what class a hull is in. if they dont know
+// the hulls from memory, knowing the ship class would be nice", then option A of the mockup): muted text beside every
+// hull named in the Pilot and Fit Analyzers and on the Matchup board -- the hull's SDE group name ("Strategic Cruiser",
+// "Combat Recon Ship"), as the D-Scan cards and the My Ships list already show it. Written at once when the type and its
+// group are loaded (they are for the hull being assessed); otherwise filled when they arrive (fillHullClasses, run after
+// each change to the page). A lookup that fails leaves it out: the hull's name is still there. hullClassTitleAttr puts
+// it in a hover instead, where a narrow column has no room (the last kill's attackers).
+function hullClassName(typeId){
+  const t = typeCache.get(Number(typeId)), g = t && groupCache.get(t.group_id);
+  return (g && g.name) || '';
+}
+function hullClassHtml(typeId){
+  if(!typeId) return '';
+  const n = hullClassName(typeId);
+  // the space before it: two words for a screen reader and when copied (a flex row drops it; the margin draws the gap)
+  return ` <span class="hull-cls" data-hull-cls="${Number(typeId)}"${n ? ' data-filled="1"' : ''}>${escapeHtml(n)}</span>`;
+}
+function hullClassTitleAttr(typeId){
+  if(!typeId) return '';
+  const n = hullClassName(typeId);
+  return ` data-hull-cls-title="${Number(typeId)}"${n ? ` data-filled="1" title="${escapeHtml(n)}"` : ''}`;
+}
+// A hull's name, its class, then the rest of a label ("Megathron <class> · Battleship target").
+function hullLabelHtml(shipName, typeId, rest){
+  return `${escapeHtml(shipName || '')}${hullClassHtml(typeId)}${rest ? escapeHtml(rest) : ''}`;
+}
+async function fillHullClasses(root){
+  const els = [...root.querySelectorAll('[data-hull-cls]:not([data-filled]), [data-hull-cls-title]:not([data-filled])')];
+  if(!els.length) return;
+  const ids = [...new Set(els.map(el => Number(el.dataset.hullCls || el.dataset.hullClsTitle)))];
+  for(const el of els) el.dataset.filled = '1';
+  const names = new Map(await Promise.all(ids.map(async id => {
+    try{ const t = await getType(id); const g = await getGroup(t.group_id); return [id, (g && g.name) || '']; }catch(e){ return [id, '']; }
+  })));
+  for(const el of els){
+    const n = names.get(Number(el.dataset.hullCls || el.dataset.hullClsTitle)) || '';
+    if(el.dataset.hullClsTitle){ if(n) el.title = n; } else el.textContent = n;
+  }
+}
+if(typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.documentElement){
+  let hullClsQueued = false;
+  new MutationObserver(() => {
+    if(hullClsQueued) return;
+    hullClsQueued = true;
+    setTimeout(() => { hullClsQueued = false; fillHullClasses(document); }, 0);
+  }).observe(document.documentElement, {childList: true, subtree: true});
+}
+
 async function resolveIdsToNames(ids){
   const unique = [...new Set(ids)].slice(0, 1000);
   if(!unique.length) return [];
@@ -9376,7 +9434,7 @@ async function renderLastKill(character, pilotName, statusEl){
     const realWeapon = weaponName && attacker.weapon_type_id !== attacker.ship_type_id;
     el.innerHTML = `
       <details class="lastkill lk-compact lk-pop">
-        <summary class="lk-sum"><span class="lk-label">${escapeHtml(cardName('lastkill'))}</span> <b>${escapeHtml(flownName)}</b>${killDay ? ` · ${escapeHtml(killDay)}` : ''} · ${escapeHtml(targetName)}<span class="lk-caret" aria-hidden="true">▾</span></summary>
+        <summary class="lk-sum"><span class="lk-label">${escapeHtml(cardName('lastkill'))}</span> <b>${escapeHtml(flownName)}</b>${hullClassHtml(attacker.ship_type_id)}${killDay ? ` · ${escapeHtml(killDay)}` : ''} · ${escapeHtml(targetName)}${hullClassHtml(km.victim.ship_type_id)}<span class="lk-caret" aria-hidden="true">▾</span></summary>
         <div class="lk-body" role="dialog" aria-label="${escapeHtml(cardName('lastkill'))} details">
           <div class="lk-head">
             <div class="lk-title"><b>${escapeHtml(flownName)}</b> killed a <b>${escapeHtml(targetName)}</b></div>
@@ -9483,7 +9541,7 @@ async function renderOtherAttackers(km, mainCharacterId, container){
     const weapon = realWeapon(a) ? (idToName.get(a.weapon_type_id) || `type ${a.weapon_type_id}`) : null;
     return `<div class="lk-att-row${a.final_blow ? ' finalblow' : ''}" role="row"${i >= LK_ATTACKERS_SHOWN ? ' hidden' : ''}>
         <span class="lk-att-who" role="cell">${escapeHtml(who)}</span>
-        <span class="lk-att-ship" role="cell">${escapeHtml(ship)}</span>
+        <span class="lk-att-ship" role="cell"${hullClassTitleAttr(a.ship_type_id)}>${escapeHtml(ship)}</span>
         <span class="lk-att-weapon${weapon ? '' : ' none'}" role="cell">${weapon ? escapeHtml(weapon) : '—'}${a.final_blow ? '<span class="lk-fb"> · final blow</span>' : ''}</span>
         <span class="lk-att-dmg" role="cell">${realWeapon(a) ? lkDamageTagHtml(weaponInfoMap.get(a.weapon_type_id)) : ''}</span>
       </div>`;
@@ -9639,13 +9697,13 @@ async function speculateShip(character, statusEl, forceRefresh){
 // loads that hull (the summary carries the busy spinner).
 function renderCandidates(ranked, sampleSize, character, statusEl){
   const el = document.getElementById('fitCandidates');
-  const label = (r) => `<span class="hp-name">${escapeHtml(r.name)}</span><span class="hp-freq">${r.count} of ${sampleSize} losses</span>`;
+  const label = (r) => `<span class="hp-name">${escapeHtml(r.name)}</span>${hullClassHtml(r.id)}<span class="hp-freq">${r.count} of ${sampleSize} losses</span>`;
   el.innerHTML = `<details class="hull-pick">
       <summary class="hull-pick-btn" title="Hulls they lose most often: pick one to see its losses">${label(ranked[0])}<span class="hp-caret" aria-hidden="true">▾</span></summary>
       <div class="hull-menu" role="menu">
         <div class="candidates-note">Most flown across their last ${sampleSize} recorded losses (capsules excluded)</div>
         ${ranked.map((r, i) => `<button type="button" role="menuitemradio" aria-checked="${i === 0}" class="candidate-btn ${i===0 ? 'active' : ''}" data-id="${r.id}" data-name="${escapeHtml(r.name)}" data-count="${r.count}">
-          <span>${escapeHtml(r.name)}</span><span class="cfreq">${r.count}/${sampleSize} losses</span></button>`).join('')}
+          <span class="cand-name">${escapeHtml(r.name)}${hullClassHtml(r.id)}</span><span class="cfreq">${r.count}/${sampleSize} losses</span></button>`).join('')}
       </div>
     </details>`;
   const pick = el.querySelector('.hull-pick'), sum = el.querySelector('.hull-pick-btn');
@@ -9653,7 +9711,7 @@ function renderCandidates(ranked, sampleSize, character, statusEl){
     b.addEventListener('click', async () => {
       if(isBusy('fitStatus')) return;
       el.querySelectorAll('.candidate-btn').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-checked', String(x === b)); });
-      sum.innerHTML = label({name: b.dataset.name, count: b.dataset.count}) + '<span class="hp-caret" aria-hidden="true">▾</span>';
+      sum.innerHTML = label({name: b.dataset.name, id: Number(b.dataset.id), count: b.dataset.count}) + '<span class="hp-caret" aria-hidden="true">▾</span>';
       pick.open = false;
       lastFitRun = (force) => runFitForShip(character, Number(b.dataset.id), b.dataset.name, statusEl, force);
       await withBusy('fitStatus', sum, `Loading ${b.dataset.name} losses…`, () => lastFitRun());
@@ -10014,7 +10072,7 @@ function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, imp
   const unresolvedHtml = (unresolved && unresolved.length) ? `
     <div class="note" style="margin-top:10px;">Not recognized against ESI, so left out of the fit below: ${unresolved.map(n => escapeHtml(n)).join(', ')}. Check spelling and capitalization match exactly, and that it isn't a SKIN variant or a renamed/removed item. (FIT-04)</div>` : '';
 
-  const nameHtml = `${escapeHtml(shipName)}${fitName ? ' — ' + escapeHtml(fitName) : ''}`;
+  const nameHtml = hullLabelHtml(shipName, f.input && f.input.shipTypeId, fitName ? ' — ' + fitName : '');
   const headHtml = mine ? myShipBannerHtml()
     : `<div class="mys-fa-head"><div class="cmeta">${nameHtml}</div>${myShipSetButtonHtml(f)}</div>`;
   // v2026.10.14.43: the result is one assessment box: its name, the matchup scoreboard (also the threat / my ship
@@ -10023,7 +10081,7 @@ function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, imp
   el.innerHTML = `
     <div class="assess-box assess-solo${mine ? ' assess-mine' : ''}">
       ${headHtml}
-      ${mine ? '' : mysSwitchHostHtml(fitName ? `${shipName} · ${fitName}` : shipName)}
+      ${mine ? '' : mysSwitchHostHtml(fitName ? `${shipName} · ${fitName}` : shipName, f.input && f.input.shipTypeId, shipName)}
       <div class="mys-threat-view">
       <div class="fit-layout-wrap" id="fit-analyzer-layout-wrap">${fitLayoutHtml(f, idToName, {dmg: !mine})}</div>
       ${unresolvedHtml}
@@ -15660,7 +15718,7 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   // (threat / my ship) is shared by all the tabs (data-mys-view on the results element), so changing tabs keeps it.
   const panelsHtml = fits.map((f, i) => `
     <div class="subtab-panel" role="tabpanel" data-idx="${i}"${i===0 ? '' : ' style="display:none;"'}>
-      ${mysSwitchHostHtml(`${shipName} · ${pilotName}`)}
+      ${mysSwitchHostHtml(`${shipName} · ${pilotName}`, f.input && f.input.shipTypeId, shipName)}
       <div class="mys-threat-view">
       <div class="fit-layout-wrap" id="fit-layout-wrap-${i}">${fitLayoutHtml(f, idToName, {collapsible: true, dmg: true})}</div>
       <div class="lossrow"><span>killmail ${f.killmailId}</span><a href="https://zkillboard.com/kill/${f.killmailId}/" target="_blank" rel="noopener">view on zKillboard</a></div>
@@ -17908,7 +17966,7 @@ function mysRenderSetSlot(slot){
 }
 function myShipBannerHtml(){
   return `<div class="mys-banner">
-      <div class="mys-banner-id">${MY_SHIP_HULL_SVG(20)}<span class="mys-banner-k">${escapeHtml(cardName('myshippage'))}</span><span class="mys-banner-v">${escapeHtml(myShipLabel())}</span></div>
+      <div class="mys-banner-id">${MY_SHIP_HULL_SVG(20)}<span class="mys-banner-k">${escapeHtml(cardName('myshippage'))}</span><span class="mys-banner-v">${myShipLabelHtml()}</span></div>
       <div class="mys-actions">
         <button type="button" class="mys-quiet" data-act="mys-replace">Replace fit</button>
         <button type="button" class="mys-quiet" data-act="mys-another">Analyze another fit</button>
@@ -17951,8 +18009,18 @@ async function showMyShipInFitAnalyzer(o = {}){
 // that ship's two numbers: the threat half its DPS on you and how long they last, the my-ship half how long you last
 // and your DPS on them. The middle says who has the edge (who outlasts the other) and who is faster. The side shown
 // is shared by every host under one results element (data-mys-scope / data-mys-view), so changing loss tabs keeps it.
-function mysSwitchHostHtml(threatLabel){
-  return `<div class="mys-switch-host" data-threat="${escapeHtml(threatLabel)}" data-view="threat" hidden></div>`;
+function mysSwitchHostHtml(threatLabel, shipTypeId, shipName){   // v.74: the hull's id and name, for its class on the board
+  return `<div class="mys-switch-host" data-threat="${escapeHtml(threatLabel)}"${shipTypeId ? ` data-threat-type="${Number(shipTypeId)}" data-threat-ship="${escapeHtml(shipName || '')}"` : ''} data-view="threat" hidden></div>`;
+}
+// v2026.10.14.74: the board's threat name with the hull's class after the hull ("Megathron <class> · Battleship target")
+function mysThreatLabelHtml(host){
+  const label = host.dataset.threat || '', ship = host.dataset.threatShip, id = Number(host.dataset.threatType) || 0;
+  if(!id) return escapeHtml(label);
+  return ship && label.startsWith(ship) ? hullLabelHtml(ship, id, label.slice(ship.length)) : escapeHtml(label) + hullClassHtml(id);
+}
+// Your saved fit's name with its class ("Vexor <class> · Drone boat"); myShipLabel stays the plain text.
+function myShipLabelHtml(r = myShip.rec){
+  return r ? hullLabelHtml(r.shipName, r.shipTypeId, r.fitName ? ' · ' + r.fitName : '') : '';
 }
 function mysWireSwitchHosts(root){
   root.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h));
@@ -17971,9 +18039,9 @@ const MYS_PICK_CHEV = '<svg class="mys-pick-chev" width="12" height="12" viewBox
 function mysPickHtml(){
   const r = myShip.rec;
   const opts = myShipSorted().map(s => `<button type="button" class="mys-pick-opt" role="menuitemradio" aria-checked="${r && s.id === r.id}" data-id="${escapeHtml(s.id)}">
-      <span class="mys-pick-chk" aria-hidden="true">${r && s.id === r.id ? '✓' : ''}</span><span class="mys-pick-name"><b>${escapeHtml(s.shipName)}</b>${s.fitName ? ` · ${escapeHtml(s.fitName)}` : ''}</span></button>`).join('');
+      <span class="mys-pick-chk" aria-hidden="true">${r && s.id === r.id ? '✓' : ''}</span><span class="mys-pick-name"><b>${escapeHtml(s.shipName)}</b>${hullClassHtml(s.shipTypeId)}${s.fitName ? ` · ${escapeHtml(s.fitName)}` : ''}</span></button>`).join('');
   return `<div class="mys-pick-row"><span class="mys-half-head">
-      <details class="mys-pick"><summary class="mys-sw-v" aria-label="Your ship: ${escapeHtml(myShipLabel())}. Change it" title="Change your ship">${escapeHtml(myShipLabel())}${MYS_PICK_CHEV}</summary>
+      <details class="mys-pick"><summary class="mys-sw-v" aria-label="Your ship: ${escapeHtml(myShipLabel())}. Change it" title="Change your ship">${myShipLabelHtml()}${MYS_PICK_CHEV}</summary>
         <div class="mys-pick-menu" role="menu" aria-label="Your ship for this matchup">
           <div class="mys-pick-head"><span>Your ship for this matchup</span><button type="button" class="info-close" aria-label="Close">×</button></div>
           ${opts}
@@ -18001,7 +18069,7 @@ function mysBoardHtml(host){
   return `<div class="mys-board" role="group" aria-label="${escapeHtml(cardName('board'))}: pick a side to show that ship">
       <span class="mys-why-sr" id="${id}-them" data-why="them" hidden></span><span class="mys-why-sr" id="${id}-you" data-why="you" hidden></span>
       <button type="button" class="mys-sw-btn mys-half is-threat" data-view="threat" aria-pressed="false" aria-describedby="${id}-them" title="Show the ${escapeHtml(cardName('perspective.threat'))}">
-        <span class="mys-half-head"><span class="mys-sw-k">Threat</span><span class="mys-sw-v">${escapeHtml(host.dataset.threat || '')}</span></span>
+        <span class="mys-half-head"><span class="mys-sw-k">Threat</span><span class="mys-sw-v">${mysThreatLabelHtml(host)}</span></span>
         <span class="mys-half-nums">${cell('their', 'DPS applied to you')}${cell('theyLast', 'they last')}</span>
       </button>
       <div class="mys-mid">
@@ -18012,7 +18080,7 @@ function mysBoardHtml(host){
       </div>
       <div class="mys-half-wrap is-mine">
       <button type="button" class="mys-sw-btn mys-half is-mine" data-view="mine" aria-pressed="false" aria-describedby="${id}-you" title="Show the ${escapeHtml(cardName('perspective.mine'))}">
-        <span class="mys-half-head"><span class="mys-sw-v mys-pick-ghost">${escapeHtml(myShipLabel())}${MYS_PICK_CHEV}</span><span class="mys-sw-k">My ship</span></span>
+        <span class="mys-half-head"><span class="mys-sw-v mys-pick-ghost">${myShipLabelHtml()}${MYS_PICK_CHEV}</span><span class="mys-sw-k">My ship</span></span>
         <span class="mys-half-nums">${cell('youLast', 'you last')}${cell('your', 'DPS applied to them')}</span>
       </button>
       ${mysPickHtml()}

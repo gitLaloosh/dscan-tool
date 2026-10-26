@@ -959,6 +959,10 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Do this instead:** before adding text to an element the checks read, grep the checks for the patterns they test
   (`…`, "holds", NaN). To hide text that must keep its size and its name, use `color:transparent` with a selector more
   specific than the rule that colours it, and measure that the overlay sits exactly on it (`my_ships_check.py` ALIGN).
+- **Again (v2026.10.14.74):** the ship class added inside that hidden name is a span with its own colour, and
+  `color:transparent` on a parent doesn't reach a child that sets `color` itself: the class showed twice on the board.
+  Anything new placed inside a hidden twin needs its own transparent rule (`.mys-pick-ghost .hull-cls`); check its
+  computed colour (`ship_class_check.py`).
 
 ## 9. Comparing different quantities with pyfa
 
