@@ -15,7 +15,7 @@ hel_constructed_fighter_bay_abilities; this checks the page around them, on the 
   * MWD on: the Einherji's speed in the application goes up, and the Damage Application headline is still PYFA CORE's at
     the card's point; Missiles off: the Firepower row is the Attack ability's DPS alone (all 3 squadrons) and drops;
   * taking an Einherji squadron back frees a tube: the Siren's square unlocks and launches it; reset brings the defaults;
-  * collapsed, the bay's row says "N / 4 tubes"; a bomber (Hel, Ametat II): "Attack" then "Bomb", the Bomb disabled;
+  * collapsed, the bay's row says "N / 4 tubes"; a bomber (Hel, Ametat II): "Attack" then "Bomb", the Bomb off (v.71: a toggle);
   * the states are kept with My Ships (stored fighterStates; a reload restores the MWD);
   * phone (375 px): ability buttons 44 px tall, the bay doesn't scroll sideways. No page errors.
 """
@@ -134,10 +134,10 @@ with sync_playwright() as p:
     restored = pg.evaluate("async () => { const f = await myShipEnsureFit(); return f && f.estimate.application.fighters.filter(x => x.typeId === 40559).map(x => [x.squadrons, x.activeAbilities]); }")
     check(restored and all(x[0] == 2 and 6441 in x[1] for x in restored), f'after a reload my ship has the stored states: {restored}')
     pg.keyboard.press('Escape')
-    # a bomber: Attack then Bomb, the Bomb disabled (counted in a coming update)
+    # a bomber: Attack then Bomb, the Bomb off (pyfa's default) and, since v2026.10.14.71, a toggle (fighter_bombs_check.py)
     pg.click('#tabBtnFit'); paste(pg, HEL)
     bay = pg.evaluate(BAY); ab = bay['types']['40560']['abs']
-    check([(a['t'], a['on'], a['dis']) for a in ab] == [('Attack', True, False), ('Bomb', False, True)] and 'coming update' in ab[1]['title'], f'bomber: {[(a["t"], a["on"], a["dis"]) for a in ab]}')
+    check([(a['t'], a['on'], a['dis']) for a in ab] == [('Attack', True, False), ('Bomb', False, False)] and "off (pyfa's default)" in ab[1]['title'], f'bomber: {[(a["t"], a["on"], a["dis"]) for a in ab]}')
     check(not errs, f'no page errors {errs}')
     ctx.close()
     # phone

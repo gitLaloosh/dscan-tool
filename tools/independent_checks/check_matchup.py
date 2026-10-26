@@ -89,8 +89,11 @@ def typed_dps_mod(m):
     return {}
 def typed_dps_fighter_ability(f, a):
     """v2026.10.14.64: one fighter ability's DPS by damage type (pyfa FighterAbility.getVolley / getDps on the oracle's attributes)"""
-    if not a.dealsDamage or not a.active or a.attrPrefix == 'fighterAbilityLaunchBomb': return {}
+    if not a.dealsDamage or not a.active: return {}
     g = f.getModifiedItemAttr; cyc = g(f'{a.attrPrefix}Duration') / 1000
+    if a.attrPrefix == 'fighterAbilityLaunchBomb':   # v2026.10.14.71: the bomb's damage is its charge's (getVolley)
+        gc = f.getModifiedChargeAttr; m = f.amount * g(f'{a.attrPrefix}DamageMultiplier', 1)
+        return {k: gc(n, 0) * m / cyc for k, n in (('em', 'emDamage'), ('therm', 'thermalDamage'), ('kin', 'kineticDamage'), ('exp', 'explosiveDamage'))} if cyc else {}
     m = f.amount * g(f'{a.attrPrefix}DamageMultiplier', 1)
     return {k: g(f'{a.attrPrefix}Damage{n}', 0) * m / cyc for k, n in (('em', 'EM'), ('therm', 'Therm'), ('kin', 'Kin'), ('exp', 'Exp'))} if cyc else {}
 def typed_dps_drone(d):

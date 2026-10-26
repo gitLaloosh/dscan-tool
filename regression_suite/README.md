@@ -858,3 +858,12 @@ Light Missile 80.1%. v2026.10.14.68 fails all 6 prop-on pins (LESSON #64).
 - `chimera_constructed_scarab_ecm`: 2 Scarab II squadrons, 3.3 x 3 = 9.9 multispectral, 9.375 + 8.4 km.
 
 v2026.10.14.69 fails 21 of these pins.
+
+## Fighter bombs (v2026.10.14.71, fighter gaps delivery 3)
+
+`hel_constructed_ametat_bombs_on`: a bare Hel with Ametat II x12 (2 squadrons), Bomb switched on (pyfa's default is off).
+pyfa's bomb: the charge (Micro Electron Bomb, 640 EM) x 6 fighters every 60 s = 64 DPS per squadron, unmodified; Attack
+735.64 per squadron. Pins from pyfa's side (`check_application.py`'s harness): dpsFixed 1,599, the bomb's 128 DPS and
+400 m explosion radius, applied DPS at 100 m / 400 m / 3,000 m signature (290.12 / 1,160.48 / 1,599.29). The bomb
+charge records were added to `nyx_constructed_ametat_bomber` too (the page fetches a bomber's charge for the Fighter
+bay's hover even with the bomb off). v2026.10.14.70 fails 6 pins.

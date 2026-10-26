@@ -21,7 +21,9 @@ every squadron the tool launches): each ability's DPS (pyfa FighterAbility.getDp
 damage attributes / {prefix}Duration, on the oracle's modified attributes -- so the tool's fighter DPS is checked too) and
 every input the function reads, over a third grid that also varies mobileDroneMode and the TARGET: a target profile
 (isFit False), a subcapital fit and a capital fit (pyfa reads the target ship's attribute named by the ability's
-ResistanceID only for a fit). Tolerance 1e-6 relative (floatUnerr keeps
+ResistanceID only for a fit). Since v2026.10.14.71 a squadron's bomb when the tool has it on (pyfa getVolley from the
+charge fighterAbilityLaunchBombType x amount, every fighterAbilityLaunchBombDuration; getFighterAbilityMult's bomb branch
+_calcBombFactor(the charge's aoeCloudSize, signature), no lock needed). Tolerance 1e-6 relative (floatUnerr keeps
 7 significant digits, so a value on a rounding edge may differ by one in the 7th digit).
 
 It also exposes applied(fitId, **params) for writing golden pins from pyfa's side.
@@ -29,7 +31,7 @@ It also exposes applied(fitId, **params) for writing golden pins from pyfa's sid
 import sys, os, re, json, math, subprocess, tempfile, itertools
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
-from pyfa_sde import PYFA_SRC, ename
+from pyfa_sde import PYFA_SRC, ename, td as SDE_TD, attrs as SDE_ATTRS
 from golden_oracle import oracle_for, GOLDEN
 from compare_implants import is_weapon, _mult, DMG
 from check_missile_range import pyfa_missile_range
@@ -150,12 +152,16 @@ class _Ability:
     @property
     def attrPrefix(s): return getattr(s.effect.cls, 'prefix', None)
     @property
-    def dealsDamage(s):   # "{prefix}DamageMultiplier" in itemModifiedAttributes (or a charge: bombs, not launched)
-        return f'{s.attrPrefix}DamageMultiplier' in s.fighter.f.attrs
+    def dealsDamage(s):   # fighterAbility.py: "{prefix}DamageMultiplier" in itemModifiedAttributes or fighter.charge is not None
+        return f'{s.attrPrefix}DamageMultiplier' in s.fighter.f.attrs or s.fighter.charge is not None
     def getDps(s):        # getVolley / getDps (factorReload off: every ability at its own cycle time)
-        if not s.dealsDamage or not s.active or s.attrPrefix == 'fighterAbilityLaunchBomb': return 0
+        if not s.dealsDamage or not s.active: return 0
         g = s.fighter.getModifiedItemAttr
-        dmg = sum(g(f'{s.attrPrefix}Damage{t}', 0) for t in ('EM', 'Therm', 'Kin', 'Exp'))
+        if s.attrPrefix == 'fighterAbilityLaunchBomb':   # v2026.10.14.71: the bomb reads the squadron's charge
+            gc = s.fighter.getModifiedChargeAttr
+            dmg = sum(gc(a, 0) for a in ('emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage'))
+        else:
+            dmg = sum(g(f'{s.attrPrefix}Damage{t}', 0) for t in ('EM', 'Therm', 'Kin', 'Exp'))
         cyc = g(f'{s.attrPrefix}Duration')
         return dmg * s.fighter.amount * g(f'{s.attrPrefix}DamageMultiplier', 1) / (cyc / 1000) if cyc else 0
 class _FighterApp:
@@ -173,10 +179,15 @@ class _FighterApp:
             elif a.effect.isImplemented and not standard and a.effect.name not in ('fighterAbilityMicroWarpDrive', 'fighterAbilityEvasiveManeuvers'): s.defaults.add(a.effectID)
         for a in s.abilities: a.active = a.effectID in f.activeAbilities
         s.typeId = int(f.item.ID)
+        # v2026.10.14.71: eos Fighter.build -- the charge is fighterAbilityLaunchBombType; no pyfa handler modifies a fighter's
+        # charge (gen_projected_table.py asserts it), so its modified attributes are the SDE's
+        cid = int(s.getModifiedItemAttr('fighterAbilityLaunchBombType') or 0)
+        s.charge = {SDE_ATTRS[str(x['attributeID'])]['name']: x['value'] for x in SDE_TD[str(cid)]['dogmaAttributes']} if cid else None
     def isDealingDamage(s): return any(a.getDps() > 0 for a in s.abilities)
     def getModifiedItemAttr(s, k, default=0):
         v = s.f.attrs.get(k); return v if v is not None else default
-    def getModifiedChargeAttr(s, k, default=0): return default
+    def getModifiedChargeAttr(s, k, default=0):
+        v = (s.charge or {}).get(k); return v if v is not None else default
 class _ShipItem:
     def __init__(s, o): s.o = o
     def getModifiedItemAttr(s, k, default=0):
@@ -299,7 +310,7 @@ if __name__ == '__main__':
         for f in src.fighters:
             if not f.isDealingDamage(): continue
             for a in f.abilities:
-                if not (a.dealsDamage and a.active) or a.attrPrefix == 'fighterAbilityLaunchBomb': continue
+                if not (a.dealsDamage and a.active): continue
                 key = f'fighter:{f.typeId}:{a.attrPrefix}'
                 pf.setdefault(key, [f, a, 0]); pf[key][2] += a.getDps()
         if set(tf) != set(pf): diffs.append(f'fighter abilities tool {sorted(tf)} pyfa {sorted(pf)}')
@@ -309,6 +320,11 @@ if __name__ == '__main__':
             pre = a.attrPrefix; g = f.getModifiedItemAttr
             drf = g(pre + 'ReductionFactor', None); drf = g(pre + 'DamageReductionFactor') if drf is None else drf
             drs = g(pre + 'ReductionSensitivity', None); drs = g(pre + 'DamageReductionSensitivity') if drs is None else drs
+            if pre == 'fighterAbilityLaunchBomb':   # v.71: a bomb reads only its charge's explosion radius (_calcBombFactor)
+                for name, tv, pv in (('dps', x['dps'], dps), ('explosionRadius', x['explosionRadius'], f.getModifiedChargeAttr('aoeCloudSize')),
+                                     ('squadronSize', x['squadronSize'], g('fighterSquadronMaxSize'))):
+                    if not close(tv or 0, pv or 0): diffs.append(f'{key} {name} tool {tv} pyfa {pv}')
+                continue
             for name, tv, pv in (('dps', x['dps'], dps), ('maxVelocity', x['speed'], g('maxVelocity')), ('radius', x['radius'], g('radius')),
                                  ('optimal', x['optimal'], g(pre + 'RangeOptimal') or g(pre + 'Range')), ('falloff', x['falloff'], g(pre + 'RangeFalloff')),
                                  ('explosionRadius', x['explosionRadius'], g(pre + 'ExplosionRadius')), ('explosionVelocity', x['explosionVelocity'], g(pre + 'ExplosionVelocity')),

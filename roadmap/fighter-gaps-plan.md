@@ -33,5 +33,12 @@ Every number checked against pyfa (eos, `graphs/data/fitDamageStats`), as everyw
      Fighters at V; `gen_projected_table.py` records the handlers), one chip per squadron type; only the web is applied.
    - Checked by `check_projected.py` (the tool's launched squadrons and abilities as inputs), four golden fits and
      `support_fighters_check.py`.
-3. **Bombs:** when switched on, pyfa's bomb volley (the charge's damage x amount x multiplier) and `_calcBombFactor`.
+3. **Bombs: done in v2026.10.14.71.**
+   - The Bomb button is a toggle, off by default (pyfa's default).
+   - When switched on: pyfa's bomb volley (the squadron's charge's damage x its fighters x the bomb damage multiplier,
+     absent: 1) every Launch Bomb duration, and `_calcBombFactor` in PYFA CORE `application` (no lock, no range).
+     No pyfa handler modifies a bomb (`gen_projected_table.py` asserts it).
+   - Two Ametat II squadrons on a Hel: 2 x 3,840 per 60 s = 128 DPS.
+   - Checked by `check_application.py` (pyfa's getVolley from the charge and the bomb branch), the golden fit
+     `hel_constructed_ametat_bombs_on` and `fighter_bombs_check.py`.
 4. **Weaknesses picks:** rank "your fighters", and the why text says "weapons, drones and fighters".

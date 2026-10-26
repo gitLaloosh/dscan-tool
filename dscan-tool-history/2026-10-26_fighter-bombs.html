@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — Fighter bombs: off by default, counted when on</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fighter bombs: off by default, counted when switched on</h1>
+<p><span class="tag">Feature</span><span class="tag">PYFA CORE</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.70</code> &rarr; <code>v2026.10.14.71</code>.</p>
+<p>the owner: "ok proceed". This is delivery 3 of <code>roadmap/fighter-gaps-plan.md</code>. His decision on 2026-10-25 was bombs "Off, toggle per type", counted with pyfa's rule when on.</p>
+
+<h2>What you see</h2>
+<ul>
+<li><b>The Bomb button is a toggle:</b> a heavy bomber's Bomb (Ametat, Antaeus, Gungnir, Termite) can be clicked. It is off by default, as in pyfa, and its hover gives the numbers either way, e.g. "Micro Electron Bomb: 3,840 damage per squadron every 60 s (64 DPS)".</li>
+<li><b>Switched on</b>, the bomb is counted in:
+<ul>
+<li>the squadron's Firepower row;</li>
+<li>Total DPS and volley;</li>
+<li>Damage Application and the Matchup times.</li>
+</ul></li>
+<li><b>How it lands:</b> anywhere, with no lock needed, at min(1, your signature / its 400 m explosion).</li>
+<li><b>Example:</b> a Hel with two Ametat II squadrons goes from 1,471 to 1,599 DPS. Against the default target, Damage Application goes from 91 to 219.</li>
+</ul>
+
+<h2>What pyfa does, and how it's matched</h2>
+<table>
+<tr><th>pyfa</th><th>Tool</th></tr>
+<tr><td><code>Fighter.build</code>: the squadron's charge is <code>fighterAbilityLaunchBombType</code></td><td>the charge is fetched for every bomber in the bay (on or off: the hover uses it)</td></tr>
+<tr><td><code>FighterAbility.getVolley</code> for <code>fighterAbilityLaunchBomb</code>: the charge's em / thermal / kinetic / explosive damage &times; <code>fighter.amount</code> &times; <code>fighterAbilityLaunchBombDamageMultiplier</code> (no fighter has it: 1)</td><td>the same, with no skill, hull, Drone Damage Amplifier or Fighter Support Unit factor (no pyfa handler touches it)</td></tr>
+<tr><td><code>getDps</code>: every <code>fighterAbilityLaunchBombDuration</code> (reload off, pyfa's default)</td><td>the same</td></tr>
+<tr><td><code>getApplicationPerKey</code>: "Bomb launching doesn't need locks"; <code>getFighterAbilityMult</code>: <code>_calcBombFactor(the charge's aoeCloudSize, signature)</code></td><td>PYFA CORE <code>application</code>: <code>pyfaCalcBombFactor</code>, checked before the lock and range code</td></tr>
+</table>
+<ul>
+<li><b><code>gen_projected_table.py</code></b> now asserts that no pyfa handler calls a <code>fit.fighters</code> charge method or names a <code>fighterAbilityLaunchBomb*</code> attribute. If a pyfa update adds one, the update chain fails before the tool's bomb goes wrong.</li>
+<li><b><code>check_application.py</code></b> now runs pyfa's bomb path on the oracle:
+<ul>
+<li><code>dealsDamage</code> with a charge;</li>
+<li><code>getVolley</code> from the charge;</li>
+<li>the bomb branch, over the fighter grid (lock respected beyond the lock range, signatures of 15 to 3,000 m).</li>
+</ul>
+A break that ignores the signature fails it.</li>
+<li><b><code>check_matchup.py</code></b> counts a bomb's damage by type from its charge.</li>
+<li><b>Re-locked:</b> PYFA CORE <code>application</code> and <code>projected</code>, after <code>check_application.py</code>, <code>compare_fit_stats.py</code>, <code>check_projected.py</code> (all 0 mismatches) and the regression suite.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New golden fit <code>hel_constructed_ametat_bombs_on</code></b> (Bomb on, not pyfa's default; LESSON #61), with pins from pyfa's side:
+<ul>
+<li>dpsFixed 1,599;</li>
+<li>bomb 128 DPS at 400 m;</li>
+<li>applied DPS at a 100 / 400 / 3,000 m signature: 290.12 / 1,160.48 / 1,599.29.</li>
+</ul>
+v.70 fails 6. <code>nyx_constructed_ametat_bomber</code> gained the bomb charge's record, because the page fetches it even with the bomb off.</li>
+<li><b>New <code>tools/page_checks/fighter_bombs_check.py</code></b> covers the toggle and its hover, the Firepower row +128, the application entry, the headline = PYFA CORE, the bomb landing beyond lock range, and switching it back off. v.70 fails.</li>
+<li><b><code>fighter_bay_check.py</code></b>: the Bomb is no longer disabled.</li>
+<li>Regression ALL PASS (263 fits), update chain all 37 steps OK, all 22 page checks 0 failures.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>Two lessons were applied rather than found again.</p>
+<ul>
+<li><b>LESSON #65:</b> the fighter DPS and application went to every check that reads them (<code>check_application.py</code>, <code>check_matchup.py</code>). Both had skipped bombs by name, and both were taught pyfa's bomb path.</li>
+<li><b>LESSON #62:</b> a formula that reads an attribute must have every pyfa handler on that attribute recorded, or asserted absent. The bomb reads attributes no table records, so the generator now asserts that nothing modifies them.</li>
+</ul>
+</body>
+</html>

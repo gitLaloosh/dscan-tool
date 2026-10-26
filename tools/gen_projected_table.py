@@ -230,6 +230,14 @@ FIGHTER_EWAR = ('fighterAbilityStasisWebifierSpeedPenalty', 'fighterAbilityStasi
                 'fighterAbilityECMRangeOptimal', 'fighterAbilityECMRangeFalloff', 'fighterAbilityECMDuration', 'fighterAbilityECMResistanceID',
                 'fighterAbilityWarpDisruptionPointStrength', 'fighterAbilityWarpDisruptionRange', 'fighterAbilityWarpDisruptionDuration')
 FIGHTER_ATTRS = FIGHTER_ATTRS + FIGHTER_EWAR
+# v2026.10.14.71 (fighter gaps delivery 3, bombs): the tool counts a bomb UNMODIFIED -- the squadron's charge
+# (fighterAbilityLaunchBombType) damage x fighters every fighterAbilityLaunchBombDuration, landing min(1, sig / the
+# charge's aoeCloudSize). That holds only while no pyfa handler touches a fighter's charge or a bomb attribute: assert it.
+def _assert_bombs_unmodified():
+    src = open(os.path.join(PYFA_SRC, 'eos', 'effects.py'), encoding='utf-8').read()
+    hits = sorted(set(re.findall(r"fit\.fighters\.\w*Charge\w*\(", src)) | set(re.findall(r"'fighterAbilityLaunchBomb\w+'", src)))
+    if hits: raise AssertionError(f'a pyfa handler now modifies fighter bombs ({hits}) -- model it in the tool\'s bomb (index.html FIGHTER_BOMB_TYPE_ATTR)')
+_assert_bombs_unmodified()
 FIGHTER_ATTRS = tuple(a for a in FIGHTER_ATTRS if a in attrId)
 FIGHTER_DMG = {attrId[p + d] for p in FIGHTER_PREFIXES for d in ('DamageEM', 'DamageTherm', 'DamageKin', 'DamageExp') if p + d in attrId}
 def _fdeals(t): return any(x['value'] > 0 for x in td.get(str(t), {}).get('dogmaAttributes', []) if x['attributeID'] in FIGHTER_DMG)

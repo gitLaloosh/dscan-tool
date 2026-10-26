@@ -130,8 +130,9 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
 - **A weapon with no charge loaded** (v2026.10.14.67): charted with the charge aboard that kills you fastest at this
   fight (the one the Weaknesses picks name first), marked "Assumed loaded" on the card and in the Matchup's hover.
   The Firepower card shows every charge aboard as a range.
-- **Fighters** (v2026.10.14.64): each damage ability of each squadron in space (Attack and Missiles; bombs stay off,
-  as in pyfa), pyfa's `getFighterAbilityMult`:
+- **Fighters** (v2026.10.14.64): each damage ability of each squadron in space (Attack and Missiles; bombs are off by
+  default, as in pyfa), pyfa's `getFighterAbilityMult`. A bomb switched on in the Fighter bay (v2026.10.14.71) lands
+  anywhere, no lock needed, at min(1, your signature / its explosion radius). The others:
   - a squadron at least as fast as you follows you and has its full range; a slower one is put at the carrier's
     centre and hits only within its ability's range of it (Attack: optimal + falloff; Missiles: a hard limit). Its
     speed is pyfa's, with its MWD ability off (pyfa's default; the owner 2026-10-25), after skills (Light Fighters,

@@ -1705,7 +1705,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.70</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.71</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -3486,8 +3486,13 @@ function pyfaGetDroneMult(app, d, p){
 // radius, optimal ('{prefix}RangeOptimal' or '{prefix}Range'), falloff, explosionRadius, explosionVelocity, drf, drs,
 // resistAttrId} (one entry per squadron type and damage ability). The target: p.tgtIsFit and p.tgtFighterResist
 // {attrId: the target ship's value} (pyfa reads tgt.item.ship's attribute named by the ability's ResistanceID, only
-// when the target is a fit; a ship without it has the attribute's SDE default). Bombs aren't counted (off by default).
+// when the target is a fit; a ship without it has the attribute's SDE default).
+// v2026.10.14.71 (fighter gaps delivery 3): a bomb (ability 'fighterAbilityLaunchBomb', off by default) needs no lock
+// ("Bomb launching doesn't need locks") and lands anywhere: _calcBombFactor(the charge's aoeCloudSize, signature), no
+// range, speed or resistance factor.
+function pyfaCalcBombFactor(atkEr, tgtSigRadius){ return atkEr === 0 ? 1 : Math.min(1, tgtSigRadius / atkEr); }
 function pyfaGetFighterAbilityMult(app, f, p){
+  if(f.ability === 'fighterAbilityLaunchBomb') return pyfaFloatUnerr(pyfaCalcBombFactor(f.explosionRadius, p.tgtSigRadius));
   const dist = p.distance;
   const inLockRange = (dist === null || dist === undefined) || !!p.ignoreLockRange || dist <= app.lockRange;
   if(!inLockRange) return 0;
@@ -3841,6 +3846,11 @@ function pyfaFighterAbilityInputs(a, prefix){
   return {speed: a.maxVelocity, radius: a.radius, optimal: g('RangeOptimal') || g('Range') || 0, falloff: g('RangeFalloff') || 0,
     explosionRadius: g('ExplosionRadius') || 0, explosionVelocity: g('ExplosionVelocity') || 0, drf: drf || 0, drs: drs || 0,
     resistAttrId: Math.trunc(g('ResistanceID') || 0) || null};
+}
+// v2026.10.14.71: a bomb's inputs -- the squadron's speed and radius (unused by the bomb factor), and its charge's
+// explosion radius (Fighter.getModifiedChargeAttr('aoeCloudSize'): no pyfa handler modifies a fighter's charge).
+function pyfaFighterBombInputs(a, chargeExplosionRadius){
+  return {speed: a.maxVelocity, radius: a.radius, optimal: 0, falloff: 0, explosionRadius: chargeExplosionRadius, explosionVelocity: 0, drf: 0, drs: 0, resistAttrId: null};
 }
 // The target ship's disallowOffensiveModifiers and web / painter resistances (PROJ_TARGET_EFFECTS).
 function pyfaProjTargetAttrs(ship, modules, implantCarriers){
@@ -12772,14 +12782,21 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // closed. Carriers need to be accurately assessed in the tool."): every fighter type in the bay is listed, support
   // squadrons too, each with the abilities pyfa implements (FIGHTER_ABILITY_EFFECTS) on or off. options.fighterStates =
   // {typeId: {n: squadrons in space, ab: {effectId: on}}} (the Fighter bay section); without it pyfa's defaults
-  // (Fighter.__init__: pyfaDefaultFighterAbilities) and the default launch below. Bombs stay off (counted in a later
-  // delivery). A damage ability switched off adds nothing; a speed ability (MWD / afterburner / evasive) switched on
+  // (Fighter.__init__: pyfaDefaultFighterAbilities) and the default launch below. Bombs are off by default (pyfa's
+  // default) and counted when switched on (v2026.10.14.71, fighter gaps delivery 3). A damage ability switched off adds nothing; a speed ability (MWD / afterburner / evasive) switched on
   // changes the squadron's speed in Damage Application (PROJ_FIGHTER_SELF_EFFECTS).
   const fighterEntries = Object.entries(tally['Fighter bay'] || {});
   const fighterReq = (options && options.fighterStates) || null;
   const fighterTypesInfo = [];
   let fighterBayCount = 0;
   const FIGHTER_BOMB_EFFECT = 6485;
+  // v2026.10.14.71 (fighter gaps delivery 3; the owner 2026-10-25 bombs "Off, toggle per type", counted with pyfa's rule):
+  // pyfa FighterAbility.getVolley for fighterAbilityLaunchBomb reads the squadron's CHARGE (fighterAbilityLaunchBombType,
+  // Fighter.build): its em / thermal / kinetic / explosive damage x the squadron's fighters x
+  // fighterAbilityLaunchBombDamageMultiplier (no fighter carries it: 1), every fighterAbilityLaunchBombDuration (pyfa's
+  // DPS has reload off, as for every ability). No pyfa handler touches the bomb's attributes or a fighter's charge
+  // (gen_projected_table.py asserts it), so no skill, hull, Drone Damage Amplifier or Fighter Support Unit changes it.
+  const FIGHTER_BOMB_TYPE_ATTR = 2324, FIGHTER_BOMB_DURATION_ATTR = 2349;
   for(const [id, data] of fighterEntries){
     const type = await getType(Number(id));
     const dmgDogma = type.dogma_attributes || [];
@@ -12792,7 +12809,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     const abilityIds = fighterEffIds.length ? fighterEffIds.filter(e => FIGHTER_ABILITY_EFFECTS[e]).sort((x, y) => x - y) : [6465];
     const defaultNames = new Set((fighterEffIds.length ? pyfaDefaultFighterAbilities(fighterEffIds) : [FIGHTER_ABILITY_EFFECTS[6465]]).map(ab => ab[0]));
     const req = fighterReq ? fighterReq[String(id)] || null : null;
-    const abOn = (e) => e !== FIGHTER_BOMB_EFFECT && (req && req.ab && req.ab[e] !== undefined ? !!req.ab[e] : defaultNames.has(FIGHTER_ABILITY_EFFECTS[e][0]));
+    const abOn = (e) => (req && req.ab && req.ab[e] !== undefined ? !!req.ab[e] : defaultNames.has(FIGHTER_ABILITY_EFFECTS[e][0]));
     const activeIds = abilityIds.filter(abOn);
     const abilities = activeIds.map(e => FIGHTER_ABILITY_EFFECTS[e]).filter(ab => ab[1]);
     const abilityParts = abilities.map(ab => {
@@ -12802,6 +12819,18 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
               weights: {em: attrVal(dmgDogma, em, 0), therm: attrVal(dmgDogma, therm, 0), kin: attrVal(dmgDogma, kin, 0), exp: attrVal(dmgDogma, exp, 0)},
               ownMult: attrVal(dmgDogma, multAttr, 1), cycleMs: attrVal(dmgDogma, durAttr, 0)};
     }).filter(a => a.perFighterDmg > 0 && a.cycleMs > 0);
+    // v.71: the bomb (on or off: the Fighter bay's hover gives its numbers either way)
+    let bomb = null;
+    const bombChargeId = abilityIds.includes(FIGHTER_BOMB_EFFECT) ? Math.trunc(attrVal(dmgDogma, FIGHTER_BOMB_TYPE_ATTR, 0)) : 0;
+    if(bombChargeId){
+      const bombCharge = await getType(bombChargeId);
+      const cd = bombCharge.dogma_attributes || [];
+      const weights = {em: attrVal(cd, DAMAGE_DEALT_ATTR.em, 0), therm: attrVal(cd, DAMAGE_DEALT_ATTR.therm, 0), kin: attrVal(cd, DAMAGE_DEALT_ATTR.kin, 0), exp: attrVal(cd, DAMAGE_DEALT_ATTR.exp, 0)};
+      bomb = {charge: bombCharge.name, chargeTypeId: bombChargeId, weights, perFighterDmg: weights.em + weights.therm + weights.kin + weights.exp,
+        cycleMs: attrVal(dmgDogma, FIGHTER_BOMB_DURATION_ATTR, 0), explosionRadius: attrVal(cd, MISSILE_EXPLOSION_RADIUS_ATTR, 0)};
+      if(activeIds.includes(FIGHTER_BOMB_EFFECT) && bomb.perFighterDmg > 0 && bomb.cycleMs > 0)
+        abilityParts.push({bomb: true, prefix: 'fighterAbilityLaunchBomb', perFighterDmg: bomb.perFighterDmg, weights, ownMult: 1, cycleMs: bomb.cycleMs, explosionRadius: bomb.explosionRadius});
+    }
     const squadronSize = attrVal(dmgDogma, FIGHTER_SQUADRON_SIZE_ATTR, 1);
     // v.66: a fighter of none of the three classes (a structure fighter) can't be launched from a ship: pyfa's
     // Fighter.fits() is false when the hull has no slot of its class.
@@ -12827,6 +12856,12 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     let dmgPerCycle = 0, perSquadronDps = 0;
     const appParts = [];   // v2026.10.14.64: each ability's own DPS per squadron (pyfa getDpsPerEffect), for application
     for(const part of abilityParts){
+      if(part.bomb){   // v.71: pyfa's bomb volley, unmodified (see FIGHTER_BOMB_TYPE_ATTR above)
+        const volley = part.perFighterDmg * squadronSize * part.ownMult, cycleSec = part.cycleMs / 1000;
+        dmgPerCycle += volley; perSquadronDps += volley / cycleSec;
+        appParts.push({prefix: part.prefix, dps: volley / cycleSec, weights: part.weights, bomb: true, explosionRadius: part.explosionRadius});
+        continue;
+      }
       const hf = hullFighterMods(hullDamageRows, {dogma: dmgDogma, group: ''}, part.target);
       const volley = part.perFighterDmg * squadronSize * part.ownMult * fighterSkillDmgMult * fighterCatMod.dmgMult * hf.dmg;
       const cycleSec = (part.cycleMs / 1000) * MAX_FIGHTER_ROF_MULT * fighterCatMod.rofMult * hf.cycle * fsuDurMult;
@@ -12836,7 +12871,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     }
     const bayQty = data.totalQty / data.lossCount;
     const squadronsAvailable = Math.floor(bayQty / squadronSize + 1e-9);
-    fighterTypesInfo.push({typeId: Number(id), name: type.name, perSquadronDps, dmgPerCycle, squadronSize, squadronsAvailable, squadronClass, type, appParts, deployed: 0,
+    fighterTypesInfo.push({typeId: Number(id), name: type.name, perSquadronDps, dmgPerCycle, squadronSize, squadronsAvailable, squadronClass, type, appParts, deployed: 0, bomb,
       bayQty, abilityIds, activeIds, requested: req && req.n !== undefined ? Math.max(0, Math.floor(Number(req.n) || 0)) : null});
     fighterBayCount += bayQty;
   }
@@ -13858,7 +13893,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         if(!part.prefix) continue;
         const dps = part.dps * f.deployed;
         appFighters.push(Object.assign({typeId: f.typeId, name: f.name, squadrons: f.deployed, squadronSize: f.squadronSize, ability: part.prefix,
-          dps, typeDps: addTypeDps({}, dps, part.weights), activeAbilities: f.activeIds.slice()}, pyfaFighterAbilityInputs(a, part.prefix)));
+          dps, typeDps: addTypeDps({}, dps, part.weights), activeAbilities: f.activeIds.slice()},
+          part.bomb ? pyfaFighterBombInputs(a, part.explosionRadius) : pyfaFighterAbilityInputs(a, part.prefix)));   // v.71: a bomb reads its charge
       }
     }
     if(pyfaSpeed){
@@ -14169,7 +14205,9 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     fighterStates: {
       items: fighterTypesInfo.map(f => ({typeId: f.typeId, name: f.name, cls: f.squadronClass, squadronSize: f.squadronSize, bayQty: f.bayQty,
         squadronsAvailable: f.squadronsAvailable, active: f.deployed, dpsEach: pyRound(f.perSquadronDps),
-        abilities: f.abilityIds.map(e => ({effectId: e, name: FIGHTER_ABILITY_EFFECTS[e][0], on: f.activeIds.includes(e), damage: !!FIGHTER_ABILITY_EFFECTS[e][1]}))})),
+        abilities: f.abilityIds.map(e => ({effectId: e, name: FIGHTER_ABILITY_EFFECTS[e][0], on: f.activeIds.includes(e), damage: !!FIGHTER_ABILITY_EFFECTS[e][1] || (e === 6485 && !!f.bomb)})),
+        // v.71: the bomb per squadron (the Fighter bay's hover): its charge, volley, cycle and explosion radius
+        bomb: f.bomb ? {charge: f.bomb.charge, volley: f.bomb.perFighterDmg * f.squadronSize, cycleSec: f.bomb.cycleMs / 1000, explosionRadius: f.bomb.explosionRadius} : null})),
       tubesTotal: fighterTubesTotal, tubesUsed, classLimit: fighterClassLimit, classUsed: fighterClassUsed, refused: fighterRefused, assumed: !fighterReq
     },
     fixedWeaponDps: pyRound(fixedHighSlotDps),
@@ -15146,7 +15184,13 @@ function fighterTypeLimit(it, fs){
 }
 function fighterAbilityTip(ab, it){
   const [, full] = FIGHTER_ABILITY_LABEL[ab.name] || [ab.name, ab.name];
-  if(ab.name === 'fighterAbilityLaunchBomb') return `${full}: off (pyfa's default). Bombs are counted in a coming update.`;
+  // v2026.10.14.71 (fighter gaps delivery 3): the bomb, off by default as in pyfa, counted when switched on
+  if(ab.name === 'fighterAbilityLaunchBomb'){
+    const b = it.bomb;
+    const what = b ? `${b.charge}: ${b.volley.toLocaleString()} damage per squadron every ${pyRound(b.cycleSec, 1)} s (${pyRound(b.volley / b.cycleSec, 1)} DPS)` : 'its bomb';
+    return ab.on ? `${full}: on. ${what}, counted in its DPS and in ${cardName('dmg')}, where it lands anywhere (no lock needed) and only partly on a target smaller than its ${b ? b.explosionRadius.toLocaleString() + ' m ' : ''}explosion. Click to switch it off.`
+      : `${full}: off (pyfa's default). Click to count it: ${what}.`;
+  }
   if(ab.damage) return ab.on ? `${full}: on, counted in its DPS and in ${cardName('dmg')}. Click to switch it off.` : `${full}: off. Click to count it.`;
   if(FIGHTER_SPEED_ABILITIES.has(ab.name)) return ab.on ? `${full}: on. The squadron's speed in ${cardName('dmg')} includes it. Click to switch it off.`
     : `${full}: off (pyfa's default). Click to switch it on: the squadron's speed in ${cardName('dmg')} then includes it.`;
@@ -15190,8 +15234,7 @@ function fighterBayStatesHtml(f, idToName){
       const [short] = FIGHTER_ABILITY_LABEL[ab.name] || [ab.name];
       const tip = fighterAbilityTip(ab, it);
       const icon = icons[String(ab.effectId)];
-      const bomb = ab.name === 'fighterAbilityLaunchBomb';
-      return `<button type="button" class="fb-ab${ab.on ? ' on' : ''}${icon ? '' : ' fb-noicon'}" data-type-id="${it.typeId}" data-effect="${ab.effectId}" aria-pressed="${ab.on}" title="${escapeHtml(tip)}" aria-label="${escapeHtml(name)}: ${escapeHtml(tip)}"${bomb ? ' disabled' : ''}>${icon ? `<img src="img/fighter-abilities/${icon}.png" alt="" width="22" height="22" loading="lazy" onerror="this.remove()">` : ''}${escapeHtml(short)}</button>`;
+      return `<button type="button" class="fb-ab${ab.on ? ' on' : ''}${icon ? '' : ' fb-noicon'}" data-type-id="${it.typeId}" data-effect="${ab.effectId}" aria-pressed="${ab.on}" title="${escapeHtml(tip)}" aria-label="${escapeHtml(name)}: ${escapeHtml(tip)}">${icon ? `<img src="img/fighter-abilities/${icon}.png" alt="" width="22" height="22" loading="lazy" onerror="this.remove()">` : ''}${escapeHtml(short)}</button>`;
     }).join('');
     html += `<div class="fititem ds-row fb-row${it.active ? '' : ' ds-none'}"><img class="ms-icon" src="https://images.evetech.net/types/${it.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="ms-name">${escapeHtml(name)}</span>${meta}<span class="ds-pips" style="--pips:${pipCols}">${pips}</span><div class="fb-ab-row">${abs}</div></div>`;
   }

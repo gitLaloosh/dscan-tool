@@ -96,7 +96,7 @@
         "python3 -I tools/independent_checks/compare_fit_stats.py index.html (0 mismatches: the application inputs per weapon vs pyfa's handlers)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "bb4676b0016622f7fef57ec135487c5f094eb16d47e142050f90f87a1530c2bf"
+      "sha256": "e3850ac02644c1b2906942aba89c37d2fca9d0140b185dd296fcefe81a4f75e9"
     },
     "projected": {
       "kind": "generated + port",
@@ -106,7 +106,7 @@
         "python3 -I tools/independent_checks/check_projected.py index.html (0 mismatches: pyfa's calc/projected.py and cache/projected.py run unmodified on oracle attributes vs the tool, every attacker x every golden fit over a 156-point grid)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "cfeef02cf04047bb9275b1a63a9c481e6adf0032824dcc4e170baff98156b7b6"
+      "sha256": "0ad46de6e7b82f39598c99a231db5ffccab196d2a1fcf7e7da8d610e1f6ad716"
     },
     "cap-rep-effect-tables": {
       "kind": "audited",
