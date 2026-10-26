@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-25 — A weapon that isn't Active: the cards say so</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>A weapon that isn't Active: the cards say so</h1>
+<p><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-25 &middot; <code>v2026.10.14.67</code> &rarr; <code>v2026.10.14.68</code>.</p>
+<p>the owner sent a screenshot ("showing zero dps in firepower card"). In it, his Nergal is My Ship, shown in the Pilot Analyzer against a Vargur. The page said:</p>
+<ul>
+<li>Firepower: 0, "drones and fixed weapons only";</li>
+<li>Damage Application: "Your ship has no turrets, missiles, ...";</li>
+<li>the Matchup: 0 DPS applied to them.</li>
+</ul>
+<p><b>Cause:</b> the saved Nergal's Light Entropic Disintegrator II wasn't set to Active. Its ring tile shows the Online dot, and the Fit card's reset icon is lit. A module below Active deals no damage, in pyfa too, so the 0 is right. The words hid the reason.</p>
+<p><b>Reproduced:</b> the same fit as My Ship with the gun set to Offline gave exactly those three texts. Separately, at 88.7 km (the Vargur's range) even an Active disintegrator applies 0, which is also right.</p>
+<p>the owner chose "Say it plainly".</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Engine:</b> <code>estimate.inactiveWeapons</code> lists the weapon types in high slots with no copy Active: {typeId, name, count, state 'online' | 'offline'}. Display only; no number changes.</li>
+<li><b>Firepower:</b> the Total DPS line reads "weapons not active" instead of "drones and fixed weapons only". The hover says "Light Entropic Disintegrator II is offline: it doesn't fire (as in pyfa). Set it Active in your fit to count it."</li>
+<li><b>Damage Application:</b> the same sentence replaces "no turrets, missiles, ...", on both your card and the threat's ("Their ... ").</li>
+<li><b>Matchup:</b> "DPS applied to them / you" carries the sentence on hover, and so does the "they last" / "you last" explanation.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>tools/page_checks/assumed_charge_check.py</code> has 3 new checks: the Nergal as My Ship, gun switched off. Firepower, Damage Application and the Matchup must each name it. v.67 fails all 3.</li>
+<li>Regression ALL PASS, update chain all 37 steps OK, all 19 page checks 0 failures.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #63: when a number is 0, show the cause the tool knows, not a guess about the fit.</p>
+<ul>
+<li>"Drones and fixed weapons only" and "no turrets" were written for fits with no guns. They also showed when the gun was there but switched off, so the user couldn't see why.</li>
+<li>Before writing a fallback sentence, list every way the number can reach that branch, and give each its own words.</li>
+</ul>
+</body>
+</html>

@@ -16,7 +16,9 @@ golden nergal / ikitursa / babaroga max-spool fits; this checks the page around 
     marked (.is-assumed, the sentence on hover), the "you last" why text says which charge is assumed, and it is the
     charge the My Ship Perspective's picks name first ("What the Nergal should use against you");
   * moving the range doesn't move the headline's box (its width comes from every candidate);
-  * no NaN / undefined, no page errors.
+  * no NaN / undefined, no page errors;
+  * v2026.10.14.68: the Nergal as My Ship with its gun not Active: Firepower says "weapons not active" (the module and its
+    state on hover), Damage Application names it instead of "no turrets...", the Matchup's 0 says why on hover.
 """
 import sys, os, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -82,6 +84,23 @@ with sync_playwright() as p:
     pg.wait_for_function(f"() => /should use against you/.test(document.querySelector('{R} .mys-mine-view').innerText)", timeout=60000)
     pick = pg.evaluate(f"() => {{ const t = [...document.querySelectorAll('{R} .mys-mine-view .wp-stat')].find(x => /Disintegrator/.test(x.textContent)); return t ? t.querySelector('.wp-value').textContent : null; }}")
     check(pick == c['assumed'][0], f'the assumed charge is the pick "What the Nergal should use against you": {pick} = {c["assumed"][0]}')
+    # v2026.10.14.68 (the owner's screenshot: his Nergal as My Ship, its gun not Active): the cards say why it's 0
+    pg.click('#myShipChip'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.click('#myShipPanel [data-act="delete"]'); pg.click('#myShipPanel [data-act="delete-yes"]'); pg.wait_for_timeout(300)
+    if pg.is_hidden('#myShipPanel'): pg.click('#myShipChip')
+    pg.fill('#myShipEft', NERGAL); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+    pg.click('#tabBtnFit'); paste(pg, OSPREY)
+    pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); settle(pg, 800)
+    pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{R} .mys-mine-view .fit-layout'); settle(pg)
+    pg.click(f'{R} .mys-mine-view button.ms-state[data-type-id="47914"]'); settle(pg, 1500)
+    st = pg.evaluate("() => myShip.f.moduleStates && myShip.f.moduleStates['47914']")
+    fp = pg.evaluate(f"() => {{ const t = document.querySelector('{R} .mys-mine-view [data-card=\"fp\"]').closest('.fit-summary'); const e = t.querySelector('.estimate-sub'); return [e.textContent, e.title]; }}")
+    dn = pg.evaluate(f"() => document.querySelector('{R} .mys-mine-view .dmg-card .dmg-note').textContent")
+    pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); settle(pg, 800)
+    your = pg.evaluate(f"() => {{ const c = document.querySelector('{R} .mys-board [data-cell=\"your\"]'); return [c.querySelector('.mys-cell-v').textContent, c.title]; }}")
+    words = 'Light Entropic Disintegrator II is ' + ('offline' if st and st.get('offline') else 'online, not active')
+    check(st and not st.get('active') and fp[0] == 'weapons not active' and words in fp[1] and 'Set it Active' in fp[1], f'gun not Active: Firepower says "{fp[0]}" ({fp[1]})')
+    check(dn.startswith('Your ' + words) and 'no turrets' not in dn, f'Damage Application names it: {dn}')
+    check(your[0] == '0' and words in your[1], f'Matchup "DPS applied to them" 0 with the reason on hover ({your[1][:80]})')
     check(not errs, f'no page errors {errs}')
     ctx.close(); b.close()
 print(f'FAILURES: {fails}')

@@ -1692,7 +1692,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.67</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.68</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -8692,7 +8692,10 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
   if(estimate.confirmedWeaponCount > 0) shortParts.push(`${estimate.confirmedWeaponCount}${hasCargoGuess || estimate.unmatchedWeaponCount > 0 ? '' : ` weapon${estimate.confirmedWeaponCount > 1 ? 's' : ''}`} confirmed`);
   if(hasCargoGuess) shortParts.push(`${estimate.cargoResolvedWeaponCount} from cargo`);
   if(estimate.unmatchedWeaponCount > 0) shortParts.push(`${estimate.unmatchedWeaponCount} not found`);
-  const totalShort = shortParts.length ? shortParts.join(' · ') : (estimate.variableWeaponCount > 0 ? '' : 'drones and fixed weapons only');
+  let totalShort = shortParts.length ? shortParts.join(' · ') : (estimate.variableWeaponCount > 0 ? '' : 'drones and fixed weapons only');
+  // v.68: a weapon that isn't Active is named, not hidden behind "drones and fixed weapons only"
+  const inactiveFp = inactiveWeaponsText(estimate, 'your');
+  if(inactiveFp && !shortParts.length) totalShort = inactiveFp.short;
   const droneShortParts = [];
   if(estimate.droneBayCount > 0) droneShortParts.push(estimate.droneCount === estimate.droneBayCount ? `all ${estimate.droneCount} in space at once`
     : estimate.droneCount > 0 ? `${estimate.droneCount} of ${estimate.droneBayCount} in space at once` : `${estimate.droneBayCount} in bay, none launchable`);
@@ -8765,7 +8768,7 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
         <div class="estimate-stat">
           <span class="estimate-label">Total DPS</span>
           <span class="estimate-value">${f.tacticalModes ? `<span class="td-mode-badge">${tacticalModeIconSvg(f.activeMode)}</span>` : ''}${totalDisplay}</span>
-          ${totalShort ? ctxHtml(totalShort, 'estimate-sub', totalSub) : ''}
+          ${totalShort ? ctxHtml(totalShort, 'estimate-sub', inactiveFp && !shortParts.length ? inactiveFp.full.replace(/^Your /, '') : totalSub) : ''}
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Weapon DPS</span>
@@ -12830,6 +12833,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   const applicationWeapons = new Map(); // v2026.10.14.34: 'weaponTypeId:chargeTypeId' -> PYFA CORE application inputs + DPS
   let unappliedFixedDps = 0;            // fixed-damage modules other than smartbombs (none counted by pyfa's graph here)
   const weaponActiveLeft = new Map(); // v.20: typeId -> ACTIVE copies not yet given to a High slot
+  const weaponTypesSeen = new Map();  // v2026.10.14.68: every weapon type in a High slot (typeId -> name), for inactiveWeapons
 
   for(const flag of flagList){
     let weaponItem = null, weaponCls = null, chargeItem = null, chargeCls = null;
@@ -12840,6 +12844,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       else if(cls.kind === 'ammo'){ chargeItem = it; chargeCls = cls; }
     }
     if(!weaponItem) continue;
+    weaponTypesSeen.set(weaponItem.id, weaponCls.type ? weaponCls.type.name : `type ${weaponItem.id}`);   // v.68
     // v.20 module states: weapons fire only while ACTIVE. States are per
     // type (copies are interchangeable); the type's ACTIVE copies are given
     // to its High slots in flag order.
@@ -14062,6 +14067,11 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     fighterSquadronCount: pyRound(fighterSquadronCount),
     fighterBayCount: pyRound(fighterBayCount),
     fighterDpsBreakdown,
+    // v2026.10.14.68 (the owner's screenshot: his Nergal as My Ship showed 0 DPS, "drones and fixed weapons only"; its gun was
+    // set Online): weapon types with no copy Active -- they don't fire (pyfa: a module below ACTIVE deals no damage), and the
+    // cards say so. {typeId, name, count, state: 'online' | 'offline'}
+    inactiveWeapons: [...weaponTypesSeen].map(([id, name]) => ({id, name, st: moduleStateResult.byId.get(id)})).filter(x => x.st && !(x.st.active > 0))
+      .map(x => ({typeId: x.id, name: x.name, count: Math.round((x.st.online || 0) + (x.st.offline || 0)), state: x.st.online > 0 ? 'online' : 'offline'})),
     // v2026.10.14.66: every fighter type in the bay, its squadrons in space and its abilities (the Fighter bay section)
     fighterStates: {
       items: fighterTypesInfo.map(f => ({typeId: f.typeId, name: f.name, cls: f.squadronClass, squadronSize: f.squadronSize, bayQty: f.bayQty,
@@ -15965,7 +15975,8 @@ async function dmgFill(host, f){
   if(host._dmgToken !== token || !host.isConnected) return;
   if(!dmgHasDamage(app) && !dmgColdGroups(f.estimate).length){
     const un = app ? dmgUnappliedText(app) : '';
-    body.innerHTML = `<p class="dmg-note">No turrets, missiles, Vorton projectors, smartbombs or drones to chart.${un ? ' ' + escapeHtml(un) : ''}</p>`;
+    const ina = inactiveWeaponsText(f.estimate, 'their');   // v.68
+    body.innerHTML = `<p class="dmg-note">${ina ? escapeHtml(ina.full) : `No turrets, missiles, Vorton projectors, smartbombs or drones to chart.${un ? ' ' + escapeHtml(un) : ''}`}</p>`;
     card.querySelector('.dmg-vs').textContent = '';
     return;
   }
@@ -16031,7 +16042,8 @@ async function dmgFillMine(host, mf){
   card.querySelector('.dmg-vs').innerHTML = `<span>applied to the ${escapeHtml(label)}</span>`;
   if(none){
     const un = app ? dmgUnappliedText(app) : '';
-    body.innerHTML = `<p class="dmg-note">Your ship has no turrets, missiles, Vorton projectors, smartbombs or drones to chart.${un ? ' ' + escapeHtml(un) : ''}</p>`;
+    const ina = inactiveWeaponsText(mf.estimate, 'your');   // v.68
+    body.innerHTML = `<p class="dmg-note">${ina ? escapeHtml(ina.full) : `Your ship has no turrets, missiles, Vorton projectors, smartbombs or drones to chart.${un ? ' ' + escapeHtml(un) : ''}`}</p>`;
     return;
   }
   if(!tf){ body.innerHTML = '<div class="status">Waiting for the threat\'s fit…</div>'; return; }
@@ -16540,7 +16552,11 @@ function mysMatchup(tf, mf, st){
   const asT = dmgAssumedText(tApp.assumed, 'their'), asM = dmgAssumedText(mApp.assumed, 'your');
   if(asT) why.you.text.push(asT.full);
   if(asM) why.them.text.push(asM.full);
-  return {theirDps: inc.dps, yourDps: out.dps, youLast, theyLast, myTop, theirTop, edge, keep: F.keep, assumed: {their: asT, your: asM},
+  // v.68: weapons set to Online / Offline don't fire; say so where their 0 shows
+  const inT = inactiveWeaponsText(tEst, 'their'), inM = inactiveWeaponsText(mEst, 'your');
+  if(inT) why.you.text.push(inT.full);
+  if(inM) why.them.text.push(inM.full);
+  return {theirDps: inc.dps, yourDps: out.dps, youLast, theyLast, myTop, theirTop, edge, keep: F.keep, assumed: {their: asT, your: asM}, inactive: {their: inT, your: inM},
     trace: {you: youTr, them: themTr}, why,
     cells: [
       {key: 'their', label: 'DPS applied to you', value: dmgFmt(inc.dps)},
@@ -16618,9 +16634,10 @@ async function mysRenderStrip(host){
     const tipKey = cell.classList.contains('mys-cell-why') ? 'pasted' : null;
     // v.67: "DPS applied to you / them" say when a charge is assumed (ASSUMED CHARGES)
     const as = c.key === 'their' ? m.assumed.their : c.key === 'your' ? m.assumed.your : null;
+    const ina = c.key === 'their' ? m.inactive.their : c.key === 'your' ? m.inactive.your : null;   // v.68
     cell.classList.toggle('is-assumed', !!as);
     if(tipKey){ if(changed) cell.dataset.pasted = bc.value; else delete cell.dataset.pasted; }
-    else if(changed || as) cell.title = [changed ? `Your pasted fit: ${bc.value}.` : '', as ? as.full : ''].filter(Boolean).join(' ');
+    else if(changed || as || ina) cell.title = [changed ? `Your pasted fit: ${bc.value}.` : '', as ? as.full : '', ina ? ina.full : ''].filter(Boolean).join(' ');
     else cell.removeAttribute('title');
   }
   host._why = m.why;   // v.58
@@ -16941,6 +16958,15 @@ function dmgAssumeApp(est, app, tgt, q, tgtEst){
   const u = Object.assign({}, a.unapplied || {});
   u.cargoGuessWeapons = Math.max(0, (u.cargoGuessWeapons || 0) - assumed.reduce((s, x) => s + x.qty, 0));
   return Object.assign(a, {unapplied: u, assumed});
+}
+// v2026.10.14.68: weapons that don't fire because no copy is Active (estimate.inactiveWeapons). whose 'your' / 'their'.
+function inactiveWeaponsText(est, whose = 'your'){
+  const list = (est && est.inactiveWeapons) || [];
+  if(!list.length) return null;
+  const W = whose === 'your' ? 'Your' : 'Their';
+  const names = list.map(x => `${x.name}${x.count > 1 ? ` ×${x.count}` : ''} ${x.count > 1 ? 'are' : 'is'} ${x.state === 'online' ? 'online, not active' : 'offline'}`);
+  return {short: 'weapons not active',
+    full: `${W} ${names.join('; ')}: ${list.length > 1 || list[0].count > 1 ? "they don't" : "it doesn't"} fire (as in pyfa).${whose === 'your' ? ' Set it Active in your fit to count it.' : ''}`};
 }
 // The words: short (the card's one line) and the sentence (hover, the board's "why").
 function dmgAssumedText(assumed, whose){

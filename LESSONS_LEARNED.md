@@ -875,6 +875,15 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 63. When a number is 0, show the cause the tool knows, not a guess about the fit
+
+- **What happened (v2026.10.14.68):** the owner's saved Nergal had its only gun set to Online. Firepower said "drones and fixed
+  weapons only", Damage Application said "Your ship has no turrets...", and the Matchup showed a bare 0. All three were
+  written for fits with no guns, and the reason the gun didn't count (its state) appeared nowhere.
+- **Do this instead:** before writing a fallback sentence, list every way the number can reach that branch (no weapon,
+  weapon not Active, no charge, out of range) and give each one its own words. The engine now lists
+  `estimate.inactiveWeapons`, and each card names them.
+
 ## 62. A generated table covers only the attributes you listed: grep pyfa for every attribute your formula reads
 
 - **What happened (v2026.10.14.67):** the hull damage table (`gen_hull_damage_table.py`) recorded handlers on a weapon's
