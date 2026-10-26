@@ -106,7 +106,7 @@
         "python3 -I tools/independent_checks/check_projected.py index.html (0 mismatches: pyfa's calc/projected.py and cache/projected.py run unmodified on oracle attributes vs the tool, every attacker x every golden fit over a 156-point grid)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "0dad866a51f830ea3e334914e840be15f9506bbe6d29f55be184f0a0e62642cd"
+      "sha256": "cfeef02cf04047bb9275b1a63a9c481e6adf0032824dcc4e170baff98156b7b6"
     },
     "cap-rep-effect-tables": {
       "kind": "audited",

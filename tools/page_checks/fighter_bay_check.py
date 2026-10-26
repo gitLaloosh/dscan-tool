@@ -92,7 +92,8 @@ with sync_playwright() as p:
           and abs_.get(str(SIREN)) == [('Point', True), ('AB', True)], f'abilities, order and pyfa defaults: {abs_}')
     imgs = [a['img'] for v in t.values() for a in v['abs']]
     check(imgs and all(i and i[0].startswith('img/fighter-abilities/') and i[1] == 64 for i in imgs), f'every ability shows its game icon, loaded: {imgs}')
-    check(any('a coming update' in a['title'] for a in t.get(str(DROMI), {}).get('abs', [])), 'the web says it is not in the numbers yet')
+    # v2026.10.14.70 (fighter gaps delivery 2): the web is applied now -- its hover says so (support_fighters_check.py checks the numbers)
+    check(any('slows the target in' in a['title'] for a in t.get(str(DROMI), {}).get('abs', [])), 'the web says it slows the target')
     a0 = pg.evaluate(APP)
     s0 = {(x[0], x[1]): x[2] for x in a0['app']}
     click(pg, f'{R} .fb-ab[data-type-id="{EIN}"][data-effect="6441"]')

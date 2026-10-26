@@ -845,3 +845,16 @@ entry of each launcher in the ranking (what the Weaknesses card's Missile tile s
 prop-on missile ranking (only an MWD's bloomed signature was ranked); now it is the afterburner's 717.9 m/s with the base
 125 m signature. Hand-checked from the SDE with the two skills at V: Scourge Heavy Assault Missile 32.7%, Scourge Fury
 Light Missile 80.1%. v2026.10.14.68 fails all 6 prop-on pins (LESSON #64).
+
+## Support fighters (v2026.10.14.70, fighter gaps delivery 2)
+
+- `nidhoggur_constructed_fighter_bay_states` gained the Dromi II's web: `proj:webFighters` 1, boost -15 x 1.10 (Nidhoggur
+  Effect12595) x 3 fighters = -49.5, optimal 16,000 x 1.25 (Support Fighters V) = 20,000 m, resistance 2115; cross-fit
+  pins from pyfa's side (`check_projected.py`'s `pyfa_point`): a Rifter (slower than the Dromi) webbed at any range,
+  659.84 m/s at 30 km; a Caracal (faster) only inside 20 km of the carrier: 958.16 at 5 km, 1,897.355 at 30 km.
+- `nidhoggur_constructed_dromi_web_off`: the same fit with the web switched off (pyfa's default is on): no web; the
+  Siren's point (strength 3, 16 km) stays on the EWAR card.
+- `archon_constructed_cenobite_neut`: 2 Cenobite II squadrons, 99 x 3 = 297 GJ per 6 s = 49.5 GJ/s, 12.5 + 5 km.
+- `chimera_constructed_scarab_ecm`: 2 Scarab II squadrons, 3.3 x 3 = 9.9 multispectral, 9.375 + 8.4 km.
+
+v2026.10.14.69 fails 21 of these pins.

@@ -7,7 +7,8 @@ for the 5% / 10% fighter missile resistances. Drones and fighters both follow-up
 **PHASE 2a DONE** (v2026.10.14.35, 2026-10-23; `dscan-tool-history/2026-10-23_projected-webs-painters-scram.html`).
 **PHASE 2b DONE** (v2026.10.14.36, 2026-10-23; `dscan-tool-history/2026-10-23_their-damage-on-you-chart.html`).
 All six decisions in section 4 made. the owner 2026-10-23: Phase 2 split into 2a (pyfa's `applyProjected`, engine only)
-and 2b (the "Their damage on you" chart with sliders). Next: Phase 3 (your guns vs them, optional) or the drones /
+and 2b (the "Their damage on you" chart with sliders). Phase 3 (your guns vs them, optional) was closed on 2026-10-26 (the owner: "yes, close those three"):
+the My Ship Perspective's Damage Application card (v2026.10.14.55) and the "your guns" Weaknesses picks (v.42) cover it. Earlier: the drones /
 fighters follow-up (D5; drones done v2026.10.14.40, `dscan-tool-history/2026-10-23_drone-damage-application.html`); My Ship
 phase 2 (matchup strip) can now read the chart's headline.
 Backlog: "Turret damage application" (DEVIATIONS.md: "turret tracking application"; architecture memory:

@@ -15,7 +15,9 @@ functions on its own estimate.application.projected and estimate.projectedTarget
 Compared for every attacker that has a web, painter, web / painter drone or scram (and every golden fit as the
 target), over a grid of distance x the target's own speed (share of its top speed) x graph settings (lock range
 respected or not, drone control range ignored or not, mobile drone mode):
-  * the attacker's inputs (pyfa's webMods / tpMods / webDrones / tpDrones and getScramRange);
+  * the attacker's inputs (pyfa's webMods / tpMods / webDrones / tpDrones / webFighters / tpFighters and getScramRange);
+    since v2026.10.14.70 the oracle launches the squadrons the tool launched, with the abilities the tool has on
+    (estimate.fighterStates: inputs), so a support squadron's web (getProjFighterData) is compared too;
   * the target's untackled top speed and signature radius;
   * at every point, the tackled speed and the painted signature radius.
 Tolerance 1e-6 relative (floatUnerr keeps 7 significant digits).
@@ -109,17 +111,29 @@ class _Drone(_Attr):
         for a in ("falloff", "falloffEffectiveness"):
             v = s.getModifiedItemAttr(a)
             if v: return v
+class _Ability:
+    """eos FighterAbility: its effect (name, resistanceID, prefix via getattr)."""
+    def __init__(s, eid): s.effect = _Eff(eid)
+class _Fighter(_Attr):
+    """eos Fighter (one squadron): amount, its item's effects, modified attributes."""
+    def __init__(s, fi):
+        super().__init__(fi); s.item = _I(fi.item); s.amount = fi.amount; s.active = sorted(fi.activeAbilities)
 class _FitItem:
     def __init__(s, o):
         s.o = o; s.ID = id(o)
         s.mods = [_Mod(m, o) for m in o.modules if m.state >= 2]
         s.drones = [_Drone(d) for d in o.drones if d.amountActive > 0]
+        s.fighters = [_Fighter(fi) for fi in o.fighters]
         s.ship = _Attr(o.ship)
         s.maxTargetRange = o.ship.get('maxTargetRange')
         s.extraAttributes = {'droneControlRange': o.ship.get('droneControlRange')}
     def activeModulesIter(s): return iter(s.mods)
     def activeDronesIter(s): return iter(s.drones)
-    def activeFighterAbilityIter(s): return iter(())   # the oracle (and the tool) launch no support fighters
+    def activeFighterAbilityIter(s):
+        # eos Fit.activeFighterAbilityIter: every ability switched on of every squadron in space (v2026.10.14.70: the
+        # tool's launch and abilities, its fighterStates, are inputs here as in check_application.py)
+        for fi in s.fighters:
+            for e in fi.active: yield fi, _Ability(e)
 class _Fit:
     """graphs/wrapper.py SourceWrapper / TargetWrapper over an oracle fit."""
     isFit = True; isProfile = False
@@ -168,18 +182,26 @@ def tool_states(t):
     drones = [(it['typeId'], round(it['active'])) for it in ((t.get('droneStates') or {}).get('items') or []) if round(it['active']) > 0]
     return states, drones
 
+def tool_fighters(t):
+    """[(typeId, squadron size, active ability ids)] per squadron the tool launched (estimate.fighterStates: damage AND
+    support squadrons, v2026.10.14.70)."""
+    out = []
+    for it in ((t.get('fighterStates') or {}).get('items') or []):
+        out += [(it['typeId'], it['squadronSize'], [a['effectId'] for a in it.get('abilities') or [] if a.get('on')])] * int(it.get('active') or 0)
+    return out
+
 if __name__ == '__main__':
     ROOT = os.path.join(HERE, '..', '..')
     html = next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(ROOT, 'index.html'))
     G = json.load(open(GOLDEN))
     tmp = tempfile.mkdtemp(); dump = os.path.join(tmp, 'd.json')
-    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, dump, 'application,projectedTarget,moduleStates,droneStates', '-', ','.join(G)], check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, dump, 'application,projectedTarget,moduleStates,droneStates,fighterStates', '-', ','.join(G)], check=True, stdout=subprocess.DEVNULL)
     tool = json.load(open(dump))
     fits = {}
     def fit(k):
         if k not in fits:
             states, drones = tool_states(tool[k])
-            fits[k] = _Fit(oracle_for(k, states=states, drones=drones, group_limits=False))
+            fits[k] = _Fit(oracle_for(k, states=states, drones=drones, group_limits=False, fighters=tool_fighters(tool[k])))
         return fits[k]
     bad, notes = 0, []
     # attackers: every fit the tool OR pyfa sees a web / painter / web drone / scram on
@@ -189,15 +211,15 @@ if __name__ == '__main__':
         if o.errors or o.oracleGaps: notes.append(f'{k}: ORACLE errors {o.errors} gaps {o.oracleGaps}'); bad += 1; continue
         inp = pyfa_inputs(fit(k)); inputs[k] = inp
         tp = ((tool[k].get('application') or {}).get('projected')) or {}
-        has_pyfa = inp['scramRange'] is not None or any(inp[x] for x in ('webMods', 'tpMods', 'webDrones', 'tpDrones'))
-        has_tool = tp.get('scramRange') is not None or any(tp.get(x) for x in ('webMods', 'tpMods', 'webDrones', 'tpDrones'))
+        has_pyfa = inp['scramRange'] is not None or any(inp[x] for x in ('webMods', 'tpMods', 'webDrones', 'tpDrones', 'webFighters', 'tpFighters'))
+        has_tool = tp.get('scramRange') is not None or any(tp.get(x) for x in ('webMods', 'tpMods', 'webDrones', 'tpDrones', 'webFighters', 'tpFighters'))
         if not (has_pyfa or has_tool): continue
         attackers.append(k)
         diffs = []
         if not close(tp.get('scramRange'), inp['scramRange']): diffs.append(f"scramRange tool {tp.get('scramRange')} pyfa {inp['scramRange']}")
         if not close((tool[k].get('application') or {}).get('lockRange') or 0, fit(k).item.maxTargetRange): diffs.append('lockRange')
         if not close(tp.get('droneControlRange') or 0, fit(k).item.extraAttributes['droneControlRange']): diffs.append(f"droneControlRange tool {tp.get('droneControlRange')} pyfa {fit(k).item.extraAttributes['droneControlRange']}")
-        for name, mobile in (('webMods', 0), ('tpMods', 0), ('webDrones', 1), ('tpDrones', 1)):
+        for name, mobile in (('webMods', 0), ('tpMods', 0), ('webDrones', 1), ('tpDrones', 1), ('webFighters', 1), ('tpFighters', 1)):
             pk = sorted(key_of(tuple(x), mobile) for x in inp[name])
             tk = sorted(key_of((x['boost'], x['optimal'], x['falloff'], x['stackingGroup'], x['resAttrID']) + ((x['speed'], x['radius']) if mobile else ()), mobile) for x in tp.get(name) or [])
             if pk != tk: diffs.append(f'{name} tool {tk} pyfa {pk}')

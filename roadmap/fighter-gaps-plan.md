@@ -26,8 +26,12 @@ Every number checked against pyfa (eos, `graphs/data/fitDamageStats`), as everyw
    - A speed ability switched on runs its pyfa handler on the squadron (`PROJ_FIGHTER_SELF_EFFECTS`).
    - Checked by `check_application.py` (the tool's actives as inputs, and pyfa's defaults when none are chosen), two golden
      fits and `fighter_bay_check.py`.
-2. **Support fighters:**
-   - Dromi webs into PYFA CORE `projected` (`webFighters`): the speeds, the chart and the times.
-   - The EWAR card shows web, neut, ECM and warp disruption with pyfa's modified numbers.
+2. **Support fighters: done in v2026.10.14.70.**
+   - Dromi webs into PYFA CORE `projected` (`webFighters`, pyfa `getProjFighterData`): the speeds, the chart and the times.
+     Against the default target a Nidhoggur's applied DPS goes from 397 to 633 with its Dromi out.
+   - The EWAR card shows web, neut, ECM and warp disruption with pyfa's modified numbers (the carrier's bonuses and Support
+     Fighters at V; `gen_projected_table.py` records the handlers), one chip per squadron type; only the web is applied.
+   - Checked by `check_projected.py` (the tool's launched squadrons and abilities as inputs), four golden fits and
+     `support_fighters_check.py`.
 3. **Bombs:** when switched on, pyfa's bomb volley (the charge's damage x amount x multiplier) and `_calcBombFactor`.
 4. **Weaknesses picks:** rank "your fighters", and the why text says "weapons, drones and fighters".

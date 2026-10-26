@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 65. New rows in an existing output reach every check that reads it
+
+- **What happened (v2026.10.14.70):** support fighters' EWAR went into `estimate.ewarModules`, the list the EWAR card draws.
+  The new checks for it passed, but the update chain's `compare_ewar.py` (which reads that same list) looked each entry up
+  among the oracle's MODULES and failed 5 entries: "Dromi II not in the oracle fit". The check was right to fail; it just
+  didn't know fighters.
+- **Do this instead:** before the chain, grep `tools/` for the output field you added rows to (`ewarModules`,
+  `application.projected`, ...) and run each check that reads it. Teach it the new kind of row with its own pyfa rule
+  (here: the oracle launches the tool's squadrons; pyfa's ability handler x the squadron's fighters) rather than skipping
+  the rows, then break the new code once to see that check fail.
+
 ## 64. A state gated on one variant's attribute silently drops the other variants
 
 - **What happened (v2026.10.14.69):** the missile ranking's "prop module on" state was computed only when

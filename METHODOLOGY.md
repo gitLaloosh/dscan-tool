@@ -65,7 +65,9 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
   (light / support / heavy) limits allow, hardest-hitting first, then support squadrons in the tubes left (webs
   first). Since v2026.10.14.66 you choose them in the Fighter bay: one square per squadron, and each type's
   abilities (the game's icons) on or off. A damage ability switched off adds nothing; a speed ability switched on
-  makes the squadron faster in the fight, as pyfa's handler does. Support squadrons' EWAR isn't in the numbers yet.
+  makes the squadron faster in the fight, as pyfa's handler does. Since v2026.10.14.70 a support squadron's web (Dromi)
+  slows the target in the fight, as pyfa's damage graph applies it; its neutralizer, ECM and warp disruption (Cenobite,
+  Scarab, Siren) are shown on the EWAR / Misc card with the carrier's bonuses, not applied.
 - **Skills, all at V:**
   - Turrets and missiles: damage and rate-of-fire skills (Surgical Strike / Rapid Firing, or Warhead Upgrades /
     Rapid Launch), plus the weapon-size and T2 Specialization skills.
@@ -124,7 +126,7 @@ at level V, so a less-trained pilot with fewer damage modules hits softer and ta
 ## The fight (Damage Application card, Matchup and its strip)
 
 - **Damage applied:** pyfa's damage graph, at one distance and one movement for each ship, with the attacker's own
-  webs, target painters and scram applied (pyfa's default). Resists aren't counted there; lock range is ignored.
+  webs (modules, drones and support fighters), target painters and scram applied (pyfa's default). Resists aren't counted there; lock range is ignored.
 - **A weapon with no charge loaded** (v2026.10.14.67): charted with the charge aboard that kills you fastest at this
   fight (the one the Weaknesses picks name first), marked "Assumed loaded" on the card and in the Matchup's hover.
   The Firepower card shows every charge aboard as a range.

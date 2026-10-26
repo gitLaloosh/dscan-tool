@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — Support fighters: webs applied, the rest on the EWAR card</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Support fighters: Dromi webs applied, every support ability on the EWAR card</h1>
+<p><span class="tag">Feature</span><span class="tag">PYFA CORE</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.69</code> &rarr; <code>v2026.10.14.70</code>.</p>
+<p>the owner: "ok let's continue with the fighter gaps." This is delivery 2 of <code>roadmap/fighter-gaps-plan.md</code>, built on his 2026-10-25 decision "Webs applied, rest shown":</p>
+<ul>
+<li>webs are applied as pyfa's damage graph applies them;</li>
+<li>neutralizers, ECM and warp disruption are shown with pyfa's numbers but not applied, the same as module neutralizers.</li>
+</ul>
+
+<h2>What you see</h2>
+<ul>
+<li><b>Damage Application and the times:</b> a carrier's Dromi squadron now slows the target. pyfa's <code>getProjFighterData</code> gives one mobile web per squadron in space with its web on:
+<ul>
+<li>its strength is the squadron's modified speed penalty &times; its fighters;</li>
+<li>a Dromi faster than the target applies its whole web at any range (pyfa's "auto" mobile mode);</li>
+<li>a slower one applies it only within its optimal of the carrier.</li>
+</ul>
+A pasted Nidhoggur (Einherji II &times;24, Dromi II, Siren II) against the default target: 397 DPS applied without the web, 633 with it.</li>
+<li><b>EWAR / Misc card:</b> one chip per support squadron type in space, in the same format as a module.
+<ul>
+<li>"Dromi II &middot; 20 km &middot; -49.5% speed"</li>
+<li>"Siren II &middot; 16 km &middot; scramble strength 3"</li>
+<li>"Cenobite II &middot; 12.5+5 km &middot; 297 GJ/cycle (49.5 GJ/s)"</li>
+<li>a Scarab's multispectral jam</li>
+</ul>
+The numbers are for one squadron (all its fighters), with the carrier's bonuses and Support Fighters at V. The header counts "squadrons" separately from modules.</li>
+<li><b>Chart:</b> the T web zone and the C neutralizer zone include the fighters' ranges. Keep at Range's "inside their web" counts a fighter web too.</li>
+<li><b>Fighter bay hovers:</b> the support abilities' hovers say what each one does. The web is counted; the others are shown, not counted. This replaces "a coming update".</li>
+</ul>
+<table>
+<tr><th>Ability (pyfa effect)</th><th>Per squadron</th><th>Applied?</th></tr>
+<tr><td>Stasis Webifier (6435)</td><td>speed penalty &times; fighters; optimal, falloff; resistance attribute from the squadron</td><td>yes: PYFA CORE <code>projected</code> <code>webFighters</code></td></tr>
+<tr><td>Energy Neutralizer (6434)</td><td>amount &times; fighters per Duration; optimal, falloff</td><td>shown</td></tr>
+<tr><td>ECM (6437)</td><td>strength per sensor type &times; fighters; optimal, falloff</td><td>shown</td></tr>
+<tr><td>Warp Disruption (6436)</td><td>point strength &times; fighters; range</td><td>shown</td></tr>
+</table>
+
+<h2>How it's matched to pyfa</h2>
+<ul>
+<li><b><code>gen_projected_table.py</code></b> records every pyfa handler on the support abilities' attributes. It found the carriers' support-fighter bonuses (Archon neutralizer 12592, Chimera ECM 12593, Nidhoggur web 12595) and Support Fighters' +5% range per level (6625-6628). Hand checks:
+<ul>
+<li>Dromi: -15 &times; 1.10 &times; 3 = -49.5%, at 16 km &times; 1.25 = 20 km.</li>
+<li>Cenobite: 90 &times; 1.10 &times; 3 = 297 GJ per 6 s = 49.5 GJ/s, at 10 km &times; 1.25 = 12.5 km.</li>
+<li>Scarab: 3 &times; 1.10 &times; 3 = 9.9.</li>
+</ul></li>
+<li><b>PYFA CORE <code>projected</code>:</b> <code>pyfaFighterWebData</code> mirrors <code>getProjFighterData</code>. <code>getTackledSpeed</code> already took mobile fighter webs; the list was empty until now.</li>
+<li><b><code>check_projected.py</code></b> now gives pyfa's oracle the squadrons the tool launched, with the abilities it has on (inputs, as <code>check_application.py</code> does). It runs pyfa's own <code>getProjFighterData</code>, so the fighter webs are compared with the rest: 25 attackers &times; 262 targets, 1,021,800 points, 0 mismatches. A break that drops the &times; fighters from the web gives 242.</li>
+<li><b>Re-verified and re-locked:</b> the generator is up to date, <code>check_projected.py</code> shows 0 mismatches, and the regression suite passes.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>Golden fits:</b>
+<ul>
+<li><code>nidhoggur_constructed_fighter_bay_states</code> gained the Dromi web's inputs, plus three tackled pins from pyfa's side: a Rifter (slower than the Dromi) is webbed at 30 km; a Caracal (faster) is webbed only within 20 km.</li>
+<li>New: <code>nidhoggur_constructed_dromi_web_off</code>. The web is switched off, which is not pyfa's default (LESSON #61).</li>
+<li>New: <code>archon_constructed_cenobite_neut</code> and <code>chimera_constructed_scarab_ecm</code>.</li>
+<li>v.69 fails 21 pins.</li>
+</ul></li>
+<li><b>New <code>tools/page_checks/support_fighters_check.py</code></b> (17 checks). It covers the chips equal to the estimate, the web in the inputs and the chart zone, and the headline = PYFA CORE with the web on and off (it changes). It also covers the Siren and the Archon's Cenobite, the hovers, and 390 px. v.69 fails 13.</li>
+<li><b><code>fighter_bay_check.py</code>:</b> the web's hover now says it slows the target.</li>
+<li>Regression ALL PASS (262 fits), update chain all 37 steps OK, all 21 page checks 0 failures.</li>
+</ul>
+
+<h2>Found by the update chain</h2>
+<p><code>compare_ewar.py</code>, which compares every EWAR card entry with pyfa's handlers, failed 5 entries: "Dromi II not in the oracle fit". It looked every entry up among the oracle's modules.</p>
+<ul>
+<li>It now launches the tool's squadrons in the oracle and applies each ability handler's rule: the modified attribute &times; the squadron's fighters, and the squadron count.</li>
+<li>Result: 123 entries, 0 mismatches.</li>
+<li>Breaking the neutralizer's &times; fighters, or dropping the Nidhoggur's web bonus, fails it.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #65: new rows in an existing output reach every check that reads it.</p>
+<ul>
+<li>Before the chain, grep <code>tools/</code> for the field you added rows to, and run each check that reads it.</li>
+<li>Teach that check the new kind of row with its own pyfa rule rather than skipping the rows. Then break the new code once and see the check fail.</li>
+</ul>
+<p>LESSON #61 was applied too: the web is tested switched off (not pyfa's default) as well as on.</p>
+<p>A check that asserts placeholder text ("a coming update") has to change when the feature lands. Search the page checks for the placeholder before shipping. The bomb's placeholder stays until delivery 3.</p>
+</body>
+</html>

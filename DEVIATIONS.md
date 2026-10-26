@@ -97,10 +97,10 @@ Each is in a backlog:
   like every system effect. Since v2026.10.14.35 (Phase 2a, PYFA CORE `projected`) the engine also
   has pyfa's `applyProjected` (on by default in pyfa's graph): the attacker's own webs, target painters, web /
   painter drones, burst projectors and warp scramblers (a scrammed target's MWD, MJD and MJFG are ignored)
-  slowing and growing the target fit or profile. One part of it is not applied: **support fighters' webs**
-  (Dromi, pyfa `getProjFighterData`). Support squadrons are launched since v2026.10.14.66 (the Fighter bay), but
-  their webs aren't passed yet, so `webFighters` is still empty (the next fighter-gaps delivery). Nothing on the page uses any of this yet
-  (Phase 2b, the chart)
+  slowing and growing the target fit or profile. Since v2026.10.14.70 that includes **support fighters' webs** (Dromi,
+  pyfa `getProjFighterData`: one mobile web per squadron in space with its web on). Support fighters' neutralizers, ECM and
+  warp disruption (Cenobite, Scarab, Siren) are shown on the EWAR / Misc card with pyfa's modified numbers but not applied,
+  as pyfa's damage graph doesn't apply them either (and module neutralizers aren't applied to the times)
 - mode effects on stats the tool doesn't show: remote repair and remote shield boost amounts (Confessor / Svipul Defense; their capacitor need *is* applied), weapon-disruption and sensor-dampener resistance (every Sharpshooter mode)
 
 **Hand-built tables not yet replaced by pyfa-derived ones:** none. Firepower was replaced in v2026.10.14.3 (P1); fighter

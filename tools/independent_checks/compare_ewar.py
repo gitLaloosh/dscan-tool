@@ -22,6 +22,13 @@ Specialist skills).
 v2026.10.14.29: Burst Jammer burstRadiusM = ecmBurstRange (142); Burst Projector fieldRadiusM / fieldDurationSec /
 warningSec / affectedSec = doomsdayAOERange / doomsdayAOEDuration / doomsdayWarningDuration / the projector's
 durationXBurstProjector, plus the field's strength (speed, neut amount, sig, damp, disruption, jam).
+v2026.10.14.70 (fighter gaps delivery 2): a support squadron type's entries (fighter: true) against the oracle launched
+with the tool's own squadrons and abilities (estimate.fighterStates, inputs): pyfa's ability handlers multiply by the
+squadron's fighters (src.amount) -- web speedBonusPct = fighterAbilityStasisWebifierSpeedPenalty x amount at its
+OptimalRange / FalloffRange (Effect6435); neut capPerCycle = fighterAbilityEnergyNeutralizerAmount x amount, capPerSec =
+that / its Duration (Effect6434); ECM jamStrength = the largest fighterAbilityECMStrength* x amount at RangeOptimal /
+RangeFalloff (Effect6437); point scramStrength = fighterAbilityWarpDisruptionPointStrength x amount within its Range
+(Effect6436); qty = that type's squadrons in space.
 Since v.11 the tool lists one entry per (module type, loaded script) and is compared with every copy
 of that type carrying that script (before v.11: one entry per type, compared with every copy). Relative tolerance 1e-6 (both
 sides unrounded). Ends with 'N mismatches' (must be 0).
@@ -71,6 +78,30 @@ def oracle_values(m, kind):
         out['capPerCycle'] = g('energyNeutralizerAmount')
     return out
 
+def fighter_values(fi, kind, squadrons):
+    g = lambda k: fi.get(k) or 0.0
+    n = fi.amount
+    out = {'qty': squadrons}
+    if kind == 'web':
+        out.update(speedBonusPct=g('fighterAbilityStasisWebifierSpeedPenalty') * n, rangeM=g('fighterAbilityStasisWebifierOptimalRange'),
+                   falloffM=g('fighterAbilityStasisWebifierFalloffRange'))
+    elif kind == 'neut':
+        amount, dur = g('fighterAbilityEnergyNeutralizerAmount') * n, g('fighterAbilityEnergyNeutralizerDuration') / 1000
+        out.update(capPerCycle=amount, capPerSec=amount / dur if dur > 0 else 0, rangeM=g('fighterAbilityEnergyNeutralizerOptimalRange'),
+                   falloffM=g('fighterAbilityEnergyNeutralizerFalloffRange'))
+    elif kind == 'ecm':
+        out.update(jamStrength=max(g('fighterAbilityECMStrength' + t) for t in ('Gravimetric', 'Ladar', 'Magnetometric', 'Radar')) * n,
+                   rangeM=g('fighterAbilityECMRangeOptimal'), falloffM=g('fighterAbilityECMRangeFalloff'))
+    elif kind == 'scram':
+        out.update(scramStrength=g('fighterAbilityWarpDisruptionPointStrength') * n, rangeM=g('fighterAbilityWarpDisruptionRange'), falloffM=0.0)
+    return out
+
+def tool_fighters(t):
+    out = []
+    for it in ((t.get('fighterStates') or {}).get('items') or []):
+        out += [(it['typeId'], it['squadronSize'], [a['effectId'] for a in it.get('abilities') or [] if a.get('on')])] * int(it.get('active') or 0)
+    return out
+
 def close(a, b): return abs(a - b) <= 1e-6 * max(1.0, abs(a), abs(b))
 
 if __name__ == '__main__':
@@ -78,16 +109,24 @@ if __name__ == '__main__':
     html = next((a for a in sys.argv[1:] if not a.startswith('--')), os.path.join(ROOT, 'index.html'))
     G = json.load(open(GOLDEN))
     tmp = os.path.join(tempfile.mkdtemp(), 'e.json')
-    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, tmp, 'ewarModules'], check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(['node', os.path.join(ROOT, 'regression_suite', 'dump_results.mjs'), html, tmp, 'ewarModules,fighterStates'], check=True, stdout=subprocess.DEVNULL)
     tool = json.load(open(tmp))
     bad = checked = 0
     for k in G:
         mods = (tool.get(k) or {}).get('ewarModules') or []
         if not mods: continue
-        o = oracle_for(k)
+        o = oracle_for(k, fighters=tool_fighters(tool[k]) if any(e.get('fighter') for e in mods) else ())
         byName = {}
         for m in o.modules: byName.setdefault(m.item.name, []).append(m)
         for e in mods:
+            if e.get('fighter'):   # v2026.10.14.70: a support squadron type
+                sq = [fi for fi in o.fighters if fi.item.name == e['name']]
+                if not sq: print(f'{k}: {e["name"]} (fighter) not in the oracle fit'); bad += 1; continue
+                ov = fighter_values(sq[0], e['kind'], len(sq))
+                diffs = [f'{f} tool {e[f]:.6g} pyfa {v:.6g}' for f, v in ov.items() if not (isinstance(e.get(f), (int, float)) and close(e[f], v))]
+                checked += 1
+                if diffs: bad += 1; print(f'{k}: {e["name"]} (fighter): ' + '; '.join(diffs))
+                continue
             copies = byName.get(e['name'], [])
             if 'script' in e:   # v.11+: one entry per (module type, script)
                 copies = [m for m in copies if (m.charge.item.name if m.charge else None) == e['script']]

@@ -34,7 +34,8 @@ AND (any of groups) on the drone, asserted exact against every published web / p
   PROJ_DRONE_ATTRS {name: attributeId} and their SDE defaults in PROJ_DRONE_DEFAULTS.
 Third table (v2026.10.14.64): the attacker's FIGHTERS (getFighterAbilityMult's inputs), PROJ_FIGHTER_*; since
 v2026.10.14.66 over every fighter (support squadrons launch too) with the squadron's own speed abilities
-(PROJ_FIGHTER_SELF_EFFECTS). Support fighters' webs (getProjFighterData) aren't passed yet (roadmap/fighter-gaps-plan.md).
+(PROJ_FIGHTER_SELF_EFFECTS). Since v2026.10.14.70 also the support abilities' attributes (FIGHTER_EWAR): webs go to
+PYFA CORE projected (getProjFighterData's webFighters), neutralizers / ECM / warp disruption to the EWAR card.
 """
 import sys, os, re, json, collections
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -217,6 +218,18 @@ FIGHTER_ATTRS = ('maxVelocity', 'radius') + tuple(p + s for p in FIGHTER_PREFIXE
 # evasive maneuvers, off by default -- boost its maxVelocity by these attributes when switched on (FIGHTER_SELF below).
 FIGHTER_SPEED_BONUS = ('fighterAbilityMicroWarpDriveSpeedBonus', 'fighterAbilityAfterburnerSpeedBonus', 'fighterAbilityEvasiveManeuversSpeedBonus')
 FIGHTER_ATTRS = FIGHTER_ATTRS + FIGHTER_SPEED_BONUS
+# v2026.10.14.70 (fighter gaps delivery 2): what the support abilities read (pyfa Effect6435 / 6434 / 6437 / 6436 and
+# cache/projected.py getProjFighterData): the web's speed penalty, optimal and falloff (applied, webFighters); the
+# neutralizer's amount, ranges and cycle, the ECM's four strengths, ranges and cycle, the warp disruption's strength and
+# range (shown on the EWAR card, not applied: the owner's "Webs applied, rest shown").
+FIGHTER_EWAR = ('fighterAbilityStasisWebifierSpeedPenalty', 'fighterAbilityStasisWebifierOptimalRange', 'fighterAbilityStasisWebifierFalloffRange',
+                'fighterAbilityStasisWebifierResistanceID',
+                'fighterAbilityEnergyNeutralizerAmount', 'fighterAbilityEnergyNeutralizerOptimalRange', 'fighterAbilityEnergyNeutralizerFalloffRange',
+                'fighterAbilityEnergyNeutralizerDuration', 'fighterAbilityEnergyNeutralizerResistanceID',
+                'fighterAbilityECMStrengthGravimetric', 'fighterAbilityECMStrengthLadar', 'fighterAbilityECMStrengthMagnetometric', 'fighterAbilityECMStrengthRadar',
+                'fighterAbilityECMRangeOptimal', 'fighterAbilityECMRangeFalloff', 'fighterAbilityECMDuration', 'fighterAbilityECMResistanceID',
+                'fighterAbilityWarpDisruptionPointStrength', 'fighterAbilityWarpDisruptionRange', 'fighterAbilityWarpDisruptionDuration')
+FIGHTER_ATTRS = FIGHTER_ATTRS + FIGHTER_EWAR
 FIGHTER_ATTRS = tuple(a for a in FIGHTER_ATTRS if a in attrId)
 FIGHTER_DMG = {attrId[p + d] for p in FIGHTER_PREFIXES for d in ('DamageEM', 'DamageTherm', 'DamageKin', 'DamageExp') if p + d in attrId}
 def _fdeals(t): return any(x['value'] > 0 for x in td.get(str(t), {}).get('dogmaAttributes', []) if x['attributeID'] in FIGHTER_DMG)
