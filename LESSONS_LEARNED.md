@@ -875,6 +875,21 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 68. A new list of inputs exposes the engine to inputs no fit had: check every one against pyfa
+
+- **What happened (v2026.10.14.76):** the Charges list offers every charge pyfa's getValidCharges allows, and its first
+  check against pyfa (`check_charge_list.py`, 279 charges) found two engine bugs that 265 golden fits never reached:
+  - a Civilian missile (it requires no skill) got Warhead Upgrades, the size skill and Ballistic Control Systems,
+    1.51x pyfa: pyfa filters all of those on the CHARGE requiring Missile Launcher Operation;
+  - two launcher types loading the same charge shared one range entry (it was keyed by charge alone).
+  A third was in the state engine: a state request didn't say which copy, so a launcher set online by the user was
+  not the one that stopped when the copies held different charges.
+- **Do this instead:** when a feature lets the user pick from a list the fits never contained, run the WHOLE list
+  through pyfa once (here every valid charge of seven weapon families), not a sample. Write the fixes' goldens from pyfa
+  (`caracal_constructed_civilian_light_missiles`, `drake_constructed_mixed_charges_copy_states`). When pinning a value
+  from the oracle, add only what pyfa counts: `module_dps` doesn't look at a module's state, so sum the active ones only
+  (the first pin here summed an online launcher too).
+
 ## 67. An input that is a Map reads as empty through Object.keys and JSON
 
 - **What happened (v2026.10.14.75):** the ring looked up each weapon's charge in `f.input.highSlotByFlag` with

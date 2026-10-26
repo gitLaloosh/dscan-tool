@@ -56,6 +56,15 @@ def implants_of(f):
         return [it['item_type_id'] for it in f['killmail']['victim'].get('items', []) if it['flag'] == 89], []
     t = f.get('tally') or {}
     return [int(x) for x in (t.get('Implants') or {})], [int(x) for x in (t.get('Boosters') or {})]
+def per_copy_order(st, n):
+    """v2026.10.14.76: a state per copy (moduleStates[typeId].order, set on the Fit card; copies in flag order), used, as
+    the tool uses it, only when it has one entry per copy and as many 'active' as the resolved counts."""
+    if not isinstance(st, dict): return None
+    o = st.get('order')
+    if not isinstance(o, list) or len(o) != n: return None
+    if 'active' in st and o.count('active') != round(st['active']): return None
+    return o
+
 def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True, fighters=()):
     """drones: [(typeId, inSpace)] -- the tool's own choice of drones in space (an input, DEVIATIONS.md).
     fighters: [(typeId, amount)] per squadron in space -- likewise the tool's own launch (v2026.10.14.64).
@@ -70,6 +79,9 @@ def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True, figh
         sid = int(f['shipTypeId'])
         mode = td_mode(sid, f.get('tacticalMode') or 'sharpshooter') or td_mode(sid, 'primary')
     pinned = states or f.get('moduleStates') or {}
+    if states:   # v.76: the tool's resolved counts keep the fit's pinned state per copy (an input; per_copy_order checks it agrees)
+        pinned = {tid: ({**st, 'order': po['order']} if isinstance(st, dict) and isinstance(po, dict) and isinstance(po.get('order'), list) else st)
+                  for tid, st in states.items() for po in [(f.get('moduleStates') or {}).get(tid)]}
     if f.get('killmail'):
         # ESI killmail flags: 11-18 low, 19-26 mid, 27-34 high, 92-99 rigs, 125-132 subsystems;
         # a charge shares its module's flag (category 8).
@@ -95,7 +107,7 @@ def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True, figh
     from pyfa_sde import cat
     charges = {}
     for key in ('highSlotByFlag', 'midSlotByFlag'):
-        for flag, lst in (f.get(key) or {}).items():
+        for flag, lst in sorted((f.get(key) or {}).items(), key=lambda kv: int(kv[0])):   # copies in flag order, as the tool walks them
             mod = next((x for x in lst if cat(x['id']) != 8), None); ch = next((x['id'] for x in lst if cat(x['id']) == 8), None)
             # a constructed fit may list several copies under one flag ({id, qty: 5}): each copy gets the charge
             if mod is not None and ch is not None: charges.setdefault(mod['id'], []).extend([ch] * max(1, int(mod.get('qty') or 1)))
@@ -105,8 +117,10 @@ def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True, figh
             if cat(int(tid)) == 8: continue   # loaded charges (paired above), not modules
             n = round(v['totalQty'] / max(1, v.get('lossCount', 1)))
             st = pinned.get(tid)
+            order = per_copy_order(st, n)
             for i in range(n):
-                if isinstance(st, dict):   # {active, online, offline} counts
+                if order: s = order[i]
+                elif isinstance(st, dict):   # {active, online, offline} counts
                     s = 'active' if i < st.get('active', 0) else 'online' if i < st.get('active', 0) + st.get('online', 0) else 'offline'
                 else: s = st or pyfa_default_state(int(tid))
                 ch = charges.get(int(tid), [])

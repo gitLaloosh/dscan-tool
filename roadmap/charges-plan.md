@@ -16,7 +16,7 @@ phone, the what-if state, list view). Decisions:
 - **Loading a charge: drag and drop, as Workbench**: "dropping on a single module loads it there. dropping in middle
   of ring loads to all possible modules."
 
-## Delivery 1: the ring as a Workbench-style track
+## Delivery 1: the ring as a Workbench-style track (done, v2026.10.14.75)
 
 - Each rack (high top, mid right, low bottom, rigs + subsystems left) gets one position per slot the hull has, as pyfa
   counts them (`Fit.getNumSlots`: the ship's hiSlots / medSlots / lowSlots / rigSlots / maxSubSystems, with the
@@ -29,7 +29,7 @@ phone, the what-if state, list view). Decisions:
 - Checks: slot counts against pyfa (oracle ship attributes, T3 subsystems included); layout_check (tiles inside the
   ring, no overlap, sizes) and a page check for the empty slots, charge icons and hovers.
 
-## Delivery 2: the Charges list, drag and drop, "not on board"
+## Delivery 2: the Charges list, drag and drop, "not on board" (done, v2026.10.14.76)
 
 - A Charges button by Ring / List opens the list for each weapon type: charges aboard first (loaded, in cargo), then
   every other charge the weapon can load (pyfa isValidCharge, already in the page), marked "not on board", sorted by DPS.
@@ -46,3 +46,10 @@ phone, the what-if state, list view). Decisions:
 - List view: each weapon row shows its charge as a small dropdown that opens the same list.
 - Checks: per-charge DPS and range against pyfa (oracle fit with that charge), drag / drop / tap, the "not on board" flag,
   phone sheet.
+
+Delivery 2 as built: the list shows on board first (loaded, cargo, fleet hangar), then "not on board" by DPS, with each
+charge's DPS and range worked out on opening (about a second for 30 charges). The engine now takes which copies are
+active from the Fit card (a weapon's copies can hold different charges). Found on the way and fixed: Civilian missiles
+got the missile damage skills and Ballistic Control Systems (pyfa filters them on the charge requiring Missile Launcher
+Operation), and two launcher types sharing a charge shared one range entry. The EFT export keeps the fit's own charges;
+the Weaknesses picks rank only the charges on board.

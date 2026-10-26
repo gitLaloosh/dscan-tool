@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — The Fit card's Charges list, drag and drop, "not on board"</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Fit card's Charges list: every usable charge, drag and drop, "not on board"</h1>
+<p><span class="tag">Feature</span><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.75</code> &rarr; <code>v2026.10.14.76</code>.</p>
+<p>the owner asked for a dropdown of "every usable charge for those weapons/launchers", as EVE Workbench has, flagging charges the fit doesn't carry, so you can see what each one does to the numbers. Delivery 1 (v.75) made the ring a Workbench-style track showing each weapon's charge. This is delivery 2 of <code>roadmap/charges-plan.md</code>, which the owner approved with "ok proceed". His choices:</p>
+<ul>
+<li>drag and drop: "dropping on a single module loads it there. dropping in middle of ring loads to all possible modules";</li>
+<li>"not on board" as the flag, not "what if".</li>
+</ul>
+<p>I added one thing and told the owner: a click or tap on a charge (or Enter) loads it in every copy, so you don't have to drag.</p>
+
+<h2>What you see</h2>
+<ul>
+<li><b>A Charges button</b> on the Fit card of any fit with turrets or launchers. It opens the list over the ring, one section per weapon type: on board first (loaded, cargo, fleet hangar), then every other charge pyfa lets that weapon load, marked "not on board" and sorted by DPS. While the numbers are worked out, the panel says "Working out each charge's DPS n of N".</li>
+<li><b>Each row</b> shows the charge's icon, name, damage type chips, the weapon's DPS with it in every copy, and its range (optimal + falloff for a turret, flight range for a missile).</li>
+<li><b>Loading.</b> A click, tap or Enter loads a charge in every copy. Dragging (mouse after 6 px, a held finger after 350 ms) fades the list so the ring shows through. Drop it on a weapon tile to load that copy only, or in the middle of the ring to load every weapon that can take it.</li>
+<li><b>"not on board".</b> A picked charge the fit doesn't carry gets a "not on board" tag on the Fit card, dashed tiles on the ring, and "· not on board" on the Loaded line. The numbers on the other cards use the picked charge (Firepower, damage application, the fight strip). "use the fit's own" brings back the fit's charges, and reset clears the picks with the states.</li>
+<li><b>List view:</b> each weapon row has a charge chip that opens the list at that weapon. Charge rows already shown on a weapon aren't repeated.</li>
+<li><b>My Ship</b> keeps picked charges across reloads.</li>
+<li><b>Phones (below 599 px):</b> the list is a bottom sheet.</li>
+<li><b>Left as they were:</b> the EFT export keeps the fit's own charges. The Weaknesses picks rank only the charges on board, so it doesn't tell you to use ammo you don't have.</li>
+</ul>
+
+<h2>How it's matched to pyfa</h2>
+<ul>
+<li><b>The list</b> is pyfa's <code>Module.getValidCharges</code>: every published type in the weapon's chargeGroup1-4 (pyfa's loop never reads chargeGroup5) that <code>isValidCharge</code> accepts (volume within the weapon's capacity; chargeSize equal when the weapon has one).</li>
+<li><b>The numbers</b> come from the page's own engine with that charge loaded, the same engine every card uses, so a row's DPS is what Firepower shows after loading it.</li>
+<li><b>Per-copy charges:</b> the engine now takes which copies are active from the Fit card (<code>moduleStates[id].order</code>), and walks the high slots in flag order, so copy k is the k-th high slot. Setting the Nova launcher online now stops that launcher, not whichever came first.</li>
+</ul>
+
+<h2>Bugs the list found (fixed)</h2>
+<p>Running every valid charge through pyfa found two engine bugs no golden fit had reached:</p>
+<ul>
+<li><b>Civilian missiles</b> got Warhead Upgrades, the missile size skill and Ballistic Control Systems: 1.51&times; pyfa. pyfa filters all of those on the charge requiring Missile Launcher Operation, and Civilian missiles require no skill. New golden <code>caracal_constructed_civilian_light_missiles</code>: 105 DPS (pyfa 104.93; v.75 gave 173).</li>
+<li><b>Two launcher types loading the same charge</b> (a Caracal with a Rapid Light and a Light Missile Launcher) shared one range entry. It was keyed by the charge alone; it is now keyed by weapon and charge.</li>
+<li><b>Per-copy states</b> (above). New golden <code>drake_constructed_mixed_charges_copy_states</code>: 182 DPS (pyfa, active launchers only, 182.26; v.75 gave 237).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/independent_checks/check_charge_list.py</code></b>, in the update chain (now 40 steps). Seven fits (heavy missiles, hybrids, lasers with crystals, autocannons, artillery, two light launcher types, an Entropic Disintegrator). For every weapon: the list against pyfa getValidCharges; for every charge, DPS and range against pyfa's handlers. Result: 0 mismatches, 279 charges. It found the two engine bugs above.</li>
+<li><b>New <code>tools/page_checks/charges_check.py</code></b>: the list and its order, DPS and range per row against the engine, click / drag onto one launcher / drop in the middle / Enter, per-copy states, the "not on board" tag and dashed tiles, "use the fit's own", reset, Escape, a Caracal's two sections, list-view chips, My Ship after a reload, and the phone sheet with a held-finger drag. v.75 fails (no button). Ignoring per-copy states fails 1; a tile drop that loads every copy fails 3 or more.</li>
+<li><b>Harnesses:</b> <code>esi_from_sde.py</code> serves group type lists; <code>eft_engine.py</code> gains <code>run_page()</code>, which runs a page function in Node with ESI answered from the SDE.</li>
+<li>LESSON #65: the whole chain and all page checks were run, and two readers needed changes:
+<ul>
+<li><b><code>golden_oracle.py</code></b>, pyfa's side of 17 checks, read state counts but not the new per-copy order, so it set the wrong Drake launcher online and the new golden failed against it (182 vs 237). It now honors the order as the tool does, also when a check passes the tool's own counts, and pairs charges with copies in slot-flag order. v.75 fails both new goldens against pyfa.</li>
+<li><b><code>layout_check.py</code></b> flagged the list view's charge chip at 375 px: it measured a long charge name's full text, though the chip cuts it with an ellipsis. It now measures ellipsis-cut text where it shows; any other clipping still counts. The chip without its ellipsis fails 2.</li>
+</ul></li>
+<li>Regression ALL PASS (265 fits), update chain all 40 steps OK, all 27 page checks 0 failures, the three lints 0 problems. PYFA CORE unchanged.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #68: a new list of inputs exposes the engine to inputs no fit had, so check every one against pyfa.</p>
+<ul>
+<li>265 golden fits passed, yet the first full run of the list against pyfa found a Civilian missile at 1.51&times; and a shared range entry.</li>
+<li>When a feature lets the user pick from a list the fits never contained, run the whole list through pyfa once, not a sample, and write goldens for the fixes from pyfa.</li>
+<li>When pinning from the oracle, add only what pyfa counts: <code>module_dps</code> ignores a module's state, so sum the active ones only. The first Drake pin summed an online launcher too.</li>
+</ul>
+</body>
+</html>

@@ -1438,6 +1438,65 @@
   .hull-pick-btn:hover, .hull-pick[open] .hull-pick-btn{border-color:var(--amber-dim);}
   .hull-pick-btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
   .hp-freq{font:400 12px var(--mono); color:var(--text-dim);}
+  /* v2026.10.14.76 CHARGES (roadmap/charges-plan.md delivery 2): the Charges button and list, drag and drop, "not on board" */
+  .fl-fit .fit-summary{position:relative;}
+  button.chg-btn{height:30px; padding:0 10px; font:600 11.5px var(--sans); border:1px solid rgba(79,195,217,0.45); border-radius:4px; background:transparent; color:var(--cyan); cursor:pointer;}
+  button.chg-btn:hover, button.chg-btn.on{background:rgba(79,195,217,0.1); border-color:var(--cyan);}
+  .chg-away-tag{font:600 10.5px var(--sans); color:var(--amber); border:1px solid var(--amber-dim); border-radius:10px; padding:2px 8px; white-space:nowrap;}
+  .chg-pop{position:absolute; left:10px; right:10px; top:52px; z-index:30; display:flex; flex-direction:column; max-height:min(620px, calc(100vh - 120px)); background:var(--panel-2); border:1px solid var(--line); border-radius:8px; box-shadow:0 12px 32px rgba(0,0,0,0.55); padding:10px 10px 8px; transition:opacity 0.12s;}
+  .chg-head{display:flex; justify-content:space-between; align-items:center; color:var(--heading); font-size:14px; margin-bottom:6px;}
+  button.chg-close{width:32px; height:32px; min-height:32px; padding:0; border:none; background:transparent; color:var(--text-dim); font-size:20px; cursor:pointer;}
+  button.chg-close:hover{color:var(--heading);}
+  .chg-filter{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px;}
+  button.chg-chip{display:inline-flex; align-items:center; gap:5px; min-height:26px; padding:2px 10px; font-size:11.5px; color:var(--text-dim); border:1px solid var(--line); border-radius:13px; background:transparent; cursor:pointer;}
+  button.chg-chip.on{color:var(--heading); border-color:var(--text-dim);}
+  .chg-dot{width:7px; height:7px; border-radius:50%; display:inline-block; flex:none;}
+  .chg-dot.em{background:var(--em);} .chg-dot.therm{background:var(--therm);} .chg-dot.kin{background:var(--kin);} .chg-dot.exp{background:var(--exp);}
+  .chg-body{overflow-y:auto; overscroll-behavior:contain; min-height:0;}
+  .chg-wait{padding:18px 6px; color:var(--text-dim); font-size:12.5px;}
+  .chg-wait .chg-n{font-family:var(--mono);}
+  .chg-wh{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text); padding:8px 4px 6px; border-top:1px solid var(--line); flex-wrap:wrap;}
+  .chg-w:first-child .chg-wh{border-top:none;}
+  .chg-wh img{width:24px; height:24px; border-radius:3px;}
+  .chg-now{color:var(--text-dim); font-size:11.5px; margin-left:auto;}
+  .chg-cols, .chg-row{display:grid; grid-template-columns:30px minmax(0,1fr) 3.4em 6.4em; align-items:center; column-gap:8px;}
+  .chg-cols{font-size:10px; text-transform:uppercase; letter-spacing:var(--label-tracking); color:var(--text-dim); padding:0 6px;}
+  .chg-cols span:nth-child(2), .chg-cols span:nth-child(3){text-align:right;}
+  .chg-cols span:first-child{grid-column:1 / 3;}
+  .chg-sec{font-size:10.5px; text-transform:uppercase; letter-spacing:var(--label-tracking); color:var(--text-dim); margin:8px 4px 3px; font-weight:600;}
+  button.chg-row{position:relative; width:100%; min-height:38px; padding:3px 6px; background:transparent; border:1px solid transparent; border-radius:5px; color:var(--text); text-align:left; font:inherit; cursor:grab; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;}
+  button.chg-row[hidden]{display:none;}
+  button.chg-row:hover{background:var(--line-soft); border-color:transparent;}
+  button.chg-row:focus-visible{outline:2px solid var(--cyan); outline-offset:-2px;}
+  button.chg-row.is-cur{border-color:var(--cyan); background:rgba(79,195,217,0.08);}
+  .chg-row img{grid-row:1 / 3; width:28px; height:28px; border-radius:4px;}
+  .chg-row .chg-dot{position:absolute; left:30px; top:6px; box-shadow:0 0 0 1.5px var(--panel-2);}
+  .chg-row .chg-n{font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .chg-row.is-away .chg-n{color:var(--text-dim);}
+  .chg-row .chg-v{font:500 12px var(--mono); text-align:right; color:var(--heading); white-space:nowrap;}
+  .chg-row.is-away .chg-v{color:var(--text);}
+  .chg-tag{grid-column:2 / -1; font-size:10.5px; color:var(--cyan); margin-top:-1px;}
+  .chg-tag.is-away{color:var(--amber);}
+  .chg-foot{font-size:11px; color:var(--text-dim); margin:8px 4px 2px; line-height:1.4;}
+  .chg-dragging .chg-pop{opacity:0.12; pointer-events:none;}
+  .chg-ghost{position:fixed; z-index:1000; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:6px; pointer-events:none; box-shadow:0 6px 18px rgba(0,0,0,0.6); border:1px solid var(--cyan);}
+  .chg-dragging .fit-ring-ship{box-shadow:0 0 0 2px rgba(79,195,217,0.35) inset;}
+  .ms-state.ms-tile.chg-drop-ok{box-shadow:0 0 0 3px rgba(79,195,217,0.55); border-color:var(--cyan);}
+  .ms-state.ms-tile.chg-away{border-color:var(--amber); border-style:dashed;}
+  .chg-away-note{color:var(--amber); font-weight:500;}
+  button.chg-own{padding:0; border:none; background:none; color:var(--cyan); font:500 12px var(--sans); cursor:pointer; text-decoration:underline; text-underline-offset:2px;}
+  .ms-name-col{display:flex; flex-direction:column; align-items:flex-start; gap:3px;}
+  button.ms-chg{display:inline-flex; align-items:center; gap:6px; max-width:100%; min-height:26px; padding:2px 8px 2px 3px; background:var(--line-soft); border:1px solid var(--line); border-radius:4px; color:var(--text); font:400 12px var(--sans); cursor:pointer;}
+  button.ms-chg img{width:20px; height:20px; border-radius:3px; flex:none;}
+  button.ms-chg span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+  button.ms-chg b{font:600 10.5px var(--sans); color:var(--amber); white-space:nowrap;}
+  button.ms-chg.chg-away{border-color:var(--amber-dim); border-style:dashed;}
+  .ms-chg-caret{color:var(--text-dim); flex:none;}
+  @media (max-width:599px){
+    .chg-pop{position:fixed; left:0; right:0; top:auto; bottom:0; max-height:75vh; border-radius:12px 12px 0 0; z-index:1200;}
+    .chg-cols, .chg-row{grid-template-columns:30px minmax(0,1fr) 3em 5.8em;}
+    button.chg-close{width:44px; height:44px; min-height:44px;}
+  }
   /* v2026.10.14.74: a hull's class beside its name (hullClassHtml), muted */
   .hull-cls{font:400 12px var(--sans); color:var(--text-dim); margin-left:0.3em; white-space:nowrap; letter-spacing:normal; text-transform:none;}
   .hull-cls:empty{display:none;}
@@ -1725,7 +1784,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.75</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.76</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1906,7 +1965,8 @@ const CARD_INFO = {
  ],
  "fit": [
   "Click a module's state to switch it off, online or active, and a drone square to put drones in space or take them back; every card recalculates. The game's rules still apply (one propulsion module running at a time, Bastion blocks the Micro Jump Drive, and so on).",
-  "Ring view: filled dot = active, hollow = online, dashed = off; hover a module for its name. The reset icon puts every module and drone back to its default state.",
+  "Ring view: filled dot = active, hollow = online, dashed = off; hover a module for its name. A weapon shows the charge loaded in it. The reset icon puts every module and drone back to its default state, and the fit's own charges.",
+  "Charges: every charge each turret and launcher can load (pyfa's list), with its DPS and range on this fit. Click one to load it into every copy; drag it onto one weapon for that one only, or into the middle of the ring for every weapon that takes it (hold a finger on it first on a phone). A charge the fit doesn't have is marked not on board, and so is the card while one is loaded; every card uses the charges shown.",
   "A killmail doesn't say what was running, so every module starts running if the game allows it (one propulsion module, the fastest; only as many Command Bursts as the hull permits), except cloaks, Micro Jump Drives and Field Generators, a Signature Suppressor's burst, Entosis Links, Capital Sensor Arrays and an Assault Damage Control's burst, which start online.",
   "Implants and boosters are in every number, as in pyfa; booster side effects are off (pyfa's default)."
  ],
@@ -2506,6 +2566,15 @@ const MISSILE_DAMAGE_SKILL_IDS = [3320, 3321, 3322, 3324, 3325, 3326, 25719]; //
 // Extra multiplier for a charge that requires more than one of them (1 for every other charge, including XL
 // torpedoes / cruise missiles, which require none of these and keep the 1.25 in MAX_MISSILE_DAMAGE_MULT).
 // LESSON #4: a universal constant is a hand table with one row -- check every charge it covers.
+// v2026.10.14.76 (found by check_charge_list.py: a Civilian Scourge Light Missile at 1.51x pyfa's DPS): pyfa's missile
+// damage handlers -- Warhead Upgrades, the missile size skills, Ballistic Control Systems and the missile damage rigs --
+// all filter on the CHARGE requiring Missile Launcher Operation (eos/effects.py: mod.charge.requiresSkill('Missile Launcher
+// Operation')). A charge that requires no skill (the Civilian missiles) gets none of them: its damage multiplier is 1.
+// (The hull's, subsystems' and implants' rows carry their own pyfa filters, hullWeaponMods.)
+function missileChargeDamageMult(chargeDogma, moduleDmgMult){
+  const mlo = REQUIRED_SKILL_ATTRS.some(a => attrVal(chargeDogma || [], a, 0) === MISSILE_LAUNCHER_OPERATION_SKILL_ID);
+  return mlo ? MAX_MISSILE_DAMAGE_MULT * missileExtraSkillDamageMult(chargeDogma) * moduleDmgMult : 1;
+}
 function missileExtraSkillDamageMult(chargeDogma){
   const n = REQUIRED_SKILL_ATTRS.filter(a => MISSILE_DAMAGE_SKILL_IDS.includes(attrVal(chargeDogma || [], a, 0))).length;
   return n > 1 ? Math.pow(1.25, n - 1) : 1;
@@ -13100,7 +13169,9 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // into IT (same flag) instead of just being matched by category against
   // whatever's floating in the cargo hold. This is what makes DPS scale
   // correctly with weapon count even when there's no "spare" ammo in cargo.
-  const flagList = [...(highSlotByFlag ? highSlotByFlag.keys() : [])];
+  // v2026.10.14.76: in flag order (a killmail lists its items in any order), so a weapon's k-th copy is its k-th High slot,
+  // as the Fit card numbers them (fitWeaponChargesByCopy, the copy order of a state request)
+  const flagList = [...(highSlotByFlag ? highSlotByFlag.keys() : [])].sort((a, b) => Number(a) - Number(b));
   const flagItemIds = new Set();
   for(const flag of flagList) for(const it of highSlotByFlag.get(flag)) flagItemIds.add(it.id);
   const flagClassified = await analyzeChunks([...flagItemIds], async (id) => ({id, cls: await classifyHighSlotItem(id)}), 5);
@@ -13124,6 +13195,8 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   const applicationWeapons = new Map(); // v2026.10.14.34: 'weaponTypeId:chargeTypeId' -> PYFA CORE application inputs + DPS
   let unappliedFixedDps = 0;            // fixed-damage modules other than smartbombs (none counted by pyfa's graph here)
   const weaponActiveLeft = new Map(); // v.20: typeId -> ACTIVE copies not yet given to a High slot
+  const weaponCopySeen = new Map();   // v.76: typeId -> copies (High slots) of it walked so far
+  const weaponFlagCount = (id) => flagList.reduce((n, flag) => n + (highSlotByFlag.get(flag).some(it => it.id === id) ? 1 : 0), 0);
   const weaponTypesSeen = new Map();  // v2026.10.14.68: every weapon type in a High slot (typeId -> name), for inactiveWeapons
 
   for(const flag of flagList){
@@ -13142,7 +13215,16 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     const flagQty = weaponItem.qty || 1;
     const weaponState = moduleStateResult.byId.get(weaponItem.id);
     let qty = flagQty;
-    if(weaponState){
+    // v2026.10.14.76 (roadmap/charges-plan.md delivery 2): the copies the Fit card set active, when it says which
+    // (moduleStates[typeId].order: a state per copy, copies in flag order, as pyfa keeps one state per module). A
+    // copy can hold its own charge, so WHICH copies fire matters. Used only when it agrees with the resolved counts.
+    const copyK = weaponCopySeen.get(weaponItem.id) || 0;
+    weaponCopySeen.set(weaponItem.id, copyK + 1);
+    const order = weaponState && moduleStates && moduleStates[String(weaponItem.id)] && moduleStates[String(weaponItem.id)].order;
+    if(weaponState && Array.isArray(order) && flagQty === 1 && order.length === weaponFlagCount(weaponItem.id)
+       && order.filter(x => x === 'active').length === Math.round(weaponState.active)){
+      qty = order[copyK] === 'active' ? 1 : 0;
+    }else if(weaponState){
       const left = weaponActiveLeft.has(weaponItem.id) ? weaponActiveLeft.get(weaponItem.id) : weaponState.active;
       qty = Math.max(0, Math.min(flagQty, left));
       weaponActiveLeft.set(weaponItem.id, left - qty);
@@ -13301,7 +13383,10 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
           }
         }
       }
-      if(rangeEntry && !rangeByAmmo.has(chargeItem.id)) rangeByAmmo.set(chargeItem.id, rangeEntry);
+      // v2026.10.14.76: one per weapon type and charge (was per charge: a second turret type sharing the charge, or a second
+      // launcher type, got the first one's entry -- found by check_charge_list.py on two launcher types)
+      const rangeKey = `${weaponItem.id}:${chargeItem.id}`;
+      if(rangeEntry && !rangeByAmmo.has(rangeKey)) rangeByAmmo.set(rangeKey, rangeEntry);
       const turretSpecMult = !isMissile ? turretSpecializationMult(weaponDogma) : 1; // LESSON #18
       // Missile Specialization (see MISSILE_SPECIALIZATION_SKILL_IDS comment
       // above, independent review finding #4, 2026-10-11) -- T2-gated RoF
@@ -13311,7 +13396,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       // v2026.10.14.6: the ship mode's damage and rate of fire (MODE_EFFECT_ROWS; was the hand
       // Sharpshooter +33.3% on the hull's weapon category).
       const mw = modeWeaponMods(weaponDogma, weaponCls.group ? weaponCls.group.name : '', chargeDogma, chargeCls.group ? chargeCls.group.name : '');
-      const dmgSkillMult = (isMissile ? MAX_MISSILE_DAMAGE_MULT * missileExtraSkillDamageMult(chargeDogma) : (isVorton ? MAX_VORTON_DAMAGE_MULT : MAX_TURRET_DAMAGE_MULT) * turretSpecMult) * catMod.dmgMult * hullDmgMult;
+      const dmgSkillMult = (isMissile ? missileChargeDamageMult(chargeDogma, catMod.dmgMult) : (isVorton ? MAX_VORTON_DAMAGE_MULT : MAX_TURRET_DAMAGE_MULT) * turretSpecMult * catMod.dmgMult) * hullDmgMult;
       const rofSkillMult = (isMissile ? MAX_MISSILE_ROF_MULT * missileSpecMult : (isVorton ? MAX_VORTON_ROF_MULT : MAX_TURRET_ROF_MULT)) * weaponRofMult(catMod, category, hw) * mw.cycle;
       const effectiveCycleSec = (cycleMs / 1000) * rofSkillMult;
       // Entropic Disintegrator spool-up (bug-class #20, see
@@ -13443,7 +13528,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
         const hullDmgMult = hullDamageMultFor(catMod.hullDamageBonuses, ammoDogma); // fallback hulls only
         const hwAmmo = hullWeaponMods(hullDamageRows, weaponRef, {dogma: ammoDogma, group: a.group ? a.group.name : ''});
         const mwAmmo = modeWeaponMods(weaponDogma, weaponRef.group, ammoDogma, a.group ? a.group.name : ''); // v2026.10.14.6 mode
-        const dmgSkillMult = (isMissile ? MAX_MISSILE_DAMAGE_MULT * missileExtraSkillDamageMult(ammoDogma) : (isVorton ? MAX_VORTON_DAMAGE_MULT : MAX_TURRET_DAMAGE_MULT) * turretSpecMult) * catMod.dmgMult * hullDmgMult;
+        const dmgSkillMult = (isMissile ? missileChargeDamageMult(ammoDogma, catMod.dmgMult) : (isVorton ? MAX_VORTON_DAMAGE_MULT : MAX_TURRET_DAMAGE_MULT) * turretSpecMult * catMod.dmgMult) * hullDmgMult;
         const perShot = DMG.reduce((sum, d) => sum + attrVal(ammoDogma, DAMAGE_DEALT_ATTR[d], 0) * hwAmmo.dmg[d] * mwAmmo.dmg[d], 0) * multiplier * dmgSkillMult * spoolupMult;
         const dps = (perShot / effectiveCycleSec) * qty;
         const existing = ammoContribution.get(a.id) || {name: a.type.name, dps: 0};
@@ -15208,9 +15293,10 @@ function nextModuleState(item, from, items){
   }
   return {to: from, skipped};
 }
-function moduleStateRowHtml(item, copyIdx, state, items){
+function moduleStateRowHtml(item, copyIdx, state, items, chip = ''){
   const icon = `<img class="ms-icon" src="https://images.evetech.net/types/${item.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
-  const name = `<span class="ms-name">${escapeHtml(item.name)}</span>`;
+  // v2026.10.14.76: a weapon's row carries its charge (chip: a button that opens the Charges list at that weapon)
+  const name = chip ? `<span class="ms-name ms-name-col"><span>${escapeHtml(item.name)}</span>${chip}</span>` : `<span class="ms-name">${escapeHtml(item.name)}</span>`;
   const fixed = item.slot === 'rig' || item.slot === 'subsystem';
   if(fixed){
     return `<div class="fititem ms-row ms-${state}">${icon}${name}<span class="ms-state ms-${state} ms-fixed" title="${item.slot === 'rig' ? 'Rigs' : 'Subsystems'} are always online"><span class="ms-dot"></span>${MODULE_STATE_LABEL[state]}</span></div>`;
@@ -15224,10 +15310,19 @@ function moduleStateRowHtml(item, copyIdx, state, items){
   return `<div class="fititem ms-row ms-${state}">${icon}${name}<button type="button" class="ms-state ms-${state}" data-type-id="${item.typeId}" data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${escapeHtml(item.name)}: ${title}"${nxt.to === state ? ' disabled' : ''}><span class="ms-dot"></span>${MODULE_STATE_LABEL[state]}</button></div>`;
 }
 function moduleListWithStatesHtml(f, idToName, opts = {}){
-  const tally = f.tally;
+  const tally = (f.input && f.input.tally) || f.tally;   // v.76: with the charges loaded from the Charges list
   const ms = f.estimate && f.estimate.moduleStates;
   const items = ms ? ms.items : [];
   const byId = new Map(items.map(it => [it.typeId, it]));
+  // v2026.10.14.76: each weapon copy's charge as a chip on its row (so the charge rows of the High slots aren't repeated)
+  const charges = f.input ? fitWeaponChargesByCopy(f, items, idToName) : new Map(), away = chgAwayIds(f);
+  const inWeapons = new Set([...charges.values()].flat().filter(Boolean).map(c => c.id));
+  const chipFor = (item, k) => {
+    if(!charges.has(item.typeId)) return '';
+    const c = charges.get(item.typeId)[k];
+    const off = c && away.has(c.id);
+    return `<button type="button" class="ms-chg${off ? ' chg-away' : ''}" data-weapon="${item.typeId}" title="${escapeHtml(c ? `${c.name}${off ? ', not on board' : ''}: open the Charges list to change it` : 'No charge loaded: open the Charges list')}">${c ? `<img src="https://images.evetech.net/types/${c.id}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span>${escapeHtml(c.name)}</span>` : '<span>no charge</span>'}${off ? '<b>not on board</b>' : ''}<span class="ms-chg-caret" aria-hidden="true">▾</span></button>`;
+  };
   const groupOrder = ['High slots','Mid slots','Low slots','Rigs','Subsystems','Drone bay','Fighter bay','Implants','Boosters','Fleet hangar','Cargo'];
   let html = '';
   for(const group of groupOrder){
@@ -15253,15 +15348,16 @@ function moduleListWithStatesHtml(f, idToName, opts = {}){
       continue;
     }
     const entries = Object.entries(tally[group])
-      .map(([id, data]) => ({id: Number(id), name: idToName.get(Number(id)) || `type ${id}`, qty: data.totalQty}))
+      .map(([id, data]) => ({id: Number(id), name: chgName(idToName, id), qty: data.totalQty}))
       .sort((a, b) => a.name.localeCompare(b.name));
     html += `<div class="fitgroup">${bayKey ? bayLabelHtml(bayKey, group) : `<h3>${group}</h3>`}`;
     for(const e of entries){
       const item = MODULE_STATE_SLOT_GROUPS.includes(group) ? byId.get(e.id) : null;
       if(item){
         const named = {...item, name: e.name};
-        moduleCopyStates(item, (f.moduleCopyOrder || {})[item.typeId]).forEach((st, k) => { html += moduleStateRowHtml(named, k, st, items); });
+        moduleCopyStates(item, (f.moduleCopyOrder || {})[item.typeId]).forEach((st, k) => { html += moduleStateRowHtml(named, k, st, items, chipFor(item, k)); });
       }else{
+        if(group === 'High slots' && inWeapons.has(e.id)) continue;   // v.76: on its weapons' rows
         html += `<div class="fititem"><span>${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}</span></div>`;
       }
     }
@@ -15487,7 +15583,7 @@ function moduleStateTileHtml(item, copyIdx, state, items, x, y, opts = {}){
   const pos = `left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--turn:${(opts.turn || 0).toFixed(1)}deg;--fit:${fit.toFixed(3)};`;
   const ch = opts.charge;
   const img = `<img src="https://images.evetech.net/types/${ch ? ch.id : item.typeId}/icon?size=64" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><span class="ms-tile-abbr">${escapeHtml(moduleTileAbbr(ch ? ch.name : item.name))}</span><span class="ms-dot"></span>`;
-  const label = ch ? `${item.name} · ${ch.name}` : item.name;
+  const label = ch ? `${item.name} · ${ch.name}${opts.away ? ' (not on board)' : ''}` : item.name;
   const fixed = item.slot === 'rig' || item.slot === 'subsystem';
   if(fixed){
     const t = `${label}: ${MODULE_STATE_LABEL[state]} (${item.slot === 'rig' ? 'rigs' : 'subsystems'} are always online)`;
@@ -15499,17 +15595,17 @@ function moduleStateTileHtml(item, copyIdx, state, items, x, y, opts = {}){
   for(const sk of nxt.skipped) tips.push(`Can't be ${sk.to}: ${sk.reason}.`);
   for(const note of item.notes || []) tips.push(note + '.');
   const title = escapeHtml(tips.join(' ')).replace(/"/g, '&quot;');
-  return `<button type="button" class="ms-state ms-tile ms-${state}${ch ? ' has-charge' : ''}" style="${pos}" data-type-id="${item.typeId}"${ch ? ` data-charge-id="${ch.id}"` : ''} data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${title}"${nxt.to === state ? ' disabled' : ''}>${img}</button>`;
+  return `<button type="button" class="ms-state ms-tile ms-${state}${ch ? ' has-charge' : ''}${opts.away ? ' chg-away' : ''}" style="${pos}" data-type-id="${item.typeId}"${ch ? ` data-charge-id="${ch.id}"` : ''} data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${title}"${nxt.to === state ? ' disabled' : ''}>${img}</button>`;
 }
 function fitRingHtml(f, idToName){
-  const tally = f.tally;
+  const tally = (f.input && f.input.tally) || f.tally;   // v.76: with the charges loaded from the Charges list
   const items = f.estimate.moduleStates.items;
   const byId = new Map(items.map(it => [it.typeId, it]));
   const bySlot = {high: [], mid: [], low: [], rig: [], subsystem: []};
   const loaded = []; // charges / scripts listed in a rack (no state of their own)
   for(const group of MODULE_STATE_SLOT_GROUPS){
     const entries = Object.entries(tally[group] || {})
-      .map(([id, data]) => ({id: Number(id), name: idToName.get(Number(id)) || `type ${id}`, qty: data.totalQty}))
+      .map(([id, data]) => ({id: Number(id), name: chgName(idToName, id), qty: data.totalQty}))
       .sort((a, b) => a.name.localeCompare(b.name));
     for(const e of entries){
       const item = byId.get(e.id);
@@ -15523,6 +15619,7 @@ function fitRingHtml(f, idToName){
   const slots = f.estimate.slots || {};
   const positions = (sl) => Math.max(bySlot[sl].length, Math.round(slots[sl] || 0));
   const charges = fitWeaponChargesByCopy(f, items, idToName);
+  const away = chgAwayIds(f);
   let tiles = '';
   const geo = fitRingGeometry(Math.max(...FIT_RING_ARCS.map(arc => arc.slots.reduce((t, sl) => t + positions(sl), 0))));
   for(const arc of FIT_RING_ARCS){
@@ -15534,13 +15631,13 @@ function fitRingHtml(f, idToName){
       const deg = start + i * step, a = deg * Math.PI / 180, x = 50 + FIT_RING_R * Math.cos(a), y = 50 + FIT_RING_R * Math.sin(a), turn = fitRingTileTurn(deg);
       if(t.empty){ tiles += `<span class="fr-empty" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--turn:${turn.toFixed(1)}deg;" title="Empty ${FIT_SLOT_NAME[t.empty]}" aria-hidden="true"></span>`; return; }
       const ch = (charges.get(t.named.typeId) || [])[t.k] || null;
-      tiles += moduleStateTileHtml(t.named, t.k, t.st, items, x, y, {turn, charge: ch});
+      tiles += moduleStateTileHtml(t.named, t.k, t.st, items, x, y, {turn, charge: ch, away: !!(ch && away.has(ch.id))});
     });
   }
   const shipId = f.input && f.input.shipTypeId;
   const shipName = (shipId && idToName.get(shipId)) || 'ship';
   const ship = shipId ? `<img src="https://images.evetech.net/types/${shipId}/render?size=512" alt="${escapeHtml(shipName)}" loading="lazy" onerror="this.style.display='none';">` : '';
-  const loadedHtml = loaded.length ? `<div class="fit-ring-loaded"><span>Loaded</span> ${loaded.map(e => `${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}`).join(' · ')}</div>` : '';
+  const loadedHtml = loaded.length ? `<div class="fit-ring-loaded"><span>Loaded</span> ${loaded.map(e => `${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}${away.has(e.id) ? ' <b class="chg-away-note">· not on board</b>' : ''}`).join(' · ')}${f.chargePicks ? ` <button type="button" class="chg-own">use the fit's own</button>` : ''}</div>` : '';
   // the dark track under the tiles and the ship inside it (radii in % of the ring's half width, for the gradient)
   const bandIn = Math.max(0, FIT_RING_R - geo.tile / 2 - 1.4), bandOut = Math.min(50, FIT_RING_R + geo.tile / 2 + 1.4), shipD = 2 * bandIn - 1;
   return `<div class="fit-ring" style="--tile:${geo.tile.toFixed(2)}%;--band-in:${(2 * bandIn).toFixed(1)}%;--band-out:${(2 * bandOut).toFixed(1)}%;--ship:${shipD.toFixed(1)}%"><div class="fit-ring-ship">${ship}</div>${tiles}</div>${loadedHtml}`;
@@ -15560,7 +15657,7 @@ function fitWeaponChargesByCopy(f, items, idToName){
     const c = list.find(x => !modules.has(Number(x.id)));
     const id = Number(w.id);
     if(!out.has(id)) out.set(id, []);
-    out.get(id).push(c ? {id: Number(c.id), name: idToName.get(Number(c.id)) || `type ${c.id}`} : null);
+    out.get(id).push(c ? {id: Number(c.id), name: chgName(idToName, c.id)} : null);
   }
   return out;
 }
@@ -15596,7 +15693,7 @@ function fitCardHtml(f, idToName, opts = {}){
   const hasStates = !!(f.estimate && f.estimate.moduleStates && f.input);
   const tally = f.tally || {};
   const moduleCount = MODULE_STATE_SLOT_GROUPS.reduce((t, g) => t + Object.values(tally[g] || {}).reduce((u, d) => u + (d.totalQty || 0), 0), 0);
-  const custom = hasStates && (!!(f.moduleStates && Object.keys(f.moduleStates).length) || !!f.droneStates || !!f.fighterStates);
+  const custom = hasStates && (!!(f.moduleStates && Object.keys(f.moduleStates).length) || !!f.droneStates || !!f.fighterStates || !!f.chargePicks);
   if(!cardIsOpen(f, 'fit')){
     // the owner: "'Fit' header row should show the name of the fit when collapsed. Similar font as 'Total DPS'":
     // f.fitTitle (ship — fit name, or ship — loss date in the Pilot Analyzer), in the stat-label style (.cc-fit).
@@ -15613,9 +15710,15 @@ function fitCardHtml(f, idToName, opts = {}){
   // the owner: "i assume we need an input to reset to the default load state. just do a little reload icon/button
   // next to the Ring/List toggle": always there, active (cyan) once a module or drone state was changed,
   // disabled while everything is in its default state. Same .ms-reset wiring as the old text button.
-  const resetTip = custom ? 'Reset every module, drone and fighter to its default state' : 'Every module, drone and fighter is in its default state';
+  const resetTip = custom ? 'Reset every module, drone and fighter to its default state, and the fit\'s own charges' : 'Every module, drone and fighter is in its default state, with the fit\'s own charges';
   const resetBtn = `<button type="button" class="ms-reset fit-reset-btn${custom ? ' is-custom' : ''}" title="${resetTip}" aria-label="${resetTip}"${custom ? '' : ' disabled'}>${FIT_RESET_SVG}</button>`;
-  const right = `<div class="fit-view-controls">${resetBtn}${fitViewSwitchHtml(view)}</div>`;
+  // v2026.10.14.76 (roadmap/charges-plan.md delivery 2): the Charges list (a fit with a turret or launcher), and the
+  // amber "not on board" tag while a charge the fit doesn't have is loaded
+  const hasWeapons = (f.estimate.moduleStates.items || []).some(it => it.slot === 'high' && weaponCategoryFromGroup(it.groupName) && it.groupName !== 'Smart Bomb');
+  const away = chgAwayIds(f);
+  const awayTag = away.size ? `<span class="chg-away-tag" title="${escapeHtml(`Loaded from the Charges list, not on board this fit: ${[...away].map(id => chgName(idToName, id)).join(', ')}; the numbers on every card use it.`)}">not on board</span>` : '';
+  const chgBtn = hasWeapons ? `<button type="button" class="chg-btn${f.chgOpen ? ' on' : ''}" aria-expanded="${!!f.chgOpen}" title="Every charge your turrets and launchers can load, with its DPS and range">Charges</button>` : '';
+  const right = `<div class="fit-view-controls">${awayTag}${chgBtn}${resetBtn}${fitViewSwitchHtml(view)}</div>`;
   const msg = f.moduleStateMessage ? `<div class="ms-msg">${escapeHtml(f.moduleStateMessage)}</div>` : '';
   const busy = f.moduleStateBusy ? ' fit-card-busy' : '';
   const modulesHtml = view === 'ring'
@@ -15627,6 +15730,7 @@ function fitCardHtml(f, idToName, opts = {}){
     <div class="fit-summary${busy}">
       <div class="fit-card-head">${cardLabelHtml('fit')}<div class="ms-head-right">${right}${infoBtnHtml('fit')}</div></div>
       ${msg}
+      ${hasWeapons && f.chgOpen ? chgPanelHtml(f) : ''}
       ${modulesHtml}
     </div>`;
 }
@@ -15690,10 +15794,11 @@ function wireModuleStateControls(container, f, rerender){
       if(!item) return;
       const counts = {active: Math.round(item.active), online: Math.round(item.online), offline: Math.round(item.offline)};
       counts[from] -= 1; counts[to] += 1;
-      f.moduleStates = {...(f.moduleStates || {}), [id]: counts};
       const order = moduleCopyStates(item, (f.moduleCopyOrder || {})[id]);
       order[Number(btn.dataset.copy) || 0] = to;
       f.moduleCopyOrder = {...(f.moduleCopyOrder || {}), [id]: order};
+      // v2026.10.14.76: the request says which copies (the engine uses it for weapons, whose copies can hold different charges)
+      f.moduleStates = {...(f.moduleStates || {}), [id]: {...counts, order: order.slice()}};
       run();
     });
   });
@@ -15739,7 +15844,13 @@ function wireModuleStateControls(container, f, rerender){
     });
   });
   const reset = container.querySelector('button.ms-reset');
-  if(reset) reset.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if(f.moduleStateBusy) return; f.moduleStates = null; f.moduleCopyOrder = null; f.droneStates = null; f.fighterStates = null; run(); });
+  if(reset) reset.addEventListener('click', async (e) => {
+    e.preventDefault(); e.stopPropagation(); if(f.moduleStateBusy || f.chgLoading) return;
+    f.moduleStates = null; f.moduleCopyOrder = null; f.droneStates = null; f.fighterStates = null;
+    if(f.chargePicks){ f.chargePicks = null; await fitApplyChargePicks(f); chgInvalidate(f); }   // v.76: and the fit's own charges
+    run();
+  });
+  wireCharges(container, f, rerender, run);   // v2026.10.14.76
 }
 
 function fitTabLabel(km, idx){
@@ -17096,7 +17207,8 @@ function wpInputWithCharges(x, assign, kindOf){
   return Object.assign({}, x, {tally, highSlotByFlag: hs});
 }
 async function wpBuildCandidates(f, est){
-  const x = f.input;
+  // v2026.10.14.76: the ammo the fit has on board (its own input), not a charge loaded from the Charges list that isn't
+  const x = f.inputOwn || f.input;
   const ids = new Set(), cargo = [...(x.cargoItemIds || [])];
   for(const list of x.highSlotByFlag.values()) for(const it of list) ids.add(it.id);
   for(const id of cargo) ids.add(id);
@@ -17197,6 +17309,318 @@ async function wpBuildCandidates(f, est){
     fighterClasses, classOf,
     // fighters the picks can't rank (support squadrons deal no damage; structure fighters can't launch): nothing to say
     fighters: false};
+}
+
+// CHARGES (v2026.10.14.76, roadmap/charges-plan.md delivery 2). the owner: "a dropdown that gives you a list of every usable
+// charge for those weapons/launchers ... even if we had to flag items missing from a fit as not being available to the
+// fit, the user might want to see what affect each ammo type has on the numbers"; then drag and drop, "dropping on a single
+// module loads it there. dropping in middle of ring loads to all possible modules", and "not on board" for a charge the
+// fit doesn't have. INPUTS only: f.chargePicks {weaponTypeId: [chargeTypeId per copy, High slots in flag order]} turn the
+// fit's own input (f.inputOwn) into f.input with those charges loaded (fitApplyChargePicks), so every card, the Matchup and
+// the strip run on the charges shown. The list is pyfa's Module.getValidCharges; each charge's DPS and range are the
+// engine's (pyfa's numbers) with that charge in every copy. Checked by check_charge_list.py and charges_check.py.
+const CHG_PYFA_GROUP_ATTRS = [604, 605, 606, 609];   // pyfa getValidCharges reads chargeGroup0..4, i.e. chargeGroup1-4 (no SDE weapon has a chargeGroup5 of its own)
+const CHG_DMG_ATTRS = {em: 114, therm: 118, kin: 117, exp: 116};
+const CHG_CANDIDATES = new Map();   // weaponTypeId -> Promise of [{id, name, dmg}]
+function chgName(idToName, id){ return (idToName && idToName.get(Number(id))) || (typeCache.get(Number(id)) || {}).name || `type ${id}`; }
+async function chgKinds(ids){
+  const out = new Map();
+  await Promise.all([...new Set(ids.map(Number))].map(async id => { try{ out.set(id, await classifyHighSlotItem(id)); }catch(e){ /* unknown type */ } }));
+  return out;
+}
+function chgFlagIds(x){ const ids = []; for(const list of ((x && x.highSlotByFlag) ? x.highSlotByFlag.values() : [])) for(const it of list) ids.push(it.id); return ids; }
+// The fit's own charges: which are on board (loaded or in the cargo / fleet hangar) and how many of each.
+function chgOnBoard(f){
+  const own = f.inputOwn || f.input, tally = (own && own.tally) || {};
+  const loaded = new Map(), hold = new Map();
+  for(const [id, d] of Object.entries(tally['High slots'] || {})) loaded.set(Number(id), d.totalQty);
+  for(const g of ['Cargo', 'Fleet hangar']) for(const [id, d] of Object.entries(tally[g] || {})) hold.set(Number(id), (hold.get(Number(id)) || 0) + d.totalQty);
+  return {loaded, hold, has: (id) => loaded.has(Number(id)) || hold.has(Number(id))};
+}
+// The weapons that can take a charge: every turret / launcher type in a High slot (probe, bomb and interdiction sphere
+// launchers aren't weapons, as in the engine), its copies in flag order with the charge each holds now.
+async function chgWeapons(f){
+  const x = f.input, kinds = await chgKinds(chgFlagIds(x));
+  const out = new Map();
+  for(const flag of [...x.highSlotByFlag.keys()].sort((a, b) => Number(a) - Number(b))){
+    const list = x.highSlotByFlag.get(flag);
+    const w = list.find(it => { const k = kinds.get(it.id); return k && k.kind === 'variable-weapon' && weaponCategoryFromGroup((k.group || {}).name); });
+    if(!w) continue;
+    const c = list.find(it => (kinds.get(it.id) || {}).kind === 'ammo');
+    const g = out.get(w.id) || {weaponTypeId: w.id, name: kinds.get(w.id).type.name, copies: []};
+    g.copies.push(c ? Number(c.id) : null);
+    out.set(w.id, g);
+  }
+  return [...out.values()];
+}
+// pyfa Module.getValidCharges: every published type in the weapon's charge groups that isValidCharge accepts (the charge's
+// volume within the weapon's capacity, the weapon's chargeSize if it has one).
+function chgCandidates(weaponTypeId){
+  if(CHG_CANDIDATES.has(weaponTypeId)) return CHG_CANDIDATES.get(weaponTypeId);
+  const p = (async () => {
+    const w = await getType(weaponTypeId), wd = w.dogma_attributes || [];
+    const size = attrVal(wd, CHARGE_SIZE_ATTR, 0), cap = (w.capacity !== undefined && w.capacity !== null) ? w.capacity : null;
+    const gids = [...new Set(CHG_PYFA_GROUP_ATTRS.map(a => attrVal(wd, a, 0)).filter(Boolean).map(Number))];
+    const ids = [];
+    for(const gid of gids){ const g = await getGroup(gid); for(const t of (g.types || [])) ids.push(Number(t)); }
+    const types = await analyzeChunks([...new Set(ids)], async id => { try{ return await getType(id); }catch(e){ return null; } }, 8);
+    const out = [];
+    for(const t of types){
+      if(!t || !t.published || !gids.includes(Number(t.group_id))) continue;
+      if(t.volume !== undefined && t.volume !== null && cap !== null && t.volume > cap) continue;
+      const td = t.dogma_attributes || [];
+      if(size > 0 && attrVal(td, CHARGE_SIZE_ATTR, null) !== size) continue;
+      const dm = Object.fromEntries(Object.entries(CHG_DMG_ATTRS).map(([k, a]) => [k, attrVal(td, a, 0)]));
+      const top = Object.keys(dm).reduce((a, b) => dm[b] > dm[a] ? b : a);
+      out.push({id: Number(t.type_id), name: t.name, dmg: dm[top] > 0 ? top : null});
+    }
+    return out.sort((a, b) => a.name.localeCompare(b.name));
+  })();
+  p.catch(() => CHG_CANDIDATES.delete(weaponTypeId));
+  CHG_CANDIDATES.set(weaponTypeId, p);
+  return p;
+}
+// f.input = the fit's own input with f.chargePicks loaded, copy by copy (a copy left undefined keeps its own charge). The
+// tally's High slots follow: a new charge takes the quantity of the one it replaces (1 in an empty slot).
+async function fitApplyChargePicks(f){
+  if(!f.inputOwn) f.inputOwn = f.input;
+  const own = f.inputOwn, picks = f.chargePicks || {};
+  if(!Object.keys(picks).length){ f.input = own; return; }
+  const kinds = await chgKinds([...chgFlagIds(own), ...Object.values(picks).flat().filter(Boolean)]);
+  const kindOf = (id) => (kinds.get(Number(id)) || {}).kind;
+  const tally = JSON.parse(JSON.stringify(own.tally || {})), hi = tally['High slots'] || (tally['High slots'] = {});
+  const hs = new Map(), seen = new Map();
+  for(const flag of [...own.highSlotByFlag.keys()].sort((a, b) => Number(a) - Number(b))){
+    const list = own.highSlotByFlag.get(flag);
+    const w = list.find(it => kindOf(it.id) === 'variable-weapon');
+    const want = w && picks[w.id];
+    if(!want){ hs.set(flag, list); continue; }
+    const k = seen.get(w.id) || 0; seen.set(w.id, k + 1);
+    const c = want[k];
+    if(c === undefined){ hs.set(flag, list); continue; }
+    let q = 1;
+    for(const it of list){
+      if(kindOf(it.id) !== 'ammo') continue;
+      q = it.qty || 1;
+      const e = hi[it.id];
+      if(e){ e.totalQty -= (it.qty || 1); if(!(e.totalQty > 1e-9)) delete hi[it.id]; }
+    }
+    const next = list.filter(it => kindOf(it.id) !== 'ammo');
+    if(c){ next.push({id: Number(c), qty: q}); const e = hi[c] || (hi[c] = {lossCount: 1, totalQty: 0}); e.totalQty += q; }
+    hs.set(flag, next);
+  }
+  f.input = Object.assign({}, own, {tally, highSlotByFlag: hs});
+}
+// Load `chargeId` into `weaponTypeId` copies (copy index, or every copy when null). A pick equal to the fit's own charge in
+// every copy is dropped, so the fit is back to its own.
+async function chgLoad(f, weaponTypeId, chargeId, copy = null){
+  const weapons = await chgWeapons(Object.assign({}, f, {input: f.inputOwn || f.input}));
+  const ownW = weapons.find(w => w.weaponTypeId === weaponTypeId);
+  if(!ownW) return false;
+  const picks = JSON.parse(JSON.stringify(f.chargePicks || {}));
+  const cur = picks[weaponTypeId] || ownW.copies.slice();
+  if(copy === null) cur.fill(chargeId); else cur[copy] = chargeId;
+  if(cur.every((c, i) => c === ownW.copies[i])) delete picks[weaponTypeId]; else picks[weaponTypeId] = cur;
+  f.chargePicks = Object.keys(picks).length ? picks : null;
+  await fitApplyChargePicks(f);
+  return true;
+}
+// Each candidate's numbers on this fit: the weapon type's DPS (pyfa's, its active copies) and range with that charge in
+// every copy, the rest of the fit as it is. Cached per fit state (module states, mode, the other weapons' charges).
+function chgNumbersKey(f, weaponTypeId){
+  const p = Object.assign({}, f.chargePicks || {}); delete p[weaponTypeId];
+  return JSON.stringify([weaponTypeId, f.moduleStates || null, f.activeMode || null, p, f.droneStates || null]);
+}
+async function chgNumbers(f, weaponTypeId, ids, onEach){
+  if(!f.chgCache) f.chgCache = new Map();
+  const key = chgNumbersKey(f, weaponTypeId);
+  const cache = f.chgCache.get(key) || new Map(); f.chgCache.set(key, cache);
+  const x = f.input, kinds = await chgKinds([...chgFlagIds(x), ...ids]);
+  const kindOf = (id) => (kinds.get(Number(id)) || {}).kind;
+  const states = (f.moduleStates && Object.keys(f.moduleStates).length) ? f.moduleStates : null;
+  const mode = f.tacticalModes ? (f.activeMode || 'sharpshooter') : 'sharpshooter';
+  for(const id of ids){
+    if(!cache.has(id)){
+      const input = wpInputWithCharges(x, new Map([[weaponTypeId, id]]), kindOf);
+      const e = await estimateHpAndDps(input.shipTypeId, input.tally, input.cargoItemIds, input.highSlotByFlag, mode, input.midSlotByFlag,
+        states, f.droneStates || null, {fitSource: x.fitSource || null, fighterStates: f.fighterStates || null});
+      const aw = ((e.application || {}).weapons || []).filter(w => w.weaponTypeId === weaponTypeId);
+      const r = (e.rangeEstimates || []).find(r => r.weaponTypeId === weaponTypeId && r.ammoTypeId === id);
+      cache.set(id, {dps: aw.reduce((s, w) => s + w.dps, 0), range: r ? (r.kind === 'missile' ? {flight: r.travelDistanceM} : {optimal: r.optimalM, falloff: r.falloffM}) : null});
+    }
+    if(onEach) onEach(id, cache.get(id));
+  }
+  return cache;
+}
+// Everything the Charges list shows, for each weapon type: its copies, the charge each holds, every valid charge with
+// on board / not on board and its numbers. Built when the list opens; f.chgData keeps it for the redraws after.
+async function chgBuild(f, onProgress){
+  const weapons = await chgWeapons(f);
+  const board = chgOnBoard(f);
+  const out = [];
+  let done = 0, total = 0;
+  const lists = await Promise.all(weapons.map(w => chgCandidates(w.weaponTypeId)));
+  lists.forEach(l => { total += l.length; });
+  for(let i = 0; i < weapons.length; i++){
+    const w = weapons[i], cands = lists[i];
+    const nums = await chgNumbers(f, w.weaponTypeId, cands.map(c => c.id), () => { done++; if(onProgress) onProgress(done, total); });
+    out.push({weaponTypeId: w.weaponTypeId, name: w.name, copies: w.copies,
+      options: cands.map(c => Object.assign({}, c, nums.get(c.id), {loaded: board.loaded.has(c.id) ? board.loaded.get(c.id) : 0,
+        hold: board.hold.get(c.id) || 0, onBoard: board.has(c.id), inUse: w.copies.filter(x => x === c.id).length}))});
+  }
+  return out;
+}
+function chgRangeText(r){
+  if(!r) return '';
+  if(r.flight !== undefined) return `${(r.flight / 1000).toFixed(1)} km`;
+  const o = (r.optimal || 0) / 1000, fo = (r.falloff || 0) / 1000;
+  return `${o.toFixed(o < 10 ? 1 : 0)}+${fo.toFixed(fo < 10 ? 1 : 0)} km`;
+}
+const CHG_DMG_LABEL = {em: 'EM', therm: 'Therm', kin: 'Kin', exp: 'Exp'};
+function chgPanelHtml(f){
+  const data = f.chgData;
+  const filter = f.chgFilter || 'all';
+  const chips = ['all', 'em', 'therm', 'kin', 'exp'].map(k => `<button type="button" class="chg-chip${filter === k ? ' on' : ''}" data-chg-filter="${k}" aria-pressed="${filter === k}">${k === 'all' ? 'All' : `<i class="chg-dot ${k}"></i>${CHG_DMG_LABEL[k]}`}</button>`).join('');
+  let body = '';
+  if(!data){
+    const p = f.chgProgress || [0, 0];
+    body = `<div class="chg-wait" role="status">Working out each charge's DPS <span class="chg-n">${p[1] ? `${p[0]} of ${p[1]}` : ''}</span></div>`;
+  }else if(!data.length){
+    body = `<div class="chg-wait">No turret or launcher on this fit takes charges.</div>`;
+  }else{
+    for(const w of data){
+      const row = (o) => {
+        const tag = o.inUse ? `loaded ×${o.inUse}` : (o.onBoard ? (o.hold ? `cargo ${Math.round(o.hold).toLocaleString()}` : 'on board') : 'not on board');
+        const rt = chgRangeText(o.range);
+        const tip = `${o.name}: ${Math.round(o.dps || 0).toLocaleString()} DPS from ${w.name} with it in every copy${rt ? `, range ${rt}` : ''}. ${o.onBoard ? '' : 'Not on board this fit. '}Click to load it into every copy; drag it onto one ${w.name} to load only that one, or into the middle of the ring for every weapon that takes it.`;
+        return `<button type="button" class="chg-row${o.inUse ? ' is-cur' : ''}${o.onBoard ? '' : ' is-away'}" data-weapon="${w.weaponTypeId}" data-charge="${o.id}" data-dmg="${o.dmg || ''}"${filter !== 'all' && o.dmg !== filter ? ' hidden' : ''} title="${escapeHtml(tip)}">
+          <img src="https://images.evetech.net/types/${o.id}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'">${o.dmg ? `<i class="chg-dot ${o.dmg}"></i>` : ''}
+          <span class="chg-n">${escapeHtml(o.name)}</span><span class="chg-v">${Math.round(o.dps || 0).toLocaleString()}</span><span class="chg-v">${escapeHtml(rt)}</span>
+          <span class="chg-tag${o.onBoard || o.inUse ? '' : ' is-away'}">${tag}</span></button>`;
+      };
+      const on = w.options.filter(o => o.onBoard || o.inUse).sort((a, b) => (b.inUse - a.inUse) || (b.loaded - a.loaded) || (b.dps - a.dps) || a.name.localeCompare(b.name));
+      const away = w.options.filter(o => !(o.onBoard || o.inUse)).sort((a, b) => (b.dps - a.dps) || a.name.localeCompare(b.name));
+      const now = [...new Set(w.copies)].map(c => c ? escapeHtml(chgName(null, c)) : 'nothing').join(', ');
+      body += `<section class="chg-w" data-weapon="${w.weaponTypeId}">
+        <div class="chg-wh"><img src="https://images.evetech.net/types/${w.weaponTypeId}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b>${escapeHtml(w.name)}</b> ×${w.copies.length}<span class="chg-now">${now}</span></div>
+        <div class="chg-cols" aria-hidden="true"><span></span><span>DPS</span><span>range</span></div>
+        ${on.length ? `<div class="chg-sec">On board</div>${on.map(row).join('')}` : ''}
+        ${away.length ? `<div class="chg-sec">Not on board</div>${away.map(row).join('')}` : ''}
+      </section>`;
+    }
+  }
+  return `<div class="chg-pop" role="dialog" aria-label="Charges">
+      <div class="chg-head"><b>Charges</b><button type="button" class="chg-close" aria-label="Close">×</button></div>
+      <div class="chg-filter" role="group" aria-label="Damage type">${chips}</div>
+      <div class="chg-body">${body}</div>
+      <div class="chg-foot">Click a charge to load it into every copy. Drag it onto one weapon for that one only, or into the middle of the ring for every weapon that takes it. DPS: that weapon type's, your skills at V.</div>
+    </div>`;
+}
+// The Fit card's charge state: any charge loaded that the fit doesn't have (the "not on board" tag, dashed tiles).
+function chgAwayIds(f){
+  if(!f.chargePicks) return new Set();
+  const board = chgOnBoard(f), out = new Set();
+  for(const list of Object.values(f.chargePicks)) for(const c of list) if(c && !board.has(c)) out.add(Number(c));
+  return out;
+}
+// Builds the list when it is open and not built yet (each rerender's wiring calls it; a build already running is left
+// alone). After a load the list is rebuilt: its numbers come from chgNumbers' cache, so only the changed state reruns.
+function chgEnsure(f, rerender){
+  if(!f.chgOpen || f.chgData || f.chgBuilding) return;
+  f.chgBuilding = true; f.chgProgress = [0, 0];
+  const seq = f.chgSeq = (f.chgSeq || 0) + 1;
+  chgBuild(f, (a, b) => {
+    f.chgProgress = [a, b];
+    const n = document.querySelector('.chg-pop .chg-wait .chg-n');
+    if(n && f.chgSeq === seq) n.textContent = `${a} of ${b}`;
+  }).then(d => { if(f.chgSeq === seq){ f.chgData = d; } }, e => { if(f.chgSeq === seq){ f.chgData = []; f.moduleStateMessage = 'Charges: ' + e.message; } })
+    .finally(() => { if(f.chgSeq === seq){ f.chgBuilding = false; if(f.chgOpen) rerender(); } });
+}
+function chgInvalidate(f){ f.chgData = null; f.chgBuilding = false; f.chgSeq = (f.chgSeq || 0) + 1; }
+// Wiring (wireModuleStateControls calls it with its rerender and run): the button, the list, its filter, a click / Enter,
+// drag and drop, "use the fit's own".
+function wireCharges(container, f, rerender, run){
+  const busy = () => f.moduleStateBusy || f.chgLoading;
+  const open = container.querySelector('button.chg-btn');
+  if(open) open.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); f.chgOpen = !f.chgOpen; rerender(); });
+  const apply = async (fn) => {
+    if(busy()) return;
+    f.chgLoading = true;
+    try{ await fn(); }finally{ f.chgLoading = false; }
+    chgInvalidate(f);
+    await run();
+  };
+  container.querySelectorAll('button.chg-own').forEach(b => b.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    apply(async () => { f.chargePicks = null; await fitApplyChargePicks(f); });
+  }));
+  container.querySelectorAll('button.ms-chg').forEach(b => b.addEventListener('click', (e) => {   // list view: a weapon's charge
+    e.preventDefault(); e.stopPropagation();
+    f.chgOpen = true; f.chgFocus = Number(b.dataset.weapon); f.chgScroll = 0; rerender();
+  }));
+  const pop = container.querySelector('.chg-pop');
+  chgEnsure(f, rerender);
+  if(!pop) return;
+  const body = pop.querySelector('.chg-body');
+  if(f.chgFocus && f.chgData){ const sec = body.querySelector(`.chg-w[data-weapon="${f.chgFocus}"]`); if(sec) body.scrollTop = sec.offsetTop - body.offsetTop; f.chgFocus = null; f.chgScroll = body.scrollTop; }
+  else if(f.chgScroll) body.scrollTop = f.chgScroll;
+  body.addEventListener('scroll', () => { f.chgScroll = body.scrollTop; }, {passive: true});
+  const close = () => { f.chgOpen = false; rerender(); const b = document.querySelector('button.chg-btn'); if(b) b.focus(); };
+  pop.querySelector('.chg-close').addEventListener('click', (e) => { e.preventDefault(); close(); });
+  pop.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ e.preventDefault(); close(); } });
+  pop.querySelectorAll('button.chg-chip').forEach(b => b.addEventListener('click', (e) => {
+    e.preventDefault();
+    f.chgFilter = b.dataset.chgFilter;
+    pop.querySelectorAll('button.chg-chip').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+    pop.querySelectorAll('.chg-row').forEach(r => { r.hidden = f.chgFilter !== 'all' && r.dataset.dmg !== f.chgFilter; });
+  }));
+  // A row: a click (or Enter / Space) loads it into every copy of its weapon. A drag (a mouse moving 6 px, a finger held
+  // 0.35 s) carries it to a weapon tile on the ring (that copy only, if its list has it) or the middle of the ring (every
+  // weapon whose list has it). While dragging, the list fades so the ring shows through.
+  const valid = (wid, cid) => (f.chgData || []).some(w => w.weaponTypeId === wid && w.options.some(o => o.id === cid));
+  pop.querySelectorAll('.chg-row').forEach(row => {
+    const wid = Number(row.dataset.weapon), cid = Number(row.dataset.charge);
+    let start = null, drag = null, holdT = null, dropped = false;
+    const place = (x, y) => { if(drag){ drag.style.left = `${x}px`; drag.style.top = `${y}px`; } };
+    const stop = () => {
+      clearTimeout(holdT); holdT = null; start = null;
+      if(drag){ drag.remove(); drag = null; container.classList.remove('chg-dragging'); container.querySelectorAll('.chg-drop-ok').forEach(t => t.classList.remove('chg-drop-ok')); }
+    };
+    const begin = (x, y) => {
+      drag = Object.assign(document.createElement('img'), {src: `https://images.evetech.net/types/${cid}/icon?size=64`, className: 'chg-ghost', alt: ''});
+      document.body.appendChild(drag); place(x, y);
+      container.classList.add('chg-dragging');
+      container.querySelectorAll('.fit-ring .ms-tile[data-type-id]').forEach(t => { if(valid(Number(t.dataset.typeId), cid)) t.classList.add('chg-drop-ok'); });
+    };
+    row.addEventListener('pointerdown', (e) => {
+      if(e.button !== 0 || busy()) return;
+      dropped = false;
+      start = {x: e.clientX, y: e.clientY, touch: e.pointerType !== 'mouse', id: e.pointerId};
+      if(start.touch) holdT = setTimeout(() => { if(start){ try{ row.setPointerCapture(start.id); }catch(err){} begin(start.x, start.y); } }, 350);
+    });
+    row.addEventListener('pointermove', (e) => {
+      if(!start) return;
+      if(drag){ e.preventDefault(); place(e.clientX, e.clientY); return; }
+      if(Math.hypot(e.clientX - start.x, e.clientY - start.y) <= 6) return;
+      if(start.touch){ stop(); return; }   // a finger moving before the hold: the list scrolls
+      try{ row.setPointerCapture(e.pointerId); }catch(err){}
+      begin(e.clientX, e.clientY);
+    });
+    row.addEventListener('touchmove', (e) => { if(drag) e.preventDefault(); }, {passive: false});
+    row.addEventListener('pointerup', (e) => {
+      if(!drag){ stop(); return; }
+      const at = document.elementFromPoint(e.clientX, e.clientY);
+      stop(); dropped = true;
+      const tile = at && at.closest('.fit-ring .ms-tile[data-type-id]'), ring = at && at.closest('.fit-ring');
+      if(tile && valid(Number(tile.dataset.typeId), cid)) apply(() => chgLoad(f, Number(tile.dataset.typeId), cid, Number(tile.dataset.copy) || 0));
+      else if(ring && !tile){
+        const ws = (f.chgData || []).filter(w => w.options.some(o => o.id === cid)).map(w => w.weaponTypeId);
+        if(ws.length) apply(async () => { for(const w of ws) await chgLoad(f, w, cid, null); });
+      }
+    });
+    row.addEventListener('pointercancel', stop);
+    row.addEventListener('click', (e) => { e.preventDefault(); if(dropped){ dropped = false; return; } apply(() => chgLoad(f, wid, cid, null)); });
+  });
 }
 // Every candidate at one point. app: the attacker's CURRENT application (radius, lock range, webs / painters / scram,
 // and its weapons and drones as they are); tgt and q: the target and the point (mysFight's them+qOut or me+qIn);
@@ -17539,11 +17963,13 @@ function myShipBuild(rec){
     const cur = myShipById(id) || rec;
     if(cur.activeMode && f.tacticalModes && f.tacticalModes[cur.activeMode]){ f.activeMode = cur.activeMode; f.estimate = f.tacticalModes[cur.activeMode]; }
     f.asbDry = !!cur.asbDry;
-    if((cur.moduleStates && Object.keys(cur.moduleStates).length) || cur.droneStates || cur.fighterStates){
+    if((cur.moduleStates && Object.keys(cur.moduleStates).length) || cur.droneStates || cur.fighterStates || cur.chargePicks){
       f.moduleStates = cur.moduleStates || null;
       f.moduleCopyOrder = cur.moduleCopyOrder || null;
       f.droneStates = cur.droneStates || null;
       f.fighterStates = cur.fighterStates || null;
+      f.chargePicks = cur.chargePicks || null;   // v2026.10.14.76: charges loaded from the Charges list
+      await fitApplyChargePicks(f);
       await recomputeFitWithStates(f);
     }
     f.fitTitle = cur.fitName ? `${cur.shipName} — ${cur.fitName}` : cur.shipName;
@@ -17583,6 +18009,7 @@ function myShipStoreStates(f){
   if(!r || f !== myShip.f) return false;
   r.moduleStates = (f.moduleStates && Object.keys(f.moduleStates).length) ? f.moduleStates : null;
   r.moduleCopyOrder = f.moduleCopyOrder || null;
+  r.chargePicks = f.chargePicks || null;
   r.droneStates = f.droneStates || null;
   r.fighterStates = f.fighterStates || null;
   r.activeMode = f.activeMode || null;
@@ -17875,7 +18302,7 @@ async function myShipAdopt(text, meta, f, states, opt = {}){
   if(target && target !== myShip.rec){   // replacing a saved fit that isn't in use: the ship in use stays
     const g = await myShipGroupOf(meta.shipTypeId);
     Object.assign(target, {eft: text, shipName: meta.shipName, fitName: meta.fitName || '', shipTypeId: meta.shipTypeId, shipGroup: g, savedAt: new Date().toISOString(),
-      moduleStates: null, moduleCopyOrder: null, droneStates: null, fighterStates: null, activeMode: null, asbDry: false, ...(states || {})});
+      moduleStates: null, moduleCopyOrder: null, chargePicks: null, droneStates: null, fighterStates: null, activeMode: null, asbDry: false, ...(states || {})});
     myShip.cache.delete(target.id);
     if(f){ f.fitTitle = meta.fitName ? `${meta.shipName} — ${meta.fitName}` : meta.shipName; myShip.cache.set(target.id, {eft: text, p: Promise.resolve({f, parsed: meta})}); }
     if(myShip.preview && myShip.preview.id === target.id) myShip.preview = null;
@@ -17890,7 +18317,7 @@ async function myShipAdopt(text, meta, f, states, opt = {}){
   const now = new Date().toISOString();
   const use = myShip.rec ? !!myShip.rec.use : true;
   const rec = {v: 1, id: target ? target.id : myShipNewId(), eft: text, shipName: meta.shipName, fitName: meta.fitName || '', shipTypeId: meta.shipTypeId, shipGroup: group,
-    savedAt: now, usedAt: now, use, moduleStates: null, moduleCopyOrder: null, droneStates: null, fighterStates: null, activeMode: null, asbDry: false, ...(states || {})};
+    savedAt: now, usedAt: now, use, moduleStates: null, moduleCopyOrder: null, chargePicks: null, droneStates: null, fighterStates: null, activeMode: null, asbDry: false, ...(states || {})};
   if(target) myShip.list[myShip.list.indexOf(target)] = rec; else myShip.list.push(rec);
   for(const r of myShip.list) r.use = use;
   myShip.cache.delete(rec.id);
@@ -18013,6 +18440,7 @@ function mysRenderSetSlot(slot){
     try{ await myShipAdopt(f.eftText, {shipName, fitName, shipTypeId: f.input.shipTypeId}, null, {
       moduleStates: (f.moduleStates && Object.keys(f.moduleStates).length) ? JSON.parse(JSON.stringify(f.moduleStates)) : null,
       moduleCopyOrder: f.moduleCopyOrder ? JSON.parse(JSON.stringify(f.moduleCopyOrder)) : null,
+      chargePicks: f.chargePicks ? JSON.parse(JSON.stringify(f.chargePicks)) : null,
       droneStates: f.droneStates ? {...f.droneStates} : null,
       fighterStates: f.fighterStates ? JSON.parse(JSON.stringify(f.fighterStates)) : null,
       activeMode: f.activeMode || null, asbDry: !!f.asbDry});}

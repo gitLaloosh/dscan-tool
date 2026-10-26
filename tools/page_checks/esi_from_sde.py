@@ -13,13 +13,19 @@ from pyfa_sde import types, groups, _en, PYFA_SRC
 byname = {}
 for k, v in types.items(): byname.setdefault(_en(v.get('typeName') or v.get('name')), int(k))
 
+# v2026.10.14.76: a group's types, as ESI lists them (the Charges list reads a weapon's charge groups)
+_GROUP_TYPES = {}
+def group_types(gid):
+    if not _GROUP_TYPES:
+        for k, v in types.items(): _GROUP_TYPES.setdefault(str(v.get('groupID')), []).append(int(k))
+    return sorted(_GROUP_TYPES.get(str(gid), []))
 def handle(route):
     url = route.request.url
     m = re.search(r'/universe/types/(\d+)/', url); g = re.search(r'/universe/groups/(\d+)/', url)
     if m: return route.fulfill(status=200, content_type='application/json', body=json.dumps(sde_type(m.group(1))))
     if g:
         gr = groups[g.group(1)]
-        return route.fulfill(status=200, content_type='application/json', body=json.dumps({'group_id': int(g.group(1)), 'name': _en(gr['groupName']), 'category_id': gr['categoryID'], 'published': True, 'types': []}))
+        return route.fulfill(status=200, content_type='application/json', body=json.dumps({'group_id': int(g.group(1)), 'name': _en(gr['groupName']), 'category_id': gr['categoryID'], 'published': True, 'types': group_types(g.group(1))}))
     if '/universe/ids/' in url:
         names = json.loads(route.request.post_data)
         return route.fulfill(status=200, content_type='application/json', body=json.dumps({'inventory_types': [{'id': byname[n], 'name': n} for n in names if n in byname]}))

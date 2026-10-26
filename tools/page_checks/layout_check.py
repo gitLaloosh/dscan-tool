@@ -393,7 +393,16 @@ OUT_OF_BOX = """(sel) => {
     while((t = w.nextNode())){
       if(!t.textContent.trim() || !t.parentElement || !t.parentElement.offsetParent || t.parentElement.closest('details.info-pop:not([open])')) continue;
       rg.selectNodeContents(t);
-      for(const r of rg.getClientRects()){
+      // v2026.10.14.76: text an ancestor cuts with an ellipsis (text-overflow: ellipsis, overflow not visible) shows only
+      // inside that ancestor, whose own box the element test above checks: measure the part that shows. Any other
+      // clipping (a card's overflow: hidden cutting a word) still counts: the cut text is a defect.
+      let cl = -Infinity, cr = Infinity;
+      for(let a = t.parentElement; a && a !== col; a = a.parentElement){
+        const cs = getComputedStyle(a);
+        if(cs.textOverflow === 'ellipsis' && cs.overflowX !== 'visible'){ const ar = a.getBoundingClientRect(); cl = Math.max(cl, ar.left); cr = Math.min(cr, ar.right); }
+      }
+      for(const r0 of rg.getClientRects()){
+        const r = {left: Math.max(r0.left, cl), right: Math.min(r0.right, cr)}; r.width = r.right - r.left;
         if(r.width > 0 && (r.right > c.right + 1 || r.left < c.left - 1)){ bad.push('text "' + t.textContent.trim().slice(0, 40) + '" ' + desc(c, r)); break; }
       }
     }

@@ -12,13 +12,14 @@ import os, sys, json, subprocess, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..')); sys.path.insert(0, os.path.join(HERE, '..', 'page_checks'))
 from refresh_golden_fixtures import sde_type
+from esi_from_sde import group_types
 from pyfa_sde import types, groups, _en
 
 BYNAME = {}
 for k, v in types.items(): BYNAME.setdefault(_en(v.get('typeName') or v.get('name')), int(k))
 def group_rec(g):
     gr = groups[str(g)]
-    return {'group_id': int(g), 'name': _en(gr['groupName']), 'category_id': gr['categoryID'], 'published': True, 'types': []}
+    return {'group_id': int(g), 'name': _en(gr['groupName']), 'category_id': gr['categoryID'], 'published': True, 'types': group_types(g)}   # v.76: as ESI lists them
 
 NODE = r'''
 const fs = require('fs'), vm = require('vm'), readline = require('readline');
@@ -70,6 +71,24 @@ def run_efts(html, fits, fields=None):
         else: a = {'inventory_types': [{'id': BYNAME[n], 'name': n} for n in q['names'] if n in BYNAME]}
         p.stdin.write(json.dumps(a) + '\n'); p.stdin.flush()
     raise RuntimeError('engine run ended without a result')
+
+# v2026.10.14.76: any page function in the same sandbox: fn is the source of `async (sb, arg) => result` (sb = the page's
+# globals), answered from the SDE the same way. Used by check_charge_list.py.
+def run_page(html, fn, arg=None):
+    head = NODE[:NODE.index('(async () => {')]
+    js_src = head + '(async () => {\n  const {arg} = JSON.parse(fs.readFileSync(inPath, "utf8"));\n  let out;\n  try { out = await (' + fn + ')(sb, arg); } catch (e) { out = {error: String(e && e.stack || e)}; }\n' \
+        + "  process.stdout.write('R ' + JSON.stringify(out) + '\\n', () => process.exit(0));\n})();\n"
+    tmp = tempfile.mkdtemp(); inp = os.path.join(tmp, 'in.json'); js = os.path.join(tmp, 'run.js')
+    json.dump({'arg': arg}, open(inp, 'w')); open(js, 'w').write(js_src)
+    p = subprocess.Popen(['node', js, html, inp], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
+    for line in p.stdout:
+        if line.startswith('R '): p.wait(); return json.loads(line[2:])
+        q = json.loads(line[2:])
+        if 'type' in q: a = sde_type(str(q['type'])) if str(q['type']) in types else None
+        elif 'group' in q: a = group_rec(q['group']) if str(q['group']) in groups else None
+        else: a = {'inventory_types': [{'id': BYNAME[n], 'name': n} for n in q['names'] if n in BYNAME]}
+        p.stdin.write(json.dumps(a) + '\n'); p.stdin.flush()
+    raise RuntimeError('page run ended without a result')
 
 if __name__ == '__main__':
     print(json.dumps(run_efts(sys.argv[1], {'t': open(sys.argv[2]).read()}, sys.argv[3].split(',') if len(sys.argv) > 3 else None))[:3000])
