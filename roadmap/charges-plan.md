@@ -53,3 +53,48 @@ active from the Fit card (a weapon's copies can hold different charges). Found o
 got the missile damage skills and Ballistic Control Systems (pyfa filters them on the charge requiring Missile Launcher
 Operation), and two launcher types sharing a charge shared one range entry. The EFT export keeps the fit's own charges;
 the Weaknesses picks rank only the charges on board.
+
+## Delivery 3: unloading, and the list inside the Fit card (done, v2026.10.14.77)
+
+the owner, after v.76: "this brings me to the next problem. unloading charges." Screenshots of Workbench: a weapon's hover
+icons (unload module, unload ammo, online), the menu at the start of each rack (Online / Activate / Overheat / Offline /
+Unload Ammo / Unload Module), the right-click menu (information only). Mockup: `unload_mockup.html` (the real v.76 page;
+unloading one of six launchers takes the Drake's weapon DPS 328 -> 273). Discussed one section at a time:
+
+1. **The list stays inside the Fit card at every width** (the owner: "the charges list needs to stay inside of the fit card
+   because if i reduce my window size as far as possible on the site, there is no way to put the list on the left or the
+   right"). Below 600 px it opens inside the card as on a wide window (no sheet over the page); opening it scrolls the
+   card's top into view; its height fits the window and it scrolls inside itself. Drag and drop as on desktop.
+   Added: **weapon-type filter chips** ("similar to the existing filter chips, allow the user to filter by module type"),
+   one per weapon type on the fit, shown only when the fit has more than one, beside the damage-type chips.
+2. **A "No charge" row** first in each weapon's section (0 DPS, no range): click / Enter unloads every copy, a drag onto
+   one weapon unloads that one, a drop in the middle of the ring unloads every weapon.
+   - An unloaded copy goes **Online** (the owner: "just put it in the online state"; EVE can't activate a weapon with no
+     ammo; pyfa would let it be Active, using capacitor (capUse counts capacitorNeed whenever Active) for no damage).
+     Its tile shows the weapon's own icon (a loaded one shows its charge), nothing else ("not a fan of the strike
+     through"). A click on it switches Online / Offline only.
+   - **Subtext rule** ("less subtext taking up real estate"): the list's how-to paragraph moves into an (i) in its
+     header; no line under the No charge row; the Loaded line names no empty copies. Firepower, Damage Application and the
+     Matchup name an empty weapon through their existing "weapons not active" line: a short line (at most 40 characters,
+     e.g. "1 launcher empty") with the full sentence in its hover / info panel. The charge rows' status tags stay.
+   - A weapon a killmail shows empty keeps today's assumed charge; only an unload the user picks overrides it.
+   - **No memory of earlier charges** (the owner: "having to remember prior charges for every module could result in a point
+     of failure"): unload -> Online; loading a charge into an empty copy -> Active (a freshly fitted weapon in pyfa).
+   - The link back is **"Use original charges"** (the owner's wording, was "use the fit's own"); reset restores charges and
+     states.
+3. **Hover bar on a weapon** (the owner: "worth trying"): after a short pause, under the tile: **Unload charge · Charges…**
+   on a loaded copy, **Charges…** alone on an empty one (opens the list at that weapon, its weapon-type chip on). No
+   Reload ("make them choose a new charge using the list"), no power button (a tile click sets the state), no unload
+   module (ETA doesn't edit fits). Keyboard focus shows it; on a phone a held finger opens the same choices as a menu.
+   Weapons that take charges only.
+4. **A menu per rack** (High, Mid, Low; rigs and subsystems are always online): All active / All online / All offline,
+   Unload all charges (the rack's weapons; only when it has some), Charges…. No overheat (backlog). **"All active" is
+   literal** (the owner: "let's stick with the literal option for now"): every module in the rack is requested Active and the
+   state engine applies what pyfa allows (group limits, activation blocks, EWAR lockout), saying why for the rest. Empty
+   weapons stay Online. Check at 320 px that the rack buttons fit without covering a tile (else a row under the ring).
+
+Delivery 3 as built (the owner: "proceed"): as above. Found on the way and fixed: the capacitor need bonus of a weapon's charge
+(Void L +25%) was averaged over every copy of the weapon type, Online and empty ones included (a Megathron with two of
+seven blasters unloaded drained 31.8 GJ/s, pyfa 32.8); the pyfa stand-in for the goldens skipped empty slots when pairing
+charges with copies; a weapon type with no Active copy could still get an assumed charge; the open list kept its DPS
+after a state change. LESSON #69. Checks: unload_check.py (pyfa per step), two pyfa goldens, charges_check.py updated.

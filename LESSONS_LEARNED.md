@@ -875,6 +875,21 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 69. Per-copy inputs: keep each copy's place and each copy's state, on both sides
+
+- **What happened (v2026.10.14.77):** unloading a weapon makes copies of one weapon type differ (some empty and Online,
+  some loaded and Active). The first pyfa pin for it, a Megathron with its first two blasters unloaded, showed two bugs:
+  - in the pyfa stand-in (`golden_oracle.py`): an empty slot was skipped when pairing charges with copies, so pyfa got
+    Void L in copies 1-5 and empty copies 6-7 -- a different fit from the tool's. v.76's Drake pin passed only because its
+    empty slot happened to be the last one;
+  - in the engine: a charge's capacitor need bonus (Void L +25%) was averaged over every copy of the weapon type, Online
+    and empty ones included, so the five Active blasters drained 31.8 GJ/s instead of pyfa's 32.8 (Module.capUse is per
+    module, and only an Active module uses any).
+- **Do this instead:** when an input can differ copy by copy, line both sides up copy by copy -- every slot keeps its
+  place (an empty one included), and every per-type sum or average counts only the copies in the state that matters,
+  chosen the same way as the damage loop chooses them. Put the empty or inactive copy FIRST in a constructed golden: last
+  is where a skipped one hides.
+
 ## 68. A new list of inputs exposes the engine to inputs no fit had: check every one against pyfa
 
 - **What happened (v2026.10.14.76):** the Charges list offers every charge pyfa's getValidCharges allows, and its first

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — Unloading charges, the hover bar and the rack menus</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Unloading charges, the hover bar, the rack menus, and the Charges list inside the Fit card</h1>
+<p><span class="tag">Feature</span><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.76</code> &rarr; <code>v2026.10.14.77</code>.</p>
+<p>the owner, after v.76: "this brings me to the next problem. unloading charges." He sent screenshots of EVE Workbench: a weapon's hover icons (unload module, unload ammo, online), the menu at the start of each rack, and the right-click menu, which only has information. From the mockup (<code>unload_mockup.html</code>) we went through each part, and he decided:</p>
+<ul>
+<li>the list "needs to stay inside of the fit card", plus chips to "filter by module type";</li>
+<li>an unloaded weapon: "just put it in the online state", and "not a fan of the strike through";</li>
+<li>subtext behind an info icon, "less subtext taking up real estate";</li>
+<li>no Reload: "make them choose a new charge using the list";</li>
+<li>"Use original charges" for the link back;</li>
+<li>the hover bar: "worth trying";</li>
+<li>the rack menu's All active: "let's stick with the literal option for now".</li>
+</ul>
+<p>the owner approved the build with "proceed". This is delivery 3 of <code>roadmap/charges-plan.md</code>.</p>
+
+<h2>What you see</h2>
+<ul>
+<li><b>No charge</b> is the first row of each weapon's section in the Charges list. It works like a charge:
+<ul>
+<li>click it (or press Enter) to unload every copy;</li>
+<li>drag it onto one weapon to unload that one;</li>
+<li>drop it in the middle of the ring to unload every weapon.</li>
+</ul>
+An unloaded weapon goes <b>Online</b> and its tile shows the weapon's own icon. A click on it switches Online / Offline only.</li>
+<li><b>Loading a charge into an empty weapon</b> makes it Active again. Nothing remembers what a weapon held before.</li>
+<li><b>Use original charges</b>, under the ring, puts back the fit's own charges. A weapon that had been unloaded goes Active.</li>
+<li><b>Firepower</b> names empty weapons, e.g. "5 weapons confirmed &middot; 1 launcher empty", with the full sentence on hover. The Damage Application note and the Matchup's "why" say it too.</li>
+<li><b>The hover bar.</b> Hovering a weapon shows <b>Unload charge &middot; Charges&hellip;</b> after a short pause; an empty weapon shows Charges&hellip; only.
+<ul>
+<li>Charges&hellip; opens the list at that weapon.</li>
+<li>Keyboard focus shows the bar too.</li>
+<li>On a phone, hold a finger on the weapon for the same choices. A tap still sets the state.</li>
+</ul></li>
+<li><b>A &#8943; button at the start of the High, Mid and Low racks.</b> Its menu has All active / All online / All offline; the High rack's adds Unload all charges and Charges&hellip;.
+<ul>
+<li>All active is literal: every module is asked to be Active, and the state engine applies what pyfa allows (group limits, activation blocks), saying why for the rest.</li>
+<li>A module with no active function goes Online, and an unloaded weapon stays Online.</li>
+</ul></li>
+<li><b>The Charges list stays inside the Fit card at every width.</b> Below 600 px it was a sheet over the page, and it covered the Matchup in the owner's narrow window.
+<ul>
+<li>It opens under the card's header and brings the card into view.</li>
+<li>Names wrap on a phone.</li>
+<li>Its how-to text is behind its own (i), "How the Charges list works".</li>
+<li>A fit with more than one weapon type gets weapon chips beside the damage-type chips.</li>
+</ul></li>
+</ul>
+
+<h2>How it's matched to pyfa</h2>
+<ul>
+<li><b>Unloading changes inputs only.</b> It changes the charge in that copy and its state; the engine then computes the fit as pyfa does. An Online weapon deals no damage and uses no capacitor (pyfa <code>Module.capUse</code> counts <code>capacitorNeed</code> only while Active).</li>
+<li><b>Why Online:</b> EVE can't run a weapon with no charge, while pyfa would let one be Active and drain capacitor for nothing. That choice is in DEVIATIONS.md.</li>
+<li><b>Killmail weapons:</b> a weapon a killmail shows empty keeps v.67's assumed charge, unless the user unloads it.</li>
+</ul>
+
+<h2>Bugs found on the way (fixed)</h2>
+<ul>
+<li><b>Capacitor drain with mixed copies.</b> A charge's capacitor bonus (Void L +25%) was averaged over every copy of a weapon type, including copies that weren't Active. A Megathron with two of seven blasters unloaded drained 31.8 GJ/s; pyfa says 32.8. Now only the Active copies count, picked the same way as for damage. The capacitor simulation also gives copies with different charges their own capacitor need, as pyfa simulates each module.</li>
+<li><b>The pyfa stand-in skipped empty slots</b> (<code>golden_oracle.py</code>). It paired charges with copies by skipping empty slots, so the next copy got the charge, and pyfa was run on a different fit from the tool's. v.76's Drake golden only passed because its empty slot was the last one.</li>
+<li><b>A weapon type with no Active copy</b> could still get an assumed charge when another weapon type on the fit was cold. Now it doesn't, since it deals no damage.</li>
+<li><b>The open list's DPS</b> now follow state changes made while it is open (v.76 kept the old numbers until it was reopened).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>Two new goldens from pyfa's handlers.</b> The Megathron's capacitor pin fails on v.76; the Drake's passes there too, since it pins the fit an unload produces.
+<ul>
+<li><code>drake_constructed_unloaded_launcher_online</code>: 273 DPS (pyfa 273.39).</li>
+<li><code>megathron_constructed_two_blasters_unloaded_online</code>: 853 DPS and 32.83 GJ/s (pyfa). v.76 gives 31.8 GJ/s.</li>
+</ul></li>
+<li><b>New <code>tools/page_checks/unload_check.py</code>.</b> Weapon DPS at every step is compared with pyfa's handlers (the oracle) on the fit that step produces. It covers:
+<ul>
+<li>the No charge row, the list's (i), drag / click / Enter;</li>
+<li>the unloaded tile's Online / Offline;</li>
+<li>the hover bar with a mouse and a keyboard, and the held-finger menu on 390 / 320 px;</li>
+<li>Use original charges, both rack menus, the weapon chips;</li>
+<li>the list inside the card on phones;</li>
+<li>rack buttons clear of every tile on a Drake, a Megathron and a Rifter at three widths.</li>
+</ul>
+v.76 fails (no No charge row: it stops there). Mutations: an unload that leaves the copy Active fails 8; the list as a sheet over the page again fails 2; the hover bar on mouseenter (a touch swaps the held-finger menu for it) fails 4; All active ignoring unloaded copies fails 1; rack buttons on the track fails 8; no empty-weapon line on Firepower fails 2.</li>
+<li><b>LESSON #65:</b> <code>charges_check.py</code> expected the phone sheet and "use the fit's own", and now expects the list inside the card and "Use original charges". <code>golden_oracle.py</code>'s fix reaches its 17 callers, so the whole chain was run.</li>
+<li>Regression ALL PASS (267 fits), update chain all 40 steps OK, all 28 page checks 0 failures, the three lints 0 problems. PYFA CORE unchanged.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #69: with per-copy inputs, keep each copy's place and each copy's state on both sides.</p>
+<ul>
+<li>When copies of one module can differ, line the tool and pyfa up copy by copy: an empty slot keeps its place.</li>
+<li>Every per-type sum or average must count only the copies in the state that matters, chosen as the damage loop chooses them.</li>
+<li>Put the odd copy first in a constructed golden. Last is where a skipped one hides.</li>
+</ul>
+</body>
+</html>

@@ -109,8 +109,10 @@ def oracle_for(fitId, mode=None, states=None, drones=(), group_limits=True, figh
     for key in ('highSlotByFlag', 'midSlotByFlag'):
         for flag, lst in sorted((f.get(key) or {}).items(), key=lambda kv: int(kv[0])):   # copies in flag order, as the tool walks them
             mod = next((x for x in lst if cat(x['id']) != 8), None); ch = next((x['id'] for x in lst if cat(x['id']) == 8), None)
-            # a constructed fit may list several copies under one flag ({id, qty: 5}): each copy gets the charge
-            if mod is not None and ch is not None: charges.setdefault(mod['id'], []).extend([ch] * max(1, int(mod.get('qty') or 1)))
+            # a constructed fit may list several copies under one flag ({id, qty: 5}): each copy gets the charge.
+            # v2026.10.14.77: an EMPTY slot holds its place (None), so copy k is still the k-th slot -- skipping it
+            # gave its charge to the next copy (two empty blasters first in flag order came out as the last two). LESSON #69
+            if mod is not None: charges.setdefault(mod['id'], []).extend([ch] * max(1, int(mod.get('qty') or 1)))
     mods = []
     for g in SLOTS:
         for tid, v in (f['tally'].get(g) or {}).items():

@@ -1492,8 +1492,38 @@
   button.ms-chg b{font:600 10.5px var(--sans); color:var(--amber); white-space:nowrap;}
   button.ms-chg.chg-away{border-color:var(--amber-dim); border-style:dashed;}
   .ms-chg-caret{color:var(--text-dim); flex:none;}
+  /* v2026.10.14.77 (charges plan delivery 3): the list stays inside the Fit card at every width (the owner: "the charges list
+     needs to stay inside of the fit card"); weapon chips; the No charge row; the hover bar on a weapon and each rack's menu */
+  .chg-head-r{display:flex; align-items:center; gap:2px;}
+  .chg-wfilter{margin-top:2px;}
+  button.chg-wchip span{max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .chg-w[hidden]{display:none;}
+  .chg-none-ic{grid-row:1 / 3; width:28px; height:28px; border:1.5px dashed var(--text-dim); border-radius:4px; box-sizing:border-box;}
+  .chg-ghost-none{background:var(--panel-2); border-style:dashed;}
+  .ms-state.ms-tile{-webkit-touch-callout:none; user-select:none; -webkit-user-select:none;}
+  .ms-state.ms-tile.hb-on{border-color:var(--cyan);}
+  .ring-hb, .rack-menu{position:absolute; z-index:40; background:var(--panel-2); border:1px solid var(--line); box-shadow:0 8px 22px rgba(0,0,0,0.55);}
+  .ring-hb{display:flex; gap:4px; padding:3px; border-radius:6px;}
+  .ring-hb button{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:30px; height:30px; min-height:30px; padding:0; border:1px solid var(--line); border-radius:4px; background:var(--line-soft); color:var(--text); cursor:pointer;}
+  .ring-hb button:hover, .ring-hb button:focus-visible{border-color:var(--cyan); color:var(--cyan);}
+  .ring-hb button span, .ring-hb-h{display:none;}
+  .ring-hb svg, .rack-menu svg{width:15px; height:15px; flex:none;}
+  .ring-hb.is-menu{flex-direction:column; align-items:stretch; padding:6px; border-radius:8px; min-width:180px;}
+  .ring-hb.is-menu .ring-hb-h, .rack-menu-h{display:block; font-size:11.5px; font-weight:600; color:var(--text-dim); padding:3px 8px 5px;}
+  .ring-hb.is-menu button, .rack-menu button{justify-content:flex-start; width:100%; height:auto; min-height:40px; padding:6px 8px; border:none; background:transparent; font:13px var(--sans); text-align:left;}
+  .ring-hb.is-menu button span{display:inline;}
+  button.rack-btn{position:absolute; z-index:5; width:min(24px, calc(var(--tile) * 0.75)); height:min(24px, calc(var(--tile) * 0.75)); min-width:0; min-height:0; padding:0; transform:translate(-50%, -50%); border-radius:50%; border:1px dashed var(--text-dim); background:var(--panel); color:var(--text-dim); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  button.rack-btn:hover, button.rack-btn[aria-expanded="true"]{border-style:solid; border-color:var(--cyan); color:var(--cyan);}
+  button.rack-btn svg{width:14px; height:14px;}
+  .rack-menu{min-width:190px; padding:6px; border-radius:8px;}
+  .rack-menu button{display:flex; align-items:center; gap:9px; color:var(--text); border-radius:5px; cursor:pointer;}
+  .rack-menu button:hover, .rack-menu button:focus-visible{background:var(--line-soft);}
+  .rack-menu hr{border:0; border-top:1px solid var(--line); margin:5px 2px;}
+  .rack-menu i{width:9px; height:9px; border-radius:50%; flex:none; box-sizing:border-box;}
+  .rack-menu i.st-active{background:var(--cyan);} .rack-menu i.st-online{border:1.5px solid var(--text-dim);} .rack-menu i.st-offline{border:1.5px dashed var(--text-dim); opacity:0.7;}
   @media (max-width:599px){
-    .chg-pop{position:fixed; left:0; right:0; top:auto; bottom:0; max-height:75vh; border-radius:12px 12px 0 0; z-index:1200;}
+    .chg-pop{left:4px; right:4px; padding:8px 6px 6px;}
+    .chg-row .chg-n{white-space:normal; overflow-wrap:anywhere; line-height:1.25;}   /* v.77: names wrap rather than "Scourge ..." */
     .chg-cols, .chg-row{grid-template-columns:30px minmax(0,1fr) 3em 5.8em;}
     button.chg-close{width:44px; height:44px; min-height:44px;}
   }
@@ -1784,7 +1814,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.76</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.77</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1963,10 +1993,16 @@ const CARD_INFO = {
   "Primary (shown by default, pyfa's default too): launchers cycle 25% faster, missile flight time x11, missile speed x0.67, targeting range x5 (capped at 300 km). Secondary: launchers cycle twice as fast, flight time halved. Tertiary: launchers cycle 25% faster, missile speed x1.5, better agility and a much shorter Micro Jump Drive reactivation delay.",
   "Every mode effect comes from pyfa's own handlers."
  ],
+ "fit#charges": [
+  "Every charge each turret and launcher can load (pyfa's list), with that weapon's DPS and range on this fit when every copy holds it, your skills at V. Charges on board come first (loaded, then cargo); the rest are marked not on board, best DPS first.",
+  "Click a charge to load it into every copy. Drag it onto one weapon for that one only, or into the middle of the ring for every weapon that takes it. On a phone, hold a finger on it before dragging.",
+  "No charge unloads the same way. An unloaded weapon goes Online (EVE can't run a weapon with no charge) and does no damage; loading a charge into it makes it Active again. Use original charges, under the ring, puts back the fit's own.",
+  "The chips filter by damage type and, on a fit with more than one weapon type, by weapon."
+ ],
  "fit": [
   "Click a module's state to switch it off, online or active, and a drone square to put drones in space or take them back; every card recalculates. The game's rules still apply (one propulsion module running at a time, Bastion blocks the Micro Jump Drive, and so on).",
   "Ring view: filled dot = active, hollow = online, dashed = off; hover a module for its name. A weapon shows the charge loaded in it. The reset icon puts every module and drone back to its default state, and the fit's own charges.",
-  "Charges: every charge each turret and launcher can load (pyfa's list), with its DPS and range on this fit. Click one to load it into every copy; drag it onto one weapon for that one only, or into the middle of the ring for every weapon that takes it (hold a finger on it first on a phone). A charge the fit doesn't have is marked not on board, and so is the card while one is loaded; every card uses the charges shown.",
+  "Charges: the Charges button lists every charge each turret and launcher can load, with its DPS and range; its own info button says how to load and unload them. Hover a weapon (hold a finger on it on a phone) to unload it or open its charges. Each rack's ⋯ button sets every module in it active, online or off, and the High rack's also unloads its weapons. A charge the fit doesn't have is marked not on board, and so is the card while one is loaded; every card uses the charges shown.",
   "A killmail doesn't say what was running, so every module starts running if the game allows it (one propulsion module, the fastest; only as many Command Bursts as the hull permits), except cloaks, Micro Jump Drives and Field Generators, a Signature Suppressor's burst, Entosis Links, Capital Sensor Arrays and an Assault Damage Control's burst, which start online.",
   "Implants and boosters are in every number, as in pyfa; booster side effects are off (pyfa's default)."
  ],
@@ -2019,10 +2055,11 @@ function numBoxStyle(widest){ return `min-width:${String(widest).length}ch;`; }
 const INFO_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6"></path><path d="M12 7.5v.5"></path></svg>';
 // v2026.10.14.49: a key may name a variant of a card's text, "<card key>#<variant>" (the Anhinga's Mode text is
 // "tdmode#primary"), and the text names other cards as {card:key} (filled from CARD_NAMES, like ERROR_CODES).
+const INFO_TITLE = {'fit#charges': 'How the Charges list works'};   // v2026.10.14.77: a panel about part of a card
 function infoBtnHtml(key){
   const paras = CARD_INFO[key];
   if(!paras) throw new Error(`infoBtnHtml: no CARD_INFO for "${key}"`);
-  const title = `How ${cardName(key.split('#')[0])} works`;
+  const title = INFO_TITLE[key] || `How ${cardName(key.split('#')[0])} works`;
   return `<details class="info-pop" data-info="${key}"><summary class="info-btn" aria-label="${escapeHtml(title)}" title="${escapeHtml(title)}">${INFO_SVG}</summary>
     <div class="info-body" role="dialog" aria-label="${escapeHtml(title)}"><div class="info-head"><span>${escapeHtml(title)}</span><button type="button" class="info-close" aria-label="Close">×</button></div>
     ${paras.map(t => `<p>${escapeHtml(t.replace(/\{card:([\w.]+)\}/g, (_, k) => cardName(k)))}</p>`).join('')}</div></details>`;
@@ -9020,6 +9057,7 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
   // v.68: a weapon that isn't Active is named, not hidden behind "drones and fixed weapons only"
   const inactiveFp = inactiveWeaponsText(estimate, 'your');
   if(inactiveFp && !shortParts.length) totalShort = inactiveFp.short;
+  else if(inactiveFp && (estimate.emptyWeapons || []).length) totalShort = `${totalShort} · ${inactiveFp.short}`;   // v.77: e.g. 5 weapons confirmed · 1 launcher empty
   const droneShortParts = [];
   if(estimate.droneBayCount > 0) droneShortParts.push(estimate.droneCount === estimate.droneBayCount ? `all ${estimate.droneCount} in space at once`
     : estimate.droneCount > 0 ? `${estimate.droneCount} of ${estimate.droneBayCount} in space at once` : `${estimate.droneBayCount} in bay, none launchable`);
@@ -9092,7 +9130,7 @@ function firepowerCardHtml(f, estimate, fighterOrDroneNote){
         <div class="estimate-stat">
           <span class="estimate-label">Total DPS</span>
           <span class="estimate-value">${f.tacticalModes ? `<span class="td-mode-badge">${tacticalModeIconSvg(f.activeMode)}</span>` : ''}${totalDisplay}</span>
-          ${totalShort ? ctxHtml(totalShort, 'estimate-sub', inactiveFp && !shortParts.length ? inactiveFp.full.replace(/^Your /, '') : totalSub) : ''}
+          ${totalShort ? ctxHtml(totalShort, 'estimate-sub', inactiveFp && !shortParts.length ? inactiveFp.full.replace(/^Your /, '') : inactiveFp && (estimate.emptyWeapons || []).length ? `${totalSub}. ${inactiveFp.full.replace(/^Your /, '')}` : totalSub) : ''}
         </div>
         <div class="estimate-stat">
           <span class="estimate-label">Weapon DPS</span>
@@ -12749,20 +12787,45 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // as x1. Cap Booster charges (-100) are excluded exactly like pyfa's own
   // guard (it only applies when the module's raw capacitorNeed >= 0 and the
   // modules here are weapons).
+  // v2026.10.14.77: averaged over the ACTIVE copies only. pyfa Module.capUse is per module: an Active module's own
+  // capacitorNeed with its own charge's capNeedBonus; a module below Active uses none. Which copies are Active is decided
+  // as in the weapon loop below (the Fit card's per-copy order when it agrees with the resolved counts, else the first
+  // copies in flag order). Before, every copy counted, whatever its state: two empty Neutron Blasters set Online diluted
+  // the five Active ones' Void L +25% (31.8 GJ/s; pyfa 32.8). Found by the unload goldens (charges plan delivery 3). LESSON #69
   const CHARGE_CAP_NEED_BONUS_ATTR = 317;
   const chargeCapNeedMultSumByWeaponId = new Map(), chargeCapNeedCountByWeaponId = new Map();
-  for(const flag of (highSlotByFlag ? highSlotByFlag.keys() : [])){
-    let weaponDt = null, chargeDt = null;
+  const capCopies = new Map();   // weaponTypeId -> [{mult, qty}] in flag order
+  const capActiveMults = new Map();   // weaponTypeId -> Map(charge multiplier -> Active copies), for the simulation's entries
+  for(const flag of [...(highSlotByFlag ? highSlotByFlag.keys() : [])].sort((a, b) => Number(a) - Number(b))){
+    let weaponDt = null, chargeDt = null, wqty = 1;
     for(const it of highSlotByFlag.get(flag)){
       const dt = typeAndGroupById.get(it.id);
       if(!dt) continue;
       if(dt.group.category_id === CHARGE_CATEGORY_ID) chargeDt = dt;
-      else if(attrVal(dt.type.dogma_attributes || [], RATE_OF_FIRE_ATTR, 0) > 0) weaponDt = dt;
+      else if(attrVal(dt.type.dogma_attributes || [], RATE_OF_FIRE_ATTR, 0) > 0){ weaponDt = dt; wqty = it.qty || 1; }
     }
     if(!weaponDt) continue;
     const bonus = chargeDt ? attrVal(chargeDt.type.dogma_attributes || [], CHARGE_CAP_NEED_BONUS_ATTR, 0) : 0;
-    chargeCapNeedMultSumByWeaponId.set(weaponDt.id, (chargeCapNeedMultSumByWeaponId.get(weaponDt.id) || 0) + (1 + bonus / 100));
-    chargeCapNeedCountByWeaponId.set(weaponDt.id, (chargeCapNeedCountByWeaponId.get(weaponDt.id) || 0) + 1);
+    if(!capCopies.has(weaponDt.id)) capCopies.set(weaponDt.id, []);
+    capCopies.get(weaponDt.id).push({mult: 1 + bonus / 100, qty: wqty});
+  }
+  for(const [id, copies] of capCopies){
+    const st = moduleStateResult.byId.get(id);
+    const order = st && moduleStates && moduleStates[String(id)] && moduleStates[String(id)].order;
+    let act;
+    if(st && Array.isArray(order) && copies.every(c => c.qty === 1) && order.length === copies.length
+       && order.filter(x => x === 'active').length === Math.round(st.active)){
+      act = copies.map((c, k) => order[k] === 'active' ? 1 : 0);
+    }else{
+      let left = st ? st.active : Infinity;
+      act = copies.map(c => { const q = Math.max(0, Math.min(c.qty, left)); left -= q; return q; });
+    }
+    copies.forEach((c, k) => {
+      if(!(act[k] > 0)) return;
+      chargeCapNeedMultSumByWeaponId.set(id, (chargeCapNeedMultSumByWeaponId.get(id) || 0) + c.mult * act[k]);
+      chargeCapNeedCountByWeaponId.set(id, (chargeCapNeedCountByWeaponId.get(id) || 0) + act[k]);
+      const g = capActiveMults.get(id) || new Map(); g.set(c.mult, (g.get(c.mult) || 0) + act[k]); capActiveMults.set(id, g);
+    });
   }
   for(const dt of defensiveTypesFiltered){
     if(!dt || dt.error) continue;
@@ -12790,7 +12853,18 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     capDrainPerSec -= qty * (capNeedAfterSkills / (cycleMs / 1000 + reactSec)); // undo the early loop's raw-cycle-time contribution for this item
     capDrainPerSec += qty * (capNeedAfterSkills * chargeCapNeedMult / effectiveCycleSec); // re-add it at the correct, skill/hull-bonus-adjusted rate, with the loaded charge's own capNeedBonus
     const simEntry = capDrainEntries.get(dt.id); // v2026.10.14.1: same cycle and cap need for the pyfa simulation
-    if(simEntry){ simEntry.cycleMs = effectiveCycleSec * 1000; simEntry.capNeed = capNeedAfterSkills * chargeCapNeedMult; }
+    if(simEntry){
+      simEntry.cycleMs = effectiveCycleSec * 1000; simEntry.capNeed = capNeedAfterSkills * chargeCapNeedMult;
+      // v2026.10.14.77: copies holding charges with different capNeedBonus are simulated each with its own need, as pyfa
+      // simulates each module (the averaged need above gives the same total drain, not the same timeline)
+      const groups = capActiveMults.get(dt.id);
+      if(groups && groups.size > 1){
+        [...groups].forEach(([mult, n], i) => {
+          if(i === 0){ simEntry.capNeed = capNeedAfterSkills * mult; simEntry.count = n; }
+          else capDrainEntries.set(`${dt.id}:x${mult}`, {cycleMs: effectiveCycleSec * 1000, capNeed: capNeedAfterSkills * mult, count: n, turret: simEntry.turret, asb: false});
+        });
+      }
+    }
   }
 
   // v2026.10.14.5 (hand-tables P2): every resistance source through pyfa's handlers -- the
@@ -15282,6 +15356,13 @@ function moduleStateChangeReason(item, from, to, items){
   if(to !== 'offline' && item.maxOnline && onlineOthers + 1 > item.maxOnline + 1e-9) return `only ${item.maxOnline} ${item.groupName} can be online at once`;
   return null;
 }
+// v2026.10.14.77: a copy the user unloaded ("No charge") switches between Online and Offline only (Active would do nothing:
+// EVE can't run a weapon with no charge)
+function unloadedNextState(item, from, items){
+  const to = from === 'online' ? 'offline' : 'online';
+  const reason = moduleStateChangeReason(item, from, to, items);
+  return reason ? {to: from, skipped: [{to, reason}]} : {to, skipped: []};
+}
 function nextModuleState(item, from, items){
   const i = MODULE_STATE_ORDER.indexOf(from);
   const skipped = [];
@@ -15293,7 +15374,7 @@ function nextModuleState(item, from, items){
   }
   return {to: from, skipped};
 }
-function moduleStateRowHtml(item, copyIdx, state, items, chip = ''){
+function moduleStateRowHtml(item, copyIdx, state, items, chip = '', unloaded = false){
   const icon = `<img class="ms-icon" src="https://images.evetech.net/types/${item.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
   // v2026.10.14.76: a weapon's row carries its charge (chip: a button that opens the Charges list at that weapon)
   const name = chip ? `<span class="ms-name ms-name-col"><span>${escapeHtml(item.name)}</span>${chip}</span>` : `<span class="ms-name">${escapeHtml(item.name)}</span>`;
@@ -15301,8 +15382,8 @@ function moduleStateRowHtml(item, copyIdx, state, items, chip = ''){
   if(fixed){
     return `<div class="fititem ms-row ms-${state}">${icon}${name}<span class="ms-state ms-${state} ms-fixed" title="${item.slot === 'rig' ? 'Rigs' : 'Subsystems'} are always online"><span class="ms-dot"></span>${MODULE_STATE_LABEL[state]}</span></div>`;
   }
-  const nxt = nextModuleState(item, state, items);
-  const tips = [`${MODULE_STATE_LABEL[state]}.`];
+  const nxt = unloaded ? unloadedNextState(item, state, items) : nextModuleState(item, state, items);   // v.77
+  const tips = [`${MODULE_STATE_LABEL[state]}${unloaded ? ', no charge' : ''}.`];
   tips.push(nxt.to !== state ? `Click to set ${MODULE_STATE_LABEL[nxt.to].toLowerCase()}.` : 'No other state is allowed right now.');
   for(const sk of nxt.skipped) tips.push(`Can't be ${sk.to}: ${sk.reason}.`);
   for(const note of item.notes || []) tips.push(note + '.');
@@ -15355,7 +15436,8 @@ function moduleListWithStatesHtml(f, idToName, opts = {}){
       const item = MODULE_STATE_SLOT_GROUPS.includes(group) ? byId.get(e.id) : null;
       if(item){
         const named = {...item, name: e.name};
-        moduleCopyStates(item, (f.moduleCopyOrder || {})[item.typeId]).forEach((st, k) => { html += moduleStateRowHtml(named, k, st, items, chipFor(item, k)); });
+        const unl = chgUnloaded(f, item.typeId);   // v.77
+        moduleCopyStates(item, (f.moduleCopyOrder || {})[item.typeId]).forEach((st, k) => { html += moduleStateRowHtml(named, k, st, items, chipFor(item, k), unl.has(k)); });
       }else{
         if(group === 'High slots' && inWeapons.has(e.id)) continue;   // v.76: on its weapons' rows
         html += `<div class="fititem"><span>${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}</span></div>`;
@@ -15589,13 +15671,14 @@ function moduleStateTileHtml(item, copyIdx, state, items, x, y, opts = {}){
     const t = `${label}: ${MODULE_STATE_LABEL[state]} (${item.slot === 'rig' ? 'rigs' : 'subsystems'} are always online)`;
     return `<span class="ms-state ms-tile ms-${state} ms-fixed" style="${pos}" data-type-id="${item.typeId}" data-copy="${copyIdx}" title="${escapeHtml(t)}" role="img" aria-label="${escapeHtml(t)}">${img}</span>`;
   }
-  const nxt = nextModuleState(item, state, items);
-  const tips = [`${label}: ${MODULE_STATE_LABEL[state]}.`];
+  const nxt = opts.unloaded ? unloadedNextState(item, state, items) : nextModuleState(item, state, items);
+  const tips = [`${opts.unloaded ? `${item.name} · no charge` : label}: ${MODULE_STATE_LABEL[state]}.`];
   tips.push(nxt.to !== state ? `Click to set ${MODULE_STATE_LABEL[nxt.to].toLowerCase()}.` : 'No other state is allowed right now.');
+  if(opts.unloaded) tips.push("Can't be active with no charge.");
   for(const sk of nxt.skipped) tips.push(`Can't be ${sk.to}: ${sk.reason}.`);
   for(const note of item.notes || []) tips.push(note + '.');
   const title = escapeHtml(tips.join(' ')).replace(/"/g, '&quot;');
-  return `<button type="button" class="ms-state ms-tile ms-${state}${ch ? ' has-charge' : ''}${opts.away ? ' chg-away' : ''}" style="${pos}" data-type-id="${item.typeId}"${ch ? ` data-charge-id="${ch.id}"` : ''} data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${title}"${nxt.to === state ? ' disabled' : ''}>${img}</button>`;
+  return `<button type="button" class="ms-state ms-tile ms-${state}${ch ? ' has-charge' : ''}${opts.away ? ' chg-away' : ''}" style="${pos}" data-type-id="${item.typeId}"${ch ? ` data-charge-id="${ch.id}"` : ''}${opts.unloaded ? ' data-unloaded="1"' : ''} data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${title}"${nxt.to === state ? ' disabled' : ''}>${img}</button>`;
 }
 function fitRingHtml(f, idToName){
   const tally = (f.input && f.input.tally) || f.tally;   // v.76: with the charges loaded from the Charges list
@@ -15621,27 +15704,40 @@ function fitRingHtml(f, idToName){
   const charges = fitWeaponChargesByCopy(f, items, idToName);
   const away = chgAwayIds(f);
   let tiles = '';
+  // v2026.10.14.77 (charges plan delivery 3): a menu button at the start of each rack with a module whose state can change
+  // (rigs and subsystems are always online), inside the track, before the rack's first slot
+  let racks = '';
   const geo = fitRingGeometry(Math.max(...FIT_RING_ARCS.map(arc => arc.slots.reduce((t, sl) => t + positions(sl), 0))));
   for(const arc of FIT_RING_ARCS){
     const list = arc.slots.flatMap(sl => [...bySlot[sl], ...Array.from({length: positions(sl) - bySlot[sl].length}, () => ({empty: sl}))]);
     if(!list.length) continue;
     const step = geo.step;
     const start = arc.center - step * (list.length - 1) / 2;
+    const rk = arc.slots[0];
+    if(FIT_RACK_TITLE[rk] && bySlot[rk].length){
+      const bd = (start - step * 0.75) * Math.PI / 180, br = FIT_RING_R - geo.tile * 1.15;
+      racks += `<button type="button" class="rack-btn" data-rack="${rk}" style="left:${(50 + br * Math.cos(bd)).toFixed(2)}%;top:${(50 + br * Math.sin(bd)).toFixed(2)}%" aria-haspopup="menu" aria-expanded="false" title="${FIT_RACK_TITLE[rk]}: set every module's state" aria-label="${FIT_RACK_TITLE[rk]}: set every module's state">${RACK_DOTS_SVG}</button>`;
+    }
     list.forEach((t, i) => {
       const deg = start + i * step, a = deg * Math.PI / 180, x = 50 + FIT_RING_R * Math.cos(a), y = 50 + FIT_RING_R * Math.sin(a), turn = fitRingTileTurn(deg);
       if(t.empty){ tiles += `<span class="fr-empty" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--turn:${turn.toFixed(1)}deg;" title="Empty ${FIT_SLOT_NAME[t.empty]}" aria-hidden="true"></span>`; return; }
       const ch = (charges.get(t.named.typeId) || [])[t.k] || null;
-      tiles += moduleStateTileHtml(t.named, t.k, t.st, items, x, y, {turn, charge: ch, away: !!(ch && away.has(ch.id))});
+      tiles += moduleStateTileHtml(t.named, t.k, t.st, items, x, y, {turn, charge: ch, away: !!(ch && away.has(ch.id)), unloaded: chgUnloaded(f, t.named.typeId).has(t.k)});
     });
   }
   const shipId = f.input && f.input.shipTypeId;
   const shipName = (shipId && idToName.get(shipId)) || 'ship';
   const ship = shipId ? `<img src="https://images.evetech.net/types/${shipId}/render?size=512" alt="${escapeHtml(shipName)}" loading="lazy" onerror="this.style.display='none';">` : '';
-  const loadedHtml = loaded.length ? `<div class="fit-ring-loaded"><span>Loaded</span> ${loaded.map(e => `${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}${away.has(e.id) ? ' <b class="chg-away-note">· not on board</b>' : ''}`).join(' · ')}${f.chargePicks ? ` <button type="button" class="chg-own">use the fit's own</button>` : ''}</div>` : '';
+  const loadedHtml = loaded.length ? `<div class="fit-ring-loaded"><span>Loaded</span> ${loaded.map(e => `${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}${away.has(e.id) ? ' <b class="chg-away-note">· not on board</b>' : ''}`).join(' · ')}${f.chargePicks ? ` <button type="button" class="chg-own">Use original charges</button>` : ''}</div>`
+    : (f.chargePicks ? `<div class="fit-ring-loaded"><span>Loaded</span> no charges <button type="button" class="chg-own">Use original charges</button></div>` : '');   // v.77: every weapon unloaded
   // the dark track under the tiles and the ship inside it (radii in % of the ring's half width, for the gradient)
   const bandIn = Math.max(0, FIT_RING_R - geo.tile / 2 - 1.4), bandOut = Math.min(50, FIT_RING_R + geo.tile / 2 + 1.4), shipD = 2 * bandIn - 1;
-  return `<div class="fit-ring" style="--tile:${geo.tile.toFixed(2)}%;--band-in:${(2 * bandIn).toFixed(1)}%;--band-out:${(2 * bandOut).toFixed(1)}%;--ship:${shipD.toFixed(1)}%"><div class="fit-ring-ship">${ship}</div>${tiles}</div>${loadedHtml}`;
+  return `<div class="fit-ring" style="--tile:${geo.tile.toFixed(2)}%;--band-in:${(2 * bandIn).toFixed(1)}%;--band-out:${(2 * bandOut).toFixed(1)}%;--ship:${shipD.toFixed(1)}%"><div class="fit-ring-ship">${ship}</div>${tiles}${racks}</div>${loadedHtml}`;
 }
+const FIT_RACK_TITLE = {high: 'High slots', mid: 'Mid slots', low: 'Low slots'};
+const RACK_DOTS_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.5" fill="currentColor"></circle><circle cx="8" cy="8" r="1.5" fill="currentColor"></circle><circle cx="12.5" cy="8" r="1.5" fill="currentColor"></circle></svg>';
+const UNLOAD_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3H3v10h3"></path><path d="M7 8h7M11 5l3 3-3 3"></path></svg>';
+const CHG_LIST_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6"></path></svg>';
 const FIT_SLOT_NAME = {high: 'high slot', mid: 'mid slot', low: 'low slot', rig: 'rig slot', subsystem: 'subsystem slot'};
 // v2026.10.14.75: the charge in each copy of each turret or launcher, {typeId: [{id, name} | null per copy]}. A copy is
 // its weapon's k-th slot (high-slot flags in order; a killmail's flags, a paste's lines); a slot's charge is the item in
@@ -15749,6 +15845,7 @@ async function recomputeFitWithStates(f){
   }else{
     f.estimate = await estimateHpAndDps(x.shipTypeId, x.tally, x.cargoItemIds, x.highSlotByFlag, 'sharpshooter', x.midSlotByFlag, states, f.droneStates || null, {fitSource: x.fitSource || null, fighterStates: f.fighterStates || null});
   }
+  for(const e of (f.tacticalModes ? Object.values(f.tacticalModes) : [f.estimate])) e.emptyWeapons = chgEmptyWeapons(f, e);   // v.77
   const ms = f.estimate.moduleStates;
   f.moduleStateMessage = ms.refused.length ? ms.refused.map(r => `${r.name}: ${r.reason}.`).join(' ') : '';
   if(states){
@@ -15782,11 +15879,13 @@ function wireModuleStateControls(container, f, rerender){
     f.moduleStateBusy = true; rerender();
     try{ await recomputeFitWithStates(f); }
     catch(err){ f.moduleStateMessage = 'Recalculation failed: ' + err.message; }
+    if(f.chgData) chgInvalidate(f);   // v.77: the open list's DPS follow the states (its cache is keyed by them)
     f.moduleStateBusy = false; rerender();
   };
   container.querySelectorAll('button.ms-state').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
+      if(btn.dataset.held){ delete btn.dataset.held; return; }   // v.77: the press opened the weapon's menu
       if(f.moduleStateBusy) return;
       const id = Number(btn.dataset.typeId), from = btn.dataset.from, to = btn.dataset.to;
       if(from === to) return;
@@ -17413,17 +17512,76 @@ async function fitApplyChargePicks(f){
 }
 // Load `chargeId` into `weaponTypeId` copies (copy index, or every copy when null). A pick equal to the fit's own charge in
 // every copy is dropped, so the fit is back to its own.
+// v2026.10.14.77 (roadmap/charges-plan.md delivery 3): chargeId 0 = "No charge", an unload the user picked (a killmail's
+// own empty slot is null, and keeps the assumed charge of v.67). the owner: "just put it in the online state" -- EVE can't run
+// a weapon with no charge (pyfa would let it be Active, using capacitor for no damage: Module.capUse counts capacitorNeed
+// whenever Active) -- so an unloaded copy that was Active goes Online. No memory of what it held (the owner: "make them choose a
+// new charge using the list"): a charge loaded into an empty copy makes it Active, as a freshly fitted weapon in pyfa.
+// Both are INPUTS (charges and module states); the engine then computes the fit as pyfa does.
 async function chgLoad(f, weaponTypeId, chargeId, copy = null){
   const weapons = await chgWeapons(Object.assign({}, f, {input: f.inputOwn || f.input}));
   const ownW = weapons.find(w => w.weaponTypeId === weaponTypeId);
   if(!ownW) return false;
+  const now = (await chgWeapons(f)).find(w => w.weaponTypeId === weaponTypeId);   // the charge in each copy now (null: empty)
   const picks = JSON.parse(JSON.stringify(f.chargePicks || {}));
   const cur = picks[weaponTypeId] || ownW.copies.slice();
-  if(copy === null) cur.fill(chargeId); else cur[copy] = chargeId;
+  const targets = copy === null ? cur.map((_, i) => i) : [copy];
+  for(const k of targets) cur[k] = chargeId;
   if(cur.every((c, i) => c === ownW.copies[i])) delete picks[weaponTypeId]; else picks[weaponTypeId] = cur;
   f.chargePicks = Object.keys(picks).length ? picks : null;
+  const order = chgCopyStates(f, weaponTypeId);
+  if(order){
+    let changed = false;
+    for(const k of targets){
+      const was = order[k];
+      if(chargeId === 0 && was === 'active'){ order[k] = 'online'; changed = true; }
+      else if(chargeId && now && !now.copies[k] && was !== 'active'){ order[k] = 'active'; changed = true; }
+    }
+    if(changed) msSetOrder(f, weaponTypeId, order);
+  }
   await fitApplyChargePicks(f);
   return true;
+}
+// v2026.10.14.77: the state of each copy of a module type as the Fit card shows it, and a new one per copy (the request
+// keeps which copy is which: the engine uses it for weapons, whose copies can hold different charges)
+function chgCopyStates(f, typeId){
+  const it = f.estimate && f.estimate.moduleStates && f.estimate.moduleStates.items.find(x => x.typeId === typeId);
+  return it ? moduleCopyStates(it, (f.moduleCopyOrder || {})[typeId]) : null;
+}
+function msSetOrder(f, typeId, order){
+  const counts = {active: 0, online: 0, offline: 0};
+  for(const st of order) counts[st] += 1;
+  f.moduleCopyOrder = {...(f.moduleCopyOrder || {}), [typeId]: order.slice()};
+  f.moduleStates = {...(f.moduleStates || {}), [typeId]: {...counts, order: order.slice()}};
+}
+// The copies of a weapon type the user unloaded ("No charge", pick 0), by copy index.
+function chgUnloaded(f, typeId){
+  const p = f.chargePicks && f.chargePicks[typeId];
+  return new Set(p ? p.map((c, i) => c === 0 ? i : -1).filter(i => i >= 0) : []);
+}
+// "Use original charges": the fit's own charges back in every copy. A copy the user had unloaded gets its charge back
+// and so goes Active (the same rule as loading a charge into an empty copy); every other state stays as set.
+async function chgUseOriginal(f){
+  for(const [wid, list] of Object.entries(f.chargePicks || {})){
+    const order = chgCopyStates(f, Number(wid));
+    if(!order || !list.some(c => c === 0)) continue;
+    list.forEach((c, k) => { if(c === 0 && order[k] !== 'active') order[k] = 'active'; });
+    msSetOrder(f, Number(wid), order);
+  }
+  f.chargePicks = null;
+  await fitApplyChargePicks(f);
+}
+// v2026.10.14.77: the weapons the user unloaded, for the cards' "weapons not active" line (estimate.emptyWeapons):
+// [{typeId, name, count, launcher}]. Set on every estimate recomputeFitWithStates makes.
+function chgEmptyWeapons(f, est){
+  const out = [];
+  for(const [wid, list] of Object.entries(f.chargePicks || {})){
+    const n = list.filter(c => c === 0).length;
+    if(!n) continue;
+    const it = est && est.moduleStates && est.moduleStates.items.find(x => x.typeId === Number(wid));
+    out.push({typeId: Number(wid), name: it ? it.name : chgName(null, wid), count: n, launcher: !!(it && /Launcher/i.test(it.groupName || ''))});
+  }
+  return out;
 }
 // Each candidate's numbers on this fit: the weapon type's DPS (pyfa's, its active copies) and range with that charge in
 // every copy, the rest of the fit as it is. Cached per fit state (module states, mode, the other weapons' charges).
@@ -17481,6 +17639,11 @@ function chgPanelHtml(f){
   const data = f.chgData;
   const filter = f.chgFilter || 'all';
   const chips = ['all', 'em', 'therm', 'kin', 'exp'].map(k => `<button type="button" class="chg-chip${filter === k ? ' on' : ''}" data-chg-filter="${k}" aria-pressed="${filter === k}">${k === 'all' ? 'All' : `<i class="chg-dot ${k}"></i>${CHG_DMG_LABEL[k]}`}</button>`).join('');
+  // v2026.10.14.77: a chip per weapon type when the fit has more than one (the owner: "similar to the existing filter chips, allow
+  // the user to filter by module type"); it works together with the damage-type chips
+  const wf = data && data.length > 1 ? (data.some(w => w.weaponTypeId === f.chgWeaponFilter) ? f.chgWeaponFilter : null) : null;
+  const wchips = data && data.length > 1 ? [`<button type="button" class="chg-chip chg-wchip${wf ? '' : ' on'}" data-chg-weapon="" aria-pressed="${!wf}">All weapons</button>`,
+    ...data.map(w => `<button type="button" class="chg-chip chg-wchip${wf === w.weaponTypeId ? ' on' : ''}" data-chg-weapon="${w.weaponTypeId}" aria-pressed="${wf === w.weaponTypeId}" title="${escapeHtml(w.name)}"><span>${escapeHtml(w.name)}</span></button>`)].join('') : '';
   let body = '';
   if(!data){
     const p = f.chgProgress || [0, 0];
@@ -17500,20 +17663,26 @@ function chgPanelHtml(f){
       };
       const on = w.options.filter(o => o.onBoard || o.inUse).sort((a, b) => (b.inUse - a.inUse) || (b.loaded - a.loaded) || (b.dps - a.dps) || a.name.localeCompare(b.name));
       const away = w.options.filter(o => !(o.onBoard || o.inUse)).sort((a, b) => (b.dps - a.dps) || a.name.localeCompare(b.name));
-      const now = [...new Set(w.copies)].map(c => c ? escapeHtml(chgName(null, c)) : 'nothing').join(', ');
-      body += `<section class="chg-w" data-weapon="${w.weaponTypeId}">
+      const now = [...new Set(w.copies)].map(c => c ? escapeHtml(chgName(null, c)) : 'no charge').join(', ');
+      // v2026.10.14.77: "No charge" first, used like a charge (click: every copy; drag: one copy or the whole ring)
+      const empty = w.copies.filter(c => !c).length;
+      const noneTip = `No charge: ${w.name} does no damage and goes Online (EVE can't run a weapon with no charge). Click to unload every copy; drag it onto one ${w.name} to unload only that one, or into the middle of the ring to unload every weapon.`;
+      const none = `<button type="button" class="chg-row chg-none${empty ? ' is-cur' : ''}" data-weapon="${w.weaponTypeId}" data-charge="0" data-dmg="" title="${escapeHtml(noneTip)}"><span class="chg-none-ic" aria-hidden="true"></span><span class="chg-n">No charge</span><span class="chg-v">0</span><span class="chg-v">–</span>${empty ? `<span class="chg-tag">empty ×${empty}</span>` : ''}</button>`;
+      body += `<section class="chg-w" data-weapon="${w.weaponTypeId}"${wf && wf !== w.weaponTypeId ? ' hidden' : ''}>
         <div class="chg-wh"><img src="https://images.evetech.net/types/${w.weaponTypeId}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b>${escapeHtml(w.name)}</b> ×${w.copies.length}<span class="chg-now">${now}</span></div>
         <div class="chg-cols" aria-hidden="true"><span></span><span>DPS</span><span>range</span></div>
+        ${none}
         ${on.length ? `<div class="chg-sec">On board</div>${on.map(row).join('')}` : ''}
         ${away.length ? `<div class="chg-sec">Not on board</div>${away.map(row).join('')}` : ''}
       </section>`;
     }
   }
+  // v2026.10.14.77 (subtext rule): how to use the list is behind its info button (CARD_INFO["fit#charges"]), not a paragraph
   return `<div class="chg-pop" role="dialog" aria-label="Charges">
-      <div class="chg-head"><b>Charges</b><button type="button" class="chg-close" aria-label="Close">×</button></div>
+      <div class="chg-head"><b>Charges</b><span class="chg-head-r">${infoBtnHtml('fit#charges')}<button type="button" class="chg-close" aria-label="Close">×</button></span></div>
       <div class="chg-filter" role="group" aria-label="Damage type">${chips}</div>
+      ${wchips ? `<div class="chg-filter chg-wfilter" role="group" aria-label="Weapon">${wchips}</div>` : ''}
       <div class="chg-body">${body}</div>
-      <div class="chg-foot">Click a charge to load it into every copy. Drag it onto one weapon for that one only, or into the middle of the ring for every weapon that takes it. DPS: that weapon type's, your skills at V.</div>
     </div>`;
 }
 // The Fit card's charge state: any charge loaded that the fit doesn't have (the "not on board" tag, dashed tiles).
@@ -17542,7 +17711,7 @@ function chgInvalidate(f){ f.chgData = null; f.chgBuilding = false; f.chgSeq = (
 function wireCharges(container, f, rerender, run){
   const busy = () => f.moduleStateBusy || f.chgLoading;
   const open = container.querySelector('button.chg-btn');
-  if(open) open.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); f.chgOpen = !f.chgOpen; rerender(); });
+  if(open) open.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); f.chgOpen = !f.chgOpen; f.chgJustOpened = f.chgOpen; rerender(); });
   const apply = async (fn) => {
     if(busy()) return;
     f.chgLoading = true;
@@ -17552,32 +17721,55 @@ function wireCharges(container, f, rerender, run){
   };
   container.querySelectorAll('button.chg-own').forEach(b => b.addEventListener('click', (e) => {
     e.preventDefault(); e.stopPropagation();
-    apply(async () => { f.chargePicks = null; await fitApplyChargePicks(f); });
+    apply(() => chgUseOriginal(f));   // v.77: unloaded copies get their charge back and go Active
   }));
   container.querySelectorAll('button.ms-chg').forEach(b => b.addEventListener('click', (e) => {   // list view: a weapon's charge
     e.preventDefault(); e.stopPropagation();
-    f.chgOpen = true; f.chgFocus = Number(b.dataset.weapon); f.chgScroll = 0; rerender();
+    f.chgOpen = true; f.chgJustOpened = true; f.chgFocus = Number(b.dataset.weapon); f.chgScroll = 0; rerender();
   }));
+  wireRingTools(container, f, rerender, run, apply);   // v.77: the hover bar on a weapon, each rack's menu
   const pop = container.querySelector('.chg-pop');
   chgEnsure(f, rerender);
   if(!pop) return;
+  // v.77: inside the Fit card at every width; opening it brings the card's top into view when the list isn't all on screen
+  // v.77: just under the card's header, whatever its height (on a phone its buttons are taller and may wrap)
+  const head = pop.parentElement && pop.parentElement.querySelector('.fit-card-head');
+  if(head) pop.style.top = `${head.offsetTop + head.offsetHeight + 4}px`;
+  // (checked again once its rows are in: "Working out..." is short, the full list may not fit)
+  if(f.chgJustOpened){
+    if(f.chgData) f.chgJustOpened = false;
+    const r = pop.getBoundingClientRect(), card = pop.closest('.fit-summary');
+    if(card && (r.top < 0 || r.bottom > window.innerHeight)) card.scrollIntoView({block: 'start'});
+  }
   const body = pop.querySelector('.chg-body');
   if(f.chgFocus && f.chgData){ const sec = body.querySelector(`.chg-w[data-weapon="${f.chgFocus}"]`); if(sec) body.scrollTop = sec.offsetTop - body.offsetTop; f.chgFocus = null; f.chgScroll = body.scrollTop; }
   else if(f.chgScroll) body.scrollTop = f.chgScroll;
   body.addEventListener('scroll', () => { f.chgScroll = body.scrollTop; }, {passive: true});
   const close = () => { f.chgOpen = false; rerender(); const b = document.querySelector('button.chg-btn'); if(b) b.focus(); };
   pop.querySelector('.chg-close').addEventListener('click', (e) => { e.preventDefault(); close(); });
-  pop.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ e.preventDefault(); close(); } });
-  pop.querySelectorAll('button.chg-chip').forEach(b => b.addEventListener('click', (e) => {
+  pop.addEventListener('keydown', (e) => {
+    if(e.key !== 'Escape') return;
+    if(pop.querySelector('details.info-pop[open]')) return;   // v.77: Escape closes the (i) panel first
+    e.preventDefault(); close();
+  });
+  pop.querySelectorAll('button.chg-chip[data-chg-filter]').forEach(b => b.addEventListener('click', (e) => {
     e.preventDefault();
     f.chgFilter = b.dataset.chgFilter;
-    pop.querySelectorAll('button.chg-chip').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
-    pop.querySelectorAll('.chg-row').forEach(r => { r.hidden = f.chgFilter !== 'all' && r.dataset.dmg !== f.chgFilter; });
+    pop.querySelectorAll('button.chg-chip[data-chg-filter]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+    pop.querySelectorAll('.chg-row:not(.chg-none)').forEach(r => { r.hidden = f.chgFilter !== 'all' && r.dataset.dmg !== f.chgFilter; });
+  }));
+  pop.querySelectorAll('button.chg-wchip').forEach(b => b.addEventListener('click', (e) => {   // v.77: by weapon type
+    e.preventDefault();
+    f.chgWeaponFilter = b.dataset.chgWeapon ? Number(b.dataset.chgWeapon) : null;
+    pop.querySelectorAll('button.chg-wchip').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+    pop.querySelectorAll('.chg-w').forEach(sec => { sec.hidden = !!f.chgWeaponFilter && Number(sec.dataset.weapon) !== f.chgWeaponFilter; });
+    body.scrollTop = 0; f.chgScroll = 0;
   }));
   // A row: a click (or Enter / Space) loads it into every copy of its weapon. A drag (a mouse moving 6 px, a finger held
   // 0.35 s) carries it to a weapon tile on the ring (that copy only, if its list has it) or the middle of the ring (every
   // weapon whose list has it). While dragging, the list fades so the ring shows through.
-  const valid = (wid, cid) => (f.chgData || []).some(w => w.weaponTypeId === wid && w.options.some(o => o.id === cid));
+  // v.77: "No charge" (cid 0) goes into any weapon
+  const valid = (wid, cid) => (f.chgData || []).some(w => w.weaponTypeId === wid && (cid === 0 || w.options.some(o => o.id === cid)));
   pop.querySelectorAll('.chg-row').forEach(row => {
     const wid = Number(row.dataset.weapon), cid = Number(row.dataset.charge);
     let start = null, drag = null, holdT = null, dropped = false;
@@ -17587,7 +17779,8 @@ function wireCharges(container, f, rerender, run){
       if(drag){ drag.remove(); drag = null; container.classList.remove('chg-dragging'); container.querySelectorAll('.chg-drop-ok').forEach(t => t.classList.remove('chg-drop-ok')); }
     };
     const begin = (x, y) => {
-      drag = Object.assign(document.createElement('img'), {src: `https://images.evetech.net/types/${cid}/icon?size=64`, className: 'chg-ghost', alt: ''});
+      drag = cid ? Object.assign(document.createElement('img'), {src: `https://images.evetech.net/types/${cid}/icon?size=64`, className: 'chg-ghost', alt: ''})
+        : Object.assign(document.createElement('span'), {className: 'chg-ghost chg-ghost-none'});
       document.body.appendChild(drag); place(x, y);
       container.classList.add('chg-dragging');
       container.querySelectorAll('.fit-ring .ms-tile[data-type-id]').forEach(t => { if(valid(Number(t.dataset.typeId), cid)) t.classList.add('chg-drop-ok'); });
@@ -17614,7 +17807,7 @@ function wireCharges(container, f, rerender, run){
       const tile = at && at.closest('.fit-ring .ms-tile[data-type-id]'), ring = at && at.closest('.fit-ring');
       if(tile && valid(Number(tile.dataset.typeId), cid)) apply(() => chgLoad(f, Number(tile.dataset.typeId), cid, Number(tile.dataset.copy) || 0));
       else if(ring && !tile){
-        const ws = (f.chgData || []).filter(w => w.options.some(o => o.id === cid)).map(w => w.weaponTypeId);
+        const ws = (f.chgData || []).filter(w => cid === 0 || w.options.some(o => o.id === cid)).map(w => w.weaponTypeId);
         if(ws.length) apply(async () => { for(const w of ws) await chgLoad(f, w, cid, null); });
       }
     });
@@ -17622,6 +17815,145 @@ function wireCharges(container, f, rerender, run){
     row.addEventListener('click', (e) => { e.preventDefault(); if(dropped){ dropped = false; return; } apply(() => chgLoad(f, wid, cid, null)); });
   });
 }
+// v2026.10.14.77 (roadmap/charges-plan.md delivery 3). The hover bar on a weapon (the owner: "worth trying"): after a short
+// pause, toward the ring's middle, "Unload charge" (a loaded copy) and "Charges…" (opens the list at that weapon); keyboard
+// focus shows it too; on a phone a held finger opens the same choices as a menu (a tap still sets the state). No Reload
+// (the owner: "make them choose a new charge using the list"), no power button (a click on the tile sets the state). And each
+// rack's menu: All active (literal, the owner: "let's stick with the literal option for now" -- the state engine applies what
+// pyfa allows and says why for the rest; a module with no active function goes Online, an unloaded weapon stays Online),
+// All online, All offline, and on the High rack Unload all charges and Charges….
+function wireRingTools(container, f, rerender, run, apply){
+  const ring = container.querySelector('.fit-ring');
+  if(!ring || !f.estimate || !f.estimate.moduleStates) return;
+  const busy = () => f.moduleStateBusy || f.chgLoading;
+  const items = f.estimate.moduleStates.items || [];
+  const weaponIds = new Set(items.filter(it => it.slot === 'high' && weaponCategoryFromGroup(it.groupName) && it.groupName !== 'Smart Bomb').map(it => it.typeId));
+  const openList = (wid) => {
+    f.chgOpen = true; f.chgJustOpened = true; f.chgScroll = 0;
+    f.chgFocus = wid || null; f.chgWeaponFilter = wid && weaponIds.size > 1 ? wid : null;
+    rerender();
+  };
+  let bar = null, barTile = null, showT = null, hideT = null, quiet = null;
+  const hide = () => {
+    clearTimeout(showT); clearTimeout(hideT);
+    if(bar){ bar.remove(); bar = null; }
+    if(barTile){ barTile.classList.remove('hb-on'); barTile = null; }
+  };
+  const later = () => { clearTimeout(hideT); hideT = setTimeout(hide, 220); };
+  // a box `el` of the ring placed toward the middle from point (cx, cy) by `reach` plus its own half size, kept inside the ring
+  const inward = (el, cx, cy, half) => {
+    const W = ring.clientWidth, H = ring.clientHeight, bw = el.offsetWidth, bh = el.offsetHeight;
+    const dx = W / 2 - cx, dy = H / 2 - cy, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+    const reach = half + Math.abs(ux) * bw / 2 + Math.abs(uy) * bh / 2 + 4;
+    el.style.left = `${Math.max(2, Math.min(W - bw - 2, cx + ux * reach - bw / 2))}px`;
+    el.style.top = `${Math.max(2, Math.min(H - bh - 2, cy + uy * reach - bh / 2))}px`;
+  };
+  const centre = (el) => { const rr = ring.getBoundingClientRect(), r = el.getBoundingClientRect(); return [r.left + r.width / 2 - rr.left, r.top + r.height / 2 - rr.top, Math.max(r.width, r.height) / 2]; };
+  const show = (tile, menu) => {
+    hide(); closeRack();
+    const id = Number(tile.dataset.typeId), k = Number(tile.dataset.copy) || 0, loaded = !!tile.dataset.chargeId;
+    const it = items.find(x => x.typeId === id), name = it ? it.name : 'Weapon';
+    bar = document.createElement('div');
+    bar.className = 'ring-hb' + (menu ? ' is-menu' : '');
+    bar.setAttribute('role', 'menu'); bar.setAttribute('aria-label', name);
+    bar.innerHTML = `<div class="ring-hb-h">${escapeHtml(name)}</div>`
+      + (loaded ? `<button type="button" role="menuitem" class="hb-unload" title="Unload charge" aria-label="Unload charge">${UNLOAD_SVG}<span>Unload charge</span></button>` : '')
+      + `<button type="button" role="menuitem" class="hb-list" title="Charges…" aria-label="Charges…">${CHG_LIST_SVG}<span>Charges…</span></button>`;
+    tile.after(bar);   // next in the Tab order after its tile; placed over the ring like the rest
+    const [cx, cy, half] = centre(tile);
+    inward(bar, cx, cy, half);
+    barTile = tile; tile.classList.add('hb-on');
+    bar.addEventListener('pointerenter', () => clearTimeout(hideT));
+    bar.addEventListener('pointerleave', (e) => { if(e.pointerType === 'mouse' && bar && !bar.classList.contains('is-menu')) later(); });
+    bar.addEventListener('focusout', (e) => { if(bar && !bar.contains(e.relatedTarget) && e.relatedTarget !== barTile) later(); });
+    // closing gives the focus back to the tile without opening the bar again
+    const back = (t) => { if(!t) return; quiet = t; t.focus(); quiet = null; };
+    bar.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); const t = barTile; hide(); back(t); } });
+    bar.addEventListener('ring-close', () => { const t = bar && bar.contains(document.activeElement) ? barTile : null; hide(); back(t); });
+    const u = bar.querySelector('.hb-unload');
+    if(u) u.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); hide(); apply(() => chgLoad(f, id, 0, k)); });
+    bar.querySelector('.hb-list').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); hide(); openList(id); });
+    if(menu) bar.querySelector('button').focus();
+  };
+  ring.querySelectorAll('.ms-tile[data-type-id]').forEach(tile => {
+    if(!weaponIds.has(Number(tile.dataset.typeId))) return;
+    // a mouse only: a touch also fires emulated mouse events, which would swap the held-finger menu for the hover bar
+    tile.addEventListener('pointerenter', (e) => { if(e.pointerType !== 'mouse' || busy() || ring.querySelector('.rack-menu') || (bar && bar.classList.contains('is-menu'))) return; clearTimeout(hideT); clearTimeout(showT); showT = setTimeout(() => show(tile, false), 300); });
+    tile.addEventListener('pointerleave', (e) => { if(e.pointerType !== 'mouse') return; clearTimeout(showT); if(bar && !bar.classList.contains('is-menu')) later(); });
+    tile.addEventListener('focus', () => { if(quiet !== tile && !busy() && tile.matches(':focus-visible')) show(tile, false); });
+    tile.addEventListener('blur', (e) => { if(bar && !bar.contains(e.relatedTarget) && !bar.classList.contains('is-menu')) later(); });
+    let holdT = null, st = null, touch = false;
+    tile.addEventListener('pointerdown', (e) => {
+      touch = e.pointerType !== 'mouse';
+      if(!touch || busy()) return;
+      st = {x: e.clientX, y: e.clientY};
+      holdT = setTimeout(() => { holdT = null; tile.dataset.held = '1'; show(tile, true); }, 450);
+    });
+    tile.addEventListener('pointermove', (e) => { if(holdT && st && Math.hypot(e.clientX - st.x, e.clientY - st.y) > 8){ clearTimeout(holdT); holdT = null; } });
+    tile.addEventListener('pointerup', () => { clearTimeout(holdT); holdT = null; });
+    tile.addEventListener('pointercancel', () => { clearTimeout(holdT); holdT = null; });
+    tile.addEventListener('contextmenu', (e) => { if(touch || tile.dataset.held) e.preventDefault(); });
+  });
+  // the racks
+  const closeRack = () => {
+    const m = ring.querySelector('.rack-menu');
+    if(m){ m.remove(); ring.querySelectorAll('button.rack-btn').forEach(b => b.setAttribute('aria-expanded', 'false')); }
+  };
+  ring.querySelectorAll('button.rack-btn').forEach(btn => btn.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const was = ring.querySelector('.rack-menu');
+    if(was){ const same = was.dataset.rack === btn.dataset.rack; closeRack(); if(same) return; }
+    if(busy()) return;
+    hide();
+    const sl = btn.dataset.rack;
+    const mods = items.filter(it => it.slot === sl && Math.round(it.qty) > 0);
+    const weapons = sl === 'high' ? mods.filter(it => weaponIds.has(it.typeId)) : [];
+    const menu = document.createElement('div');
+    menu.className = 'rack-menu'; menu.dataset.rack = sl;
+    menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', FIT_RACK_TITLE[sl]);
+    menu.innerHTML = `<div class="rack-menu-h">${FIT_RACK_TITLE[sl]}</div>`
+      + `<button type="button" role="menuitem" data-act="active"><i class="st-active"></i>All active</button>`
+      + `<button type="button" role="menuitem" data-act="online"><i class="st-online"></i>All online</button>`
+      + `<button type="button" role="menuitem" data-act="offline"><i class="st-offline"></i>All offline</button>`
+      + (weapons.length ? `<hr><button type="button" role="menuitem" data-act="unload">${UNLOAD_SVG}Unload all charges</button><button type="button" role="menuitem" data-act="list">${CHG_LIST_SVG}Charges…</button>` : '');
+    ring.appendChild(menu);
+    const [cx, cy, half] = centre(btn);
+    inward(menu, cx, cy, half);
+    btn.setAttribute('aria-expanded', 'true');
+    menu.addEventListener('ring-close', () => { const back = menu.contains(document.activeElement); closeRack(); if(back) btn.focus(); });
+    menu.addEventListener('keydown', (ev) => { if(ev.key === 'Escape'){ ev.preventDefault(); ev.stopPropagation(); closeRack(); btn.focus(); } });
+    menu.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      const act = b.dataset.act;
+      closeRack();
+      if(busy()) return;
+      if(act === 'unload'){ apply(async () => { for(const w of weapons) await chgLoad(f, w.typeId, 0, null); }); return; }
+      if(act === 'list'){ openList(null); return; }
+      for(const it of mods){
+        const n = Math.round(it.qty);
+        const order = Array.from({length: n}, () => act === 'active' && !it.canActive ? 'online' : act);
+        if(act === 'active') for(const k of chgUnloaded(f, it.typeId)) if(k < n) order[k] = 'online';
+        msSetOrder(f, it.typeId, order);
+      }
+      run();
+    }));
+    menu.querySelector('button').focus();
+  }));
+}
+// One listener for the whole page: a press outside an open weapon menu or rack menu closes it, as Escape does.
+// Guarded: the regression suites run this script with a stub document (LESSON #36).
+if(typeof document !== 'undefined' && typeof document.addEventListener === 'function') document.addEventListener('pointerdown', (e) => {
+  document.querySelectorAll('.ring-hb.is-menu, .rack-menu').forEach(m => {
+    if(!m.contains(e.target) && !(e.target.closest && e.target.closest('button.rack-btn'))) m.dispatchEvent(new Event('ring-close'));
+  });
+}, true);
+if(typeof document !== 'undefined' && typeof document.addEventListener === 'function') document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Escape') return;
+  const open = [...document.querySelectorAll('.ring-hb.is-menu, .rack-menu')];
+  if(!open.length) return;
+  e.preventDefault(); e.stopPropagation();
+  open.forEach(m => m.dispatchEvent(new Event('ring-close')));
+}, true);
 // Every candidate at one point. app: the attacker's CURRENT application (radius, lock range, webs / painters / scram,
 // and its weapons and drones as they are); tgt and q: the target and the point (mysFight's them+qOut or me+qIn);
 // tgtEst: the target's estimate (its HP, resonances, reps and capacitor, for the time to kill).
@@ -17769,7 +18101,9 @@ async function dmgAssumeReady(f){
 function dmgColdGroups(est){
   const c = ASSUME_CANDS.get(est), app = est && est.application;
   if(!c || !app) return [];
-  return c.groups.filter(g => g.options.length && g.options.every(o => !o.loaded) && !app.weapons.some(w => w.weaponTypeId === g.weaponTypeId));
+  // v2026.10.14.77: and only a type with an Active copy (one set Online, e.g. unloaded with "No charge", deals no damage)
+  const live = (id) => { const it = ((est.moduleStates || {}).items || []).find(x => x.typeId === id); return !it || it.active > 0; };
+  return c.groups.filter(g => g.options.length && g.options.every(o => !o.loaded) && !app.weapons.some(w => w.weaponTypeId === g.weaponTypeId) && live(g.weaponTypeId));
 }
 // For ranges and number widths: the application with EVERY candidate of every cold weapon type added (it never changes
 // with the fight, unlike the assumed charge).
@@ -17805,13 +18139,31 @@ function dmgAssumeApp(est, app, tgt, q, tgtEst){
   return Object.assign(a, {unapplied: u, assumed});
 }
 // v2026.10.14.68: weapons that don't fire because no copy is Active (estimate.inactiveWeapons). whose 'your' / 'their'.
+// v2026.10.14.77: and the copies the user unloaded (estimate.emptyWeapons, "No charge" in the Charges list): they are
+// Online with no charge, so they don't fire either; said as empty, not as "online".
 function inactiveWeaponsText(est, whose = 'your'){
-  const list = (est && est.inactiveWeapons) || [];
-  if(!list.length) return null;
+  const empty = (est && est.emptyWeapons) || [];
+  const emptyIds = new Set(empty.map(x => x.typeId));
+  const list = ((est && est.inactiveWeapons) || []).filter(x => !emptyIds.has(x.typeId) || x.state === 'offline');
+  if(!list.length && !empty.length) return null;
   const W = whose === 'your' ? 'Your' : 'Their';
-  const names = list.map(x => `${x.name}${x.count > 1 ? ` ×${x.count}` : ''} ${x.count > 1 ? 'are' : 'is'} ${x.state === 'online' ? 'online, not active' : 'offline'}`);
-  return {short: 'weapons not active',
-    full: `${W} ${names.join('; ')}: ${list.length > 1 || list[0].count > 1 ? "they don't" : "it doesn't"} fire (as in pyfa).${whose === 'your' ? ' Set it Active in your fit to count it.' : ''}`};
+  const parts = [];
+  if(list.length){
+    const names = list.map(x => `${x.name}${x.count > 1 ? ` ×${x.count}` : ''} ${x.count > 1 ? 'are' : 'is'} ${x.state === 'online' ? 'online, not active' : 'offline'}`);
+    parts.push(`${W} ${names.join('; ')}: ${list.length > 1 || list[0].count > 1 ? "they don't" : "it doesn't"} fire (as in pyfa).${whose === 'your' ? ' Set it Active in your fit to count it.' : ''}`);
+  }
+  if(empty.length){
+    const names = empty.map(x => `${x.name}${x.count > 1 ? ` ×${x.count}` : ''}`);
+    const n = empty.reduce((t, x) => t + x.count, 0);
+    parts.push(`${list.length ? 'And' : W} ${names.join(', ')} ${n > 1 ? 'have' : 'has'} no charge (unloaded in the Charges list), so ${n > 1 ? "they don't" : "it doesn't"} fire. Use original charges or the Charges list to load ${n > 1 ? 'them' : 'it'}.`);
+  }
+  let short = 'weapons not active';
+  if(empty.length && !list.length){
+    const n = empty.reduce((t, x) => t + x.count, 0);
+    const noun = empty.every(x => x.launcher) ? 'launcher' : empty.every(x => !x.launcher) ? 'turret' : 'weapon';
+    short = `${n} ${noun}${n > 1 ? 's' : ''} empty`;
+  }
+  return {short, full: parts.join(' ')};
 }
 // The words: short (the card's one line) and the sentence (hover, the board's "why").
 function dmgAssumedText(assumed, whose){

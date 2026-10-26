@@ -11,7 +11,7 @@ run on a pasted fit that HAS that charge (buildFitFromEft), a path that doesn't 
     first (loaded x6, cargo 1,000 / 500), the rest "not on board" by DPS; each row's DPS and range = the pasted fit's;
     the damage-type chips filter it;
   * a click on Caldari Navy Scourge loads it in all six: Firepower = the pasted fit's, the amber "not on board" tag, six
-    dashed tiles, the Loaded line says so; "use the fit's own" brings the fit back;
+    dashed tiles, the Loaded line says so; "Use original charges" (v2026.10.14.77's name) brings the fit back;
   * dragging Nova onto the first launcher loads that one only (1 Nova + 5 Scourge = that pasted fit), the list fading
     while dragging; then setting the Nova launcher online leaves 5 Scourge firing, setting a Scourge one online instead
     leaves 4 Scourge + Nova (the state follows the copy);
@@ -21,8 +21,10 @@ run on a pasted fit that HAS that charge (buildFitFromEft), a path that doesn't 
     in the middle loads both types;
   * list view: each launcher row's charge chip opens the list at that launcher; the charge rows aren't repeated;
   * My Ship keeps a loaded charge after a reload;
-  * 390 and 320 px: the list is a bottom sheet; a finger held on a row then dragged onto a launcher loads that one; no
-    sideways scroll; no page errors.
+  * 390 and 320 px: the list opens inside the Fit card (v2026.10.14.77, the owner: "the charges list needs to stay inside of the
+    fit card"; it was a sheet over the page), under the card's header, all on screen; a finger held on a row then dragged
+    onto a launcher loads that one; no sideways scroll; no page errors.
+The "No charge" row (v.77) is checked by unload_check.py; here the charge rows only.
 v2026.10.14.75 fails (no Charges list).
 """
 import sys, os, re, json
@@ -81,7 +83,7 @@ ENGINE = """async (texts) => { const out = [];
     out.push({total: e.dpsFixed, w: (e.application.weapons || []).map(w => ({id: w.weaponTypeId, ammo: w.ammoTypeId, dps: w.dps})), range: e.rangeEstimates}); }
   return out; }"""
 LIST = f"""() => [...document.querySelectorAll('{R} .chg-pop .chg-w')].map(s => ({{weapon: Number(s.dataset.weapon), head: s.querySelector('.chg-wh').innerText,
-  rows: [...s.querySelectorAll('.chg-row')].map(r => ({{id: Number(r.dataset.charge), dmg: r.dataset.dmg, hidden: r.hidden, name: r.querySelector('.chg-n').textContent,
+  rows: [...s.querySelectorAll('.chg-row:not(.chg-none)')].map(r => ({{id: Number(r.dataset.charge), dmg: r.dataset.dmg, hidden: r.hidden, name: r.querySelector('.chg-n').textContent,
     v: [...r.querySelectorAll('.chg-v')].map(x => x.textContent), tag: r.querySelector('.chg-tag').textContent, cur: r.classList.contains('is-cur'), away: r.classList.contains('is-away'),
     sec: (() => {{ let p = r.previousElementSibling; while(p && !p.classList.contains('chg-sec')) p = p.previousElementSibling; return p ? p.textContent : ''; }})()}}))}}))"""
 TILES = f"""() => [...document.querySelectorAll('{R} .fit-ring .ms-tile[data-type-id="{HML}"]')].sort((a, b) => a.dataset.copy - b.dataset.copy).map(t => ({{charge: Number(t.dataset.chargeId || 0), away: t.classList.contains('chg-away'), from: t.dataset.from, copy: Number(t.dataset.copy)}}))"""
@@ -158,10 +160,11 @@ with sync_playwright() as p:
     check(total(pg) == f'{want_total:,}' and pg.locator(f'{R} .chg-away-tag').count() == 1 and [x['charge'] for x in t] == [NAVY] * 6 and all(x['away'] for x in t)
           and 'not on board' in loaded, f'1440: a click loads Caldari Navy Scourge in all six: {total(pg)} DPS (pasted {want_total}), "not on board" tag, dashed tiles, Loaded line ({loaded!r})')
     pg.click(f'{R} .chg-close'); settle(pg)   # the list covers the ring while open
+    check(pg.inner_text(f'{R} button.chg-own').strip() == 'Use original charges', f'1440: the link back reads "Use original charges" ({pg.inner_text(f"{R} button.chg-own")!r})')
     pg.click(f'{R} button.chg-own'); settle(pg)
     base_total = run_async(pg, ENGINE, [DRAKE])[0]['total']
     check(total(pg) == f'{base_total:,}' and pg.locator(f'{R} .chg-away-tag').count() == 0 and [x['charge'] for x in pg.evaluate(TILES)] == [SCOURGE] * 6,
-          f'1440: "use the fit\'s own" brings it back ({total(pg)} DPS)')
+          f'1440: "Use original charges" brings it back ({total(pg)} DPS)')
     # drag Nova onto the first launcher
     open_list(pg)
     first = f'{R} .fit-ring .ms-tile[data-type-id="{HML}"][data-copy="0"]'
@@ -222,11 +225,13 @@ with sync_playwright() as p:
         pg.goto('file://' + HTML); pg.evaluate("localStorage.clear(); localStorage.setItem('dscanFitView', 'ring')"); pg.reload(); pg.click('#tabBtnFit')
         paste(pg, DRAKE)
         if not pg.locator(f'{R} .fit-ring').is_visible(): pg.click(f'{R} button.cc-toggle[data-card="fit"]'); settle(pg)
-        pg.locator(f'{R} .fit-ring').scroll_into_view_if_needed()
+        pg.evaluate('window.scrollTo(0, 0)'); pg.wait_for_timeout(150)   # opened from the top of the page
         open_list(pg)
-        box = pg.locator(f'{R} .chg-pop').bounding_box()
-        pos = pg.evaluate(f"() => getComputedStyle(document.querySelector('{R} .chg-pop')).position")
-        check(pos == 'fixed' and abs(box['x']) < 1 and abs(box['width'] - w) < 1 and abs(box['y'] + box['height'] - 844) < 1, f'{w}px: the list is a sheet at the bottom ({pos}, {box})')
+        g = pg.evaluate(f"""() => {{ const p = document.querySelector('{R} .chg-pop'), card = p.closest('.fit-summary'), head = card.querySelector('.fit-card-head');
+          const r = p.getBoundingClientRect(), c = card.getBoundingClientRect(), h = head.getBoundingClientRect();
+          return {{pos: getComputedStyle(p).position, top: r.top, bottom: r.bottom, left: r.left, right: r.right, cl: c.left, cr: c.right, hb: h.bottom, vh: innerHeight}}; }}""")
+        check(g['pos'] == 'absolute' and g['left'] >= g['cl'] - 0.5 and g['right'] <= g['cr'] + 0.5 and g['top'] >= g['hb'] - 0.5 and g['top'] >= -0.5 and g['bottom'] <= g['vh'] + 0.5,
+              f'{w}px: the list opens inside the Fit card, under its header, all on screen ({g})')
         # a finger held on Nova, then dragged onto the first launcher (pointer events, as a touch screen sends them)
         tile = pg.locator(f'{R} .fit-ring .ms-tile[data-type-id="{HML}"][data-copy="0"]').bounding_box()
         pg.evaluate("""async ([R, cid, x, y]) => { const row = document.querySelector(R + ` .chg-row[data-charge="${cid}"]`), r = row.getBoundingClientRect();
