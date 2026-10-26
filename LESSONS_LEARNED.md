@@ -875,6 +875,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 64. A state gated on one variant's attribute silently drops the other variants
+
+- **What happened (v2026.10.14.69):** the missile ranking's "prop module on" state was computed only when
+  `boostedSignatureRadius` existed, and that value exists only for an MWD (its signature bloom). An afterburner fit has
+  a boosted speed but no bloom, so it got no prop-on ranking at all, from v.27 to v.68. Nothing failed: no golden fit
+  pinned a prop-on missile ranking on an afterburner fit, and the independent check skips a state the tool reports as
+  absent. It surfaced only when the new Missile tile needed an "AB on" column.
+- **Do this instead:** gate a state on what defines it (here: a prop module is fitted, `boostedSpeed`), and give each
+  variant its own value (an MWD's bloomed signature, an afterburner's base signature). When a check skips a state the
+  tool leaves out, also check that the tool should leave it out (`check_missile_application.py` now checks the prop-on
+  signature per prop kind), and add a golden fit for each variant
+  (`caracal_constructed_afterburner_missile_picks`).
+
 ## 63. When a number is 0, show the cause the tool knows, not a guess about the fit
 
 - **What happened (v2026.10.14.68):** the owner's saved Nergal had its only gun set to Online. Firepower said "drones and fixed

@@ -593,6 +593,14 @@ for (const [fitId, fit] of Object.entries(golden)) {
       result.missileBestBoostedPct = result.missileApplication.boosted[0].applicationPct;
       result.missileBestBoostedAppliedDps = result.missileApplication.boosted[0].appliedDps;
     }
+    // v2026.10.14.69: the Missile tile shows each launcher's best entry (the first of that launcher in the ranking):
+    // missileLauncher:<launcher>:<cruising|boosted> = "<tier> <applicationPct>"
+    for (const state of ['cruising', 'boosted']) {
+      for (const x of result.missileApplication[state] || []) {
+        const k = `missileLauncher:${x.classLabel}:${state}`;
+        if (!(k in result)) result[k] = `${x.tier} ${x.applicationPct}`;
+      }
+    }
   }
   // Turret "No answer" tiles fall back to the 2nd-weakest damage type
   // (backlog item, 2026-10-12, the owner: "utilize the next weakest resist type

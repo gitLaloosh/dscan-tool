@@ -836,3 +836,12 @@ each hull with an Entropic Radiation Sink II and its size of Entropic Disintegra
 effects 7216 / 7211 / 12288 double the disintegrator's damageMultiplierBonusMax (2.125 -> 4.25). Expected DPS from
 pyfa's side (pyfa_fit_oracle, getDps at max spool): 641.5 / 1,300.4 / 1,793.0. v2026.10.14.66 gave 382 / 774 / 1,067
 and fails all 6 pins (LESSON #62).
+
+## Missile picks for each launcher (v2026.10.14.69)
+
+`run_regression.mjs` now flattens `missileLauncher:<launcher>:<cruising|boosted>` = `"<tier> <applicationPct>"`, the first
+entry of each launcher in the ranking (what the Weaknesses card's Missile tile shows).
+`caracal_constructed_afterburner_missile_picks`: a Caracal with a 10MN Afterburner II. Until v.68 an afterburner fit had no
+prop-on missile ranking (only an MWD's bloomed signature was ranked); now it is the afterburner's 717.9 m/s with the base
+125 m signature. Hand-checked from the SDE with the two skills at V: Scourge Heavy Assault Missile 32.7%, Scourge Fury
+Light Missile 80.1%. v2026.10.14.68 fails all 6 prop-on pins (LESSON #64).

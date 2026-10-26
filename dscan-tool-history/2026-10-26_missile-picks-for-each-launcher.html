@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — Missile picks for each launcher</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Missile tile: the best ammo for each launcher</h1>
+<p><span class="tag">Feature</span><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.68</code> &rarr; <code>v2026.10.14.69</code>.</p>
+<p>the owner asked about the backlog item "Missile ammo pick uses raw charge stats" (optional phase 5 of the hand-table work).</p>
+<ul>
+<li>That item was already done in v.27: the pick uses your two application skills at V, pyfa's only skill handlers on a missile's application.</li>
+<li>What was left was presentation. The tile picked one ammo across every launcher size, so a battleship target got "Torpedo" even for a frigate pilot.</li>
+</ul>
+<p>the owner's decisions:</p>
+<ul>
+<li>"let's do #3": show a pick for each launcher size;</li>
+<li>from the mockup (the real page, desktop and phone), option A: six rows rather than three sizes;</li>
+<li>"Keep it" for the column with the target's prop module on.</li>
+</ul>
+
+<h2>What you see</h2>
+<p>This applies to the Weaknesses card with no ship saved; with My Ship on, your own picks replace these tiles as before.</p>
+<ul>
+<li><b>The label</b> reads "Missile &middot; Nova", the damage type's race prefix.</li>
+<li><b>One row per launcher:</b> Rocket, Light, HAM, Heavy, Torpedo, Cruise. Each row shows the best ammo tier (T1, Fury, Precision, Rage, Javelin) and how much of its damage lands.</li>
+<li><b>Columns "MWD off / on"</b> ("AB" for an afterburner), when the target fits a prop module. The "on" column names a tier only when a different one is better there: against a Megathron with its MWD on, Cruise switches from T1 to Precision.</li>
+<li><b>Colour:</b> under 50% is amber.</li>
+<li><b>Hover</b> gives the full ammo name and both percentages to one decimal, e.g. "Inferno Precision Light Missile: 100% of its damage lands with their MWD off, 100% with it on."</li>
+<li><b>Narrow screens:</b> at 320 px the tile still fits. The "on" column's tier is cut first ("P…", whole on hover).</li>
+</ul>
+<table>
+<tr><th>Target</th><th>Before</th><th>Now (MWD off / on)</th></tr>
+<tr><td>Rifter, MWD</td><td>Inferno Rocket, 100%</td><td>Rocket T1 100 / 96, Light Precision 100 / 100, HAM T1 16 / 13, Heavy Precision 30 / 26, Torpedo T1 4 / 3, Cruise Precision 10 / 9</td></tr>
+<tr><td>Megathron, MWD</td><td>Nova Torpedo, 96.2%</td><td>every launcher 100%, except Torpedo T1 96 / 76; Cruise T1 100, Precision 100 with the MWD on</td></tr>
+</table>
+
+<h2>Found on the way: afterburner fits had no "prop on" missile ranking</h2>
+<ul>
+<li><b>The bug:</b> the prop-on ranking was computed only when the target had an MWD signature bloom (<code>boostedSignatureRadius</code>, MWD only). A target with an afterburner had a boosted speed but no ranking, since v.27.</li>
+<li><b>The fix:</b> the prop-on state is now the winning prop module's speed with its own signature: an MWD's bloom, or an afterburner's base signature.</li>
+<li><b>Effect:</b> 32 existing golden fits with an afterburner gained a prop-on ranking (33 with the new one); no pinned number moved. The independent check went from 286 to 319 rankings, 0 mismatches.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>check_missile_application.py</code></b> also checks the prop-on signature for each prop kind: an afterburner's must equal the base signature, and an MWD's can't be smaller. A break that blooms an afterburner fails 36 rankings.</li>
+<li><b>New golden fit <code>caracal_constructed_afterburner_missile_picks</code></b>, hand-checked from the SDE: Scourge HAM 32.7% and Scourge Fury Light Missile 80.1% at 717.9 m/s and 125 m. <code>run_regression.mjs</code> flattens each launcher's best as <code>missileLauncher:&lt;launcher&gt;:&lt;state&gt;</code>. v.68 fails all 6 prop-on pins.</li>
+<li><b>New <code>tools/page_checks/missile_picks_check.py</code></b> covers four targets at 1440, 390 and 320 px: rows, order, tiers, %, the prop column and its header, amber, hover, fit inside the tile, no sideways scroll, no page errors.
+<ul>
+<li>v.68 fails 12.</li>
+<li>A break that takes the last entry of each launcher fails 5, and one that always names the prop tier fails 3.</li>
+</ul></li>
+<li>Regression ALL PASS (259 fits), update chain all 37 steps OK, all 20 page checks 0 failures. No PYFA CORE change.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #64: a state gated on one variant's attribute silently drops the other variants.</p>
+<ul>
+<li>"Prop on" was gated on the MWD's signature bloom, so afterburner fits never had it. The check skipped the state because the tool said it was absent.</li>
+<li>Gate a state on what defines it (a prop module is fitted), and give each variant its own value.</li>
+<li>When a check skips a state, also check that the tool should leave it out. Add a golden fit for each variant.</li>
+<li>For a recommendation: rank inside the choice the user actually has (their launcher). A single pick across choices they can't make isn't an answer.</li>
+</ul>
+</body>
+</html>

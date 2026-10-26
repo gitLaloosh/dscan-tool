@@ -6,7 +6,8 @@ Navigation Prediction (aoeVelocity, aoeVelocityBonus x level), unpenalized, on c
 Launcher Operation. A pyfa or SDE change here fails the check.
 Part 2 -- every golden fit's ranking recomputed here: each catalog missile's SDE explosion radius / velocity /
 drf with those skills at V, the target's unrounded signature and speed (missileApplication.inputs: cruising =
-base signature + cruise speed; boosted = MWD signature + boosted speed), EVE's missile application formula
+base signature + cruise speed; boosted = the winning prop module's signature + boosted speed: an MWD's bloom, an
+afterburner's base signature, since v2026.10.14.69), EVE's missile application formula
 min(1, S/E, (S/E * Ve/Vt)^drf), applied DPS = raw damage / launcher cycle x application. The tool's whole
 ordering, percentages and applied DPS must match.
 
@@ -72,6 +73,12 @@ for k, t in tool.items():
         if inp is None:
             if ma[state] is not None: bad += 1; print(f'{k} {state}: tool ranks with no inputs')
             continue
+        # v2026.10.14.69: the prop-on state is the winning prop module with its own signature -- an afterburner's is the
+        # base signature (no bloom); an MWD's is its bloom, which can't be smaller
+        if state == 'boosted' and inp.get('prop') == 'afterburner' and inp['sig'] != ma['inputs']['cruising']['sig']:
+            bad += 1; print(f"{k}: afterburner prop-on signature {inp['sig']} != base {ma['inputs']['cruising']['sig']}")
+        if state == 'boosted' and inp.get('prop') == 'mwd' and inp['sig'] < ma['inputs']['cruising']['sig']:
+            bad += 1; print(f"{k}: MWD prop-on signature {inp['sig']} below base {ma['inputs']['cruising']['sig']}")
         exp = rank(inp['sig'], inp['speed']); got = [(r['name'], r['applicationPct'], r['appliedDps']) for r in ma[state]]
         n += 1
         # same values per missile; the order may differ only between exact ties

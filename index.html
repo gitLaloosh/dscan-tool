@@ -663,6 +663,19 @@
      real weakest damage type. */
   .rec-stat.rec-stat-fallback{border-left:2px solid var(--amber-dim);}
   .rec-fallback-tag{color:var(--amber);}
+  /* v2026.10.14.69: the Missile tile, the best ammo for each launcher (missileRecTileHtml). Rows share one grid
+     (subgrid), so the columns line up; numbers right-aligned in mono, under 50% amber. */
+  .mis-rows{display:grid; grid-template-columns:auto minmax(3.5em,1fr) auto; column-gap:10px; row-gap:3px; margin-top:4px;}
+  .mis-rows.has-prop{grid-template-columns:auto minmax(3.5em,1fr) auto minmax(0,max-content);}   /* the tier keeps some room; a narrow tile cuts the prop column's tier first, then the tier (whole on hover) */
+  .mis-row{display:grid; grid-column:1 / -1; grid-template-columns:subgrid; align-items:baseline; min-width:0;}
+  .mis-k{font-size:12px; color:var(--text-dim); white-space:nowrap;}
+  .mis-v{font-size:13px; font-weight:600; color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+  .mis-p{font:600 12.5px var(--mono); color:var(--heading); text-align:right; white-space:nowrap;}
+  .mis-b{display:flex; justify-content:flex-end; gap:6px; min-width:0; font:500 11.5px var(--mono); color:var(--text-dim); white-space:nowrap;}
+  .mis-bt{overflow:hidden; text-overflow:ellipsis; min-width:1.6ch;}   /* cut to at least a whole "…" */
+  .mis-bp{flex:none;}
+  .mis-h{font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); text-align:right; white-space:nowrap;}
+  .mis-p.is-low, .mis-bp.is-low{color:var(--amber);}
 
   .fitgroup h3{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); margin:0 0 8px;}
   .fititem{
@@ -1692,7 +1705,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.68</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.69</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1851,6 +1864,7 @@ const CARD_INFO = {
   "The title says whose weaknesses these are: the threat's, or yours (Your Weaknesses, in {card:perspective.mine} and on {card:myshippage}).",
   "Capacitor drains: its capacitor runs out with every running module cycling, even at best case (a fitted Capacitor Booster or Ancillary Shield Booster on charges). The ring is how long it lasts; hover it for the numbers. No charges: a booster with none loaded and none in cargo (pasted fits only). No paste: an Ancillary Armor Repairer with no Nanite Repair Paste loaded or in cargo (pasted fits only), so no 3x boost.",
   "Without your ship: the ammo and drone type for each weapon system that hits that weakness hardest. A turret system that can't deal it falls back to the next weakest type.",
+  "Missiles: the best ammo for each launcher, and how much of its damage lands on this ship's signature and speed, with its MWD (or afterburner) off and on. With your skills at V; your rigs and modules aren't known. Under 50% is amber.",
   "With your ship saved and Use in assessments on: your own ammo and drones against it, best first by how long it lasts with that loaded (damage by type against its resists, layer by layer, minus its reps while its capacitor lasts; the rest of your fit as it is). Only the ammo and drones aboard count. The DPS is pyfa's applied DPS at the range and movement set on {card:dmg}. Hover a pick for the next best. In {card:perspective.mine} the same, for their ammo against you."
  ],
  "ewar": [
@@ -7029,26 +7043,49 @@ const MISSILE_AMMO_NAME_BY_DMG_TYPE = {em: 'Mjolnir', therm: 'Inferno', kin: 'Sc
 // review -- not urgent, just flagged so it isn't forgotten.
 const MISSILE_REC_METRIC = 'appliedDps'; // 'appliedDps' | 'applicationPct'
 
-// Fit Analyzer's Missile rec-stat tile -- replaces the old static "Mjolnir
-// (pure EM)"-style text with the ranked ammo recommendation (missile
-// Application, see estimateHpAndDps above). Shows the best entry at
-// cruising speed as the headline, a 2nd line only when a prop mod is
-// fitted and its boosted state picks a genuinely different best entry
-// (same "don't repeat an unchanged number" convention as the rest of
-// this card), and flags low application (<50%) explicitly even when
-// applied DPS is what's actually driving the ranking, since a pilot
-// still needs to know most shots will miss.
-function missileRecTileHtml(missileApplication){
-  const best = missileApplication.cruising[0];
-  const lowApplication = best.applicationPct < 50;
-  const boostedBest = missileApplication.boosted ? missileApplication.boosted[0] : null;
-  const boostedDiffers = boostedBest && boostedBest.name !== best.name;
+// v2026.10.14.69 (the owner: "let's do #3", then option A from the mockup, "Keep it" for the prop column): the Missile tile
+// shows the best ammo for EACH launcher (Rocket, Light, HAM, Heavy, Torpedo, Cruise), not one pick across every size --
+// a pilot can only fire the launchers on their ship, and "Torpedo" against a battleship tells a frigate pilot nothing.
+// Presentation only: each row is the first entry of that launcher in the tool's existing ranking
+// (estimate.missileApplication.cruising / .boosted, ranked by MISSILE_REC_METRIC within the launcher; numbers checked
+// by check_missile_application.py). Columns (headed "MWD  off  on", short so a 320 px phone fits): with the target's prop module off, and on (only when it fits one; the
+// prop column names a different tier when one is better with it on). Under 50% is amber.
+const MISSILE_LAUNCHER_ROWS = [['Rocket', 'Rocket'], ['Light Missile', 'Light'], ['Heavy Assault Missile', 'HAM'],
+  ['Heavy Missile', 'Heavy'], ['Torpedo', 'Torpedo'], ['Cruise Missile', 'Cruise']];
+function missileBestByLauncher(ranking){
+  const best = {};
+  for(const x of ranking || []) if(!best[x.classLabel]) best[x.classLabel] = x;
+  return best;
+}
+function missileRecTileHtml(missileApplication, propModType){
+  const race = missileApplication.ammoName;
+  const off = missileBestByLauncher(missileApplication.cruising);
+  const on = missileApplication.boosted ? missileBestByLauncher(missileApplication.boosted) : null;
+  const P = propModType === 'afterburner' ? 'AB' : 'MWD';
+  const full = x => `${race} ${x.tier === 'T1' ? '' : x.tier + ' '}${x.classLabel}`;
+  const pct = x => `${Math.round(x.applicationPct)}%`;
+  const low = x => x.applicationPct < 50 ? ' is-low' : '';
+  let rows = '';
+  for(const [cls, short] of MISSILE_LAUNCHER_ROWS){
+    const x = off[cls]; if(!x) continue;
+    const y = on && on[cls];
+    const yOther = y && y.tier !== x.tier;
+    const tip = `${full(x)}: ${x.applicationPct}% of its damage lands${on ? ` with their ${P} off` : ''}`
+      + (y ? (yOther ? `; with it on, ${full(y)} is better: ${y.applicationPct}%` : `, ${y.applicationPct}% with it on`) : '')
+      + (x.applicationPct < 50 ? '. Under half lands: turrets or drones may do better.' : '.');
+    rows += `<div class="mis-row" data-launcher="${escapeHtml(cls)}" title="${escapeHtml(tip)}">`
+      + `<span class="mis-k">${short}</span><span class="mis-v">${x.tier}</span>`
+      + `<span class="mis-p${low(x)}">${pct(x)}</span>`
+      + (on ? `<span class="mis-b">${y ? `${yOther ? `<span class="mis-bt">${y.tier}</span>` : ''}<span class="mis-bp${low(y)}">${pct(y)}</span>` : ''}</span>` : '')
+      + `</div>`;
+  }
   return `
-          <div class="rec-stat">
-            <span class="rec-label">Missile</span>
-            <span class="rec-value" title="${missileApplication.ammoName} ${best.name}">${missileApplication.ammoName} ${best.name}</span>
-            ${(() => { const full = `${best.applicationPct}% applies at cruising speed${lowApplication ? ' — poor application, consider turrets/drones instead' : ''}${boostedDiffers ? ` · ${boostedBest.name} best if prop mod active (${boostedBest.applicationPct}%)` : ''}`;
-              return lowApplication ? ctxHtml(`only ${best.applicationPct}% applies: try turrets, drones`, 'rec-sub', full) : ctxHtml(`${best.applicationPct}% applies at cruising speed`, 'rec-sub', full); })()}
+          <div class="rec-stat rec-stat-missile">
+            <span class="rec-label" title="${escapeHtml(`Missile: ${race}, the best ammo for each launcher. Your All V skills; your rigs and modules aren't known.`)}">Missile · ${race}</span>
+            <div class="mis-rows${on ? ' has-prop' : ''}">
+              ${on ? `<div class="mis-row mis-head" aria-hidden="true"><span></span><span class="mis-h">${P}</span><span class="mis-h">off</span><span class="mis-h">on</span></div>` : ''}
+              ${rows}
+            </div>
           </div>`;
 }
 
@@ -13882,8 +13919,13 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       .sort((a, b) => MISSILE_REC_METRIC === 'appliedDps' ? (b.appliedDps - a.appliedDps) : (b.applicationPct - a.applicationPct));
   }
   const missileApplicationCruising = rankMissileAmmo(baseSignatureRadius, cruisingSpeed);
-  const missileApplicationBoosted = (boostedSignatureRadius !== null && boostedSpeed !== null)
-    ? rankMissileAmmo(boostedSignatureRadius, boostedSpeed)
+  // v2026.10.14.69: the prop-on state is the fit's winning prop module (propModType, the one boostedSpeed belongs to)
+  // with ITS signature: an MWD's bloom, an afterburner's none (base signature). Until v.68 an afterburner fit had no
+  // prop-on ranking at all (boostedSignatureRadius is MWD-only), so the Missile tile's "AB on" column had nothing to show.
+  // LESSON #64.
+  const missileBoostedSig = propModType === 'mwd' && boostedSignatureRadius !== null ? boostedSignatureRadius : baseSignatureRadius;
+  const missileApplicationBoosted = boostedSpeed !== null
+    ? rankMissileAmmo(missileBoostedSig, boostedSpeed)
     : null;
 
   // Navigation & targeting, Phase 4: capacitor stability -- see the
@@ -14129,7 +14171,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       boosted: missileApplicationBoosted,
       // v2026.10.14.27: the unrounded target numbers each ranking used (for check_missile_application.py)
       inputs: {cruising: {sig: baseSignatureRadius, speed: cruisingSpeed},
-        boosted: missileApplicationBoosted ? {sig: boostedSignatureRadius, speed: boostedSpeed} : null}
+        boosted: missileApplicationBoosted ? {sig: missileBoostedSig, speed: boostedSpeed, prop: propModType} : null}
     },
     // Raw (pre-resist) per-layer HP and the Tank Type classification derived
     // from it -- see the TANK_TYPE_THRESHOLD block above.
@@ -14523,7 +14565,7 @@ function fitSummaryParts(f){
             <span class="rec-value" title="${estimate.drones.primary.name} (${estimate.drones.primary.size})">${estimate.drones.primary.name} (${estimate.drones.primary.size})</span>
             ${estimate.drones.alt ? ctxHtml(`or ${estimate.drones.alt.name} if it moves`, 'rec-sub', `or ${estimate.drones.alt.name} (${estimate.drones.alt.size}) if it won't sit still`) : ''}
           </div>
-          ${missileRecTileHtml(estimate.missileApplication)}
+          ${missileRecTileHtml(estimate.missileApplication, estimate.speed && estimate.speed.propModType)}
           ${turretRecTileHtml('Laser', estimate.turretRecs.laser, estimate.weakest, estimate.secondWeakest)}
           ${turretRecTileHtml('Hybrid', estimate.turretRecs.hybrid, estimate.weakest, estimate.secondWeakest)}
           ${turretRecTileHtml('Projectile', estimate.turretRecs.projectile, estimate.weakest, estimate.secondWeakest)}
