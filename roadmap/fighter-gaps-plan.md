@@ -52,3 +52,9 @@ Every number checked against pyfa (eos, `graphs/data/fitDamageStats`), as everyw
 
 All four deliveries are done: carriers are assessed with pyfa's numbers for squadrons, abilities, support EWAR, bombs
 and the picks.
+
+Follow-up, v2026.10.14.73 (the owner: "are we not recommending fighters when my ship is not active?"): with no ship saved,
+the Weaknesses card has a Fighter tile too: the T2 light fighter, heavy fighter and bomber of the target's least resisted
+damage type, and how much of each one's damage lands (pyfa's getFighterAbilityMult, skills at V, the bomb counted).
+The Missile and Fighter tiles start collapsed to one summary line. Checked by `check_fighter_rec.py` and
+`fighter_tile_check.py`.

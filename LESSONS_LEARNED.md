@@ -875,6 +875,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 66. A fetch every fit makes needs a shared fixture, served by every harness
+
+- **What happened (v2026.10.14.73):** the generic Fighter tile fetches the same 12 fighters and 4 bombs for EVERY fit,
+  whatever it flies. Each golden fit answers type fetches only from its own `types`, so all 263 fits would have failed
+  with a 404, and copying 16 records into each fit would have added megabytes. (The missile catalog was copied into
+  every fit in v.27; that was 14 small records.)
+- **Do this instead:** put types the page fetches regardless of the fit in `regression_suite/shared_types.json`
+  (written by `refresh_golden_fixtures.py --write` from the table in index.html, so it can't drift), and make every
+  harness that answers fetches from a fixture fall back to it: grep `tools/` and `regression_suite/` for
+  `universe\/types` (the escaped regex, which a plain grep for `universe/types` misses). A fit's own record still wins.
+  Pin the new output on a few fits (here `fighterRec:<class>:<state>`), so a fixture that silently lost the shared
+  records fails the suite.
+
 ## 65. New rows in an existing output reach every check that reads it
 
 - **What happened (v2026.10.14.70):** support fighters' EWAR went into `estimate.ewarModules`, the list the EWAR card draws.

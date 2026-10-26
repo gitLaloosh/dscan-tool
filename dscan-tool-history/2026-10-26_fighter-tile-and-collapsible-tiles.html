@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — A Fighter tile with no ship saved; Missile and Fighter tiles collapse</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; padding:4px 10px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>A Fighter tile with no ship saved; the Missile and Fighter tiles collapse</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.72</code> &rarr; <code>v2026.10.14.73</code>.</p>
+<p>the owner asked: "are we not recommending fighters when my ship is not active?" They weren't: with no ship saved, the Weaknesses card had Drone, Missile and turret tiles, but nothing for a carrier pilot. His decisions:</p>
+<ul>
+<li>"yes please", and "let's have those that do multiple rows be able to expand and collapse. default to collapsed";</li>
+<li>from the mockup: collapsed "B: names + how much lands";</li>
+<li>the bomber row: "Count the bomb".</li>
+</ul>
+
+<h2>What you see</h2>
+<ul>
+<li><b>A Fighter tile</b> after the Missile tile, labelled "Fighter &middot; Minmatar" (the race of the least resisted damage type). It names the T2 light fighter, heavy fighter and bomber of that type and how much of each one's damage lands on this ship.</li>
+<li><b>Collapsed (the default):</b> one line each.
+<ul>
+<li>Fighter: "Einherji &middot; Tyrfing &middot; Gungnir", then "light 79% &middot; heavy 2% &middot; bomber 44%".</li>
+<li>Missile: "6 launchers", then "6 of 6 land 95% or more" (with the prop module off).</li>
+</ul></li>
+<li><b>Open</b> (the chevron by the label): the rows, as the Missile tile had them since v.69. For fighters: Light / Heavy / Bomber, the % with the target's MWD or afterburner off and on, under 50% amber. The hover gives the one decimal; the bomber's says it counts "its attack and its bomb".</li>
+<li><b>Open or closed is kept per fit</b>: it survives a re-render (closing and opening the card, a module toggle), and a new paste starts collapsed. Switching it doesn't redraw the card.</li>
+<li><b>The card's info</b> explains the fighter tile and the collapsing.</li>
+</ul>
+<table>
+<tr><th>Target</th><th>Light</th><th>Heavy</th><th>Bomber</th></tr>
+<tr><td>Megathron, MWD (explosive)</td><td>Einherji 79 / 75</td><td>Tyrfing 2 / 1</td><td>Gungnir 44 / 38</td></tr>
+<tr><td>Dominix Navy Issue, MWD (thermal)</td><td>Firbolg 84 / 80</td><td>Cyclops 2 / 2</td><td>Antaeus 54 / 45</td></tr>
+<tr><td>Revelation (a capital)</td><td>Templar 100</td><td>Malleus 100</td><td>Ametat 100</td></tr>
+</table>
+<p>Heavy fighters land almost nothing on a subcap: their torpedoes are anti-capital (a subcap's fighter-missile resistance lets 10% through), and their attack missile's explosion is huge. On a capital they land fully.</p>
+
+<h2>How it's matched to pyfa</h2>
+<ul>
+<li><b>The types</b> (<code>FIGHTER_REC_TYPES</code>): for each damage type, the T2 fighter of each squadron role (light attack, heavy attack, bomber) that deals only that type. Superiority and support fighters aren't offered, and neither are faction fighters.</li>
+<li><b>The fighter:</b> your skills at V and no carrier bonus (<code>pyfaProjFighterSetup</code> on an empty ship); abilities pyfa's defaults, plus the bomb on the bomber.</li>
+<li><b>How much lands:</b> pyfa's <code>getFighterAbilityMult</code> (PYFA CORE <code>application</code>, unchanged) for each ability, weighted by that ability's DPS:
+<ul>
+<li>at distance 0 (fighters fly to the target), lock range ignored, mobile mode auto;</li>
+<li>at the signature and speed the missile ranking uses, with the prop module off and on;</li>
+<li>against the target's own fighter-missile resistances.</li>
+</ul></li>
+<li><b>No PYFA CORE change.</b> The new code only builds inputs and draws the tile.</li>
+</ul>
+
+<h2>Golden fixtures: one shared file</h2>
+<p>The tile fetches the same 12 fighters and 4 bombs for every fit. Each golden fit answers fetches only from its own records, so every fit would have failed with a 404; copying 16 records into 263 fits would have added megabytes.</p>
+<ul>
+<li><b>New <code>regression_suite/shared_types.json</code></b> (35 KB), written by <code>refresh_golden_fixtures.py --write</code> from the SDE and index.html's table.</li>
+<li><b>Every harness that answers fetches from a fixture</b> falls back to it: <code>run_regression.mjs</code>, <code>dump_results.mjs</code>, <code>compare_cap_sim.mjs</code>, <code>scaffold_golden_fit.mjs</code>. A fit's own record still wins.</li>
+<li><b>New pins</b> <code>fighterRec:&lt;class&gt;:&lt;name|cruising|boosted&gt;</code> on three fits: an afterburner cruiser, an MWD battleship, a capital. They equal pyfa's values (the check below). A break that ignores the target's resistances fails the capital's heavy pin (55 instead of 100).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/independent_checks/check_fighter_rec.py</code></b>, in the update chain (now 38 steps):
+<ul>
+<li>the mapping, written from the SDE alone (T2, squadron role, every damage ability and the bomb one damage type), must equal the tool's table;</li>
+<li>every golden fit's three rows from pyfa: an oracle fit with one squadron of each type on a hull with no fighter bonus (a Rifter; an Ibis must give the same attributes), pyfa's <code>getDps</code> and <code>getFighterAbilityMult</code>, the golden fit as the target.</li>
+</ul>
+Result: 263 fits, 975 shares, 0 mismatches. Breaks: no bomb 791, the bomb given the fighter skills 528, the resistances ignored 55, two types swapped 88, the MWD bloom ignored 76.</li>
+<li><b>New <code>tools/page_checks/fighter_tile_check.py</code></b>: four targets at 1440, 390 and 320 px.
+<ul>
+<li>collapsed by default, with the summaries above;</li>
+<li>the chevron opens a tile and Enter closes it;</li>
+<li>the rows equal the estimate, amber under 50%, hovers;</li>
+<li>the open state survives a re-render, and a new paste starts collapsed;</li>
+<li>no sideways scroll, rows inside the tile.</li>
+</ul>
+v.72 fails 16. Breaks that open by default or forget the open state fail 51 and 24.</li>
+<li><b>Updated:</b> <code>missile_picks_check.py</code> now opens the collapsed tile before reading its rows.</li>
+<li>Regression ALL PASS (263 fits; v.72 fails all 24 new pins), update chain all 38 steps OK, all 24 page checks 0 failures. PYFA CORE: 20 sections match the manifest, unchanged.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #66: a fetch every fit makes, whatever it flies, needs a shared fixture that every harness serves.</p>
+<ul>
+<li>Put those types in <code>shared_types.json</code>, written from the page's own table so it can't drift.</li>
+<li>Find every harness by grepping for the escaped regex <code>universe\/types</code>. A plain grep for <code>universe/types</code> found only one of the five.</li>
+<li>Pin the new output on a few fits, so a fixture that lost the shared records fails the suite.</li>
+</ul>
+<p>LESSON #65 was applied: the Missile rows moved behind a chevron, so the one check that reads them (<code>missile_picks_check.py</code>) was changed in the same delivery.</p>
+</body>
+</html>

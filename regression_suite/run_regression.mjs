@@ -56,6 +56,9 @@ if (!m) {
 }
 const code = m[1];
 const golden = JSON.parse(fs.readFileSync(goldenPath, 'utf8'));
+// shared_types.json (v2026.10.14.73): the types every fit fetches whatever it flies (the generic Fighter tile's
+// fighters and bombs), written by tools/refresh_golden_fixtures.py. A fit's own record wins; this is the fallback.
+const SHARED = JSON.parse(fs.readFileSync(path.join(__dirname, 'shared_types.json'), 'utf8'));
 
 // GUARD (added 2026-10-11, incident: a stale duplicate regression_suite\
 // folder -- leftover from an earlier abandoned-duplicate-folder scrape --
@@ -96,12 +99,14 @@ for (const [fitId, fit] of Object.entries(golden)) {
     const groupMatch = url.match(/\/universe\/groups\/(\d+)\//);
     if (typeMatch) {
       const id = typeMatch[1];
-      if (TYPES[id]) return { ok: true, json: async () => TYPES[id] };
+      const r = TYPES[id] || SHARED.types[id];
+      if (r) return { ok: true, json: async () => r };
       return { ok: false, status: 404 };
     }
     if (groupMatch) {
       const id = groupMatch[1];
-      if (GROUPS[id]) return { ok: true, json: async () => GROUPS[id] };
+      const r = GROUPS[id] || SHARED.groups[id];
+      if (r) return { ok: true, json: async () => r };
       return { ok: false, status: 404 };
     }
     return { ok: false, status: 404 };
@@ -600,6 +605,14 @@ for (const [fitId, fit] of Object.entries(golden)) {
         const k = `missileLauncher:${x.classLabel}:${state}`;
         if (!(k in result)) result[k] = `${x.tier} ${x.applicationPct}`;
       }
+    }
+  }
+  // v2026.10.14.73: the generic Fighter tile -- fighterRec:<light|heavy|bomber>:<cruising|boosted> = % of its damage that
+  // lands (the share x 100, unrounded); fighterRec:<cls>:name = the type shown
+  if (result.fighterRec) {
+    for (const x of result.fighterRec.rows || []) {
+      result[`fighterRec:${x.cls}:name`] = x.name;
+      for (const state of ['cruising', 'boosted']) if (x[state] !== null) result[`fighterRec:${x.cls}:${state}`] = x[state] * 100;
     }
   }
   // Turret "No answer" tiles fall back to the 2nd-weakest damage type

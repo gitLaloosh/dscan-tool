@@ -6,13 +6,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const [htmlPath = path.join(__dirname, '..', 'index.html'), outPath, fieldList, modeOverride, fitList] = process.argv.slice(2);
 const onlyFits = fitList ? new Set(fitList.split(',')) : null;
 const golden = JSON.parse(fs.readFileSync(path.join(__dirname, 'golden_fits.json'), 'utf8'));
+// shared_types.json (v2026.10.14.73): the types every fit fetches whatever it flies (the generic Fighter tile's
+// fighters and bombs), written by tools/refresh_golden_fixtures.py. A fit's own record wins; this is the fallback.
+const SHARED = JSON.parse(fs.readFileSync(path.join(__dirname, 'shared_types.json'), 'utf8'));
 const code = [...fs.readFileSync(htmlPath, 'utf8').matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 const fields = fieldList ? fieldList.split(',') : null;
 const out = {};
 for (const [id, fit] of Object.entries(golden)) {
   if (onlyFits && !onlyFits.has(id)) continue;
   const fakeFetch = async url => { const t = url.match(/\/universe\/types\/(\d+)\//), g = url.match(/\/universe\/groups\/(\d+)\//);
-    const r = t ? fit.types[t[1]] : g ? fit.groups[g[1]] : null; return r ? {ok: true, json: async () => r} : {ok: false, status: 404}; };
+    const r = t ? (fit.types[t[1]] || SHARED.types[t[1]]) : g ? (fit.groups[g[1]] || SHARED.groups[g[1]]) : null; return r ? {ok: true, json: async () => r} : {ok: false, status: 404}; };
   const fakeEl = () => ({addEventListener(){}, get style(){return {};}, querySelectorAll(){return [];}, appendChild(){}, innerHTML: ''});
   const sb = {fetch: fakeFetch, document: {getElementById: fakeEl, createElement: fakeEl}, console: {log(){}, warn(){}, error(){}}, Promise, Map, Set, Infinity, Math, JSON, Object, Array, Number, String};
   vm.createContext(sb); vm.runInContext(code, sb);

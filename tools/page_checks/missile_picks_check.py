@@ -17,6 +17,8 @@ with no prop module):
   * 1440, 390 and 320 px wide: no sideways scroll, every row inside the tile, the tier never cut to nothing;
   * no NaN / undefined, no page errors.
 v2026.10.14.68 fails (one pick, no rows).
+Since v2026.10.14.73 the tile starts collapsed (tools/page_checks/fighter_tile_check.py checks that and its summary);
+this check opens it with its chevron after each paste and checks the rows.
 """
 import sys, os, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -114,6 +116,8 @@ with sync_playwright() as p:
         pg.click('#tabBtnFit')
         for key, (prop, eft) in FITS.items():
             paste(pg, eft)
+            if pg.locator(f'{R} .weak-generic .rec-stat-missile .rec-tog').count():   # v.73: open the collapsed tile
+                pg.click(f'{R} .weak-generic .rec-stat-missile .rec-tog'); pg.wait_for_timeout(150)
             if vw == 1440:
                 pg.wait_for_selector(f'{R} .dmg-card', timeout=60000); settle(pg)
                 seen[key] = pg.evaluate(EST)

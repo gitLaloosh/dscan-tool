@@ -73,6 +73,7 @@ import vm from 'vm';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const SHARED = JSON.parse(fs.readFileSync(path.join(__dirname, 'shared_types.json'), 'utf8'));
 
 const ESI = 'https://esi.evetech.net/latest';
 const ZKB = 'https://zkillboard.com/api';
@@ -204,12 +205,15 @@ async function computeProvisionalExpected(htmlPath, killmail, typesMap, groupsMa
     const groupMatch = url.match(/\/universe\/groups\/(\d+)\//);
     if (typeMatch) {
       const id = typeMatch[1];
-      if (typesMap[id]) return { ok: true, json: async () => typesMap[id] };
+      // shared_types.json (v2026.10.14.73): the generic Fighter tile's types, fetched for every fit (run_regression.mjs falls back to it too)
+      const r = typesMap[id] || SHARED.types[id];
+      if (r) return { ok: true, json: async () => r };
       return { ok: false, status: 404 };
     }
     if (groupMatch) {
       const id = groupMatch[1];
-      if (groupsMap[id]) return { ok: true, json: async () => groupsMap[id] };
+      const r = groupsMap[id] || SHARED.groups[id];
+      if (r) return { ok: true, json: async () => r };
       return { ok: false, status: 404 };
     }
     return { ok: false, status: 404 };

@@ -20,12 +20,17 @@ What it does, per fit:
 The file is written back in its existing serialization (compact JSON,
 ASCII-escaped), so only refreshed records change.
 
+Also writes regression_suite/shared_types.json (v2026.10.14.73): the types the page fetches for EVERY fit
+whatever it flies -- the generic Fighter tile's 12 T2 fighters (FIGHTER_REC_TYPES, read from index.html) and
+the 4 bombs those bombers launch (fighterAbilityLaunchBombType, attr 2324) -- with their groups. Every harness
+that answers type fetches from a fit's fixture falls back to it, so 263 fits don't each carry 16 copies.
+
 Reported per fit: types added, attributes added, attribute values changed
 (a value change means the fixture held other game data -- e.g. pre-patch
 Hawk), effects added/removed, groups added. Pins are NOT touched: rerun
 regression_suite/run_regression.mjs and explain every number that moves.
 """
-import sys, os, json, collections
+import sys, os, json, collections, re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pyfa_sde import types, td, groups, attrs, _en
 
@@ -109,6 +114,24 @@ for fitId, (r, notes) in report.items():
     if len(notes) > 12: print(f'    ... {len(notes) - 12} more')
 print('\nTOTAL:', dict(tot))
 for fitId, ids in unknown.items(): print(f'not in SDE (left alone) {fitId}: {sorted(ids, key=int)}')
+
+# The shared fixture (see the docstring).
+HTML = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'index.html')
+SHARED = os.path.join(os.path.dirname(GOLDEN), 'shared_types.json')
+blk = re.search(r'const FIGHTER_REC_TYPES = (\{.*?\}\}\s*;)', open(HTML).read(), re.S)
+assert blk, 'FIGHTER_REC_TYPES not found in index.html'
+rec = sorted({t for t in re.findall(r'\b(\d{4,6})\b', blk.group(1))}, key=int)
+assert len(rec) == 12, f'FIGHTER_REC_TYPES: expected 12 fighters, found {rec}'
+bombs = sorted({str(int(a['value'])) for t in rec for a in td[t].get('dogmaAttributes', []) if a['attributeID'] == 2324}, key=int)
+shared = {'note': 'Types every fit fetches (the generic Fighter tile): written by tools/refresh_golden_fixtures.py --write', 'types': {}, 'groups': {}}
+for t in rec + bombs:
+    shared['types'][t] = sde_type(t)
+    gid = str(shared['types'][t]['group_id'])
+    shared['groups'][gid] = {'name': _en(groups[gid]['groupName']), 'category_id': groups[gid]['categoryID']}
+sraw = json.dumps(shared, separators=(',', ':'), ensure_ascii=True)
+old_s = open(SHARED).read() if os.path.exists(SHARED) else None
+print(f'shared_types.json: {len(rec)} fighters + {len(bombs)} bombs, {len(shared["groups"])} groups: ' + ('unchanged' if old_s == sraw else 'CHANGES'))
 if WRITE:
     open(GOLDEN, 'w').write(json.dumps(G, separators=(',', ':')))
     print('\nwrote', GOLDEN)
+    if old_s != sraw: open(SHARED, 'w').write(sraw); print('wrote', SHARED)

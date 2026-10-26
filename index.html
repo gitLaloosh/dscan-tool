@@ -676,6 +676,14 @@
   .mis-bp{flex:none;}
   .mis-h{font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); text-align:right; white-space:nowrap;}
   .mis-p.is-low, .mis-bp.is-low{color:var(--amber);}
+  /* v2026.10.14.73: Missile and Fighter tiles collapse to a summary line (default) and open on the label's chevron */
+  .rec-tog{display:inline-flex; align-items:center; gap:5px; max-width:100%; background:none; border:0; padding:0; margin:0; font:inherit; color:inherit; letter-spacing:inherit; text-transform:inherit; cursor:pointer; text-align:left;}
+  .rec-tog > span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .rec-tog:hover .cc-chev{stroke:var(--cyan);}
+  .rec-tog:focus-visible{outline:1px solid var(--cyan); outline-offset:2px;}
+  .rec-multi:not(.is-open) .rec-tog .cc-chev{transform:rotate(-90deg);}
+  .rec-multi:not(.is-open) .mis-rows{display:none;}
+  .rec-multi.is-open .rec-sum{display:none;}
 
   .fitgroup h3{font-family:var(--sans); font-size:var(--label-size); font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:var(--label-tracking); margin:0 0 8px;}
   .fititem{
@@ -1705,7 +1713,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.72</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.73</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1864,7 +1872,8 @@ const CARD_INFO = {
   "The title says whose weaknesses these are: the threat's, or yours (Your Weaknesses, in {card:perspective.mine} and on {card:myshippage}).",
   "Capacitor drains: its capacitor runs out with every running module cycling, even at best case (a fitted Capacitor Booster or Ancillary Shield Booster on charges). The ring is how long it lasts; hover it for the numbers. No charges: a booster with none loaded and none in cargo (pasted fits only). No paste: an Ancillary Armor Repairer with no Nanite Repair Paste loaded or in cargo (pasted fits only), so no 3x boost.",
   "Without your ship: the ammo and drone type for each weapon system that hits that weakness hardest. A turret system that can't deal it falls back to the next weakest type.",
-  "Missiles: the best ammo for each launcher, and how much of its damage lands on this ship's signature and speed, with its MWD (or afterburner) off and on. With your skills at V; your rigs and modules aren't known. Under 50% is amber.",
+  "Missiles: the best ammo for each launcher, and how much of its damage lands on this ship's signature and speed, with its MWD (or afterburner) off and on. With your skills at V; your rigs and modules aren't known. Under 50% is amber. The tile shows how many launchers land 95% or more; open it (the chevron) for each launcher.",
+  "Fighters: the T2 light fighter, heavy fighter and bomber of that damage type, and how much of each one's damage lands, as pyfa applies it at this ship (fighters fly to it): its signature and speed with its MWD (or afterburner) off and on, and its resistance to fighter missiles (a heavy fighter's torpedoes are built for capitals: a smaller ship takes a tenth). With your skills at V and no carrier bonus; abilities as pyfa sets them, with the bomber's bomb on. The tile names them; open it for each class.",
   "With your ship saved and Use in assessments on: your own ammo, drones and fighters against it, best first by how long it lasts with that loaded (damage by type against its resists, layer by layer, minus its reps while its capacitor lasts; the rest of your fit as it is). Only the ammo, drones and fighters aboard count; fighters get one pick per class (light, heavy), in that class's squadrons, with their abilities as set in the Fighter bay. The DPS is pyfa's applied DPS at the range and movement set on {card:dmg}. Hover a pick for the next best. In {card:perspective.mine} the same, for their ammo against you."
  ],
  "ewar": [
@@ -7078,7 +7087,14 @@ function missileBestByLauncher(ranking){
   for(const x of ranking || []) if(!best[x.classLabel]) best[x.classLabel] = x;
   return best;
 }
-function missileRecTileHtml(missileApplication, propModType){
+// v2026.10.14.73 (the owner: "let's have those that do multiple rows be able to expand and collapse. default to collapsed",
+// then "B: names + how much lands"): a tile with rows (Missile, Fighter) shows one summary line until its chevron opens
+// it. Open or closed is kept per fit and tile (f.recOpen) and switched in place (wireCardToggles), with no re-render.
+function recTileOpen(f, kind){ return !!(f && f.recOpen && f.recOpen[kind]); }
+function recTogLabelHtml(kind, open, label, tip){
+  return `<span class="rec-label" title="${escapeHtml(tip)}"><button type="button" class="rec-tog" data-rec="${kind}" aria-expanded="${open}" title="${open ? 'Hide' : 'Show'} the rows">${CC_CHEV}<span>${escapeHtml(label)}</span></button></span>`;
+}
+function missileRecTileHtml(missileApplication, propModType, open = false){
   const race = missileApplication.ammoName;
   const off = missileBestByLauncher(missileApplication.cruising);
   const on = missileApplication.boosted ? missileBestByLauncher(missileApplication.boosted) : null;
@@ -7100,14 +7116,101 @@ function missileRecTileHtml(missileApplication, propModType){
       + (on ? `<span class="mis-b">${y ? `${yOther ? `<span class="mis-bt">${y.tier}</span>` : ''}<span class="mis-bp${low(y)}">${pct(y)}</span>` : ''}</span>` : '')
       + `</div>`;
   }
+  const shown = MISSILE_LAUNCHER_ROWS.map(([cls]) => off[cls]).filter(Boolean), most = shown.filter(x => x.applicationPct >= 95).length;
   return `
-          <div class="rec-stat rec-stat-missile">
-            <span class="rec-label" title="${escapeHtml(`Missile: ${race}, the best ammo for each launcher. Your All V skills; your rigs and modules aren't known.`)}">Missile · ${race}</span>
+          <div class="rec-stat rec-stat-missile rec-multi${open ? ' is-open' : ''}" data-rec="missile">
+            ${recTogLabelHtml('missile', open, `Missile · ${race}`, `Missile: ${race}, the best ammo for each launcher. Your All V skills; your rigs and modules aren't known.`)}
+            <span class="rec-value rec-sum">${shown.length} launchers</span>
+            ${ctxHtml(`${most} of ${shown.length} land 95% or more`, 'rec-sub rec-sum', `${most} of ${shown.length} launchers' best ammo lands 95% or more of its damage${on ? ` with their ${P} off` : ''}. Open for each launcher.`)}
             <div class="mis-rows${on ? ' has-prop' : ''}">
               ${on ? `<div class="mis-row mis-head" aria-hidden="true"><span></span><span class="mis-h">${P}</span><span class="mis-h">off</span><span class="mis-h">on</span></div>` : ''}
               ${rows}
             </div>
           </div>`;
+}
+
+// FIGHTER RECOMMENDATION (v2026.10.14.73; the owner: "yes please" to a generic Fighter tile, then "B: names + how much lands"
+// collapsed and "Count the bomb"). With no ship saved, the Weaknesses card's Fighter tile names, for the target's weakest
+// damage type, the T2 light attack fighter, heavy attack fighter and heavy bomber (each pure that type: checked against the
+// SDE by tools/independent_checks/check_fighter_rec.py) and how much of each one's damage lands on this ship -- pyfa's
+// getFighterAbilityMult (PYFA CORE application) at the target (distance 0: a fighter flies to it), against the target's
+// signature and speed with its prop module off and on (the missile ranking's inputs) and its fighter missile resistances
+// (a subcap takes 10% of a heavy fighter's anti-capital torpedoes). The fighter's attributes: your skills at V and no hull
+// or module (pyfaProjFighterSetup on an empty ship); abilities pyfa's defaults, plus the bomb on the bomber (a bomber is
+// flown for its bomb). The share is DPS-weighted over the abilities: each ability's pyfa DPS with your skills at V (the
+// fighter damage skills multiply Attack and Missiles alike; nothing modifies a bomb).
+const FIGHTER_REC_CLASS_LABEL = {light: 'Light', heavy: 'Heavy', bomber: 'Bomber'};
+function fighterRecTileHtml(rec, propModType, open = false){
+  if(!rec || !rec.rows || !rec.rows.length) return '';
+  const on = rec.rows.some(r => r.boosted !== null);
+  const P = propModType === 'afterburner' ? 'AB' : 'MWD';
+  const one = v => Math.round(v * 1000) / 10;               // the hover's one decimal; the row rounds that (as the Missile tile)
+  const pct = v => `${Math.round(one(v))}%`;
+  const low = v => one(v) < 50 ? ' is-low' : '';
+  let rows = '';
+  for(const r of rec.rows){
+    const full = `${r.name} II${r.cls === 'bomber' ? ' (its attack and its bomb)' : ''}`;
+    const tip = `${full}: ${one(r.cruising)}% of its damage lands${on ? ` with their ${P} off` : ''}`
+      + (on && r.boosted !== null ? `, ${one(r.boosted)}% with it on` : '') + (one(r.cruising) < 50 ? '. Under half lands.' : '.');
+    rows += `<div class="mis-row" data-class="${r.cls}" title="${escapeHtml(tip)}">`
+      + `<span class="mis-k">${FIGHTER_REC_CLASS_LABEL[r.cls]}</span><span class="mis-v">${escapeHtml(r.name)}</span>`
+      + `<span class="mis-p${low(r.cruising)}">${pct(r.cruising)}</span>`
+      + (on ? `<span class="mis-b">${r.boosted !== null ? `<span class="mis-bp${low(r.boosted)}">${pct(r.boosted)}</span>` : ''}</span>` : '')
+      + `</div>`;
+  }
+  const sum = rec.rows.map(r => `${r.cls} ${pct(r.cruising)}`).join(' · ');
+  return `
+          <div class="rec-stat rec-stat-fighter rec-multi${open ? ' is-open' : ''}" data-rec="fighter">
+            ${recTogLabelHtml('fighter', open, `Fighter · ${rec.race}`, `Fighter: ${rec.race}, the T2 light, heavy and bomber squadron of that damage. How much of its damage lands at this ship, with your skills at V and no carrier bonus; the bomber's bomb is counted.`)}
+            <span class="rec-value rec-sum" title="${escapeHtml(rec.rows.map(r => r.name + ' II').join(', '))}">${rec.rows.map(r => escapeHtml(r.name)).join(' · ')}</span>
+            ${ctxHtml(sum, 'rec-sub rec-sum', `How much lands${on ? ` with their ${P} off` : ''}: ${rec.rows.map(r => `${r.name} II ${one(r.cruising)}%`).join(', ')}. Open for each class.`)}
+            <div class="mis-rows${on ? ' has-prop' : ''}">
+              ${on ? `<div class="mis-row mis-head" aria-hidden="true"><span></span><span class="mis-h">${P}</span><span class="mis-h">off</span><span class="mis-h">on</span></div>` : ''}
+              ${rows}
+            </div>
+          </div>`;
+}
+const FIGHTER_REC_TYPES = {light: {em: 40556, therm: 40558, kin: 40557, exp: 40559},     // Templar / Firbolg / Dragonfly / Einherji II
+                           heavy: {em: 40561, therm: 40563, kin: 40567, exp: 40565},     // Malleus / Cyclops / Mantis / Tyrfing II
+                           bomber: {em: 40560, therm: 40562, kin: 40566, exp: 40564}};   // Ametat / Antaeus / Termite / Gungnir II
+async function fighterRecommendation(weakest, inputs, fighterResist){
+  const setup = pyfaProjFighterSetup({effectIds: [], attr: () => 0, reqs: []}, [], []);
+  const resist = fighterResist || Object.fromEntries(Object.entries(PROJ_TARGET_ATTRS).filter(([n]) => n.startsWith('fighterAbility')).map(([, id]) => [id, PROJ_TARGET_DEFAULTS[String(id)]]));
+  const rows = [];
+  for(const cls of ['light', 'heavy', 'bomber']){
+    const tid = FIGHTER_REC_TYPES[cls][weakest];
+    if(!tid) continue;
+    const t = await getType(tid), g = await getGroup(t.group_id), dg = t.dogma_attributes || [];
+    const effs = (t.dogma_effects || []).map(e => e.effect_id);
+    const active = pyfaDefaultFighterAbilities(effs).map(ab => Number(Object.keys(FIGHTER_ABILITY_EFFECTS).find(k => FIGHTER_ABILITY_EFFECTS[k][0] === ab[0])));
+    if(cls === 'bomber' && effs.includes(6485) && !active.includes(6485)) active.push(6485);
+    const a = setup({attr: (x, d) => x === RADIUS_ATTR ? attrVal(dg, x, t.radius || 0) : attrVal(dg, x, d),
+      reqs: REQUIRED_SKILL_ATTRS.map(x => attrVal(dg, x, 0)).filter(Boolean), group: g.name}, active);
+    const heavy = attrVal(dg, FIGHTER_IS_HEAVY_ATTR, 0) === 1;
+    const skillMult = MAX_FIGHTER_DAMAGE_MULT * MAX_FIGHTER_DRONE_INTERFACING_DAMAGE_MULT * (heavy ? MAX_HEAVY_FIGHTERS_DAMAGE_MULT : 1)
+      * (attrVal(dg, REQUIRED_SKILL_3_ATTR, 0) > 0 ? FIGHTER_SPECIALIZATION_MULT : 1);
+    const parts = [];
+    for(const e of active){
+      if(e === 6485){
+        const c = await getType(Math.trunc(attrVal(dg, 2324, 0))), cd = c.dogma_attributes || [], dur = attrVal(dg, 2349, 0) / 1000;
+        const dmg = ['em', 'therm', 'kin', 'exp'].reduce((sum, k) => sum + attrVal(cd, DAMAGE_DEALT_ATTR[k], 0), 0);
+        if(dmg > 0 && dur > 0) parts.push({ability: 'fighterAbilityLaunchBomb', dps: dmg / dur, f: pyfaFighterBombInputs(a, attrVal(cd, MISSILE_EXPLOSION_RADIUS_ATTR, 0))});
+        continue;
+      }
+      const ab = FIGHTER_ABILITY_EFFECTS[e], pre = ab && PROJ_FIGHTER_ABILITY_PREFIX[ab[0]];
+      if(!ab || !ab[1] || !pre) continue;
+      const [em, th, ki, ex, ma, du] = ab[2], dur = attrVal(dg, du, 0) / 1000;
+      const dmg = (attrVal(dg, em, 0) + attrVal(dg, th, 0) + attrVal(dg, ki, 0) + attrVal(dg, ex, 0)) * attrVal(dg, ma, 1) * skillMult;
+      if(dmg > 0 && dur > 0) parts.push({ability: pre, dps: dmg / dur, f: pyfaFighterAbilityInputs(a, pre)});
+    }
+    const total = parts.reduce((sum, x) => sum + x.dps, 0);
+    const share = (st) => !st || !total ? null : parts.reduce((sum, x) => sum + x.dps * pyfaGetFighterAbilityMult({lockRange: Infinity, radius: 0}, Object.assign({ability: x.ability}, x.f),
+      {distance: 0, tgtSpeed: st.speed, tgtSigRadius: st.sig, ignoreLockRange: true, droneMode: GRAPH_DRONE_MODE.auto, tgtIsFit: true, tgtFighterResist: resist}), 0) / total;
+    // dps: one fighter's, with your skills at V (it only weights the abilities; the shares are 0..1, null with no prop module)
+    rows.push({cls, typeId: tid, name: t.name.replace(/ II$/, ''), abilities: parts.map(x => x.ability), dps: total,
+      cruising: share(inputs.cruising), boosted: share(inputs.boosted)});
+  }
+  return {damageType: weakest, race: DMG_TO_RACE[weakest], rows};
 }
 
 const DMG_TO_RACE = {em:'Amarr', therm:'Gallente', kin:'Caldari', exp:'Minmatar'};
@@ -14169,6 +14272,9 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   const capSimResultRangeMax = capBoosterRangeIdentifiedForDisplay
     ? runCapSim([...capModuleDrains(true), ...capInjectorsIdentified, ...capInjectorsBestUnresolved])
     : null;
+  // v2026.10.14.73: the generic Fighter tile (fighterRecommendation, above): this ship as the target
+  const fighterRec = await fighterRecommendation(weakest, {cruising: {sig: baseSignatureRadius, speed: cruisingSpeed},
+    boosted: missileApplicationBoosted ? {sig: missileBoostedSig, speed: boostedSpeed} : null}, projectedTarget ? projectedTarget.fighterResist : null);
 
   return {
     // v.20 module states: per fitted type, copies per state, plus any
@@ -14262,6 +14368,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
       inputs: {cruising: {sig: baseSignatureRadius, speed: cruisingSpeed},
         boosted: missileApplicationBoosted ? {sig: missileBoostedSig, speed: boostedSpeed, prop: propModType} : null}
     },
+    fighterRec,   // v2026.10.14.73: the generic Fighter tile
     // Raw (pre-resist) per-layer HP and the Tank Type classification derived
     // from it -- see the TANK_TYPE_THRESHOLD block above.
     rawShieldHP: pyRound(shieldHP),
@@ -14599,6 +14706,17 @@ function cardWhoHtml(key){
 // Wires every card toggle inside `wrap`; rerender() rebuilds the layout (and re-wires). Focus returns to
 // the same toggle so a keyboard user stays in place.
 function wireCardToggles(wrap, f, rerender){
+  // v2026.10.14.73: a multi-row tile's chevron (recTogLabelHtml), switched in place
+  wrap.querySelectorAll('button.rec-tog').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const kind = b.dataset.rec, open = !recTileOpen(f, kind);
+      f.recOpen = {...(f.recOpen || {}), [kind]: open};
+      const tile = b.closest('.rec-multi');
+      if(tile) tile.classList.toggle('is-open', open);
+      b.setAttribute('aria-expanded', String(open)); b.title = `${open ? 'Hide' : 'Show'} the rows`;
+    });
+  });
   wrap.querySelectorAll('button.cc-toggle').forEach(b => {
     b.addEventListener('click', (e) => {
       e.preventDefault(); e.stopPropagation();
@@ -14654,7 +14772,8 @@ function fitSummaryParts(f){
             <span class="rec-value" title="${estimate.drones.primary.name} (${estimate.drones.primary.size})">${estimate.drones.primary.name} (${estimate.drones.primary.size})</span>
             ${estimate.drones.alt ? ctxHtml(`or ${estimate.drones.alt.name} if it moves`, 'rec-sub', `or ${estimate.drones.alt.name} (${estimate.drones.alt.size}) if it won't sit still`) : ''}
           </div>
-          ${missileRecTileHtml(estimate.missileApplication, estimate.speed && estimate.speed.propModType)}
+          ${missileRecTileHtml(estimate.missileApplication, estimate.speed && estimate.speed.propModType, recTileOpen(f, 'missile'))}
+          ${fighterRecTileHtml(estimate.fighterRec, estimate.speed && estimate.speed.propModType, recTileOpen(f, 'fighter'))}
           ${turretRecTileHtml('Laser', estimate.turretRecs.laser, estimate.weakest, estimate.secondWeakest)}
           ${turretRecTileHtml('Hybrid', estimate.turretRecs.hybrid, estimate.weakest, estimate.secondWeakest)}
           ${turretRecTileHtml('Projectile', estimate.turretRecs.projectile, estimate.weakest, estimate.secondWeakest)}

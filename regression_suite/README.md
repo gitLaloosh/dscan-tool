@@ -593,6 +593,21 @@ re-derived as each stat's hand-table phase reaches them.
 Before adding a golden fit, run `refresh_golden_fixtures.py` in report mode. It
 must print `0 of N fits change`.
 
+## Shared types (v2026.10.14.73)
+
+`shared_types.json` holds the types the page fetches for every fit, whatever it
+flies: the generic Fighter tile's 12 T2 fighters (index.html's
+`FIGHTER_REC_TYPES`), the 4 bombs their bombers launch, and their groups.
+`refresh_golden_fixtures.py --write` writes it from the SDE; report mode says
+whether it would change. `run_regression.mjs`, `dump_results.mjs`,
+`compare_cap_sim.mjs` and `scaffold_golden_fit.mjs` answer a type or group a
+fit doesn't carry from it (a fit's own record wins), so 263 fits don't each
+carry 16 copies (LESSON #66). The tile is pinned as
+`fighterRec:<light|heavy|bomber>:<name|cruising|boosted>` (% that lands) on
+`caracal_constructed_afterburner_missile_picks`, `dominix_navyissue_buffer` and
+`revelation_constructed_capital_t1_no_specialization` (a capital: heavy
+fighters land fully); the values equal pyfa's (`check_fighter_rec.py`).
+
 ## Time-to-kill "why" words (v2026.10.14.58)
 
 After the fits, `run_regression.mjs` runs `ttkWhy` on hand-built defenses (`ttkTrace` on layers with made-up hit

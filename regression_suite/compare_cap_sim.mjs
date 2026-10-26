@@ -10,13 +10,16 @@ import { fileURLToPath } from 'url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const htmlPath = process.argv[2] || path.join(here, '..', 'index.html');
 const golden = JSON.parse(fs.readFileSync(path.join(here, 'golden_fits.json'), 'utf8'));
+// shared_types.json (v2026.10.14.73): the types every fit fetches whatever it flies (the generic Fighter tile's
+// fighters and bombs), written by tools/refresh_golden_fixtures.py. A fit's own record wins; this is the fallback.
+const SHARED = JSON.parse(fs.readFileSync(path.join(here, 'shared_types.json'), 'utf8'));
 const code = fs.readFileSync(htmlPath, 'utf8').match(/<script>([\s\S]*)<\/script>/)[1];
 const cases = [], jsResults = {};
 let pyRoundRef = null; // index.html's pyRound (fuzzed against Python round by tools/check_py_round.mjs)
 for (const [fid, fit] of Object.entries(golden)) {
   const fakeFetch = async (url) => { const tm = url.match(/\/universe\/types\/(\d+)\//), gm = url.match(/\/universe\/groups\/(\d+)\//);
-    if (tm && fit.types[tm[1]]) return { ok: true, json: async () => fit.types[tm[1]] };
-    if (gm && fit.groups[gm[1]]) return { ok: true, json: async () => fit.groups[gm[1]] };
+    const r = tm ? (fit.types[tm[1]] || SHARED.types[tm[1]]) : gm ? (fit.groups[gm[1]] || SHARED.groups[gm[1]]) : null;
+    if (r) return { ok: true, json: async () => r };
     return { ok: false, status: 404 }; };
   const fakeEl = () => ({ addEventListener() {}, get style() { return {}; }, querySelectorAll() { return []; }, appendChild() {}, get innerHTML() { return ''; }, set innerHTML(v) {} });
   const sb = { fetch: fakeFetch, document: { getElementById() { return fakeEl(); }, createElement() { return fakeEl(); } }, console, Promise, Map, Set, Infinity, Math, JSON, Object, Array, Number, String };
