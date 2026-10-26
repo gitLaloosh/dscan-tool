@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — Weaknesses picks rank fighters, one tile per class</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Weaknesses picks rank fighters: one tile per class</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.71</code> &rarr; <code>v2026.10.14.72</code>.</p>
+<p>the owner: "proceed". This is delivery 4, the last one, of <code>roadmap/fighter-gaps-plan.md</code>. His decisions:</p>
+<ul>
+<li>"Include fighters" (2026-10-25);</li>
+<li>"One tile per class";</li>
+<li>abilities "As set in the Fighter bay".</li>
+</ul>
+<p>All four fighter-gap deliveries are now done.</p>
+
+<h2>What you see</h2>
+<ul>
+<li><b>Threat view:</b> with a carrier or supercarrier saved as My Ship, the Weaknesses card shows "Your light fighters" and "Your heavy fighters". Each tile names the best type in your bay for that class, e.g. "Firbolg II &times;3 &middot; 1,696 DPS &middot; they last 8 s", and its hover names the next best.</li>
+<li><b>My Ship Perspective:</b> the same tiles for the threat's fighters, "Their light / heavy fighters".</li>
+<li><b>How a candidate is built:</b> each damage-dealing type of that class is flown in that class's squadrons, replacing the ones in space. The count is as many as its bay, the class limit and the tubes left by your other classes' squadrons allow. A Nyx with 2 heavy squadrons out gets 3 light (5 tubes).</li>
+<li><b>Abilities:</b> as you set them in the Fighter bay, or pyfa's defaults. A bomb counts only if you switched it on, and switching it on moves the heavy pick (448 to 485 DPS in the check).</li>
+<li><b>Ranking:</b> like every pick, by the strip's time to kill against their resists, with the rest of your fit as it is (guns, drones and the other fighter class), then their buffer alone.</li>
+<li><b>Not ranked:</b> support squadrons (no damage).</li>
+<li><b>Wording:</b> "Fighters aren't ranked yet" is gone. The "nothing breaks" why text now says "weapons, drones and fighters", and so does the empty-card message. The card's info explains the per-class pick.</li>
+</ul>
+
+<h2>How it's matched to pyfa</h2>
+<ul>
+<li><b>One engine run per candidate</b> (<code>wpBuildCandidates</code>), with that launch requested in <code>fighterStates</code>.
+<ul>
+<li>The count shown is what the engine launched, not what was asked.</li>
+<li>Two classes can't share a run, because one class's squadrons move the other's free tubes.</li>
+</ul></li>
+<li><b><code>wpRank</code></b> scores a fighter pick with its own entries plus the other classes' squadrons in space.</li>
+<li><b><code>check_weakness_picks.py</code></b> was extended with a Nyx (Einherji II, Firbolg II, Templar II and Gram II light; Mantis II and Ametat II heavy, more heavy squadrons than tubes) in three pairs, so both ways are covered:
+<ul>
+<li>It writes the squadron rule independently: the bay from the squadron size, the hull's modified tubes and class slots, and the tubes left by the tool's launch of the other classes.</li>
+<li>It decides which types deal damage with pyfa's <code>FighterAbility.getDps</code>.</li>
+<li>It builds an oracle fit with each candidate launch, then runs pyfa's <code>projected.py</code> and <code>application.py</code> unmodified, and the strip's time to kill.</li>
+<li>The Matchup board's numbers now include fighters too.</li>
+</ul>
+Result: 18 pairs &times; 168 settings, 3,024 fighter candidates, 0 mismatches.
+<ul>
+<li>A break that drops the other class from the rest of the fit fails.</li>
+<li>A break that shows the squadrons asked instead of launched fails.</li>
+</ul></li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/page_checks/fighter_picks_check.py</code></b>:
+<ul>
+<li>the two tiles equal the page's own <code>wpRank</code>, with 3 + 2 squadrons;</li>
+<li>the hovers name the next best;</li>
+<li>switching the bomb on in my Fighter bay moves the heavy pick;</li>
+<li>the collapsed row names the picks, and the info text mentions fighters;</li>
+<li>in the My ship view, their fighters are ranked;</li>
+<li>at 390 px the tiles stay inside the card.</li>
+</ul>
+v.71 fails.</li>
+<li><b>Updated for the new wording:</b> <code>weakness_picks_check.py</code> (the info text names fighters), the regression suite's ttkWhy case ("weapons, drones and fighters"), and <code>fighter_application_check.py</code>. That last one asserted the old placeholder "Fighters aren't ranked yet." and timed out in the full page run; it now checks that the carrier's fighters are ranked per class.</li>
+<li>Regression ALL PASS (263 fits), update chain all 37 steps OK, all 23 page checks 0 failures.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #65, extended: a check asserting a placeholder ("Fighters aren't ranked yet.") broke when the feature landed. I had noted this risk in the v.70 history and still missed it. Grep <code>tools/</code> for the placeholder text in the same delivery. Also applied: the picks' output reaches <code>check_weakness_picks.py</code>, and that check's Matchup-board comparison had counted only modules and drones. It now counts fighters too, so a carrier's board is compared in full.</p>
+<p>A break that looked meaningful, ignoring the tubes when sizing a candidate, changed nothing: the engine itself refuses squadrons beyond the tubes. The useful break is to show the count requested instead of the count launched. Before trusting a mutation, make sure it can change an output.</p>
+</body>
+</html>

@@ -107,7 +107,7 @@ def desktop(b):
     # v2026.10.14.49 (subtext rule 2): how the picks are ranked is in the card's info panel, not a note under them
     head = pg.inner_text(f'{TV} .wp-head'); info = pg.evaluate("() => CARD_INFO.weak.join(' ')")
     check('against the Hecate' in head and pg.locator(f'{TV} .wp-note').count() == 0 and pg.locator(f'{TV} details.info-pop[data-info="weak"]').count() >= 1
-          and 'Only the ammo and drones aboard' in info and '{card:dmg}' in info, f'threat view: head "{head}", ranking explained behind the info button')
+          and 'Only the ammo, drones and fighters aboard' in info and '{card:dmg}' in info, f'threat view: head "{head}", ranking explained behind the info button')
     # sitting still at 1 km your blasters apply; then the range slider re-ranks them (Void M close, Null M further out)
     pg.locator(f'{R} .fl-dmg button[data-seg="You"][data-v="still"]').click(); pg.wait_for_timeout(300)
     pg.evaluate("() => { const i = document.querySelector('#fitAnalyzerResults .fl-dmg input[data-in=\"range\"]'); i.value = 1000; i.dispatchEvent(new Event('input', {bubbles: true})); }"); pg.wait_for_timeout(400)

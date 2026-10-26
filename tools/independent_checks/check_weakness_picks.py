@@ -35,10 +35,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..')); sys.path.insert(0, os.path.join(HERE, '..', 'page_checks'))
 import check_projected as CP
 import check_application as CA
-from check_matchup import typed_dps_mod, typed_dps_drone, TYPES, ttk
+from check_matchup import typed_dps_mod, typed_dps_drone, typed_dps_fighter_ability, TYPES, ttk
+from pyfa_fit_oracle import fighter_default_actives
 from pyfa_fit_oracle import OracleFit, resonances
 from golden_oracle import td_mode
-from pyfa_sde import T, types, td, groups, _en
+from pyfa_sde import T, types, td, groups, _en, attrs as SDE_ATTRS
 from refresh_golden_fixtures import sde_type
 from eft_engine import BYNAME, group_rec
 
@@ -98,8 +99,15 @@ FITS = {
                              ('200mm AutoCannon II', None), ('200mm AutoCannon II', None), ('200mm AutoCannon II', None)],
                   [], [('Fusion S', 1000), ('Phased Plasma S', 1000), ('EMP S', 1000), ('Titanium Sabot S', 1000)]),
 }
+# v2026.10.14.72 (fighter gaps delivery 4; the owner: "One tile per class", abilities "As set in the Fighter bay"): a
+# supercarrier with light AND heavy fighters of several types, listed in the EFT's drone / fighter section
+FITS['nyx'] = ('Nyx', [('Damage Control II', None), ('Drone Damage Amplifier II', None), ('Drone Damage Amplifier II', None), ('Fighter Support Unit II', None)], [], [])
+# more heavy squadrons than the tubes left for them, so a candidate's count is the tubes', not its bay's (a break that shows
+# the squadrons asked instead of launched must fail)
+FIGHTERS = {'nyx': [('Einherji II', 18), ('Firbolg II', 18), ('Templar II', 6), ('Mantis II', 24), ('Ametat II', 24), ('Gram II', 12)]}
 PAIRS = [('vexor', 'hecate'), ('hecate', 'vexor'), ('omen', 'caracal'), ('caracal', 'rupture'), ('rupture', 'thrasher'), ('thrasher', 'drake'), ('ishtar', 'drake'), ('drake', 'ishtar'), ('ishtar', 'omen'),
-         ('vexor', 'hecate_cold'), ('hecate_cold', 'omen'), ('caracal', 'nergal'), ('nergal', 'vexor'), ('hecate', 'rifter_cold'), ('rifter_cold', 'caracal')]   # v.67
+         ('vexor', 'hecate_cold'), ('hecate_cold', 'omen'), ('caracal', 'nergal'), ('nergal', 'vexor'), ('hecate', 'rifter_cold'), ('rifter_cold', 'caracal'),   # v.67
+         ('nyx', 'omen'), ('caracal', 'nyx'), ('nyx', 'hecate')]   # v.72: fighters both ways
 GRID = [dict(range=r, mode=mo, speedPct=100, prop=pr, sigPct=100, theirPct=tp, theirMode=tm, axis='distance')
         for r, mo, pr, (tp, tm) in itertools.product([1500, 5000, 12000, 30000, 60000], ['still', 'orbit', 'straight'], [True, False], [(0, 'toward'), (100, 'toward'), (100, 'orbit'), (100, 'still'), (100, 'keep')])]   # v.51: their Stopped, v.53: Keep at Range
 # v2026.10.14.53: you keeping range from them approaching / orbiting
@@ -109,7 +117,7 @@ GRID += [dict(range=r, mode='keep', speedPct=100, prop=pr, sigPct=100, theirPct=
 def eft(k):
     ship, mods, drones, cargo = FITS[k]
     lines = [f'[{ship}, {k}]'] + [f'{m}, {c}' if c else m for m, c in mods] + ['']
-    lines += [f'{d} x{n}' for d, n in drones] + [''] + [f'{c} x{n}' for c, n in cargo]
+    lines += [f'{d} x{n}' for d, n in drones + FIGHTERS.get(k, [])] + [''] + [f'{c} x{n}' for c, n in cargo]
     return '\n'.join(lines) + '\n'
 
 # the tool: both fits built by the real engine; for every pair and setting, its own picks both ways
@@ -142,11 +150,12 @@ vm.createContext(sb); vm.runInContext(code, sb);
     const {f} = await sb.buildFitFromEft(text);
     F[k] = f;
     await sb.dmgAssumeReady(f);   // v.67: the candidates the assumed charge is chosen from
-    est[k] = JSON.parse(JSON.stringify({moduleStates: f.estimate.moduleStates, droneStates: f.estimate.droneStates, projectedTarget: f.estimate.projectedTarget, capacitor: {stable: f.estimate.capacitor.stable, timeToEmptyExactSec: f.estimate.capacitor.timeToEmptyExactSec}}));
+    est[k] = JSON.parse(JSON.stringify({moduleStates: f.estimate.moduleStates, droneStates: f.estimate.droneStates, fighterStates: f.estimate.fighterStates, projectedTarget: f.estimate.projectedTarget, capacitor: {stable: f.estimate.capacitor.stable, timeToEmptyExactSec: f.estimate.capacitor.timeToEmptyExactSec}}));
   }
   const fin = (x) => x === Infinity ? 'inf' : x;
   const pack = (r) => ({groups: r.groups.map(g => ({w: g.weaponTypeId, qty: g.qty, opts: g.ranked.map(o => [o.chargeTypeId, o.dps, o.loaded, fin(o.ttk), fin(o.ttkBuffer)])})),
-    drones: r.drones.map(d => [d.typeId, d.count, d.dps, fin(d.ttk), fin(d.ttkBuffer)])});
+    drones: r.drones.map(d => [d.typeId, d.count, d.dps, fin(d.ttk), fin(d.ttkBuffer)]),
+    fighterClasses: (r.fighterClasses || []).map(c => [c.cls, c.ranked.map(o => [o.typeId, o.count, o.dps, fin(o.ttk), fin(o.ttkBuffer)])])});
   const out = {};
   for (const [m, t] of pairs) {
     const cm = await sb.wpCandidates(F[m]), ct = await sb.wpCandidates(F[t]);
@@ -186,7 +195,7 @@ def valid_charge(w, c):
     if (wa.get(CHARGE_SIZE) or 0) > 0 and ca.get(CHARGE_SIZE) != wa[CHARGE_SIZE]: return False
     return any(wa.get(x) and int(wa[x]) == types[str(c)]['groupID'] for x in CHARGE_GROUP)
 deals = lambda c: any((A(c).get(x) or 0) > 0 for x in DMG_ATTR)
-def oracle(k, states, drones, charge_for=None):
+def oracle(k, states, drones, charge_for=None, fighters=()):
     """pyfa_fit_oracle on fit k with the tool's resolved states; charge_for: {weaponTypeId: chargeTypeId} for every copy."""
     ship, mods, _, _ = FITS[k]
     seen, ml = {}, []
@@ -196,7 +205,7 @@ def oracle(k, states, drones, charge_for=None):
         s = 'active' if i < st['active'] else 'online' if i < st['active'] + st['online'] else 'offline'
         ml.append((tid, s, (charge_for or {}).get(tid, int(T(c)) if c else None)))
     sid = int(T(ship))   # the tool's default mode (resolveModeKey): Sharpshooter on a Tactical Destroyer, else the first mode
-    return OracleFit(sid, ml, mode=td_mode(sid, 'sharpshooter') or td_mode(sid, 'primary'), drones=drones).calculate()
+    return OracleFit(sid, ml, mode=td_mode(sid, 'sharpshooter') or td_mode(sid, 'primary'), drones=drones, fighters=fighters).calculate()
 
 def flight(k, did, o):
     """a flight of one drone type: as many as the bay, 5 drones and the drone bandwidth allow (written from the rule)."""
@@ -223,6 +232,9 @@ if __name__ == '__main__':
       'raw_dps_order': [("const order = (a, b) => cmp(a.ttk, b.ttk) || cmp(a.ttkBuffer, b.ttkBuffer) ||", "const order = (a, b) => (b.dps - a.dps) ||")],
       'no_assume': [("if(!cold.length || !tgtEst) return app;", "return app;")],   # v.67
       'assume_highest_raw': [("const best = r.groups[0] && r.groups[0].ranked[0];", "const best = r.groups[0] && r.groups[0].ranked.slice().sort((a, b) => b.dps - a.dps)[0];")],
+      'fighter_count_requested': [("const room = Math.max(0, Math.min(fs.classLimit[cls] || 0, fs.tubesTotal - other));", "const room = Math.max(0, fs.classLimit[cls] || 0);"),
+                                  ("options.push({typeId: it.typeId, name: it.name, count: got.active, af});", "options.push({typeId: it.typeId, name: it.name, count: n, af});")],   # v.72: shows what was asked, not launched
+      'fighter_other_class_dropped': [("score(o, wsAll, dsAll, pt([], [], o.af), [...others, ...o.af])", "score(o, wsAll, dsAll, pt([], [], o.af), o.af)")],   # v.72
       'rest_of_fit_ignored': [("return Object.assign({}, g, {ranked: sorted(g.options.map(o => score(o, [...others, o.aw], dsAll, pt([o.aw], []))))});", "return Object.assign({}, g, {ranked: sorted(g.options.map(o => score(o, [o.aw], [], pt([o.aw], []))))});")],
     }
     mname = next((args[i + 1] for i, a in enumerate(args) if a == '--mutate'), None)
@@ -237,9 +249,12 @@ if __name__ == '__main__':
     out, est = res['out'], res['est']
     states = {k: CP.tool_states(est[k]) for k in FITS}
     cache = {}
-    def orc(k, prop=None, charge_for=None, drones=None):
-        """prop: None = the tool's states; True / False = the prop module active / online (check_matchup.py orc)."""
-        key = (k, prop, tuple(sorted((charge_for or {}).items())), tuple(drones) if drones is not None else None)
+    launch = {k: tuple((a, b, tuple(c or ())) for a, b, c in CP.tool_fighters(est[k])) for k in FITS}   # v.72: the tool's launch (an input)
+    def orc(k, prop=None, charge_for=None, drones=None, fighters=None):
+        """prop: None = the tool's states; True / False = the prop module active / online (check_matchup.py orc).
+        fighters: None = the squadrons the tool launched (v2026.10.14.72), else [(typeId, amount, activeIds)] per squadron."""
+        fl = launch[k] if fighters is None else tuple(fighters)
+        key = (k, prop, tuple(sorted((charge_for or {}).items())), tuple(drones) if drones is not None else None, fl)
         if key not in cache:
             st, dr = states[k]
             v = est[k]['projectedTarget']['variants']
@@ -247,7 +262,7 @@ if __name__ == '__main__':
                 tid = str(v['propTypeId']); s0 = st.get(tid) or {'active': 0, 'online': 1, 'offline': 0}
                 n = s0['active'] + s0['online'] + s0['offline']
                 st = dict(st); st[tid] = (s0 if v['running'] else {'active': 1, 'online': n - 1, 'offline': 0}) if prop else {'active': 0, 'online': n - s0['offline'], 'offline': s0['offline']}
-            cache[key] = oracle(k, st, dr if drones is None else list(drones), charge_for)
+            cache[key] = oracle(k, st, dr if drones is None else list(drones), charge_for, [(a, b, list(c)) for a, b, c in fl])
             o = cache[key]
             if o.errors or o.oracleGaps: raise SystemExit(f'ORACLE {k} {key}: errors {o.errors} gaps {o.oracleGaps}')
         return cache[key]
@@ -268,6 +283,24 @@ if __name__ == '__main__':
         return g, dr
     bad, notes, points, opts_checked, flips, nvals, resist_flips = 0, [], 0, 0, 0, 0, 0
     assumed_n = [0]   # v.67: points where a charge was assumed
+    fighter_n = [0]   # v.72: fighter candidates compared
+    def fighter_facts(k, o):
+        """v.72, written from the SDE and the oracle's ship: each fighter type's class, squadron size, bay squadrons, ability
+        effects and whether it deals damage with pyfa's default abilities (FighterAbility.getDps > 0); the hull's tubes
+        and class limits (its modified fighterTubes / fighterLightSlots / fighterHeavySlots)."""
+        names = lambda t: {SDE_ATTRS[str(a['attributeID'])]['name']: a['value'] for a in (td.get(str(t)) or {}).get('dogmaAttributes', [])}
+        out = {'cls': {}, 'size': {}, 'bay': {}, 'effects': {}, 'deals': {}}
+        for nm, qty in FIGHTERS.get(k, []):
+            tid = int(T(nm)); a = names(tid)
+            out['cls'][tid] = 'light' if a.get('fighterSquadronIsLight') == 1 else 'heavy' if a.get('fighterSquadronIsHeavy') == 1 else 'support' if a.get('fighterSquadronIsSupport') == 1 else 'other'
+            out['size'][tid] = int(a.get('fighterSquadronMaxSize') or 1); out['bay'][tid] = int(math.floor(qty / out['size'][tid] + 1e-9))
+            out['effects'][tid] = sorted(e['effectID'] for e in td[str(tid)]['dogmaEffects'])
+            probe = OracleFit(int(o.ship.item.ID), [], fighters=[(tid, out['size'][tid])]).calculate()
+            out['deals'][tid] = CA._FighterApp(probe.fighters[0]).isDealingDamage()
+        for tid, _, _ in launch[k]: out['cls'].setdefault(tid, 'other')
+        out['tubes'] = int(o.ship.get('fighterTubes') or 0)
+        out['limit'] = {'light': int(o.ship.get('fighterLightSlots') or 0), 'heavy': int(o.ship.get('fighterHeavySlots') or 0)}
+        return out
     capsec = lambda k: math.inf if est[k]['capacitor'].get('stable') else (est[k]['capacitor'].get('timeToEmptyExactSec') if est[k]['capacitor'].get('timeToEmptyExactSec') is not None else math.inf)
     for m, t in PAIRS:
         gm, dm = candidates(m); gt, dt = candidates(t)
@@ -302,6 +335,10 @@ if __name__ == '__main__':
                     for d in src.drones:
                         if pick(d.d):
                             for kk, v in typed_dps_drone(d.d).items(): s[kk] += v * am.get(d, 0)
+                    for fa in src.fighters:   # v.72: fighters (check_matchup.py's rule: each active damage ability)
+                        if pick(fa.f):
+                            for ab in fa.abilities:
+                                for kk, v in typed_dps_fighter_ability(fa, ab).items(): s[kk] += v * am.get((fa, ab.effectID), 0)
                     return s
                 applied = lambda o, pick: sum(typed(o, pick).values())
                 add = lambda a, b: {kk: a[kk] + b[kk] for kk in a}
@@ -355,7 +392,7 @@ if __name__ == '__main__':
                     if exp and len(exp) > 1 and sorted(exp, key=lambda x: -x[1])[0][0] != exp[0][0]: resist_flips += 1
                 if assume: cur = orc(k, None, dict(assume))
                 # v.67: the Matchup board's numbers for this side: the whole fit (any assumed charge loaded)
-                whole = typed(cur, lambda x_: x_ in cur.modules or x_ in cur.drones)
+                whole = typed(cur, lambda x_: x_ in cur.modules or x_ in cur.drones or x_ in cur.fighters)
                 bi = (0, 1) if side == 'theirs' else (2, 3)
                 wt1, _ = ttks(whole)
                 gb = got['board']
@@ -384,9 +421,41 @@ if __name__ == '__main__':
                 de = {x[0]: x for x in d_exp}
                 if dt_order != [x[0] for x in d_exp] and not all(tclose(de[a][3], de[b][3]) and tclose(de[a][4], de[b][4]) for a, b in zip(dt_order, [x[0] for x in d_exp])):
                     diffs.append(f'{side} {st}: drone order tool {dt_order} independent {[x[0] for x in d_exp]}')
+                # v2026.10.14.72: one pick per fighter class -- each light / heavy type in the bay that deals damage with
+                # pyfa's default abilities (the fit is pasted: nothing set in the Fighter bay), flown in that class's
+                # squadrons: as many as its bay squadrons, the class limit and the tubes left by the OTHER classes'
+                # squadrons in space (the tool's launch) allow; the whole fit then has that launch (its own oracle fit)
+                fx = fighter_facts(k, cur)
+                f_got = dict((c, opts) for c, opts in got[side].get('fighterClasses') or [])
+                for cls in ('light', 'heavy'):
+                    other = sum(1 for tid, _, _ in launch[k] if fx['cls'][tid] != cls)
+                    room = max(0, min(fx['limit'][cls], fx['tubes'] - other))
+                    f_exp = []
+                    for tid, baysq in fx['bay'].items():
+                        if fx['cls'][tid] != cls or not fx['deals'][tid]: continue
+                        n = min(baysq, room)
+                        if n < 1: continue
+                        fl = tuple(x for x in launch[k] if fx['cls'][x[0]] != cls) + ((tid, fx['size'][tid], tuple(sorted(fighter_default_actives(fx['effects'][tid])))),) * n
+                        o = orc(k, None, dict(assume) if assume else None, None, fl)
+                        own = typed(o, lambda fi, tid=tid: int(fi.item.ID) == tid)
+                        t1, t2 = ttks(typed(o, lambda x_, o=o: x_ in o.modules or x_ in o.drones or x_ in o.fighters))
+                        f_exp.append((tid, n, sum(own.values()), t1, t2))
+                    tg = f_got.get(cls, [])
+                    if sorted(x[0] for x in tg) != sorted(x[0] for x in f_exp): diffs.append(f'{side} {st} {cls} fighters: tool {[x[0] for x in tg]} independent {[x[0] for x in f_exp]}'); continue
+                    fe = {x[0]: x for x in f_exp}
+                    for tid, cnt, dps, g1, g2 in tg:
+                        opts_checked += 1; e = fe[tid]
+                        if cnt != e[1] or not close(dps, e[2]) or not tclose(fin(g1), e[3]) or not tclose(fin(g2), e[4]):
+                            diffs.append(f'{side} {st} {cls} fighter {tid}: tool x{cnt} {dps} {g1} {g2} independent x{e[1]} {e[2]} {e[3]} {e[4]}')
+                    f_exp.sort(key=lambda x: (x[3], x[4]))
+                    ft = [x[0] for x in tg]; fe_o = [x[0] for x in f_exp]
+                    if ft != fe_o and not all(tclose(fe[a][3], fe[b][3]) and tclose(fe[a][4], fe[b][4]) for a, b in zip(ft, fe_o)):
+                        diffs.append(f'{side} {st} {cls} fighter order tool {ft} independent {fe_o}')
+                    fighter_n[0] += len(f_exp)
         nvals += len(diffs)
         if diffs: bad += 1; notes.append(f'{m} vs {t}: {len(diffs)} differences, e.g. ' + ' | '.join(diffs[:3]))
     for n in notes[:30]: print(n)
     print(f'{len(PAIRS)} pairs x {len(GRID)} card settings x both sides: {points} points, {opts_checked} candidate DPS values compared, {flips} cases where a carried charge beats the loaded one, {resist_flips} where their resists change the pick from the highest-DPS charge')
     print(f'{assumed_n[0]} assumed charges (weapons with nothing loaded) checked with the Matchup board')
+    print(f'{fighter_n[0]} fighter candidates (one pick per class) compared')
     print(f'{bad} mismatches ({nvals} differing values; Weaknesses picks vs pyfa: isValidCharge, an oracle fit per candidate, projected.py + application.py)')

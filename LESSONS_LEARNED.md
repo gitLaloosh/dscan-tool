@@ -885,6 +885,10 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   `application.projected`, ...) and run each check that reads it. Teach it the new kind of row with its own pyfa rule
   (here: the oracle launches the tool's squadrons; pyfa's ability handler x the squadron's fighters) rather than skipping
   the rows, then break the new code once to see that check fail.
+- **Same rule for words (v2026.10.14.72):** `fighter_application_check.py` asserted the placeholder "Fighters aren't
+  ranked yet."; when the picks learned fighters it timed out waiting for it. When a feature replaces a placeholder
+  ("a coming update", "not ranked yet"), grep `tools/` for the placeholder text and change those checks in the same
+  delivery.
 
 ## 64. A state gated on one variant's attribute silently drops the other variants
 

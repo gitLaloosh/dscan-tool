@@ -1705,7 +1705,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.71</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.72</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1865,7 +1865,7 @@ const CARD_INFO = {
   "Capacitor drains: its capacitor runs out with every running module cycling, even at best case (a fitted Capacitor Booster or Ancillary Shield Booster on charges). The ring is how long it lasts; hover it for the numbers. No charges: a booster with none loaded and none in cargo (pasted fits only). No paste: an Ancillary Armor Repairer with no Nanite Repair Paste loaded or in cargo (pasted fits only), so no 3x boost.",
   "Without your ship: the ammo and drone type for each weapon system that hits that weakness hardest. A turret system that can't deal it falls back to the next weakest type.",
   "Missiles: the best ammo for each launcher, and how much of its damage lands on this ship's signature and speed, with its MWD (or afterburner) off and on. With your skills at V; your rigs and modules aren't known. Under 50% is amber.",
-  "With your ship saved and Use in assessments on: your own ammo and drones against it, best first by how long it lasts with that loaded (damage by type against its resists, layer by layer, minus its reps while its capacitor lasts; the rest of your fit as it is). Only the ammo and drones aboard count. The DPS is pyfa's applied DPS at the range and movement set on {card:dmg}. Hover a pick for the next best. In {card:perspective.mine} the same, for their ammo against you."
+  "With your ship saved and Use in assessments on: your own ammo, drones and fighters against it, best first by how long it lasts with that loaded (damage by type against its resists, layer by layer, minus its reps while its capacitor lasts; the rest of your fit as it is). Only the ammo, drones and fighters aboard count; fighters get one pick per class (light, heavy), in that class's squadrons, with their abilities as set in the Fighter bay. The DPS is pyfa's applied DPS at the range and movement set on {card:dmg}. Hover a pick for the next best. In {card:perspective.mine} the same, for their ammo against you."
  ],
  "ewar": [
   "Each chip is one module type: T tackle (scrams, points, webs, bubbles), D disruption (ECM, dampeners, weapon disruptors, target painters, burst jammers and projectors), C capacitor warfare (neutralizers, nosferatu), B command bursts. Hover a chip for the whole line.",
@@ -16581,7 +16581,7 @@ function ttkOrdinal(n){
 function ttkWhy(side, tr, dps){
   const you = side === 'you', P = you ? 'Your' : 'Their', p = you ? 'your' : 'their';
   const title = tr.total === Infinity ? (you ? 'You hold' : 'They hold') : `${you ? 'You' : 'They'} last ${ttkText(tr.total)}`;
-  if(!(dps > 0)) return {title, text: [you ? 'Their weapons and drones apply nothing to you at this range, so nothing breaks.' : 'Your weapons and drones apply nothing to them at this range, so nothing breaks.']};
+  if(!(dps > 0)) return {title, text: [you ? 'Their weapons, drones and fighters apply nothing to you at this range, so nothing breaks.' : 'Your weapons, drones and fighters apply nothing to them at this range, so nothing breaks.']};   // v.72: fighters are ranked and counted too
   const list = (a, w) => a.length < 2 ? a[0] : `${a.slice(0, -1).join(', ')} ${w} ${a[a.length - 1]}`;
   const hp = (x) => `${dmgFmt(x)} HP/s`;
   const nm = (r, layer) => r.name ? (r.qty > 1 ? `${r.name} ×${r.qty}` : r.name) : `${layer} repairers`;
@@ -16930,9 +16930,41 @@ async function wpBuildCandidates(f, est){
       if(ad) drones.push({typeId: dk.typeId, name: ad.name, count: ad.qty, ad});
     }
   }
+  // v2026.10.14.72 (fighter gaps delivery 4; the owner: "One tile per class", abilities "As set in the Fighter bay"): for light
+  // and for heavy fighters, each damage-dealing type in the bay (its abilities as set, pyfa's defaults otherwise) flown in
+  // that class's squadrons: the class's squadrons in space replaced by that type, as many as its bay, the class limit and
+  // the tubes left by the OTHER classes' squadrons in space allow. One engine run per candidate (a class change moves the
+  // tubes, so two classes can't share a run); the rest of the fit as it is.
+  const fighterClasses = [];
+  const fs = est.fighterStates;
+  if(fs && fs.items && fs.items.length){
+    const base = f.fighterStates ? JSON.parse(JSON.stringify(f.fighterStates)) : fighterStatesOf(est);
+    for(const cls of ['light', 'heavy']){
+      const kinds = fs.items.filter(it => it.cls === cls && it.dpsEach > 0 && it.squadronsAvailable >= 1);
+      if(!kinds.length) continue;
+      const other = fs.items.filter(it => it.cls !== cls).reduce((sum, it) => sum + (it.active || 0), 0);
+      const room = Math.max(0, Math.min(fs.classLimit[cls] || 0, fs.tubesTotal - other));
+      const options = [];
+      for(const it of kinds){
+        const n = Math.min(it.squadronsAvailable, room);
+        if(!(n >= 1)) continue;
+        const states2 = JSON.parse(JSON.stringify(base));
+        for(const o of fs.items) if(o.cls === cls) states2[o.typeId] = Object.assign({}, states2[o.typeId] || {}, {n: o.typeId === it.typeId ? n : 0});
+        const e = await estimateHpAndDps(x.shipTypeId, x.tally, x.cargoItemIds, x.highSlotByFlag, mode, x.midSlotByFlag, states, f.droneStates || null,
+          {fitSource: x.fitSource || null, fighterStates: states2});
+        const af = ((e.application || {}).fighters || []).filter(a => a.typeId === it.typeId);
+        const got = ((e.fighterStates || {}).items || []).find(o => o.typeId === it.typeId);
+        if(af.length && got && got.active > 0) options.push({typeId: it.typeId, name: it.name, count: got.active, af});
+      }
+      if(options.length) fighterClasses.push({cls, options, inSpace: (est.application.fighters || []).filter(a => (fs.items.find(o => o.typeId === a.typeId) || {}).cls === cls)});
+    }
+  }
+  const classOf = Object.fromEntries(((fs && fs.items) || []).map(it => [it.typeId, it.cls]));
   return {groups: groups.map(g => ({weaponTypeId: g.weaponTypeId, name: g.name, qty: g.qty, options: g.options})), drones,
     inSpace: (est.application.drones || []).map(d => ({typeId: d.typeId, name: d.name, count: d.qty})),
-    fighters: (est.application.fighters || []).length > 0 || !!(est.application.unapplied && est.application.unapplied.fighterDps > 0)};
+    fighterClasses, classOf,
+    // fighters the picks can't rank (support squadrons deal no damage; structure fighters can't launch): nothing to say
+    fighters: false};
 }
 // Every candidate at one point. app: the attacker's CURRENT application (radius, lock range, webs / painters / scram,
 // and its weapons and drones as they are); tgt and q: the target and the point (mysFight's them+qOut or me+qIn);
@@ -16947,7 +16979,7 @@ function wpRank(cands, app, tgt, q, tgtEst){
   const pt = (ws, ds, fs = app.fighters || []) => dmgTypedPoint(Object.assign({}, app, {weapons: ws, drones: ds, fighters: fs}), tgt, q);
   const def = ttkDefense(tgtEst);
   const buf = {layers: def.layers.map(l => Object.assign({}, l, {rep: 0, reps: [], passive: 0})), capSec: Infinity};   // v.57: reps cleared too (ttkSeconds reads l.reps)
-  const score = (o, ws, ds, own) => Object.assign({}, o, {dps: own.dps, ttk: ttkSeconds(def, pt(ws, ds).typed), ttkBuffer: ttkSeconds(buf, pt(ws, ds).typed)});
+  const score = (o, ws, ds, own, fs) => Object.assign({}, o, {dps: own.dps, ttk: ttkSeconds(def, pt(ws, ds, fs).typed), ttkBuffer: ttkSeconds(buf, pt(ws, ds, fs).typed)});
   const cmp = (x, y) => (x === y ? 0 : x - y);   // Infinity === Infinity: equal, go to the next key
   const order = (a, b) => cmp(a.ttk, b.ttk) || cmp(a.ttkBuffer, b.ttkBuffer) || ((b.loaded ? 1 : 0) - (a.loaded ? 1 : 0));
   const sorted = (list) => list.sort(order);
@@ -16958,6 +16990,11 @@ function wpRank(cands, app, tgt, q, tgtEst){
       return Object.assign({}, g, {ranked: sorted(g.options.map(o => score(o, [...others, o.aw], dsAll, pt([o.aw], [], []))))});
     }),
     drones: sorted(cands.drones.map(d => score(d, wsAll, [d.ad], pt([], [d.ad], [])))),
+    // v2026.10.14.72: a fighter pick replaces its class's squadrons in space; the other classes stay (fs)
+    fighterClasses: (cands.fighterClasses || []).map(c => {
+      const others = (app.fighters || []).filter(a => (cands.classOf || {})[a.typeId] !== c.cls);
+      return Object.assign({}, c, {ranked: sorted(c.options.map(o => score(o, wsAll, dsAll, pt([], [], o.af), [...others, ...o.af])))});
+    }),
     inSpace: cands.inSpace, fighters: cands.fighters};
 }
 // v2026.10.14.49 (subtext rule 1 and 4): every tile is the same three lines -- label, pick, one context line -- so a
@@ -16993,15 +17030,26 @@ function wpCardHtml(r, side, threatName, fight){
     else tiles.push(wpTileHtml(`${who} drones`, `${best.name} ×${best.count}`, `${dmgFmt(best.dps)} DPS · ${last(best)}`, '',
       `${best.name} ×${best.count}: ${dmgFmt(best.dps)} DPS ${on}${at}; ${last(best)}. ${rest ? `Then ${rest}.` : 'The only combat drones aboard.'}`));
   }
+  // v2026.10.14.72 (fighter gaps delivery 4): one tile per fighter class, like the weapon tiles
+  for(const c of r.fighterClasses || []){
+    const label = `${who} ${c.cls} fighters`;
+    const best = c.ranked[0];
+    if(!best) continue;
+    const rest = c.ranked.slice(1, 4).map(o => alt(o, `${o.name} ×${o.count}`)).join(' · ');
+    if(!(best.dps >= 0.5)){ tiles.push(wpTileHtml(label, 'Out of reach', `none of the ${c.cls} fighters aboard applies`, ' wp-none', `None of the ${c.cls} fighters aboard applies${at}.`)); continue; }
+    tiles.push(wpTileHtml(label, `${best.name} ×${best.count}`, `${dmgFmt(best.dps)} DPS · ${last(best)}`, '',
+      `${best.name} ×${best.count} squadron${best.count === 1 ? '' : 's'}: ${dmgFmt(best.dps)} DPS ${on}${at}; ${last(best)} (its abilities as set in the Fighter bay). ${rest ? `Then ${rest}.` : `The only ${c.cls} fighters aboard.`}`));
+  }
   // v2026.10.14.49: how the picks are ranked moved behind the card's info button (CARD_INFO.weak); the head is one line.
   const head = you ? `Your best against the ${threatName}` : `What the ${threatName} should use against you`;
   const body = tiles.length ? `<div class="rec-grid wp-grid">${tiles.join('')}</div>`
-    : `<div class="wp-msg">${you ? 'Your ship has' : 'They have'} no turrets, launchers, Vorton projectors or combat drones to rank.</div>`;
-  return `<div class="wp-head" title="${escapeHtml(head)}">${escapeHtml(head)}</div>${body}${r.fighters ? `<div class="wp-msg">Fighters aren't ranked yet.</div>` : ''}`;
+    : `<div class="wp-msg">${you ? 'Your ship has' : 'They have'} no turrets, launchers, Vorton projectors, combat drones or damage fighters to rank.</div>`;
+  return `<div class="wp-head" title="${escapeHtml(head)}">${escapeHtml(head)}</div>${body}`;
 }
 function wpSummary(r){
   const parts = r.groups.filter(g => g.ranked.length && g.ranked[0].dps >= 0.5).map(g => g.ranked[0].name);
   if(r.drones.length && r.drones[0].dps >= 0.5) parts.push(r.drones[0].name);
+  for(const c of r.fighterClasses || []) if(c.ranked.length && c.ranked[0].dps >= 0.5) parts.push(c.ranked[0].name);   // v.72
   return parts.length ? parts.join(', ') : 'nothing aboard applies';
 }
 // Fills the Weaknesses picks of the visible threat (threat view) and of my ship (My ship view) under one switch host.

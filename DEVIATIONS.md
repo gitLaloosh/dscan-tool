@@ -64,8 +64,10 @@ introduces a difference.
   then the charge already loaded. Choices: only ammo and drones aboard (loaded, cargo, drone bay; pyfa's
   isValidCharge rule for what loads); a drone pick is one type at a time (as many as the bay, 5 drones and the
   bandwidth allow), not mixed flights; the fight's webs, painters and scram are the fit's current ones, whatever
-  is being ranked. Fighters aren't ranked yet (the last of the fighter-gaps deliveries, roadmap/fighter-gaps-plan.md),
-  but they count in the rest of the fit since v2026.10.14.64. Checked by `check_weakness_picks.py`.
+  is being ranked. Fighters (v2026.10.14.72, the owner: "One tile per class", abilities "As set in the Fighter bay"): one
+  pick per class (light, heavy), each damage-dealing type flown in that class's squadrons -- as many as its bay, the class
+  limit and the tubes left by the other classes' squadrons in space allow -- with its abilities as set (pyfa's defaults
+  otherwise); support squadrons aren't ranked (they deal no damage). Checked by `check_weakness_picks.py`.
 - Keep at Range on the Damage Application card and the fight strip (v2026.10.14.53, fight setup F2; the owner 2026-10-24).
   pyfa's damage graph has no such movement; it is mapped onto the graph's own inputs. The ship keeping range moves
   straight away along the line of sight (angle 180°, so no transversal, pyfa `_calcAngularSpeed`) at the other ship's

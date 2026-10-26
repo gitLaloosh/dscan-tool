@@ -41,4 +41,14 @@ Every number checked against pyfa (eos, `graphs/data/fitDamageStats`), as everyw
    - Two Ametat II squadrons on a Hel: 2 x 3,840 per 60 s = 128 DPS.
    - Checked by `check_application.py` (pyfa's getVolley from the charge and the bomb branch), the golden fit
      `hel_constructed_ametat_bombs_on` and `fighter_bombs_check.py`.
-4. **Weaknesses picks:** rank "your fighters", and the why text says "weapons, drones and fighters".
+4. **Weaknesses picks: done in v2026.10.14.72.**
+   - the owner: "One tile per class" and abilities "As set in the Fighter bay".
+   - "Your light fighters" / "Your heavy fighters" ("Their ..." in the My Ship Perspective): each damage-dealing type in the
+     bay flown in that class's squadrons (bay, class limit, the tubes left by the other classes), ranked by the strip's
+     time to kill with the rest of the fit as it is.
+   - The why text and the empty-card message name fighters; the card's info explains the per-class pick.
+   - Checked by `check_weakness_picks.py` (a Nyx with four light and two heavy types, both ways; an oracle fit per
+     candidate) and `fighter_picks_check.py`.
+
+All four deliveries are done: carriers are assessed with pyfa's numbers for squadrons, abilities, support EWAR, bombs
+and the picks.

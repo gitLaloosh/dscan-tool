@@ -12,8 +12,8 @@ input), check_damage_chart.py (the card's points) and check_matchup.py (the time
     of their missiles / torpedoes (5% / 10%, the SDE defaults pyfa reads); a light attack squadron (Templar II) has no
     such note; the raw Firepower numbers are unchanged (pyfa's raw DPS);
   * with a ship saved: the scoreboard's "DPS applied to you" is the card's headline and the times have no NaN / undefined;
-  * the My Ship Perspective's Weaknesses picks (the carrier's) still say "Fighters aren't ranked yet." (which squadrons
-    to launch is its own backlog item);
+  * the My Ship Perspective's Weaknesses picks (the carrier's) rank its fighters, one tile per class (v2026.10.14.72,
+    fighter gaps delivery 4; checked against pyfa by check_weakness_picks.py and on the page by fighter_picks_check.py);
   * no page errors.
 """
 import sys, os
@@ -99,8 +99,10 @@ with sync_playwright() as p:
     check(why and not any(x in why for x in ('NaN', 'undefined', 'Infinity')), f'why text has no NaN ({why[:160]})')
     # the My Ship Perspective's Weaknesses picks are the threat's (the carrier's) weapons on you
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{R} .mys-mine-view .fit-layout'); settle(pg)
-    pg.wait_for_function(f"() => /Fighters aren't ranked yet/.test(document.querySelector('{R} .mys-mine-view').innerText)", timeout=60000)
-    check("Fighters aren't ranked yet." in pg.inner_text(f'{R} .mys-mine-view'), 'Weaknesses picks (My Ship Perspective): fighters not ranked yet')
+    pg.wait_for_selector(f'{R} .mys-mine-view .weak-picks[data-filled]', timeout=120000); settle(pg)
+    labels = pg.evaluate(f"() => [...document.querySelectorAll('{R} .mys-mine-view .weak-picks .wp-stat .rec-label')].map(e => e.textContent)")
+    check(any(l.startswith('Their ') and l.endswith(' fighters') for l in labels) and "Fighters aren't ranked yet" not in pg.inner_text(f'{R} .mys-mine-view'),
+          f'Weaknesses picks (My Ship Perspective): the carrier\'s fighters ranked per class ({labels})')
     check(not errs, f'no page errors {errs}')
     ctx.close(); b.close()
 print(f'FAILURES: {fails}')

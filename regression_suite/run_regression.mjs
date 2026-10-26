@@ -817,7 +817,7 @@ if (lastSandbox && lastSandbox.ttkWhy) {
     ['holds on regen', why('them', [L('shield', 1000, [], 120)], 100),
       'They hold', ["Their shield's regen, 120 HP/s, is more than the 100 HP/s that gets through, so it holds."]],
     ['no damage', why('you', [L('shield', 1000)], 0),
-      'You hold', ['Their weapons and drones apply nothing to you at this range, so nothing breaks.']],
+      'You hold', ['Their weapons, drones and fighters apply nothing to you at this range, so nothing breaks.']],
     ['all buffer', why('you', [L('shield', 100), L('armor', 100), L('hull', 100)], 100),
       'You last 3 s', ['With no local repairer, your shield, armor and hull go in 3 s.']],
     // v2026.10.14.61: Ancillary Armor Repairer (paste x3 for a clip from the armor's start, reloads, plain once spent, all on the capacitor)
