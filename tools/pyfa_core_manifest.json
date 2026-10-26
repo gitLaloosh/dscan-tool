@@ -96,7 +96,7 @@
         "python3 -I tools/independent_checks/compare_fit_stats.py index.html (0 mismatches: the application inputs per weapon vs pyfa's handlers)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "e3850ac02644c1b2906942aba89c37d2fca9d0140b185dd296fcefe81a4f75e9"
+      "sha256": "c2bc49c50a87eea7e2e1034bc2e0c069de2dc7238ce29cc19cbb1a3e82095af3"
     },
     "projected": {
       "kind": "generated + port",

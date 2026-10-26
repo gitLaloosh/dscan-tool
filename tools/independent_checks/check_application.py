@@ -33,7 +33,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
 from pyfa_sde import PYFA_SRC, ename, td as SDE_TD, attrs as SDE_ATTRS
 from golden_oracle import oracle_for, GOLDEN
-from compare_implants import is_weapon, _mult, DMG
+from compare_implants import is_weapon, is_bomb, _mult, DMG, pyfa_cycle_sec
 from check_missile_range import pyfa_missile_range
 from pyfa_effects import EFFECTS
 
@@ -111,7 +111,7 @@ class _Mod:
 def module_dps(m):
     """Per-module DPS as compare_implants.oracle_values sums it (pyfa getDps, spool at max)."""
     g = m.item.group.name
-    cyc = max(m.get('speed') or 0, m.get('duration') or 0) / 1000
+    cyc = pyfa_cycle_sec(m)   # v2026.10.14.78: + reactivation delay (a bomb launcher's)
     if not cyc: return 0
     if m.charge is not None and is_weapon(g):
         spool = (m.get('damageMultiplierBonusMax') or 0) if (m.get('damageMultiplierBonusPerCycle') or 0) else 0

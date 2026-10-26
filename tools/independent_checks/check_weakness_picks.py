@@ -273,7 +273,8 @@ if __name__ == '__main__':
         wts = []
         for m, c in mods:
             tid = int(T(m))
-            if CA.is_weapon(_en(groups[str(types[str(tid)]['groupID'])]['groupName'])) and tid not in wts and (st.get(str(tid)) or {'active': 1})['active'] > 0: wts.append(tid)
+            gname = _en(groups[str(types[str(tid)]['groupID'])]['groupName'])
+            if CA.is_weapon(gname) and not CA.is_bomb(gname) and tid not in wts and (st.get(str(tid)) or {'active': 1})['active'] > 0: wts.append(tid)
         g = {}
         for w in wts:
             loaded = [int(T(c)) for m, c in mods if int(T(m)) == w and c]

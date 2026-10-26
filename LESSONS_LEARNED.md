@@ -875,6 +875,21 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 70. A "skip" that a shared helper doesn't know about, and a cycle that isn't only the module's speed
+
+- **What happened (v2026.10.14.78):** bombs had been left out of the DPS since 2026-10-11 (counted as missiles they had
+  got missile skills and no reactivation delay, >6x too high). Putting them back as pyfa counts them showed two traps:
+  - the shared `is_weapon` helper of the independent checks matched bomb launchers too ("Missile Launcher Bomb"), so the
+    pyfa side counted them while the tool skipped them, and the weapon loop in the engine still consumed the bomb
+    launcher's copy count (it classes as a variable weapon), so the new bomb block saw nothing until the main loop
+    skipped it explicitly;
+  - pyfa's getDps divides by `getCycleParameters().averageTime`, which with reload off is the cycle PLUS
+    moduleReactivationDelay: a Bomb Launcher's 10 s cycle is really 90 s at Bomb Deployment V (a first estimate that
+    left it out was 725 DPS for a Hound's Shrapnel Bomb; pyfa's is 80.56).
+- **Do this instead:** when an exclusion is lifted, grep every check for the helper that decided it (`is_weapon`,
+  `weaponCategoryFromGroup`) and every loop that consumes the same copies; take a module's DPS cycle from pyfa's
+  averageTime, reactivation delay included, never from its speed attribute alone.
+
 ## 69. Per-copy inputs: keep each copy's place and each copy's state, on both sides
 
 - **What happened (v2026.10.14.77):** unloading a weapon makes copies of one weapon type differ (some empty and Online,

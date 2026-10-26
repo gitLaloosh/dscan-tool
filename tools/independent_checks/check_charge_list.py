@@ -91,7 +91,8 @@ Heavy Entropic Disintegrator II, Baryon Exotic Plasma M
 FN = """async (sb, fits) => { const out = {};
   for(const [k, t] of Object.entries(fits)){
     const {f} = await sb.buildFitFromEft(t);
-    out[k] = (await sb.chgBuild(f)).map(w => ({weaponTypeId: w.weaponTypeId, name: w.name, copies: w.copies.length,
+    // v.78: the weapon sections (check_module_charges.py checks the rest)
+    out[k] = (await sb.chgBuild(f)).filter(w => !w.kind || w.kind === 'weapon').map(w => ({weaponTypeId: w.weaponTypeId, name: w.name, copies: w.copies.length,
       options: w.options.map(o => ({id: o.id, name: o.name, dps: o.dps, range: o.range}))}));
   }
   return out; }"""

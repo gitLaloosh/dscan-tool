@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — Charges in every module, and bombs</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Charges in every module that takes one, and bombs in the DPS</h1>
+<p><span class="tag">Feature</span><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.77</code> &rarr; <code>v2026.10.14.78</code>.</p>
+<p>the owner, after v.77: "weapons aren't the only modules that hold charges. we're not evaluating modules that load cap charges, scripts, bubbles, etc.", then "let's do it as a fourth delivery". From the mockup (<code>charges_d4_mockup.html</code>) he decided:</p>
+<ul>
+<li>module chips as icons: "use the module's icon for the filter rather than text ... use hover to display the name";</li>
+<li>an unloaded module that isn't a weapon keeps its state: "sounds good";</li>
+<li>the ring: option "B", the module's own icon with its charge in a corner;</li>
+<li>Command Bursts "in";</li>
+<li>bombs: "fold it into the delivery unless you think it's a bad idea".</li>
+</ul>
+<p>This is delivery 4 of <code>roadmap/charges-plan.md</code>.</p>
+
+<h2>What you see</h2>
+<ul>
+<li><b>The Charges button</b> is on any fit with a module that takes a charge, not only turrets and launchers.</li>
+<li><b>A section per module</b> in the Charges list, in rack order, each with the two numbers its charge changes:
+<ul>
+<li>Capacitor Booster: GJ/s and the capacitor (stable % or how long it lasts);</li>
+<li>Ancillary Shield Booster: cycles per clip and the capacitor;</li>
+<li>Ancillary Armor Repairer: burst and sustained HP/s;</li>
+<li>Tracking Computer: turret range and tracking; Missile Guidance Computer: missile range and explosion radius;</li>
+<li>Sensor Booster: lock range and scan resolution; Remote Sensor Dampener: the same, as the % it takes off the target;</li>
+<li>Tracking Disruptor: range and tracking %; Guidance Disruptor: range and precision %;</li>
+<li>Warp Disruption Field Generator: range and the effect (Bubble, Point, Scramble);</li>
+<li>Flex Shield Hardener: the four shield resists and EHP;</li>
+<li>Command Burst: the charge's buffs; Interdiction Sphere Launcher: the bubble's radius and how long it lasts;</li>
+<li>Bomb Launcher: DPS and range, like a weapon.</li>
+</ul></li>
+<li><b>Module chips are icons</b>, named on hover, with a count in the corner for several copies. The damage-type chips filter weapons and bombs only.</li>
+<li><b>No charge</b> works for every module. A module that isn't a weapon keeps its state and works as it does with no charge: a Capacitor Booster injects nothing, an ASB runs on capacitor, an AAR repairs its plain amount, a scripted module works as the plain module. Charges in cargo don't refill a module you unloaded.</li>
+<li><b>Capacitor Boosters, ASBs and AARs take one charge for every copy.</b> A drop on one copy loads them all, and the hover bar says "Unload charges (every copy)". The engine works their charge out per type (or per fit, for paste), so a per-copy choice would show numbers the engine can't make. Everything else goes copy by copy.</li>
+<li><b>The ring</b> keeps such a module's own icon, with its charge or script in a corner. Weapons and bombs still show the charge.</li>
+<li><b>The hover bar and every rack's &#8943; menu</b> (High, Mid and Low) offer Unload and Charges&hellip; for any module that takes charges.</li>
+<li><b>Bombs count</b> in Total DPS, volley and Damage Application, as pyfa counts them: the bomb's damage over the launcher's 10 s cycle plus its 160 s reactivation delay, halved by Bomb Deployment V. A Hound's Bomb Launcher I with a Shrapnel Bomb: 80.56 DPS, 7,250 volley. Bombs had been left out since 2026-10-11. Application is pyfa's getBombMult (in PYFA CORE <code>application</code>, re-verified).</li>
+<li><b>Fixed:</b> a Stasis Webification Probe showed a 0 km bubble lasting 0 s. Its field is its own SDE size (15 km, 30 s, &minus;20% speed).</li>
+<li><b>Not offered:</b> Flex Armor Hardener scripts (the engine doesn't read them), remote assistance scripts, scanner and survey probes, mining crystals.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>check_bombs.py</code> (chain):</b> every Stealth Bomber &times; both bomb launchers &times; all 7 bombs, plus an Online launcher, against pyfa: DPS, volley, maxRange, explosion range and radius. 75 cases, 0 mismatches; v.77 fails 350.</li>
+<li><b>New <code>check_module_charges.py</code> (chain):</b> eight fits. Every module's list = pyfa getValidCharges. Every charge's two numbers (94 rows with No charge) = the fit pasted with that charge. 24 numbers directly against pyfa's handlers: Sensor Booster, Tracking Computer, Missile Guidance Computer, damp and disruptor bonuses, Flex shield resonances. No charge beats the cargo inference and keeps the state. v.77 fails 11; mutations: a Capacitor Booster that ignores the unload fails 3; paste never added to an AAR without any fails 1.</li>
+<li><b>New <code>page_checks/module_charges_check.py</code>:</b> the ring's corners, the sections and headers, the icon chips, a script click, No charge on the Capacitor Booster, the hover bar, the Mid rack's Unload all charges, Use original charges, the list view, two ASBs loading together, and 390 px. v.77 fails 3 (weapon sections only, no corners: it stops there); mutations: no corner badge fails 5; a charge per copy for ASBs fails 1; an unloaded module that isn't a weapon set Online fails 2; the hover bar and rack Unload on weapons only fails 3.</li>
+<li><b>Two goldens pinned to pyfa:</b> <code>hound_constructed_torpedoes_and_shrapnel_bomb</code> (349 DPS, 9,632 volley) and <code>manticore_constructed_void_bomb_no_damage</code> (269 DPS: the Void Bomb's 7 of each damage type count, 0.33 DPS).</li>
+<li><b>LESSON #65:</b> the bomb change reached <code>compare_implants.py</code> (<code>is_bomb</code>, <code>pyfa_cycle_sec</code>), <code>check_application.py</code>, <code>check_matchup.py</code>, <code>compare_fit_stats.py</code> and <code>check_weakness_picks.py</code>; the icon chips reached <code>unload_check.py</code>; the web-probe fix reached <code>compare_ewar.py</code>; <code>check_charge_list.py</code> now reads the weapon sections only.</li>
+<li>Regression ALL PASS (269 fits), update chain all 42 steps OK (the Charges-list step after moving a comment that cut its JavaScript line), all 29 page checks 0 failures, the three lints 0 problems. PYFA CORE <code>application</code> re-verified (<code>check_application.py</code> 0 mismatches; dropping getBombMult's range band fails 2) and the manifest updated.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #70: lifting an exclusion means finding every place that made it, and pyfa's DPS cycle includes the reactivation delay.</p>
+<ul>
+<li>The checks' shared <code>is_weapon</code> helper counted bomb launchers on the pyfa side while the tool skipped them. The engine's weapon loop also used up the launcher's copies before the new bomb block saw them.</li>
+<li>pyfa's getDps divides by averageTime: the cycle plus moduleReactivationDelay. A first estimate without it said 725 DPS for the Hound's bomb; pyfa says 80.56.</li>
+<li>When you lift an exclusion, grep every check for the helper that decided it and every loop that consumes the same copies.</li>
+</ul>
+</body>
+</html>

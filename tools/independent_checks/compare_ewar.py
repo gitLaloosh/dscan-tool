@@ -61,6 +61,10 @@ def oracle_values(m, kind):
         c = m.charge
         out['rangeM'] = out['bubbleRadiusM'] = (c.get('warpScrambleRange') or 0.0) if c else 0.0
         out['lifetimeSec'] = ((c.get('explosionDelay') or 0.0) / 1000) if c else 0.0
+        # v2026.10.14.78: a Stasis Webification Probe has no warpScrambleRange: its field is doomsdayAOERange wide for
+        # doomsdayAOEDuration (SDE type 56748; pyfa has no handler for the probe's field, so these are its attributes)
+        if c and not out['bubbleRadiusM'] and (c.get('doomsdayAOERange') or 0) > 0:
+            out['rangeM'] = out['bubbleRadiusM'] = c.get('doomsdayAOERange'); out['lifetimeSec'] = c.get('doomsdayAOEDuration') / 1000
     if kind == 'burst':
         out['buffDurationSec'] = g('buffDuration') / 1000
         for n in (1, 2, 3, 4): out[f'buff{n}'] = g(f'warfareBuff{n}Value')

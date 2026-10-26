@@ -37,7 +37,11 @@ def oracle_application(o):
         g = m.item.group.name; t = int(m.item.ID)
         if m.charge is not None and is_weapon(g):
             key = f'{t}:{int(m.charge.item.ID)}'
-            if g.startswith('Missile Launcher'):
+            if g == 'Missile Launcher Bomb':   # v2026.10.14.78: what pyfa getBombMult reads
+                mr = pyfa_missile_range(o, m)
+                if not sum(m.charge.get(a) or 0 for a in ('emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage')): continue   # no damage: not dealing damage
+                v = {'maxRange': mr[3] if mr else None, 'blastRadius': m.getModifiedChargeAttr('explosionRange'), 'aoeCloudSize': m.getModifiedChargeAttr('aoeCloudSize')}
+            elif g.startswith('Missile Launcher'):
                 mr = pyfa_missile_range(o, m)
                 v = {'missileMaxRangeData': list(mr[:3]) if mr else None, 'aoeCloudSize': m.getModifiedChargeAttr('aoeCloudSize'),
                      'aoeVelocity': m.getModifiedChargeAttr('aoeVelocity'), 'aoeDamageReductionFactor': m.getModifiedChargeAttr('aoeDamageReductionFactor', 1)}

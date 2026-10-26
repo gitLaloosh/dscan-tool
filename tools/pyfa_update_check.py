@@ -97,6 +97,8 @@ if '--run' in sys.argv:
         ('Fighter tile: SDE mapping + pyfa shares', env + 'python3 -I tools/independent_checks/check_fighter_rec.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.73
         ('slots per rack vs pyfa', env + 'python3 -I tools/independent_checks/check_slots.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.75
         ('Charges list vs pyfa', env + 'python3 -I tools/independent_checks/check_charge_list.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.76
+        ('bombs vs pyfa', env + 'python3 -I tools/independent_checks/check_bombs.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.78
+        ('module charges vs pyfa', env + 'python3 -I tools/independent_checks/check_module_charges.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),  # v2026.10.14.78
         ('drone recommendation rule', env + 'python3 -I tools/independent_checks/check_drone_recommendation.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 mismatches')),
         ('error codes registry and ERRORS.md', 'python3 -I tools/gen_errors_md.py index.html', lambda o: o.strip().splitlines()[-1].endswith('ERRORS.md is up to date')),
         ('card names from one list', 'python3 -I tools/check_card_names.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.45

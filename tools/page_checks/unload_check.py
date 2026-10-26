@@ -20,7 +20,7 @@ The real page, ESI and the game's icons served from pyfa's SDE copy. Weapon DPS 
   * the High rack's menu: All active / All online / All offline / Unload all charges / Charges…; the Mid rack's has the
     three states only; Unload all charges: six empty Online launchers, 0 weapon DPS, "6 launchers empty"; All active
     keeps them Online; the Mid rack's All offline / All active (the Large Shield Extenders, passive, go Online);
-  * a Caracal (two launcher types): weapon chips (All weapons + one per type) show one section; the damage chips leave the
+  * a Caracal (two launcher types): module chips (All + an icon per type, v.78) show one section; the damage chips leave the
     No charge rows in view;
   * 390 and 320 px (touch): the list inside the Fit card, under its header, all on screen when opened from the top of the
     page; a held finger on a launcher opens Unload charge / Charges… without changing its state, Unload charge works, a
@@ -249,8 +249,10 @@ with sync_playwright() as p:
     pg.click(f'{R} button.ms-reset'); settle(pg)
     # two launcher types: the weapon chips
     paste(pg, CARACAL); open_list(pg)
-    chips = pg.evaluate(f"() => [...document.querySelectorAll('{R} .chg-pop button.chg-wchip')].map(c => c.textContent.trim())")
-    check(len(chips) == 3 and chips[0] == 'All weapons', f'1440 Caracal: weapon chips, All weapons + one per launcher type ({chips})')
+    # v.78 (the owner: "use the module's icon for the filter rather than text ... use hover to display the name"): All, then an
+    # icon per module type named by its hover title (and aria-label), a count badge for several copies
+    chips = pg.evaluate(f"() => [...document.querySelectorAll('{R} .chg-pop button.chg-wchip')].map(c => c.classList.contains('chg-ichip') ? (c.querySelector('img') ? c.title.replace(/ ×\\d+$/, '') : 'NO ICON') : c.textContent.trim())")
+    check(len(chips) == 3 and chips[0] == 'All' and 'NO ICON' not in chips, f'1440 Caracal: module chips, All + an icon per launcher type ({chips})')
     if len(chips) == 3:
         pg.click(f'{R} .chg-pop button.chg-wchip:nth-of-type(3)'); pg.wait_for_timeout(150)
         vis = pg.evaluate(f"() => [...document.querySelectorAll('{R} .chg-pop .chg-w')].filter(s => !s.hidden).map(s => s.querySelector('.chg-wh b').textContent)")

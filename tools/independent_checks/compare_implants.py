@@ -25,7 +25,8 @@ Since v2026.10.14.13 (Phase 2, weapons / drones):
                    (charge em+therm+kin+exp) x damageMultiplier (1 when absent) x (1 + damageMultiplierBonusMax,
                    the spool at maximum, only when damageMultiplierBonusPerCycle is set as in pyfa's
                    calculateSpoolup) / rawCycleTime
-  smartbombDps     active Smart Bombs: their own damage / duration
+  smartbombDps     active Smart Bombs: their own damage / duration; since v2026.10.14.78 also active Bomb Launchers:
+                   the bomb's damage x damageMultiplier / (speed + moduleReactivationDelay), pyfa getDps
   droneDps         pyfa Drone.getDps for the drones the tool has in space (passed to the oracle):
                    damage x damageMultiplier x amount / cycle
   droneControlRange  ship droneControlRange (pyfa extraAttributes, 20000 + increases)
@@ -42,6 +43,13 @@ from golden_oracle import oracle_for, implants_of, GOLDEN
 from check_missile_range import pyfa_missile_range
 DMG = ('emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage')
 def is_weapon(g): return g.endswith('Weapon') or g.startswith('Missile Launcher') or g == 'Vorton Projector'
+# v2026.10.14.78: a Bomb Launcher (group "Missile Launcher Bomb") is counted as pyfa counts it (getVolleyParameters: its
+# charge's damage), in the tool's fixed-damage total with the smart bombs; its cycle has a long reactivation delay.
+def is_bomb(g): return g == 'Missile Launcher Bomb'
+def pyfa_cycle_sec(m):
+    """pyfa getDps's cycle: getCycleParameters().averageTime with reload off (pyfa's default) = rawCycleTime +
+    moduleReactivationDelay. v2026.10.14.78: the delay was left out (no damaging module had one until bombs)."""
+    return (max(m.get('speed') or 0, m.get('duration') or 0) + (m.get('moduleReactivationDelay') or 0)) / 1000
 # Python round(): ties to even on the exact value, as pyfa's display rounding and, since v2026.10.14.22,
 # the tool's pyRound(). (Before v.22 this was floor(x + 0.5), the JavaScript Math.round way.)
 def pyround(x): return round(x)
@@ -77,7 +85,10 @@ def oracle_values(o):
     wd = sd = 0.0; rng = []
     for m in active:
         g = m.item.group.name
-        cyc = max(m.get('speed') or 0, m.get('duration') or 0) / 1000
+        cyc = pyfa_cycle_sec(m)
+        if m.charge is not None and is_bomb(g):
+            if cyc: sd += sum(m.charge.get(a) or 0 for a in DMG) * _mult(m) / cyc
+            continue
         if m.charge is not None and is_weapon(g):
             # pyfa calculateSpoolup: no spool unless BOTH damageMultiplierBonusMax and ...PerCycle are set
             # (the SDE default of BonusMax is 0.5 on every item -- reading it alone gave every turret +50%)

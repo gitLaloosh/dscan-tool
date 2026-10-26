@@ -79,7 +79,7 @@ def close(a, b):
     return abs(a - b) <= 1e-6 * max(1.0, abs(a), abs(b))
 
 def typed_dps_mod(m):
-    cyc = max(m.get('speed') or 0, m.get('duration') or 0) / 1000
+    cyc = CA.pyfa_cycle_sec(m)   # v2026.10.14.78: + reactivation delay (a bomb launcher's)
     if not cyc: return {}
     g = m.item.group.name
     if m.charge is not None and CA.is_weapon(g):

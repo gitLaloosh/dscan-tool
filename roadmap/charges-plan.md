@@ -98,3 +98,53 @@ Delivery 3 as built (the owner: "proceed"): as above. Found on the way and fixed
 seven blasters unloaded drained 31.8 GJ/s, pyfa 32.8); the pyfa stand-in for the goldens skipped empty slots when pairing
 charges with copies; a weapon type with no Active copy could still get an assumed charge; the open list kept its DPS
 after a state change. LESSON #69. Checks: unload_check.py (pyfa per step), two pyfa goldens, charges_check.py updated.
+
+## Delivery 4: charges in modules that aren't turrets or launchers (built, v2026.10.14.78)
+
+the owner: "weapons aren't the only modules that hold charges. we're not evaluating modules that load cap charges, scripts,
+bubbles, etc." (the numbers already used the fit's own charges in those modules; what was missing is choosing them),
+then "let's do it as a fourth delivery". Mockup: `charges_d4_mockup.html` (real page, a Megathron with a Heavy Capacitor
+Booster II, Tracking Computer II, Sensor Booster II and Large Ancillary Armor Repairer). Decisions:
+
+- **A section per module that takes charges**, built as a weapon's (No charge, on board, not on board), with the two
+  numbers that charge changes instead of DPS and range: Capacitor Booster GJ/s and the Capacitor card's result;
+  Tracking Computer / Missile Guidance Computer the weapons' range and tracking (or missile range and explosion radius);
+  Sensor Booster lock range and scan resolution; Ancillary Shield / Armor Repairer the repair with and without the
+  charge; the rest as the cards that show them.
+- **Module chips as icons** (the owner: "use the module's icon for the filter rather than text ... use hover to display the
+  name"): All, then one icon per module in the list's order, a count in the corner for several copies; the damage-type
+  chips apply to the weapon sections.
+- **"No charge" overrides the cargo inference** (found in the mockup: an empty Capacitor Booster was filled from cargo, so
+  unloading it changed nothing); a module a killmail shows empty keeps the inference unless the user unloads it.
+- **Unloading a module that isn't a weapon keeps its state** (the owner: "sounds good"): it still works without a charge
+  (a Capacitor Booster injects nothing, an Ancillary Shield Booster runs on capacitor, an Ancillary Armor Repairer repairs
+  its base amount, a scripted module works as the plain module).
+- **Ring: "B"**: such a module keeps its own icon with its charge in a corner (weapons keep the charge icon, "A").
+- **Modules**: Capacitor Boosters, Ancillary Shield and Armor Repairers, scripted modules (Tracking Computers, Missile
+  Guidance Computers, Sensor Boosters, Sensor Dampeners, Tracking and Guidance Disruptors, Warp Disruption Field
+  Generators, Flex hardeners), **Command Bursts** ("in"), **bubbles** (Interdiction Sphere Launcher probes) and **bombs**.
+  Out: scanner / survey probes (the tool doesn't model scanning) and mining crystals (yield isn't used).
+- **Bombs into the DPS** (found while answering "why are we not including ... bombs"): pyfa's getVolleyParameters counts
+  any Active module whose charge carries damage, bombs included (a Hound with a Bomb Launcher I and a Shrapnel Bomb: pyfa
+  80.56 DPS -- its 10 s cycle plus a 160 s reactivation delay halved by Bomb Deployment V; an early note here said 725,
+  which left the delay out -- and 7,250 volley; the tool 0, bomb launchers skipped since 2026-10-11). the owner: "fold it into
+  the delivery".
+
+### As built (v2026.10.14.78)
+
+- **Engine (inputs only):** `options.unloaded`, the module types with "No charge" in every copy: an unloaded Capacitor
+  Booster injects nothing, an ASB runs on capacitor (its drain always counts, no clip), an AAR repairs its plain amount,
+  an Interdiction Sphere Launcher takes no probe from cargo. Bombs: their own block (damage x damageMultiplier over speed
+  + reactivation delay x 0.5), application in PYFA CORE `application` (pyfa getBombMult). The engine's sphere now reads a
+  Stasis Webification Probe's field (doomsdayAOERange / doomsdayAOEDuration; it showed 0 km and 0 s before).
+- **List:** `chgModules` (High and Mid slots by flag, AARs from the Low slots' tally), `chgInputWithPicks` (any module's
+  charge, paste in or out of the Low tally), `chgMetrics` (each kind's two numbers), `chgBuild`. Headers: DPS / range
+  (weapons, bombs); GJ/s / Capacitor; Clip / Capacitor (ASB); Burst HP/s / Sustained (AAR); Range / Tracking (Tracking
+  Computer, Tracking Disruptor); Range / Expl. radius (Missile Guidance Computer); Range / Precision (Guidance
+  Disruptor); Lock range / Scan res (Sensor Booster, damp, as % for the damp); Range / Effect (WDFG: Bubble, Point,
+  Scramble); Resists / EHP (Flex Shield Hardener); Buffs (Command Burst, one wide column); Radius / Lasts (probes).
+- **Per type:** Capacitor Boosters, ASBs and AARs take one charge for every copy (the engine works them out per type or
+  per fit); the rest go copy by copy. Not offered: Flex Armor Hardener scripts (the engine ignores them), remote
+  assistance scripts, scanner / survey probes, mining crystals.
+- **Ring:** option B, `.ms-badge`; the hover bar and every rack's menu for any module that takes charges.
+- **Checks:** `check_bombs.py`, `check_module_charges.py` (chain), `page_checks/module_charges_check.py`.
