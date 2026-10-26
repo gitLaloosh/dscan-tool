@@ -1260,14 +1260,16 @@
   button.fit-view-btn{padding:4px 12px; font-size:11.5px; border:0; border-radius:3px; background:transparent; color:var(--text-dim); cursor:pointer;}
   button.fit-view-btn.on{background:var(--line); color:var(--heading);}
   button.fit-view-btn:hover:not(.on){color:var(--text);}
-  .fit-ring{position:relative; width:min(100%, 520px); aspect-ratio:1 / 1; margin:4px auto 6px;}
-  .fit-ring-ship{position:absolute; left:16%; top:16%; width:68%; height:68%; border-radius:50%; overflow:hidden; border:1px solid var(--line); background:radial-gradient(circle at 50% 45%, #1a2229 0%, #0e1216 72%);}
+  .fit-ring{position:relative; width:min(100%, 520px); aspect-ratio:1 / 1; margin:4px auto 6px;
+    background:radial-gradient(circle closest-side, transparent calc(var(--band-in, 78%) - 0.6%), #0b0f13 var(--band-in, 78%), #0b0f13 var(--band-out, 99%), transparent calc(var(--band-out, 99%) + 0.6%));}   /* v.75: the track */
+  .fit-ring-ship{position:absolute; left:calc(50% - var(--ship, 68%) / 2); top:calc(50% - var(--ship, 68%) / 2); width:var(--ship, 68%); height:var(--ship, 68%); border-radius:50%; overflow:hidden; border:1px solid var(--line); background:radial-gradient(circle at 50% 45%, #1a2229 0%, #0e1216 72%);}
+  .fr-empty{position:absolute; width:var(--tile, 7%); height:var(--tile, 7%); transform:translate(-50%, -50%) rotate(var(--turn, 0deg)); border:1px dashed #2a333c; border-radius:14%; background:#10161b; box-sizing:border-box;}
   .fit-ring-ship img{width:100%; height:100%; object-fit:cover; display:block;}
-  .ms-state.ms-tile{position:absolute; width:var(--tile, 7%); height:var(--tile, 7%); min-width:0; min-height:0; padding:0; gap:0; transform:translate(-50%, -50%);
-    display:flex; align-items:center; justify-content:center; border:2px solid var(--text-dim); border-radius:18%; background:var(--panel); overflow:hidden;}
-  .ms-state.ms-tile img{width:88%; height:88%; border-radius:12%; display:block;}
-  .ms-tile .ms-tile-abbr{display:none; font-family:var(--mono); font-size:9px; color:var(--text);}
-  .ms-state.ms-tile .ms-dot{position:absolute; right:5%; bottom:5%; width:24%; height:24%; background:var(--panel);}
+  .ms-state.ms-tile{position:absolute; width:var(--tile, 7%); height:var(--tile, 7%); min-width:0; min-height:0; padding:0; gap:0; transform:translate(-50%, -50%) rotate(var(--turn, 0deg));
+    display:flex; align-items:center; justify-content:center; border:1.5px solid var(--text-dim); border-radius:14%; background:var(--panel); overflow:hidden; box-sizing:border-box;}
+  .ms-state.ms-tile img{width:100%; height:100%; border-radius:10%; display:block; transform:rotate(calc(-1 * var(--turn, 0deg))) scale(var(--fit, 1));}
+  .ms-tile .ms-tile-abbr{display:none; font-family:var(--mono); font-size:9px; color:var(--text); transform:rotate(calc(-1 * var(--turn, 0deg)));}   /* v.75: upright, as the icon */
+  .ms-state.ms-tile .ms-dot{position:absolute; right:5%; bottom:5%; width:20%; height:20%; background:var(--panel);}
   .ms-state.ms-tile.ms-active{border-color:var(--cyan); box-shadow:0 0 0 2px rgba(79,195,217,0.18);}
   .ms-state.ms-tile.ms-active .ms-dot{background:currentColor;}
   .ms-state.ms-tile.ms-online{border-color:var(--text-dim);}
@@ -1723,7 +1725,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.74</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.75</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -12457,6 +12459,17 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     hullDamageCarriers.push({dogma: st.dogma_attributes || [], effectIds: new Set((st.dogma_effects || []).map(e => e.effect_id))});
   }
   const hullDamageRows = hullDamageRowsFor(hullDamageCarriers);
+  // v2026.10.14.75 (roadmap/charges-plan.md, delivery 1): the hull's slots as pyfa counts them (Fit.getNumSlots: the ship's
+  // hiSlots / medSlots / lowSlots / rigSlots / maxSubSystems), with a T3's subsystems added (pyfa's slotModifier handler,
+  // effect 3774, the only one on those attributes). The Fit card's ring draws the empty ones. Checked by check_slots.py.
+  const fitSlots = {high: attrVal(shipDogma, SHIP_HI_SLOTS_ATTR, 0), mid: attrVal(shipDogma, SHIP_MED_SLOTS_ATTR, 0), low: attrVal(shipDogma, SHIP_LOW_SLOTS_ATTR, 0),
+    rig: attrVal(shipDogma, SHIP_RIG_SLOTS_ATTR, 0), subsystem: attrVal(shipDogma, SHIP_MAX_SUBSYSTEMS_ATTR, 0)};
+  for(const id of subsystemIds){
+    const st = await getType(id), sd = st.dogma_attributes || [];
+    if(!(st.dogma_effects || []).some(e => e.effect_id === SUBSYSTEM_SLOT_MODIFIER_EFFECT)) continue;
+    const n = Math.round((tally['Subsystems'][id] || {}).totalQty || 1);
+    fitSlots.high += n * attrVal(sd, SUBSYSTEM_HI_SLOT_MOD_ATTR, 0); fitSlots.mid += n * attrVal(sd, SUBSYSTEM_MED_SLOT_MOD_ATTR, 0); fitSlots.low += n * attrVal(sd, SUBSYSTEM_LOW_SLOT_MOD_ATTR, 0);
+  }
   // v2026.10.14.13 implants / boosters (PYFA CORE implant-calc, Phase 2): their weapon damage / rate of fire,
   // charge damage and drone damage rows join the hull rows -- same [target, kind, ..., skills, skillsOn,
   // groups, groupsOn, dmgType, penalized] shape, applied by hullWeaponMods / hullDroneMods to every weapon,
@@ -14338,6 +14351,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
     // v.20 module states: per fitted type, copies per state, plus any
     // requested state the game rules refused (see resolveModuleStates).
     moduleStates: {items: moduleStateResult.items, refused: moduleStateResult.refused, assumed: moduleStateResult.assumed},
+    slots: fitSlots,   // v2026.10.14.75: pyfa Fit.getNumSlots per rack (the ring's empty slots)
     shieldHP: pyRound(shieldHP / avgShieldRes),
     armorHP: pyRound(armorHP / avgArmorRes),
     hullHP: pyRound(hullHP / avgHullRes),
@@ -15438,41 +15452,54 @@ function setFitViewPref(v){
   try{ localStorage.setItem(FIT_VIEW_KEY, v); }catch(e){}
 }
 // One arc per rack, centred on its compass point; tile centres sit on a circle of FIT_RING_R % of the ring's
-// width. Tiles are drawn as upright squares, so two neighbours on an arc stop overlapping only when their
-// centre distance along the WORSE axis is at least a tile: neighbours d apart along the arc, at most `half`
-// degrees from the arc's compass point, are d*cos(half) apart on that axis. fitRingGeometry() picks one
-// angular step for the whole fit from its fullest arc (at most 70 degrees per arc, so the arcs keep 20
-// degrees between them) and the largest tile that fits; a full eight-slot rack gives ~6% tiles (29px on a
-// 480px ring), a frigate's racks the 8.4% maximum. Checked by tools/page_checks/layout_check.py. LESSON #33
+// width. v2026.10.14.75 (roadmap/charges-plan.md delivery 1, the owner: "Workbench-style track"): every slot the hull has
+// gets a position (pyfa's slot counts, estimate.slots; empty ones drawn as outlines), and the tiles follow the circle
+// (each square turned to its position, so its sides lie along and across the track). Neighbours `step` degrees apart
+// then touch first at their inner corners: a square of side s centred at R fits when s <= 2R sin(step/2) / (1 +
+// sin(step/2)). One step for the whole fit from its fullest arc (positions x step <= 86 degrees, so the racks keep a
+// small gap); an eight-slot rack gives ~7.7% tiles (35 px on a 460 px ring), a frigate's the 11% maximum. The icon is
+// turned the other way round on the lower half, so it is never upside down. Checked by layout_check.py. LESSON #33
 const FIT_RING_ARCS = [
   {slots: ['high'], center: -90}, {slots: ['mid'], center: 0}, {slots: ['low'], center: 90}, {slots: ['rig', 'subsystem'], center: 180}];
-const FIT_RING_R = 44, FIT_RING_MAX_SPAN = 70, FIT_RING_MAX_STEP = 13, FIT_RING_MAX_TILE = 8.4;
+const FIT_RING_R = 45, FIT_RING_MAX_SPAN = 86, FIT_RING_MAX_STEP = 16, FIT_RING_MAX_TILE = 11;
 function fitRingGeometry(maxPerArc){
   const n = Math.max(maxPerArc, 4);
-  const step = Math.min(FIT_RING_MAX_STEP, FIT_RING_MAX_SPAN / (n - 1));
-  const half = step * (n - 1) / 2 * Math.PI / 180;
-  const chord = 2 * FIT_RING_R * Math.sin(step / 2 * Math.PI / 180);
-  return {step, tile: Math.min(FIT_RING_MAX_TILE, chord * Math.cos(half) - 0.3)};
+  const step = Math.min(FIT_RING_MAX_STEP, FIT_RING_MAX_SPAN / n);
+  const h = Math.sin(step / 2 * Math.PI / 180);
+  return {step, tile: Math.min(FIT_RING_MAX_TILE, 2 * FIT_RING_R * h / (1 + h) - 0.3)};
 }
+// The turn of a tile at `deg` degrees (0 = right, 90 = bottom): its sides along the circle, never upside down.
+function fitRingTileTurn(deg){
+  let r = ((deg + 90) % 360 + 540) % 360 - 180;   // -180..180, 0 at the top
+  if(r > 90) r -= 180; else if(r < -90) r += 180;
+  return r;
+}
+const SHIP_HI_SLOTS_ATTR = 14, SHIP_MED_SLOTS_ATTR = 13, SHIP_LOW_SLOTS_ATTR = 12, SHIP_RIG_SLOTS_ATTR = 1137, SHIP_MAX_SUBSYSTEMS_ATTR = 1367;
+const SUBSYSTEM_SLOT_MODIFIER_EFFECT = 3774, SUBSYSTEM_HI_SLOT_MOD_ATTR = 1374, SUBSYSTEM_MED_SLOT_MOD_ATTR = 1375, SUBSYSTEM_LOW_SLOT_MOD_ATTR = 1376;
 const FIT_SLOT_OF_GROUP = {'High slots': 'high', 'Mid slots': 'mid', 'Low slots': 'low', 'Rigs': 'rig', 'Subsystems': 'subsystem'};
 function moduleTileAbbr(name){
   return name.replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 3).map(w => /^\d/.test(w) ? w.replace(/\D.*$/, '') : w[0].toUpperCase()).join('').slice(0, 4);
 }
-function moduleStateTileHtml(item, copyIdx, state, items, x, y){
-  const pos = `left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;`;
-  const img = `<img src="https://images.evetech.net/types/${item.typeId}/icon?size=64" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><span class="ms-tile-abbr">${escapeHtml(moduleTileAbbr(item.name))}</span><span class="ms-dot"></span>`;
+function moduleStateTileHtml(item, copyIdx, state, items, x, y, opts = {}){
+  // v2026.10.14.75: opts.turn (degrees, fitRingTileTurn), opts.charge {id, name} (a weapon shows its charge's icon)
+  // the frame turns with the circle; the icon stays upright, as large as fits inside the turned frame
+  const tr = (opts.turn || 0) * Math.PI / 180, fit = 1 / (Math.abs(Math.cos(tr)) + Math.abs(Math.sin(tr)));
+  const pos = `left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--turn:${(opts.turn || 0).toFixed(1)}deg;--fit:${fit.toFixed(3)};`;
+  const ch = opts.charge;
+  const img = `<img src="https://images.evetech.net/types/${ch ? ch.id : item.typeId}/icon?size=64" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><span class="ms-tile-abbr">${escapeHtml(moduleTileAbbr(ch ? ch.name : item.name))}</span><span class="ms-dot"></span>`;
+  const label = ch ? `${item.name} · ${ch.name}` : item.name;
   const fixed = item.slot === 'rig' || item.slot === 'subsystem';
   if(fixed){
-    const t = `${item.name}: ${MODULE_STATE_LABEL[state]} (${item.slot === 'rig' ? 'rigs' : 'subsystems'} are always online)`;
-    return `<span class="ms-state ms-tile ms-${state} ms-fixed" style="${pos}" title="${escapeHtml(t)}" role="img" aria-label="${escapeHtml(t)}">${img}</span>`;
+    const t = `${label}: ${MODULE_STATE_LABEL[state]} (${item.slot === 'rig' ? 'rigs' : 'subsystems'} are always online)`;
+    return `<span class="ms-state ms-tile ms-${state} ms-fixed" style="${pos}" data-type-id="${item.typeId}" data-copy="${copyIdx}" title="${escapeHtml(t)}" role="img" aria-label="${escapeHtml(t)}">${img}</span>`;
   }
   const nxt = nextModuleState(item, state, items);
-  const tips = [`${item.name}: ${MODULE_STATE_LABEL[state]}.`];
+  const tips = [`${label}: ${MODULE_STATE_LABEL[state]}.`];
   tips.push(nxt.to !== state ? `Click to set ${MODULE_STATE_LABEL[nxt.to].toLowerCase()}.` : 'No other state is allowed right now.');
   for(const sk of nxt.skipped) tips.push(`Can't be ${sk.to}: ${sk.reason}.`);
   for(const note of item.notes || []) tips.push(note + '.');
   const title = escapeHtml(tips.join(' ')).replace(/"/g, '&quot;');
-  return `<button type="button" class="ms-state ms-tile ms-${state}" style="${pos}" data-type-id="${item.typeId}" data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${title}"${nxt.to === state ? ' disabled' : ''}>${img}</button>`;
+  return `<button type="button" class="ms-state ms-tile ms-${state}${ch ? ' has-charge' : ''}" style="${pos}" data-type-id="${item.typeId}"${ch ? ` data-charge-id="${ch.id}"` : ''} data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${title}"${nxt.to === state ? ' disabled' : ''}>${img}</button>`;
 }
 function fitRingHtml(f, idToName){
   const tally = f.tally;
@@ -15491,23 +15518,51 @@ function fitRingHtml(f, idToName){
       moduleCopyStates(item, (f.moduleCopyOrder || {})[item.typeId]).forEach((st, k) => bySlot[FIT_SLOT_OF_GROUP[group]].push({named, k, st}));
     }
   }
+  // v2026.10.14.75: every slot the hull has (estimate.slots, pyfa's counts) is a position; a rack's fitted modules come
+  // first, then its empty slots. A weapon copy shows the charge in its slot (fitWeaponChargesByCopy).
+  const slots = f.estimate.slots || {};
+  const positions = (sl) => Math.max(bySlot[sl].length, Math.round(slots[sl] || 0));
+  const charges = fitWeaponChargesByCopy(f, items, idToName);
   let tiles = '';
-  const geo = fitRingGeometry(Math.max(...FIT_RING_ARCS.map(arc => arc.slots.reduce((t, sl) => t + bySlot[sl].length, 0))));
+  const geo = fitRingGeometry(Math.max(...FIT_RING_ARCS.map(arc => arc.slots.reduce((t, sl) => t + positions(sl), 0))));
   for(const arc of FIT_RING_ARCS){
-    const list = arc.slots.flatMap(sl => bySlot[sl]);
+    const list = arc.slots.flatMap(sl => [...bySlot[sl], ...Array.from({length: positions(sl) - bySlot[sl].length}, () => ({empty: sl}))]);
     if(!list.length) continue;
     const step = geo.step;
     const start = arc.center - step * (list.length - 1) / 2;
     list.forEach((t, i) => {
-      const a = (start + i * step) * Math.PI / 180;
-      tiles += moduleStateTileHtml(t.named, t.k, t.st, items, 50 + FIT_RING_R * Math.cos(a), 50 + FIT_RING_R * Math.sin(a));
+      const deg = start + i * step, a = deg * Math.PI / 180, x = 50 + FIT_RING_R * Math.cos(a), y = 50 + FIT_RING_R * Math.sin(a), turn = fitRingTileTurn(deg);
+      if(t.empty){ tiles += `<span class="fr-empty" style="left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--turn:${turn.toFixed(1)}deg;" title="Empty ${FIT_SLOT_NAME[t.empty]}" aria-hidden="true"></span>`; return; }
+      const ch = (charges.get(t.named.typeId) || [])[t.k] || null;
+      tiles += moduleStateTileHtml(t.named, t.k, t.st, items, x, y, {turn, charge: ch});
     });
   }
   const shipId = f.input && f.input.shipTypeId;
   const shipName = (shipId && idToName.get(shipId)) || 'ship';
   const ship = shipId ? `<img src="https://images.evetech.net/types/${shipId}/render?size=512" alt="${escapeHtml(shipName)}" loading="lazy" onerror="this.style.display='none';">` : '';
   const loadedHtml = loaded.length ? `<div class="fit-ring-loaded"><span>Loaded</span> ${loaded.map(e => `${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}`).join(' · ')}</div>` : '';
-  return `<div class="fit-ring" style="--tile:${geo.tile.toFixed(2)}%"><div class="fit-ring-ship">${ship}</div>${tiles}</div>${loadedHtml}`;
+  // the dark track under the tiles and the ship inside it (radii in % of the ring's half width, for the gradient)
+  const bandIn = Math.max(0, FIT_RING_R - geo.tile / 2 - 1.4), bandOut = Math.min(50, FIT_RING_R + geo.tile / 2 + 1.4), shipD = 2 * bandIn - 1;
+  return `<div class="fit-ring" style="--tile:${geo.tile.toFixed(2)}%;--band-in:${(2 * bandIn).toFixed(1)}%;--band-out:${(2 * bandOut).toFixed(1)}%;--ship:${shipD.toFixed(1)}%"><div class="fit-ring-ship">${ship}</div>${tiles}</div>${loadedHtml}`;
+}
+const FIT_SLOT_NAME = {high: 'high slot', mid: 'mid slot', low: 'low slot', rig: 'rig slot', subsystem: 'subsystem slot'};
+// v2026.10.14.75: the charge in each copy of each turret or launcher, {typeId: [{id, name} | null per copy]}. A copy is
+// its weapon's k-th slot (high-slot flags in order; a killmail's flags, a paste's lines); a slot's charge is the item in
+// it that isn't a fitted module.
+function fitWeaponChargesByCopy(f, items, idToName){
+  const out = new Map(), hs = (f.input && f.input.highSlotByFlag) || {};
+  const weapons = new Set(items.filter(it => weaponCategoryFromGroup(it.groupName)).map(it => it.typeId));
+  const modules = new Set(items.map(it => it.typeId));
+  const byFlag = hs instanceof Map ? [...hs.entries()] : Object.entries(hs);   // a Map from the engine's builders
+  for(const [, list] of byFlag.map(([k, v]) => [Number(k), v || []]).sort((a, b) => a[0] - b[0])){
+    const w = list.find(x => weapons.has(Number(x.id)));
+    if(!w) continue;
+    const c = list.find(x => !modules.has(Number(x.id)));
+    const id = Number(w.id);
+    if(!out.has(id)) out.set(id, []);
+    out.get(id).push(c ? {id: Number(c.id), name: idToName.get(Number(c.id)) || `type ${c.id}`} : null);
+  }
+  return out;
 }
 const FIT_RESET_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.2 8.2a5.2 5.2 0 1 1-1.6-3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path><path d="M12.2 1.9v2.9h-2.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
 function fitViewSwitchHtml(view){

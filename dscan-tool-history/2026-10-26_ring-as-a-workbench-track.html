@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-26 — The Fit card's ring as a Workbench-style track</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Fit card's ring as a Workbench-style track, with each weapon's charge</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-26 &middot; <code>v2026.10.14.74</code> &rarr; <code>v2026.10.14.75</code>.</p>
+<p>the owner: "let's work on the ammo in the fit card", with a dropdown of every usable charge, as EVE Workbench has, and "i also prefer how much easier it is to see the icons in their fits". He sent screenshots of Workbench's ring, its charges panel, the ring with charges loaded and its hover. From the mockup he picked:</p>
+<ul>
+<li>"A: charge icon" (the charge's icon in the weapon's tile);</li>
+<li>"Workbench-style track";</li>
+<li>drag and drop for loading ("dropping on a single module loads it there. dropping in middle of ring loads to all possible modules");</li>
+<li>"not on board" rather than "what if".</li>
+</ul>
+<p>The plan is <code>roadmap/charges-plan.md</code>. This is delivery 1, the ring. Delivery 2 is the Charges list, drag and drop, and the "not on board" flag.</p>
+
+<h2>What you see</h2>
+<ul>
+<li><b>One position per slot the hull has</b>, as pyfa counts them: high slots on top, mids on the right, lows at the bottom, rigs then subsystems on the left. Empty slots are dashed outlines on a dark track.</li>
+<li><b>Tiles follow the circle:</b> each frame is turned to its position and the icon stays upright. A 7-slot rack's tiles are about 38 px on a desktop card (29&ndash;31 px before), and a frigate's about 48 px.</li>
+<li><b>A turret or launcher shows the charge in its own slot.</b> A killmail's launchers can hold different charges, and each shows its own; an empty one shows the weapon. The hover names all three, e.g. "Heavy Missile Launcher II &middot; Scourge Heavy Missile: Active. Click to set online."</li>
+<li><b>Clicking a tile still sets its state</b>; the Loaded line under the ring is unchanged.</li>
+<li><b>The ship picture</b> fills the circle inside the track.</li>
+</ul>
+
+<h2>How it's matched to pyfa</h2>
+<ul>
+<li><b>Slot counts:</b> <code>estimate.slots</code> is pyfa's <code>Fit.getNumSlots</code>, the ship's hiSlots, medSlots, lowSlots, rigSlots and maxSubSystems. A T3's subsystems add theirs through pyfa's <code>slotModifier</code> handler (effect 3774), the only one on those attributes.</li>
+<li><b>T3 cruisers:</b> pyfa counts 5 subsystem slots (the hull's maxSubSystems), and its own fitting view draws 5, so the ring shows a fifth, empty one.</li>
+<li>Presentation only otherwise; no PYFA CORE change.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/independent_checks/check_slots.py</code></b>, in the update chain (now 39 steps):
+<ul>
+<li>pyfa's handlers on the slot attributes are only <code>slotModifier</code>;</li>
+<li>every golden fit's five counts equal the oracle ship's.</li>
+</ul>
+Result: 263 fits, 11 with subsystems, 0 mismatches. A break that skips the subsystems fails 11.</li>
+<li><b>New <code>tools/page_checks/ring_track_check.py</code></b>, with the game's icons served from pyfa's copy:
+<ul>
+<li>positions per rack equal the hull's slots;</li>
+<li>a Drake with 3 Scourge, 2 Nova and 1 empty launcher shows those, in order;</li>
+<li>the hovers; non-weapons keep their icons;</li>
+<li>frames turned along the circle, icons upright;</li>
+<li>a tile still sets the state; a Loki killmail shows each autocannon's own charge;</li>
+<li>1440 / 390 / 320 px.</li>
+</ul>
+v.74 fails 27. Icons turning with their frames fail 6; every copy showing the first copy's charge fails 6.</li>
+<li><b><code>layout_check.py</code></b> (LESSON #65): it measured overlap on bounding boxes, which turned tiles always have. It now tests the turned squares themselves, empty slots included. Chord-sized tiles fail 28 pairs.</li>
+<li>Regression ALL PASS (263 fits), update chain all 39 steps OK, all 26 page checks 0 failures. No PYFA CORE change.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #67: an input that is a <code>Map</code> reads as empty through <code>Object.keys</code> and JSON.</p>
+<ul>
+<li>The ring looked up each weapon's charge in <code>f.input.highSlotByFlag</code> with <code>Object.keys</code>. The engine builds it as a <code>Map</code>, so no weapon showed a charge, and nothing threw.</li>
+<li>A <code>JSON.stringify</code> dump showed <code>{}</code>, which looked like "no slots".</li>
+<li>Check where a structure is built, accept both shapes, and test what is drawn against the input.</li>
+</ul>
+</body>
+</html>

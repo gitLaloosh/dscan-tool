@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 67. An input that is a Map reads as empty through Object.keys and JSON
+
+- **What happened (v2026.10.14.75):** the ring looked up each weapon's charge in `f.input.highSlotByFlag` with
+  `Object.keys(...)`. The engine's builders make it a `Map`, so the lookup found no slots, and no weapon showed a charge;
+  nothing threw. Dumping it with `JSON.stringify` for a look printed `{}`, which looked like "a paste has no flags".
+  (Only the golden fixtures hold it as a plain object.)
+- **Do this instead:** before reading an engine structure, check its type where it is built (`new Map()`), and accept
+  both shapes when a value can come from either (`x instanceof Map ? [...x.entries()] : Object.entries(x)`). To look at a
+  Map in a dump, convert it first. A page check that compares what is drawn with the input (`ring_track_check.py`: each
+  launcher's charge in its own slot) catches the empty lookup; a check that only asks "is there a ring" doesn't.
+
 ## 66. A fetch every fit makes needs a shared fixture, served by every harness
 
 - **What happened (v2026.10.14.73):** the generic Fighter tile fetches the same 12 fighters and 4 bombs for EVERY fit,

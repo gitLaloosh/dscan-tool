@@ -8,7 +8,7 @@ tools/pyfa_sde.py (PYFA_SRC), images answer 404 (the page falls back to text).
 import os, sys, json, re
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from refresh_golden_fixtures import sde_type
-from pyfa_sde import types, groups, _en
+from pyfa_sde import types, groups, _en, PYFA_SRC
 
 byname = {}
 for k, v in types.items(): byname.setdefault(_en(v.get('typeName') or v.get('name')), int(k))
@@ -26,6 +26,16 @@ def handle(route):
     return route.fulfill(status=404, body='')
 
 def img(route): return route.fulfill(status=404, body='')
+# v2026.10.14.75: the game's icons from pyfa's copy (imgs/icons/<iconID>@1x/2x.png, the type's SDE iconID), for checks that
+# need an icon to load (ring_track_check.py: the icon's own turn). Renders and types without an icon stay 404.
+def icon_route(route):
+    m = re.search(r'/types/(\d+)/icon', route.request.url)
+    if m:
+        i = (types.get(m.group(1)) or {}).get('iconID')
+        size = int((re.search(r'size=(\d+)', route.request.url) or [0, 64])[1])
+        f = os.path.join(PYFA_SRC, 'imgs', 'icons', f'{i}@{"2x" if size > 32 else "1x"}.png')
+        if i and os.path.exists(f): return route.fulfill(status=200, content_type='image/png', body=open(f, 'rb').read())
+    return route.fulfill(status=404, body='')
 
 def route_all(page):
     page.route(re.compile(r'https://esi\.evetech\.net/.*'), handle)

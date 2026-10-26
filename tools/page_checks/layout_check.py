@@ -155,6 +155,24 @@ with sync_playwright() as p:
         ctx.close()
     b.close()
 
+# v2026.10.14.75: every ring tile and empty slot as the square it is drawn (centre, side, turn); pairs that overlap by more
+# than half a pixel (separating axis test), and whether every corner is inside the ring's box.
+RING_GEO = """(R) => {
+  const els = [...document.querySelectorAll(R + ' .fit-ring .ms-tile, ' + R + ' .fit-ring .fr-empty')];
+  const sq = els.map(e => { const b = e.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(e).transform), a = Math.atan2(m.b, m.a), h = e.offsetWidth / 2;
+    const cx = b.left + b.width / 2, cy = b.top + b.height / 2, c = Math.cos(a), s = Math.sin(a);
+    return {ax: [[c, s], [-s, c]], pts: [[-h, -h], [h, -h], [h, h], [-h, h]].map(([x, y]) => [cx + x * c - y * s, cy + x * s + y * c]), side: 2 * h}; });
+  const proj = (pts, ax) => { const v = pts.map(p => p[0] * ax[0] + p[1] * ax[1]); return [Math.min(...v), Math.max(...v)]; };
+  let overlap = 0;
+  for(let i = 0; i < sq.length; i++) for(let j = i + 1; j < sq.length; j++){
+    const sep = [...sq[i].ax, ...sq[j].ax].some(ax => { const [a0, a1] = proj(sq[i].pts, ax), [b0, b1] = proj(sq[j].pts, ax); return Math.min(a1, b1) - Math.max(a0, b0) <= 0.5; });
+    if(!sep) overlap++;
+  }
+  const r = document.querySelector(R + ' .fit-ring').getBoundingClientRect(), box = [r.left, r.top, r.right, r.bottom];
+  const inside = sq.every(q => q.pts.every(p => p[0] >= box[0] - 0.5 && p[1] >= box[1] - 0.5 && p[0] <= box[2] + 0.5 && p[1] <= box[3] + 0.5));
+  return {n: document.querySelectorAll(R + ' .fit-ring .ms-tile').length, empty: document.querySelectorAll(R + ' .fit-ring .fr-empty').length,
+    overlap, inside, box, tiles: sq.length, side: sq.length ? Math.min(...sq.map(q => q.side)) : 0};
+}"""
 STRESS = """[Legion, ring stress]
 Tracking Enhancer II
 Damage Control II
@@ -231,12 +249,11 @@ with sync_playwright() as p:
         on = pg.evaluate(f"document.querySelector('{R} .fit-view-btn.on').dataset.view")
         check(on == want, f'{W}: default fit view {want} ({on})')
         if on != 'ring': pg.click(R + ' .fit-view-btn[data-view="ring"]'); pg.wait_for_timeout(300)
-        tiles = pg.evaluate(f"""() => [...document.querySelectorAll('{R} .fit-ring .ms-tile')].map(t => {{ const r = t.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }})""")
-        box = pg.evaluate(f"() => {{ const r = document.querySelector('{R} .fit-ring').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }}")
-        overlap = sum(1 for i in range(len(tiles)) for j in range(i + 1, len(tiles))
-                      if min(tiles[i][2], tiles[j][2]) - max(tiles[i][0], tiles[j][0]) > 0.5 and min(tiles[i][3], tiles[j][3]) - max(tiles[i][1], tiles[j][1]) > 0.5)
-        inside = all(t[0] >= box[0] - 0.5 and t[1] >= box[1] - 0.5 and t[2] <= box[2] + 0.5 and t[3] <= box[3] + 0.5 for t in tiles)
-        check(len(tiles) == 31 and overlap == 0 and inside, f'{W}: ring of 8/8/8 + 3 rigs + 4 subsystems: {len(tiles)} tiles (31), {overlap} overlapping, all inside the ring: {inside} (ring {box[2]-box[0]:.0f}px)')
+        # v2026.10.14.75: the tiles are turned along the circle (and empty slots drawn), so overlap is tested on the turned
+        # squares themselves (separating axes), not their bounding boxes; every corner must lie inside the ring's box
+        geo = pg.evaluate(RING_GEO, R)
+        tiles, box = geo['tiles'], geo['box']
+        check(geo['n'] == 31 and geo['overlap'] == 0 and geo['inside'], f"{W}: ring of 8/8/8 + 3 rigs + 4 subsystems: {geo['n']} tiles (31) and {geo['empty']} empty slots, {geo['overlap']} overlapping, all inside the ring: {geo['inside']} (ring {box[2]-box[0]:.0f}px, tile {geo['side']:.0f}px)")
         check(pg.locator(R + ' .fit-ring-loaded').count() == 1 and 'Gleam M' in pg.inner_text(R + ' .fit-ring-loaded'), f'{W}: loaded charges listed under the ring')
         sw = pg.evaluate('document.documentElement.scrollWidth'); check(sw <= W, f'{W}: ring view, no sideways scroll ({sw})')
         # same count as the list's rows (Hecate), and a tile click recalculates
