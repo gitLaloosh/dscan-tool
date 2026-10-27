@@ -94,6 +94,10 @@ introduces a difference.
   (logistics, then their DPS on you ÷ the time you take to break one) and the verdict (how many you break one after
   another before you go, with all their damage on you meanwhile) are the tool's own. Not counted: remote repairs,
   command bursts, ships beyond each group's 3 main hulls, groups not looked up. Checked by `vs_check.py`.
+- The Pilot Analyzer's Pilot Affiliation box (v2026.10.14.87). Not pyfa at all: the pilot's corporation, alliance,
+  corporation history, birthday and security status from ESI, and zKillboard's own all-time stats (dangerRatio,
+  gangRatio, avgGangSize, shipsDestroyed, shipsLost, iskDestroyed) shown as zKillboard gives them; "solo" is
+  100 − gangRatio, the ISK is shortened (212.4b). Checked by `affiliation_check.py`.
 - EVE's closed-form capacitor stability, on ring hover (pyfa computes it as `cap_stable_eve` but doesn't display it).
 - Rounding of the tool's own values (missile application % and applied DPS in the ammo ranking, the ring's drawing geometry) stays JavaScript's `Math.round`. Every pyfa stat the tool shows is rounded with `pyRound` (Python `round()`, ties to even) since v2026.10.14.22.
 

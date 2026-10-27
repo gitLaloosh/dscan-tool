@@ -2119,6 +2119,36 @@
     .vs-kr > .vs-why{grid-column:2 / -1;}
     .vs-msg button{min-height:44px;}
   }
+  /* PILOT AFFILIATION (v2026.10.14.87): the top right of the Pilot Analyzer; below the pilot line under 1241 px. */
+  @media (min-width: 1241px){
+    .pa-top:has(> .pa-aff:not([hidden])){display:grid; grid-template-columns:minmax(0,1fr) 360px; column-gap:24px; align-items:start;}
+  }
+  .pa-main{min-width:0;}
+  .pa-aff{box-sizing:border-box; min-width:0; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px 14px;}
+  .pa-aff-side{margin-bottom:8px;}
+  .pa-aff-side:has(> #pilotSideTag:empty){display:none;}
+  .pa-org{display:flex; align-items:center; gap:10px; min-width:0;}
+  .pa-org + .pa-org{margin-top:6px;}
+  .pa-org .sa-logo{width:28px; height:28px; flex:none;}
+  .pa-org .nm{font:600 13px var(--sans); color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+  .pa-org .tk{font:400 12px var(--mono); color:var(--text-dim); margin-left:6px;}
+  .pa-facts{display:flex; gap:4px 14px; flex-wrap:wrap; margin-top:8px; font:400 12px var(--sans); color:var(--text-dim);}
+  .pa-facts b, .pa-tot b, .pa-bar .v b{font:600 12px var(--mono); color:var(--heading);}
+  .pa-zk-h{display:flex; align-items:center; gap:8px; margin-top:9px; padding-top:8px; border-top:1px solid var(--line-soft);}
+  .pa-zk-h .k{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  .pa-zk-h a{margin-left:auto; font:600 12px var(--sans); color:var(--cyan); text-decoration:none; white-space:nowrap;}
+  .pa-zk-h a:hover{text-decoration:underline;}
+  .pa-bar{display:grid; grid-template-columns:52px minmax(0,1fr) 122px; gap:10px; align-items:center; margin-top:7px; font:400 12px var(--sans); color:var(--text-dim);}
+  .pa-bar .t{height:8px; border-radius:3px; overflow:hidden; display:flex; gap:2px;}
+  .pa-bar .t i{display:block; height:100%;}
+  .pa-bar .v{color:var(--text); white-space:nowrap;}
+  .pa-tot{display:flex; gap:4px 16px; flex-wrap:wrap; margin-top:9px; font:400 12px var(--sans); color:var(--text-dim);}
+  .pa-tot b{font-size:13px;}
+  .pa-msg{padding:8px 0 2px;}
+  .pa-zk-h summary.info-btn{width:24px; height:24px;}   /* as the Matchup's small one (.mys-mid-tools); 44 px on a phone below */
+  .pa-aff-side{margin-bottom:6px;} .pa-aff-side .side-tag{height:24px;}
+  @media (max-width: 1240px){ .pa-aff{margin:12px 0 4px; max-width:560px;} }
+  @media (max-width: 760px){ .pa-zk-h a{min-height:44px; display:inline-flex; align-items:center;} .pa-zk-h summary.info-btn{width:44px; height:44px;} }
 </style>
 </head>
 <body>
@@ -2126,7 +2156,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.86</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.87</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2202,6 +2232,7 @@
 
   <div id="tabPilot" class="tab-panel">
   <section class="panel">
+    <div class="pa-top"><div class="pa-main">
     <h2>Pilot Analyzer</h2>
     <p class="sub">Enter a pilot's name and, optionally, a ship type (from a D-Scan, or typed manually). Leave the ship blank and it'll sample their recent losses to guess which hull they fly most.</p>
     <div class="row">
@@ -2215,9 +2246,12 @@
     <!-- v2026.10.14.43 (the owner: "the UI is just too busy"): one header line -- pilot, hull dropdown, last kill -->
     <div class="pilot-head">
       <span class="ph-name" id="pilotHeadName"></span>
-      <span id="pilotSideTag"></span>
       <div id="fitCandidates"></div>
       <div id="lastKillInfo"></div>
+    </div>
+    </div>
+    <!-- v2026.10.14.87: the pilot's corporation, alliance and zKillboard stats (Your Side's tag moved in here) -->
+    <aside class="pa-aff" id="pilotAff" hidden><div class="pa-aff-side"><span id="pilotSideTag"></span></div><div id="pilotAffBody"></div></aside>
     </div>
     <div class="busy-bar" id="pilotBusy" role="status" aria-live="polite" hidden><span class="busy-spin" aria-hidden="true"></span><span class="busy-label"></span><span class="busy-detail"></span></div>
     <div id="fitResults"></div>
@@ -2274,7 +2308,8 @@ const CARD_NAMES = {
  "onscan": "On Scan",
  "pilots": "Pilots",
  "fleet": "Fleet",
- "vs": "Against Your Ship"
+ "vs": "Against Your Ship",
+ "aff": "Pilot Affiliation"
 };
 function cardName(key){
   const n = CARD_NAMES[key];
@@ -2421,6 +2456,11 @@ const CARD_INFO = {
   "Holding you: ships whose scram or web reaches you at this range (T), and whose neutralizers or nosferatus do (C).",
   "Kill first: logistics first; then the damage each one puts on you ÷ the time you take to break one (your damage on it through its resists and repairs). The verdict counts how many you'd break one after another before you go, with all of their damage still landing meanwhile, so it's the worse case.",
   "Estimates from killmails, not a count: their fits may differ, they won't all shoot you at once, and remote repairs, command bursts and overheating aren't in it."
+ ],
+ "aff": [
+  "The pilot's corporation and alliance (ESI), and their side by {card:side} when it's set. In corp since: when they joined that corporation (their corporation history). Pilot since: the year the character was made. Sec: their security status.",
+  "zKillboard, all time: zKillboard's own numbers, as its pilot page shows them, not the tool's. Danger: zKillboard's dangerous / snuggly rating, from what they've destroyed against what they've lost. Gang: how many of their kills were solo, and their average gang size. Kills, losses and ISK destroyed: zKillboard's totals.",
+  "One zKillboard request per pilot, after the analysis' own, kept an hour; the corporation lookups are kept an hour, names and tickers a week."
  ]
 };
 const CTX_MAX = 40;
@@ -2654,6 +2694,16 @@ const ERROR_CODES = {
   "since": "2026-10-10",
   "doc": "2026-10-10_last-kill-hull-pivot-button.html"
  },
+ "PILOT-08": {
+  "title": "Couldn't load the pilot's corporation",
+  "where": "Pilot Analyzer, {card:aff}",
+  "trigger": "ESI's /characters/{id}/ didn't answer (offline, an ESI outage, or a character ESI no longer knows).",
+  "check": "ESI status; analyze the pilot again. The rest of the Pilot Analyzer doesn't need it.",
+  "why": "",
+  "since": "2026-10-27 (v2026.10.14.87)",
+  "doc": "2026-10-27_pilot-affiliation-and-zkillboard-stats.html"
+ },
+
  "FIT-01": {
   "title": "The fit paste is empty",
   "where": "Fit Analyzer",
@@ -10274,7 +10324,7 @@ async function runSharedKillmail(id, hash){
   if(isBusy('fitStatus')) return;
   for(const x of ['fitResults', 'fitCandidates', 'lastKillInfo']) document.getElementById(x).innerHTML = '';
   document.getElementById('pilotHeadName').textContent = '';
-  sideTagForPilot(null);
+  sideTagForPilot(null); paAffClear();
   lastFitRun = null;
   const btn = document.getElementById('fitBtn');
   return withBusy('fitStatus', btn, 'Loading the shared killmail…', async () => { try{
@@ -10339,7 +10389,7 @@ async function runFitCheck(opts){
   document.getElementById('fitCandidates').innerHTML = '';
   document.getElementById('lastKillInfo').innerHTML = '';
   document.getElementById('pilotHeadName').textContent = '';
-  sideTagForPilot(null);
+  sideTagForPilot(null); paAffClear();
   lastFitRun = null;
   const pilotName = document.getElementById('pilotName').value.trim();
   const shipName = (document.getElementById('manualShip').value.trim()) || document.getElementById('shipSelect').value;
@@ -10366,7 +10416,8 @@ async function runFitCheck(opts){
     }
     currentCharacter = character;
     document.getElementById('pilotHeadName').textContent = character.name || pilotName;
-    sideTagForPilot(character.id);   // v2026.10.14.81: Friendly / Hostile beside the name (Your Side set)
+    sideTagForPilot(character.id);   // v2026.10.14.81: Friendly / Hostile (v.87: in the affiliation box)
+    paAff.esi = paAffStart(character.id);        // v2026.10.14.87: corporation, alliance; zKillboard stats after the analysis (finally)
     await renderLastKill(character, pilotName, statusEl);
 
     if(shipName){
@@ -10397,6 +10448,7 @@ async function runFitCheck(opts){
     setStatus(statusEl, withCode('Error: ' + e.message + (e.zkbUnavailable ? '.' : '. Check your network connection to zkillboard.com and esi.evetech.net.'), errorCodeOf(e)), true);
   }finally{
     btn.disabled = false;
+    paAffStats();   // v.87: the zKillboard stats request goes after the analysis' own
   } });
 }
 
@@ -20315,7 +20367,7 @@ async function saIdsToNames(ids){
 }
 // A zKillboard answer, kept ZKB_CACHE_TTL_MS in IndexedDB 'zkb' (D4 "Not asking twice"); force skips the copy kept.
 const ZKB_CACHE_TTL_MS = 60 * 60 * 1000;
-async function zkbCachedJson(url, force, what){
+async function zkbCachedJson(url, force, what, want = 'array'){   // want 'object': the stats API (v.87)
   if(!force){
     const c = await dscanCacheGet('zkb', url, ZKB_CACHE_TTL_MS, true);
     if(c !== undefined) return {data: c.data, at: c.ts, cached: true};
@@ -20325,7 +20377,7 @@ async function zkbCachedJson(url, force, what){
   catch(e){ if(e.zkbUnavailable || e.code) throw e; throw codedError('ZKB-05', describeEsiFailure(`zKillboard ${what}`, undefined)); }
   if(!res.ok) throw codedError('ZKB-05', describeEsiFailure(`zKillboard ${what}`, res.status));
   const data = await res.json();
-  if(!Array.isArray(data)) throw codedError('ZKB-05', `zKillboard ${what}: unexpected answer`);
+  if(want === 'object' ? !(data && typeof data === 'object' && !Array.isArray(data)) : !Array.isArray(data)) throw codedError('ZKB-05', `zKillboard ${what}: unexpected answer`);
   dscanCacheSet('zkb', url, data);
   return {data, at: Date.now(), cached: false};
 }
@@ -21351,6 +21403,127 @@ function sidePanelAction(act, el){
     side.msg.friendly = {text: `Added ${s.name}`};
     return sideChanged();
   }
+}
+
+
+// ---- PILOT AFFILIATION (v2026.10.14.87; the owner via todo-inbox: "add pilot affiliation info (alliance, corp, etc). is it
+// possible to pull their zkill threat level too?"; the place he marked: the top right of the Pilot Analyzer; mockup
+// Claude outputs/pilot_affiliation_mockup.html, "let's use your pick for all three questions": everything as drawn, all
+// time as zKillboard publishes it, System Analyzer rows unchanged) ----
+// ESI /characters/{id}/ (corporation, alliance, birthday, security status) and /characters/{id}/corporationhistory/
+// (when they joined their corporation), each kept an hour; names and tickers by getOrg (a week). Then, after the
+// analysis' own zKillboard requests, one zKillboard /api/stats/characterID/{id}/ through the zKillboard queue, kept an
+// hour: its all-time dangerRatio and gangRatio (percentages, as zKillboard's pilot page shows them), avgGangSize,
+// shipsDestroyed, shipsLost, iskDestroyed. zKillboard's numbers, shown as zKillboard shows them, not the tool's.
+// Your Side's tag (sideTagForPilot) sits in the box since v.87.
+const PA_AFF_TTL_MS = 60 * 60 * 1000;
+const paAff = {token: 0, id: null, d: null, esi: null};
+async function paAffEsi(path, key){
+  const c = await dscanCacheGet('orgs', key, PA_AFF_TTL_MS);
+  if(c !== undefined) return c;
+  let res;
+  try{ res = await fetch(`${ESI}${path}?datasource=tranquility`); }
+  catch(e){ throw new Error(describeEsiFailure(`ESI ${path}`, undefined)); }
+  if(!res.ok) throw new Error(describeEsiFailure(`ESI ${path}`, res.status));
+  const j = await res.json();
+  dscanCacheSet('orgs', key, j);
+  return j;
+}
+function paAffClear(){
+  paAff.token++; paAff.id = null; paAff.d = null;
+  paAffRender();
+}
+async function paAffStart(charId){
+  const token = ++paAff.token;
+  paAff.id = charId; paAff.d = {state: 'load', zk: {state: 'wait'}};
+  paAffRender();
+  const d = paAff.d;
+  try{
+    const [c, hist] = await Promise.all([paAffEsi(`/characters/${charId}/`, `character:${charId}`),
+      paAffEsi(`/characters/${charId}/corporationhistory/`, `charhistory:${charId}`).catch(() => null)]);   // only "in corp since"
+    if(token !== paAff.token) return;
+    const [corp, alli] = await Promise.all([getOrg('corporation', c.corporation_id).catch(() => null),
+      c.alliance_id ? getOrg('alliance', c.alliance_id).catch(() => null) : null]);
+    if(token !== paAff.token) return;
+    const cur = Array.isArray(hist) && hist.length ? [...hist].sort((a, b) => b.record_id - a.record_id)[0] : null;
+    Object.assign(d, {state: 'done', corpId: c.corporation_id, allianceId: c.alliance_id || null, corp, alli,
+      since: cur && cur.corporation_id === c.corporation_id ? cur.start_date : null, birthday: c.birthday || null,
+      sec: typeof c.security_status === 'number' ? c.security_status : null});
+  }catch(e){
+    if(token !== paAff.token) return;
+    Object.assign(d, {state: 'err', err: withCode(`Couldn't load their corporation and alliance: ${e.message}.`, 'PILOT-08')});
+  }
+  paAffRender();
+}
+// After the analysis (its kills and losses go first in the zKillboard queue).
+async function paAffStats(){
+  const id = paAff.id, token = paAff.token, d = paAff.d;
+  if(!id || !d || d.zk.state !== 'wait') return;
+  await paAff.esi;   // the box first: if ESI's character record fails there's nowhere to show them, so they aren't asked
+  if(token !== paAff.token || d.state === 'err' || d.zk.state !== 'wait') return;
+  d.zk = {state: 'load'};
+  paAffRender();
+  try{
+    const {data} = await zkbCachedJson(`${ZKB}/stats/characterID/${id}/`, false, 'stats lookup', 'object');
+    if(token !== paAff.token) return;
+    d.zk = paAffZk(data);
+  }catch(e){
+    if(token !== paAff.token) return;
+    d.zk = {state: 'err', code: errorCodeOf(e), err: withCode(e.message, errorCodeOf(e))};
+  }
+  paAffRender();
+}
+function paAffZk(s){
+  const num = (v) => typeof v === 'number' && isFinite(v) ? v : null;
+  if(!s || s.error) return {state: 'none'};
+  const z = {state: 'ok', danger: num(s.dangerRatio), gang: num(s.gangRatio), avgGang: num(s.avgGangSize),
+    kills: num(s.shipsDestroyed) || 0, losses: num(s.shipsLost) || 0, isk: num(s.iskDestroyed)};
+  return z.kills || z.losses ? z : {state: 'none'};
+}
+function paIsk(v){
+  const u = [[1e12, 't'], [1e9, 'b'], [1e6, 'm'], [1e3, 'k']].find(([n]) => v >= n);
+  return u ? `${(v / u[0]).toFixed(1)}${u[1]}` : String(Math.round(v));
+}
+function paSec(v){ const r = Math.round(v * 10) / 10; return (r === 0 ? 0 : r).toFixed(1).replace('-', '−'); }
+function paAffOrgHtml(kind, id, o){
+  const path = kind === 'alliance' ? 'alliances' : 'corporations';
+  const tk = o && o.ticker ? (kind === 'alliance' ? `<${o.ticker}>` : `[${o.ticker}]`) : '';
+  return `<div class="pa-org" data-pa-org="${kind}"><span class="sa-logo${kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span>${escapeHtml(((o && o.ticker) || '').slice(0, 5))}</span><img src="https://images.evetech.net/${path}/${Number(id)}/logo?size=64" alt="" loading="lazy" onerror="this.remove()"></span>`
+    + `<span class="nm">${escapeHtml((o && o.name) || `${kind === 'alliance' ? 'Alliance' : 'Corporation'} ${id}`)}${tk ? `<span class="tk">${escapeHtml(tk)}</span>` : ''}</span></div>`;
+}
+function paAffHtml(d){
+  // a failure says so in a few words, the whole message on hover (not the full sentence a third time on a zKillboard outage)
+  const msg = (t, busy, full) => `<div class="pr-msg pa-msg"${full ? ` title="${escapeHtml(full)}"` : ''}>${busy ? '<span class="busy-spin" aria-hidden="true"></span>' : ''}${escapeHtml(t)}</div>`;
+  if(d.state === 'load') return msg('Looking up their corporation…', true);
+  if(d.state === 'err') return msg(withCode("Couldn't load their corporation", 'PILOT-08'), false, d.err);
+  const month = (s) => { const t = new Date(s); return isNaN(t) ? '' : t.toLocaleDateString('en-US', {month: 'short', year: 'numeric', timeZone: 'UTC'}); };
+  const facts = [d.since ? `<span>In corp since <b>${escapeHtml(month(d.since))}</b></span>` : '',
+    d.birthday && !isNaN(new Date(d.birthday)) ? `<span>Pilot since <b>${new Date(d.birthday).getUTCFullYear()}</b></span>` : '',
+    d.sec !== null ? `<span>Sec <b>${paSec(d.sec)}</b></span>` : ''].join('');
+  const z = d.zk;
+  let zk;
+  if(z.state === 'wait' || z.state === 'load') zk = msg('Looking up zKillboard…', true);
+  else if(z.state === 'err') zk = msg(withCode("zKillboard stats unavailable", z.code), false, z.err);
+  else if(z.state === 'none') zk = msg('No kills or losses on zKillboard.');
+  else{
+    const bar = (label, share, color, v) => `<div class="pa-bar" data-pa-bar="${label.toLowerCase()}"><span>${label}</span><span class="t" aria-hidden="true"><i style="flex:${share};background:${color}"></i><i style="flex:${100 - share};background:var(--line)"></i></span><span class="v">${v}</span></div>`;
+    const solo = z.gang === null ? null : Math.max(0, Math.min(100, 100 - z.gang)), danger = z.danger === null ? null : Math.max(0, Math.min(100, z.danger));
+    zk = (danger === null ? '' : bar('Danger', danger, 'var(--danger)', `<b>${Math.round(danger)}%</b> dangerous`))
+      + (solo === null ? '' : bar('Gang', solo, 'var(--amber)', `<b>${Math.round(solo)}%</b> solo${z.avgGang ? ` · gang ≈<b>${Math.round(z.avgGang)}</b>` : ''}`))
+      + `<div class="pa-tot"><span>Kills <b data-pa="kills">${z.kills.toLocaleString('en-US')}</b></span><span>Losses <b data-pa="losses">${z.losses.toLocaleString('en-US')}</b></span>${z.isk !== null ? `<span>ISK destroyed <b data-pa="isk">${paIsk(z.isk)}</b></span>` : ''}</div>`;
+  }
+  return `${paAffOrgHtml('corporation', d.corpId, d.corp)}${d.allianceId ? paAffOrgHtml('alliance', d.allianceId, d.alli) : ''}
+    ${facts ? `<div class="pa-facts">${facts}</div>` : ''}
+    <div class="pa-zk-h"><span class="k">zKillboard, all time</span>${infoBtnHtml('aff')}<a href="https://zkillboard.com/character/${Number(paAff.id)}/" target="_blank" rel="noopener">Open on zKillboard ↗</a></div>${zk}`;
+}
+function paAffRender(){
+  const box = document.getElementById('pilotAff'), body = document.getElementById('pilotAffBody');
+  if(!box || !body) return;
+  box.setAttribute('aria-label', cardName('aff'));
+  if(!paAff.d){ box.hidden = true; body.innerHTML = ''; return; }
+  if(body.querySelector('details.info-pop[open]')) return setTimeout(paAffRender, 400);   // not under an open panel
+  box.hidden = false;
+  body.innerHTML = paAffHtml(paAff.d);
 }
 
 // ---- the Pilot Analyzer's tag (D2: "a friendly opened in the Pilot Analyzer is tagged") ----

@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 77. A failure case leaves state behind: the next case in the same page inherits it
+
+- **What happened (v2026.10.14.87):** `affiliation_check.py` made zKillboard's stats answer 500 for one pilot, then
+  gave a second pilot a wrong answer (`[]`) to see ZKB-05. The second case showed ZKB-01 instead: after the 500 the
+  page's zKillboard queue waits before asking again (the D4 back-off), so the second request never went out. The page
+  was right; the check's order was wrong. Worse, a later "zKillboard's stats aren't asked" check in the same page passed
+  vacuously: the queue answered from its back-off without a request, so a mutant that did ask survived until that case got
+  a page of its own.
+- **Do this instead:** run each failure case in its own browser context, or put the ones that leave state behind
+  (back-off, budget, caches) last, and say why in the check. Same family as #74 (a shared request log).
+
 ## 76. Before modelling an effect, find pyfa's handler for it: it may already say how
 
 - **What happened (v2026.10.14.85):** "Against Your Ship" adds their neutralizers to your capacitor simulation. The

@@ -66,6 +66,7 @@ pilot name.", "Paste a fit first.") carry no code: they are instructions, not er
 | PILOT-05 | Only capsules, shuttles, rookie ships or MTUs lost | Pilot Analyzer (no ship typed) | Every recent loss was a hull the 'most flown' guess leaves out. | Type a ship name. | Those hulls say nothing about what the pilot flies into fights (exact ESI group ids, not name matching). | 2026-10-08 ([2026-10-08_pilot-search-hull-exclusion-filter.html](dscan-tool-history/2026-10-08_pilot-search-hull-exclusion-filter.html)) |
 | PILOT-06 | Couldn't read the losses of that hull | Pilot Analyzer | None of the hull's recent loss killmails could be fetched from ESI. | ESI status. |  | original (before 2026-10-08) |
 | PILOT-07 | Pilot not among the attackers of their last kill | Pilot Analyzer, the Last Kill line | zKillboard's latest kill for the pilot doesn't list them as an attacker in ESI's killmail. | The killmail on zkillboard.com. |  | 2026-10-10 ([2026-10-10_last-kill-hull-pivot-button.html](dscan-tool-history/2026-10-10_last-kill-hull-pivot-button.html)) |
+| PILOT-08 | Couldn't load the pilot's corporation | Pilot Analyzer, Pilot Affiliation | ESI's /characters/{id}/ didn't answer (offline, an ESI outage, or a character ESI no longer knows). | ESI status; analyze the pilot again. The rest of the Pilot Analyzer doesn't need it. |  | 2026-10-27 (v2026.10.14.87) ([2026-10-27_pilot-affiliation-and-zkillboard-stats.html](dscan-tool-history/2026-10-27_pilot-affiliation-and-zkillboard-stats.html)) |
 
 ## Fit Analyzer
 

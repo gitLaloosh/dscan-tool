@@ -103,6 +103,9 @@ with sync_playwright() as p:
     h3 = pg.evaluate(HEAD)
     check(h3['tabs'] == 2 and h3['lastKill'] and not h3['tag'] and h3['hash'] == '', f'"See their losses": the normal analysis (2 Loki losses, the Last Kill line); the address drops the link ({h3["tabs"]}, {h3["hash"]!r})')
     # a zKillboard link pasted into the pilot box
+    # v2026.10.14.87: first the Pilot Affiliation box's zKillboard stats request, which goes after the analysis (the
+    # previous pilot's, not the link's; LESSON #74 / #77)
+    pg.wait_for_function("() => typeof paAff === 'undefined' || !paAff.d || paAff.d.state === 'err' || ['ok', 'none', 'err'].includes(paAff.d.zk.state)", timeout=60000)
     ZKB_CALLS.clear()
     pg.fill('#manualShip', ''); pg.fill('#pilotName', 'https://zkillboard.com/kill/9100003/'); pg.click('#fitBtn'); wait_idle(pg)
     h4 = pg.evaluate(HEAD)

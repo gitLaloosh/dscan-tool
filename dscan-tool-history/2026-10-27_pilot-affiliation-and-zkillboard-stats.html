@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — Pilot affiliation and zKillboard stats</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Pilot affiliation and zKillboard stats in the Pilot Analyzer</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.86</code> &rarr; <code>v2026.10.14.87</code></p>
+<p>the owner, via todo-inbox: "add pilot affiliation info (alliance, corp, etc). is it possible to pull their zkill threat level too?" He marked the empty top right of the Pilot Analyzer on a screenshot; mockup <code>Claude outputs/pilot_affiliation_mockup.html</code>; "let's use your pick for all three questions": everything as drawn, all time as zKillboard publishes it, System Analyzer rows unchanged.</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Pilot Affiliation</b> (<code>aff</code>), at the top right of the Pilot Analyzer from 1241 px (beside the inputs and the pilot line; the loss tabs start below it), under the pilot line on narrower screens.</li>
+<li>Corporation and alliance with logos and tickers; Your Side's tag (Friendly / Hostile and why) moved into the box from the pilot line; In corp since (their corporation history), Pilot since (the character's birth year), Sec (security status to one decimal).</li>
+<li><b>zKillboard, all time</b>: Danger (zKillboard's dangerous / snuggly %), Gang (solo % = 100 &minus; gang %, and their average gang size), kills, losses and ISK destroyed, and a link to their zKillboard page. zKillboard's numbers, shown as it gives them (DEVIATIONS.md section 3).</li>
+<li><b>Requests:</b> ESI <code>/characters/{id}/</code> and <code>/characters/{id}/corporationhistory/</code> (kept an hour), names and tickers as the System Analyzer gets them (a week); one zKillboard <code>/api/stats/characterID/{id}/</code> through the zKillboard queue <i>after</i> the analysis' own kills and losses requests, so the analysis isn't slowed, kept an hour.</li>
+<li><b>Failures</b> say so in a short line with the cause on hover (so a zKillboard outage's long message isn't shown a third time): "zKillboard stats unavailable (ZKB-01 / ZKB-05)", and the new <b>PILOT-08</b> when ESI's character record fails. A pilot with no zKillboard history: "No kills or losses on zKillboard." A shared killmail link or a name that isn't a pilot: no box.</li>
+<li>Field names (dangerRatio, gangRatio, avgGangSize, shipsDestroyed, shipsLost, iskDestroyed) are zKillboard's stats document as other tools read it; zKillboard's API page couldn't be fetched from here, so <b>please glance at one real pilot against their zKillboard page</b>. A missing field leaves its line out rather than showing a wrong number.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/affiliation_check.py</code> (16 checks; <code>sa_mocks.py</code> now answers the character records, corporation histories and one pilot's zKillboard stats). v.86 fails. Mutations, each caught (11): gang not inverted, stats asked before the analysis, oldest history record, tag left out of the box, no cache, Danger and Gang swapped, Sec to two decimals, no side-by-side layout, the long error in the box, stats asked when ESI's character record failed (survived at first: see the lesson), stats asked with the analysis.</li>
+<li>Found on the way: when ESI's character record fails the box shows only PILOT-08, so the zKillboard stats aren't asked (they were, for nothing). <code>shared_kill_check.py</code> now waits for the previous pilot's stats request before counting the pasted link's one zKillboard call.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 37 page checks; lints 0 problems; ERRORS.md 39 codes.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #77: a failure case leaves state behind. The check's zKillboard 500 put the page's zKillboard queue into its back-off, so the next case (a wrong answer, expecting ZKB-05) showed ZKB-01, and a later "no stats request" check passed whatever the page did: the queue answered from its back-off without asking (a mutant that asked anyway survived). Run each failure case in its own browser context, or put the ones that leave state behind last and say why.</p>
+</body></html>

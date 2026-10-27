@@ -112,6 +112,9 @@ _h(SMALL_FROST[0], losses=[('Curse', 40), ('Vedmak', 45), ('Curse', 50)])       
 _h(SMALL_FROST[1])                                                             # no history
 _h(SMALL_FROST[2], kills=[('Vedmak', 1 / 24)], losses=[('Curse', 2)])          # Curse on the D-Scan wins over the newer Vedmak
 _h(SMALL_FROST[3], losses=[('Capsule', 1)])                                     # only a capsule
+ZK_STATS = {}   # v.87: zKillboard stats (see char_info below)
+ZK_STATS[SMALL_RED[1]] = {'dangerRatio': 82, 'gangRatio': 76, 'avgGangSize': 3.1, 'shipsDestroyed': 1284, 'shipsLost': 96,
+                          'iskDestroyed': 212.4e9, 'info': {'id': SMALL_RED[1], 'name': PILOTS[SMALL_RED[1]][0]}}   # v.87
 SMALL_LOCAL = [PILOTS[i][0] for i in SMALL_RED + SMALL_FROST] + [v[0] for v in PILOTS.values() if v[1] == 98000002][:2]
 SCAN_ROWS = SCAN + '\n' + f"{byname['Curse']}\tSomeone's Curse\tCurse\t2.1 AU"
 def expected_rows():
@@ -244,6 +247,16 @@ def expected():
             'crts_first6': red[:6], 'crts_more': len(red) - 6, 'suggest': sug, 'small_threat': small_threat}
 
 ORG_BY_NAME = {v[1].lower(): (k, v[0]) for k, v in ORGS.items()}
+# v2026.10.14.87 pilot affiliation: ESI /characters/{id}/ and its corporation history for every pilot here (NPC corporation
+# first, then their own since 4 Mar 2025), and zKillboard stats for the Vedmak pilot (SMALL_RED[1]) only; the others have
+# none (an "info" block only, as zKillboard answers a pilot with no kills or losses).
+def char_info(cid):
+    a = aff(cid)
+    return {'name': PILOTS[cid][0], 'corporation_id': a['corporation_id'], **({'alliance_id': a['alliance_id']} if 'alliance_id' in a else {}),
+            'birthday': '2019-04-12T08:00:00Z', 'security_status': -2.43}
+def char_history(cid):
+    return [{'corporation_id': 1000167, 'record_id': 100, 'start_date': '2019-04-12T08:00:00Z'},
+            {'corporation_id': PILOTS[cid][1], 'record_id': 200, 'start_date': '2025-03-04T10:00:00Z'}]
 def esi(route):
     url, body = route.request.url, route.request.post_data or ''
     j = lambda o, st=200: route.fulfill(status=st, content_type='application/json', body=json.dumps(o))
@@ -271,6 +284,11 @@ def esi(route):
             elif str(i) in _TYPES: out.append({'id': i, 'name': _en(_TYPES[str(i)].get('typeName') or _TYPES[str(i)].get('name')), 'category': 'inventory_type'})   # v.83: module names
             else: return j({'error': 'Ensure all IDs are valid before resolving.'}, 404)
         return j(out)
+    m = re.search(r'/characters/(\d+)/(corporationhistory/)?\?', url)   # v.87
+    if m:
+        i = int(m.group(1))
+        if i not in PILOTS: return j({'error': 'Character not found'}, 404)
+        return j(char_history(i) if m.group(2) else char_info(i))
     m = re.search(r'/(alliances|corporations)/(\d+)/\?', url)
     if m:
         i = int(m.group(2))
@@ -295,6 +313,12 @@ def zkb(route):
         return stubs(FLEET_LOSSES.get((int(m.group(1)), name), []))
     m = re.search(r'/kills/allianceID/(\d+)/$', url)
     if m and int(m.group(1)) in FLEET_KILLS: return stubs(FLEET_KILLS[int(m.group(1))])
+    m = re.search(r'/stats/characterID/(\d+)/', url)   # v.87
+    if m:
+        i = int(m.group(1))
+        if i not in PILOTS: return route.fulfill(status=200, content_type='application/json', headers=cors, body='{"error":"Invalid type or id"}')
+        body = ZK_STATS.get(i) or {'info': {'id': i, 'name': PILOTS[i][0]}}
+        return route.fulfill(status=200, content_type='application/json', headers=cors, body=json.dumps(body))
     m = re.search(r'/(kills|losses)/characterID/(\d+)/', url)
     if m and int(m.group(2)) in HIST: return stubs(HIST[int(m.group(2))][m.group(1)])
     return route.fulfill(status=200, content_type='application/json', headers=cors, body='[]')
