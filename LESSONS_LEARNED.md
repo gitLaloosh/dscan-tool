@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 75. A weapon and its charge share a killmail flag: pick items by type, not by flag
+
+- **What happened (v2026.10.14.83, caught in review before the first run):** the fleet view rebuilds a common fit from
+  the newest loss, giving each weapon the variant's most common charge. The first draft removed every high-slot item
+  whose flag held a charge, to put the new charge in, which removed the weapons too: on a killmail the module and the
+  charge loaded in it are two items with the same `flag` (see buildLossTally's highSlotByFlag note).
+- **Do this instead:** remove or replace the charge by its type (the charge's `item_type_id` in that flag), never by
+  the flag alone; and keep the original item (its quantity too) when it's already the right charge. The check builds a
+  Loki loss with a different charge in its launchers so the swap really happens, and a mutant that drops the whole
+  flag fails it (the pinned 801 DPS).
+
 ## 74. A request log shared by several pages counts the other pages' work too
 
 - **What happened (v2026.10.14.82):** `pilot_rows_check.py` counts zKillboard requests to prove each pilot costs 2 and a

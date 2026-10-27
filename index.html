@@ -2012,6 +2012,68 @@
     .pr-msg{grid-column:1 / -1;}
     .pr-seg button{min-height:40px;}
   }
+  /* FLEET VIEW (v2026.10.14.83; local-and-fleet-plan.md L4, D9): their fleet, estimated, then a card per looked-up group:
+     its main hulls lately, share and ≈ count, the common fit's variant and its numbers. */
+  .fl-sum, .fl-g, .fl-rest{margin-top:14px; padding:14px 14px 8px; position:relative;}
+  .fl-sum .ctx, .fl-gt .ctx{display:block;}
+  .fl-row{display:flex; gap:12px 32px; flex-wrap:wrap; margin-top:10px; align-items:flex-start;}
+  .fl-stat .k{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  .fl-stat .v{font:600 22px var(--mono); color:var(--heading); margin-top:2px;}
+  .fl-dbar{display:flex; gap:2px; width:240px; max-width:100%; height:8px; border-radius:3px; overflow:hidden; margin-top:6px;}
+  .fl-dbar i{display:block; height:100%;}
+  .fl-dk{display:flex; gap:4px 12px; flex-wrap:wrap; margin-top:5px; font:400 11.5px var(--sans);}
+  .fl-dk b{font:600 11.5px var(--mono);}
+  .fl-ewl{display:flex; gap:6px 12px; flex-wrap:wrap; margin-top:8px; font:600 14px var(--mono); color:var(--heading);}
+  .fl-ewl > span{display:inline-flex; align-items:center; gap:5px;}
+  .fl-gh{display:flex; align-items:center; gap:10px; min-width:0;}
+  .fl-gh .sa-logo{width:34px; height:34px; flex:none;}
+  .fl-gt{min-width:0; flex:1 1 auto;}
+  .fl-gt .nm{display:block; font:600 14px/18px var(--sans); color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .fl-cnt{text-align:right; flex:none;}
+  .fl-cnt b{font:600 18px var(--mono); color:var(--heading);}
+  .fl-cnt .ctx{display:block;}
+  .fl-cols, .fl-h{display:grid; grid-template-columns:minmax(160px,1.3fr) 110px minmax(180px,1.4fr) 112px 64px 76px 62px 24px; gap:12px; align-items:center;}
+  .fl-cols{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); padding:10px 4px 6px; border-bottom:1px solid var(--line);}
+  .fl-cols .r{text-align:right;}
+  .fl-h{padding:8px 4px; border-bottom:1px solid var(--line-soft); min-height:54px;}
+  .fl-share{display:flex; flex-direction:column; gap:3px;}
+  .fl-share b{font:600 14px var(--mono); color:var(--heading); white-space:nowrap;}
+  .fl-est{font-weight:400; color:var(--text-dim); font-size:12px;}
+  .fl-sbar{height:5px; background:var(--line); border-radius:2px; overflow:hidden; width:96px;}
+  .fl-sbar i{display:block; height:100%; background:var(--amber-dim);}
+  .ctx.fl-onscan{color:var(--cap-good);}
+  .fl-var{display:flex; flex-direction:column; gap:2px; min-width:0; position:relative;}
+  details.fl-pick{position:relative;}
+  .fl-varbtn{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:5px; padding:3px 8px; min-height:28px; box-sizing:border-box; font:600 12px var(--sans); color:var(--text); width:max-content; max-width:100%; cursor:pointer; list-style:none;}
+  summary.fl-varbtn::-webkit-details-marker{display:none;}
+  .fl-varbtn .c{color:var(--text-dim); font-weight:400;}
+  .fl-varbtn.is-vary{cursor:default;}
+  details.fl-pick[open] > summary.fl-varbtn, summary.fl-varbtn:hover{border-color:var(--cyan);}
+  .fl-pop{position:absolute; left:0; top:calc(100% + 4px); z-index:35; width:max-content; min-width:280px; max-width:min(440px, calc(100vw - 40px)); background:var(--panel-2); border:1px solid #2c3842; border-radius:8px; box-shadow:0 10px 28px rgba(0,0,0,.55); padding:8px;}
+  .fl-pop-t{margin:0 4px 4px;}
+  button.fl-opt{display:flex; width:100%; gap:10px; align-items:baseline; padding:8px 6px; min-height:36px; border:none; border-radius:4px; background:transparent; color:var(--text-dim); font:400 12.5px var(--sans); letter-spacing:0; text-align:left;}
+  button.fl-opt b{font:600 12.5px var(--sans); color:var(--heading); white-space:nowrap;}
+  button.fl-opt.on, button.fl-opt:hover{background:var(--panel);}
+  button.fl-open{width:24px; height:28px; min-height:0; padding:0; border:none; color:var(--text-dim); font-size:16px; background:transparent;}
+  button.fl-open:hover{color:var(--cyan); background:transparent;}
+  .fl-mob{display:none;}
+  .fl-h > .pr-msg{grid-column:3 / -1;}
+  .fl-more{padding:10px 4px 4px; font:400 12px var(--sans); color:var(--text-dim);}
+  .fl-msg{padding:10px 4px;}
+  .fl-rr{display:flex; gap:10px; align-items:center; padding:6px 0; border-top:1px solid var(--line-soft); min-width:0;}
+  .fl-rr .nm{font:600 13px var(--sans); color:var(--heading); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .fl-rn{margin-left:auto; font:600 13px var(--mono); color:var(--heading);}
+  .fl-rr button{padding:4px 12px;}
+  @media (max-width: 760px){
+    .fl-cols{display:none;}
+    .fl-h{grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"h s" "v v" "x o"; row-gap:6px;}
+    .fl-h > .pr-hull{grid-area:h;} .fl-h > .fl-share{grid-area:s; align-items:flex-end;} .fl-h > .fl-var{grid-area:v;} .fl-h > .fl-open{grid-area:o; width:44px; height:44px;}
+    .fl-h > .fl-mob{grid-area:x; display:flex; gap:4px 8px; flex-wrap:wrap; align-items:center; font:400 12px var(--sans); color:var(--text-dim);}
+    .fl-h > .pr-dps, .fl-h > .fl-ehp, .fl-h > .fl-weak, .fl-h > .fl-ew{display:none;}
+    .fl-h > .pr-msg{grid-column:1 / -1;}
+    .fl-rr button{min-height:44px;}
+    .fl-pop{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; border-radius:14px 14px 0 0; box-shadow:0 0 0 100vmax rgba(0,0,0,.55); padding:10px 12px 20px;}
+  }
 </style>
 </head>
 <body>
@@ -2019,7 +2081,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.82</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.83</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2165,7 +2227,8 @@ const CARD_NAMES = {
  "neutral": "Neutral",
  "friendly": "Friendly",
  "onscan": "On Scan",
- "pilots": "Pilots"
+ "pilots": "Pilots",
+ "fleet": "Fleet"
 };
 function cardName(key){
   const n = CARD_NAMES[key];
@@ -2296,6 +2359,14 @@ const CARD_INFO = {
   "The numbers come from their newest loss in that hull, worked out as in the Pilot Analyzer (pyfa's numbers): DPS (a range when their charges are guessed from cargo) with its damage types, EHP, the weakest resist and the EWAR letters of the {card:ewar} card. No loss of that hull among those losses: the bare hull's EHP and resists, marked fit unknown.",
   "Each pilot is 2 zKillboard requests (kills and losses, kept for an hour), 15 pilots at a time; Load more asks for the next ones. Rows keep their place while they fill, then sort once: hostile first, then by DPS.",
   "A row opens that pilot in the Pilot Analyzer, on that hull."
+ ],
+ "fleet": [
+  "Above the “pilot rows up to” number of hostile + neutral pilots ({card:side}), Local is a fleet. The 5 largest hostile or neutral groups are looked up; the others are listed with a Look up button. Groups shows the columns instead.",
+  "Lately flying: each group's 50 newest kills on zKillboard; every pilot of theirs on those kills counts the hull they flew. “≈” is that hull's share × how many of the group are in Local: an estimate. The D-Scan count beside it is what's really near you.",
+  "Common fit, for the 3 main hulls: the group's 20 newest losses in that hull, grouped by their exact set of fitted modules (drone types included, cargo not). Up to 3 variants of 2 or more losses, with how many and what differs from the most common; pick one and the numbers follow. Each weapon gets the charge most of those losses had in it. No fit on 2 or more losses: the newest one (“fits vary”).",
+  "The numbers are worked out as in the Fit Analyzer (pyfa's numbers). › opens that fit there.",
+  "Their fleet, estimated: those ≈ counts × each fit, added up. Raw DPS by damage type (no application, no resists), what most of the counted ships are weakest to, how many have tackle (T), disruption (D), cap warfare (C) or bursts (B), and logistics. Hulls beyond the main 3 aren't counted.",
+  "Each group is 4 zKillboard requests (its kills, and the losses of its 3 main hulls), kept for an hour."
  ]
 };
 const CTX_MAX = 40;
@@ -7810,6 +7881,7 @@ function droneRecommendation(weakest, droneSizes, targetSpeed){
 const typeCache = new Map();
 const groupCache = new Map();
 let lastScanShips = [];
+let lastScanCounts = new Map();   // v2026.10.14.83: typeId -> ships of that type on the last D-Scan (the fleet view)
 
 // --- Persistent ESI type/group cache (remediation plan Phase 3 / ARCH-3) ---
 // Ship/module dogma data (what getType()/getGroup() below fetch) is close to
@@ -8539,6 +8611,7 @@ async function runAnalysis(){
 
     lastScanShips = typeResults.filter(t => t && !t.error && t.group.category_id === 6)
       .map(t => ({name:t.name, typeId:t.typeId}));
+    lastScanCounts = new Map(lastScanShips.map(t => [t.typeId, typeCounts.get(t.name) || 1]));
     populateShipSelect();
 
     // Bug list #1: fitted/character items are never objects in space.
@@ -10327,7 +10400,7 @@ async function speculateShip(character, statusEl, forceRefresh){
 // every analysis, so per-render document listeners would pile up -- see the .fit-menu note).
 (function headerPopClose(){
   if(typeof document === 'undefined' || !document.addEventListener) return;   // LESSON #36: suites run this file against a stub DOM
-  const openOnes = () => [...document.querySelectorAll('details.lk-pop[open], details.hull-pick[open], details.info-pop[open], details.mys-fpart[open], details.mys-pick[open]')];
+  const openOnes = () => [...document.querySelectorAll('details.lk-pop[open], details.hull-pick[open], details.info-pop[open], details.mys-fpart[open], details.mys-pick[open], details.fl-pick[open]')];
   document.addEventListener('pointerdown', (e) => { for(const d of openOnes()) if(!d.contains(e.target)) d.open = false; }, true);
   // v2026.10.14.48: an info panel's close button (shown on a phone, where the panel is a sheet)
   document.addEventListener('click', (e) => {
@@ -20295,6 +20368,7 @@ async function runLocal(text, statusEl, force){
   }
   sa.last = {pilots, notFound, orgNames, names: names.length};
   sa.gen++; sa.rows = new Map(); sa.rowLimit = SA_ROWS_PER_BATCH; sa.rowOrder = null;   // v.82: a new paste, new pilot rows
+  sa.fleet = new Map(); sa.fleetExtra = new Set();   // v.83: and new fleet lookups
   saRender();
   const ev = sa.evidence;
   setStatus(statusEl, `${names.length} name(s): ${pilots.length} pilot(s) found${notFound.length ? `, ${notFound.length} not found` : ''}.${ev ? ` Evidence: ${ev.n} of your side's losses${ev.capped ? ` (the last ${SA_KM_MAX})` : ''} in 7 days.` : ''}`);
@@ -20395,14 +20469,17 @@ function saRender(){
       <div class="sa-bar" role="img" aria-label="${S.h} hostile, ${S.n} neutral, ${S.f} friendly">${['h', 'n', 'f'].filter(k => S[k]).map(k => `<i class="${k}" style="flex:${S[k]}"></i>`).join('')}</div>
       <div class="sa-keys">${['h', 'n', 'f'].map(k => `<span class="sa-key">${SIDE_MARK[k]}${SIDE_WORD[k]} <b>${S[k]}</b></span>`).join('')}</div>
       <div class="sa-mode">${threat > rows ? `<span class="sa-pill fleet">Fleet: ${threat} hostile + neutral</span>${ctxHtml(`over ${rows}: shown by group`)}`
-                                          : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}${small ? saViewSwitchHtml() : ''}</div>
+                                          : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}${threat > 0 ? saViewSwitchHtml(small ? 'pilots' : 'fleet') : ''}</div>
       ${notes}
     </div>
-    ${small && sa.view === 'pilots' ? `<div class="card pr-card" id="saPilots">${saPilotsCardHtml(G)}</div>` : `<div class="sa-cols">${saColHtml('h', G.h)}${saColHtml('n', G.n)}</div>`}
+    ${small && sa.view !== 'groups' ? `<div class="card pr-card" id="saPilots">${saPilotsCardHtml(G)}</div>`
+      : !small && threat > 0 && sa.view !== 'groups' ? `<div id="saFleet">${saFleetCardHtml(G)}</div>`   // v.83 (L4)
+      : `<div class="sa-cols">${saColHtml('h', G.h)}${saColHtml('n', G.n)}</div>`}
     <details class="sa-g sa-friendly" data-sa-g="friendly"${sa.friendOpen ? ' open' : ''}><summary>${SIDE_MARK.f}<span class="sa-gname"><span class="nm">${escapeHtml(cardName('friendly'))}</span><span class="ctx sa-ftk">${G.f.slice(0, 6).map(g => g.kind ? orgTickerHtml(g.kind, g.id) : '').join(' ')}</span></span><span class="sa-gn">${S.f}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>
       <div class="sa-friendly-body">${G.f.length ? G.f.map(g => saGroupHtml(g, 'f')).join('') : '<div class="sa-empty">None in local.</div>'}</div></details>`;
   fillOrgTickers(host);
-  if(small && sa.view === 'pilots') saPumpRows();
+  if(small && sa.view !== 'groups') saPumpRows();
+  else if(!small && threat > 0 && sa.view !== 'groups') saPumpFleet();
 }
 function saAgo(ts){ const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'just now' : `from ${m} min ago`; }
 
@@ -20418,9 +20495,10 @@ function saAgo(ts){ const m = Math.round((Date.now() - ts) / 60000); return m < 
 // by DPS.
 const SA_ROW_KILLS = 5, SA_ROW_LOSSES = 10, SA_RECENT_DAYS = 30, SA_ROWS_PER_BATCH = 15, SA_ROW_WORKERS = 3;
 const DAY_MS = 86400000;
-function saViewSwitchHtml(){
-  return `<span class="pr-seg" role="group" aria-label="Show pilots or groups">${[['pilots', cardName('pilots')], ['groups', 'Groups']].map(([v, l]) =>
-    `<button type="button" data-sa-view="${v}" aria-pressed="${sa.view === v}"${sa.view === v ? ' class="on"' : ''}>${escapeHtml(l)}</button>`).join('')}</span>`;
+function saViewSwitchHtml(kind){   // kind: 'pilots' (a small gang) or 'fleet' (v.83); either one against 'groups'
+  return `<span class="pr-seg" role="group" aria-label="Show ${kind} or groups">${[[kind, cardName(kind)], ['groups', 'Groups']].map(([v, l]) => {
+    const on = (v === 'groups') === (sa.view === 'groups');
+    return `<button type="button" data-sa-view="${v}" aria-pressed="${on}"${on ? ' class="on"' : ''}>${escapeHtml(l)}</button>`; }).join('')}</span>`;
 }
 // Hostile then neutral, in the columns' order (largest group first), each with its side.
 function saThreatList(G){
@@ -20572,6 +20650,263 @@ function saUpdatePilots(){
 }
 
 
+
+// ---- L4: the fleet view (v2026.10.14.83; plan D4, D5, D9: the owner's answers to the fleet-view mockup: "Newest 50 kills",
+// "Show ≈ counts", the summary "Include it now", "L4 now, L5 next") ----
+// Above "pilot rows up to", the 5 largest hostile / neutral groups (D4) are looked up: their 50 newest kills on
+// zKillboard (1 request; killmails from ESI) give what they fly lately: every pilot of theirs on those kills counts the
+// hull they flew. For their top 3 hulls, the group's 20 newest losses in that hull (1 request each) give the common fit
+// (D5): losses grouped by their exact set of fitted modules (drone types included, cargo not), up to 3 variants of 2+
+// losses with their share and what differs from the first; the charge in each weapon is the most common one among that
+// variant's losses; no variant: the newest loss ("fits vary"). Numbers through the same engine as everywhere. "≈ in
+// local" = the hull's share × the group's count in local, an estimate. Their fleet, estimated: those counts × each
+// common fit, added up (raw DPS, no application or resists).
+const SA_FLEET_GROUPS = 5, SA_FLEET_KILLS = 50, SA_FLEET_HULLS = 3, SA_FLEET_LOSSES = 20, SA_VARIANT_MIN = 2, SA_VARIANTS = 3;
+const KM_SLOT_FLAG = (f) => (f >= 11 && f <= 34) || (f >= 92 && f <= 99) || (f >= 125 && f <= 132);   // low, mid, high, rigs, subsystems
+const KM_DRONE_FLAG = 87, KM_FIGHTER_FLAG = 158;
+sa.fleet = new Map(); sa.fleetExtra = new Set();   // group key -> {state, ...}; groups looked up by hand
+function saFleetPlan(G){
+  const all = [];
+  for(const k of ['h', 'n']) for(const g of G[k]) if(!g.npc && !g.small) all.push({g, side: k});
+  const big = [...all].sort((a, b) => b.g.n - a.g.n).slice(0, SA_FLEET_GROUPS).map(x => x.g.key);
+  sa.fleetAuto = new Set(big);
+  const looked = all.filter(x => sa.fleetAuto.has(x.g.key) || sa.fleetExtra.has(x.g.key));
+  const rest = all.filter(x => !looked.includes(x));
+  return {looked, rest};
+}
+function saGroupPath(g){ return `${g.kind === 'alliance' ? 'allianceID' : 'corporationID'}/${g.id}`; }
+async function saIsShip(typeId){ try{ const t = await getType(typeId); const gr = await getGroup(t.group_id); return gr.category_id === 6 && !EXCLUDED_HULL_GROUP_IDS.has(t.group_id); }catch(e){ return false; } }
+// The module set of one loss: fitted modules by type and count, drone and fighter types (no counts: how many were in the
+// bay varies), and each weapon's charge.
+async function saFitKey(km){
+  const items = (km.victim && km.victim.items) || [], mods = new Map(), drones = new Set(), charges = new Map();
+  for(const it of items){
+    const f = it.flag, q = (it.quantity_destroyed || 0) + (it.quantity_dropped || 0) || 1;
+    if(f === KM_DRONE_FLAG || f === KM_FIGHTER_FLAG){ drones.add(it.item_type_id); continue; }
+    if(!KM_SLOT_FLAG(f)) continue;
+    const t = await getType(it.item_type_id), gr = await getGroup(t.group_id);
+    if(gr.category_id === 8){ if(f >= 27 && f <= 34) charges.set(f, it.item_type_id); continue; }   // a charge loaded in a high slot
+    mods.set(it.item_type_id, (mods.get(it.item_type_id) || 0) + 1);
+  }
+  const key = [...[...mods].sort((a, b) => a[0] - b[0]).map(([i, n]) => `${i}x${n}`), ...[...drones].sort((a, b) => a - b).map(i => `d${i}`)].join(',');
+  return {key, mods, drones, charges};
+}
+// Short words for what differs between two fits (D5 examples: "MWD instead of AB", "railguns instead of blasters").
+function saModWord(name){
+  const n = String(name || '');
+  if(/Microwarpdrive/i.test(n)) return 'MWD';
+  if(/Afterburner/i.test(n)) return 'AB';
+  if(/Railgun/i.test(n)) return 'railguns';
+  if(/Blaster/i.test(n)) return 'blasters';
+  if(/Autocannon/i.test(n)) return 'autocannons';
+  if(/Artillery/i.test(n)) return 'artillery';
+  if(/Pulse Laser/i.test(n)) return 'pulse lasers';
+  if(/Beam Laser/i.test(n)) return 'beam lasers';
+  if(/Warp Scrambler/i.test(n)) return 'scram';
+  if(/Warp Disruptor/i.test(n)) return 'point';
+  if(/Stasis Webifier/i.test(n)) return 'web';
+  return n.replace(/ (I|II)$/, '');
+}
+function saFitDiff(a, b, names){
+  const minus = [...a.mods.keys()].filter(i => !b.mods.has(i)), plus = [...b.mods.keys()].filter(i => !a.mods.has(i));
+  const w = (ids) => [...new Set(ids.map(i => saModWord(names.get(i))))];
+  const p = w(plus), m = w(minus);
+  if(!p.length && !m.length) return 'the same modules, other counts';
+  if(p.length === 1 && m.length === 1) return `${p[0]} instead of ${m[0]}`;
+  const parts = [...p.map(x => `+${x}`), ...m.map(x => `−${x}`)];
+  return parts.slice(0, 3).join(', ') + (parts.length > 3 ? ` +${parts.length - 3} more` : '');
+}
+// One fit for a variant: its newest loss, each weapon loaded with the variant's most common charge for that weapon type.
+function saVariantKm(v){
+  const top = v.fits[0], newest = top.km, high = (f) => f >= 27 && f <= 34;
+  const byWeapon = new Map();   // weapon type -> charge type -> losses
+  for(const x of v.fits) for(const [f, c] of x.charges){
+    const wpn = x.km.victim.items.find(it => it.flag === f && it.item_type_id !== c);
+    if(!wpn) continue;
+    const m = byWeapon.get(wpn.item_type_id) || new Map(); m.set(c, (m.get(c) || 0) + 1); byWeapon.set(wpn.item_type_id, m);
+  }
+  const best = new Map([...byWeapon].map(([w, m]) => [w, [...m].sort((a, b) => b[1] - a[1])[0][0]]));
+  // the newest loss's own charge stays where it's already the most common one (its quantity too); else it's swapped
+  const swap = new Map();   // flag -> charge type
+  for(const it of newest.victim.items) if(high(it.flag) && best.has(it.item_type_id) && top.charges.get(it.flag) !== best.get(it.item_type_id)) swap.set(it.flag, best.get(it.item_type_id));
+  const out = newest.victim.items.filter(it => !(swap.has(it.flag) && top.charges.get(it.flag) === it.item_type_id));
+  for(const [f, c] of swap) out.push({item_type_id: c, flag: f, quantity_destroyed: 1, singleton: 0});
+  return swap.size ? {...newest, victim: {...newest.victim, items: out}} : newest;
+}
+async function saHullFits(g, hullId){
+  const {data} = await zkbCachedJson(`${ZKB}/losses/${saGroupPath(g)}/shipTypeID/${hullId}/`, false, 'losses lookup');
+  const stubs = [...data].filter(x => x && x.killmail_id && x.zkb && x.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, SA_FLEET_LOSSES);
+  const take = (await analyzeChunks(stubs, fetchKillmail, 5)).filter(r => r && r.km && r.km.victim && r.km.victim.ship_type_id === hullId).map(r => r.km);   // newest first
+  if(!take.length) return {none: true};
+  const fits = [];
+  for(const km of take){ const k = await saFitKey(km); fits.push({...k, km}); }
+  const groups = new Map();
+  for(const x of fits){ const a = groups.get(x.key) || []; a.push(x); groups.set(x.key, a); }
+  let vs = [...groups.values()].filter(a => a.length >= SA_VARIANT_MIN).sort((a, b) => b.length - a.length || Date.parse(b[0].km.killmail_time) - Date.parse(a[0].km.killmail_time)).slice(0, SA_VARIANTS);
+  const vary = !vs.length;
+  if(vary) vs = [[fits[0]]];
+  const ids = new Set(); for(const x of fits) for(const i of x.mods.keys()) ids.add(i);
+  const names = new Map((await resolveIdsToNames([...ids])).map(n => [n.id, n.name]));
+  const out = [];
+  for(const a of vs){
+    const v = {n: a.length, fits: a};
+    const km = saVariantKm(v), built = buildLossTally(km);
+    v.km = km; v.built = built;
+    v.est = await estimateHpAndDps(hullId, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag);
+    v.diff = out.length ? saFitDiff(vs[0][0], a[0], names) : '';
+    out.push(v);
+  }
+  const times = take.map(km => Date.parse(km.killmail_time));
+  return {variants: out, vary, of: take.length, from: Math.min(...times), to: Math.max(...times)};
+}
+async function saFleetGroupData(g){
+  const {data} = await zkbCachedJson(`${ZKB}/kills/${saGroupPath(g)}/`, false, 'kills lookup');
+  const kms = await (async () => {
+    const take = [...data].filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, SA_FLEET_KILLS);
+    return (await analyzeChunks(take, fetchKillmail, 5)).filter(r => r && r.km).map(r => r.km);
+  })();
+  const mine = (a) => a.character_id && a.ship_type_id && (g.kind === 'alliance' ? a.alliance_id === g.id : a.corporation_id === g.id);
+  const count = new Map();
+  for(const km of kms) for(const a of (km.attackers || [])) if(mine(a)) count.set(a.ship_type_id, (count.get(a.ship_type_id) || 0) + 1);
+  const ships = [];
+  for(const [id, n] of count) if(await saIsShip(id)) ships.push([id, n]);
+  ships.sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+  const total = ships.reduce((s, x) => s + x[1], 0);
+  if(!total) return {state: 'done', kills: kms.length, hulls: [], total: 0};
+  const times = kms.map(km => Date.parse(km.killmail_time));
+  const hulls = [];
+  for(const [id, n] of ships.slice(0, SA_FLEET_HULLS)){
+    const t = await getType(id), gr = await getGroup(t.group_id);
+    const h = {typeId: id, name: t.name, cls: gr.name, n, share: n / total, logi: /Logistics|Force Auxiliary/i.test(gr.name), pick: 0};
+    try{ Object.assign(h, await saHullFits(g, id)); }catch(e){ h.err = withCode(e.message, errorCodeOf(e)); }
+    hulls.push(h);
+  }
+  const rest = ships.slice(SA_FLEET_HULLS);
+  return {state: 'done', kills: kms.length, from: Math.min(...times), to: Math.max(...times), hulls, total,
+          restShare: rest.reduce((s, x) => s + x[1], 0) / total, restHulls: rest.length};
+}
+function saPumpFleet(){
+  const G = sa.lastGroups;
+  if(!G) return;
+  const {looked} = saFleetPlan(G), gen = sa.gen;
+  const todo = looked.filter(x => !sa.fleet.has(x.g.key));
+  for(const x of todo) sa.fleet.set(x.g.key, {state: 'wait'});
+  let i = 0;
+  const worker = async () => {
+    while(i < todo.length){
+      const x = todo[i++];
+      if(gen !== sa.gen) return;
+      sa.fleet.set(x.g.key, {state: 'load'}); saUpdateFleet();
+      let r;
+      try{ r = await saFleetGroupData(x.g); }catch(e){ r = {state: 'err', msg: withCode(e.message, errorCodeOf(e))}; }
+      if(gen !== sa.gen) return;
+      sa.fleet.set(x.g.key, r); saUpdateFleet();
+    }
+  };
+  for(let w = 0; w < 2; w++) worker();
+}
+function saMonthDay(t){ return new Date(t).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}); }
+function saFleetHullHtml(g, gr, h){
+  const v = h.variants && h.variants[h.pick];
+  const est = Math.round(h.share * g.n), scanN = lastScanCounts.get(h.typeId) || 0;
+  const share = `<span class="fl-share"><b>${Math.round(h.share * 100)}% <span class="fl-est" title="An estimate: this share of their ${g.n} pilots in local">≈${est}</span></b><span class="fl-sbar"><i style="width:${Math.round(h.share * 100)}%"></i></span></span>`;
+  const hull = `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${h.typeId}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(h.name)}<span class="cls">${escapeHtml(h.cls)}</span></span>${scanN ? `<span class="ctx fl-onscan">✓ ${scanN} on scan</span>` : ctxHtml('none on scan')}</span></span>`;
+  if(h.err) return `<div class="fl-h">${hull}${share}<span class="pr-msg err">${escapeHtml(h.err)}</span></div>`;
+  if(h.none || !v) return `<div class="fl-h">${hull}${share}<span class="pr-msg">No losses of it: fit unknown</span></div>`;
+  const e = v.est, dps = saRowDps(e), td = saRowTypeDps(e);
+  const bar = dps.v > 0 ? `<span class="pr-dbar" aria-hidden="true">${DMG.filter(d => td[d] > 0).map(d => `<i style="flex:${td[d]};background:var(--${d})"></i>`).join('')}</span>` : '';
+  const cats = ['tackle', 'disrupt', 'drain', 'boost'].filter(c => (e.ewarModules || []).some(m => m.category === c));
+  const ew = cats.map(c => `<span class="ewar-badge ${c}">${EWAR_BADGE_LETTER[c]}</span>`).join('');
+  const weak = `<span style="color:var(--${e.weakest})">${escapeHtml(DMG_FULL[e.weakest] || '')}</span>`;
+  const span = `${escapeHtml(h.name)}: ${escapeHtml(gr.name)}'s last ${h.of} loss${h.of === 1 ? '' : 'es'} in it, ${saMonthDay(h.from)} – ${saMonthDay(h.to)}`;
+  const pick = h.vary ? `<span class="fl-varbtn is-vary" title="${span}">Fits vary <span class="c">showing the latest</span></span>${ctxHtml('no fit on 2 or more losses')}`
+    : `<details class="fl-pick"><summary class="fl-varbtn" title="${span}">Variant ${h.pick + 1} <span class="c">${v.n} of ${h.of}</span><span aria-hidden="true">▾</span></summary>
+       <div class="fl-pop" role="menu"><div class="ctx fl-pop-t" title="${span}">${span}</div>${h.variants.map((x, i) => `<button type="button" role="menuitemradio" aria-checked="${i === h.pick}" class="fl-opt${i === h.pick ? ' on' : ''}" data-fl-var="${escapeHtml(gr.key)}|${h.typeId}|${i}"><b>${x.n} of ${h.of}</b><span>${i ? escapeHtml(x.diff) : 'the most common'}</span></button>`).join('')}</div></details>
+       ${ctxHtml(h.pick ? v.diff : h.variants.length > 1 ? `${h.variants.length - 1} more: ${h.variants[1].diff}` : v.n * 4 >= h.of * 3 ? 'a strict doctrine' : '', '', h.pick ? v.diff : '')}`;
+  return `<div class="fl-h">${hull}${share}<span class="fl-var">${pick}</span>
+    <span class="pr-dps"><span class="pr-num">${dps.text}</span>${bar}</span>
+    <span class="pr-num fl-ehp">${saFmtK(e.totalHP)}</span>
+    <span class="pr-weak fl-weak">${weak}</span>
+    <span class="pr-ew fl-ew">${ew || '<span class="pr-dash">—</span>'}</span>
+    <button type="button" class="fl-open" data-fl-open="${escapeHtml(gr.key)}|${h.typeId}" title="Open this fit in the Fit Analyzer" aria-label="Open the ${escapeHtml(h.name)} fit in the Fit Analyzer">›</button>
+    <span class="fl-mob">DPS ${dps.text} · EHP ${saFmtK(e.totalHP)} · ${weak}${ew ? ` ${ew}` : ''}</span></div>`;
+}
+function saFleetGroupHtml(x){
+  const g = x.g, r = sa.fleet.get(g.key) || {state: 'wait'};
+  const why = saWhyText(g) || (x.side === 'n' ? 'Neutral' : '');
+  const k = `${g.kind}:${g.id}`, path = g.kind === 'alliance' ? 'alliances' : 'corporations';
+  const logo = `<span class="sa-logo${g.kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span data-tk-for="${k}"></span><img src="https://images.evetech.net/${path}/${g.id}/logo?size=64" alt="" loading="lazy" onerror="this.remove()"></span>`;
+  const span = r.state === 'done' && r.kills ? `from its last ${r.kills} kill${r.kills === 1 ? '' : 's'}, ${saMonthDay(r.from)} – ${saMonthDay(r.to)}` : '';
+  const head = `<div class="fl-gh" data-sa-g="${escapeHtml(x.side)}:${escapeHtml(g.key)}">${SIDE_MARK[x.side]}${logo}<span class="fl-gt"><span class="nm">${escapeHtml(g.name)} ${orgTickerHtml(g.kind, g.id)}</span>${ctxHtml([why, span].filter(Boolean).join(' · '))}</span><span class="fl-cnt"><b>${g.n}</b><span class="ctx">in local</span></span></div>`;
+  let body;
+  if(r.state === 'wait' || r.state === 'load') body = `<div class="pr-msg fl-msg"><span class="busy-spin" aria-hidden="true"></span>${r.state === 'load' ? 'Looking up on zKillboard…' : 'Waiting for zKillboard…'}</div>`;
+  else if(r.state === 'err') body = `<div class="pr-msg fl-msg err">${escapeHtml(r.msg)} <button type="button" class="sa-link" data-fl-retry="${escapeHtml(g.key)}">Retry</button></div>`;
+  else if(!r.hulls.length) body = `<div class="pr-msg fl-msg">${r.kills ? 'No ships of theirs on those kills' : 'No kills on zKillboard'}</div>`;
+  else body = `<div class="fl-cols" aria-hidden="true"><span>Lately flying</span><span>Share</span><span>Common fit</span><span class="r">DPS</span><span class="r">EHP</span><span>Weakest</span><span>EWAR</span><span></span></div>
+    ${r.hulls.map(h => saFleetHullHtml(x.g, g, h)).join('')}${r.restHulls ? `<div class="fl-more">${Math.round(r.restShare * 100)}% in ${r.restHulls} other hull${r.restHulls === 1 ? '' : 's'}</div>` : ''}`;
+  return `<div class="card fl-g" data-fl-g="${escapeHtml(g.key)}">${head}${body}</div>`;
+}
+// Their fleet, estimated: the looked-up groups' main hulls, ≈ count × the common fit (the picked variant).
+function saFleetSummary(looked){
+  let dps = 0, ships = 0, logi = 0; const td = {}, weak = {}, ew = {tackle: 0, disrupt: 0, drain: 0, boost: 0}, logiBy = new Map();
+  for(const x of looked){
+    const r = sa.fleet.get(x.g.key);
+    if(!r || r.state !== 'done') continue;
+    for(const h of r.hulls){
+      const v = h.variants && h.variants[h.pick], n = Math.round(h.share * x.g.n);
+      if(!v || !n) continue;
+      const e = v.est, d = saRowDps(e), t = saRowTypeDps(e);
+      ships += n; dps += n * d.v;
+      for(const k of DMG) td[k] = (td[k] || 0) + n * (t[k] || 0);
+      weak[e.weakest] = (weak[e.weakest] || 0) + n;
+      for(const c of Object.keys(ew)) if((e.ewarModules || []).some(m => m.category === c)) ew[c] += n;
+      if(h.logi){ logi += n; logiBy.set(h.name, (logiBy.get(h.name) || 0) + n); }
+    }
+  }
+  return {dps, ships, td, weak, ew, logi, logiBy};
+}
+function saFleetCardHtml(G){
+  const {looked, rest} = saFleetPlan(G);
+  const order = [...looked].sort((a, b) => (a.side === b.side ? 0 : a.side === 'h' ? -1 : 1) || b.g.n - a.g.n);
+  const S = saFleetSummary(order), pilots = order.reduce((s, x) => s + x.g.n, 0), threat = [...G.h, ...G.n].reduce((s, g) => s + g.n, 0);
+  const done = order.filter(x => ['done', 'err'].includes((sa.fleet.get(x.g.key) || {}).state)).length;
+  const tot = DMG.reduce((s, k) => s + (S.td[k] || 0), 0);
+  const w = Object.entries(S.weak).sort((a, b) => b[1] - a[1])[0];
+  const sum = `<div class="card fl-sum"><div class="pr-head"><h3>Their fleet, estimated</h3>${ctxHtml(`${done} of ${order.length} groups looked up`)}<span class="sa-sp"></span>${infoBtnHtml('fleet')}</div>
+    ${ctxHtml(`${order.length} largest groups: ${pilots} of ${threat} pilots`, '', `The ${order.length} largest hostile / neutral groups in local (${pilots} of ${threat} hostile + neutral pilots): their main hulls lately × how many are in local. An estimate, not a count.`)}
+    ${S.ships ? `<div class="fl-row">
+      <div class="fl-stat"><div class="k">Raw DPS, all of it</div><div class="v">≈${Math.round(S.dps).toLocaleString()}</div>
+        <span class="fl-dbar" aria-hidden="true">${DMG.filter(k => S.td[k] > 0).map(k => `<i style="flex:${S.td[k]};background:var(--${k})"></i>`).join('')}</span>
+        <div class="fl-dk">${DMG.filter(k => S.td[k] > 0).sort((a, b) => S.td[b] - S.td[a]).map(k => `<span style="color:var(--${k})">${DMG_FULL[k]} <b>${Math.round(S.td[k] / tot * 100)}%</b></span>`).join('')}</div></div>
+      <div class="fl-stat"><div class="k">Their ships are weakest to</div><div class="v" style="color:var(--${w[0]})">${escapeHtml(DMG_FULL[w[0]])}</div>${ctxHtml(`≈${w[1]} of the ≈${S.ships} ships counted`)}</div>
+      <div class="fl-stat"><div class="k">Tackle and EWAR</div><div class="fl-ewl">${['tackle', 'disrupt', 'drain', 'boost'].filter(c => S.ew[c]).map(c => `<span><span class="ewar-badge ${c}">${EWAR_BADGE_LETTER[c]}</span>≈${S.ew[c]}</span>`).join('') || '<span class="pr-dash">none seen</span>'}</div></div>
+      <div class="fl-stat"><div class="k">Logistics</div><div class="v">≈${S.logi}</div>${ctxHtml([...S.logiBy].map(([n, c]) => `${n} ×${c}`).join(', ') || 'none seen')}</div>
+    </div>` : `<div class="pr-msg fl-msg">${done < order.length ? 'Adds up as the groups come in…' : 'Nothing to add up: no fits found'}</div>`}</div>`;
+  const restHtml = rest.length ? `<div class="card fl-rest"><div class="pr-head"><h3>Not looked up</h3>${ctxHtml('4 zKillboard requests each')}</div>
+    ${rest.slice(0, 12).map(x => `<div class="fl-rr">${SIDE_MARK[x.side]}<span class="nm">${escapeHtml(x.g.name)} ${orgTickerHtml(x.g.kind, x.g.id)}</span><span class="fl-rn">${x.g.n}</span><button type="button" data-fl-look="${escapeHtml(x.g.key)}">Look up</button></div>`).join('')}
+    ${rest.length > 12 ? `<div class="fl-more">and ${rest.length - 12} more in Groups</div>` : ''}</div>` : '';
+  return `${sum}${order.map(saFleetGroupHtml).join('')}${restHtml}`;
+}
+function saUpdateFleet(){
+  const el = document.getElementById('saFleet');
+  if(!el || !sa.lastGroups) return;
+  if(el.querySelector('details.info-pop[open], details.fl-pick[open]')) return setTimeout(saUpdateFleet, 400);   // not under an open panel
+  el.innerHTML = saFleetCardHtml(sa.lastGroups);
+  fillOrgTickers(el);
+}
+function saFleetHull(gkey, typeId){ const r = sa.fleet.get(gkey); return r && r.hulls ? r.hulls.find(h => h.typeId === Number(typeId)) : null; }
+async function saOpenFleetFit(gkey, typeId){
+  const h = saFleetHull(gkey, typeId), v = h && h.variants && h.variants[h.pick];
+  if(!v) return;
+  const ids = new Set(); for(const it of v.km.victim.items) ids.add(it.item_type_id);
+  const names = new Map((await resolveIdsToNames([...ids])).map(n => [n.id, n.name]));
+  const g = [...sa.lastGroups.h, ...sa.lastGroups.n].find(x => x.key === gkey);
+  const text = await fitToEftText(h.name, `${g ? g.name : 'Common fit'}, variant ${h.pick + 1}`, v.built.tally, names, v.built.highSlotByFlag);
+  document.getElementById('fitAnalyzerInput').value = text;
+  switchTab('fit');
+  runFitAnalyzer();
+}
+
 async function runSystemAnalyzer(force){
   const localEl = document.getElementById('localInput'), scanEl = document.getElementById('dscanInput');
   const local = localEl.value, scan = scanEl.value, statusEl = document.getElementById('localStatus');
@@ -20600,7 +20935,7 @@ async function runSystemAnalyzer(force){
 function saClear(){
   for(const id of ['localInput', 'dscanInput']) document.getElementById(id).value = '';
   for(const id of ['localStatus', 'scanStatus']) setStatus(document.getElementById(id), '');
-  sa.last = null; sa.evidence = null; sa.evidenceErr = null; sa.gen++; sa.rows = new Map(); saRender();
+  sa.last = null; sa.evidence = null; sa.evidenceErr = null; sa.gen++; sa.rows = new Map(); sa.fleet = new Map(); sa.fleetExtra = new Set(); saRender();
   document.getElementById('resultsWrap').style.display = 'none';
   showDscanFitHint('');
   document.getElementById('localInput').focus();
@@ -20857,6 +21192,14 @@ async function sideTagForPilot(charId){
     if(rb){ saOpenRow(rb.dataset.prPilot, rb.dataset.prHull || ''); return; }
     const lm = e.target.closest('[data-pr-more]');
     if(lm){ sa.rowLimit += SA_ROWS_PER_BATCH; sa.rowOrder = null; saPumpRows(); saUpdatePilots(); return; }
+    const fv = e.target.closest('[data-fl-var]');   // v.83: fleet view
+    if(fv){ const [gk, t, i] = fv.dataset.flVar.split('|'); const h = saFleetHull(gk, t); if(h){ h.pick = Number(i); } const d = fv.closest('details'); if(d) d.open = false; saUpdateFleet(); return; }
+    const fo = e.target.closest('[data-fl-open]');
+    if(fo){ const [gk, t] = fo.dataset.flOpen.split('|'); saOpenFleetFit(gk, t); return; }
+    const fl = e.target.closest('[data-fl-look]');
+    if(fl){ sa.fleetExtra.add(fl.dataset.flLook); saPumpFleet(); saUpdateFleet(); return; }
+    const fr = e.target.closest('[data-fl-retry]');
+    if(fr){ sa.fleet.delete(fr.dataset.flRetry); saPumpFleet(); saUpdateFleet(); return; }
     const rr = e.target.closest('[data-pr-retry]');
     if(rr){ for(const [k, v] of [...sa.rows]) if(v.state === 'err') sa.rows.delete(k); sa.rowOrder = null; saPumpRows(); saUpdatePilots(); return; }
     const ab = e.target.closest('[data-sa-act]');

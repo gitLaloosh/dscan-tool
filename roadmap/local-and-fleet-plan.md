@@ -1,4 +1,4 @@
-# Local and fleet assessment (plan, decided 2026-10-27; steps 1-2 built in v2026.10.14.81-.82)
+# Local and fleet assessment (plan, decided 2026-10-27; steps 1-3 built in v2026.10.14.81-.83)
 
 Started 2026-10-27. the owner, after "what do you think is the biggest gap in the tool right now?" (the tool sizes up one
 pilot at a time; a fight is usually against a group) and "what happens when there are 100+ people in system?": "I've been
@@ -190,6 +190,11 @@ because we'll need to do some real security analysis of the tool first". What it
   **"Most recently seen"** (newest ship on a kill or loss in 30 days, a ship of theirs on the D-Scan first, else the
   hull lost most); **"Hull only, fit unknown"** when they have no loss of that hull; order **"Hostile first, then DPS"**.
 
+- **D9. Step 3 (L4) details — decided** (the owner's answers to the fleet-view mockup, 2026-10-27, all as recommended): a
+  group's hulls lately from its **"Newest 50 kills"** (1 request); **"Show ≈ counts"** (share × the group's count in
+  local, labeled an estimate); the **"Their fleet, estimated"** summary now; **"L4 now, L5 next"** (their fleet against
+  your ship is its own version).
+
 ## Step 1 as built (v2026.10.14.81)
 
 - **Tab:** the D-Scan tab is the System Analyzer (CARD_NAMES `sysan`), last; Local and D-Scan boxes side by side, one
@@ -235,7 +240,29 @@ because we'll need to do some real security analysis of the tool first". What it
   asked in (hostile groups first) while they fill, then sort once: hostile first, then DPS (fit unknown, then no
   history, last). Three pilots are looked up at a time; the zKillboard queue keeps them 1 s apart.
 - **Checks:** `tools/page_checks/pilot_rows_check.py` (histories built from golden-fit killmails: DPS and EHP checked
-  against the pyfa-verified pins; the ship rules against `sa_mocks.expected_rows()`). Next step: L4 + L5 (fleets).
+  against the pyfa-verified pins; the ship rules against `sa_mocks.expected_rows()`).
+
+## Step 3 as built (v2026.10.14.83)
+
+- **Fleet** (`fleet`): above "pilot rows up to", a Fleet / Groups switch (Fleet first). The 5 largest hostile / neutral
+  groups (not NPC corporations or the folded small groups) are looked up, shown hostile first then neutral, largest
+  first; the rest under "Not looked up" with a Look up button each.
+- **A group:** its 50 newest kills (zKillboard, kept an hour; killmails from ESI, kept forever); every attacker of
+  that group with a pilot counts the hull flown (ships only; capsules, shuttles, rookie ships, MTUs left out). The 3
+  main hulls: share, "≈" = share × the group's count in local, "✓ N on scan" (the D-Scan's count of that type).
+- **Common fit (D5)** per main hull: the group's 20 newest losses in it (1 request); exact set of fitted modules
+  (high, mid, low, rigs, subsystems; drone and fighter types without counts; charges, scripts and cargo not part of
+  it); variants of 2+ losses, up to 3, by count (ties: newest); the newest loss of the variant with each weapon given
+  the variant's most common charge; "what differs" in short words (MWD / AB, railguns / blasters, scram / point / web,
+  or the module's name); "a strict doctrine" at 3 of 4 or more; no variant: the newest loss ("Fits vary"); no losses:
+  "fit unknown". Numbers through `estimateHpAndDps`; › opens the fit in the Fit Analyzer (EFT).
+- **Their fleet, estimated:** over the main hulls with a fit, ≈ count × the picked variant: raw DPS and damage types,
+  the weakest resist of most counted ships, ships with T / D / C / B, logistics (hull classes Logistics / Force
+  Auxiliary).
+- **Requests (D4):** 4 per group at most (kills + 3 hulls' losses), so 20 for the 5; Look up adds 4.
+- **Checks:** `tools/page_checks/fleet_view_check.py` (kills and losses built from golden-fit killmails; numbers
+  against the pyfa-verified pins, shares / counts / summary against `sa_mocks.expected_fleet()`). Next step: L5,
+  their fleet against your ship.
 
 ## Checks (as for every delivery)
 

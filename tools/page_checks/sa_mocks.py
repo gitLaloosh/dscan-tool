@@ -5,6 +5,7 @@ Analyzer should show for LOCAL with the Your Side the check sets up:
   Crimson Tide Syndicate (an alliance) and Turncoat Corp (a corporation inside Blue Coalition Member); pilot rows 15."""
 import os, re, json, hashlib, time
 from esi_from_sde import handle as esi_handle, byname
+from pyfa_sde import types as _TYPES, _en
 
 ALLIANCE, CORP = 99000001, 98000001
 BCM, CRTS, VOIDR, NPACT, ALLIED, THIRD, QHC = 99000002, 99000003, 99000004, 99000005, 99000006, 99000007, 99000008
@@ -137,6 +138,56 @@ def expected_rows():
     rows.sort(key=lambda r: (0 if r[1] == 'h' else 1, -r[5], r[0]))
     return [(r[2], r[3], r[4]) for r in rows]
 
+# v2026.10.14.83 fleet view (L4): Crimson Tide's kills (Curse 6, Vedmak 3, Loki 1 and a capsule) and losses by hull
+# (Curse: 3 of the golden fit + 2 with a 50MN MWD for the afterburner; Vedmak: 1; Loki: none); Void Runners' kills
+# (4 in Lokis) and Loki losses (3 of the golden fit, the newest with Scourge). Variant 2 of the Curse also flies
+# Hammerhead II for the Infiltrator II (a drone type: part of the fit's key, not of "what differs"). Other groups: no kills.
+def _gkill(attackers, days):
+    _kid[0] += 1; k = _kid[0]
+    KM[k] = {'killmail_id': k, 'killmail_time': _iso(days), 'solar_system_id': 30000142,
+             'victim': {'character_id': pick(98000013), 'corporation_id': 98000013, 'ship_type_id': byname['Ferox'], 'damage_taken': 100, 'items': [], 'position': {'x': 0, 'y': 0, 'z': 0}},
+             'attackers': [dict(aff(c), final_blow=i == 0, damage_done=100, ship_type_id=byname[h], security_status=0) for i, (c, h) in enumerate(attackers)]}
+    H[k] = hashlib.sha1(str(k).encode()).hexdigest(); return k
+def _gloss(cid, hull, days, *swaps):
+    k = _loss(cid, hull, days)
+    for a, b in swaps:
+        for it in KM[k]['victim']['items']:
+            if it['item_type_id'] == a: it['item_type_id'] = b
+    return k
+_crts = [i for i, v in PILOTS.items() if v[1] in (98000003, 98000004)]
+_void = [i for i, v in PILOTS.items() if v[1] == 98000005]
+_npact = pick(98000007)
+FLEET_KILLS = {CRTS: [_gkill([(_crts[i], 'Curse'), (_npact, 'Ferox')], 1 + i) for i in range(6)]
+                     + [_gkill([(_crts[6 + i], 'Vedmak')], 2 + i) for i in range(3)]
+                     + [_gkill([(_crts[9], 'Loki'), (_crts[10], 'Capsule')], 3)],
+               VOIDR: [_gkill([(_void[i], 'Loki')], 1 + i) for i in range(4)]}
+AB, MWD = byname['Federation Navy 100MN Afterburner'], byname['50MN Y-T8 Compact Microwarpdrive']
+FLEET_LOSSES = {(CRTS, 'Curse'): [_gloss(_crts[i], 'Curse', 2 + i) for i in range(3)] + [_gloss(_crts[3 + i], 'Curse', 6 + i, (AB, MWD), (byname['Infiltrator II'], byname['Hammerhead II'])) for i in range(2)],
+                (CRTS, 'Vedmak'): [_gloss(_crts[7], 'Vedmak', 4)], (CRTS, 'Loki'): [],
+                # the newest Loki loss had Scourge in its launchers: the variant's most common charge (Mjolnir Rage) is put back
+                # (made last: the page orders losses by killmail ID, as zKillboard numbers them in time)
+                (VOIDR, 'Loki'): [_gloss(_void[i], 'Loki', 3 + i) for i in range(2)]
+                                 + [_gloss(_void[2], 'Loki', 2, (byname['Mjolnir Rage Heavy Assault Missile'], byname['Caldari Navy Scourge Heavy Assault Missile']))]}
+def expected_fleet():
+    """The fleet view worked out here: shares from the kills (each attacker of the group counts its hull; capsules
+    don't), ≈ = share × the group's count in local, the variants by exact module set, and the summary from the golden
+    pins (Curse 177, Vedmak 507, Loki 801 DPS)."""
+    n_local = {CRTS: 32, VOIDR: 13}
+    out = {}
+    for g, kills in FLEET_KILLS.items():
+        cnt = {}
+        for k in kills:
+            for a in KM[k]['attackers']:
+                if a.get('alliance_id') != g: continue
+                h = {v: kk for kk, v in byname.items()}[a['ship_type_id']]
+                if h == 'Capsule': continue
+                cnt[h] = cnt.get(h, 0) + 1
+        tot = sum(cnt.values())
+        out[g] = [(h, round(100 * c / tot), round(c / tot * n_local[g])) for h, c in sorted(cnt.items(), key=lambda x: (-x[1], byname[x[0]]))]
+    dps = {'Curse': PIN['Curse']['dpsFixed'], 'Vedmak': PIN['Vedmak']['dpsFixed'], 'Loki': PIN['Loki']['dpsFixed']}
+    counted = [(h, est) for g in out for h, pct, est in out[g] if FLEET_LOSSES.get((g, h))]
+    return {'rows': out, 'dps': dps, 'sum_dps': sum(est * dps[h] for h, est in counted), 'ships': sum(est for _, est in counted)}
+
 def expected():
     """What the page should show, worked out here. Side rules (plan D2, D2b): corporation entries first (yours, the
     friendly list, the hostile list), then alliance entries, then the evidence, else neutral."""
@@ -217,6 +268,7 @@ def esi(route):
         for i in ids:
             if i in ORGS: out.append({'id': i, 'name': ORGS[i][1], 'category': ORGS[i][0]})
             elif i in PILOTS: out.append({'id': i, 'name': PILOTS[i][0], 'category': 'character'})
+            elif str(i) in _TYPES: out.append({'id': i, 'name': _en(_TYPES[str(i)].get('typeName') or _TYPES[str(i)].get('name')), 'category': 'inventory_type'})   # v.83: module names
             else: return j({'error': 'Ensure all IDs are valid before resolving.'}, 404)
         return j(out)
     m = re.search(r'/(alliances|corporations)/(\d+)/\?', url)
@@ -237,6 +289,12 @@ def zkb(route):
     stubs = lambda ids: route.fulfill(status=200, content_type='application/json', headers=cors, body=json.dumps([{'killmail_id': k, 'zkb': {'hash': H[k]}} for k in sorted(ids, reverse=True)]))
     if f'/losses/allianceID/{ALLIANCE}/' in url: return stubs(LOSSES)
     if f'/kills/allianceID/{ALLIANCE}/' in url: return stubs(KILLS)
+    m = re.search(r'/losses/allianceID/(\d+)/shipTypeID/(\d+)/', url)
+    if m:
+        name = {v: k for k, v in byname.items()}.get(int(m.group(2)))
+        return stubs(FLEET_LOSSES.get((int(m.group(1)), name), []))
+    m = re.search(r'/kills/allianceID/(\d+)/$', url)
+    if m and int(m.group(1)) in FLEET_KILLS: return stubs(FLEET_KILLS[int(m.group(1))])
     m = re.search(r'/(kills|losses)/characterID/(\d+)/', url)
     if m and int(m.group(2)) in HIST: return stubs(HIST[int(m.group(2))][m.group(1)])
     return route.fulfill(status=200, content_type='application/json', headers=cors, body='[]')

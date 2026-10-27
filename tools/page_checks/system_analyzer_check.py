@@ -70,6 +70,8 @@ with sync_playwright() as p:
     M.route(ctx)
     pg = ctx.new_page()
     pg.goto('file://' + HTML)
+    GROUPS_VIEW = "() => { sa.view = 'groups'; }"   # v.82/.83: this check reads the columns; Pilots / Fleet (and their zKillboard lookups) have their own checks
+    pg.evaluate(GROUPS_VIEW)
     pg.wait_for_timeout(300)
     # --- the tab ---
     tabs = pg.evaluate("() => [...document.querySelectorAll('.tabs .tab-btn')].map(b => b.textContent.trim())")
@@ -137,6 +139,7 @@ with sync_playwright() as p:
     check(chip.startswith('Example Alliance') and '+2 friendly' in chip and '2 hostile' in chip, f'the chip: your alliance, +2 friendly, 2 hostile ({chip!r})')
     # reload: all kept
     pg.reload(); pg.wait_for_timeout(500)
+    pg.evaluate(GROUPS_VIEW)
     open_side(pg)
     kept = (chips(pg, 'friendly'), chips(pg, 'hostile'), pg.input_value('#sideRows'), pg.input_value('#sidePilot'))
     check(kept == (['Blue Coalition Member', 'Allied Wing'], ['Crimson Tide Syndicate', 'Turncoat Corp'], '20', 'Test Pilot'), f'everything kept after a reload {kept}')
@@ -174,9 +177,8 @@ with sync_playwright() as p:
     check(n2 == 0 and len(M.ZKB_CALLS) == 1, f'a second Analyze asks zKillboard nothing (kept an hour); Refresh asks once ({n2}, {len(M.ZKB_CALLS)})')
     # small gang
     analyze(pg, '\n'.join(M.SMALL_LOCAL))
-    # v.82: a small gang opens on its pilot rows; let them finish (their zKillboard requests) before the queue checks below
-    pg.wait_for_function("() => { const c = document.querySelector('#saPilots .pr-head .ctx'); return c && /^(\\d+) of \\1 looked up$/.test(c.textContent); }", timeout=120000)
-    pg.click('[data-sa-view="groups"]'); pg.wait_for_timeout(200)
+    sw = pg.evaluate("() => [...document.querySelectorAll('.sa-mode [data-sa-view]')].map(b => [b.textContent, b.getAttribute('aria-pressed')])")
+    check(sw == [['Pilots', 'false'], ['Groups', 'true']] and not pg.query_selector('#saPilots'), f'small gang in Groups: the columns, no pilot rows looked up {sw}')
     r2 = pg.evaluate(RESULT)
     check('Small gang: %d hostile + neutral' % E['small_threat'] in r2['mode'], f"15 or fewer: small gang ({r2['mode']!r})")
     # --- the queue: spacing and budget ---

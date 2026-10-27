@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — System Analyzer, step 3: the fleet view</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>System Analyzer, step 3: the fleet view</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.82</code> &rarr; <code>v2026.10.14.83</code> &middot; plan: <code>roadmap/local-and-fleet-plan.md</code> (L4; decisions D4, D5, D9).</p>
+<p>the owner: "ok proceed" after the pilot rows, then his answers to the fleet-view mockup (<code>Claude outputs/fleet_view_mockup.html</code>): "Newest 50 kills", "Show &asymp; counts", the summary "Include it now", "L4 now, L5 next".</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Fleet / Groups:</b> above "pilot rows up to" (15) hostile + neutral pilots, the System Analyzer opens on the fleet view; Groups shows the step 1 columns (every pilot still one click away).</li>
+<li><b>The 5 largest groups</b> (hostile first, then neutral) are looked up; the others are listed under "Not looked up" with a <b>Look up</b> button.</li>
+<li><b>Each group:</b> what it's been flying, from its 50 newest kills: its 3 main hulls with their share, <b>&asymp; how many</b> of its pilots in local that is (an estimate: share &times; their count in local), and how many are on your D-Scan.</li>
+<li><b>Common fit</b> per hull (D5): from the group's 20 newest losses in it, grouped by exact fitted modules; up to 3 variants of 2+ losses with how many and what differs from the most common ("MWD instead of AB"); pick one and its numbers follow (DPS with damage types, EHP, weakest resist, EWAR letters). One fit only: "Fits vary, showing the latest"; no losses: "fit unknown". <b>&rsaquo;</b> opens the fit in the Fit Analyzer.</li>
+<li><b>Their fleet, estimated:</b> &asymp; counts &times; each common fit, added up: raw DPS by damage type, what most of their ships are weakest to, how many have tackle / disruption / cap warfare / bursts, and logistics.</li>
+<li><b>zKillboard:</b> 4 requests per group at most (kills + 3 hulls' losses), 20 for the 5; each kept an hour.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/fleet_view_check.py</code> (21 checks): kills and losses built from golden-fit killmails, so each common fit's numbers are checked against the regression suite's pyfa-verified pins (Curse 177 DPS / 22,648 EHP, Vedmak 507, Loki 801) and the shares, &asymp; counts and the summary (raw DPS 18,846 = &Sigma; &asymp; &times; pins) against <code>sa_mocks.expected_fleet()</code>. v.82 fails (no fleet view).</li>
+<li>Three mutants first survived (the summary ignoring the pick, the two charge-swap ones): variant 2 had the same DPS as variant 1, and the mock's odd-charge Loki loss wasn't the newest by killmail ID. The mock now gives variant 2 Hammerhead II drones and makes that loss last, and the check re-reads the summary after a pick.</li>
+<li>Mutations, each caught: other groups' pilots counted; capsules counted; a variant of 1 loss; 6 groups; &asymp; not share &times; local; the summary ignoring the picked variant; the charge swap removing the weapon; no charge swap.</li>
+<li><code>system_analyzer_check.py</code> reads the columns in Groups (the Pilots and Fleet views have their own checks); <code>sa_mocks.py</code> answers ESI's /universe/names/ for item types too. CARD_NAMES + roadmap/card-names.md: <code>fleet</code>.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 34 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #75: on a killmail a weapon and the charge loaded in it are two items with the same <code>flag</code>. The first draft of the charge swap removed every high-slot item in a flag that held a charge, weapons included; it was caught in review. Pick items by type, never by the flag alone, keep the original item when it's already right, and give the check a loss that really needs the swap (here a Loki with Scourge in its launchers) so a mutant that drops the flag fails.</p>
+</body></html>
