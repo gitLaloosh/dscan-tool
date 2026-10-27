@@ -40,7 +40,16 @@ number a count, so thin data shows as thin. zKillboard's own size labels, if its
   corporation's) common fit, said as not theirs; active hours in the browser's time zone. `tools/page_checks/dossier_check.py`.
 - **v2026.10.14.91 fix:** the fallback's tab now links to the alliance's / corporation's loss its fit was read from (it
   linked to killmail "undefined"), and its loss row says whose loss it is.
-- **Delivery 2 (next):** the System Analyzer's pilot rows from the same dossier, with the Auto / Solo / Small gang /
-  Fleet / All switch (D4–D6).
+- **Delivery 2 (v2026.10.14.92): done.** The System Analyzer's pilot rows read each pilot's newest 50 kills and 30
+  losses (the dossier's data; the same 2 zKillboard requests per pilot) and pick the possible ship for a gang size: the
+  hull with the most of their kills in it, tagged; a ship of theirs on the D-Scan still first; no kill in that size:
+  v.84's rule. One switch on the Pilots card (Auto default, kept in the browser); Auto = their alliance's (else
+  corporation's) count in Local. A row opens the dossier on the same size and hull. `tools/page_checks/sa_size_check.py`.
+- **Kills under a row (v2026.10.14.93): done.** the owner's backlog item "expand a hull row to list its kills"; mockup
+  `Claude outputs/pilot_kills_list_mockup.html`, all four answers as recommended: **K1** a ▶ button per row (the row
+  still picks the hull); **K2** the list follows the switch; **K3** Show 10 more keeps reading older killmails from ESI
+  past the dossier's 50 (zKillboard's list is already asked; Try again for any ESI couldn't return, PILOT-09); **K4**
+  columns as drawn (when in your time, victim, players, system, their weapon, with them, zKillboard's value, link).
+  `tools/page_checks/dossier_kills_check.py`.
 - Still to check against a real pilot: whether zKillboard's lists carry their own size labels (the dossier counts the
   player attackers itself).

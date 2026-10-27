@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — Kills under a dossier row</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Pilot Dossier: their kills in a hull, under its row</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.92</code> &rarr; <code>v2026.10.14.93</code></p>
+<p>the owner via todo-inbox: "high prio - in pilot analyzer &gt; pilot dossier &gt; hull row &gt; add ability to expand/collapse. expanding shows a list of their kills with that hull (shows 10 by default with 'show more' link that continues to load more). add a link to the zKillboard entry for each one of those kills." He asked for a mockup first (<code>Claude outputs/pilot_kills_list_mockup.html</code>) and took all four recommended answers: a ▶ button per row, the list follows the switch, keep reading older kills, columns as drawn.</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>▶ before each hull</b> with kills. It opens that hull's kills under the row, one row at a time. Pressing the rest of the row still picks the hull for the loss tabs, as before.</li>
+<li><b>The list</b>: newest first, 10 at a time, in the switch's gang size. Each kill shows:
+  <ul>
+  <li>when, in your time;</li>
+  <li>the victim's ship, class, pilot and corporation ticker;</li>
+  <li>the players on the kill (dot in the size colour);</li>
+  <li>the system;</li>
+  <li>their weapon on that kill;</li>
+  <li>who flew with them;</li>
+  <li>zKillboard's value;</li>
+  <li>a "zKillboard ↗" link to the kill.</li>
+  </ul>
+  On a phone, each kill takes three lines.</li>
+<li><b>Show 10 more</b>: first the rest of the kills already read for the dossier (its newest 50), then older killmails from ESI, 25 at a time and up to 2 batches per press, until 10 more turn up in that hull and size. The line beside the button says how many of how many, then "all N … in zKillboard's list".</li>
+<li><b>Requests</b>: none from zKillboard (its list of their kills, with each kill's value, is already asked), plus:
+  <ul>
+  <li>one ESI names lookup for the victims;</li>
+  <li>their corporations' tickers (kept);</li>
+  <li>older killmails only when you ask for them (kept for good).</li>
+  </ul>
+  The dossier's own numbers stay on its newest 50 kills.</li>
+<li><b>ESI failing</b> on some older kills: what was read is listed, with "N older kills couldn't be read (PILOT-09)" and a Try again button. PILOT-09 is new; ERRORS.md has 40 codes.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/dossier_kills_check.py</code>. <code>sa_mocks.py</code> gained zKillboard's value on the dossier pilot's kills and a pilot with 60 kills, so the dossier reads 50 and Show 10 more has to read older ones. Expected lines are worked out from the mock's killmails. v.92 fails. Mutants caught (7): oldest first, the switch ignored, ▶ doing nothing, no older kills read, UTC times, failures not said, "with them" empty.</li>
+<li>Found on the way: <code>extension_check.py</code> failed once under load (it passed on its own, as twice before today). The message it caught was a real gap: when zKillboard can't be reached at all for a pasted kill link, the page said "Failed to fetch … (APP-01)", the code for an uncoded error. It now says the network cause with SHARE-01, and <code>shared_kill_check.py</code> checks it (v.92 fails). The extension check itself stays a little flaky under heavy load (its pages are served from a local server).</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 40 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #34, from the other side: a check that works out a value the page formats with <code>toFixed</code> must round the JavaScript way. The check's Python <code>f'{x:.1f}'</code> sent 51.25 to "51.2" (ties to even) where the page showed "51.3". When a check and the page differ on an exact half, look at the check's rounding first.</p>
+</body></html>

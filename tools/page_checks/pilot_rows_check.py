@@ -16,6 +16,9 @@ Checks:
   * past 15 pilots: "Not looked up yet" and "Load N more pilots", which looks up the rest (2 requests each);
   * at 390 px nothing runs off the page; no page errors.
 v2026.10.14.81 fails (no pilot rows).
+v2026.10.14.92: the possible ship is picked for a gang size (sa_size_check.py). These pilots' mock kills are all solo
+(one attacker) and Auto puts them in a small gang (3 of their alliance in Local), so every row here takes v.84's rule
+(no kill in that size), which this check keeps testing: LESSON #80.
 """
 import sys, os, re, json
 HERE = os.path.dirname(os.path.abspath(__file__))

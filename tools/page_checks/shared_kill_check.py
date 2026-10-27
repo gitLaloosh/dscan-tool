@@ -14,7 +14,8 @@ to a wrong hash, as it does). Checks:
   * "See Test Pilot's Loki losses": the normal analysis (two Loki losses, the Last Kill line), the address drops the link;
   * a zKillboard kill link pasted into the pilot box: one zKillboard call (/api/killID/), that loss (the Vedmak), and the
     address shows its share link; an ID zKillboard doesn't know: SHARE-01;
-  * a link cut short (#kill=<id> only): SHARE-02; a wrong hash: ESI-05; a new link typed into the address bar of an open
+  * a link cut short (#kill=<id> only): SHARE-02; a wrong hash: ESI-05; zKillboard not reachable for a pasted kill link:
+    SHARE-01 with the network cause (v.93; was the uncoded APP-01); a new link typed into the address bar of an open
     page (hashchange) loads it;
   * 390 px: the header wraps, no sideways scroll. No page errors.
 v2026.10.14.78 fails (no share item, a link opens nothing).
@@ -130,6 +131,14 @@ with sync_playwright() as p:
     pg.wait_for_timeout(400); wait_idle(pg)
     s3 = pg.inner_text('#fitStatus')
     check('(ESI-05)' in s3 and '422' in s3, f'a wrong hash: ESI-05 ({s3!r})')
+    ctx.close()
+    # v2026.10.14.93: zKillboard not reachable for a pasted kill link (a network error, not an answer): SHARE-01, not the
+    # uncoded APP-01 (seen when extension_check ran under load)
+    ctx, pg, errs = page(b, 1440, 1000)
+    pg.route(re.compile(r'https://zkillboard\.com/api/killID/.*'), lambda r: r.abort('failed'))
+    pg.click('#tabBtnPilot'); pg.fill('#pilotName', 'https://zkillboard.com/kill/9100003/'); pg.click('#fitBtn'); pg.wait_for_timeout(400); wait_idle(pg)
+    s4 = pg.inner_text('#fitStatus')
+    check('(SHARE-01)' in s4 and 'network error' in s4 and 'APP-01' not in s4, f'zKillboard not reachable for a kill link: SHARE-01 with the network cause ({s4!r})')
     ctx.close()
     # ---------------- phone
     ctx, pg, errs = page(b, 390, 844, True, url=f'#kill=9100001/{H[9100001]}')

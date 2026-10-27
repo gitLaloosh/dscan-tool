@@ -1986,6 +1986,9 @@
   .pr-pn, .pr-hn{min-width:0;}
   .pr-pilot .nm, .pr-hull .nm{display:block; font:600 13px/16px var(--sans); color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .pr-hull .cls{font:400 11.5px var(--sans); color:var(--text-dim); margin-left:6px;}
+  .pr-size{display:inline-block; margin-left:7px; padding:0 6px; border:1px solid currentColor; border-radius:9px; font:600 10.5px/15px var(--sans); vertical-align:1px;}   /* v.92: the dossier's size colours */
+  .pr-size.solo{color:var(--cyan);} .pr-size.small{color:var(--amber);} .pr-size.fleet{color:var(--drain);}
+  .pr-sizes{margin-left:0;} .pr-sizes button{padding:5px 11px;}
   .pr-ico{width:32px; height:32px; border-radius:4px; background:#222b33; border:1px solid var(--line); flex:none; box-sizing:border-box;}
   .pr-num{font:600 14px var(--mono); color:var(--heading); text-align:right; white-space:nowrap;}
   .pr-dps{display:flex; flex-direction:column; gap:3px; align-items:flex-end;}
@@ -2162,7 +2165,24 @@
   .pd-key{display:flex; gap:12px; font:400 11.5px var(--sans); color:var(--text-dim); margin-left:auto;}
   .pd-key i{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:4px; vertical-align:-1px;}
   .pd-cols, button.pd-row{display:grid; grid-template-columns:minmax(150px,1.1fr) 82px 96px minmax(140px,1.2fr) minmax(140px,1.2fr) minmax(130px,1fr) 58px; gap:12px; align-items:center;}
-  .pd-cols{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); padding:12px 4px 6px 10px; border-bottom:1px solid var(--line); margin-top:6px;}
+  .pd-cols{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); padding:12px 4px 6px 44px; border-bottom:1px solid var(--line); margin-top:6px;}
+  /* v.93: ▶ before each row, their kills under it */
+  .pd-rh{position:relative;}
+  .pd-rh > button.pd-row{padding-left:44px;}
+  button.pd-exp{position:absolute; left:9px; top:50%; margin-top:-13px; z-index:1; width:26px; height:26px; min-height:0; padding:0; border:1px solid var(--line); border-radius:5px; background:transparent; color:var(--text-dim); font:600 10px var(--sans); letter-spacing:0; display:inline-flex; align-items:center; justify-content:center;}
+  button.pd-exp:hover, .pd-rw.open button.pd-exp{color:var(--heading); background:var(--panel-2);}
+  .pd-kills{border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--panel-2) 55%, transparent); padding:2px 10px 10px 44px;}
+  .pdk{display:grid; grid-template-columns:96px minmax(170px,1.2fr) 86px 74px minmax(150px,1.1fr) minmax(120px,1fr) 58px 96px; gap:12px; align-items:center; font:400 12.5px var(--sans); color:var(--text); padding:6px 0; border-bottom:1px solid var(--line-soft); min-height:40px;}
+  .pdk > span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pdk b{font-weight:600; color:var(--heading);} .pdk .pd-dim{font-size:11.5px;}
+  .pdk-t, .pdk-v{display:flex; flex-direction:column;}
+  .pdk-g i{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px;}
+  .pdk-val, .pdk-l{text-align:right;} .pdk-val{font-family:var(--mono);}
+  .pdk-l a{color:var(--cyan); text-decoration:none; font-weight:600;} .pdk-l a:hover{text-decoration:underline;}
+  .pdk-m{display:none;}
+  .pdk-h{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); min-height:0; padding:8px 0 5px;}
+  .pdk-more{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:9px 0 0; font:400 12px var(--sans); color:var(--text-dim);}
+  .pdk-more button{min-height:30px; padding:4px 12px; font:600 12px var(--sans); letter-spacing:0; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); display:inline-flex; gap:6px; align-items:center;}
   .pd-cols .r{text-align:right;}
   button.pd-row{width:100%; padding:8px 4px 8px 10px; border:none; border-bottom:1px solid var(--line-soft); border-radius:0; background:transparent; font:400 12.5px var(--sans); color:var(--text); text-align:left; letter-spacing:0; min-height:44px;}
   button.pd-row:hover{background:var(--panel-2);}
@@ -2190,6 +2210,16 @@
   .pd-note{display:flex; gap:8px; align-items:flex-start; margin:10px 0 4px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel-2); font:400 12.5px var(--sans); color:var(--text);}
   @media (max-width: 900px){
     .pd-cols{display:none;}
+    .pd-rh > button.pd-row{padding-left:50px;}
+    button.pd-exp{top:4px; margin-top:0; left:2px; width:40px; height:40px; font-size:11px;}
+    .pd-kills{padding:2px 4px 10px;}
+    .pdk-h{display:none;}
+    .pdk{grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"v l" "g g" "w w"; row-gap:3px; padding:8px 0;}
+    .pdk > .pdk-v{grid-area:v;} .pdk > .pdk-l{grid-area:l; align-self:start;} .pdk > .pdk-g{grid-area:g;} .pdk > .pdk-w{grid-area:w; color:var(--text-dim); font-size:11.5px;}
+    .pdk > .pdk-t, .pdk > .pdk-s, .pdk > .pdk-x, .pdk > .pdk-val{display:none;}
+    .pdk-m{display:inline;}
+    .pdk-l a{display:inline-flex; align-items:center; min-height:40px;}
+    .pdk-more button{min-height:40px;}
     button.pd-row{grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"h n" "g g" "w w" "f f"; row-gap:5px;}
     .pd-row > .pd-hull{grid-area:h;} .pd-row > .pd-n.k{grid-area:n;} .pd-row > .pd-gang{grid-area:g; flex-direction:row; align-items:center; gap:8px;}
     .pd-row > .pd-w{grid-area:w;} .pd-row > .pd-f{grid-area:f;} .pd-row > .pd-v, .pd-row > .pd-last{display:none;}
@@ -2205,7 +2235,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.91</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.93</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2488,10 +2518,11 @@ const CARD_INFO = {
  ],
  "pilots": [
   "With 15 or fewer hostile + neutral pilots in Local (your “pilot rows up to” number in {card:side}), each gets a row. Groups shows the columns instead.",
-  "Possible ship: the newest ship they were seen in within 30 days on zKillboard, the ship they flew on one of their last 5 kills or lost in one of their last 10 losses; a ship of theirs that's on your D-Scan comes first. Nothing that recent: the hull they lost most among those losses, which can be months old. The line under the ship says when it was seen; it's a possibility, not what they're in now.",
+  "Possible ship, for a gang size (the switch): from their newest 50 kills and 30 losses, as the {card:dossier} in the Pilot Analyzer. Auto picks each pilot's size from how many of their alliance (or corporation, without one) are in Local: 1 solo, 2–10 small gang, 11+ fleet; an NPC corporation counts as solo. The others use one size for every row.",
+  "The ship is the hull with the most of their kills in that size (the tag says which; All: kills and losses together); a ship of theirs from the last 30 days that's on your D-Scan comes first. No kill in that size: the newest ship they were seen in within 30 days, else the hull they lost most. The line under the ship says how many and when (the whole sentence on hover); it's a possibility, not what they're in now.",
   "The numbers come from their newest loss in that hull, worked out as in the Pilot Analyzer (pyfa's numbers): DPS (a range when their charges are guessed from cargo) with its damage types, EHP, the weakest resist and the EWAR letters of the {card:ewar} card. No loss of that hull among those losses: the bare hull's EHP and resists, marked fit unknown.",
   "Each pilot is 2 zKillboard requests (kills and losses, kept for an hour), 15 pilots at a time; Load more asks for the next ones. Rows keep their place while they fill, then sort once: hostile first, then by DPS.",
-  "A row opens that pilot in the Pilot Analyzer, on that hull."
+  "A row opens that pilot in the Pilot Analyzer, on that hull, its dossier on the same size."
  ],
  "fleet": [
   "Above the “pilot rows up to” number of hostile + neutral pilots ({card:side}), Local is a fleet. The 5 largest hostile or neutral groups are looked up; the others are listed with a Look up button. Groups shows the columns instead.",
@@ -2518,7 +2549,8 @@ const CARD_INFO = {
   "What they fly, from their newest 50 kills and 30 losses on zKillboard (each killmail read from ESI and kept): one row per hull, the busiest first. Pick a row to see that hull below: their own losses in it, or, when they've never lost one, their alliance's (or corporation's) common fit, said as not theirs.",
   "Gang size on a kill is the players on that killmail (NPCs left out; anyone who joined in counts): Solo is 1, Small gang 2–10, Fleet 11 or more. The switch keeps only those kills, so you see what they fly alone, in a small gang or in a fleet. Losses show a hull but not a gang size (only who killed them).",
   "Weapons seen: the weapon each killmail credits them with. Flies with: the other players' hulls on those kills. Kills mostly: what they killed, by ship class. Every number is a count, so a pilot with few kills shows few.",
-  "Active: the hours of their kills in your own time zone. Usual systems: where their kills and losses were. Capsules, shuttles, rookie ships and Mobile Tractor Units aren't counted as hulls."
+  "Active: the hours of their kills in your own time zone. Usual systems: where their kills and losses were. Capsules, shuttles, rookie ships and Mobile Tractor Units aren't counted as hulls.",
+  "▶ opens their kills in that hull under its row (in the switch's gang size), newest first, 10 at a time: when, the victim, the players on the kill, the system, their weapon, who flew with them, zKillboard's value and a link to the kill. Show 10 more reads older kills from ESI once those are shown (no new zKillboard request)."
  ]
 };
 const CTX_MAX = 40;
@@ -2638,7 +2670,7 @@ const ERROR_CODES = {
  "SHARE-01": {
   "title": "zKillboard has no such killmail",
   "where": "Pilot Analyzer status line, a zKillboard kill link pasted into the pilot box",
-  "trigger": "zKillboard's /api/killID/{id}/ didn't return that killmail (no killmail with that ID, or a non-5xx error status; 5xx is ZKB-01).",
+  "trigger": "zKillboard's /api/killID/{id}/ didn't return that killmail (no killmail with that ID, or a non-5xx error status; 5xx is ZKB-01), or couldn't be reached at all (a network error; since v2026.10.14.93, was APP-01).",
   "check": "The killmail ID in the link; open the link on zkillboard.com.",
   "why": "The hash ESI needs comes from zKillboard; without it the killmail can't be fetched.",
   "since": "v2026.10.14.79",
@@ -2760,6 +2792,16 @@ const ERROR_CODES = {
   "why": "",
   "since": "2026-10-27 (v2026.10.14.87)",
   "doc": "2026-10-27_pilot-affiliation-and-zkillboard-stats.html"
+ },
+
+ "PILOT-09": {
+  "title": "Couldn't read some of their older kills",
+  "where": "Pilot Analyzer, {card:dossier}, the kills under a row",
+  "trigger": "ESI didn't return some killmails while Show 10 more read their older kills (offline, an ESI outage).",
+  "check": "ESI status; press Try again under the list once ESI answers. The kills already shown stay.",
+  "why": "",
+  "since": "2026-10-27 (v2026.10.14.93)",
+  "doc": "2026-10-27_dossier-kills-under-a-row.html"
  },
 
  "FIT-01": {
@@ -10392,7 +10434,9 @@ async function runSharedKillmail(id, hash){
 async function sharedKillmailRun(id, hash, statusEl){
   if(!hash){
     setStatus(statusEl, `Looking up killmail ${id} on zKillboard…`);
-    const res = await zkbFetch(`${ZKB}/killID/${id}/`);
+    let res;   // v.93: a network failure here was uncoded (APP-01; seen in extension_check under load)
+    try{ res = await zkbFetch(`${ZKB}/killID/${id}/`); }
+    catch(e){ if(e.zkbUnavailable || e.code) throw e; throw codedError('SHARE-01', describeEsiFailure(`zKillboard killmail lookup (killmail ${id})`, undefined)); }
     const list = res.ok ? await res.json() : [];
     const stub = (Array.isArray(list) ? list : []).find(k => Number(k.killmail_id) === id);
     hash = stub && stub.zkb && stub.zkb.hash;
@@ -10524,7 +10568,8 @@ async function runFitCheck(opts){
 const PD_KILLS = 50, PD_LOSSES = 30, PD_ROWS = 8;
 const PD_SIZES = [['solo', 'Solo'], ['small', 'Small gang'], ['fleet', 'Fleet']];
 function pdSize(n){ return n <= 1 ? 'solo' : n <= 10 ? 'small' : 'fleet'; }   // D1: the player attackers on a kill
-const pd = {charId: null, d: null, mode: 'all', sel: null, character: null, statusEl: null};
+const pd = {charId: null, d: null, mode: 'all', sel: null, character: null, statusEl: null, want: null,
+  kStubs: [], read: 0, older: [], open: null, shown: 10, busy: false, failed: [], names: new Map(), value: new Map()};   // v.93: the kills under a row
 const killStubCache = new Map();
 async function fetchKillsStubs(charId, forceRefresh){
   if(!forceRefresh && killStubCache.has(charId)) return killStubCache.get(charId);
@@ -10539,6 +10584,18 @@ async function fetchKillsStubs(charId, forceRefresh){
 async function pdIsHull(id){
   try{ const t = await getType(id), g = await getGroup(t.group_id); return g.category_id === 6 && !EXCLUDED_HULL_GROUP_IDS.has(t.group_id); }catch(e){ return false; }
 }
+// One of their kills (v.93: also what the kills under a row show): their hull and weapon, the gang size (player
+// attackers), wingmates' hulls, the victim. null when they aren't on it with a ship.
+function pdKill(km, charId){
+  const me = (km.attackers || []).find(a => a.character_id === charId);
+  if(!me || !me.ship_type_id) return null;
+  const players = (km.attackers || []).filter(a => a.character_id);
+  const n = players.length, v = km.victim || {};
+  return {hull: me.ship_type_id, size: pdSize(n), n, t: Date.parse(km.killmail_time),
+    weapon: me.weapon_type_id && me.weapon_type_id !== me.ship_type_id ? me.weapon_type_id : null,
+    mates: players.filter(a => a !== me && a.ship_type_id).map(a => a.ship_type_id), victim: v.ship_type_id,
+    id: km.killmail_id, sys: km.solar_system_id, vchar: v.character_id, vcorp: v.corporation_id};
+}
 // The dossier's numbers, from the killmails. kms: {kills: [km], losses: [km]} (newest first).
 async function pdBuild(charId, kms){
   const hulls = new Map();   // typeId -> {id, kills: [{size, n, t, weapon, mates: [ids], victim}], losses: [{t, km}]}
@@ -10546,14 +10603,11 @@ async function pdBuild(charId, kms){
   const ids = new Set(), times = [], systems = new Map();
   const sizes = {solo: 0, small: 0, fleet: 0};
   for(const km of kms.kills){
-    const me = (km.attackers || []).find(a => a.character_id === charId);
-    if(!me || !me.ship_type_id) continue;
-    const players = (km.attackers || []).filter(a => a.character_id);
-    const n = players.length, size = pdSize(n), t = Date.parse(km.killmail_time);
-    const mates = players.filter(a => a !== me && a.ship_type_id).map(a => a.ship_type_id);
-    const weapon = me.weapon_type_id && me.weapon_type_id !== me.ship_type_id ? me.weapon_type_id : null;
-    hullOf(me.ship_type_id).kills.push({size, n, t, weapon, mates, victim: km.victim && km.victim.ship_type_id});
-    for(const x of [me.ship_type_id, weapon, km.victim && km.victim.ship_type_id, ...mates]) if(x) ids.add(x);
+    const k = pdKill(km, charId);
+    if(!k) continue;
+    const {size, t, weapon, mates} = k;
+    hullOf(k.hull).kills.push(k);
+    for(const x of [k.hull, weapon, k.victim, ...mates]) if(x) ids.add(x);
     sizes[size]++; times.push(t);
     if(km.solar_system_id) systems.set(km.solar_system_id, (systems.get(km.solar_system_id) || 0) + 1);
   }
@@ -10611,13 +10665,15 @@ function pdHtml(d){
     const vic = pdTop(ks.map(k => k.victim).filter(Boolean).map(id => (d.info.get(id) || {}).cls), 2, x => x).map(([c, n]) => `${c} ${n}`).join(' · ');
     const bar = h.kills.length ? `<span class="bar" aria-hidden="true">${PD_SIZES.map(([v]) => `<i style="flex:${sz[v]};background:${PD_COLOR[v]}"></i>`).join('')}</span>` : '';
     const fit = h.losses.length ? `${h.losses.length} loss${h.losses.length === 1 ? '' : 'es'} · fit from their losses` : 'no loss of theirs';
-    const sel = pd.sel === h.id;
-    return `<button type="button" class="pd-row${sel ? ' sel' : ''}" data-pd-hull="${h.id}" aria-pressed="${sel}" title="Show their ${escapeHtml(h.name)} ${h.losses.length ? 'losses' : '(their group’s common fit)'}">
+    const sel = pd.sel === h.id, open = pd.open === h.id, nk = pdKillList(h).length;
+    // v.93 (K1): ▶ opens their kills in this hull under the row; the row itself still picks the hull
+    const exp = nk ? `<button type="button" class="pd-exp" data-pd-exp="${h.id}" aria-expanded="${open}"${open ? ` aria-controls="pdk-${h.id}"` : ''} aria-label="${open ? 'Hide' : 'Show'} their ${escapeHtml(h.name)} kills" title="${open ? 'Hide' : 'Show'} their ${escapeHtml(h.name)} kills">${open ? '▼' : '▶'}</button>` : '';
+    return `<div class="pd-rw${open ? ' open' : ''}"><div class="pd-rh">${exp}<button type="button" class="pd-row${sel ? ' sel' : ''}" data-pd-hull="${h.id}" aria-pressed="${sel}" title="Show their ${escapeHtml(h.name)} ${h.losses.length ? 'losses' : '(their group’s common fit)'}">
       <span class="pd-hull"><span class="nm">${escapeHtml(h.name)}<span class="cls">${escapeHtml(h.cls || '')}</span></span><span class="pd-sub">${escapeHtml(fit)}</span></span>
       <span class="pd-n k">${ks.length}${pd.mode === 'all' ? '' : `<span> of ${h.kills.length}</span>`}</span>
       <span class="pd-gang">${bar}<span>${med === null ? '<span class="pd-dim">no kills</span>' : `usually <b>${med}</b>`}</span></span>
       <span class="pd-w">${escapeHtml(w) || '<span class="pd-dim">—</span>'}</span><span class="pd-f">${escapeHtml(mates) || '<span class="pd-dim">—</span>'}</span>
-      <span class="pd-v pd-dim">${escapeHtml(vic) || '—'}</span><span class="pd-n pd-last">${pdAgo(last)}</span></button>`;
+      <span class="pd-v pd-dim">${escapeHtml(vic) || '—'}</span><span class="pd-n pd-last">${pdAgo(last)}</span></button></div>${open ? pdKillsHtml(h) : ''}</div>`;
   };
   // footer: active hours in the user's own time zone (D3), usual systems, the split
   const hrs = new Array(24).fill(0); for(const t of d.times) hrs[new Date(t).getHours()]++;
@@ -10638,6 +10694,89 @@ function pdHtml(d){
       <div><div class="k">Solo / gang</div><div class="v" data-pd="split"><b>${d.sizes.solo}</b> solo · <b>${d.sizes.small}</b> small gang · <b>${d.sizes.fleet}</b> fleet</div></div>
     </div>`;
 }
+// ---- v.93: their kills in a hull, under its row (the owner's backlog item; mockup Claude outputs/pilot_kills_list_mockup.html,
+// "▶ button per row", "Follow the switch", "Keep reading older kills", columns "As drawn") ----
+// The kills already read for the dossier (newest PD_KILLS) and any older ones read since, in this hull and the switch's
+// size, newest first, PD_SHOW_STEP at a time. Past those: the next older killmails of zKillboard's list (already asked),
+// read from ESI (kept for good), PD_OLDER_BATCH at a time, up to 2 batches a press. Victims' names: one ESI names lookup.
+const PD_SHOW_STEP = 10, PD_OLDER_BATCH = 25;
+function pdKillList(h){
+  return [...h.kills, ...pd.older.filter(k => k.hull === h.id)].filter(k => pd.mode === 'all' || k.size === pd.mode).sort((a, b) => b.t - a.t);
+}
+function pdKillsHtml(h){
+  const d = pd.d, list = pdKillList(h), shown = list.slice(0, pd.shown);
+  const nm = (id) => (d.info.get(id) || {}).name || '', cls = (id) => (d.info.get(id) || {}).cls || '';
+  const word = pd.mode === 'all' ? '' : `${{solo: 'solo', small: 'small-gang', fleet: 'fleet'}[pd.mode]} `;
+  const need = shown.flatMap(k => [k.vchar, k.vcorp]).filter(id => id && !pd.names.has(id));
+  if(need.length) pdNames(need);
+  const lines = shown.map(k => {
+    const x = new Date(k.t), day = x.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}), hm = x.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+    const c = new Map(); for(const m of k.mates) c.set(m, (c.get(m) || 0) + 1);
+    const mates = [...c].sort((a, b) => b[1] - a[1] || nm(a[0]).localeCompare(nm(b[0]))).map(([m, n]) => `${nm(m) || `type ${m}`}${n > 1 ? ` ×${n}` : ''}`).join(', ');
+    const who = k.vchar ? (pd.names.get(k.vchar) || '…') : 'no pilot';
+    const sys = d.sysNames.get(k.sys) || (k.sys ? `system ${k.sys}` : '');
+    const val = pd.value.get(k.id);
+    const isk = val ? paIsk(val) : '—';
+    return `<div class="pdk" data-pdk="${k.id}"><span class="pdk-t"><b>${day}</b><span class="pd-dim">${hm} your time</span></span>
+      <span class="pdk-v"><span><b>${escapeHtml(nm(k.victim) || `type ${k.victim}`)}</b> <span class="pd-dim">${escapeHtml(cls(k.victim))}</span></span><span class="pd-dim">${escapeHtml(who)} ${orgTickerHtml('corporation', k.vcorp)}<span class="pdk-m"> · ${day} ${hm}</span></span></span>
+      <span class="pdk-g"><i style="background:${PD_COLOR[k.size]}"></i>${k.n} pilot${k.n === 1 ? '' : 's'}<span class="pdk-m pd-dim"> ${{solo: 'solo', small: 'small gang', fleet: 'fleet'}[k.size]} · ${escapeHtml(sys)} · ${isk}</span></span>
+      <span class="pdk-s">${escapeHtml(sys)}</span>
+      <span class="pdk-w">${escapeHtml(nm(k.weapon) || '—')}<span class="pdk-m">${mates ? ` · with ${escapeHtml(mates)}` : ''}</span></span>
+      <span class="pdk-x">${escapeHtml(mates) || '<span class="pd-dim">alone</span>'}</span>
+      <span class="pdk-val">${isk}</span>
+      <span class="pdk-l"><a href="https://zkillboard.com/kill/${k.id}/" target="_blank" rel="noopener">zKillboard ↗</a></span></div>`;
+  }).join('');
+  const unread = pd.read < pd.kStubs.length, nf = pd.failed.length;
+  const what = `${word}${h.name} kill${list.length === 1 ? '' : 's'}`;
+  const note = list.length > shown.length ? `${shown.length} of ${list.length} ${what}${unread || nf ? ` in their newest ${pd.read - nf}` : ''}`
+    : unread || nf ? `${shown.length} ${what} in their newest ${pd.read - nf}` : `all ${list.length} ${what} in zKillboard's list`;
+  const fail = nf ? ` · ${withCode(`${nf} older kill${nf === 1 ? '' : 's'} couldn't be read`, 'PILOT-09')}` : '';
+  const label = list.length > shown.length || unread ? `Show ${PD_SHOW_STEP} more` : 'Try again';
+  const more = list.length > shown.length || unread || nf
+    ? `<button type="button" data-pd-more="${h.id}"${pd.busy ? ' disabled' : ''}>${pd.busy ? '<span class="busy-spin" aria-hidden="true"></span>Reading older kills…' : label}</button>` : '';
+  return `<div class="pd-kills" id="pdk-${h.id}" role="region" aria-label="Their ${escapeHtml(h.name)} kills">
+    <div class="pdk pdk-h" aria-hidden="true"><span>When</span><span>Victim</span><span>Gang</span><span>System</span><span>Their weapon</span><span>With them</span><span class="pdk-val">Value</span><span></span></div>
+    ${lines || `<div class="pd-msg pd-dim">No ${what} among those read.</div>`}
+    <div class="pdk-more">${more}<span>${escapeHtml(note)}${escapeHtml(fail)}</span></div></div>`;
+}
+const pdNamesAsked = new Set();
+async function pdNames(ids){
+  const ask = ids.filter(id => !pdNamesAsked.has(id));
+  if(!ask.length) return;
+  for(const id of ask) pdNamesAsked.add(id);
+  try{ for(const n of await resolveIdsToNames(ask)) pd.names.set(n.id, n.name); }catch(e){ for(const id of ask) pdNamesAsked.delete(id); return; }
+  pdRender();
+}
+// "Show 10 more": the next PD_SHOW_STEP already read, else older killmails until PD_SHOW_STEP more in this hull and size.
+async function pdMore(hid){
+  const d = pd.d, h = d && d.hulls.find(x => x.id === hid), charId = pd.charId;
+  if(!h || pd.busy) return;
+  if(pdKillList(h).length > pd.shown){ pd.shown += PD_SHOW_STEP; pdRender(); return; }
+  pd.busy = true; pdRender();
+  const before = pdKillList(h).length;
+  try{
+    // the ones that failed before first (Try again), then the next older ones
+    for(let b = 0; b < 2 && (pd.failed.length || pd.read < pd.kStubs.length) && pdKillList(h).length - before < PD_SHOW_STEP; b++){
+      const retry = pd.failed.length > 0, batch = retry ? pd.failed.splice(0) : pd.kStubs.slice(pd.read, pd.read + PD_OLDER_BATCH);
+      if(!retry) pd.read += batch.length;
+      const rs = await analyzeChunks(batch, fetchKillmail, 4);
+      if(pd.charId !== charId) return;
+      const got = [];
+      rs.forEach((r, i) => { if(!r || r.error || !r.km){ pd.failed.push(batch[i]); return; } const k = pdKill(r.km, charId); if(k){ pd.older.push(k); got.push(k); } });
+      // names, classes and systems for the new ones (types and groups are kept for good)
+      const ids = [...new Set(got.flatMap(k => [k.hull, k.weapon, k.victim, ...k.mates]).filter(id => id && !d.info.has(id)))];
+      await analyzeChunks(ids, async (id) => {
+        let t; try{ t = await getType(id); }catch(e){ return; }
+        let g = null; try{ g = await getGroup(t.group_id); }catch(e){}
+        d.info.set(id, {name: t.name, cls: g ? g.name : '', cat: g ? g.category_id : null, group: t.group_id});
+      }, 6);
+      const sys = [...new Set(got.map(k => k.sys).filter(id => id && !d.sysNames.has(id)))];
+      if(sys.length) try{ for(const n of await resolveIdsToNames(sys)) d.sysNames.set(n.id, n.name); }catch(e){}
+    }
+  } finally {
+    if(pd.charId === charId){ pd.busy = false; pd.shown += PD_SHOW_STEP; pdRender(); }
+  }
+}
 function pdRender(){
   const el = document.getElementById('pilotDossier');
   if(!el) return;
@@ -10645,17 +10784,21 @@ function pdRender(){
   if(el.querySelector('details.info-pop[open]')) return setTimeout(pdRender, 400);
   el.hidden = false;
   el.innerHTML = pdHtml(pd.d);
+  fillOrgTickers(el);   // v.93: the victims' corporations
 }
 // The pilot line names the hull on screen and its class (the hull dropdown did until v.89; ship class v.74).
 function pdHullLabel(name, typeId){
   const fc = document.getElementById('fitCandidates');
   if(fc && !fc.querySelector('.km-shared')) fc.innerHTML = `<span class="hull-static">${escapeHtml(name)}</span>${hullClassHtml(typeId)}`;
 }
-function pdClear(){ pd.charId = null; pd.d = null; pd.sel = null; pdRender(); }
+function pdClear(){ Object.assign(pd, {charId: null, d: null, sel: null, kStubs: [], read: 0, older: [], open: null, shown: PD_SHOW_STEP, busy: false, failed: []}); pdRender(); }
 // Reads the killmails and draws the dossier; returns the hull to show first (the busiest in All), or null.
 async function pdLoad(character, statusEl, forceRefresh, quiet){
   const charId = character.id;
-  pd.charId = charId; pd.character = character; pd.statusEl = statusEl; pd.mode = 'all';
+  pd.charId = charId; pd.character = character; pd.statusEl = statusEl;
+  // v.92: opened from a System Analyzer row, the dossier opens on the size that row used
+  const want = pd.want && pd.want.name === currentPilotName ? pd.want : null; pd.want = null;
+  pd.mode = want ? want.mode : 'all';
   if(!quiet) setStatus(statusEl, `Reading ${currentPilotName}'s newest kills and losses…`);
   const [kStubs, lStubs] = await Promise.all([fetchKillsStubs(charId, forceRefresh).catch(e => { if(e.zkbUnavailable) throw e; return []; }), fetchLossesStubs(charId, undefined, forceRefresh)]);
   const [kr, lr] = await Promise.all([analyzeChunks(kStubs.slice(0, PD_KILLS), fetchKillmail, 4), analyzeChunks(lStubs.slice(0, PD_LOSSES), fetchKillmail, 3)]);
@@ -10665,7 +10808,12 @@ async function pdLoad(character, statusEl, forceRefresh, quiet){
   if(pd.charId !== charId) return null;
   d.stubs = kStubs.length + lStubs.length;
   pd.d = d;
-  const top = pdRows(d, 'all')[0];
+  // v.93: zKillboard's list (newest first) for reading older kills, and its value for each
+  Object.assign(pd, {kStubs, read: Math.min(PD_KILLS, kStubs.length), older: [], open: null, shown: PD_SHOW_STEP, busy: false, failed: [], value: new Map()});
+  for(const s of kStubs) if(s && s.zkb && s.zkb.totalValue) pd.value.set(s.killmail_id, s.zkb.totalValue);
+  // the hull to show first: the busiest in the mode (v.92: or the one a System Analyzer row picked)
+  const wantHull = want && want.hull ? d.hulls.find(h => h.id === want.hull) : null;
+  const top = wantHull ? {h: wantHull} : pdRows(d, pd.mode)[0] || pdRows(d, 'all')[0];
   pd.sel = top ? top.h.id : null;
   pdRender();
   return top ? top.h : null;
@@ -10705,6 +10853,11 @@ async function pdShowHull(character, hull, statusEl, forceRefresh){
   el.addEventListener('click', async (e) => {
     const m = e.target.closest('[data-pd-mode]');
     if(m){ pd.mode = m.dataset.pdMode; pdRender(); const again = el.querySelector(`[data-pd-mode="${pd.mode}"]`); if(again) again.focus({preventScroll: true}); return; }
+    const x = e.target.closest('[data-pd-exp]');   // v.93: one row's kills open at a time
+    if(x){ const id = Number(x.dataset.pdExp); pd.open = pd.open === id ? null : id; pd.shown = PD_SHOW_STEP; pdRender(); const again = el.querySelector(`[data-pd-exp="${id}"]`); if(again) again.focus({preventScroll: true}); return; }
+    const mo = e.target.closest('[data-pd-more]');
+    if(mo){ const id = Number(mo.dataset.pdMore); await pdMore(id); const again = el.querySelector(`[data-pd-more="${id}"]`) || el.querySelector(`[data-pd-exp="${id}"]`); if(again) again.focus({preventScroll: true}); return; }
+    if(e.target.closest('.pd-kills')) return;   // a zKillboard link opens on its own
     const r = e.target.closest('[data-pd-hull]');
     if(!r || !pd.d || isBusy('fitStatus')) return;
     const h = pd.d.hulls.find(x => x.id === Number(r.dataset.pdHull));
@@ -20652,6 +20805,9 @@ function localLooksWrong(text){
 
 const sa = {last: null, open: new Set(), more: new Set(), friendOpen: false, evidence: null, evidenceErr: null,
   view: 'pilots', rows: new Map(), rowLimit: 0, gen: 0, scanTypes: new Set(), scanReady: Promise.resolve(), rowOrder: null, lastGroups: null};   // v.82: pilot rows (L3)
+// v.92 (pilot-dossier-plan.md D4-D6): the Pilots card's gang-size switch, kept in this browser
+const SA_SIZES = [['auto', 'Auto'], ['solo', 'Solo'], ['small', 'Small gang'], ['fleet', 'Fleet'], ['all', 'All']];
+sa.size = (() => { try{ const v = localStorage.getItem('dscanSaSize'); return SA_SIZES.some(x => x[0] === v) ? v : 'auto'; }catch(e){ return 'auto'; } })();
 
 async function runLocal(text, statusEl, force){
   const names = parseLocalNames(text);
@@ -20836,18 +20992,20 @@ function saRowTypeDps(e){
   for(const w of [...(app.weapons || []), ...(app.drones || []), ...(app.fighters || [])]) for(const d of DMG) acc[d] = (acc[d] || 0) + ((w.typeDps || {})[d] || 0);
   return acc;
 }
+// v.92 (pilot-dossier-plan.md D4-D6): each row reads the Pilot Dossier's data (their newest PD_KILLS kills and PD_LOSSES
+// losses, from ESI, kept for good; the same 2 zKillboard requests as before) and picks the possible ship for a gang size.
 async function saPilotData(p){
   const kills = await zkbCachedJson(`${ZKB}/kills/characterID/${p.id}/`, false, 'kills lookup');
   const losses = await zkbCachedJson(`${ZKB}/losses/characterID/${p.id}/`, false, 'losses lookup');
   const newest = (list, n) => [...list.data].filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, n);
-  const [kk, lk] = await Promise.all([analyzeChunks(newest(kills, SA_ROW_KILLS), fetchKillmail, 3), analyzeChunks(newest(losses, SA_ROW_LOSSES), fetchKillmail, 3)]);
+  const [kk, lk] = await Promise.all([analyzeChunks(newest(kills, PD_KILLS), fetchKillmail, 3), analyzeChunks(newest(losses, PD_LOSSES), fetchKillmail, 3)]);
+  const kms = {kills: kk.filter(r => r && r.km).map(r => r.km), losses: lk.filter(r => r && r.km && r.km.victim).map(r => r.km)};
   const seen = [];
-  for(const r of kk){
-    if(!r || !r.km) continue;
-    const a = (r.km.attackers || []).find(x => x.character_id === p.id);
-    if(a && a.ship_type_id) seen.push({typeId: a.ship_type_id, t: Date.parse(r.km.killmail_time), kind: 'kill'});
+  for(const km of kms.kills){
+    const a = (km.attackers || []).find(x => x.character_id === p.id);
+    if(a && a.ship_type_id) seen.push({typeId: a.ship_type_id, t: Date.parse(km.killmail_time), kind: 'kill'});
   }
-  for(const r of lk) if(r && r.km && r.km.victim) seen.push({typeId: r.km.victim.ship_type_id, t: Date.parse(r.km.killmail_time), kind: 'loss', km: r.km});
+  for(const km of kms.losses) seen.push({typeId: km.victim.ship_type_id, t: Date.parse(km.killmail_time), kind: 'loss', km});
   if(!seen.length) return {state: 'none', any: kills.data.length + losses.data.length > 0};
   await sa.scanReady;
   const types = new Map();
@@ -20855,25 +21013,76 @@ async function saPilotData(p){
   // capsules, shuttles, rookie ships and MTUs aren't a ship worth assessing (EXCLUDED_HULL_GROUP_IDS, as the Pilot Analyzer)
   const ok = seen.filter(s => types.has(s.typeId) && !EXCLUDED_HULL_GROUP_IDS.has(types.get(s.typeId).group_id)).sort((a, b) => b.t - a.t);
   if(!ok.length) return {state: 'none', any: true, onlyPods: true};
-  const recent = ok.filter(s => Date.now() - s.t <= SA_RECENT_DAYS * DAY_MS);
+  const r = {state: 'done', ok, types, d: await pdBuild(p.id, kms), estBy: new Map()};
+  await saRowPick(r, p);
+  return r;
+}
+// D6: their group is their alliance, else their corporation; D4: its count in Local gives the size (1 solo, 2-10 small
+// gang, 11+ fleet: pdSize). An NPC corporation isn't a group: solo.
+function saSizeFor(p){
+  if(sa.size !== 'auto') return {size: sa.size};
+  const g = p.alliance ? {kind: 'alliance', id: p.alliance} : {kind: 'corporation', id: p.corp};
+  const npc = !p.alliance && isNpcCorp(p.corp);
+  const n = npc ? 1 : sa.last.pilots.filter(q => g.kind === 'alliance' ? q.alliance === g.id : q.corp === g.id).length;
+  return {size: pdSize(n), n, npc, gname: sa.last.orgNames.get(g.id) || `their ${g.kind}`};
+}
+const SA_SIZE_WORD = {solo: 'solo', small: 'small-gang', fleet: 'fleet'}, SA_SIZE_TAG = {solo: 'solo', small: 'small gang', fleet: 'fleet'};
+// The possible ship for the size: a ship of theirs on your D-Scan (seen within SA_RECENT_DAYS) first; then the hull with
+// the most of their kills in that size (All: kills + losses, the dossier's All); no kill in that size: v.84's rule (the
+// newest seen within SA_RECENT_DAYS, else the hull they lost most). Its numbers: their newest loss in it, else "fit unknown".
+async function saRowPick(r, p){
+  const S = saSizeFor(p), size = S.size;
+  r.mode = sa.size;
+  const why = sa.size !== 'auto' ? '' : S.npc ? ' Solo: an NPC corporation isn\'t a group.'
+    : S.n === 1 ? ` Solo: the only one of ${S.gname} in Local.` : ` ${PD_SIZES.find(x => x[0] === size)[1]}: ${S.n} of ${S.gname} in Local.`;
+  const recent = r.ok.filter(s => Date.now() - s.t <= SA_RECENT_DAYS * DAY_MS);
   const how = (s) => `${s.kind === 'kill' ? 'on a kill' : 'lost one'} ${saAgoShort(s.t)}`;
-  let pick, basis;
+  let pick, basis, tag = '', title = '';
   const onScan = recent.find(s => sa.scanTypes.has(s.typeId));
-  if(onScan){ pick = onScan.typeId; basis = `on scan; ${how(onScan)}`; }
-  else if(recent.length){ pick = recent[0].typeId; basis = how(recent[0]); }
-  else{
-    const ls = ok.filter(s => s.kind === 'loss');
-    if(ls.length){
-      const n = new Map(); for(const s of ls) n.set(s.typeId, (n.get(s.typeId) || 0) + 1);
-      pick = [...n].sort((a, b) => b[1] - a[1] || ls.findIndex(s => s.typeId === a[0]) - ls.findIndex(s => s.typeId === b[0]))[0][0];
-      basis = `${n.get(pick)} of ${ls.length} losses, latest ${saAgoShort(ls.find(s => s.typeId === pick).t)}`;
-    }else{ pick = ok[0].typeId; basis = how(ok[0]); }
+  const top = onScan ? null : pdRows(r.d, size)[0];
+  if(onScan){ pick = onScan.typeId; basis = `on scan; ${how(onScan)}`; title = `A ship of theirs from the last ${SA_RECENT_DAYS} days is on your D-Scan, so it comes first.`; }
+  else if(top && size === 'all'){
+    const k = top.h.kills.length, l = top.h.losses.length;
+    pick = top.h.id; basis = `${k} kill${k === 1 ? '' : 's'} · ${l} loss${l === 1 ? '' : 'es'} · ${saAgoShort(top.last)}`;
+    title = `Their most flown hull, all sizes: ${k} of their newest ${r.d.nKills} kills and ${l} of their newest ${r.d.nLosses} losses.`;
   }
-  const t = types.get(pick), g = await getGroup(t.group_id);
-  const loss = ok.find(s => s.kind === 'loss' && s.typeId === pick);
-  const built = buildLossTally(loss ? loss.km : {victim: {items: []}});
-  const est = await estimateHpAndDps(pick, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag);
-  return {state: 'done', typeId: pick, hull: t.name, cls: (g && g.name) || '', basis, est, built, fitUnknown: !loss, lossAt: loss ? loss.t : null};
+  else if(top){
+    const last = Math.max(...top.ks.map(k => k.t)), n = top.ks.length, of = r.d.sizes[size];
+    pick = top.h.id; tag = size; basis = `${n} of ${of} ${SA_SIZE_WORD[size]} kills · ${saAgoShort(last)}`;
+    title = `Their most flown hull in ${size === 'solo' ? 'solo kills' : `${SA_SIZE_TAG[size]}s`}: ${n} of their ${of} ${SA_SIZE_WORD[size]} kills among their newest ${r.d.nKills}.${why}`;
+  }
+  else{
+    if(recent.length){ pick = recent[0].typeId; basis = how(recent[0]); }
+    else{
+      const ls = r.ok.filter(s => s.kind === 'loss');
+      if(ls.length){
+        const n = new Map(); for(const s of ls) n.set(s.typeId, (n.get(s.typeId) || 0) + 1);
+        pick = [...n].sort((a, b) => b[1] - a[1] || ls.findIndex(s => s.typeId === a[0]) - ls.findIndex(s => s.typeId === b[0]))[0][0];
+        basis = `${n.get(pick)} of ${ls.length} losses, latest ${saAgoShort(ls.find(s => s.typeId === pick).t)}`;
+      }else{ pick = r.ok[0].typeId; basis = how(r.ok[0]); }
+    }
+    title = size === 'all' ? '' : `No ${SA_SIZE_WORD[size]} kills among their newest ${r.d.nKills}, so the newest ship they were seen in.${why}`;
+  }
+  const t = r.types.get(pick) || await getType(pick);
+  let cls = ''; try{ cls = (await getGroup(t.group_id)).name || ''; }catch(e){}
+  const loss = r.ok.find(s => s.kind === 'loss' && s.typeId === pick);
+  let x = r.estBy.get(pick);
+  if(!x){
+    const built = buildLossTally(loss ? loss.km : {victim: {items: []}});
+    x = {built, est: await estimateHpAndDps(pick, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag)};
+    r.estBy.set(pick, x);
+  }
+  Object.assign(r, {typeId: pick, hull: t.name, cls, basis, tag, title, est: x.est, built: x.built, fitUnknown: !loss, lossAt: loss ? loss.t : null});
+}
+// The switch: every row already looked up picks again from what it has (no request), then the rows sort again.
+async function saSetSize(v){
+  sa.size = v; try{ localStorage.setItem('dscanSaSize', v); }catch(e){}
+  if(!sa.lastGroups) return;
+  const gen = sa.gen;
+  saUpdatePilots();
+  await Promise.all(saThreatList(sa.lastGroups).map(async (x) => { const r = sa.rows.get(x.p.id); if(r && r.state === 'done' && r.mode !== sa.size) await saRowPick(r, x.p); }));
+  if(gen !== sa.gen) return;
+  sa.rowOrder = null; saUpdatePilots();
 }
 function saPumpRows(){
   const G = sa.lastGroups;
@@ -20889,7 +21098,7 @@ function saPumpRows(){
       if(gen !== sa.gen) return;
       sa.rows.set(x.p.id, {state: 'load'}); saUpdatePilots();
       let r;
-      try{ r = await saPilotData(x.p); }
+      try{ r = await saPilotData(x.p); while(r.state === 'done' && r.mode !== sa.size) await saRowPick(r, x.p); }   // v.92: switched meanwhile
       catch(e){ r = {state: 'err', msg: withCode(e.message, errorCodeOf(e))}; }
       if(gen !== sa.gen) return;
       sa.rows.set(x.p.id, r); saUpdatePilots();
@@ -20897,7 +21106,8 @@ function saPumpRows(){
   };
   for(let w = 0; w < SA_ROW_WORKERS; w++) worker();
 }
-function saOpenRow(name, hull){
+function saOpenRow(name, hull, size, typeId){
+  pd.want = size ? {name, mode: size, hull: Number(typeId) || null} : null;   // v.92: the dossier opens on the size and hull the row used
   switchTab('pilot');
   document.getElementById('pilotName').value = name;
   document.getElementById('manualShip').value = hull;
@@ -20921,8 +21131,10 @@ function saRowHtml(x){
   const weak = `<span style="color:var(--${e.weakest})">${escapeHtml(DMG_FULL[e.weakest] || '')}</span>`;
   const scan = sa.scanTypes.has(r.typeId);
   const ehpTitle = r.fitUnknown ? 'The hull with nothing fitted: no loss of it among their recent losses' : `From their loss ${saAgoShort(r.lossAt)}`;
-  return `<button type="button" class="pr-row" ${open(r.fitUnknown ? '' : r.hull)}>${pilot}
-    <span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${r.typeId}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(r.hull)}<span class="cls">${escapeHtml(r.cls)}</span></span>${ctxHtml(r.basis)}</span></span>
+  const sizeTag = r.tag ? `<span class="pr-size ${r.tag}">${SA_SIZE_TAG[r.tag]}</span>` : '';   // v.92: the size it was picked for
+  const dsize = r.tag || (r.mode === 'all' ? 'all' : '');
+  return `<button type="button" class="pr-row" ${open(r.fitUnknown ? '' : r.hull)}${dsize ? ` data-pr-size="${dsize}" data-pr-type="${r.typeId}"` : ''}>${pilot}
+    <span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${r.typeId}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(r.hull)}<span class="cls">${escapeHtml(r.cls)}</span>${sizeTag}</span>${ctxHtml(r.basis, '', r.title ? `${r.basis}. ${r.title}` : '')}</span></span>
     <span class="pr-dps">${dps ? `<span class="pr-num">${dps.text}</span>${bar}` : `<span class="pr-fu" title="No loss of this hull among their recent losses, so no fit to read">fit unknown</span>`}</span>
     <span class="pr-num pr-ehp" title="${escapeHtml(ehpTitle)}">${saFmtK(e.totalHP)}</span>
     <span class="pr-weak">${weak}</span>
@@ -20944,7 +21156,8 @@ function saPilotsCardHtml(G){
     shown = sa.rowOrder.map(id => byId.get(id)).filter(Boolean);
   }
   const errs = inBatch.some(x => st(x) === 'err');
-  return `<div class="pr-head"><h3>${escapeHtml(cardName('pilots'))}</h3>${ctxHtml(`${done} of ${inBatch.length} looked up`)}${errs ? '<button type="button" class="sa-link" data-pr-retry="1">Retry</button>' : ''}<span class="sa-sp"></span>${infoBtnHtml('pilots')}</div>
+  const sizes = `<span class="pr-seg pr-sizes" role="group" aria-label="Gang size the possible ship is picked for">${SA_SIZES.map(([v, l]) => `<button type="button" data-sa-size="${v}" aria-pressed="${sa.size === v}"${sa.size === v ? ' class="on"' : ''}${v === 'auto' ? ' title="Each pilot by how many of their alliance (else corporation) are in Local: 1 solo, 2–10 small gang, 11+ fleet"' : ''}>${l.replace(' gang', '<span class="pd-long"> gang</span>')}</button>`).join('')}</span>`;
+  return `<div class="pr-head"><h3>${escapeHtml(cardName('pilots'))}</h3>${ctxHtml(`${done} of ${inBatch.length} looked up`)}${errs ? '<button type="button" class="sa-link" data-pr-retry="1">Retry</button>' : ''}<span class="sa-sp"></span>${sizes}${infoBtnHtml('pilots')}</div>
     <div class="pr-cols" aria-hidden="true"><span>Pilot</span><span>Possible ship</span><span class="r">DPS</span><span class="r">EHP</span><span>Weakest</span><span>EWAR</span><span>Scan</span><span></span></div>
     ${shown.map(saRowHtml).join('')}${later.map(saRowHtml).join('')}
     ${later.length ? `<div class="pr-more"><button type="button" data-pr-more="1">Load ${Math.min(later.length, SA_ROWS_PER_BATCH)} more pilot${Math.min(later.length, SA_ROWS_PER_BATCH) === 1 ? '' : 's'}</button>${ctxHtml(`${2 * Math.min(later.length, SA_ROWS_PER_BATCH)} zKillboard requests`)}</div>` : ''}`;
@@ -21818,7 +22031,9 @@ async function sideTagForPilot(charId){
     const vb = e.target.closest('[data-sa-view]');   // v.82
     if(vb){ sa.view = vb.dataset.saView; saRender(); const again = res.querySelector(`[data-sa-view="${sa.view}"]`); if(again) again.focus({preventScroll: true}); return; }
     const rb = e.target.closest('[data-pr-pilot]');
-    if(rb){ saOpenRow(rb.dataset.prPilot, rb.dataset.prHull || ''); return; }
+    if(rb){ saOpenRow(rb.dataset.prPilot, rb.dataset.prHull || '', rb.dataset.prSize || '', rb.dataset.prType || ''); return; }
+    const zb = e.target.closest('[data-sa-size]');   // v.92: the gang-size switch
+    if(zb){ saSetSize(zb.dataset.saSize).then(() => { const again = res.querySelector(`[data-sa-size="${sa.size}"]`); if(again) again.focus({preventScroll: true}); }); return; }
     const lm = e.target.closest('[data-pr-more]');
     if(lm){ sa.rowLimit += SA_ROWS_PER_BATCH; sa.rowOrder = null; saPumpRows(); saUpdatePilots(); return; }
     const vset = e.target.closest('[data-vs-set]');   // v.85: Against your ship

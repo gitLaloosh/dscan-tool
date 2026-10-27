@@ -25,6 +25,7 @@ ORGS = {   # id: (kind, name, ticker, alliance)
     98000013: ('corporation', 'Lantern Bay Traders', 'LBT', None), 98000030: ('corporation', 'Three Pilots Inc', 'TPI', None),
     ALLIED: ('alliance', 'Allied Wing', 'AW', None), 98000040: ('corporation', 'Allied Wing Ops', 'AWO', ALLIED),
     THIRD: ('alliance', 'Random Third Party', 'RTP', None), 98000041: ('corporation', 'Third Party Corp', 'RTPC', THIRD),
+    98000042: ('corporation', 'Third Party Annex', 'RTPA', THIRD),   # v.92: the same alliance, another corporation (sa_size_check)
     1000167: ('corporation', 'State War Academy', 'SWA', None), 1000044: ('corporation', 'School of Applied Knowledge', 'SAK', None),
 }
 SMALL = [98000020 + i for i in range(8)]
@@ -55,7 +56,7 @@ def aff(cid):
 def att(cid, final=False):
     return dict(aff(cid), final_blow=final, damage_done=100, ship_type_id=byname['Ferox'], security_status=0)
 def pick(corp, k=0): return [i for i, v in PILOTS.items() if v[1] == corp][k]
-THIRD_PILOT = 92000001; PILOTS[THIRD_PILOT] = ('Rando Thirdparty', 98000041)
+THIRD_PILOT = 92000001; PILOTS[THIRD_PILOT] = ('Rando Thirdparty', 98000041); NAME_ID['rando thirdparty'] = THIRD_PILOT   # v.92: pasted in Local by sa_size_check
 NPC_ALT = pick(1000167)
 # your side's losses (D2b evidence): Void Runners on 3, Ashen Reach on 1; friendlies, NPCs and NPC-corp pilots never count
 LOSSES = {
@@ -176,6 +177,7 @@ FLEET_LOSSES = {(CRTS, 'Curse'): [_gloss(_crts[i], 'Curse', 2 + i) for i in rang
 # loss in a Loki: the dossier takes Random Third Party's common Loki fit (2 golden Loki losses).
 import datetime as _dt
 DOSSIER_PILOT = 92000002; PILOTS[DOSSIER_PILOT] = ('Vesna Dossier', 98000041); NAME_ID['vesna dossier'] = DOSSIER_PILOT
+ANNEX_PILOT = 92000003; PILOTS[ANNEX_PILOT] = ('Tessa Annex', 98000042); NAME_ID['tessa annex'] = ANNEX_PILOT   # v.92: her alliance, another corporation
 SYSTEMS = {30000142: 'Jita', 30004759: '1DQ1-A', 30002187: 'Amarr'}
 # (hull, weapon, players on the kill (them included), wingmates' hulls (cycled), victims (cycled), how many, system)
 DOSSIER_SPEC = [
@@ -221,6 +223,25 @@ DOSSIER_LOSSES = [_loss(DOSSIER_PILOT, 'Capsule', 8.1), _loss(DOSSIER_PILOT, 'Cu
 for _k in DOSSIER_LOSSES: KM[_k]['solar_system_id'] = 30004759
 FLEET_LOSSES[(THIRD, 'Loki')] = [_gloss(THIRD_PILOT, 'Loki', 4), _gloss(THIRD_PILOT, 'Loki', 6)]
 HIST[DOSSIER_PILOT] = {'kills': DOSSIER_KILLS, 'losses': DOSSIER_LOSSES}
+# v.93 (dossier_kills_check): zKillboard's value on the dossier pilot's kills; a pilot with 60 kills, so the dossier
+# reads the newest 50 and "Show 10 more" reads older ones: 48 small-gang Vedmak kills, then 12 older solo Sabre kills.
+VALUE = {k: (5 + k % 40) * 1.25e6 for k in DOSSIER_KILLS}
+LONG_PILOT = 92000004; PILOTS[LONG_PILOT] = ('Kirra Longtail', 98000042); NAME_ID['kirra longtail'] = LONG_PILOT
+LONG_KILLS = []
+def _lkill(hull, n, mates, victim, days):
+    _kid[0] += 1; k = _kid[0]
+    me = {'character_id': LONG_PILOT, 'corporation_id': 98000042, 'alliance_id': THIRD, 'ship_type_id': byname[hull], 'weapon_type_id': byname['Heavy Entropic Disintegrator II' if hull == 'Vedmak' else '125mm Gatling AutoCannon II'], 'damage_done': 500, 'final_blow': True, 'security_status': -1.0}
+    others = []
+    for i in range(n - 1):
+        _mate[0] += 1
+        others.append({'character_id': _mate[0], 'corporation_id': 98000099, 'ship_type_id': byname[mates[i % len(mates)]], 'damage_done': 100, 'final_blow': False, 'security_status': 0})
+    KM[k] = {'killmail_id': k, 'killmail_time': _diso(days, 20), 'solar_system_id': 30002187,
+             'victim': {'character_id': pick(98000013), 'corporation_id': 98000013, 'ship_type_id': byname[victim], 'damage_taken': 1000, 'items': [], 'position': {'x': 0, 'y': 0, 'z': 0}},
+             'attackers': [me, *others]}
+    H[k] = hashlib.sha1(str(k).encode()).hexdigest(); VALUE[k] = 20e6; return k
+for _d in range(61, 49, -1): LONG_KILLS.append(_lkill('Sabre', 1, [], 'Rifter', _d))                  # oldest first: IDs grow with time
+for _d in range(48, 0, -1): LONG_KILLS.append(_lkill('Vedmak', 3, ['Sabre', 'Curse'], 'Stabber', _d))
+HIST[LONG_PILOT] = {'kills': LONG_KILLS, 'losses': []}
 
 def expected_fleet():
     """The fleet view worked out here: shares from the kills (each attacker of the group counts its hull; capsules
@@ -260,7 +281,7 @@ def expected():
         k = a or corp
         if not (1000000 <= corp < 2000000) and k in ev: return ('h', 'zkb', ev[k])
         return ('n', None, None)
-    found = [v for k, v in PILOTS.items() if v[1] != 98000041]   # v.90: the third-party corporation isn't in LOCAL (THIRD_PILOT, DOSSIER_PILOT)
+    found = [v for k, v in PILOTS.items() if v[1] not in (98000041, 98000042)]   # v.90: the third-party corporations aren't in LOCAL (THIRD_PILOT, DOSSIER_PILOT, v.92 ANNEX_PILOT)
     groups = {'h': {}, 'n': {}, 'f': {}}
     for name, corp in found:
         s, why, x = side(corp); a = ORGS[corp][3]
@@ -356,7 +377,7 @@ def zkb(route):
     url = route.request.url
     ZKB_CALLS.append((url, time.time()))
     cors = {'access-control-allow-origin': '*'}
-    stubs = lambda ids: route.fulfill(status=200, content_type='application/json', headers=cors, body=json.dumps([{'killmail_id': k, 'zkb': {'hash': H[k]}} for k in sorted(ids, reverse=True)]))
+    stubs = lambda ids: route.fulfill(status=200, content_type='application/json', headers=cors, body=json.dumps([{'killmail_id': k, 'zkb': dict({'hash': H[k]}, **({'totalValue': VALUE[k]} if k in VALUE else {}))} for k in sorted(ids, reverse=True)]))   # v.93: zKillboard's value
     if f'/losses/allianceID/{ALLIANCE}/' in url: return stubs(LOSSES)
     if f'/kills/allianceID/{ALLIANCE}/' in url: return stubs(KILLS)
     m = re.search(r'/losses/allianceID/(\d+)/shipTypeID/(\d+)/', url)

@@ -875,6 +875,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 80. A check that still passes after a change may never reach the change
+
+- **What happened (v2026.10.14.92):** the System Analyzer's pilot rows started picking the possible ship for a gang
+  size. `pilot_rows_check.py`, `system_analyzer_check.py` and `vs_check.py` all passed at once, unchanged. Not because
+  the new pick agreed with them: their mock pilots' kills each have one attacker (solo), and Auto put those pilots in a
+  small gang (3 of their alliance in Local), so every row fell through to the old rule. The new path ran in none of them.
+- **Do this instead:** when old checks pass untouched after a behaviour change, find out which branch their data takes
+  before counting them as evidence; write a check whose data reaches the new path (here `sa_size_check.py`, from the
+  dossier mock with kills in every size), and note in the old check which path it now covers. Same family as #77.
+
 ## 79. Removing an element removes everything it did, not only what it showed
 
 - **What happened (v2026.10.14.90):** the Pilot Dossier's rows replaced the Pilot Analyzer's hull dropdown. The dropdown
@@ -1383,6 +1393,10 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     exactly (BigInt, ties to even); use it wherever pyfa calls `round()`.
   - Don't round a reference value when you pin it: an applied DPS of 2e-19
     rounded to 9 decimals became 0, and the pin failed against the exact tool.
+  - The other way round (v2026.10.14.93): a page check that works out a value the page shows with `toFixed` (zKillboard's
+    ISK, not a pyfa stat, so `paIsk`'s `toFixed` is right) must round the JavaScript way. `dossier_kills_check.py`
+    formatted 51.25m with Python's `f'{x:.1f}'` (ties to even: "51.2") against the page's "51.3"; it now uses
+    `Decimal(...).quantize(..., ROUND_HALF_UP)` on the exact value. A mismatch on a tie is the check's rounding first.
     Pin the reference unrounded and let `tolerancePct` do the comparing.
 
 ## 36. Code that runs at page load also runs inside the regression suites
