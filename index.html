@@ -2126,7 +2126,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.85</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.86</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -8714,25 +8714,19 @@ function renderResults(typeResults, typeCounts, unresolvedCounts, celestialCount
   const celestialTotal = [...celestialCounts.values()].reduce((a,b) => a+b, 0);
   const unresolvedTotal = [...unresolvedCounts.values()].reduce((a,b) => a+b, 0);
   const fittingTotal = [...fittingCounts.values()].reduce((a,b) => a+b, 0);
-  document.getElementById('contactsCount').textContent = `${typeResults.length} type(s), ${celestialTotal + unresolvedTotal + fittingTotal} other line(s)`;
+  // v2026.10.14.86 (the owner via todo-inbox: "scanner probes are showing up in the resistance results"; "your recommendation
+  // sounds fine"): a contact that isn't a ship (probes, drones, deployables, structures...) gets no card of its own; they
+  // share one "Other contacts" line after the ship cards, as celestials do.
+  const okResults = typeResults.filter(t => t && !t.error);
+  const shipResults = okResults.filter(t => t.group.category_id === 6), otherResults = okResults.filter(t => t.group.category_id !== 6);
+  const otherTotal = otherResults.reduce((s, t) => s + (typeCounts.get(t.name) || 1), 0);
+  document.getElementById('contactsCount').textContent = `${shipResults.length} ship type(s), ${celestialTotal + unresolvedTotal + fittingTotal + otherTotal} other line(s)`;
 
-  for(const item of typeResults){
-    if(!item || item.error){
-      continue;
-    }
+  for(const item of shipResults){
     const { name, type, group } = item;
     const count = typeCounts.get(name) || 1;
     const card = document.createElement('div');
     card.className = 'card';
-
-    if(group.category_id !== 6){
-      card.innerHTML = `
-        <div class="ctop"><span class="cname">${escapeHtml(name)}</span><span class="ccount">x${count}</span></div>
-        <div class="cmeta notship">${escapeHtml(group.name)} — not a ship, no resistance profile</div>
-      `;
-      grid.appendChild(card);
-      continue;
-    }
 
     const dogma = type.dogma_attributes;
     const shieldHP = attrVal(dogma, SHIELD_HP_ATTR, 0);
@@ -8792,6 +8786,17 @@ function renderResults(typeResults, typeCounts, unresolvedCounts, celestialCount
         <b>Hybrid:</b> ${turretRecText(turretRecs.hybrid, weakest, secondWeakest)}<br>
         <b>Projectile:</b> ${turretRecText(turretRecs.projectile, weakest, secondWeakest)}
       </div>
+    `;
+    grid.appendChild(card);
+  }
+
+  if(otherResults.length){
+    const card = document.createElement('div');
+    card.className = 'card sc-other';
+    const list = otherResults.map(t => `<span title="${escapeHtml(t.group.name)}">${escapeHtml(t.name)} (x${typeCounts.get(t.name) || 1})</span>`).join(', ');
+    card.innerHTML = `
+      <div class="cname" style="margin-bottom:8px;">Other contacts (${otherResults.length})</div>
+      <div class="cmeta notship">${list} — not ships, no resistance profile</div>
     `;
     grid.appendChild(card);
   }

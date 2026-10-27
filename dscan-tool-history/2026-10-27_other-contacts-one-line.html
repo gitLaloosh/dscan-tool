@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — Probes and other non-ships share one line on the D-Scan results</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Probes and other non-ships share one line on the D-Scan results</h1>
+<p><span class="tag">Bug fix</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.85</code> &rarr; <code>v2026.10.14.86</code></p>
+<p>the owner, via todo-inbox: "run a dscan analysis that contains a scanner probe in it &gt; scanner probes are showing up in the resistance results". Then, to my suggestion of one line like the celestials: "your recommendation sounds fine".</p>
+
+<h2>What changed</h2>
+<ul>
+<li>Under On Scan, only ships get a resistance card. Every other contact (scanner probes, drones, deployables such as a Mobile Depot, structures) is listed once, with its count, in one "Other contacts" card after the ships; hovering a name shows its group. Celestials, fitting items and unrecognized lines are as before.</li>
+<li>The count line says ship types: "2 ship type(s), 11 other line(s)".</li>
+<li><b>Root cause:</b> <code>renderResults</code> gave every resolved type its own card, so a contact that wasn't a ship got a card that said "not a ship, no resistance profile" among the ship cards. Probes are rightly kept as contacts (they are in space; v.9's never-in-space rule only drops fitting items), so the fix is where they're shown, not whether.</li>
+<li>No number changed; the System Analyzer's scan list (ships only) is unchanged.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/scan_contacts_check.py</code> (9 checks, 1440 and 390 px): a D-Scan of 2 Ferox, a Caracal, 4 Core Scanner Probe I, a Combat Scanner Probe I, a Mobile Depot and 5 Hobgoblin II gives two resistance cards, one "Other contacts (4)" line with counts and groups, the count line, the scan's ships, nothing off the page. v.85 fails 4.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 36 page checks; lints 0 problems.</li>
+<li><code>extension_check.py</code> failed once while the update-check chain ran alongside it: it asked for the extension's menus before the extension had made them. It now asks again for up to 15 s; passes.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>A result list that mixes kinds (ships and everything else) should put the kind the card is about first and fold the rest into one summary line, as celestials already were. When a type is rightly kept but wrongly shown, fix where it's shown, not the filter: removing probes from contacts would have hidden real information (someone is probing).</p>
+</body></html>

@@ -1,0 +1,1 @@
+new backlog item: high prio - add toggle to switch analysis from pilot's "most recent losses" to "most recent losses for the hulls that they've been using the most lately to participate in kills. i feel like this is more likely to predict what they'll be flying at any given time. make sense?

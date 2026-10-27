@@ -17,7 +17,7 @@ load, so the page comes from http://127.0.0.1:<port>/; its ESI and zKillboard ca
     default" puts it back. No page errors.
 v2026.10.14.79 fails (the tool doesn't read #zkill= / #pilot= / #pilotname=).
 """
-import sys, os, re, json, tempfile, threading, http.server, functools
+import sys, os, time, re, json, tempfile, threading, http.server, functools
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
 from playwright.sync_api import sync_playwright
@@ -63,7 +63,12 @@ with sync_playwright() as p:
     sw = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event('serviceworker', timeout=30000)
     ext_id = sw.url.split('/')[2]
     # the menu items: chrome.contextMenus.update fails for an item that doesn't exist
-    menus = sw.evaluate("""() => Promise.all(ETA.MENUS.map(m => new Promise(r => chrome.contextMenus.update(m.id, {}, () => r([m.id, chrome.runtime.lastError ? chrome.runtime.lastError.message : 'ok', m.contexts.join(','), (m.targetUrlPatterns || m.documentUrlPatterns || []).join(' ')])))))""")
+    # v2026.10.14.86: the menus are made in onInstalled; on a busy machine the check could ask first (flaked once with the
+    # update-check chain running alongside). Ask again for up to 15 s before judging.
+    for _ in range(30):
+        menus = sw.evaluate("""() => Promise.all(ETA.MENUS.map(m => new Promise(r => chrome.contextMenus.update(m.id, {}, () => r([m.id, chrome.runtime.lastError ? chrome.runtime.lastError.message : 'ok', m.contexts.join(','), (m.targetUrlPatterns || m.documentUrlPatterns || []).join(' ')])))))""")
+        if all(m[1] == 'ok' for m in menus): break
+        time.sleep(0.5)
     check([m[0] for m in menus] == ['eta-kill-link', 'eta-kill-page', 'eta-pilot-link', 'eta-pilot-page', 'eta-pilot-name'] and all(m[1] == 'ok' for m in menus)
           and all('zkillboard.com/kill/*' in m[3] for m in menus[:2]) and all('zkillboard.com/character/*' in m[3] for m in menus[2:4]) and menus[4][2] == 'selection',
           f'the five menu items exist with their zKillboard patterns ({[(m[0], m[1], m[2]) for m in menus]})')
