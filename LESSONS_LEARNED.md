@@ -875,6 +875,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 78. A number can be exactly right and still mislead: check the assumption, not only the arithmetic
+
+- **What happened (v2026.10.14.85, hidden in v.88):** "Against Your Ship" added up, for every pilot in Local, a guessed
+  hull (from killmail history) with a guessed fit (from losses) into one verdict. `vs_check.py` proved every per-ship
+  number matched the Matchup; the owner found it "inaccurate and even misleading" in use: "a lot of pilots simply fly a wide
+  variety of hulls and/or do not get killed very often". The guesses compounded.
+- **Do this instead:** before turning estimates into a verdict, ask how wrong each input can be and what one wrong input
+  does to the answer; show how much of the answer rests on what's known (a ship on D-Scan) versus guessed, and don't give
+  a verdict when that share is low. Checks of the arithmetic don't cover this; say so in the mockup.
+
 ## 77. A failure case leaves state behind: the next case in the same page inherits it
 
 - **What happened (v2026.10.14.87):** `affiliation_check.py` made zKillboard's stats answer 500 for one pilot, then

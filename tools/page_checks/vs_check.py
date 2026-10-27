@@ -18,6 +18,8 @@ the card shows is worked out again here, in the page but from the outside:
   * the Pilots view: the card above the rows, each row with a fit counted once ("fit unknown" not);
   * at 390 px nothing runs off the page; no page errors.
 v2026.10.14.84 fails (no card).
+v2026.10.14.88: the card is switched off on the page (saVsOn = false; the owner: guessed hulls for many pilots compound into a
+misleading verdict); this check switches it on to keep its numbers checked, and checks it's off by default.
 """
 import sys, os, json
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -114,9 +116,10 @@ def setv(pg, v):
     pg.click(f'#saVs [data-vs-set="{v}"]'); pg.wait_for_timeout(250)
 def save_ship(pg):
     pg.click('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
-def setup(ctx, ship=True):
+def setup(ctx, ship=True, on=True):
     pg = ctx.new_page(); pg.goto('file://' + HTML)
     pg.evaluate("(s) => localStorage.setItem('dscanSide', JSON.stringify(s))", SIDE); pg.reload(); pg.wait_for_timeout(300)
+    if on: pg.evaluate("() => { if(typeof saVsOn !== 'undefined') saVsOn = true; }")   # v2026.10.14.88: the card is switched off on the page
     if ship: save_ship(pg)
     return pg
 def analyze(pg, local, scan):
@@ -184,6 +187,15 @@ with sync_playwright() as p:
     check(over[0] <= 390 and not over[1], f'390 px: nothing runs off the page {over}')
     ctx.close()
 
+    # v2026.10.14.88: switched off on the page (the owner: guessed hulls for many pilots compound into a misleading verdict)
+    ctx = new_ctx()
+    pg = setup(ctx, on=False)
+    analyze(pg, M.LOCAL, SCAN)
+    pg.wait_for_function("() => { const c = document.querySelector('#saFleet .fl-sum .pr-head .ctx'); return c && c.textContent === '5 of 5 groups looked up'; }", timeout=150000)
+    pg.wait_for_timeout(500)
+    off = pg.evaluate("() => [!!document.querySelector('#saVs'), !!document.querySelector('#saVsHost'), !!document.querySelector('#saFleet .fl-sum')]")
+    check(off == [False, False, True], f'v.88: the card is off by default (fleet view without it, the summary still there) {off}')
+    ctx.close()
     # no ship saved
     ctx = new_ctx()
     pg = setup(ctx, ship=False)

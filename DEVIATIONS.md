@@ -81,7 +81,7 @@ introduces a difference.
   it can fly; chosen and then no longer possible, it stays chosen, marked, with the speed capped. The chart stays a
   snapshot at one distance, as pyfa's graph. Checked by `check_matchup.py` (the inputs and the "can hold" rule, written
   again) and `fight_strip_check.py`.
-- The System Analyzer's "Against Your Ship" card (v2026.10.14.85, local-and-fleet-plan.md L5, D10). pyfa fits one ship
+- The System Analyzer's "Against Your Ship" card (v2026.10.14.85, local-and-fleet-plan.md L5, D10; hidden since v2026.10.14.88, see the plan). pyfa fits one ship
   against one target; this adds ships up. Each counted ship's numbers are the Matchup's (pyfa's damage application
   both ways at the card's one range, you still or orbiting at full speed with your prop on, they sitting still; "they
   last" by the time-to-kill rule above); their applied damage is summed by damage type × the ≈ count (the fleet view's

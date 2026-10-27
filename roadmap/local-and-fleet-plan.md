@@ -296,6 +296,26 @@ because we'll need to do some real security analysis of the tool first". What it
   `capSimPyfa` and drains written from pyfa; 11 mutants caught). Next: L6 (doctrine matchups) needs its own design
   talk; L7 (login) later.
 
+## Step 4 status: hidden (v2026.10.14.88)
+
+the owner (todo-inbox, 2026-10-27): "The assumptions in the 'against your ship' section on the system analyzer tab just aren't
+reliable. in limited use so far, I've found it to be inaccurate and even misleading. probably need to back it out until it
+can be refined a bit more." Then: "a lot of pilots simply fly a wide variety of hulls and/or do not get killed very often.
+taking a guess and what ship multiple pilots could be flying and getting any number of those wrong, can result in some
+wildly inaccurate assumptions resulting in poor decision making."
+
+- The card is switched off (`saVsOn = false`); its code and `vs_check.py` stay, so a refined version starts from tested
+  pieces. Nothing else changed: the Pilots / Fleet views still say "Possible ship" and "≈".
+- Why it misled: every counted ship is a guess twice over (the hull from killmail history, the fit from losses), and the
+  card adds the guesses up into one verdict, so wrong guesses compound instead of averaging out.
+- To discuss before it comes back (not decided): count only what's certain (hulls on your D-Scan, with the fit as
+  the only guess), say how much of the fleet the numbers cover, no verdict when that's low; ties to the backlog items on
+  hulls seen on kills, non-combat ships and ships named after a pilot in Local.
+- the owner's context for that talk (2026-10-27): "in some cases you might see a 50:50 split between friendlies and enemies in
+  local while maybe 10% or 20% of that number shows up as ships on d-scan (maybe less). friendlies will fly many of those
+  same hulls because good pvp hulls are good pvp hulls." So a hull on D-Scan can't be pinned to a side or a pilot by its
+  type alone, and D-Scan shows a small part of Local: "only what's certain" may cover very little.
+
 ## Checks (as for every delivery)
 
 ESI and zKillboard mocked as in `killmail_mocks.py` (enforcing the real contracts: 500 / 1000 limits, affiliation failing

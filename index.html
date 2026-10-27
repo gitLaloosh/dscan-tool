@@ -2156,7 +2156,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.87</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.88</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -20584,7 +20584,7 @@ function saRender(){
                                           : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}${threat > 0 ? saViewSwitchHtml(small ? 'pilots' : 'fleet') : ''}</div>
       ${notes}
     </div>
-    ${small && sa.view !== 'groups' ? `${threat > 0 ? `<div id="saVsHost">${saVsPilotsHtml()}</div>` : ''}<div class="card pr-card" id="saPilots">${saPilotsCardHtml(G)}</div>`   // v.85 (L5)
+    ${small && sa.view !== 'groups' ? `${threat > 0 && saVsOn ? `<div id="saVsHost">${saVsPilotsHtml()}</div>` : ''}<div class="card pr-card" id="saPilots">${saPilotsCardHtml(G)}</div>`   // v.85 (L5)
       : !small && threat > 0 && sa.view !== 'groups' ? `<div id="saFleet">${saFleetCardHtml(G)}</div>`   // v.83 (L4)
       : `<div class="sa-cols">${saColHtml('h', G.h)}${saColHtml('n', G.n)}</div>`}
     <details class="sa-g sa-friendly" data-sa-g="friendly"${sa.friendOpen ? ' open' : ''}><summary>${SIDE_MARK.f}<span class="sa-gname"><span class="nm">${escapeHtml(cardName('friendly'))}</span><span class="ctx sa-ftk">${G.f.slice(0, 6).map(g => g.kind ? orgTickerHtml(g.kind, g.id) : '').join(' ')}</span></span><span class="sa-gn">${S.f}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>
@@ -20999,7 +20999,7 @@ function saFleetCardHtml(G){
   const restHtml = rest.length ? `<div class="card fl-rest"><div class="pr-head"><h3>Not looked up</h3>${ctxHtml('4 zKillboard requests each')}</div>
     ${rest.slice(0, 12).map(x => `<div class="fl-rr">${SIDE_MARK[x.side]}<span class="nm">${escapeHtml(x.g.name)} ${orgTickerHtml(x.g.kind, x.g.id)}</span><span class="fl-rn">${x.g.n}</span><button type="button" data-fl-look="${escapeHtml(x.g.key)}">Look up</button></div>`).join('')}
     ${rest.length > 12 ? `<div class="fl-more">and ${rest.length - 12} more in Groups</div>` : ''}</div>` : '';
-  return `${sum}${saVsHtml(saVsUnitsFleet(order), 'fleet')}${order.map(saFleetGroupHtml).join('')}${restHtml}`;   // v.85 (L5)
+  return `${sum}${saVsOn ? saVsHtml(saVsUnitsFleet(order), 'fleet') : ''}${order.map(saFleetGroupHtml).join('')}${restHtml}`;   // v.85 (L5)
 }
 function saUpdateFleet(){
   const el = document.getElementById('saFleet');
@@ -21032,6 +21032,13 @@ async function saOpenFleetFit(gkey, typeId){
 // them (Fit.addDrain: amount × calculateRangeFactor(optimal, falloff, distance), cycle = duration; DEVIATIONS.md for
 // what isn't applied). Kill first: logistics, then the damage each puts on you ÷ the time your fire takes to break one.
 // Nothing here changes a number the engine works out.
+// v2026.10.14.88: HIDDEN. the owner (todo-inbox): "The assumptions in the 'against your ship' section ... just aren't reliable
+// ... inaccurate and even misleading. probably need to back it out until it can be refined"; then: "a lot of pilots simply
+// fly a wide variety of hulls and/or do not get killed very often. taking a guess and what ship multiple pilots could be
+// flying and getting any number of those wrong, can result in some wildly inaccurate assumptions resulting in poor
+// decision making." The card adds up guessed hulls and guessed fits into one verdict, so one wrong guess per pilot
+// compounds. Kept, switched off, until it's refined (dscan-backlog; plan L5 "Status"); vs_check.py switches it on.
+let saVsOn = false;
 const SA_VS_RANGES_KM = [5, 10, 20, 30, 50];
 sa.vs = {rangeKm: null, prop: false, count: 'all'};   // range: null = start at your own guns' best range
 const saVsInput = (typeId, b) => ({shipTypeId: typeId, tally: b.tally, cargoItemIds: b.cargoItemIds, highSlotByFlag: b.highSlotByFlag, midSlotByFlag: b.midSlotByFlag});

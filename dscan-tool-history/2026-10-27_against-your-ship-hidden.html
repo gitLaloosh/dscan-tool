@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — Against Your Ship hidden until it's refined</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Against Your Ship hidden until it's refined</h1>
+<p><span class="tag">Rollback</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.87</code> &rarr; <code>v2026.10.14.88</code> &middot; plan: <code>roadmap/local-and-fleet-plan.md</code> ("Step 4 status: hidden").</p>
+<p>the owner, via todo-inbox: "The assumptions in the 'against your ship' section on the system analyzer tab just aren't reliable. in limited use so far, I've found it to be inaccurate and even misleading. probably need to back it out until it can be refined a bit more." Then: "a lot of pilots simply fly a wide variety of hulls and/or do not get killed very often. taking a guess and what ship multiple pilots could be flying and getting any number of those wrong, can result in some wildly inaccurate assumptions resulting in poor decision making."</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The Against Your Ship card (v.85) no longer shows in the Fleet or Pilots view. Its code is kept behind <code>saVsOn = false</code>, so a refined version starts from tested pieces.</li>
+<li>Nothing else changed: the Pilots and Fleet views still show their "Possible ship" and "&asymp;" estimates.</li>
+<li><b>Why it misled:</b> each counted ship was a guess twice over (the hull from killmail history, the fit from losses), and the card added the guesses into one verdict, so wrong guesses compounded instead of averaging out. Every per-ship number was right for the ship it assumed (the checks proved that); the assumption was the problem.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>vs_check.py</code> switches the card on in the page to keep its numbers checked, and checks it's off by default (v.87 fails that).</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 37 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #78: a number can be exactly right and still mislead. Checks proved each ship's numbers matched the Matchup; none asked how likely the ship was to be what the card assumed. Before adding up estimates into one verdict, ask how wrong the inputs can be, and show how much of the answer rests on guesses.</p>
+</body></html>
