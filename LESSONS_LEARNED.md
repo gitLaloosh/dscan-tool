@@ -885,6 +885,11 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Do this instead:** before removing an element, list its side effects (labels, focus, state other code reads) and
   where each will live now; put a label for "what was asked" before the step that can fail, and check the failure path,
   not only the happy one. Mutation `m6` (the label back after the fit) is caught by that case.
+- **Again (v2026.10.14.91), the other direction: a new path into an old renderer.** The dossier's "no loss of theirs"
+  fallback handed `buildLossFits` only `{km}`; the fit tabs also read `killmail_id` and `hash` (the loss row's "view on
+  zKillboard" link, the share link), so the tab linked to `zkillboard.com/kill/undefined/`. the owner found it in use;
+  `dossier_check.py` had checked the note, the DPS and the tab count, not the links. When a new path feeds an existing
+  renderer, grep every field the renderer reads off its input and check each one on the new path.
 
 ## 78. A number can be exactly right and still mislead: check the assumption, not only the arithmetic
 

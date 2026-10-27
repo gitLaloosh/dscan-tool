@@ -2205,7 +2205,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.90</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.91</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -10691,7 +10691,9 @@ async function pdShowHull(character, hull, statusEl, forceRefresh){
   if(!r || r.none || !r.variants || !r.variants.length){ el.innerHTML = ''; setStatus(statusEl, `No loss of ${currentPilotName}'s in a ${hull.name}, nor of their ${g.kind}'s lately: fit unknown.`); return; }
   let gname = '';
   try{ gname = (await getOrg(g.kind, g.id)).name; }catch(e){}
-  const {fits, idToName} = await buildLossFits(r.variants.map(v => ({km: v.km})), hull.id);
+  // v.91: each tab keeps the killmail it was read from (its zKillboard link and share link were "undefined"), said as theirs
+  const who = (v) => `${gname || `their ${g.kind}`}'s loss, the newest of ${v.n} with this fit`;
+  const {fits, idToName} = await buildLossFits(r.variants.map(v => ({km: v.km, killmail_id: v.killmail_id, hash: v.hash, who: who(v)})), hull.id);
   renderFitTabs(currentPilotName, hull.name, fits, idToName);
   const what = `${gname || `their ${g.kind}`}'s common ${hull.name} fit${r.variants.length > 1 ? 's' : ''}`;
   el.insertAdjacentHTML('afterbegin', `<div class="pd-note" data-pd-fallback="1"><span class="ewar-badge boost" aria-hidden="true">i</span><span>No loss of ${escapeHtml(currentPilotName)}'s in a ${escapeHtml(hull.name)}: showing ${escapeHtml(what)} (${r.variants.map(v => `${v.n} of ${r.of}`).join(', ')} of their losses), not their own.</span></div>`);
@@ -11175,7 +11177,7 @@ async function buildLossFits(valid, shipTypeId){
     // its loaded charge -- same reason fitToEftText() above needs it,
     // rather than re-deriving it from the tally (which has already lost
     // the per-flag module/charge association by this point).
-    fits.push({ km: v.km, killmailId: v.killmail_id, killmailHash: v.hash, tally: built.tally, highSlotByFlag: built.highSlotByFlag, estimate, tacticalModes, activeMode,
+    fits.push({ km: v.km, killmailId: v.killmail_id, killmailHash: v.hash, lossOf: v.who || '', tally: built.tally, highSlotByFlag: built.highSlotByFlag, estimate, tacticalModes, activeMode,
       input: {shipTypeId, tally: built.tally, cargoItemIds: built.cargoItemIds, highSlotByFlag: built.highSlotByFlag, midSlotByFlag: built.midSlotByFlag} }); // v.22 module states
   }
 
@@ -16993,7 +16995,7 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
       ${mysSwitchHostHtml(`${shipName} · ${pilotName}`, f.input && f.input.shipTypeId, shipName)}
       <div class="mys-threat-view">
       <div class="fit-layout-wrap" id="fit-layout-wrap-${i}">${fitLayoutHtml(f, idToName, {collapsible: true, dmg: true})}</div>
-      <div class="lossrow"><span>killmail ${f.killmailId}</span><a href="https://zkillboard.com/kill/${f.killmailId}/" target="_blank" rel="noopener">view on zKillboard</a></div>
+      ${f.killmailId ? `<div class="lossrow"><span>killmail ${f.killmailId}${f.lossOf ? ` · ${escapeHtml(f.lossOf)}` : ''}</span><a href="https://zkillboard.com/kill/${f.killmailId}/" target="_blank" rel="noopener">view on zKillboard</a></div>` : ''}
       </div>
       <div class="mys-mine-view" hidden></div>
     </div>
@@ -21046,6 +21048,7 @@ function saVariantKm(v){
 async function saHullFits(g, hullId){
   const {data} = await zkbCachedJson(`${ZKB}/losses/${saGroupPath(g)}/shipTypeID/${hullId}/`, false, 'losses lookup');
   const stubs = [...data].filter(x => x && x.killmail_id && x.zkb && x.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, SA_FLEET_LOSSES);
+  const hashOf = new Map(stubs.map(x => [x.killmail_id, x.zkb.hash]));   // v.91: the loss behind each variant, for its zKillboard link
   const take = (await analyzeChunks(stubs, fetchKillmail, 5)).filter(r => r && r.km && r.km.victim && r.km.victim.ship_type_id === hullId).map(r => r.km);   // newest first
   if(!take.length) return {none: true};
   const fits = [];
@@ -21062,6 +21065,7 @@ async function saHullFits(g, hullId){
     const v = {n: a.length, fits: a};
     const km = saVariantKm(v), built = buildLossTally(km);
     v.km = km; v.built = built;
+    v.killmail_id = a[0].km.killmail_id; v.hash = hashOf.get(v.killmail_id);   // v.91: the newest loss of this variant (the fit shown is its own, charges the variant's most common)
     v.est = await estimateHpAndDps(hullId, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag);
     v.diff = out.length ? saFitDiff(vs[0][0], a[0], names) : '';
     out.push(v);

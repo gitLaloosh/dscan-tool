@@ -38,6 +38,8 @@ number a count, so thin data shows as thin. zKillboard's own size labels, if its
 - **Delivery 1 (v2026.10.14.90): done.** The Pilot Dossier in the Pilot Analyzer (D1–D3, D7): one kills list shared with
   the Last Kill line; the rows replace the hull dropdown; a hull with no loss of theirs shows their alliance's (else
   corporation's) common fit, said as not theirs; active hours in the browser's time zone. `tools/page_checks/dossier_check.py`.
+- **v2026.10.14.91 fix:** the fallback's tab now links to the alliance's / corporation's loss its fit was read from (it
+  linked to killmail "undefined"), and its loss row says whose loss it is.
 - **Delivery 2 (next):** the System Analyzer's pilot rows from the same dossier, with the Auto / Solo / Small gang /
   Fleet / All switch (D4–D6).
 - Still to check against a real pilot: whether zKillboard's lists carry their own size labels (the dossier counts the

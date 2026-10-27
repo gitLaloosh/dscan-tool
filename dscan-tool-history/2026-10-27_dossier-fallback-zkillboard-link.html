@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — Dossier fallback zKillboard link</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Pilot Dossier: the fallback fit's zKillboard link</h1>
+<p><span class="tag">Bug fix</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.90</code> &rarr; <code>v2026.10.14.91</code></p>
+<p>the owner (screenshot: owner's Svipul, "No loss of owner's in a Svipul: showing an alliance's common Svipul fit (15 of 20 of their losses)"): "if a pilot has zero losses for a hull that they have kills in, how is that being handled? i am seeing a fit but if you use the 'view on zkillboard' link, it does not work."</p>
+
+<h2>How a hull with no loss of theirs is handled</h2>
+<ul>
+<li>The page reads their alliance's (else corporation's) newest losses of that hull: one zKillboard request, their newest 20 losses of it, kept an hour.</li>
+<li>The losses are grouped by exact module set. The most common set is the fit shown: the newest of those losses, with the charge most of them carried in each weapon. "15 of 20" means 15 of the 20 losses read had that exact fit.</li>
+<li>A note above the tabs says it's the group's fit, not the pilot's own. An NPC corporation, or no recent losses in the group: "fit unknown".</li>
+</ul>
+
+<h2>The bug</h2>
+<ul>
+<li>The fallback passed the fit builder only the killmail's contents, not its ID and hash. The tab's loss row linked to <code>zkillboard.com/kill/undefined/</code>, said "killmail undefined", and the ⋮ menu's "Copy share link" was left out.</li>
+<li>Fixed: each variant keeps the ID and hash of the newest loss it was read from (<code>saHullFits</code>). The link opens that loss, the share link is offered again, and the loss row says whose it is: "killmail N · an alliance's loss, the newest of 15 with this fit".</li>
+<li>No number changed. The hidden fleet view uses the same lookup, and only gains the two fields.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>dossier_check.py</code> now checks the fallback tab's link, its loss row and the share-link item. v.90 fails it (<code>kill/undefined/</code>). Mutants caught: the oldest loss linked, no hash (no share link), no "whose".</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 38 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #79, again from the other side: a new path into an old renderer has to carry every field that renderer reads. The fallback handed <code>buildLossFits</code> only <code>{km}</code>; the tabs also read <code>killmail_id</code> and <code>hash</code>. The check had tested the note, the DPS and the tab count, not the links. Grep every field the renderer reads off its input, and check each one on the new path.</p>
+</body></html>

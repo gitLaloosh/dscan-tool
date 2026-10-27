@@ -17,7 +17,7 @@ and 3 losses (Vedmak, Curse, a capsule). Every number the dossier shows is worke
   * a ship typed in: that hull's losses as before, the dossier under it with that row selected;
   * a pilot with no kills or losses: PILOT-03, no dossier;
   * at 390 px nothing runs off the page; no page errors.
-v2026.10.14.89 fails (no dossier).
+v2026.10.14.89 fails (no dossier); v2026.10.14.90 fails the "view on zKillboard" check (the fallback tab linked to killmail undefined).
 """
 import sys, os, re, statistics, datetime
 from collections import Counter
@@ -130,6 +130,13 @@ with sync_playwright() as p:
     tabs = pg.evaluate("() => document.querySelectorAll('#fitResults [role=tab]').length")
     check("No loss of Vesna Dossier's in a Loki: showing Random Third Party's common Loki fit (2 of 2 of their losses), not their own." == note.strip() and len(gl) == 1 and tabs == 1,
           f'no loss of theirs: their alliance\'s common fit, said as not theirs, one zKillboard request ({note.strip()!r}, {len(gl)}, {tabs} tab)')
+    # v2026.10.14.91 (the owner: "if you use the 'view on zkillboard' link, it does not work"): the tab's links are the
+    # killmail its fit was read from, the newest of the variant's losses (zKillboard's newest-first order), said as theirs
+    lk = max(M.FLEET_LOSSES[(M.THIRD, 'Loki')])
+    row = pg.evaluate("""() => { const t = document.querySelector('#fitResults .subtab-panel:not([style*="none"])'); const a = t && t.querySelector('.lossrow a');
+      return [a ? a.getAttribute('href') : null, t ? t.querySelector('.lossrow span').textContent : '', !!document.querySelector('#fitResults [data-action="share-link"]')]; }""")
+    check(row[0] == f'https://zkillboard.com/kill/{lk}/' and row[1] == f"killmail {lk} · Random Third Party's loss, the newest of 2 with this fit" and row[2],
+          f'no loss of theirs: "view on zKillboard" opens the loss its fit came from, the row says whose, the share link is offered {row}')
     # a ship typed in
     analyze(pg, NAME, 'Vedmak')
     t = pg.evaluate("() => [document.querySelector('#fitStatus').textContent, !document.querySelector('#pilotDossier').hidden, [...document.querySelectorAll('#pilotDossier button.pd-row[aria-pressed=true]')].map(b => b.dataset.pdHull)]")
