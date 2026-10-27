@@ -39,6 +39,7 @@ types a name by hand.
 | `fleet` | Fleet | v2026.10.14.83: the fleet view above "pilot rows up to" (local-and-fleet-plan.md L4, D9); the Fleet / Groups switch |
 | `vs` | Against Your Ship | v2026.10.14.85: their counted ships against My Ship, in the Fleet and Pilots views (local-and-fleet-plan.md L5, D10) |
 | `aff` | Pilot Affiliation | v2026.10.14.87: the pilot's corporation, alliance and zKillboard stats, top right of the Pilot Analyzer (the owner via todo-inbox; mockup picks) |
+| `dossier` | Pilot Dossier | v2026.10.14.90: what a pilot flies, by gang size, in the Pilot Analyzer (roadmap/pilot-dossier-plan.md) |
 
 Settled: Title Case for every name (the open capitalisation question is closed).
 

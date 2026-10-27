@@ -92,11 +92,11 @@ def rows(pg):
 
 def desktop(b):
     ctx, pg, errs = start(b, 1440, 900)
-    hb = [box(pg, x) for x in ('#pilotHeadName', '.hull-pick-btn', '.lk-sum')]
-    check(max(x['y'] + x['height'] / 2 for x in hb) - min(x['y'] + x['height'] / 2 for x in hb) < 6 and pg.is_hidden('.lk-body'), 'closed: pilot, hull dropdown and last kill on one line')
-    before = [box(pg, x) for x in ('#pilotHeadName', '.hull-pick-btn', '.lk-sum', '#fitResults .assess-tabs')]
+    hb = [box(pg, x) for x in ('#pilotHeadName', '#fitCandidates .hull-static', '.lk-sum')]
+    check(max(x['y'] + x['height'] / 2 for x in hb) - min(x['y'] + x['height'] / 2 for x in hb) < 6 and pg.is_hidden('.lk-body'), 'closed: pilot, hull and last kill on one line')
+    before = [box(pg, x) for x in ('#pilotHeadName', '#fitCandidates .hull-static', '.lk-sum', '#fitResults .assess-tabs')]
     pg.click('.lk-sum'); pg.wait_for_selector('#attackerList .lk-att-row', timeout=30000); pg.wait_for_timeout(200)
-    after = [box(pg, x) for x in ('#pilotHeadName', '.hull-pick-btn', '.lk-sum', '#fitResults .assess-tabs')]
+    after = [box(pg, x) for x in ('#pilotHeadName', '#fitCandidates .hull-static', '.lk-sum', '#fitResults .assess-tabs')]
     check(all(abs(a['y'] - c['y']) < 1 and abs(a['x'] - c['x']) < 1 for a, c in zip(before, after)), 'open: the header line and the loss box do not move')
     pb, sb, tb = box(pg, '.lk-body'), box(pg, '.lk-sum'), box(pg, '#fitResults .assess-tabs')
     check(pb['y'] >= sb['y'] + sb['height'] and pb['y'] < tb['y'] + 40 and abs(pb['x'] - sb['x']) < 2 and pb['height'] > 200,

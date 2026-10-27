@@ -98,43 +98,41 @@ with sync_playwright() as p:
     check(True, 'Analyze: the bar mirrors the status line step (' + bar_state(pg)['detail'][:60] + ')')
     wait_idle(pg)
     check(not pg.evaluate("document.getElementById('fitBtn').classList.contains('is-loading')") and pg.locator('#fitResults .fit-layout').count() > 0
-          and pg.locator('.candidate-btn').count() >= 3, f'Analyze: done, bar gone, results and {pg.locator(".candidate-btn").count()} hull buttons shown')
-    # v2026.10.14.43: one header line -- pilot, hull dropdown, last kill (one line, opens on click)
-    hb = [pg.locator(x).bounding_box() for x in ('#pilotHeadName', '.hull-pick-btn', '.lk-sum')]
+          and pg.locator('#pilotDossier button.pd-row').count() >= 3, f'Analyze: done, bar gone, results and {pg.locator("#pilotDossier button.pd-row").count()} hulls in the dossier (v.90; was the hull dropdown)')
+    # v2026.10.14.43: one header line -- pilot, hull, last kill (one line, opens on click); v.90: the hull is a label (the
+    # Pilot Dossier's rows pick it)
+    hb = [pg.locator(x).bounding_box() for x in ('#pilotHeadName', '#fitCandidates .hull-static', '.lk-sum')]
     check(all(hb) and max(b['y'] + b['height'] / 2 for b in hb) - min(b['y'] + b['height'] / 2 for b in hb) < 6 and 'Test Pilot' in pg.inner_text('#pilotHeadName')
-          and pg.is_hidden('.hull-menu') and pg.is_hidden('.lk-body'), 'header: pilot, hull dropdown and last kill on one line, both closed')
+          and not pg.query_selector('.hull-pick') and pg.is_hidden('.lk-body'), 'header: pilot, hull and last kill on one line, the last kill closed; no hull dropdown')
     if os.environ.get('SHOTS'): pg.locator('#tabPilot section.panel').screenshot(path=os.path.join(os.environ['SHOTS'], 'pilot_header.png'))
     pg.click('.lk-sum'); pg.wait_for_timeout(150)
     check(pg.is_visible('#lkPivotBtn') and pg.is_visible('.lk-body a[href*="zkillboard.com/kill/"]'), 'header: the last kill opens to the full details and the pivot button')
-    pg.click('.lk-sum'); pg.click('.hull-pick-btn'); pg.wait_for_timeout(150)
-    check(pg.is_visible('.hull-menu') and pg.locator('.hull-menu .candidate-btn').count() >= 3, 'header: the hull dropdown lists their most-lost hulls')
-    if os.environ.get('SHOTS'): pg.screenshot(path=os.path.join(os.environ['SHOTS'], 'pilot_hull_menu.png'))
-    pg.click('.hull-pick-btn'); pg.wait_for_timeout(100)
-    first = pg.locator('.candidate-btn.active').text_content().strip()   # v.43: the hulls sit in the closed dropdown
-    check('Loki' in first, f'Loki ranked first ({first.splitlines()[0]})')
+    pg.click('.lk-sum'); pg.wait_for_timeout(100)
+    first = pg.locator('#pilotDossier button.pd-row[aria-pressed="true"] .nm').text_content().strip()
+    check(first.startswith('Loki'), f'Loki ranked first in the dossier and shown ({first})')
     # switch hull with the page scrolled down
     pg.evaluate("window.scrollTo(0, document.querySelector('#fitResults').getBoundingClientRect().top + scrollY + 900)"); pg.wait_for_timeout(100)
     sy = pg.evaluate('scrollY')
-    cur = pg.locator('.candidate-btn:has-text("Curse")'); vd = pg.locator('.candidate-btn:has-text("Vedmak")')
+    cur = pg.locator('#pilotDossier [data-pd-hull="20125"]'); vd = pg.locator('#pilotDossier [data-pd-hull="47270"]')
     cur.dispatch_event('click'); pg.wait_for_timeout(450)   # a real click would scroll the button into view first
     sy = pg.evaluate('scrollY')
     s2 = bar_state(pg)
     check(s2['vis'] == 'visible' and abs(s2['top'] - 8) < 2 and 'Curse' in s2['label'] and sy > 900, f'switch hull, scrolled {sy} px down: bar pinned at the top of the screen ({s2["top"]:.0f} px), "{s2["label"]}"')
     st = pg.evaluate("() => { const r = getComputedStyle(document.getElementById('fitResults')); return [r.opacity, r.pointerEvents]; }")
     check(float(st[0]) < 0.6 and st[1] == 'none', f'switch hull: old results dimmed and not clickable {st}')
-    check(pg.evaluate("document.querySelector('.hull-pick-btn').classList.contains('is-loading') && /Curse/.test(document.querySelector('.hull-pick-btn').textContent) && !document.querySelector('.hull-pick').open"),
-          'switch hull: the dropdown closes, names the Curse and spins')
+    check(pg.evaluate("(() => { const r = document.querySelector('#pilotDossier [data-pd-hull=\"20125\"]'); return r.classList.contains('is-loading') && r.getAttribute('aria-pressed') === 'true'; })()"),
+          'switch hull: the Curse row is picked and spins')
     vd.dispatch_event('click')   # a second hull while the first loads: ignored
     wait_idle(pg)
     txt = pg.inner_text('#fitResults')
-    check('Curse' in pg.locator('.candidate-btn.active').text_content() and 'Vedmak' not in txt[:600] and pg.evaluate("/Curse/.test(document.getElementById('fitStatus').textContent) || /Curse/.test(document.getElementById('fitResults').innerText)"),
+    check(pg.locator('#pilotDossier [data-pd-hull="20125"]').get_attribute('aria-pressed') == 'true' and 'Vedmak' not in txt[:600] and pg.evaluate("/Curse/.test(document.getElementById('fitStatus').textContent) || /Curse/.test(document.getElementById('fitResults').innerText)"),
           'switch hull: the click on another hull meanwhile was ignored; the Curse is shown')
     # cached: back to the Loki, no bar
     pg.evaluate('window.__delay.zkb = 0')
     seen = []
     pg.evaluate("window.__barSeen = false; new MutationObserver(() => {}).observe(document.body, {subtree: true, attributes: true}); setInterval(() => { const b = document.getElementById('pilotBusy'); if(!b.hidden && getComputedStyle(b).visibility === 'visible') window.__barSeen = true; }, 10);")
-    pg.click('.hull-pick-btn'); pg.locator('.candidate-btn:has-text("Loki")').click(); wait_idle(pg); pg.wait_for_timeout(300)
-    check(not pg.evaluate('window.__barSeen') and 'Loki' in pg.locator('.candidate-btn.active').text_content() and 'Loki' in pg.inner_text('.hull-pick-btn'), 'cached hull switch (from the dropdown): done without the bar showing')
+    pg.locator('#pilotDossier [data-pd-hull="29990"]').click(); wait_idle(pg); pg.wait_for_timeout(300)
+    check(not pg.evaluate('window.__barSeen') and pg.locator('#pilotDossier [data-pd-hull="29990"]').get_attribute('aria-pressed') == 'true' and 'Loki' in pg.inner_text('#fitCandidates'), 'cached hull switch (from the dossier): done without the bar showing')
     # Refresh losses
     pg.evaluate('window.__delay.zkb = 900; window.__barSeen = false')
     pg.evaluate('window.scrollTo(0, 0)'); pg.click('#refreshLossesBtn'); pg.wait_for_timeout(450)

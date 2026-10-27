@@ -9,7 +9,7 @@ blame the user's network, and stay usable. Three cases, each with zKillboard ser
   503   -> the outage message at once, no "check your network connection" hint
   hang  -> no answer at all: the outage message after ~20 s (not 40: the losses lookup fails at once after
            the last-kill lookup timed out, ZKB_COOLDOWN_MS)
-  ok    -> an empty answer: the normal "no recorded losses / kills" texts
+  ok    -> an empty answer: the normal "no recorded kills or losses" texts (PILOT-03 since v.90)
 ESI is served from pyfa's SDE (esi_from_sde.py) plus a stand-in character for the pilot name.
 """
 import sys, os, json, re, time
@@ -54,7 +54,8 @@ def check(ok, msg):
 for mode in ('503', 'hang', 'ok'):
     secs, status, lastkill, errs = run(mode)
     if mode == 'ok':
-        check('No recorded losses' in status and 'No recorded kills' in lastkill, f'{mode}: normal empty-result texts ({secs:.1f} s)')
+        # v2026.10.14.90: the Pilot Dossier reads kills and losses together: "No recorded kills or losses ... (PILOT-03)"
+        check('No recorded kills or losses' in status and '(PILOT-03)' in status and 'No recorded kills' in lastkill, f'{mode}: normal empty-result texts ({secs:.1f} s; {status!r})')
     else:
         check(OUTAGE in status and OUTAGE in lastkill, f'{mode}: outage message in both places ({secs:.1f} s)')
         check('network connection' not in status, f'{mode}: no "check your network" hint')

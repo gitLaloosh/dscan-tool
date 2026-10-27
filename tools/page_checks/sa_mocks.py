@@ -171,6 +171,57 @@ FLEET_LOSSES = {(CRTS, 'Curse'): [_gloss(_crts[i], 'Curse', 2 + i) for i in rang
                 # (made last: the page orders losses by killmail ID, as zKillboard numbers them in time)
                 (VOIDR, 'Loki'): [_gloss(_void[i], 'Loki', 3 + i) for i in range(2)]
                                  + [_gloss(_void[2], 'Loki', 2, (byname['Mjolnir Rage Heavy Assault Missile'], byname['Caldari Navy Scourge Heavy Assault Missile']))]}
+# v2026.10.14.90 Pilot Dossier: one pilot (not in LOCAL: the third-party corporation) with kills in five hulls at set gang
+# sizes, weapons, wingmates, victims, hours and systems, and three losses (Vedmak and Curse golden fits, a capsule). No
+# loss in a Loki: the dossier takes Random Third Party's common Loki fit (2 golden Loki losses).
+import datetime as _dt
+DOSSIER_PILOT = 92000002; PILOTS[DOSSIER_PILOT] = ('Vesna Dossier', 98000041); NAME_ID['vesna dossier'] = DOSSIER_PILOT
+SYSTEMS = {30000142: 'Jita', 30004759: '1DQ1-A', 30002187: 'Amarr'}
+# (hull, weapon, players on the kill (them included), wingmates' hulls (cycled), victims (cycled), how many, system)
+DOSSIER_SPEC = [
+    ('Sabre', '125mm Gatling AutoCannon II', 3, ['Curse', 'Hound'], ['Rifter', 'Caracal'], 12, 30004759),
+    ('Sabre', '125mm Gatling AutoCannon II', 20, ['Sabre', 'Hound'], ['Megathron'], 1, 30004759),
+    ('Sabre', '125mm Gatling AutoCannon II', 1, [], ['Rifter'], 1, 30004759),
+    ('Purifier', 'Torpedo Launcher II', 24, ['Purifier', 'Purifier', 'Hound'], ['Charon', 'Orca'], 11, 30002187),
+    ('Purifier', 'Torpedo Launcher II', 4, ['Purifier'], ['Drake'], 1, 30002187),
+    ('Vedmak', 'Heavy Entropic Disintegrator II', 3, ['Sabre', 'Curse'], ['Stabber', 'Drake'], 6, 30004759),
+    ('Vedmak', 'Heavy Entropic Disintegrator II', 1, [], ['Rifter'], 1, 30000142),
+    ('Vedmak', 'Heavy Entropic Disintegrator II', 15, ['Vedmak', 'Sabre'], ['Thanatos'], 1, 30004759),
+    ('Kikimora', 'Light Entropic Disintegrator II', 31, ['Kikimora', 'Kikimora', 'Hound'], ['Megathron', 'Megathron', 'Thanatos'], 6, 30002187),
+    ('Loki', 'Heavy Assault Missile Launcher II', 1, [], ['Stabber', 'Thrasher'], 4, 30000142),
+    ('Loki', 'Heavy Assault Missile Launcher II', 2, ['Sabre'], ['Rifter'], 1, 30000142),
+]
+DOSSIER_HOURS = [17, 18, 19, 20, 21, 19, 18, 20, 2, 19]   # UTC hours of the kills, cycled
+DOSSIER_KILLS, DOSSIER_LOSSES = [], []
+def _diso(days, hour):
+    t = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(days=days)
+    return t.replace(hour=hour, minute=7, second=0, microsecond=0).strftime('%Y-%m-%dT%H:%M:%SZ')
+_mate = [93000000]
+def _dkill(hull, weapon, n, mates, victim, days, hour, system):
+    _kid[0] += 1; k = _kid[0]
+    me = {'character_id': DOSSIER_PILOT, 'corporation_id': 98000041, 'alliance_id': THIRD, 'ship_type_id': byname[hull],
+          'weapon_type_id': byname[weapon], 'damage_done': 500, 'final_blow': True, 'security_status': -2.0}
+    others = []
+    for i in range(n - 1):
+        _mate[0] += 1
+        others.append({'character_id': _mate[0], 'corporation_id': 98000099, 'ship_type_id': byname[mates[i % len(mates)]], 'weapon_type_id': byname[mates[i % len(mates)]], 'damage_done': 100, 'final_blow': False, 'security_status': 0})
+    npc = {'faction_id': 500001, 'ship_type_id': byname['Rifter'], 'damage_done': 5, 'final_blow': False, 'security_status': 0}   # an NPC: not a player
+    KM[k] = {'killmail_id': k, 'killmail_time': _diso(days, hour), 'solar_system_id': system,
+             'victim': {'character_id': pick(98000013), 'corporation_id': 98000013, 'ship_type_id': byname[victim], 'damage_taken': 1000, 'items': [], 'position': {'x': 0, 'y': 0, 'z': 0}},
+             'attackers': [me, *others, npc]}
+    H[k] = hashlib.sha1(str(k).encode()).hexdigest(); return k
+DOSSIER_ENTRIES = []   # (hull, weapon, players, mates, victim, days ago, UTC hour, system); the spec's order = newest first
+for hull, weapon, n, mates, victims, count, system in DOSSIER_SPEC:
+    for c in range(count):
+        j = len(DOSSIER_ENTRIES)
+        DOSSIER_ENTRIES.append((hull, weapon, n, mates, victims[c % len(victims)], 1 + j * 0.9, DOSSIER_HOURS[j % len(DOSSIER_HOURS)], system))
+for e in reversed(DOSSIER_ENTRIES):   # made oldest first, so killmail IDs grow with time (as zKillboard lists them, newest first)
+    DOSSIER_KILLS.append(_dkill(*e))
+DOSSIER_LOSSES = [_loss(DOSSIER_PILOT, 'Capsule', 8.1), _loss(DOSSIER_PILOT, 'Curse', 8), _loss(DOSSIER_PILOT, 'Vedmak', 3)]
+for _k in DOSSIER_LOSSES: KM[_k]['solar_system_id'] = 30004759
+FLEET_LOSSES[(THIRD, 'Loki')] = [_gloss(THIRD_PILOT, 'Loki', 4), _gloss(THIRD_PILOT, 'Loki', 6)]
+HIST[DOSSIER_PILOT] = {'kills': DOSSIER_KILLS, 'losses': DOSSIER_LOSSES}
+
 def expected_fleet():
     """The fleet view worked out here: shares from the kills (each attacker of the group counts its hull; capsules
     don't), ≈ = share × the group's count in local, the variants by exact module set, and the summary from the golden
@@ -209,7 +260,7 @@ def expected():
         k = a or corp
         if not (1000000 <= corp < 2000000) and k in ev: return ('h', 'zkb', ev[k])
         return ('n', None, None)
-    found = [v for k, v in PILOTS.items() if k != THIRD_PILOT]
+    found = [v for k, v in PILOTS.items() if v[1] != 98000041]   # v.90: the third-party corporation isn't in LOCAL (THIRD_PILOT, DOSSIER_PILOT)
     groups = {'h': {}, 'n': {}, 'f': {}}
     for name, corp in found:
         s, why, x = side(corp); a = ORGS[corp][3]
@@ -281,6 +332,7 @@ def esi(route):
         for i in ids:
             if i in ORGS: out.append({'id': i, 'name': ORGS[i][1], 'category': ORGS[i][0]})
             elif i in PILOTS: out.append({'id': i, 'name': PILOTS[i][0], 'category': 'character'})
+            elif i in SYSTEMS: out.append({'id': i, 'name': SYSTEMS[i], 'category': 'solar_system'})   # v.90
             elif str(i) in _TYPES: out.append({'id': i, 'name': _en(_TYPES[str(i)].get('typeName') or _TYPES[str(i)].get('name')), 'category': 'inventory_type'})   # v.83: module names
             else: return j({'error': 'Ensure all IDs are valid before resolving.'}, 404)
         return j(out)
@@ -313,6 +365,8 @@ def zkb(route):
         return stubs(FLEET_LOSSES.get((int(m.group(1)), name), []))
     m = re.search(r'/kills/allianceID/(\d+)/$', url)
     if m and int(m.group(1)) in FLEET_KILLS: return stubs(FLEET_KILLS[int(m.group(1))])
+    m = re.search(r'/losses/characterID/(\d+)/shipTypeID/(\d+)/', url)   # v.90: only that hull's losses
+    if m and int(m.group(1)) in HIST: return stubs([k for k in HIST[int(m.group(1))]['losses'] if KM[k]['victim']['ship_type_id'] == int(m.group(2))])
     m = re.search(r'/stats/characterID/(\d+)/', url)   # v.87
     if m:
         i = int(m.group(1))

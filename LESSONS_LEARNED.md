@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 79. Removing an element removes everything it did, not only what it showed
+
+- **What happened (v2026.10.14.90):** the Pilot Dossier's rows replaced the Pilot Analyzer's hull dropdown. The dropdown
+  had also named the hull on the pilot line, with its class, *before* the fit was built. The replacement label was first
+  written after `renderFitTabs`, so when the fit failed (ESI couldn't return the Loki's group: ESI-03) the pilot line stayed
+  empty, and `renderFitTabs` overwrote the classed label with a class-less one besides. `ship_class_check.py`'s
+  "no group from ESI" case caught it (a timeout, not a FAIL: it waited for the label).
+- **Do this instead:** before removing an element, list its side effects (labels, focus, state other code reads) and
+  where each will live now; put a label for "what was asked" before the step that can fail, and check the failure path,
+  not only the happy one. Mutation `m6` (the label back after the fit) is caught by that case.
+
 ## 78. A number can be exactly right and still mislead: check the assumption, not only the arithmetic
 
 - **What happened (v2026.10.14.85, hidden in v.88):** "Against Your Ship" added up, for every pilot in Local, a guessed

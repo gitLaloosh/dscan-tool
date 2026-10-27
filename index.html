@@ -2149,6 +2149,55 @@
   .pa-aff-side{margin-bottom:6px;} .pa-aff-side .side-tag{height:24px;}
   @media (max-width: 1240px){ .pa-aff{margin:12px 0 4px; max-width:560px;} }
   @media (max-width: 760px){ .pa-zk-h a{min-height:44px; display:inline-flex; align-items:center;} .pa-zk-h summary.info-btn{width:44px; height:44px;} }
+  /* PILOT DOSSIER (v2026.10.14.90; roadmap/pilot-dossier-plan.md): what a pilot flies, by gang size; its rows pick the hull. */
+  .pd-card{margin:14px 0 4px; padding:14px 16px 10px; position:relative;}
+  .pd-head{display:flex; align-items:center; gap:10px; min-width:0;}
+  .pd-head h3{margin:0; flex:none;}
+  .pd-head .ctx{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pd-bar1{display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; margin-top:10px;}
+  .pd-seg{display:inline-flex; border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .pd-seg button{border:none; border-radius:0; padding:5px 12px; min-height:30px; color:var(--text-dim); font:600 12px var(--sans); background:transparent; letter-spacing:0;}
+  .pd-seg button b{font:600 12px var(--mono); color:var(--text-dim); margin-left:6px;}
+  .pd-seg button.on{background:var(--panel-2); color:var(--heading);} .pd-seg button.on b{color:var(--heading);}
+  .pd-key{display:flex; gap:12px; font:400 11.5px var(--sans); color:var(--text-dim); margin-left:auto;}
+  .pd-key i{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:4px; vertical-align:-1px;}
+  .pd-cols, button.pd-row{display:grid; grid-template-columns:minmax(150px,1.1fr) 82px 96px minmax(140px,1.2fr) minmax(140px,1.2fr) minmax(130px,1fr) 58px; gap:12px; align-items:center;}
+  .pd-cols{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); padding:12px 4px 6px 10px; border-bottom:1px solid var(--line); margin-top:6px;}
+  .pd-cols .r{text-align:right;}
+  button.pd-row{width:100%; padding:8px 4px 8px 10px; border:none; border-bottom:1px solid var(--line-soft); border-radius:0; background:transparent; font:400 12.5px var(--sans); color:var(--text); text-align:left; letter-spacing:0; min-height:44px;}
+  button.pd-row:hover{background:var(--panel-2);}
+  button.pd-row.sel{box-shadow:inset 3px 0 0 var(--amber); background:var(--panel-2);}
+  .pd-row > span{min-width:0;}
+  .pd-hull .nm{font:600 13px var(--sans); color:var(--heading);} .pd-hull .cls{color:var(--text-dim); font-size:11.5px; margin-left:6px; font-weight:400;}
+  .pd-hull .pd-sub{display:block; font-size:11.5px; line-height:1.4; color:var(--text-dim); margin:1px 0 0;   /* not .sub: section.panel .sub adds 16px below */
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pd-n{font:600 13px var(--mono); color:var(--heading); text-align:right;} .pd-n span{color:var(--text-dim); font-weight:400;}
+  .pd-last{font-weight:400;}
+  .pd-gang{display:flex; flex-direction:column; gap:3px;}
+  .pd-gang .bar{display:flex; height:6px; border-radius:2px; overflow:hidden; gap:1px; width:84px;}
+  .pd-gang .bar i{display:block; height:100%;}
+  .pd-gang b{font:600 12px var(--mono); color:var(--heading);}
+  .pd-w, .pd-f, .pd-v{overflow:hidden; text-overflow:ellipsis;}
+  .pd-dim{color:var(--text-dim);}
+  .pd-more{padding:8px 4px 2px; font:400 12px var(--sans); color:var(--text-dim);}
+  .pd-msg{padding:10px 4px;}
+  .pd-foot{display:flex; gap:10px 34px; flex-wrap:wrap; margin-top:12px; align-items:flex-end;}
+  .pd-foot .k{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); margin-bottom:5px;}
+  .pd-hours{display:flex; align-items:flex-end; gap:2px; height:30px;}
+  .pd-hours i{display:block; width:7px; background:var(--cyan); border-radius:1px 1px 0 0; opacity:.85;}
+  .pd-axis{display:flex; justify-content:space-between; width:214px; font:400 10.5px var(--mono); color:var(--text-dim); margin-top:3px;}
+  .pd-foot .v{font:400 12.5px var(--sans); color:var(--text);} .pd-foot .v b{font:600 12.5px var(--sans); color:var(--heading);}
+  .pd-note{display:flex; gap:8px; align-items:flex-start; margin:10px 0 4px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel-2); font:400 12.5px var(--sans); color:var(--text);}
+  @media (max-width: 900px){
+    .pd-cols{display:none;}
+    button.pd-row{grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"h n" "g g" "w w" "f f"; row-gap:5px;}
+    .pd-row > .pd-hull{grid-area:h;} .pd-row > .pd-n.k{grid-area:n;} .pd-row > .pd-gang{grid-area:g; flex-direction:row; align-items:center; gap:8px;}
+    .pd-row > .pd-w{grid-area:w;} .pd-row > .pd-f{grid-area:f;} .pd-row > .pd-v, .pd-row > .pd-last{display:none;}
+    .pd-seg{display:flex; width:100%;} .pd-seg button{flex:1; min-height:44px; padding:5px 4px; white-space:nowrap;} .pd-seg .pd-long{display:none;}
+    .pd-row > .pd-w:has(> .pd-dim:only-child), .pd-row > .pd-f:has(> .pd-dim:only-child){display:none;}   /* a hull with no kills: no dash lines */
+    .pd-key{margin-left:0;}
+    .pd-head{flex-wrap:wrap;} .pd-head .ctx{white-space:normal; order:3; flex-basis:100%;}
+  }
 </style>
 </head>
 <body>
@@ -2156,7 +2205,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.89</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.90</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2253,6 +2302,8 @@
     <!-- v2026.10.14.87: the pilot's corporation, alliance and zKillboard stats (Your Side's tag moved in here) -->
     <aside class="pa-aff" id="pilotAff" hidden><div class="pa-aff-side"><span id="pilotSideTag"></span></div><div id="pilotAffBody"></div></aside>
     </div>
+    <!-- v2026.10.14.90: what they fly, by gang size; its rows choose the hull (roadmap/pilot-dossier-plan.md) -->
+    <div class="card pd-card" id="pilotDossier" hidden></div>
     <div class="busy-bar" id="pilotBusy" role="status" aria-live="polite" hidden><span class="busy-spin" aria-hidden="true"></span><span class="busy-label"></span><span class="busy-detail"></span></div>
     <div id="fitResults"></div>
   </section>
@@ -2309,7 +2360,8 @@ const CARD_NAMES = {
  "pilots": "Pilots",
  "fleet": "Fleet",
  "vs": "Against Your Ship",
- "aff": "Pilot Affiliation"
+ "aff": "Pilot Affiliation",
+ "dossier": "Pilot Dossier"
 };
 function cardName(key){
   const n = CARD_NAMES[key];
@@ -2461,6 +2513,12 @@ const CARD_INFO = {
   "The pilot's corporation and alliance (ESI), and their side by {card:side} when it's set. In corp since: when they joined that corporation (their corporation history). Pilot since: the year the character was made. Sec: their security status.",
   "zKillboard, all time: zKillboard's own numbers, as its pilot page shows them, not the tool's. Danger: zKillboard's dangerous / snuggly rating, from what they've destroyed against what they've lost. Gang: how many of their kills were solo, and their average gang size. Kills, losses and ISK destroyed: zKillboard's totals.",
   "One zKillboard request per pilot, after the analysis' own, kept an hour; the corporation lookups are kept an hour, names and tickers a week."
+ ],
+ "dossier": [
+  "What they fly, from their newest 50 kills and 30 losses on zKillboard (each killmail read from ESI and kept): one row per hull, the busiest first. Pick a row to see that hull below: their own losses in it, or, when they've never lost one, their alliance's (or corporation's) common fit, said as not theirs.",
+  "Gang size on a kill is the players on that killmail (NPCs left out; anyone who joined in counts): Solo is 1, Small gang 2–10, Fleet 11 or more. The switch keeps only those kills, so you see what they fly alone, in a small gang or in a fleet. Losses show a hull but not a gang size (only who killed them).",
+  "Weapons seen: the weapon each killmail credits them with. Flies with: the other players' hulls on those kills. Kills mostly: what they killed, by ship class. Every number is a count, so a pilot with few kills shows few.",
+  "Active: the hours of their kills in your own time zone. Usual systems: where their kills and losses were. Capsules, shuttles, rookie ships and Mobile Tractor Units aren't counted as hulls."
  ]
 };
 const CTX_MAX = 40;
@@ -2650,9 +2708,9 @@ const ERROR_CODES = {
   "doc": null
  },
  "PILOT-03": {
-  "title": "No recorded losses",
+  "title": "No recorded kills or losses",
   "where": "Pilot Analyzer",
-  "trigger": "zKillboard lists no losses for the pilot.",
+  "trigger": "zKillboard lists no kills and no losses for the pilot (since v2026.10.14.90 kills count too).",
   "check": "Type a ship name to analyze that hull without a loss.",
   "why": "",
   "since": "original (before 2026-10-08)",
@@ -10099,9 +10157,7 @@ async function renderLastKill(character, pilotName, statusEl){
   const el = document.getElementById('lastKillInfo');
   el.innerHTML = `<div class="lastkill">Checking last kill…</div>`;
   try{
-    const res = await zkbFetch(`${ZKB}/kills/characterID/${character.id}/`);
-    if(!res.ok) throw codedError('ZKB-03', describeEsiFailure(`zKillboard kills lookup (character ${character.id})`, res.status));
-    const stubs = await res.json();
+    const stubs = await fetchKillsStubs(character.id);   // v.90: one list for the Last Kill line and the dossier
     if(!stubs.length){
       el.innerHTML = `<div class="lastkill">No recorded kills for ${escapeHtml(pilotName)} on zKillboard.</div>`;
       return;
@@ -10324,7 +10380,7 @@ async function runSharedKillmail(id, hash){
   if(isBusy('fitStatus')) return;
   for(const x of ['fitResults', 'fitCandidates', 'lastKillInfo']) document.getElementById(x).innerHTML = '';
   document.getElementById('pilotHeadName').textContent = '';
-  sideTagForPilot(null); paAffClear();
+  sideTagForPilot(null); paAffClear(); pdClear();
   lastFitRun = null;
   const btn = document.getElementById('fitBtn');
   return withBusy('fitStatus', btn, 'Loading the shared killmail…', async () => { try{
@@ -10389,7 +10445,7 @@ async function runFitCheck(opts){
   document.getElementById('fitCandidates').innerHTML = '';
   document.getElementById('lastKillInfo').innerHTML = '';
   document.getElementById('pilotHeadName').textContent = '';
-  sideTagForPilot(null); paAffClear();
+  sideTagForPilot(null); paAffClear(); pdClear();
   lastFitRun = null;
   const pilotName = document.getElementById('pilotName').value.trim();
   const shipName = (document.getElementById('manualShip').value.trim()) || document.getElementById('shipSelect').value;
@@ -10440,6 +10496,7 @@ async function runFitCheck(opts){
       }
       lastFitRun = (force) => runFitForShip(character, shipTypeId, displayShipName, statusEl, force);
       await lastFitRun();
+      await pdLoadQuiet(character, statusEl, shipTypeId);   // v.90: the pilot's dossier, that hull's row selected
     }else{
       lastFitRun = (force) => speculateShip(character, statusEl, force);
       await lastFitRun();
@@ -10452,58 +10509,222 @@ async function runFitCheck(opts){
   } });
 }
 
+
+// ==== PILOT DOSSIER (v2026.10.14.90; roadmap/pilot-dossier-plan.md, D1-D8: the owner, "maybe building a dossier of the pilot
+// based on how many are involved when they're flying each ship type?"; his answers to Claude outputs/pilot_dossier_mockup.html:
+// Solo (1) / Small gang (2-10) / Fleet (11+), their newest 50 kills and 30 losses, the dossier open above the loss tabs
+// with its rows choosing the hull (replacing the hull dropdown), active hours "based on the user's local timezone rather
+// than UTC at all times") ====
+// From the killmails (ESI, kept for good), never a guess: on each kill, the pilot's own attacker entry gives the hull and
+// the credited weapon; the player attackers (NPCs out, third parties in) give the gang size; the other attackers' hulls
+// give "flies with"; the victim's ship class "kills mostly". Losses add the hull, its fit and when, not a gang size (a
+// loss shows who killed them, not who flew with them). Capsules, shuttles, rookie ships and MTUs are left out
+// (EXCLUDED_HULL_GROUP_IDS). A hull with no loss of theirs: their alliance's (else corporation's) common fit, by the
+// fleet view's method (saHullFits: one zKillboard request, kept an hour), said as not theirs.
+const PD_KILLS = 50, PD_LOSSES = 30, PD_ROWS = 8;
+const PD_SIZES = [['solo', 'Solo'], ['small', 'Small gang'], ['fleet', 'Fleet']];
+function pdSize(n){ return n <= 1 ? 'solo' : n <= 10 ? 'small' : 'fleet'; }   // D1: the player attackers on a kill
+const pd = {charId: null, d: null, mode: 'all', sel: null, character: null, statusEl: null};
+const killStubCache = new Map();
+async function fetchKillsStubs(charId, forceRefresh){
+  if(!forceRefresh && killStubCache.has(charId)) return killStubCache.get(charId);
+  let res;
+  try{ res = await zkbFetch(`${ZKB}/kills/characterID/${charId}/`); }
+  catch(e){ if(e.zkbUnavailable) throw e; throw codedError('ZKB-03', describeEsiFailure(`zKillboard kills lookup (character ${charId})`, undefined)); }
+  if(!res.ok) throw codedError('ZKB-03', describeEsiFailure(`zKillboard kills lookup (character ${charId})`, res.status));
+  const stubs = await res.json();
+  killStubCache.set(charId, stubs);
+  return stubs;
+}
+async function pdIsHull(id){
+  try{ const t = await getType(id), g = await getGroup(t.group_id); return g.category_id === 6 && !EXCLUDED_HULL_GROUP_IDS.has(t.group_id); }catch(e){ return false; }
+}
+// The dossier's numbers, from the killmails. kms: {kills: [km], losses: [km]} (newest first).
+async function pdBuild(charId, kms){
+  const hulls = new Map();   // typeId -> {id, kills: [{size, n, t, weapon, mates: [ids], victim}], losses: [{t, km}]}
+  const hullOf = (id) => { if(!hulls.has(id)) hulls.set(id, {id, kills: [], losses: []}); return hulls.get(id); };
+  const ids = new Set(), times = [], systems = new Map();
+  const sizes = {solo: 0, small: 0, fleet: 0};
+  for(const km of kms.kills){
+    const me = (km.attackers || []).find(a => a.character_id === charId);
+    if(!me || !me.ship_type_id) continue;
+    const players = (km.attackers || []).filter(a => a.character_id);
+    const n = players.length, size = pdSize(n), t = Date.parse(km.killmail_time);
+    const mates = players.filter(a => a !== me && a.ship_type_id).map(a => a.ship_type_id);
+    const weapon = me.weapon_type_id && me.weapon_type_id !== me.ship_type_id ? me.weapon_type_id : null;
+    hullOf(me.ship_type_id).kills.push({size, n, t, weapon, mates, victim: km.victim && km.victim.ship_type_id});
+    for(const x of [me.ship_type_id, weapon, km.victim && km.victim.ship_type_id, ...mates]) if(x) ids.add(x);
+    sizes[size]++; times.push(t);
+    if(km.solar_system_id) systems.set(km.solar_system_id, (systems.get(km.solar_system_id) || 0) + 1);
+  }
+  for(const km of kms.losses){
+    const v = km.victim; if(!v || !v.ship_type_id) continue;
+    hullOf(v.ship_type_id).losses.push({t: Date.parse(km.killmail_time), km}); ids.add(v.ship_type_id);
+    if(km.solar_system_id) systems.set(km.solar_system_id, (systems.get(km.solar_system_id) || 0) + 1);
+  }
+  // names and classes (types are kept for good), hulls only
+  const info = new Map();
+  await analyzeChunks([...ids], async (id) => {
+    let t; try{ t = await getType(id); }catch(e){ return; }
+    let g = null; try{ g = await getGroup(t.group_id); }catch(e){ /* the class unknown; still a hull if it was flown or lost */ }
+    info.set(id, {name: t.name, cls: g ? g.name : '', cat: g ? g.category_id : null, group: t.group_id});
+  }, 6);
+  const isHull = (id) => { const i = info.get(id); return !!i && (i.cat === 6 || i.cat === null) && !EXCLUDED_HULL_GROUP_IDS.has(i.group); };
+  for(const id of [...hulls.keys()]) if(!isHull(id)) hulls.delete(id);
+  const sysNames = new Map();
+  try{ for(const n of await resolveIdsToNames([...systems.keys()])) sysNames.set(n.id, n.name); }catch(e){}
+  const allT = [...kms.kills, ...kms.losses].map(km => Date.parse(km.killmail_time)).filter(x => !isNaN(x));
+  return {hulls: [...hulls.values()].map(h => Object.assign(h, info.get(h.id))), info, sizes, times, systems, sysNames,
+    nKills: kms.kills.length, nLosses: kms.losses.length, from: allT.length ? Math.min(...allT) : null, to: allT.length ? Math.max(...allT) : null};
+}
+// Rows for a mode ('all' or a size): kills in that size, sorted; 'all' adds the hulls only lost (activity = kills + losses).
+function pdRows(d, mode){
+  const rows = [];
+  for(const h of d.hulls){
+    const ks = mode === 'all' ? h.kills : h.kills.filter(k => k.size === mode);
+    if(mode !== 'all' && !ks.length) continue;
+    const last = Math.max(...h.kills.map(k => k.t), ...h.losses.map(l => l.t));
+    rows.push({h, ks, last, score: mode === 'all' ? h.kills.length + h.losses.length : ks.length});
+  }
+  return rows.sort((a, b) => b.score - a.score || b.last - a.last);
+}
+function pdTop(list, n, name){
+  const c = new Map(); for(const x of list) if(x) c.set(x, (c.get(x) || 0) + 1);
+  return [...c].sort((a, b) => b[1] - a[1] || String(name(a[0])).localeCompare(String(name(b[0])))).slice(0, n);
+}
+function pdMedian(a){ if(!a.length) return null; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); }
+function pdAgo(t){ const m = Math.max(0, (Date.now() - t) / 60000); return m < 60 ? `${Math.max(1, Math.round(m))} min` : m < 2880 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; }
+function pdTz(){ const o = -new Date().getTimezoneOffset(), h = Math.trunc(Math.abs(o) / 60), mm = Math.abs(o) % 60; return `UTC${o < 0 ? '−' : '+'}${h}${mm ? ':' + String(mm).padStart(2, '0') : ''}`; }
+const PD_COLOR = {solo: 'var(--cyan)', small: 'var(--amber)', fleet: 'var(--drain)'};
+function pdHtml(d){
+  const nm = (id) => (d.info.get(id) || {}).name || `type ${id}`;
+  const day = (t) => new Date(t).toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+  const counts = {all: d.sizes.solo + d.sizes.small + d.sizes.fleet, ...d.sizes};
+  const seg = [['all', 'All'], ...PD_SIZES].map(([v, l]) => `<button type="button" data-pd-mode="${v}" aria-pressed="${pd.mode === v}"${pd.mode === v ? ' class="on"' : ''}>${l.replace(' gang', '<span class="pd-long"> gang</span>')}<b>${counts[v]}</b></button>`).join('');
+  const key = PD_SIZES.map(([v, l]) => `<span><i style="background:${PD_COLOR[v]}"></i>${v === 'solo' ? 'solo' : v === 'small' ? 'small gang 2–10' : 'fleet 11+'}</span>`).join('');
+  const all = pdRows(d, pd.mode), rows = all.slice(0, PD_ROWS);
+  const rowHtml = ({h, ks, last}) => {
+    const sz = {solo: 0, small: 0, fleet: 0}; for(const k of h.kills) sz[k.size]++;
+    const med = pdMedian(ks.map(k => k.n));
+    const w = pdTop(ks.map(k => k.weapon), 2, nm).map(([id]) => nm(id)).join(', ');
+    const mates = pdTop(ks.flatMap(k => [...new Set(k.mates)]).filter(id => d.info.get(id) && d.info.get(id).cat === 6 && !EXCLUDED_HULL_GROUP_IDS.has(d.info.get(id).group)), 3, nm).map(([id, n]) => `${nm(id)} ${n}`).join(' · ');
+    const vic = pdTop(ks.map(k => k.victim).filter(Boolean).map(id => (d.info.get(id) || {}).cls), 2, x => x).map(([c, n]) => `${c} ${n}`).join(' · ');
+    const bar = h.kills.length ? `<span class="bar" aria-hidden="true">${PD_SIZES.map(([v]) => `<i style="flex:${sz[v]};background:${PD_COLOR[v]}"></i>`).join('')}</span>` : '';
+    const fit = h.losses.length ? `${h.losses.length} loss${h.losses.length === 1 ? '' : 'es'} · fit from their losses` : 'no loss of theirs';
+    const sel = pd.sel === h.id;
+    return `<button type="button" class="pd-row${sel ? ' sel' : ''}" data-pd-hull="${h.id}" aria-pressed="${sel}" title="Show their ${escapeHtml(h.name)} ${h.losses.length ? 'losses' : '(their group’s common fit)'}">
+      <span class="pd-hull"><span class="nm">${escapeHtml(h.name)}<span class="cls">${escapeHtml(h.cls || '')}</span></span><span class="pd-sub">${escapeHtml(fit)}</span></span>
+      <span class="pd-n k">${ks.length}${pd.mode === 'all' ? '' : `<span> of ${h.kills.length}</span>`}</span>
+      <span class="pd-gang">${bar}<span>${med === null ? '<span class="pd-dim">no kills</span>' : `usually <b>${med}</b>`}</span></span>
+      <span class="pd-w">${escapeHtml(w) || '<span class="pd-dim">—</span>'}</span><span class="pd-f">${escapeHtml(mates) || '<span class="pd-dim">—</span>'}</span>
+      <span class="pd-v pd-dim">${escapeHtml(vic) || '—'}</span><span class="pd-n pd-last">${pdAgo(last)}</span></button>`;
+  };
+  // footer: active hours in the user's own time zone (D3), usual systems, the split
+  const hrs = new Array(24).fill(0); for(const t of d.times) hrs[new Date(t).getHours()]++;
+  const hmax = Math.max(1, ...hrs);
+  const hours = hrs.map((n, i) => `<i style="height:${n ? Math.max(3, Math.round(n / hmax * 30)) : 1}px" title="${String(i).padStart(2, '0')}:00–${String((i + 1) % 24).padStart(2, '0')}:00, your time: ${n} kill${n === 1 ? '' : 's'}" data-pd-h="${n}"></i>`).join('');
+  const sys = [...d.systems].sort((a, b) => b[1] - a[1]);
+  const sysTop = sys.slice(0, 3).map(([id, n]) => `<b>${escapeHtml(d.sysNames.get(id) || `system ${id}`)}</b> ${n}`).join(' · ');
+  const sysRest = sys.slice(3).reduce((s, x) => s + x[1], 0);
+  const span = d.from ? `, ${day(d.from)} – ${day(d.to)}` : '';
+  const rowsBody = rows.length ? rows.map(rowHtml).join('') : `<div class="pr-msg pd-msg">${pd.mode === 'all' ? 'No ships among their recent kills and losses (capsules, shuttles and rookie ships aren’t counted).' : `No ${PD_SIZES.find(x => x[0] === pd.mode)[1].toLowerCase()} kills among their newest ${d.nKills}.`}</div>`;
+  return `<div class="pd-head"><h3>${escapeHtml(cardName('dossier'))}</h3>${ctxHtml(`newest ${d.nKills} kills, ${d.nLosses} losses${span}`, '', `From their newest ${d.nKills} kills and ${d.nLosses} losses on zKillboard${span}, read from ESI`)}<span class="sa-sp"></span>${infoBtnHtml('dossier')}</div>
+    <div class="pd-bar1"><span class="pd-seg" role="group" aria-label="Gang size">${seg}</span><span class="pd-key" aria-hidden="true">${key}</span></div>
+    <div class="pd-cols" aria-hidden="true"><span>Hull</span><span class="r">Kills</span><span>Gang size</span><span>Weapons seen</span><span>Flies with</span><span>Kills mostly</span><span class="r">Last</span></div>
+    ${rowsBody}${all.length > rows.length ? `<div class="pd-more">${all.length - rows.length} more hull${all.length - rows.length === 1 ? '' : 's'} with fewer</div>` : ''}
+    <div class="pd-foot">
+      <div><div class="k">Active, your time (${pdTz()})</div><div class="pd-hours" data-pd="hours">${hours}</div><div class="pd-axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div></div>
+      <div><div class="k">Usual systems</div><div class="v" data-pd="systems">${sysTop || '<span class="pd-dim">—</span>'}${sysRest ? ` · ${sys.length - 3} others ${sysRest}` : ''}</div></div>
+      <div><div class="k">Solo / gang</div><div class="v" data-pd="split"><b>${d.sizes.solo}</b> solo · <b>${d.sizes.small}</b> small gang · <b>${d.sizes.fleet}</b> fleet</div></div>
+    </div>`;
+}
+function pdRender(){
+  const el = document.getElementById('pilotDossier');
+  if(!el) return;
+  if(!pd.d){ el.hidden = true; el.innerHTML = ''; return; }
+  if(el.querySelector('details.info-pop[open]')) return setTimeout(pdRender, 400);
+  el.hidden = false;
+  el.innerHTML = pdHtml(pd.d);
+}
+// The pilot line names the hull on screen and its class (the hull dropdown did until v.89; ship class v.74).
+function pdHullLabel(name, typeId){
+  const fc = document.getElementById('fitCandidates');
+  if(fc && !fc.querySelector('.km-shared')) fc.innerHTML = `<span class="hull-static">${escapeHtml(name)}</span>${hullClassHtml(typeId)}`;
+}
+function pdClear(){ pd.charId = null; pd.d = null; pd.sel = null; pdRender(); }
+// Reads the killmails and draws the dossier; returns the hull to show first (the busiest in All), or null.
+async function pdLoad(character, statusEl, forceRefresh, quiet){
+  const charId = character.id;
+  pd.charId = charId; pd.character = character; pd.statusEl = statusEl; pd.mode = 'all';
+  if(!quiet) setStatus(statusEl, `Reading ${currentPilotName}'s newest kills and losses…`);
+  const [kStubs, lStubs] = await Promise.all([fetchKillsStubs(charId, forceRefresh).catch(e => { if(e.zkbUnavailable) throw e; return []; }), fetchLossesStubs(charId, undefined, forceRefresh)]);
+  const [kr, lr] = await Promise.all([analyzeChunks(kStubs.slice(0, PD_KILLS), fetchKillmail, 4), analyzeChunks(lStubs.slice(0, PD_LOSSES), fetchKillmail, 3)]);
+  if(pd.charId !== charId) return null;
+  const ok = (rs) => rs.filter(r => r && !r.error && r.km).map(r => r.km);
+  const d = await pdBuild(charId, {kills: ok(kr), losses: ok(lr)});
+  if(pd.charId !== charId) return null;
+  d.stubs = kStubs.length + lStubs.length;
+  pd.d = d;
+  const top = pdRows(d, 'all')[0];
+  pd.sel = top ? top.h.id : null;
+  pdRender();
+  return top ? top.h : null;
+}
+// A ship typed or picked: the dossier after that hull's analysis, without touching its status line; that hull selected.
+async function pdLoadQuiet(character, statusEl, shipTypeId){
+  try{ await pdLoad(character, statusEl, false, true); }catch(e){ pdClear(); return; }
+  if(pd.d && pd.d.hulls.some(h => h.id === shipTypeId)){ pd.sel = shipTypeId; pdRender(); }
+  else if(pd.d){ pd.sel = null; pdRender(); }
+}
+// A row: that hull's losses, or (none of theirs) their alliance's / corporation's common fit (saHullFits), said as not theirs.
+async function pdShowHull(character, hull, statusEl, forceRefresh){
+  if(hull.losses && hull.losses.length) return runFitForShip(character, hull.id, hull.name, statusEl, forceRefresh);
+  pdHullLabel(hull.name, hull.id);
+  const el = document.getElementById('fitResults');
+  let g = null;
+  try{ const [a] = await saAffiliation([character.id]); if(a) g = a.alliance_id ? {kind: 'alliance', id: a.alliance_id} : {kind: 'corporation', id: a.corporation_id}; }catch(e){}
+  if(!g || isNpcCorp(g.id)){ el.innerHTML = ''; setStatus(statusEl, `No loss of ${currentPilotName}'s in a ${hull.name}, and no group to take a common fit from: fit unknown.`); return; }
+  setStatus(statusEl, `No loss of theirs in a ${hull.name}: looking up their ${g.kind}'s ${hull.name} losses…`);
+  let r;
+  try{ r = await saHullFits(g, hull.id); }
+  catch(e){ el.innerHTML = ''; setStatus(statusEl, withCode(`No loss of theirs in a ${hull.name}, and their ${g.kind}'s losses couldn't be read: ${e.message}`, errorCodeOf(e)), true); return; }
+  if(!r || r.none || !r.variants || !r.variants.length){ el.innerHTML = ''; setStatus(statusEl, `No loss of ${currentPilotName}'s in a ${hull.name}, nor of their ${g.kind}'s lately: fit unknown.`); return; }
+  let gname = '';
+  try{ gname = (await getOrg(g.kind, g.id)).name; }catch(e){}
+  const {fits, idToName} = await buildLossFits(r.variants.map(v => ({km: v.km})), hull.id);
+  renderFitTabs(currentPilotName, hull.name, fits, idToName);
+  const what = `${gname || `their ${g.kind}`}'s common ${hull.name} fit${r.variants.length > 1 ? 's' : ''}`;
+  el.insertAdjacentHTML('afterbegin', `<div class="pd-note" data-pd-fallback="1"><span class="ewar-badge boost" aria-hidden="true">i</span><span>No loss of ${escapeHtml(currentPilotName)}'s in a ${escapeHtml(hull.name)}: showing ${escapeHtml(what)} (${r.variants.map(v => `${v.n} of ${r.of}`).join(', ')} of their losses), not their own.</span></div>`);
+  setStatus(statusEl, `No loss of theirs in a ${hull.name}: showing ${what}, not their own.`);
+}
+(function pdInit(){
+  const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('pilotDossier');
+  if(!el || !el.addEventListener) return;   // LESSON #36: the suites run this file against a stub DOM
+  el.addEventListener('click', async (e) => {
+    const m = e.target.closest('[data-pd-mode]');
+    if(m){ pd.mode = m.dataset.pdMode; pdRender(); const again = el.querySelector(`[data-pd-mode="${pd.mode}"]`); if(again) again.focus({preventScroll: true}); return; }
+    const r = e.target.closest('[data-pd-hull]');
+    if(!r || !pd.d || isBusy('fitStatus')) return;
+    const h = pd.d.hulls.find(x => x.id === Number(r.dataset.pdHull));
+    if(!h) return;
+    pd.sel = h.id; pdRender();
+    const row = el.querySelector(`[data-pd-hull="${h.id}"]`);
+    const character = pd.character, statusEl = pd.statusEl;
+    lastFitRun = (force) => pdShowHull(character, h, statusEl, force);
+    await withBusy('fitStatus', row || el, `Loading ${h.name}…`, () => lastFitRun());
+  });
+})();
+
 async function speculateShip(character, statusEl, forceRefresh){
-  setStatus(statusEl, 'No ship specified — sampling recent losses to guess their most-flown hull…');
-  const stubs = await fetchLossesStubs(character.id, undefined, forceRefresh);
-  if(!stubs.length){
-    setStatus(statusEl, withCode(`No recorded losses for ${currentPilotName} on zKillboard — try specifying a ship directly.`, 'PILOT-03'), true);
-    return;
-  }
-  const sample = stubs.slice(0, 30);
-  const kmResults = await analyzeChunks(sample, fetchKillmail, 3);
-  const valid = kmResults.filter(r => r && !r.error);
-  if(!valid.length){
-    setStatus(statusEl, withCode('Could not retrieve killmail details to guess a ship.', 'PILOT-04'), true);
-    return;
-  }
-
-  const shipTally = {};
-  for(const {km} of valid){
-    const sid = km.victim.ship_type_id;
-    shipTally[sid] = (shipTally[sid] || 0) + 1;
-  }
-
-  // Capsule/Shuttle/Corvette(rookie ship)/Mobile Tractor Unit losses ride
-  // along with a pilot's real combat losses but aren't a hull worth
-  // threat-assessing — they'd otherwise crowd out the pilot's actual ships
-  // in the "most flown" ranking. Only include one if the user asked for it
-  // directly, via the ship dropdown or the manual ship box (that path calls
-  // runFitForShip() straight away and never reaches here). Excluded by
-  // exact group_id (EXCLUDED_HULL_GROUP_IDS above), not by name.
-  const candidateIds = Object.keys(shipTally).map(Number);
-  const [candidateNames, candidateTypes] = await Promise.all([
-    resolveIdsToNames(candidateIds),
-    analyzeChunks(candidateIds, async (id) => ({id, type: await getType(id)}), 5)
-  ]);
-  const idToName = new Map(candidateNames.map(n => [n.id, n.name]));
-  const idToGroupId = new Map(candidateTypes.filter(r => r && !r.error).map(r => [r.id, r.type.group_id]));
-  const isExcludedHull = (id) => EXCLUDED_HULL_GROUP_IDS.has(idToGroupId.get(id));
-
-  const ranked = Object.entries(shipTally)
-    .map(([id, count]) => ({id: Number(id), count}))
-    .filter(r => !isExcludedHull(r.id))
-    .sort((a,b) => b.count - a.count)
-    .slice(0, 5);
-
-  if(!ranked.length){
-    setStatus(statusEl, withCode(`${currentPilotName}'s recent losses on zKillboard were all capsules/shuttles/rookie ships/MTUs — try specifying a ship directly.`, 'PILOT-05'), true);
-    return;
-  }
-
-  ranked.forEach(r => r.name = idToName.get(r.id) || `type ${r.id}`);
-
-  renderCandidates(ranked, valid.length, character, statusEl);
-  await runFitForShip(character, ranked[0].id, ranked[0].name, statusEl, forceRefresh);
+  // v2026.10.14.90 (pilot-dossier-plan.md D3, D7): the Pilot Dossier, from their newest kills AND losses, replaces the
+  // dropdown of hulls by losses; the busiest hull in All is shown first (its losses, or their group's common fit).
+  const top = await pdLoad(character, statusEl, forceRefresh);
+  const d = pd.d;
+  if(!d) return;
+  if(!d.stubs){ pdClear(); setStatus(statusEl, withCode(`No recorded kills or losses for ${currentPilotName} on zKillboard — try specifying a ship directly.`, 'PILOT-03'), true); return; }
+  if(!d.nKills && !d.nLosses){ setStatus(statusEl, withCode('Could not retrieve killmail details to guess a ship.', 'PILOT-04'), true); return; }
+  if(!top){ setStatus(statusEl, withCode(`${currentPilotName}'s recent kills and losses on zKillboard were all in capsules/shuttles/rookie ships/MTUs — try specifying a ship directly.`, 'PILOT-05'), true); return; }
+  await pdShowHull(character, top, statusEl, forceRefresh);
 }
 
 // v2026.10.14.44: the header's pop-ups (hull dropdown, last-kill panel) close on Escape or a press outside them.
@@ -10524,33 +10745,7 @@ async function speculateShip(character, statusEl, forceRefresh){
     for(const d of openOnes()){ d.open = false; const s = d.querySelector('summary'); if(s) s.focus(); }
   });
 })();
-// v2026.10.14.43 (the owner: "the UI is just too busy with all of the hulls from their losses"): the most-flown hulls
-// are a dropdown in the header line (<details>, like the fit-actions menu: no document-level listener to leak on
-// re-render). The summary shows the hull on screen and its share of their losses; picking one closes the menu and
-// loads that hull (the summary carries the busy spinner).
-function renderCandidates(ranked, sampleSize, character, statusEl){
-  const el = document.getElementById('fitCandidates');
-  const label = (r) => `<span class="hp-name">${escapeHtml(r.name)}</span>${hullClassHtml(r.id)}<span class="hp-freq">${r.count} of ${sampleSize} losses</span>`;
-  el.innerHTML = `<details class="hull-pick">
-      <summary class="hull-pick-btn" title="Hulls they lose most often: pick one to see its losses">${label(ranked[0])}<span class="hp-caret" aria-hidden="true">▾</span></summary>
-      <div class="hull-menu" role="menu">
-        <div class="candidates-note">Most flown across their last ${sampleSize} recorded losses (capsules excluded)</div>
-        ${ranked.map((r, i) => `<button type="button" role="menuitemradio" aria-checked="${i === 0}" class="candidate-btn ${i===0 ? 'active' : ''}" data-id="${r.id}" data-name="${escapeHtml(r.name)}" data-count="${r.count}">
-          <span class="cand-name">${escapeHtml(r.name)}${hullClassHtml(r.id)}</span><span class="cfreq">${r.count}/${sampleSize} losses</span></button>`).join('')}
-      </div>
-    </details>`;
-  const pick = el.querySelector('.hull-pick'), sum = el.querySelector('.hull-pick-btn');
-  el.querySelectorAll('.candidate-btn').forEach(b => {
-    b.addEventListener('click', async () => {
-      if(isBusy('fitStatus')) return;
-      el.querySelectorAll('.candidate-btn').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-checked', String(x === b)); });
-      sum.innerHTML = label({name: b.dataset.name, id: Number(b.dataset.id), count: b.dataset.count}) + '<span class="hp-caret" aria-hidden="true">▾</span>';
-      pick.open = false;
-      lastFitRun = (force) => runFitForShip(character, Number(b.dataset.id), b.dataset.name, statusEl, force);
-      await withBusy('fitStatus', sum, `Loading ${b.dataset.name} losses…`, () => lastFitRun());
-    });
-  });
-}
+// (v2026.10.14.43-.89: renderCandidates, the dropdown of hulls by losses; replaced by the Pilot Dossier's rows in v.90.)
 
 // Builds the tally shape estimateHpAndDps() expects, but scoped to a SINGLE
 // killmail — lossCount is always 1, so nothing from any other loss ever gets
@@ -10988,6 +11183,7 @@ async function buildLossFits(valid, shipTypeId){
   return {fits, idToName: new Map(names.map(n => [n.id, n.name]))};
 }
 async function runFitForShip(character, shipTypeId, shipName, statusEl, forceRefresh){
+  pdHullLabel(shipName, shipTypeId);   // v.90: the pilot line names the hull asked for, with its class (before the fit: it may fail)
   setStatus(statusEl, `Querying zKillboard for ${shipName} losses…`);
   try{
     const stubs = await fetchLossesStubs(character.id, shipTypeId, forceRefresh);
@@ -16804,8 +17000,8 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   `).join('');
 
   el.dataset.mysScope = '1'; el.dataset.mysView = 'threat';
-  const fc = document.getElementById('fitCandidates');   // no hull dropdown (ship typed or picked from the last kill): name the hull
-  if(fc && !fc.querySelector('.hull-pick')) fc.innerHTML = `<span class="hull-static">${escapeHtml(shipName)}</span>`;
+  const fc = document.getElementById('fitCandidates');   // the hull named (v.90: its callers name it first, with its class, via pdHullLabel)
+  if(fc && !fc.querySelector('.hull-static')) fc.innerHTML = `<span class="hull-static">${escapeHtml(shipName)}</span>`;
   const phn = document.getElementById('pilotHeadName');
   if(phn && !phn.textContent) phn.textContent = pilotName;
   el.innerHTML = `

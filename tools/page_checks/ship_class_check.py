@@ -66,22 +66,19 @@ CLS_OF = "(sel) => [...document.querySelectorAll(sel)].map(e => { const c = e.qu
 def pilot(b, w):
     tag = f'{w}px pilot'
     ctx, pg, errs = _ns['start'](b, w, 900, w < 500)
-    filled(pg, '.hull-pick-btn .hull-cls:not([data-filled])', tag)
-    btn = pg.evaluate(CLS_OF, '.hull-pick-btn')[0]
-    check(btn['cls'] == cls(29990) and btn['shown'] and btn['text'].startswith('Loki Strategic Cruiser'), f'{tag}: the hull button names the class ({btn["text"]!r})')
-    mids = pg.evaluate("() => [...document.querySelectorAll('.hull-pick-btn > span')].filter(e => e.getBoundingClientRect().width > 0).map(e => { const r = e.getBoundingClientRect(); return [r.top + r.height / 2, r.height]; })")
-    check(max(m[0] for m in mids) - min(m[0] for m in mids) < 4 and max(m[1] for m in mids) < 24, f'{tag}: the hull button stays one line (name, class, losses, caret: {[[round(x) for x in m] for m in mids]})')
-    pg.click('.hull-pick-btn'); pg.wait_for_timeout(200)
-    filled(pg, '.hull-menu .hull-cls:not([data-filled])', tag)
-    rows = pg.evaluate("() => [...document.querySelectorAll('.hull-menu .candidate-btn')].map(b => ({id: Number(b.dataset.id), cls: (b.querySelector('.hull-cls') || {}).textContent, text: b.textContent.replace(/\\s+/g, ' ').trim(), h: b.getBoundingClientRect().height, fh: b.querySelector('.cfreq').getBoundingClientRect().height}))")
-    bad = [r for r in rows if r['cls'] != cls(r['id']) or not r['text'].startswith(f"{tname(r['id'])} {cls(r['id'])}") or r['fh'] > 20]
-    check(len(rows) == 4 and not bad, f'{tag}: every hull menu row names its class on one line ({[(r["text"], round(r["fh"])) for r in rows]})')
+    # v2026.10.14.90: the hull dropdown became the Pilot Dossier's rows (each names its class); the pilot line names the
+    # hull on screen with its class
+    filled(pg, '#fitCandidates .hull-cls:not([data-filled])', tag)
+    btn = pg.evaluate(CLS_OF, '#fitCandidates')[0]
+    check(btn['cls'] == cls(29990) and btn['shown'] and btn['text'].startswith('Loki Strategic Cruiser'), f'{tag}: the pilot line names the hull and its class ({btn["text"]!r})')
+    rows = pg.evaluate("() => [...document.querySelectorAll('#pilotDossier button.pd-row')].map(b => { const n = b.querySelector('.pd-hull .nm'); const r = n.getBoundingClientRect(); return {id: Number(b.dataset.pdHull), cls: n.querySelector('.cls').textContent, text: n.textContent.replace(/\\s+/g, ' ').trim(), h: r.height}; })")
+    bad = [r for r in rows if r['cls'] != cls(r['id']) or not r['text'].startswith(tname(r['id'])) or r['h'] > 22]
+    check(len(rows) == 4 and not bad, f'{tag}: every dossier row names its hull\'s class on one line ({[(r["text"], round(r["h"])) for r in rows]})')
     if w == 1440:
-        pg.locator('.candidate-btn[data-name="Curse"]').click(); _ns['wait_idle'](pg); pg.wait_for_timeout(300)
-        btn = pg.evaluate(CLS_OF, '.hull-pick-btn')[0]
-        check(btn['cls'] == cls(CURSE) and btn['text'].startswith('Curse Combat Recon Ship'), f'{tag}: picking the Curse, the button follows ({btn["text"]!r})')
-    else:
-        pg.keyboard.press('Escape')
+        pg.locator('#pilotDossier [data-pd-hull="%d"]' % CURSE).click(); _ns['wait_idle'](pg); pg.wait_for_timeout(300)
+        filled(pg, '#fitCandidates .hull-cls:not([data-filled])', tag)
+        btn = pg.evaluate(CLS_OF, '#fitCandidates')[0]
+        check(btn['cls'] == cls(CURSE) and btn['text'].startswith('Curse Combat Recon Ship'), f'{tag}: picking the Curse, the pilot line follows ({btn["text"]!r})')
     lk = pg.evaluate(CLS_OF.replace(".querySelector('.hull-cls')", ".querySelectorAll('.hull-cls')").replace('c ? c.textContent : null', 'c ? [...c].map(x => x.textContent) : null').replace("!!c && c.getClientRects().length > 0 && c.getBoundingClientRect().width > 0", "!!c && [...c].every(x => x.getBoundingClientRect().width > 0)"), '.lk-sum')[0]
     check(lk['cls'] == [cls(VED), cls(CURSE)] and lk['shown'] and f'Vedmak {cls(VED)}' in lk['text'] and f'Curse {cls(CURSE)}' in lk['text'], f'{tag}: the Last Kill line names both classes ({lk["text"]!r})')
     pg.click('.lk-sum'); pg.wait_for_selector('#attackerList .lk-att-row', timeout=30000)
@@ -138,12 +135,12 @@ def no_group(b):
     pg.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))
     pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')")
     pg.click('#tabBtnPilot'); pg.fill('#pilotName', 'Test Pilot'); pg.click('#fitBtn')
-    pg.wait_for_selector('.hull-pick-btn', timeout=60000); pg.wait_for_timeout(1500)
-    btn = pg.evaluate(CLS_OF, '.hull-pick-btn')[0]
-    pg.click('.hull-pick-btn'); pg.wait_for_timeout(800)
-    rows = pg.evaluate(CLS_OF, '.hull-menu .candidate-btn')
-    check(btn['text'].startswith('Loki') and not btn['shown'] and rows[1]['cls'] == cls(CURSE) and not errs,
-          f'no group from ESI: the Loki shows no class, the Curse still does, no page errors ({btn["text"]!r}; {errs[:1]})')
+    pg.wait_for_timeout(300); pg.wait_for_function("() => !document.querySelector('#fitBtn').disabled", timeout=90000); pg.wait_for_timeout(1000)
+    # (the Loki's fit fails here: ESI-03 for its group; the pilot line still names the hull asked for: LESSON #79)
+    btn = pg.evaluate(CLS_OF, '#fitCandidates')[0]
+    rows = pg.evaluate("() => Object.fromEntries([...document.querySelectorAll('#pilotDossier button.pd-row')].map(b => [b.querySelector('.pd-hull .nm').firstChild.textContent, b.querySelector('.pd-hull .cls').textContent]))")
+    check(btn['text'].startswith('Loki') and not btn['shown'] and rows.get('Loki') == '' and rows.get('Curse') == cls(CURSE) and not errs,
+          f'no group from ESI: the Loki shows no class (still a row), the Curse still does, no page errors ({btn["text"]!r}; {rows}; {errs[:1]})')
     ctx.close()
 
 with sync_playwright() as p:
