@@ -884,6 +884,11 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **Do this instead:** before turning estimates into a verdict, ask how wrong each input can be and what one wrong input
   does to the answer; show how much of the answer rests on what's known (a ship on D-Scan) versus guessed, and don't give
   a verdict when that share is low. Checks of the arithmetic don't cover this; say so in the mockup.
+- **Again (v2026.10.14.89):** the fleet view (v.83) read Local as a fleet: everyone in Local counted, the largest groups'
+  hulls and fits added up. the owner, from a high-sec trade hub with 1499 in Local: "most of those pilots are docked up and
+  likely not even flying a combat ship of any kind." Local says who is in the system, not who is undocked, in a ship, or
+  in the fight; the summary covered 78 of 1468 pilots and still read as "their fleet". Switched off. Ask what the source
+  really proves (here: presence, nothing more) before building a picture on it.
 
 ## 77. A failure case leaves state behind: the next case in the same page inherits it
 

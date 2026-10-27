@@ -120,6 +120,7 @@ def setup(ctx, ship=True, on=True):
     pg = ctx.new_page(); pg.goto('file://' + HTML)
     pg.evaluate("(s) => localStorage.setItem('dscanSide', JSON.stringify(s))", SIDE); pg.reload(); pg.wait_for_timeout(300)
     if on: pg.evaluate("() => { if(typeof saVsOn !== 'undefined') saVsOn = true; }")   # v2026.10.14.88: the card is switched off on the page
+    pg.evaluate("() => { if(typeof saFleetOn !== 'undefined') saFleetOn = true; }")   # v2026.10.14.89: so is the fleet view it sits in
     if ship: save_ship(pg)
     return pg
 def analyze(pg, local, scan):

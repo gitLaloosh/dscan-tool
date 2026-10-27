@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — The System Analyzer's fleet view hidden until it's refined</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The System Analyzer's fleet view hidden until it's refined</h1>
+<p><span class="tag">Rollback</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.88</code> &rarr; <code>v2026.10.14.89</code> &middot; plan: <code>roadmap/local-and-fleet-plan.md</code> ("Step 3 status: hidden").</p>
+<p>the owner, with screenshots from a high-sec trade hub (1499 in Local; the fleet summary covering 78 of 1468 hostile + neutral pilots, several hull lookups failing with ZKB-01): "it's just not on point, again, due to the lack of other ships on-grid. just too many assumptions based on local. we should strip the fleet stuff out of that page temporarily until we have a better method for reaching our conclusions. the screen shot is from a system that is a major trade hub in high sec space where most of those pilots are docked up and likely not even flying a combat ship of any kind."</p>
+
+<h2>What changed</h2>
+<ul>
+<li>Over "pilot rows up to" (15), the System Analyzer shows the Groups columns only. The pill says "1468 hostile + neutral" (no "Fleet:"), there's no Fleet / Groups switch, and no group is looked up on zKillboard. The fleet view's code is kept behind <code>saFleetOn = false</code>.</li>
+<li>Unchanged: Local's counts and columns, Your Side, the evidence, the small gang's Pilots view, the On Scan contacts. (Against Your Ship was already hidden in v.88.)</li>
+<li>Why it misled: Local proves who is in the system, not who is undocked, in a combat ship or in the fight. The view counted every pilot in Local as part of a fleet and added up their groups' usual hulls and fits.</li>
+<li>A backlog item to discuss what a fleet picture can rest on instead.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>fleet_view_check.py</code> first checks the view is off (the columns, no switch, no group lookups; v.88 fails), then switches it on in the page to keep its numbers checked. <code>system_analyzer_check.py</code>: the pill and no switch over 15. <code>vs_check.py</code> switches both on.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 37 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #78, again: ask what a source really proves before building a picture on it. Local proves presence and nothing more; a trade hub's Local is mostly docked traders. A summary covering 78 of 1468 pilots still read as "their fleet".</p>
+</body></html>

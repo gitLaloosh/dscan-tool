@@ -274,6 +274,23 @@ because we'll need to do some real security analysis of the tool first". What it
   against the pyfa-verified pins, shares / counts / summary against `sa_mocks.expected_fleet()`). Next step: L5,
   their fleet against your ship.
 
+## Step 3 status: hidden (v2026.10.14.89)
+
+the owner (2026-10-27, screenshots of a high-sec trade hub: 1499 in Local, 1468 hostile + neutral; the fleet view's summary
+covering 78 of them, ZKB-01 on several hull lookups): "please create a backlog item for us to discuss the 'fleet' content
+on the system analysis page. it's just not on point, again, due to the lack of other ships on-grid. just too many
+assumptions based on local. we should strip the fleet stuff out of that page temporarily until we have a better method
+for reaching our conclusions. the screen shot is from a system that is a major trade hub in high sec space where most of
+those pilots are docked up and likely not even flying a combat ship of any kind."
+
+- The fleet view is switched off (`saFleetOn = false`): over "pilot rows up to" Local shows the Groups columns only (the
+  pill says "N hostile + neutral", not "Fleet"), no Fleet / Groups switch, no group lookups on zKillboard. Its code and
+  `fleet_view_check.py` stay (the check switches it on). The small gang's Pilots view is unchanged.
+- Why: Local proves presence, not that a pilot is undocked, in a combat ship or in the fight; a trade hub's Local is
+  mostly docked traders. The 4 zKillboard requests per group also ran into zKillboard's limits (ZKB-01) on a big Local.
+- To discuss (backlog "System Analyzer fleet content"): what a fleet picture can rest on (D-Scan and what's on grid, your
+  own fleet, kills happening now in the system), and whether Local alone should say anything beyond who's there.
+
 ## Step 4 as built (v2026.10.14.85)
 
 - **Where (D10):** the card **Against Your Ship** (`vs`) under "Their fleet, estimated" in the Fleet view, and above the

@@ -17,7 +17,8 @@ sa_mocks.expected_fleet() (the rules in Python). Checks:
   * Their fleet, estimated: raw DPS = Σ ≈count × the pinned DPS, ships counted, tackle / cap-warfare counts;
   * › opens the fit in the Fit Analyzer (EFT pasted, that hull analyzed);
   * at 390 px nothing runs off the page; no page errors.
-v2026.10.14.82 fails (no fleet view).
+v2026.10.14.82 fails (no fleet view). Since v2026.10.14.89 the fleet view is switched off on the page; this check checks that
+first (Groups columns, no switch, no group lookups), then switches it on (saFleetOn = true) to keep its numbers checked.
 """
 import sys, os, re
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +55,15 @@ with sync_playwright() as p:
     M.route(ctx)
     pg = ctx.new_page(); pg.goto('file://' + HTML)
     pg.evaluate("(s) => localStorage.setItem('dscanSide', JSON.stringify(s))", SIDE); pg.reload(); pg.wait_for_timeout(300)
+    # v2026.10.14.89: the fleet view is switched off on the page (the owner: "too many assumptions based on local"); first that,
+    # then switched on here to keep its numbers checked
+    M.ZKB_CALLS.clear()
+    pg.click('#tabBtnDscan'); pg.fill('#localInput', M.LOCAL); pg.fill('#dscanInput', SCAN); pg.click('#analyzeBtn'); pg.wait_for_timeout(300)
+    pg.wait_for_function("() => document.querySelector('#saBusy').hidden && !document.querySelector('#analyzeBtn').disabled", timeout=60000); pg.wait_for_timeout(1500)
+    off = pg.evaluate("() => [!!document.querySelector('#saFleet'), !!document.querySelector('.sa-cols'), !!document.querySelector('.sa-mode [data-sa-view]'), document.querySelector('.sa-mode .sa-pill').textContent]")
+    grp = [c[0] for c in M.ZKB_CALLS if '/kills/allianceID/' in c[0] or '/shipTypeID/' in c[0] or '/kills/corporationID/' in c[0]]
+    check(off[:3] == [False, True, False] and not off[3].startswith('Fleet') and not grp, f'v.89: off by default: the Groups columns, no switch, no group lookups on zKillboard {off} ({len(grp)} lookups)')
+    pg.evaluate("() => { saFleetOn = true; }")
     M.ZKB_CALLS.clear()
     pg.click('#tabBtnDscan'); pg.fill('#localInput', M.LOCAL); pg.fill('#dscanInput', SCAN); pg.click('#analyzeBtn'); pg.wait_for_timeout(300)
     pg.wait_for_function("() => document.querySelector('#saBusy').hidden && !document.querySelector('#analyzeBtn').disabled", timeout=60000)

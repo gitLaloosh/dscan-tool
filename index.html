@@ -2156,7 +2156,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.88</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.89</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2415,7 +2415,7 @@ const CARD_INFO = {
  "sysan": [
   "Paste the Local member list (in the Local window, select the members and press Ctrl+C) and, if you have one, your D-Scan. Local lists everyone in the system, in space or docked; the D-Scan shows only ships within about 14 AU of you. So who is here comes from Local, and the scan only says what is near you now.",
   "Each name is looked up on ESI (its corporation and alliance) and sorted into hostile, neutral and friendly with {card:side}. A name ESI doesn't know (a typo, a renamed pilot) is listed as not found.",
-  "Up to the “pilot rows up to” number of hostile + neutral pilots (15 unless you change it) is a small gang: one row per pilot ({card:pilots}). More is a fleet: the largest groups' ships and common fits ({card:fleet}). Groups shows the columns either way.",
+  "Up to the “pilot rows up to” number of hostile + neutral pilots (15 unless you change it) is a small gang: one row per pilot ({card:pilots}). More is shown by group, as the columns. Groups shows the columns for a small gang too.",
   "With only a D-Scan pasted, {card:onscan} shows the ships on scan, as the D-Scan tab did."
  ],
  "side": [
@@ -20580,18 +20580,18 @@ function saRender(){
       <div class="sa-sum-top"><span class="sa-total">${tot}</span><span class="sa-total-l">in local</span></div>
       <div class="sa-bar" role="img" aria-label="${S.h} hostile, ${S.n} neutral, ${S.f} friendly">${['h', 'n', 'f'].filter(k => S[k]).map(k => `<i class="${k}" style="flex:${S[k]}"></i>`).join('')}</div>
       <div class="sa-keys">${['h', 'n', 'f'].map(k => `<span class="sa-key">${SIDE_MARK[k]}${SIDE_WORD[k]} <b>${S[k]}</b></span>`).join('')}</div>
-      <div class="sa-mode">${threat > rows ? `<span class="sa-pill fleet">Fleet: ${threat} hostile + neutral</span>${ctxHtml(`over ${rows}: shown by group`)}`
-                                          : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}${threat > 0 ? saViewSwitchHtml(small ? 'pilots' : 'fleet') : ''}</div>
+      <div class="sa-mode">${threat > rows ? `<span class="sa-pill${saFleetOn ? ' fleet' : ''}">${saFleetOn ? 'Fleet: ' : ''}${threat} hostile + neutral</span>${ctxHtml(`over ${rows}: shown by group`)}`
+                                          : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}${threat > 0 && (small || saFleetOn) ? saViewSwitchHtml(small ? 'pilots' : 'fleet') : ''}</div>
       ${notes}
     </div>
     ${small && sa.view !== 'groups' ? `${threat > 0 && saVsOn ? `<div id="saVsHost">${saVsPilotsHtml()}</div>` : ''}<div class="card pr-card" id="saPilots">${saPilotsCardHtml(G)}</div>`   // v.85 (L5)
-      : !small && threat > 0 && sa.view !== 'groups' ? `<div id="saFleet">${saFleetCardHtml(G)}</div>`   // v.83 (L4)
+      : !small && threat > 0 && saFleetOn && sa.view !== 'groups' ? `<div id="saFleet">${saFleetCardHtml(G)}</div>`   // v.83 (L4); off since v.89
       : `<div class="sa-cols">${saColHtml('h', G.h)}${saColHtml('n', G.n)}</div>`}
     <details class="sa-g sa-friendly" data-sa-g="friendly"${sa.friendOpen ? ' open' : ''}><summary>${SIDE_MARK.f}<span class="sa-gname"><span class="nm">${escapeHtml(cardName('friendly'))}</span><span class="ctx sa-ftk">${G.f.slice(0, 6).map(g => g.kind ? orgTickerHtml(g.kind, g.id) : '').join(' ')}</span></span><span class="sa-gn">${S.f}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>
       <div class="sa-friendly-body">${G.f.length ? G.f.map(g => saGroupHtml(g, 'f')).join('') : '<div class="sa-empty">None in local.</div>'}</div></details>`;
   fillOrgTickers(host);
   if(small && sa.view !== 'groups') saPumpRows();
-  else if(!small && threat > 0 && sa.view !== 'groups') saPumpFleet();
+  else if(!small && threat > 0 && saFleetOn && sa.view !== 'groups') saPumpFleet();
 }
 function saAgo(ts){ const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'just now' : `from ${m} min ago`; }
 
@@ -21039,6 +21039,12 @@ async function saOpenFleetFit(gkey, typeId){
 // decision making." The card adds up guessed hulls and guessed fits into one verdict, so one wrong guess per pilot
 // compounds. Kept, switched off, until it's refined (dscan-backlog; plan L5 "Status"); vs_check.py switches it on.
 let saVsOn = false;
+// v2026.10.14.89: the FLEET VIEW (L4) is switched off too. the owner: "it's just not on point, again, due to the lack of other
+// ships on-grid. just too many assumptions based on local. we should strip the fleet stuff out of that page temporarily
+// until we have a better method" (his screenshot: a high-sec trade hub, 1499 in Local, most of them docked and not in a
+// combat ship at all). Over "pilot rows up to" Local now shows the Groups columns only: no Fleet / Groups switch, no
+// group lookups on zKillboard. Kept, switched off (dscan-backlog; plan L4 "Status"); fleet_view_check.py switches it on.
+let saFleetOn = false;
 const SA_VS_RANGES_KM = [5, 10, 20, 30, 50];
 sa.vs = {rangeKm: null, prop: false, count: 'all'};   // range: null = start at your own guns' best range
 const saVsInput = (typeId, b) => ({shipTypeId: typeId, tally: b.tally, cargoItemIds: b.cargoItemIds, highSlotByFlag: b.highSlotByFlag, midSlotByFlag: b.midSlotByFlag});

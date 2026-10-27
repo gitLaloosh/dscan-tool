@@ -161,7 +161,9 @@ with sync_playwright() as p:
     crts = next(g for g in r['h']['groups'] if g['name'] == 'Crimson Tide Syndicate')
     check(crts['tk'] == '<CRTS>' and [tuple(c) for c in crts['corps']] == E['crts_corps'] and crts['pilots'][0][0] == E['crts_first6'] and crts['pilots'][0][1] == f"+{E['crts_more']} more",
           f"a group's corporations, 6 names then \"+N more\", the ticker filled ({crts['tk']}, {crts['corps']}, {crts['pilots'][0]})")
-    check('Fleet: %d hostile + neutral' % (E['n']['h'] + E['n']['n']) in r['mode'] and 'over 15' in r['mode'], f"over 15: the fleet pill ({r['mode']!r})")
+    nthreat = E['n']['h'] + E['n']['n']
+    check('%d hostile + neutral' % nthreat in r['mode'] and 'Fleet' not in r['mode'] and 'over 15' in r['mode'] and not pg.query_selector('.sa-mode [data-sa-view]'),
+          f"over 15 (v.89, the fleet view switched off): '{nthreat} hostile + neutral, over 15: shown by group', no Fleet / Groups switch ({r['mode']!r})")
     check(r['nf'].endswith(', '.join(M.NOT_FOUND)) and any('2 names not found' == w for w in r['warns']), f"names not found listed ({r['warns']}, {r['nf']!r})")
     zl = [c[0] for c in M.ZKB_CALLS]
     check(len(zl) == 1 and '/losses/allianceID/%d/pastSeconds/604800/' % M.ALLIANCE in zl[0], f'the evidence: one zKillboard request, your alliance\'s losses in 7 days {zl}')
