@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — Browser extension</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The browser extension: right-click zKillboard to open it in ETA</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.79</code> &rarr; <code>v2026.10.14.80</code> &middot; extension 1.0.0.</p>
+<p>From the backlog (the owner, 2026-10-25: "create a google chrome extension that would let me right click on a pilot name or killmail in zkillboard.com and send it to the tool"), built after the shared killmail links (v.79). the owner: "ok build the browser extension please", the tool's address https://gitlaloosh.github.io/dscan-tool/, and the menu items: "all three please".</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>A Chrome extension</b> in the repo's <code>browser-extension</code> folder, with five right-click items:
+<ul>
+<li>on a link to a kill, or a kill's page: <b>Open kill in EVE Threat Assessment</b> (the shared-killmail view);</li>
+<li>on a link to a pilot, or a pilot's page: <b>Analyze pilot in EVE Threat Assessment</b> (the Pilot Analyzer for that pilot);</li>
+<li>on selected text on any page: <b>Analyze "&lt;text&gt;" in EVE Threat Assessment</b> (a selected zKillboard link opens that kill or pilot instead).</li>
+</ul></li>
+<li><b>Install:</b> <code>chrome://extensions</code> &rarr; Developer mode &rarr; Load unpacked &rarr; the <code>browser-extension</code> folder. It works in Edge and Brave too. Its options page changes the tool's address (default: your GitHub Pages address).</li>
+<li><b>Permissions:</b> right-click menus and storage (for the address) only. It reads nothing from the pages you visit and makes no requests of its own: it opens the tool with the ID or name in the address.</li>
+<li><b>The tool reads three new links:</b> <code>#zkill=&lt;killmail ID&gt;</code> (it gets the hash from zKillboard, as for a pasted kill link, and the address then shows the share link), <code>#pilot=&lt;character ID&gt;</code> (the name from ESI) and <code>#pilotname=&lt;name&gt;</code>. Each runs what typing it would. A pilot link stays in the address until another analysis starts, so a reload runs it again.</li>
+<li><b>New error code SHARE-03:</b> a pilot link with an ID ESI doesn't know as a pilot, or no name.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/page_checks/extension_check.py</code>:</b> Chromium loads the extension. It checks the manifest's permissions; that the five items exist; the link each click makes (10 cases); end to end, that a kill link, a pilot link and a selected name open the right view, and an unknown pilot shows SHARE-03; and the options page. v.79 fails 4 (the tool doesn't read the new links); mutations: #pilot= not read fails 2; a pilot link that clears the address fails 1; #zkill= not read fails 1.</li>
+<li><b>New <code>tools/page_checks/killmail_mocks.py</code>:</b> the zKillboard and ESI answers shared by <code>shared_kill_check.py</code> and the new check. ESI's /universe/names now gives each ID its category and answers 404 to an unknown ID, as it does.</li>
+<li>Regression ALL PASS (269 fits), update chain all 42 steps OK, all 31 page checks 0 failures, the three lints 0 problems; ERRORS.md regenerated (32 codes). PYFA CORE untouched. A first mutant run, with the chain and every page check running at the same time, showed SHARE-03 for a real pilot: a failed ESI lookup was being reported as "not a pilot". Only ESI's 404 means that now; any other failure shows its own error code. The real check then passed three runs in a row.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #72: a tab a browser extension opens isn't routed on its first load.</p>
+<ul>
+<li>The extension's new tab showed Chrome's error page: it starts loading before Playwright attaches, so a made-up host routed by Playwright never answered.</li>
+<li>Serve that page from a real local web server and route only the page's own requests. Extensions also need Chromium's new headless mode.</li>
+</ul>
+</body>
+</html>

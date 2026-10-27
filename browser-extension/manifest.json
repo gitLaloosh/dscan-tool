@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "EVE Threat Assessment for zKillboard",
+  "short_name": "ETA",
+  "version": "1.0.0",
+  "description": "Right-click a zKillboard kill or pilot, or a selected pilot name, to open it in EVE Threat Assessment.",
+  "permissions": ["contextMenus", "storage"],
+  "background": {"service_worker": "background.js"},
+  "options_page": "options.html",
+  "icons": {"16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png"}
+}

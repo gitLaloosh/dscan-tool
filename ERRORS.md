@@ -81,6 +81,7 @@ pilot name.", "Paste a fit first.") carry no code: they are instructions, not er
 |---|---|---|---|---|---|---|
 | SHARE-01 | zKillboard has no such killmail | Pilot Analyzer status line, a zKillboard kill link pasted into the pilot box | zKillboard's /api/killID/{id}/ didn't return that killmail (no killmail with that ID, or a non-5xx error status; 5xx is ZKB-01). | The killmail ID in the link; open the link on zkillboard.com. | The hash ESI needs comes from zKillboard; without it the killmail can't be fetched. | v2026.10.14.79 ([2026-10-27_shared-killmail-links.html](dscan-tool-history/2026-10-27_shared-killmail-links.html)) |
 | SHARE-02 | Incomplete shared killmail link | Pilot Analyzer status line, a page opened from a link | The address has #kill= but not a killmail ID and a 40-character hash (#kill={id}/{hash}), e.g. a link cut short when pasted. | Copy the link again with "Copy share link" in the loss's ⋮ menu. |  | v2026.10.14.79 ([2026-10-27_shared-killmail-links.html](dscan-tool-history/2026-10-27_shared-killmail-links.html)) |
+| SHARE-03 | Pilot link not recognized | Pilot Analyzer status line, a page opened from the browser extension | #pilot={id} with an ID ESI doesn't know as a pilot, or #pilotname= with no name (or longer than EVE's 37 characters). | The pilot's zKillboard page; the text that was selected. |  | v2026.10.14.80 ([2026-10-27_browser-extension.html](dscan-tool-history/2026-10-27_browser-extension.html)) |
 
 ## WP
 

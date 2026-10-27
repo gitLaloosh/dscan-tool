@@ -1838,7 +1838,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.79</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.80</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2194,6 +2194,15 @@ const ERROR_CODES = {
   "why": "",
   "since": "v2026.10.14.79",
   "doc": "2026-10-27_shared-killmail-links.html"
+ },
+ "SHARE-03": {
+  "title": "Pilot link not recognized",
+  "where": "Pilot Analyzer status line, a page opened from the browser extension",
+  "trigger": "#pilot={id} with an ID ESI doesn't know as a pilot, or #pilotname= with no name (or longer than EVE's 37 characters).",
+  "check": "The pilot's zKillboard page; the text that was selected.",
+  "why": "",
+  "since": "v2026.10.14.80",
+  "doc": "2026-10-27_browser-extension.html"
  },
  "DSCAN-01": {
   "title": "A fit was pasted into the D-Scan box",
@@ -9743,6 +9752,34 @@ function parseKillLink(text){
   m = t.match(ZKB_KILL_LINK_RE);
   return m ? {id: Number(m[1]), hash: null} : null;
 }
+// v2026.10.14.80 (the browser extension, the owner: "all three" menu items): #zkill=<killmail ID> (a zKillboard kill: the
+// hash comes from zKillboard, as for a pasted kill link), #pilot=<character ID> (a zKillboard pilot link: the name from
+// ESI) and #pilotname=<name> (selected text). Each runs what typing it would; the address keeps the link until another
+// analysis starts.
+const TOOL_LINK_RE = /(?:^|[#&?])(?:kill|zkill|pilot|pilotname)=/;
+async function runPilotFromLink(p){
+  const statusEl = document.getElementById('fitStatus');
+  switchTab('pilot');
+  if(isBusy('fitStatus')) return;
+  let name = p.name ? String(p.name).replace(/\s+/g, ' ').trim() : '';
+  if(p.id){
+    setStatus(statusEl, 'Looking up the pilot…');
+    try{ const r = await resolveIdsToNames([p.id]); const c = r.find(x => x.id === p.id && x.category === 'character'); name = c ? c.name : ''; }
+    catch(e){
+      // ESI answers 404 to an ID it doesn't know (SHARE-03 below); any other failure is shown as itself
+      if(!/status 404/.test(e.message || '')){ setStatus(statusEl, withCode('Error: ' + e.message + '.', errorCodeOf(e)), true); return; }
+      name = '';
+    }
+  }
+  if(!name || name.length > 37){   // EVE pilot names are at most 37 characters
+    setStatus(statusEl, withCode(p.id ? `This link's pilot (ID ${p.id}) isn't a pilot ESI knows.` : 'This link has no pilot name in it.', 'SHARE-03'), true);
+    return;
+  }
+  document.getElementById('pilotName').value = name;
+  document.getElementById('manualShip').value = '';
+  document.getElementById('shipSelect').value = '';
+  return runFitCheck({keepHash: true});
+}
 function shareLinkFor(f){
   const base = String((typeof location !== 'undefined' && location.href) || '').split('#')[0];
   return `${base}#kill=${f.killmailId}/${f.killmailHash}`;
@@ -9814,7 +9851,7 @@ async function sharedKillmailRun(id, hash, statusEl){
   setStatus(statusEl, `Shared killmail: ${pilot ? `${pilot}'s` : 'a'} ${shipName}${day ? `, lost ${day}` : ''}.`);
 }
 
-async function runFitCheck(){
+async function runFitCheck(opts){
   const statusEl = document.getElementById('fitStatus');
   document.getElementById('fitResults').innerHTML = '';
   document.getElementById('fitCandidates').innerHTML = '';
@@ -9828,7 +9865,8 @@ async function runFitCheck(){
   // v2026.10.14.79: a zKillboard kill link (or this tool's share link) in the pilot box opens that killmail
   const link = parseKillLink(pilotName);
   if(link) return runSharedKillmail(link.id, link.hash);
-  if(typeof location !== 'undefined' && /kill=/.test(location.hash || '')) setShareHash(null);   // a new analysis: the address bar drops the shared link
+  // a new analysis: the address bar drops the link it came from (v.80: not when that link started it -- opts.keepHash)
+  if(!(opts && opts.keepHash === true) && typeof location !== 'undefined' && TOOL_LINK_RE.test(location.hash || '')) setShareHash(null);
 
   const btn = document.getElementById('fitBtn');
   if(isBusy('fitStatus')) return;
@@ -19659,13 +19697,21 @@ async function mysRenderMineView(mv){
     if(e.key === 'Escape' && myShipPanelIsOpen()){ e.preventDefault(); closeMyShipPanel(); }
   });
 })();
-// v2026.10.14.79: a shared killmail link (#kill=<id>/<hash>) opens that loss, on load and when the address changes
+// v2026.10.14.79: a shared killmail link (#kill=<id>/<hash>) opens that loss, on load and when the address changes;
+// v.80: the extension's #zkill=, #pilot= and #pilotname= links too
 (function sharedKillLinkInit(){
   if(typeof window === 'undefined' || !window.addEventListener || typeof location === 'undefined'
      || typeof document === 'undefined' || !document.getElementById || !document.getElementById('fitResults')) return;   // LESSON #36: stub DOM
   const go = () => {
-    if(!/kill=/.test(location.hash || '')) return;
-    const k = parseKillLink(location.hash);
+    const h = location.hash || '';
+    let m = h.match(/(?:^|[#&])zkill=(\d+)(?!\d)/);
+    if(m){ runSharedKillmail(Number(m[1]), null); return; }
+    m = h.match(/(?:^|[#&])pilot=(\d+)(?!\d)/);
+    if(m){ runPilotFromLink({id: Number(m[1])}); return; }
+    m = h.match(/(?:^|[#&])pilotname=([^&]*)/);
+    if(m){ let n = ''; try{ n = decodeURIComponent(m[1].replace(/\+/g, ' ')); }catch(e){ n = ''; } runPilotFromLink({name: n}); return; }
+    if(!/(?:^|[#&])kill=/.test(h)) return;
+    const k = parseKillLink(h);
     if(k && k.hash){ runSharedKillmail(k.id, k.hash); return; }
     switchTab('pilot');
     setStatus(document.getElementById('fitStatus'), withCode('This link isn\'t a complete killmail link: it needs the killmail ID and its hash. Copy it again with "Copy share link".', 'SHARE-02'), true);

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EVE Threat Assessment for zKillboard: options</title>
+<style>
+  body{font:14px/1.5 system-ui, sans-serif; background:#0d1014; color:#dfe5ea; margin:0; padding:24px; max-width:640px;}
+  h1{font-size:18px; margin:0 0 12px;}
+  label{display:block; font-weight:600; margin-bottom:6px;}
+  input{width:100%; box-sizing:border-box; padding:8px 10px; font:14px system-ui, sans-serif; background:#161b21; color:#dfe5ea; border:1px solid #2a3038; border-radius:4px;}
+  .row{display:flex; gap:8px; margin-top:10px;}
+  button{padding:7px 14px; font:600 13px system-ui, sans-serif; border-radius:4px; border:1px solid #4fc3d9; background:transparent; color:#4fc3d9; cursor:pointer;}
+  button.plain{border-color:#2a3038; color:#b5bfc8;}
+  #status{margin-top:10px; min-height:1.5em; color:#8b97a3;}
+  #status.err{color:#e0864a;}
+  p{color:#b5bfc8;}
+</style>
+</head>
+<body>
+<h1>EVE Threat Assessment for zKillboard</h1>
+<p>Right-click a kill or pilot link on zKillboard (or the kill or pilot page itself), or select a pilot name on any page, and pick the EVE Threat Assessment item. The tool opens in a new tab.</p>
+<label for="toolUrl">The tool's address</label>
+<input type="url" id="toolUrl" spellcheck="false" autocomplete="off">
+<div class="row"><button type="button" id="save">Save</button><button type="button" id="reset" class="plain">Use the default</button></div>
+<div id="status" role="status"></div>
+<script src="options.js"></script>
+</body>
+</html>

@@ -875,6 +875,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 72. A tab a browser extension opens isn't routed on its first load
+
+- **What happened (v2026.10.14.80):** `extension_check.py` loads the extension into Chromium and lets it open the tool in a
+  new tab, with the tool's address pointed at a made-up host that Playwright was told to answer. The tab showed Chrome's
+  error page: a page the extension creates (chrome.tabs.create) starts loading before Playwright attaches, so its first
+  navigation never reaches the route. The ESI and zKillboard calls the page makes afterwards are routed as usual.
+- **Do this instead:** serve the page the extension opens from a real local web server (the check starts one on
+  127.0.0.1 and sets that address in the extension's options), and keep routing only the page's own requests. Extensions
+  also need Chromium's new headless mode (`--headless=new`, with headless=False in Playwright): the old one doesn't load them.
+
 ## 71. A mock that accepts anything can't check what the feature adds
 
 - **What happened (v2026.10.14.79):** a shared killmail link carries the killmail ID and its hash, because ESI's
