@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — "Possible ship", not "Likely ship"</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Pilot rows: "Possible ship", not "Likely ship"</h1>
+<p><span class="tag">Wording</span> 2026-10-27 &middot; <code>v2026.10.14.83</code> &rarr; <code>v2026.10.14.84</code> &middot; plan: <code>roadmap/local-and-fleet-plan.md</code> (step 2).</p>
+<p>the owner: "for now, we need to change 'likely ship' to 'possible ship'. some of the suggestions are from data that is months old."</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The Pilots column is <b>Possible ship</b>. When a pilot has nothing on zKillboard in the last 30 days, the row falls back to the hull they lost most among their last 10 losses, which can be months old (the line under the ship already says when, e.g. "2 of 3 losses, latest 4 mo ago").</li>
+<li>The Pilots info panel says so: the fallback can be months old, the line under the ship says when it was seen, and it's a possibility, not what they're in now.</li>
+<li>The System Analyzer's own info panel no longer says the pilot rows and the fleet view "come in later steps" (they came in v.82 and v.83).</li>
+<li>No number changed; the rule that picks the ship is the same.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>pilot_rows_check.py</code> now checks the column says Possible ship (v.83 fails it).</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 34 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>A label is a claim. "Likely" promised more than the data behind it: the fallback reads losses with no age limit. When a value can be stale, name it for what it is ("possible", "last seen") and show its age beside it, rather than a word that implies it's current.</p>
+</body></html>

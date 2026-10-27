@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — System Analyzer, step 4: against your ship</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>System Analyzer, step 4: against your ship</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.84</code> &rarr; <code>v2026.10.14.85</code> &middot; plan: <code>roadmap/local-and-fleet-plan.md</code> (L5; decision D10).</p>
+<p>the owner: "alright proceed with the mockup", then his answers to it (<code>Claude outputs/against_your_ship_mockup.html</code>): "Fleet and Pilots views", "All, with an On scan switch", "One range + Still/MWD", "Damage per second of your fire".</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Against Your Ship</b>, a new card: under "Their fleet, estimated" in the Fleet view, above the rows in the Pilots view. It uses the ship in My Ship; with none saved it asks for one, and with "Use in assessments" off it says so.</li>
+<li><b>Settings on one line:</b> the range (5 / 10 / 20 / 30 / 50 km, starting at your guns' best range), you Still or with your MWD on, and All (&asymp; counts) or On Scan (only what's on your D-Scan).</li>
+<li><b>A verdict first:</b> "Don't take this fight." when you'd go before the first ship on the kill list breaks; otherwise how many you'd break first, or that you hold.</li>
+<li><b>The numbers:</b> how long you last (with the other count's time beside), the DPS that lands on you by damage type, how many ships hold you (T: scram or web in reach; C: neuts or nosferatus), how long your capacitor lasts under their neuts, their logistics.</li>
+<li><b>Kill first:</b> logistics, then the damage each puts on you per second of your fire; each row with its count, its DPS on you, the time you take to break one, and why.</li>
+<li>Every ship's numbers are the Matchup's (pyfa's damage application both ways); your capacitor is pyfa's simulation with their neuts added the way pyfa adds projected neuts (their falloff counts). No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/vs_check.py</code> (about 40 checks): the fleet view's golden-fit groups and a Vexor in My Ship. Each kill-first row against the Matchup's <code>mysMatchup</code>; the totals as &Sigma; count &times; each ship (counts from <code>sa_mocks.expected_fleet()</code>); the capacitor through <code>capSimPyfa</code> with drains written in the check from pyfa's source; "you last", T / C, logistics first, the verdict; range, MWD and On Scan; no ship; "Use in assessments" off; the Pilots view; 390 px. v.84 fails (no card).</li>
+<li>Mutations, each caught (11): neuts in optimal only; On Scan ignored; kill order by DPS; logistics not first; no neut drains; one drain per ship, not per module; a fixed 20 km start; "fit unknown" rows counted; the verdict rule; the MWD switch ignored; damage not multiplied by the count.</li>
+<li>Lints found two things on the way: the label "Their DPS on you" is a retired name (now "DPS applied to you", as the Matchup), and "On scan" is the card name On Scan.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 35 page checks; lints 0 problems. DEVIATIONS.md, card-names.md (<code>vs</code>), tools/README.md updated.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #76: before modelling an effect, find pyfa's handler for it. The first draft counted a neut only inside its optimal, at full strength; pyfa's projected neut / nosferatu effects already feed the capacitor simulation through <code>Fit.addDrain</code>, with the falloff range factor (and the target's Energy Warfare Resistance and a capital neut's signature resolution, listed in DEVIATIONS.md as not applied yet). At 30 km the mock's Curse neut is in its falloff, so the made-up rule would have been wrong there; the check tests that range and a mutant with the optimal-only rule fails.</p>
+</body></html>

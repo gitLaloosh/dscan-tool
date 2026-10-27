@@ -59,6 +59,8 @@ with sync_playwright() as p:
     analyze(pg, '\n'.join(M.SMALL_LOCAL), M.SCAN_ROWS)
     sw = pg.evaluate("() => [...document.querySelectorAll('.sa-mode [data-sa-view]')].map(b => [b.textContent, b.getAttribute('aria-pressed')])")
     check(sw == [['Pilots', 'true'], ['Groups', 'false']] and pg.is_visible('#saPilots') and not pg.query_selector('.sa-cols'), f'small gang: the Pilots / Groups switch, Pilots shown {sw}')
+    cols = pg.evaluate("() => [...document.querySelectorAll('#saPilots .pr-cols span')].map(e => e.textContent).filter(Boolean)")
+    check(cols[:2] == ['Pilot', 'Possible ship'], f'v.84 (the owner: "some of the suggestions are from data that is months old"): the column says Possible ship {cols[:2]}')
     first = pg.evaluate(ROWS)
     check([r['pilot'] for r in first] == [n for n, *_ in sorted(E, key=lambda r: M.SMALL_LOCAL.index(r[0]))] and any(r['msg'] for r in first),
           f"while loading the rows keep the order they were asked in, hostile group first {[r['pilot'] for r in first]}")

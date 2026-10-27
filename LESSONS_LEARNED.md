@@ -875,6 +875,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 76. Before modelling an effect, find pyfa's handler for it: it may already say how
+
+- **What happened (v2026.10.14.85):** "Against Your Ship" adds their neutralizers to your capacitor simulation. The
+  first draft counted a neut only inside its optimal, at full strength: a rule made up for the card. pyfa already does this: its
+  projected Energy Neutralizer / Nosferatu effects (Effect6187 / 6197) call `Fit.addDrain`, which feeds the capacitor
+  simulation an incoming drain of amount × `calculateRangeFactor(optimal, falloff, distance)` (× the target's Energy
+  Warfare Resistance and, for capital neuts, × min(1, signature / signature resolution)), cycle = duration, staggered.
+  At 30 km the mock's Curse neut sits in its falloff: the made-up rule would have counted it at full strength.
+- **Do this instead:** grep pyfa's `eos/effects.py` and `eos/saveddata/fit.py` for the attribute before writing a rule;
+  port what's there (the engine already has `pyfaCalculateRangeFactor`), and put only what isn't ported in
+  DEVIATIONS.md. The check writes the pyfa rule again on its own and tests a range where the falloff matters, so a
+  mutant with the optimal-only rule fails.
+
 ## 75. A weapon and its charge share a killmail flag: pick items by type, not by flag
 
 - **What happened (v2026.10.14.83, caught in review before the first run):** the fleet view rebuilds a common fit from

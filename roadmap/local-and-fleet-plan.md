@@ -195,6 +195,13 @@ because we'll need to do some real security analysis of the tool first". What it
   local, labeled an estimate); the **"Their fleet, estimated"** summary now; **"L4 now, L5 next"** (their fleet against
   your ship is its own version).
 
+- **D10. Step 4 (L5) details — decided** (the owner's answers to the "Against your ship" mockup, 2026-10-27, all as
+  recommended; mockup `Claude outputs/against_your_ship_mockup.html`): the card in **the Fleet and the Pilots views**
+  (a small gang added up the same way, each row's fit counted once); **all estimated ships by default, with an "On
+  scan" switch** and the on-scan time beside; **one range for all of them** (5 / 10 / 20 / 30 / 50 km, starting at
+  your own guns' best range) plus **Still / MWD on**; **kill order by the damage each puts on you per second of your
+  fire**, logistics first. Without a saved ship the card asks for My Ship.
+
 ## Step 1 as built (v2026.10.14.81)
 
 - **Tab:** the D-Scan tab is the System Analyzer (CARD_NAMES `sysan`), last; Local and D-Scan boxes side by side, one
@@ -232,6 +239,9 @@ because we'll need to do some real security analysis of the tool first". What it
   and why ("on a kill 2 h ago", "lost one 3 d ago", "on scan; ...", "2 of 3 losses, latest 40 d ago"); DPS (the Pilot
   Analyzer's rule: a range when charges are guessed from cargo) with a bar by damage type; EHP; weakest resist; EWAR
   letters (T D C B); "✓ on scan". A row opens the Pilot Analyzer on that pilot and hull. A phone shows each as a card.
+- **v2026.10.14.84:** the column is **"Possible ship"**, not "Likely ship" (the owner: "for now, we need to change 'likely
+  ship' to 'possible ship'. some of the suggestions are from data that is months old"). The info panel says the
+  fallback (the hull lost most) can be months old and that the line under the ship says when it was seen.
 - **Per pilot:** zKillboard /kills/characterID/{id}/ and /losses/characterID/{id}/ (kept an hour, through the queue),
   the newest 5 kills and 10 losses from ESI (kept forever). Capsules, shuttles, rookie ships and MTUs don't count. The
   numbers: their newest loss in that hull through `estimateHpAndDps` (as the Pilot Analyzer); no loss of it among those
@@ -263,6 +273,28 @@ because we'll need to do some real security analysis of the tool first". What it
 - **Checks:** `tools/page_checks/fleet_view_check.py` (kills and losses built from golden-fit killmails; numbers
   against the pyfa-verified pins, shares / counts / summary against `sa_mocks.expected_fleet()`). Next step: L5,
   their fleet against your ship.
+
+## Step 4 as built (v2026.10.14.85)
+
+- **Where (D10):** the card **Against Your Ship** (`vs`) under "Their fleet, estimated" in the Fleet view, and above the
+  rows in the Pilots view (each row with a fit counted once; "fit unknown" rows not). No ship saved: it asks for My
+  Ship (its button opens the panel); "Use in assessments" off: it says to turn it on.
+- **Settings:** Range 5 / 10 / 20 / 30 / 50 km, starting at the step nearest your guns' best range (dmgDefaultRangeM, as
+  the Damage Application card); You: Still / MWD on (orbiting at full speed, your prop on); Count: All ≈N / On Scan: N
+  (min of the D-Scan count and the ≈ count per hull). A new ship in My Ship starts again from its best range.
+- **Per ship:** the Matchup's pieces (mysFight: pyfa's application both ways, their webs and paints, assumed charges;
+  "they last" by the time-to-kill rule). **Added up:** their applied DPS by damage type × count, "you last" through
+  your layers by the same rule, your capacitor by pyfa's capSim with their running neuts and nosferatus in reach added
+  as pyfa adds projected ones (amount × calculateRangeFactor, cycle = duration, one drain per copy per ship).
+  DEVIATIONS.md says what isn't applied (your Energy Warfare Resistance, a capital neut's signature resolution).
+- **Shown:** the verdict ("Don't take this fight." when you go before the first ship on the list breaks; "You'd break
+  about N before you go."; "You could break all of them first."; "You hold against all of it here."), You last (the
+  other count's time beside), DPS applied to you with the damage-type bar and how much of their raw DPS lands, Holding
+  you (T: scram or web reaching you; C: neuts or nosferatus), Your capacitor, Their logistics, and Kill first (6 rows:
+  logistics, then their DPS on you ÷ the time you take to break one; why in a few words).
+- **Checks:** `tools/page_checks/vs_check.py` (every number worked out again in the page through `mysMatchup`,
+  `capSimPyfa` and drains written from pyfa; 11 mutants caught). Next: L6 (doctrine matchups) needs its own design
+  talk; L7 (login) later.
 
 ## Checks (as for every delivery)
 

@@ -2074,6 +2074,51 @@
     .fl-rr button{min-height:44px;}
     .fl-pop{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; border-radius:14px 14px 0 0; box-shadow:0 0 0 100vmax rgba(0,0,0,.55); padding:10px 12px 20px;}
   }
+  /* AGAINST YOUR SHIP (v2026.10.14.85; local-and-fleet-plan.md L5, D10): their counted ships against My Ship, added up. */
+  .vs-card{margin-top:14px; padding:14px 16px 10px; position:relative; border-left:3px solid var(--cyan); min-width:0;}
+  .vs-head{display:flex; align-items:center; gap:10px; min-width:0;}
+  .vs-head h3{margin:0; flex:none;}
+  .vs-head .info-pop{flex:none;}
+  .vs-opt{display:inline-flex; align-items:center; gap:8px;}
+  .vs-ship{flex:0 1 auto; display:inline-flex; align-items:baseline; gap:6px; border:1px solid var(--line); border-radius:14px; padding:2px 10px; font:600 12px var(--sans); color:var(--cyan); min-width:0; max-width:100%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;}
+  .vs-fit{font-weight:400; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis;}
+  .vs-set{display:flex; gap:8px 10px; align-items:center; flex-wrap:wrap; margin-top:10px;}
+  .vs-k{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  .vs-set .pr-seg{margin-left:0;}
+  .vs-set .pr-seg button{padding:4px 10px; min-height:30px;}
+  .vs-verdict{display:flex; gap:10px; align-items:flex-start; margin-top:12px; padding:10px 12px; background:var(--panel-2); border:1px solid var(--line); border-radius:6px;}
+  .vs-verdict.bad{background:#2a1715; border-color:#5a2a24;}
+  .vs-vt{min-width:0;}
+  .vs-vt b{display:block; font:600 14px var(--sans); color:var(--heading);}
+  .vs-vt .ctx{display:block;}
+  .vs-row{display:flex; gap:12px 34px; flex-wrap:wrap; margin-top:12px;}
+  .vs-stat{min-width:0;}
+  .vs-stat .k{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  .vs-stat .v{font:600 22px var(--mono); color:var(--heading); margin-top:2px;}
+  .vs-stat .v.bad{color:var(--danger);}
+  .vs-stat .ctx{display:block;}
+  .vs-ko{margin-top:14px;}
+  .vs-ko h4{margin:0 0 2px; font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  .vs-kr{display:grid; grid-template-columns:22px minmax(150px,1.2fr) 60px 110px 120px minmax(160px,1.4fr); gap:12px; align-items:center; padding:8px 4px; border-bottom:1px solid var(--line-soft); min-width:0;}
+  .vs-kr.vs-kh{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); border-bottom:1px solid var(--line); padding-top:4px;}
+  .vs-kr .r{text-align:right;}
+  .vs-rank, .vs-n{font:600 14px var(--mono); color:var(--heading);}
+  .vs-num{font:600 14px var(--mono); color:var(--heading); text-align:right; white-space:nowrap;}
+  .vs-who{min-width:0;}
+  .vs-who .nm{display:block; font:600 13px var(--sans); color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .vs-who .cls{font-weight:400; color:var(--text-dim); margin-left:6px; font-size:11.5px;}
+  .vs-why{font:400 12px var(--sans); color:var(--text); min-width:0;}
+  .vs-msg{padding:10px 0 4px;}
+  .vs-msg button{padding:4px 12px; margin-left:6px;}
+  @media (max-width: 760px){
+    .vs-set .pr-seg button{min-height:40px; padding:4px 9px;}
+    .vs-row{gap:12px 22px;}
+    .vs-kr{grid-template-columns:22px minmax(0,1fr) auto; row-gap:4px;}
+    .vs-kr.vs-kh{display:none;}
+    .vs-kr > .vs-c3, .vs-kr > .vs-c4{display:none;}
+    .vs-kr > .vs-why{grid-column:2 / -1;}
+    .vs-msg button{min-height:44px;}
+  }
 </style>
 </head>
 <body>
@@ -2081,7 +2126,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.83</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.85</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2228,7 +2273,8 @@ const CARD_NAMES = {
  "friendly": "Friendly",
  "onscan": "On Scan",
  "pilots": "Pilots",
- "fleet": "Fleet"
+ "fleet": "Fleet",
+ "vs": "Against Your Ship"
 };
 function cardName(key){
   const n = CARD_NAMES[key];
@@ -2334,7 +2380,7 @@ const CARD_INFO = {
  "sysan": [
   "Paste the Local member list (in the Local window, select the members and press Ctrl+C) and, if you have one, your D-Scan. Local lists everyone in the system, in space or docked; the D-Scan shows only ships within about 14 AU of you. So who is here comes from Local, and the scan only says what is near you now.",
   "Each name is looked up on ESI (its corporation and alliance) and sorted into hostile, neutral and friendly with {card:side}. A name ESI doesn't know (a typo, a renamed pilot) is listed as not found.",
-  "Up to the “pilot rows up to” number of hostile + neutral pilots is a small gang (15 unless you change it); more is a fleet. For now both are shown by group: a row per pilot and the fleet's likely ships come in later steps.",
+  "Up to the “pilot rows up to” number of hostile + neutral pilots (15 unless you change it) is a small gang: one row per pilot ({card:pilots}). More is a fleet: the largest groups' ships and common fits ({card:fleet}). Groups shows the columns either way.",
   "With only a D-Scan pasted, {card:onscan} shows the ships on scan, as the D-Scan tab did."
  ],
  "side": [
@@ -2355,7 +2401,7 @@ const CARD_INFO = {
  ],
  "pilots": [
   "With 15 or fewer hostile + neutral pilots in Local (your “pilot rows up to” number in {card:side}), each gets a row. Groups shows the columns instead.",
-  "Likely ship: the newest ship they were seen in within 30 days on zKillboard, the ship they flew on one of their last 5 kills or lost in one of their last 10 losses; a ship of theirs that's on your D-Scan comes first. Nothing that recent: the hull they lost most among those losses.",
+  "Possible ship: the newest ship they were seen in within 30 days on zKillboard, the ship they flew on one of their last 5 kills or lost in one of their last 10 losses; a ship of theirs that's on your D-Scan comes first. Nothing that recent: the hull they lost most among those losses, which can be months old. The line under the ship says when it was seen; it's a possibility, not what they're in now.",
   "The numbers come from their newest loss in that hull, worked out as in the Pilot Analyzer (pyfa's numbers): DPS (a range when their charges are guessed from cargo) with its damage types, EHP, the weakest resist and the EWAR letters of the {card:ewar} card. No loss of that hull among those losses: the bare hull's EHP and resists, marked fit unknown.",
   "Each pilot is 2 zKillboard requests (kills and losses, kept for an hour), 15 pilots at a time; Load more asks for the next ones. Rows keep their place while they fill, then sort once: hostile first, then by DPS.",
   "A row opens that pilot in the Pilot Analyzer, on that hull."
@@ -2367,6 +2413,14 @@ const CARD_INFO = {
   "The numbers are worked out as in the Fit Analyzer (pyfa's numbers). › opens that fit there.",
   "Their fleet, estimated: those ≈ counts × each fit, added up. Raw DPS by damage type (no application, no resists), what most of the counted ships are weakest to, how many have tackle (T), disruption (D), cap warfare (C) or bursts (B), and logistics. Hulls beyond the main 3 aren't counted.",
   "Each group is 4 zKillboard requests (its kills, and the losses of its 3 main hulls), kept for an hour."
+ ],
+ "vs": [
+  "Your ship (My Ship, with “Use in assessments” on) against the ships counted here: in the Fleet view each main hull's common fit (the variant picked) × its ≈ count; in the Pilots view each row's fit once (rows with “fit unknown” aren't counted). All, or only what's on your D-Scan.",
+  "One fight setup for all of them: the range, starting at your guns' best range, and you sitting still or moving with your MWD or afterburner on (their webs and painters as fitted). Each ship's damage on you and yours on it is worked out as in {card:dmg} and the {card:board} (pyfa's damage application), then their damage is added up by type.",
+  "You last: all of that damage through your resists and repairs, layer by layer, as the {card:board}'s “you last”, the tool's own rule on pyfa's numbers. Your capacitor is pyfa's simulation of your fit with their neutralizers and nosferatus in reach draining it, as pyfa adds projected ones (their optimal and falloff at this range); your repairs stop when it's empty.",
+  "Holding you: ships whose scram or web reaches you at this range (T), and whose neutralizers or nosferatus do (C).",
+  "Kill first: logistics first; then the damage each one puts on you ÷ the time you take to break one (your damage on it through its resists and repairs). The verdict counts how many you'd break one after another before you go, with all of their damage still landing meanwhile, so it's the worse case.",
+  "Estimates from killmails, not a count: their fits may differ, they won't all shoot you at once, and remote repairs, command bursts and overheating aren't in it."
  ]
 };
 const CTX_MAX = 40;
@@ -19661,6 +19715,7 @@ function myShipAfterChange(){
   if(myShip.faViewing && myShip.rec && myShip.faEft !== myShip.rec.eft) showMyShipInFitAnalyzer({keepPanel: true, noTab: true});
   dmgRefreshAll(); // v.36
   mysRefreshStrips(); // v.41
+  sa.vs.rangeKm = null; saRefreshVs();   // v.85: Against your ship, from your new ship's best range
 }
 
 // ---- Fit Analyzer: "Set as my ship", "Viewing my ship" ----
@@ -20472,7 +20527,7 @@ function saRender(){
                                           : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}${threat > 0 ? saViewSwitchHtml(small ? 'pilots' : 'fleet') : ''}</div>
       ${notes}
     </div>
-    ${small && sa.view !== 'groups' ? `<div class="card pr-card" id="saPilots">${saPilotsCardHtml(G)}</div>`
+    ${small && sa.view !== 'groups' ? `${threat > 0 ? `<div id="saVsHost">${saVsPilotsHtml()}</div>` : ''}<div class="card pr-card" id="saPilots">${saPilotsCardHtml(G)}</div>`   // v.85 (L5)
       : !small && threat > 0 && sa.view !== 'groups' ? `<div id="saFleet">${saFleetCardHtml(G)}</div>`   // v.83 (L4)
       : `<div class="sa-cols">${saColHtml('h', G.h)}${saColHtml('n', G.n)}</div>`}
     <details class="sa-g sa-friendly" data-sa-g="friendly"${sa.friendOpen ? ' open' : ''}><summary>${SIDE_MARK.f}<span class="sa-gname"><span class="nm">${escapeHtml(cardName('friendly'))}</span><span class="ctx sa-ftk">${G.f.slice(0, 6).map(g => g.kind ? orgTickerHtml(g.kind, g.id) : '').join(' ')}</span></span><span class="sa-gn">${S.f}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>
@@ -20486,7 +20541,8 @@ function saAgo(ts){ const m = Math.round((Date.now() - ts) / 60000); return m < 
 // ---- L3: one row per pilot in a small gang (v2026.10.14.82; plan D8, the owner's answers to the mockup: "A: Pilots / Groups
 // switch", "Most recently seen", "Hull only, fit unknown", "Hostile first, then DPS") ----
 // Per pilot: zKillboard's list of their kills and of their losses (2 requests through the page's queue, each kept an
-// hour), then the newest SA_ROW_KILLS kills and SA_ROW_LOSSES losses from ESI (kept forever). The likely ship is the
+// hour), then the newest SA_ROW_KILLS kills and SA_ROW_LOSSES losses from ESI (kept forever). The possible ship (v.84: was
+// "likely ship"; the owner: "some of the suggestions are from data that is months old") is the
 // newest one seen (the ship they flew on a kill, or lost) within SA_RECENT_DAYS, a ship of theirs on the D-Scan first;
 // nothing that recent: the hull they lost most among those losses (the Pilot Analyzer's rule, on fewer losses). Its
 // numbers come from their newest loss in that hull through the same engine as everywhere (pyfa's numbers); no loss in it
@@ -20562,7 +20618,7 @@ async function saPilotData(p){
   const loss = ok.find(s => s.kind === 'loss' && s.typeId === pick);
   const built = buildLossTally(loss ? loss.km : {victim: {items: []}});
   const est = await estimateHpAndDps(pick, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag);
-  return {state: 'done', typeId: pick, hull: t.name, cls: (g && g.name) || '', basis, est, fitUnknown: !loss, lossAt: loss ? loss.t : null};
+  return {state: 'done', typeId: pick, hull: t.name, cls: (g && g.name) || '', basis, est, built, fitUnknown: !loss, lossAt: loss ? loss.t : null};
 }
 function saPumpRows(){
   const G = sa.lastGroups;
@@ -20634,7 +20690,7 @@ function saPilotsCardHtml(G){
   }
   const errs = inBatch.some(x => st(x) === 'err');
   return `<div class="pr-head"><h3>${escapeHtml(cardName('pilots'))}</h3>${ctxHtml(`${done} of ${inBatch.length} looked up`)}${errs ? '<button type="button" class="sa-link" data-pr-retry="1">Retry</button>' : ''}<span class="sa-sp"></span>${infoBtnHtml('pilots')}</div>
-    <div class="pr-cols" aria-hidden="true"><span>Pilot</span><span>Likely ship</span><span class="r">DPS</span><span class="r">EHP</span><span>Weakest</span><span>EWAR</span><span>Scan</span><span></span></div>
+    <div class="pr-cols" aria-hidden="true"><span>Pilot</span><span>Possible ship</span><span class="r">DPS</span><span class="r">EHP</span><span>Weakest</span><span>EWAR</span><span>Scan</span><span></span></div>
     ${shown.map(saRowHtml).join('')}${later.map(saRowHtml).join('')}
     ${later.length ? `<div class="pr-more"><button type="button" data-pr-more="1">Load ${Math.min(later.length, SA_ROWS_PER_BATCH)} more pilot${Math.min(later.length, SA_ROWS_PER_BATCH) === 1 ? '' : 's'}</button>${ctxHtml(`${2 * Math.min(later.length, SA_ROWS_PER_BATCH)} zKillboard requests`)}</div>` : ''}`;
 }
@@ -20646,6 +20702,7 @@ function saUpdatePilots(){
   const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.prPilot : null;
   el.innerHTML = saPilotsCardHtml(sa.lastGroups);
   fillOrgTickers(el);
+  saRefreshVs();   // v.85: Against your ship adds up the rows looked up so far
   if(focused){ const f = el.querySelector(`[data-pr-pilot="${CSS.escape(focused)}"]`); if(f) f.focus({preventScroll: true}); }
 }
 
@@ -20885,7 +20942,7 @@ function saFleetCardHtml(G){
   const restHtml = rest.length ? `<div class="card fl-rest"><div class="pr-head"><h3>Not looked up</h3>${ctxHtml('4 zKillboard requests each')}</div>
     ${rest.slice(0, 12).map(x => `<div class="fl-rr">${SIDE_MARK[x.side]}<span class="nm">${escapeHtml(x.g.name)} ${orgTickerHtml(x.g.kind, x.g.id)}</span><span class="fl-rn">${x.g.n}</span><button type="button" data-fl-look="${escapeHtml(x.g.key)}">Look up</button></div>`).join('')}
     ${rest.length > 12 ? `<div class="fl-more">and ${rest.length - 12} more in Groups</div>` : ''}</div>` : '';
-  return `${sum}${order.map(saFleetGroupHtml).join('')}${restHtml}`;
+  return `${sum}${saVsHtml(saVsUnitsFleet(order), 'fleet')}${order.map(saFleetGroupHtml).join('')}${restHtml}`;   // v.85 (L5)
 }
 function saUpdateFleet(){
   const el = document.getElementById('saFleet');
@@ -20905,6 +20962,187 @@ async function saOpenFleetFit(gkey, typeId){
   document.getElementById('fitAnalyzerInput').value = text;
   switchTab('fit');
   runFitAnalyzer();
+}
+
+
+// ---- L5: their fleet against your ship (v2026.10.14.85; plan D10, the owner's answers to the mockup: "Fleet and Pilots
+// views", "All, with an On scan switch", "One range + Still/MWD", "Damage per second of your fire") ----
+// Each counted ship type (a fleet hull's picked common fit × its ≈ count, or a pilot row's fit × 1) against My Ship,
+// one ship at a time, through the Matchup's own pyfa-verified pieces (mysFight: pyfa's projected webs / paints and
+// damage application both ways; ttkDefense / ttkSeconds: the time-to-kill rule, DEVIATIONS.md section 3). Then added
+// up: their applied damage by type × count, and your time to last under all of it, your capacitor simulated by pyfa's
+// capSim with their neuts and nosferatus in reach added as incoming drains, as pyfa's projected neut / nos effects add
+// them (Fit.addDrain: amount × calculateRangeFactor(optimal, falloff, distance), cycle = duration; DEVIATIONS.md for
+// what isn't applied). Kill first: logistics, then the damage each puts on you ÷ the time your fire takes to break one.
+// Nothing here changes a number the engine works out.
+const SA_VS_RANGES_KM = [5, 10, 20, 30, 50];
+sa.vs = {rangeKm: null, prop: false, count: 'all'};   // range: null = start at your own guns' best range
+const saVsInput = (typeId, b) => ({shipTypeId: typeId, tally: b.tally, cargoItemIds: b.cargoItemIds, highSlotByFlag: b.highSlotByFlag, midSlotByFlag: b.midSlotByFlag});
+function saVsUnitsFleet(order){
+  const units = [];
+  for(const x of order){
+    const r = sa.fleet.get(x.g.key);
+    if(!r || r.state !== 'done') continue;
+    for(const h of r.hulls){
+      const v = h.variants && h.variants[h.pick];
+      const n = Math.round(h.share * x.g.n);
+      if(!v || !n) continue;
+      units.push({key: `${x.g.key}|${h.typeId}`, label: h.name, sub: x.g.name, ship: h.name, typeId: h.typeId, count: n,
+        scan: lastScanCounts.get(h.typeId) || 0, f: v.vsF || (v.vsF = {estimate: v.est, input: saVsInput(h.typeId, v.built)}), logi: h.logi});
+    }
+  }
+  return units;
+}
+function saVsUnitsPilots(list){
+  const units = [];
+  for(const x of list){
+    const r = sa.rows.get(x.p.id);
+    if(!r || r.state !== 'done' || r.fitUnknown) continue;
+    units.push({key: `p${x.p.id}`, label: x.p.name, sub: r.hull, ship: r.hull, typeId: r.typeId, count: 1, scan: sa.scanTypes.has(r.typeId) ? 1 : 0,
+      f: r.vsF || (r.vsF = {estimate: r.est, input: saVsInput(r.typeId, r.built)}), logi: /Logistics|Force Auxiliary/i.test(r.cls || '')});
+  }
+  return units;
+}
+// Your ship, and every assumed charge (dmgAssumeReady) loaded; then the card is drawn again. A failed load says why
+// (MYSHIP-02) and isn't tried again until My Ship changes.
+let saVsLoading = false;
+function saVsReady(units){
+  const mf = myShip.f && myShip.f.eftText === myShip.rec.eft ? myShip.f : null;
+  const need = (f) => dmgNeedsAssume(f.estimate) && !ASSUME_CANDS.has(f.estimate);
+  const pending = !mf || need(mf) || units.some(u => need(u.f));
+  if(pending && !saVsLoading && !(myShip.error && !mf)){
+    saVsLoading = true;
+    (async () => {
+      try{ const f = await myShipEnsureFit(); await Promise.all([f ? dmgAssumeReady(f) : null, ...units.map(u => dmgAssumeReady(u.f))]); }
+      finally{ saVsLoading = false; saRefreshVs(); }
+    })();
+  }
+  return pending ? null : mf;
+}
+function saVsState(mf){
+  if(sa.vs.rangeKm === null){
+    const best = dmgDefaultRangeM(mf.estimate.application) / 1000;
+    sa.vs.rangeKm = SA_VS_RANGES_KM.reduce((a, b) => Math.abs(b - best) < Math.abs(a - best) ? b : a);
+  }
+  return {range: sa.vs.rangeKm * 1000, mode: sa.vs.prop ? 'orbit' : 'still', speedPct: 100, prop: sa.vs.prop, sigPct: 100, theirPct: 100, theirMode: 'still', axis: 'distance'};
+}
+// Their neuts and nosferatus running, as pyfa's projected effects drain you at `range` (Effect6187 / 6197 and the
+// fighters' neut ability: amount × calculateRangeFactor, cycle = duration): [cycle ms, GJ, amount] per module copy.
+function saVsDrains(est, range){
+  const out = [];
+  for(const m of est.ewarModules || []){
+    if((m.kind !== 'neut' && m.kind !== 'nos') || m.running === false || !(m.capPerCycle > 0) || !(m.capPerSec > 0)) continue;
+    const gj = m.capPerCycle * pyfaCalculateRangeFactor(m.rangeM || 0, m.falloffM || 0, range);
+    if(gj > 0) out.push({ms: Math.round(1000 * m.capPerCycle / m.capPerSec), gj, qty: m.qty || 1});
+  }
+  return out;
+}
+// The numbers: per unit (one ship of it) and added up for `count` ('all': ≈ counts; 'scan': what's on your D-Scan).
+function saVsCompute(units, mf, st, count){
+  const per = [];
+  for(const u of units){
+    const n = count === 'scan' ? Math.min(u.scan, u.count) : u.count;
+    const F = mysFight(u.f, mf, st);
+    if(!F) continue;
+    const inc = dmgTypedPoint(F.tApp, F.me, F.qIn), out = dmgTypedPoint(F.mApp, F.them, F.qOut);
+    const theyLast = ttkSeconds(ttkDefense(u.f.estimate), out.typed);
+    const reach = dmgTackleReach(F.tApp);
+    const holds = (reach.scram > 0 && st.range <= reach.scram) || (reach.web > 0 && st.range <= reach.web);
+    const drains = saVsDrains(u.f.estimate, st.range);
+    per.push({u, n, inc, out, theyLast, holds, drains, raw: saRowDps(u.f.estimate).v,
+              score: theyLast === Infinity ? 0 : inc.dps / Math.max(theyLast, 0.1)});
+  }
+  const typed = {em: 0, therm: 0, kin: 0, exp: 0};
+  let raw = 0, hold = 0, neutShips = 0, logi = 0, ships = 0;
+  const drains = [];
+  for(const x of per){
+    if(!x.n) continue;
+    ships += x.n; raw += x.n * x.raw;
+    for(const d of DMG) typed[d] += x.n * (x.inc.typed[d] || 0);
+    if(x.holds) hold += x.n;
+    if(x.drains.length) neutShips += x.n;
+    if(x.u.logi) logi += x.n;
+    // pyfa's incoming drains: [cycle ms, GJ per cycle, no clip, staggered, no reload, not an injector], one per copy
+    for(const d of x.drains) for(let i = 0; i < x.n * d.qty; i++) drains.push([d.ms, d.gj, 0, false, 0, false]);
+  }
+  const def = ttkDefense(mf.estimate), si = (mf.estimate.capacitor || {}).simInputs || {};
+  if(drains.length && si.capacity > 0){
+    const sim = capSimPyfa(si.capacity, si.rechargeMs, [...(si.best || []), ...drains]);
+    def.capSec = sim.stable ? Infinity : (sim.timeToEmptyExactSec ?? Infinity);
+  }
+  const youLast = ships ? ttkSeconds(def, typed) : Infinity;
+  const dps = DMG.reduce((s, d) => s + typed[d], 0);
+  const order = per.filter(x => x.n > 0).sort((a, b) => (b.u.logi - a.u.logi) || (b.score - a.score) || (b.inc.dps - a.inc.dps));
+  return {per, order, typed, dps, raw, ships, hold, neutShips, logi, capSec: def.capSec, youLast, neutDrains: drains.length};
+}
+// How many you break, one after another down the kill order, before you go. Their damage on you stays as it is while
+// you shoot (the worse case: a ship you break stops shooting).
+function saVsBreaks(C){
+  let t = 0, k = 0;
+  for(const x of C.order) for(let i = 0; i < x.n; i++){
+    if(x.theyLast === Infinity || t + x.theyLast > C.youLast) return k;
+    t += x.theyLast; k++;
+  }
+  return k;
+}
+function saVsWhy(x, top){
+  if(x.u.logi) return 'repairs the others';
+  if(x.theyLast === Infinity) return "you can't break it here";
+  if(x === top) return 'most damage removed per second of your fire';
+  if(x.drains.length) return 'its neuts drain your capacitor';
+  if(x.holds) return 'holds you: scram or web';
+  return x.score * 2 >= top.score ? 'high damage, quick to break' : 'less damage per second of your fire';
+}
+function saVsShell(inner, ship, attrs = ''){
+  return `<div class="card vs-card" id="saVs"${attrs}><div class="vs-head"><h3>${escapeHtml(cardName('vs'))}</h3>${ship || ''}<span class="sa-sp"></span>${infoBtnHtml('vs')}</div>${inner}</div>`;
+}
+function saVsHtml(units, kind){
+  const myBtn = '<button type="button" data-vs-myship="1">My Ship</button>';
+  if(!myShip.rec) return saVsShell(`<div class="pr-msg vs-msg">Save your ship in My Ship to see how long it lasts against them. ${myBtn}</div>`);
+  if(!myShip.rec.use) return saVsShell(`<div class="pr-msg vs-msg">Turn on “Use in assessments” in My Ship to see how long it lasts against them. ${myBtn}</div>`);
+  const r = myShip.rec;
+  const ship = `<span class="vs-ship">${escapeHtml(r.shipName)}${r.fitName ? `<span class="vs-fit">${escapeHtml(r.fitName)}</span>` : ''}</span>`;
+  const mf = saVsReady(units);
+  if(!mf) return saVsShell(`<div class="pr-msg vs-msg">${myShip.error && !saVsLoading ? `${escapeHtml(myShip.error)} ${myBtn}` : '<span class="busy-spin" aria-hidden="true"></span>Loading your ship…'}</div>`, ship);
+  if(!mf.estimate.application || !mf.estimate.projectedTarget) return saVsShell(`<div class="pr-msg vs-msg">${escapeHtml(withCode("Your ship's hull record has no dogma effects, so pyfa's numbers can't be worked out for it.", 'DMG-01'))}</div>`, ship);
+  const st = saVsState(mf), km = sa.vs.rangeKm;
+  const A = saVsCompute(units, mf, st, 'all'), S = saVsCompute(units, mf, st, 'scan');
+  const onScan = sa.vs.count === 'scan', C = onScan ? S : A, other = onScan ? A : S;
+  const seg = (name, items) => `<span class="pr-seg" role="group" aria-label="${escapeHtml(name)}">${items.map(([v, l, on]) => `<button type="button" data-vs-set="${v}" aria-pressed="${on}"${on ? ' class="on"' : ''}>${escapeHtml(l)}</button>`).join('')}</span>`;
+  const set = `<div class="vs-set"><span class="vs-opt"><span class="vs-k">Range</span>${seg('Range', SA_VS_RANGES_KM.map((k, i) => [`range:${k}`, i === SA_VS_RANGES_KM.length - 1 ? `${k} km` : String(k), k === km]))}</span>
+    <span class="vs-opt"><span class="vs-k">You</span>${seg('You', [['prop:0', 'Still', !sa.vs.prop], ['prop:1', 'MWD on', sa.vs.prop]])}</span>
+    <span class="vs-opt"><span class="vs-k">Count</span>${seg('Count', [['count:all', `All ${kind === 'pilots' ? '' : '≈'}${A.ships}`, !onScan], ['count:scan', `${cardName('onscan')}: ${S.ships}`, onScan]])}</span></div>`;
+  if(!C.ships) return saVsShell(`${set}<div class="pr-msg vs-msg">${onScan ? 'None of the ships counted is on your D-Scan.' : kind === 'pilots' ? 'No pilot row with a known fit yet.' : 'No counted ship with a known fit yet.'}</div>`, ship);
+  const top = C.order[0], k = saVsBreaks(C);
+  const verdict = C.youLast === Infinity ? {bad: false, t: 'You hold against all of it here.', c: "their damage doesn't break your tank"}
+    : C.youLast < top.theyLast ? {bad: true, t: "Don't take this fight.", c: "you'd go before the first one breaks"}
+    : k >= C.ships ? {bad: false, t: 'You could break all of them first.', c: `${C.ships} ships, one at a time`}
+    : {bad: true, t: `You'd break about ${k} before you go.`, c: `of ${C.ships} ships, in ${ttkText(C.youLast)}`};
+  const landPct = C.raw > 0 ? Math.round(C.dps / C.raw * 100) : 0;
+  const bar = C.dps > 0 ? `<span class="fl-dbar" aria-hidden="true">${DMG.filter(d => C.typed[d] > 0).map(d => `<i style="flex:${C.typed[d]};background:var(--${d})"></i>`).join('')}</span>` : '';
+  const pre = kind === 'pilots' ? '' : '≈';
+  const rows = C.order.slice(0, 6).map((x, i) => `<div class="vs-kr" data-vs-unit="${escapeHtml(x.u.key)}"><span class="vs-rank">${i + 1}</span><span class="vs-who"><span class="nm">${escapeHtml(x.u.label)}<span class="cls">${escapeHtml(x.u.sub)}</span></span></span>
+      <span class="vs-n vs-c3">${kind === 'pilots' ? '' : x.n}</span><span class="vs-num vs-c4">${dmgFmt(x.inc.dps)}</span><span class="vs-num" data-vs-they="1">${escapeHtml(ttkText(x.theyLast))}</span><span class="vs-why">${escapeHtml(saVsWhy(x, top))}</span></div>`).join('');
+  return saVsShell(`${set}
+    <div class="vs-verdict${verdict.bad ? ' bad' : ''}"><span class="ewar-badge ${verdict.bad ? 'danger' : 'boost'}" aria-hidden="true">${verdict.bad ? '!' : '✓'}</span><span class="vs-vt"><b>${escapeHtml(verdict.t)}</b>${ctxHtml(verdict.c)}</span></div>
+    <div class="vs-row">
+      <div class="vs-stat"><div class="k">You last</div><div class="v${C.youLast < 60 ? ' bad' : ''}" data-vs="last">${escapeHtml(ttkText(C.youLast))}</div>${ctxHtml(`${onScan ? 'all of them' : 'on scan only'}: ${other.ships ? ttkText(other.youLast) : 'none'}`)}</div>
+      <div class="vs-stat"><div class="k">DPS applied to you</div><div class="v" data-vs="dps">${pre}${dmgFmt(C.dps)}</div>${bar}${ctxHtml(`${landPct}% of their raw DPS lands at ${km} km`)}</div>
+      <div class="vs-stat"><div class="k">Holding you</div><div class="fl-ewl" data-vs="hold"><span><span class="ewar-badge tackle">T</span>${pre}${C.hold}</span><span><span class="ewar-badge drain">C</span>${pre}${C.neutShips}</span></div>${ctxHtml(`scram, web or neuts in reach at ${km} km`)}</div>
+      <div class="vs-stat"><div class="k">Your capacitor</div><div class="v${C.capSec < 60 ? ' bad' : ''}" data-vs="cap">${C.capSec === Infinity ? 'Stable' : escapeHtml(ttkText(C.capSec))}</div>${ctxHtml(C.neutDrains ? 'under their neuts' : 'no neuts in reach')}</div>
+      <div class="vs-stat"><div class="k">Their logistics</div><div class="v" data-vs="logi">${pre}${C.logi}</div>${ctxHtml(C.logi ? 'kill them first' : 'none seen')}</div>
+    </div>
+    <div class="vs-ko"><h4>Kill first</h4>
+      <div class="vs-kr vs-kh" aria-hidden="true"><span></span><span>${kind === 'pilots' ? 'Pilot' : 'Ship'}</span><span class="vs-c3">${pre}</span><span class="r vs-c4">On you, each</span><span class="r">You kill one in</span><span>Why</span></div>
+      ${rows}</div>`, ship, ` data-you-last="${C.youLast}" data-dps="${C.dps}"`);
+}
+function saVsPilotsHtml(){ return saVsHtml(saVsUnitsPilots(saThreatList(sa.lastGroups).slice(0, sa.rowLimit)), 'pilots'); }
+function saRefreshVs(){
+  if(document.getElementById('saFleet')) return saUpdateFleet();
+  const host = document.getElementById('saVsHost');
+  if(!host || !sa.lastGroups) return;
+  if(host.querySelector('details.info-pop[open]')) return setTimeout(saRefreshVs, 400);   // not under an open panel
+  host.innerHTML = saVsPilotsHtml();
 }
 
 async function runSystemAnalyzer(force){
@@ -21192,6 +21430,15 @@ async function sideTagForPilot(charId){
     if(rb){ saOpenRow(rb.dataset.prPilot, rb.dataset.prHull || ''); return; }
     const lm = e.target.closest('[data-pr-more]');
     if(lm){ sa.rowLimit += SA_ROWS_PER_BATCH; sa.rowOrder = null; saPumpRows(); saUpdatePilots(); return; }
+    const vset = e.target.closest('[data-vs-set]');   // v.85: Against your ship
+    if(vset){
+      const [k, v] = vset.dataset.vsSet.split(':');
+      if(k === 'range') sa.vs.rangeKm = Number(v); else if(k === 'prop') sa.vs.prop = v === '1'; else sa.vs.count = v;
+      saRefreshVs();
+      const again = res.querySelector(`[data-vs-set="${vset.dataset.vsSet}"]`); if(again) again.focus({preventScroll: true});
+      return;
+    }
+    if(e.target.closest('[data-vs-myship]')){ openMyShipPanel(); return; }
     const fv = e.target.closest('[data-fl-var]');   // v.83: fleet view
     if(fv){ const [gk, t, i] = fv.dataset.flVar.split('|'); const h = saFleetHull(gk, t); if(h){ h.pick = Number(i); } const d = fv.closest('details'); if(d) d.open = false; saUpdateFleet(); return; }
     const fo = e.target.closest('[data-fl-open]');

@@ -37,6 +37,7 @@ types a name by hand.
 | `onscan` | On Scan | v2026.10.14.81: the D-Scan contacts under the System Analyzer (what the D-Scan tab showed) |
 | `pilots` | Pilots | v2026.10.14.82: one row per hostile / neutral pilot in a small gang (local-and-fleet-plan.md L3, D8 "A: Pilots / Groups switch") |
 | `fleet` | Fleet | v2026.10.14.83: the fleet view above "pilot rows up to" (local-and-fleet-plan.md L4, D9); the Fleet / Groups switch |
+| `vs` | Against Your Ship | v2026.10.14.85: their counted ships against My Ship, in the Fleet and Pilots views (local-and-fleet-plan.md L5, D10) |
 
 Settled: Title Case for every name (the open capitalisation question is closed).
 

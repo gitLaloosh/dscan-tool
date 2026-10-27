@@ -81,6 +81,19 @@ introduces a difference.
   it can fly; chosen and then no longer possible, it stays chosen, marked, with the speed capped. The chart stays a
   snapshot at one distance, as pyfa's graph. Checked by `check_matchup.py` (the inputs and the "can hold" rule, written
   again) and `fight_strip_check.py`.
+- The System Analyzer's "Against Your Ship" card (v2026.10.14.85, local-and-fleet-plan.md L5, D10). pyfa fits one ship
+  against one target; this adds ships up. Each counted ship's numbers are the Matchup's (pyfa's damage application
+  both ways at the card's one range, you still or orbiting at full speed with your prop on, they sitting still; "they
+  last" by the time-to-kill rule above); their applied damage is summed by damage type × the ≈ count (the fleet view's
+  estimate) and run through your layers by the same rule. Your capacitor: pyfa's capSim on your fit's own drains plus,
+  as pyfa's projected Energy Neutralizer / Nosferatu effects and the fighters' neut ability add them (Fit.addDrain), one
+  incoming drain per running module per ship, amount × calculateRangeFactor(optimal, falloff, distance), cycle =
+  duration, staggered. Not applied (so it errs toward more drain): your Energy Warfare Resistance (Capacitor Battery
+  bonuses, the Monitor's hull) and a capital neut's signature resolution (pyfa: × min(1, your signature / 8,000 m); only
+  capital neuts have one). A nosferatu drains as pyfa counts it, whatever your capacitor level. The kill order
+  (logistics, then their DPS on you ÷ the time you take to break one) and the verdict (how many you break one after
+  another before you go, with all their damage on you meanwhile) are the tool's own. Not counted: remote repairs,
+  command bursts, ships beyond each group's 3 main hulls, groups not looked up. Checked by `vs_check.py`.
 - EVE's closed-form capacitor stability, on ring hover (pyfa computes it as `cap_stable_eve` but doesn't display it).
 - Rounding of the tool's own values (missile application % and applied DPS in the ammo ranking, the ring's drawing geometry) stays JavaScript's `Math.round`. Every pyfa stat the tool shows is rounded with `pyRound` (Python `round()`, ties to even) since v2026.10.14.22.
 
