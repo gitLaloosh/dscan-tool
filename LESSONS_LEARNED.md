@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 73. What's inside a closed <details> still has a box
+
+- **What happened (v2026.10.14.81):** `system_analyzer_check.py` looks at 390 px for anything running off the page. It
+  flagged the close buttons of three info panels (ⓘ) that were all closed. Chromium lays out the content of a closed
+  `<details>` with `content-visibility: hidden`: nothing is drawn, but `getBoundingClientRect()` still returns a box, here
+  the phone sheet's close button sitting past the right edge.
+- **Do this instead:** in a check about what someone sees, skip what isn't shown with `el.checkVisibility()` (false
+  inside a closed `<details>`, `display:none` or `content-visibility: hidden`), not just a zero width. The same goes for
+  text read with `innerText` from an element that isn't rendered: it gives the raw text (the chip's phone-only ticker
+  showed up in the desktop text until the check filtered with `checkVisibility()`).
+
 ## 72. A tab a browser extension opens isn't routed on its first load
 
 - **What happened (v2026.10.14.80):** `extension_check.py` loads the extension into Chromium and lets it open the tool in a

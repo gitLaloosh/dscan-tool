@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — System Analyzer, step 1</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>System Analyzer, step 1: who's in Local, and Your Side</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.80</code> &rarr; <code>v2026.10.14.81</code> &middot; plan: <code>roadmap/local-and-fleet-plan.md</code> (L1 + L2, decisions D1&ndash;D7).</p>
+<p>the owner: "a local system tab with two inputs for a dscan and a copy/paste of the local chat window ... identified non-blues in system and what they're likely flying", with Local as the full list of who's in system and D-Scan only ~14 AU around you. After the mockup he paused to weigh an EVE login first (his coalition's blues would show as neutral without one), then: "go ahead with the System Analyzer but do not make the login the first step ... login can remain as #7". Answers to the mockup: "A: chip by My Ship", the zKillboard evidence in step 1, both coalition helpers ("Paste a list of alliances", "Suggested friendlies"), details "Both fine".</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>The D-Scan tab is now the System Analyzer</b> (still last): a Local box and a D-Scan box side by side, one Analyze. With only a scan pasted it shows the same contacts as before, under <b>On Scan</b>. A scan or a fit pasted into the Local box is refused (SYS-02).</li>
+<li><b>Your Side</b>, a chip beside My Ship on every tab. Its panel has your pilot (sets your corporation and alliance, looked up again on every Analyze), <b>Also friendly</b> and <b>Hostile</b> lists (one name at a time, or <b>Paste a list</b>: one name per line, tickers ignored), <b>Suggested friendlies</b> (the groups that shot alongside your side on 2+ of its last 50 kills in 7 days, from zKillboard, added with one click), and <b>Pilot rows up to</b> (15, at most 30). Saved in this browser only. On a phone the chip shows your ticker and the panel is a sheet.</li>
+<li><b>Local, sorted:</b> the total, a bar and counts for Hostile / Neutral / Friendly, "Fleet" or "Small gang" by the threshold, and names ESI doesn't know. <b>Hostile</b> and <b>Neutral</b> columns, by alliance then corporation, largest first; each group opens to its corporations and up to 6 names each ("+N more"); each name opens the Pilot Analyzer. NPC corporations are one neutral group; with more than 6 neutral groups, the 1&ndash;2 pilot groups share a row. Friendly is one closed line.</li>
+<li><b>Why hostile:</b> "Your hostile list", or <b>"Killed N of yours in 7 days"</b>: zKillboard's list of your alliance's losses in the past 7 days and the newest 50 of those killmails; every attacking pilot's alliance (or corporation) counts once per loss; NPCs and friendlies never. A corporation entry beats its alliance's (a hostile corp inside a friendly alliance is hostile).</li>
+<li><b>Pilot Analyzer:</b> a Friendly or Hostile tag beside the pilot's name once Your Side is set.</li>
+<li><b>zKillboard, politely (plan D4), for the whole page:</b> one request at a time, 1 s apart; the same request at once is asked once; at most 100 per 10 minutes from a browser (ZKB-04 after that); the pause after a zKillboard failure doubles from 60 s up to 10 minutes. The System Analyzer's zKillboard answers are kept an hour (Refresh skips that), killmails forever, tickers a week.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/system_analyzer_check.py</code> (39 checks) with <code>sa_mocks.py</code>: made-up alliances, corporations and pilots (no real ones); ESI's /characters/affiliation/ mock fails the whole request on a non-character ID, as ESI does (LESSON #71). Every count, side, group order and reason is worked out in Python from the same data, not read from the page. v.80 fails (no System Analyzer).</li>
+<li>Mutations, each caught: a corporation entry checked after its alliance; evidence counting attacker rows instead of losses; no spacing between zKillboard requests; the hour's copy ignored; no folding of small groups; the budget not checked; NPC corporations not grouped; suggestions that include listed groups (counts in the chat summary of this delivery).</li>
+<li><code>header_check.py</code> now expects the tab name System Analyzer. Error codes ZKB-04, ZKB-05, SYS-01, SYS-02, SIDE-01, SIDE-02 (ERRORS.md regenerated, 38 codes). CARD_NAMES + roadmap/card-names.md: sysan, side, hostile, neutral, friendly, onscan.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 32 page checks; lints (card names, subtext, pyfa core) 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #73: what's inside a closed <code>&lt;details&gt;</code> still has a layout box in Chromium (its content is <code>content-visibility: hidden</code>). The 390 px "nothing off the page" check flagged the close buttons of three closed info panels until it skipped what isn't shown with <code>el.checkVisibility()</code>; <code>innerText</code> of an element that isn't rendered likewise returns its raw text. In a check about what someone sees, filter with <code>checkVisibility()</code>, not a zero width.</p>
+<p>Also: a request answered once for several callers (the zKillboard queue merging identical requests) must hand each caller its own <code>Response.clone()</code>: a body can be read only once.</p>
+</body></html>

@@ -37,7 +37,7 @@ def run(b, W):
     check(h['title'] == 'EVE Threat Assessment (ETA)' and h['h1'] == 'EVE Threat Assessment', f'{W}: tab title "{h["title"]}", header "{h["h1"]}"')
     check(h['p'] == ["Who's in system, what they fly, and how to beat them."], f'{W}: one tagline {h["p"]}')
     check('ESI' in h['btn'] and 'week' in h['btn'], f'{W}: the caching sentence is the Refresh button\'s hover ("{h["btn"]}")')
-    check(h['tabs'] == ['Pilot Analyzer', 'Fit Analyzer', 'D-Scan Analyzer'], f'{W}: the tabs keep their names, D-Scan last (v.62) {h["tabs"]}')
+    check(h['tabs'] == ['Pilot Analyzer', 'Fit Analyzer', 'System Analyzer'], f'{W}: the tabs keep their names, the System Analyzer (was D-Scan, v.81) last (v.62) {h["tabs"]}')
     # v2026.10.14.62: the page opens on the Pilot Analyzer
     shown = pg.evaluate("() => [...document.querySelectorAll('.tab-panel')].filter(p => getComputedStyle(p).display !== 'none').map(p => p.id).concat([document.querySelector('.tab-btn.active').id])")
     check(shown == ['tabPilot', 'tabBtnPilot'], f'{W}: opens on the Pilot Analyzer {shown}')

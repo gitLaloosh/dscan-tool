@@ -1831,6 +1831,142 @@
     button.fb-ab{padding:5px 10px 5px 5px; font-size:12px; min-height:44px;}   /* v.66: finger-sized ability buttons */
     button.fb-ab img{width:30px; height:30px;}
   }
+  /* SYSTEM ANALYZER (v2026.10.14.81; roadmap/local-and-fleet-plan.md step 1 = L1 + L2, from the mockup the owner approved:
+     "A: chip by My Ship", evidence in step 1, "Paste a list of alliances" + "Suggested friendlies", details "Both fine").
+     Sides: hostile = --danger, friendly = --side-friendly (the pair passes validate_palette.js --mode dark on #12171c and
+     #161c22: CVD dE 21.9, normal 26.0, 3:1), neutral grey on purpose; each side also has a shape (- square, o circle,
+     + square) and its name, so colour is never the only cue. Classes sa-* (the tab) and side-* (Your Side). */
+  :root{--side-friendly:#4f8fe0; --side-hostile:var(--danger); --side-neutral:#5d6a73;}
+  .sa-head{display:flex; align-items:center; gap:8px; position:relative;}
+  .sa-head h2{margin:0;}
+  .sa-sp{flex:1 1 auto;}
+  .sa-inputs{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; margin-top:12px;}
+  .sa-in label{display:block; font:600 12px/16px var(--sans); color:var(--heading);}
+  .sa-in .ctx{margin-bottom:6px;}
+  .sa-in textarea{min-height:170px;}
+  .sa-status .status{margin-top:4px;}
+  .sa-status .status:empty{display:none;}
+  .sa-status{margin-top:4px;}
+  .sa-mark{display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:4px; font:700 13px/1 var(--sans); flex:none; box-sizing:border-box;}
+  .sa-mark.h{background:var(--side-hostile); color:#fff;}
+  .sa-mark.n{background:transparent; border:1.5px solid var(--text-dim); border-radius:50%; width:16px; height:16px;}
+  .sa-mark.f{background:var(--side-friendly); color:#fff;}
+  .sa-sum{margin-top:18px;}
+  .sa-sum-top{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+  .sa-total{font:600 26px/1 var(--mono); color:var(--heading);}
+  .sa-total-l{font:600 var(--label-size)/1 var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  .sa-bar{display:flex; gap:2px; height:10px; margin:12px 0 8px; border-radius:4px; overflow:hidden;}
+  .sa-bar i{display:block; height:100%; min-width:3px;}
+  .sa-bar i.h{background:var(--side-hostile);} .sa-bar i.n{background:var(--side-neutral);} .sa-bar i.f{background:var(--side-friendly);}
+  .sa-keys{display:flex; gap:8px 18px; flex-wrap:wrap;}
+  .sa-key{display:inline-flex; align-items:center; gap:7px; font:600 13px var(--sans); color:var(--text);}
+  .sa-key b{font:600 13px var(--mono); color:var(--heading);}
+  .sa-mode{margin-top:10px; display:flex; gap:6px 10px; align-items:center; flex-wrap:wrap;}
+  .sa-mode .ctx{display:inline-block;}
+  .sa-pill{display:inline-flex; align-items:center; height:24px; padding:0 10px; border:1px solid var(--line); border-radius:12px; font:600 12px var(--sans); color:var(--text); white-space:nowrap;}
+  .sa-pill.fleet{border-color:var(--amber-dim); color:var(--amber);}
+  .sa-warn{display:flex; gap:8px; align-items:flex-start; margin-top:10px; max-width:460px;}
+  .sa-warn .ewar-badge{flex:none;}
+  .sa-warn button.sa-link{margin-left:6px;}
+  button.sa-link{border:none; padding:0 2px; min-height:0; color:var(--cyan); font:600 12px var(--sans); letter-spacing:0; background:transparent;}
+  button.sa-link:hover{text-decoration:underline; background:transparent;}
+  .sa-cols{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; margin-top:16px; align-items:start;}
+  .sa-col.card{padding:14px 14px 6px; position:relative; min-width:0;}
+  .sa-col .card-head h3{margin:0; font:600 14px var(--sans); color:var(--heading);}
+  .sa-col .card-head .sa-n{font:600 13px var(--mono); color:var(--text-dim); margin-left:auto;}
+  .sa-empty{font-size:12.5px; color:var(--text-dim); padding:6px 0 10px;}
+  details.sa-g{border-top:1px solid var(--line-soft);}
+  details.sa-g > summary{list-style:none; display:grid; grid-template-columns:30px minmax(0,1fr) auto 14px; gap:10px; align-items:center; padding:8px 2px; cursor:pointer; min-height:48px; box-sizing:border-box;}
+  details.sa-g > summary::-webkit-details-marker{display:none;}
+  details.sa-g > summary:focus-visible{outline:2px solid var(--cyan); outline-offset:-2px;}
+  .sa-logo{position:relative; width:30px; height:30px; border-radius:4px; background:#222b33; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font:700 9px var(--mono); color:var(--text-dim); overflow:hidden; box-sizing:border-box;}
+  .sa-logo.corp{border-radius:50%;}
+  .sa-logo img{position:absolute; inset:0; width:100%; height:100%;}
+  .sa-gname{min-width:0;}
+  .sa-gname .nm{display:block; font:600 13px/16px var(--sans); color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .tk{font-family:var(--mono); font-weight:400; color:var(--text-dim); font-size:11.5px;}
+  .sa-why{display:flex; align-items:center; gap:5px; font:600 11.5px/16px var(--sans); color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sa-why::before{content:""; flex:none;}
+  .sa-why.list::before{width:7px; height:7px; border-radius:2px; background:var(--side-hostile);}
+  .sa-why.zkb::before{width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-bottom:7px solid var(--amber);}
+  .sa-gn{font:600 15px var(--mono); color:var(--heading); text-align:right; min-width:3ch;}
+  .sa-chev{color:var(--text-dim); font-size:11px; text-align:center; transition:transform .15s;}
+  details.sa-g[open] > summary .sa-chev{transform:rotate(90deg);}
+  .sa-gbody{padding:0 2px 10px 40px;}
+  .sa-corp{display:flex; align-items:baseline; gap:8px; margin-top:6px; font:600 12px var(--sans); color:var(--text); min-width:0;}
+  .sa-corp > span:first-child{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sa-corp .c{margin-left:auto; font:600 12px var(--mono); color:var(--text-dim);}
+  .sa-pilots{display:flex; flex-wrap:wrap; gap:4px 6px; margin:5px 0 4px;}
+  .sa-pilots button.sa-pilot{padding:3px 8px; min-height:28px; border:1px solid var(--line); color:var(--text); font:400 12px var(--sans); border-radius:3px; letter-spacing:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sa-pilots button.sa-pilot:hover{border-color:var(--cyan); color:var(--cyan); background:transparent;}
+  details.sa-friendly{margin-top:14px; background:var(--panel-2); border:1px solid var(--line); border-radius:4px;}
+  details.sa-friendly > summary{grid-template-columns:18px minmax(0,1fr) auto 14px; min-height:44px; padding:8px 14px;}
+  .sa-friendly-body{padding:0 14px 6px;}
+  .sa-onscan-head{display:flex; align-items:baseline; gap:6px 12px; flex-wrap:wrap; margin-bottom:10px;}
+  .sa-onscan-head h2{margin:0;}
+  .sa-onscan-head .ctx{display:inline-block;}
+  .sa-onscan-head .legend{margin:0 0 0 auto;}
+  /* Your Side: a chip beside My Ship, on every tab; the panel is a popover (a sheet from the bottom on a phone) */
+  button.side-chip{display:inline-flex; align-items:center; gap:8px; min-height:36px; max-width:320px; padding:0 12px 0 9px; border:1px solid var(--line); border-radius:18px;
+    background:var(--panel); color:var(--text); font:600 12.5px var(--sans); letter-spacing:0; white-space:nowrap;}
+  button.side-chip:hover, button.side-chip[aria-expanded="true"]{background:var(--panel-2); border-color:var(--side-friendly);}
+  button.side-chip.is-empty{background:transparent; border-style:dashed; border-color:var(--text-faint);}
+  .side-chip-name{min-width:0; overflow:hidden; text-overflow:ellipsis;}
+  .side-chip-more{color:var(--text-dim); font-weight:400;}
+  .side-chip-short{display:none; font-family:var(--mono);}
+  .side-panel{position:absolute; right:0; top:calc(100% + 8px); z-index:60; width:min(440px, calc(100vw - 32px)); max-height:calc(100vh - 140px); overflow-y:auto; box-sizing:border-box;
+    background:var(--panel); border:1px solid #2c3842; border-radius:10px; padding:16px 18px 18px; box-shadow:0 18px 40px rgba(0,0,0,0.55); text-align:left;}
+  .side-panel h2{font-size:16px; margin:0;}
+  .side-panel .sa-head{margin-bottom:2px;}
+  .side-fld{margin-top:14px;}
+  .side-fld > .side-lab{display:flex; align-items:center; gap:7px; font:600 12px var(--sans); color:var(--heading); margin-bottom:6px;}
+  .side-row{display:flex; gap:8px;}
+  .side-row input[type=text]{flex:1 1 auto; min-width:0;}
+  .side-row button{padding:6px 12px; flex:none;}
+  .side-panel textarea{min-height:110px; margin-top:6px;}
+  .side-res{display:flex; gap:8px; align-items:center; margin-top:6px; font:400 12.5px var(--sans); color:var(--text); min-width:0;}
+  .side-res > span:last-child{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .side-chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;}
+  .side-chips:empty{display:none;}
+  .side-chips > span{display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 2px 0 10px; border:1px solid var(--line); border-radius:15px; font:400 12.5px var(--sans); color:var(--text); max-width:100%; box-sizing:border-box;}
+  .side-chips > span > .nm{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .side-chips button.side-x{border:none; padding:0; width:26px; height:26px; min-height:0; color:var(--text-dim); font-size:16px; line-height:1; flex:none; background:transparent;}
+  .side-chips button.side-x:hover{color:var(--heading); background:transparent;}
+  .side-msg{margin-top:4px;}
+  .side-msg.err{color:var(--danger);}
+  .side-sug{display:flex; align-items:center; gap:8px; padding:5px 0; border-top:1px solid var(--line-soft); min-width:0;}
+  .side-sug > .side-sug-t{flex:1 1 auto; min-width:0;}
+  .side-sug .nm{display:block; font:600 12.5px var(--sans); color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .side-sug button{padding:4px 12px; flex:none;}
+  .side-num{display:flex; align-items:center; gap:10px;}
+  .side-num input[type=text]{width:64px; min-width:0; flex:none; font-family:var(--mono); text-align:right;}
+  .side-num .ctx{display:inline-block;}
+  .side-foot{margin-top:14px; padding-top:10px; border-top:1px solid var(--line-soft);}
+  .side-backdrop{display:none;}
+  .side-tag{display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 10px 0 4px; border:1px solid var(--line); border-radius:13px; font:600 12px var(--sans); color:var(--text); max-width:100%; box-sizing:border-box; white-space:nowrap;}
+  .side-tag.f{border-color:var(--side-friendly);} .side-tag.h{border-color:var(--side-hostile);}
+  .side-tag .sa-mark{width:16px; height:16px; font-size:11px;}
+  .side-tag .nm{min-width:0; overflow:hidden; text-overflow:ellipsis;}
+  #pilotSideTag:empty{display:none;}
+  @media (max-width: 760px){
+    .sa-inputs, .sa-cols{grid-template-columns:minmax(0,1fr);}
+    .sa-in textarea{min-height:110px;}
+  }
+  @media (max-width: 599px){
+    button.side-chip{min-height:44px; min-width:44px; flex:none; max-width:30vw; justify-content:center; padding:0 10px;}
+    .mys-chip-ship{flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}   /* v.81: room for Your Side */
+    .side-chip-name, .side-chip-more{display:none;}
+    .side-chip-short{display:inline;}
+    .side-panel{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-height:88vh; border-radius:14px 14px 0 0; padding:16px 16px 24px; z-index:61;}
+    .side-backdrop{display:block; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,0.5);}
+    .side-backdrop[hidden]{display:none;}
+    .side-row button, .side-sug button{min-height:44px;}
+    details.sa-g > summary{min-height:52px;}
+    .sa-pilots button.sa-pilot{min-height:36px;}
+    button.sa-link{min-height:36px;}
+  }
+  .sa-onscan-head .count{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+  .is-busy#saResults{opacity:0.45; pointer-events:none; transition:opacity 0.15s 0.25s;}
 </style>
 </head>
 <body>
@@ -1838,7 +1974,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.80</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.81</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1857,8 +1993,13 @@
          tab the page opens on): Pilot, Fit, D-Scan. -->
     <button type="button" class="tab-btn active" id="tabBtnPilot">Pilot Analyzer</button>
     <button type="button" class="tab-btn" id="tabBtnFit">Fit Analyzer</button>
-    <button type="button" class="tab-btn" id="tabBtnDscan">D-Scan Analyzer</button>
+    <!-- v2026.10.14.81: the D-Scan tab is the System Analyzer now (its name from CARD_NAMES 'sysan', filled by systemAnalyzerInit) -->
+    <button type="button" class="tab-btn" id="tabBtnDscan" data-card="sysan"></button>
     <div class="mys-bar" id="myShipBar">
+      <!-- v2026.10.14.81 Your Side (System Analyzer step 1, D7 "A: chip by My Ship"): labels set by renderSideChip -->
+      <button type="button" class="side-chip is-empty" id="sideChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="sidePanel"></button>
+      <div class="side-backdrop" id="sideBackdrop" hidden></div>
+      <div class="side-panel" id="sidePanel" role="dialog" hidden></div>
       <button type="button" class="mys-chip is-empty" id="myShipChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="myShipPanel"></button>
       <label class="mys-use is-off" id="myShipUseLabel" title="Save your ship first"><input type="checkbox" class="mys-sw" id="myShipUse" disabled aria-label="Use my ship in assessments"><span class="mys-use-long">Use in assessments</span><span class="mys-use-short">Use</span></label>
       <div class="mys-backdrop" id="myShipBackdrop" hidden></div>
@@ -1867,29 +2008,41 @@
   </div>
 
   <div id="tabDscan" class="tab-panel" style="display:none;">
+  <!-- v2026.10.14.81 (roadmap/local-and-fleet-plan.md, D1: "it should replace it", "System Analyzer sounds fine"): the
+       D-Scan tab is now the System Analyzer, in its place (last): Local (everyone in system) and D-Scan (ships within
+       ~14 AU) side by side, one Analyze. With only a scan pasted it does what the D-Scan tab did. Element ids kept
+       (tabDscan, dscanInput, analyzeBtn, resultsWrap) so the scan code and its checks are unchanged. -->
   <section class="panel">
-    <h2>Scan input</h2>
-    <p class="sub">Copy your D-Scan window (Ctrl+A, Ctrl+C in the client) and paste it below — or just type a single ship name if you don't have a scan handy and want to check one hull directly.</p>
-    <textarea id="dscanInput" placeholder="Paste directional scan output here, or type a ship name like &quot;Purifier&quot;…"></textarea>
+    <div class="sa-head"><h2 data-card="sysan"></h2><span class="sa-sp"></span><span id="saInfo"></span></div>
+    <div class="sa-inputs">
+      <div class="sa-in"><label for="localInput">Local</label><span class="ctx">Everyone in system: select all, Ctrl+C</span>
+        <textarea id="localInput" placeholder="Paste the Local member list here (one pilot per line)" spellcheck="false"></textarea></div>
+      <div class="sa-in"><label for="dscanInput">D-Scan</label><span class="ctx">Ships within ~14 AU: Ctrl+A, Ctrl+C</span>
+        <textarea id="dscanInput" placeholder="Paste your D-Scan window here, or type a ship name like &quot;Purifier&quot;" spellcheck="false"></textarea></div>
+    </div>
     <div class="row" style="margin-top:12px;">
-      <button id="analyzeBtn">Analyze scan</button>
+      <button id="analyzeBtn">Analyze</button>
+      <button id="saClearBtn" type="button" style="border-color:var(--line); color:var(--text-dim);">Clear</button>
       <button id="debugToggle" type="button" style="border-color:var(--line); color:var(--text-dim);">Show parsed rows</button>
-      <span class="status" id="scanStatus"></span>
     </div>
+    <div class="sa-status"><div class="status" id="localStatus"></div><div class="status" id="scanStatus"></div></div>
     <div class="fit-hint" id="dscanFitHint" style="display:none;"></div>
-    <div class="legend">
-      <span><i style="background:var(--em)"></i>EM</span>
-      <span><i style="background:var(--therm)"></i>Thermal</span>
-      <span><i style="background:var(--kin)"></i>Kinetic</span>
-      <span><i style="background:var(--exp)"></i>Explosive</span>
-    </div>
     <div id="debugRows" style="display:none; margin-top:14px; padding-top:12px; border-top:1px solid var(--line-soft);"></div>
+    <div class="busy-bar" id="saBusy" role="status" aria-live="polite" hidden><span class="busy-spin" aria-hidden="true"></span><span class="busy-label"></span><span class="busy-detail"></span></div>
+    <div id="saResults"></div>
   </section>
 
   <div id="resultsWrap" style="display:none;">
-    <div class="contacts-head">
-      <h2>Contacts</h2>
+    <div class="sa-onscan-head">
+      <h2 data-card="onscan"></h2>
       <span class="count" id="contactsCount"></span>
+      <span class="ctx">near you, not the whole system</span>
+      <div class="legend">
+        <span><i style="background:var(--em)"></i>EM</span>
+        <span><i style="background:var(--therm)"></i>Thermal</span>
+        <span><i style="background:var(--kin)"></i>Kinetic</span>
+        <span><i style="background:var(--exp)"></i>Explosive</span>
+      </div>
     </div>
     <div class="grid" id="resultsGrid"></div>
   </div>
@@ -1910,6 +2063,7 @@
     <!-- v2026.10.14.43 (the owner: "the UI is just too busy"): one header line -- pilot, hull dropdown, last kill -->
     <div class="pilot-head">
       <span class="ph-name" id="pilotHeadName"></span>
+      <span id="pilotSideTag"></span>
       <div id="fitCandidates"></div>
       <div id="lastKillInfo"></div>
     </div>
@@ -1959,7 +2113,13 @@ const CARD_NAMES = {
  "perspective.threat": "Threat Perspective",
  "perspective.mine": "My Ship Perspective",
  "myshippage": "Viewing My Ship",
- "tdmode": "Mode"
+ "tdmode": "Mode",
+ "sysan": "System Analyzer",
+ "side": "Your Side",
+ "hostile": "Hostile",
+ "neutral": "Neutral",
+ "friendly": "Friendly",
+ "onscan": "On Scan"
 };
 function cardName(key){
   const n = CARD_NAMES[key];
@@ -2061,6 +2221,28 @@ const CARD_INFO = {
   "They last / you last is not a pyfa number: the damage by type against each layer's resists (shield, then armor, then hull), minus that layer's local repairs and passive shield regen, with the repairs stopping when the capacitor runs out. An Ancillary Shield Booster on charges keeps going without the capacitor: it reps for its clip, reloads for 60 s, and repeats until its charges (loaded and in the hold) run out. An Ancillary Armor Repairer with Nanite Repair Paste repairs three times as much for its clip from when the armor starts taking damage, reloads for 60 s, repeats while its paste lasts, then repairs its plain amount; it needs the capacitor either way (a killmail with no paste seen: a full clip assumed). \"holds\" means the damage never gets through. Hover a time (tap it on a phone) for why it breaks when it does.",
   "Edge: who outlasts the other. Faster: the two top speeds. An amber number differs from your pasted fit's own module states; hover it for the pasted value (for a time, it's at the end of its why).",
   "The strip under the board sets one fight for both perspectives: each ship's movement, with the in-game names (Stopped, Approach, Orbit, Keep at Range), and the range between you. Adjust on {card:dmg} changes the same settings."
+ ],
+ "sysan": [
+  "Paste the Local member list (in the Local window, select the members and press Ctrl+C) and, if you have one, your D-Scan. Local lists everyone in the system, in space or docked; the D-Scan shows only ships within about 14 AU of you. So who is here comes from Local, and the scan only says what is near you now.",
+  "Each name is looked up on ESI (its corporation and alliance) and sorted into hostile, neutral and friendly with {card:side}. A name ESI doesn't know (a typo, a renamed pilot) is listed as not found.",
+  "Up to the “pilot rows up to” number of hostile + neutral pilots is a small gang (15 unless you change it); more is a fleet. For now both are shown by group: a row per pilot and the fleet's likely ships come in later steps.",
+  "With only a D-Scan pasted, {card:onscan} shows the ships on scan, as the D-Scan tab did."
+ ],
+ "side": [
+  "Your pilot sets your corporation and alliance; they're looked up again each time you analyze Local, so a change of corporation is picked up.",
+  "Add other friendly alliances or corporations, such as your coalition: one at a time, or as a pasted list with one name per line. Use the full name; a ticker in < > or [ ] after it is ignored. Hostile works the same way. Adding a group to one list takes it off the other.",
+  "A corporation entry beats its alliance's: a hostile corporation inside a friendly alliance shows as hostile.",
+  "Suggested friendlies: the alliances and corporations (not already listed) that shot alongside your side on 2 or more of its last 50 kills in the past 7 days on zKillboard. One zKillboard request, kept for an hour. Add only the ones really on your side.",
+  "“Pilot rows up to” is where a small gang ends and a fleet begins: 15 unless you change it, at most 30.",
+  "Everything here is saved in this browser only."
+ ],
+ "hostile": [
+  "Hostile: pilots in an alliance or corporation on your hostile list, then groups that killed your side lately: zKillboard's list of your alliance's losses in the past 7 days (one request, kept for an hour) and the newest 50 of those killmails from ESI. Every attacking pilot's alliance (or corporation, without one) counts. Your lists win: a group you list as friendly is never hostile.",
+  "Grouped by alliance, then corporation (a corporation with no alliance stands alone), largest first. Each name opens the Pilot Analyzer."
+ ],
+ "neutral": [
+  "Neutral: everyone in Local who isn't friendly or hostile. Pilots in NPC corporations (starter corporations, often new pilots and alts) are one group. With more than 6 groups, the groups of 1 or 2 pilots share one row.",
+  "Each name opens the Pilot Analyzer."
  ]
 };
 const CTX_MAX = 40;
@@ -2153,7 +2335,7 @@ const ERROR_CODES = {
  "ZKB-01": {
   "title": "zKillboard's API isn't answering",
   "where": "Pilot Analyzer status line and the {card:lastkill} line",
-  "trigger": "A zKillboard API call took over 20 s (ZKB_TIMEOUT_MS) or answered 5xx. Since 2026-10-22 zKillboard queues API requests and answers 503 'API result unavailable' when its worker doesn't answer within 60 s. Further zKillboard calls fail at once for 60 s (ZKB_COOLDOWN_MS).",
+  "trigger": "A zKillboard API call took over 20 s (ZKB_TIMEOUT_MS) or answered 5xx. Since 2026-10-22 zKillboard queues API requests and answers 503 'API result unavailable' when its worker doesn't answer within 60 s. Further zKillboard calls fail at once for 60 s (ZKB_COOLDOWN_MS); since v2026.10.14.81 the pause doubles with each failure in a row, up to 10 minutes (ZKB_COOLDOWN_MAX_MS, plan D4).",
   "check": "Open a zkillboard.com/api/... URL in a browser. If it shows 'API result unavailable', the problem is on zKillboard's side.",
   "why": "The page used to wait a full minute and then tell the user to check their network.",
   "since": "v2026.10.14.31",
@@ -2206,7 +2388,7 @@ const ERROR_CODES = {
  },
  "DSCAN-01": {
   "title": "A fit was pasted into the D-Scan box",
-  "where": "D-Scan Analyzer",
+  "where": "{card:sysan}, D-Scan box",
   "trigger": "The paste starts with an EFT header like [Ship, Fit name].",
   "check": "Nothing to fix: the hint offers to open it in the Fit Analyzer.",
   "why": "Bug list (the owner, 2026-10-14): an EFT fit pasted into the D-Scan box was read as a scan.",
@@ -2215,7 +2397,7 @@ const ERROR_CODES = {
  },
  "DSCAN-02": {
   "title": "ESI rejected the D-Scan names",
-  "where": "D-Scan Analyzer",
+  "where": "{card:sysan}, D-Scan box",
   "trigger": "The name lookup for the scan's types failed (wraps the ESI-01 text). Usually the paste lost its tab characters, so whole lines were sent as names.",
   "check": "'Parsed rows' under the input: whether columns are split correctly.",
   "why": "Points at the paste rather than ESI when columns weren't split.",
@@ -2224,7 +2406,7 @@ const ERROR_CODES = {
  },
  "DSCAN-03": {
   "title": "D-Scan lines couldn't be split into columns",
-  "where": "D-Scan Analyzer, parsed rows note",
+  "where": "{card:sysan}, D-Scan box, parsed rows note",
   "trigger": "Lines without the tab-separated columns a D-Scan copy has.",
   "check": "Copy the scan again with Ctrl+A, Ctrl+C in the client.",
   "why": "Explains why those lines' type lookup will fail.",
@@ -2383,6 +2565,60 @@ const ERROR_CODES = {
   "why": "The picks are pyfa numbers for each charge and drone aboard; when one can't be worked out the card says so instead of ranking what's left.",
   "since": "v2026.10.14.42",
   "doc": "2026-10-23_weaknesses-your-guns-their-guns.html"
+ },
+ "ZKB-04": {
+  "title": "zKillboard limit reached in this browser",
+  "where": "Any zKillboard lookup (Pilot Analyzer, {card:sysan}, {card:side})",
+  "trigger": "The page asked zKillboard ZKB_BUDGET (100) times within 10 minutes in this browser (counted in localStorage across reloads; plan D4).",
+  "check": "Wait the minutes the message gives; anything already looked up (kept for an hour) still works.",
+  "why": "the owner (D4): keep the tool polite to zKillboard, which asks tools not to hammer its API.",
+  "since": "v2026.10.14.81",
+  "doc": "2026-10-27_system-analyzer-local-and-your-side.html"
+ },
+ "ZKB-05": {
+  "title": "zKillboard lookup for your side failed",
+  "where": "{card:sysan} (the evidence) and {card:side} (suggested friendlies)",
+  "trigger": "zKillboard's /api/losses/ or /api/kills/ for your alliance (or corporation) answered a non-5xx error status or something that isn't a list (5xx is ZKB-01).",
+  "check": "The status in the message; open the same zkillboard.com/api/... URL in a browser.",
+  "why": "The evidence and the suggestions are extras: the lists still work without them, and the message says why they're missing.",
+  "since": "v2026.10.14.81",
+  "doc": "2026-10-27_system-analyzer-local-and-your-side.html"
+ },
+ "SYS-01": {
+  "title": "Local lookup failed (affiliations)",
+  "where": "{card:sysan} status line, and setting your pilot in {card:side}",
+  "trigger": "ESI's POST /characters/affiliation/ failed (no response or an error status).",
+  "check": "The status in the message; ESI's status page.",
+  "why": "Without each pilot's corporation and alliance nobody can be sorted into a side.",
+  "since": "v2026.10.14.81",
+  "doc": "2026-10-27_system-analyzer-local-and-your-side.html"
+ },
+ "SYS-02": {
+  "title": "Not a Local member list",
+  "where": "{card:sysan} status line",
+  "trigger": "The Local box holds D-Scan rows (tab-separated) or a ship fit (EFT).",
+  "check": "Paste the D-Scan in the D-Scan box, a fit in the Fit Analyzer.",
+  "why": "Names from a scan or a fit aren't pilots; looking them up would only fill the not-found list.",
+  "since": "v2026.10.14.81",
+  "doc": "2026-10-27_system-analyzer-local-and-your-side.html"
+ },
+ "SIDE-01": {
+  "title": "Your pilot wasn't found",
+  "where": "{card:side}, your pilot",
+  "trigger": "ESI's /universe/ids/ has no pilot by the name typed.",
+  "check": "The spelling; pilot names must match exactly.",
+  "why": "Your pilot is what sets your corporation and alliance.",
+  "since": "v2026.10.14.81",
+  "doc": "2026-10-27_system-analyzer-local-and-your-side.html"
+ },
+ "SIDE-02": {
+  "title": "Alliance or corporation not found",
+  "where": "{card:side}, the friendly and hostile lists",
+  "trigger": "ESI's /universe/ids/ has no alliance or corporation by one of the names added (a ticker instead of the name, or a typo).",
+  "check": "Use the full name, as on the alliance's or corporation's info window.",
+  "why": "ESI looks groups up by their name, not their ticker.",
+  "since": "v2026.10.14.81",
+  "doc": "2026-10-27_system-analyzer-local-and-your-side.html"
  }
 };
 function withCode(text, code){ return code ? `${text} (${code})` : text; }
@@ -2418,11 +2654,45 @@ const ZKB_TIMEOUT_MS = 20000;
 const ZKB_COOLDOWN_MS = 60000;
 let zkbUnavailableUntil = 0;
 const ZKB_UNAVAILABLE_TEXT = "zKillboard's API isn't answering right now. That's on zKillboard's side, not your connection. Try again in a few minutes";
-async function zkbFetch(url){
+// v2026.10.14.81 (roadmap/local-and-fleet-plan.md D4; the owner: "should we add constraints to prevent users from flooding
+// zkillboard with requests from the tool? ... what seems reasonable?", then "sounds good, record them as D4"): one
+// zKillboard queue for the whole page. Requests go one at a time, ZKB_SPACING_MS apart; the same URL asked for while
+// it's waiting or running is answered once (each caller gets its own copy); at most ZKB_BUDGET requests per
+// ZKB_BUDGET_WINDOW_MS from this browser, counted across reloads (localStorage), then ZKB-04 says when more are allowed;
+// after a failure the pause starts at ZKB_COOLDOWN_MS and doubles on each failure in a row, up to ZKB_COOLDOWN_MAX_MS.
+// Each number is one constant, set low on purpose (D4), to loosen after real use.
+const ZKB_SPACING_MS = 1000;
+const ZKB_BUDGET = 100, ZKB_BUDGET_WINDOW_MS = 10 * 60 * 1000, ZKB_BUDGET_KEY = 'dscanZkbBudget';
+const ZKB_COOLDOWN_MAX_MS = 10 * 60 * 1000;
+let zkbFailStreak = 0, zkbQueue = Promise.resolve(), zkbLastStart = 0;
+const zkbInflight = new Map();   // url -> Promise<Response> (the original; callers get clones)
+function zkbBudgetRead(){
+  try{ const a = JSON.parse(localStorage.getItem(ZKB_BUDGET_KEY) || '[]'); return Array.isArray(a) ? a.filter(t => typeof t === 'number' && Date.now() - t < ZKB_BUDGET_WINDOW_MS) : []; }
+  catch(e){ return []; }
+}
+function zkbBudgetSpend(){   // true when a request may go now (and counts it)
+  if(typeof localStorage === 'undefined') return true;
+  const a = zkbBudgetRead();
+  if(a.length >= ZKB_BUDGET) return false;
+  a.push(Date.now());
+  try{ localStorage.setItem(ZKB_BUDGET_KEY, JSON.stringify(a)); }catch(e){ /* private window: not counted */ }
+  return true;
+}
+function zkbBudgetError(){
+  const a = zkbBudgetRead(), mins = a.length ? Math.max(1, Math.ceil((a[0] + ZKB_BUDGET_WINDOW_MS - Date.now()) / 60000)) : 1;
+  return Object.assign(new Error(`This page has asked zKillboard ${ZKB_BUDGET} times in 10 minutes, its limit in this browser. More in ${mins} min; anything already looked up still works`), {code: 'ZKB-04', zkbUnavailable: true});
+}
+const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
+async function zkbFetchNow(url){
   const ac = typeof AbortController === 'function' ? new AbortController() : null;
   const timer = ac ? setTimeout(() => ac.abort(), ZKB_TIMEOUT_MS) : null;
-  const unavailable = () => { zkbUnavailableUntil = Date.now() + ZKB_COOLDOWN_MS; return Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true, code: 'ZKB-01'}); };
+  const unavailable = () => {
+    zkbUnavailableUntil = Date.now() + Math.min(ZKB_COOLDOWN_MAX_MS, ZKB_COOLDOWN_MS * Math.pow(2, zkbFailStreak));
+    zkbFailStreak++;
+    return Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true, code: 'ZKB-01'});
+  };
   if(Date.now() < zkbUnavailableUntil){ if(timer) clearTimeout(timer); throw Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true, code: 'ZKB-01'}); }
+  if(!zkbBudgetSpend()){ if(timer) clearTimeout(timer); throw zkbBudgetError(); }
   let res;
   try{
     res = await fetch(url, ac ? {signal: ac.signal} : undefined);
@@ -2433,7 +2703,23 @@ async function zkbFetch(url){
     if(timer) clearTimeout(timer);
   }
   if(res.status >= 500) throw unavailable();
+  zkbFailStreak = 0;
   return res;
+}
+async function zkbFetch(url){
+  let p = zkbInflight.get(url);
+  if(!p){
+    p = zkbQueue.then(async () => {
+      const wait = zkbLastStart + ZKB_SPACING_MS - Date.now();
+      if(wait > 0) await sleepMs(wait);
+      zkbLastStart = Date.now();
+      return zkbFetchNow(url);
+    });
+    zkbQueue = p.then(() => {}, () => {});
+    zkbInflight.set(url, p);
+    p.then(() => zkbInflight.delete(url), () => zkbInflight.delete(url));
+  }
+  return (await p).clone();
 }
 
 function describeEsiFailure(context, status, detail){
@@ -7500,7 +7786,7 @@ let lastScanShips = [];
 // before this change -- which is why the regression suite's output is
 // byte-identical before and after this phase.
 const DSCAN_CACHE_DB_NAME = 'dscan-tool-cache';
-const DSCAN_CACHE_DB_VERSION = 1;
+const DSCAN_CACHE_DB_VERSION = 2;   // v2026.10.14.81: + 'zkb' (1 hour), 'killmails' (forever), 'orgs' (a week)
 const DSCAN_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 let dscanCacheDbPromise = null;
@@ -7514,8 +7800,12 @@ function openDscanCacheDb(){
         const db = req.result;
         if(!db.objectStoreNames.contains('types')) db.createObjectStore('types');
         if(!db.objectStoreNames.contains('groups')) db.createObjectStore('groups');
+        for(const st of ['zkb', 'killmails', 'orgs']) if(!db.objectStoreNames.contains(st)) db.createObjectStore(st);
       };
-      req.onsuccess = () => resolve(req.result);
+      // v2026.10.14.81: another tab still holding the old version blocks the upgrade; work without the cache this
+      // visit rather than wait, and let go of the database when a newer page asks for it.
+      req.onblocked = () => resolve(null);
+      req.onsuccess = () => { const db = req.result; db.onversionchange = () => { try{ db.close(); }catch(e){} dscanCacheDbPromise = null; }; resolve(db); };
       req.onerror = () => resolve(null); // best-effort cache; never block the tool on it
     }catch(e){
       resolve(null);
@@ -7524,7 +7814,8 @@ function openDscanCacheDb(){
   return dscanCacheDbPromise;
 }
 
-async function dscanCacheGet(storeName, id){
+// ttlMs (v2026.10.14.81): how long an entry is good for (Infinity: killmails); withTs: return {ts, data}.
+async function dscanCacheGet(storeName, id, ttlMs = DSCAN_CACHE_TTL_MS, withTs = false){
   const db = await openDscanCacheDb();
   if(!db) return undefined;
   try{
@@ -7533,8 +7824,8 @@ async function dscanCacheGet(storeName, id){
       const req = tx.objectStore(storeName).get(id);
       req.onsuccess = () => {
         const entry = req.result;
-        if(!entry || (Date.now() - entry.ts) > DSCAN_CACHE_TTL_MS) return resolve(undefined);
-        resolve(entry.data);
+        if(!entry || (Date.now() - entry.ts) > ttlMs) return resolve(undefined);
+        resolve(withTs ? entry : entry.data);
       };
       req.onerror = () => resolve(undefined);
     });
@@ -7587,7 +7878,8 @@ function setStatus(el, msg, isErr){
 // Presentation only. The bar waits 250 ms before it appears, so a cached answer doesn't flash it.
 var BUSY_BARS = { // var, not const: setStatus() may run before this line (no temporal dead zone)
   fitStatus: {bar: 'pilotBusy', results: 'fitResults', scope: 'tabPilot'},
-  fitAnalyzerStatus: {bar: 'fitAnalyzerBusy', results: 'fitAnalyzerResults', scope: 'tabFit'}
+  fitAnalyzerStatus: {bar: 'fitAnalyzerBusy', results: 'fitAnalyzerResults', scope: 'tabFit'},
+  localStatus: {bar: 'saBusy', results: 'saResults', scope: 'tabDscan'}   // v2026.10.14.81 System Analyzer
 };
 const busyRuns = {}; // status id -> true while a run is in flight
 function isBusy(statusId){ return !!busyRuns[statusId]; }
@@ -8091,7 +8383,7 @@ document.getElementById('refreshCacheBtn').addEventListener('click', async () =>
   await clearDscanCache();
   heroRefreshStatus('Cleared — next analysis will re-fetch from ESI.', 5000);
 });
-document.getElementById('analyzeBtn').addEventListener('click', runAnalysis);
+document.getElementById('analyzeBtn').addEventListener('click', () => runSystemAnalyzer(false));   // v2026.10.14.81: Local and D-Scan
 document.getElementById('debugToggle').addEventListener('click', () => {
   const el = document.getElementById('debugRows');
   const showing = el.style.display !== 'none';
@@ -8477,6 +8769,9 @@ async function fetchKillmail(stub){
   const hash = stub.zkb && stub.zkb.hash;
   if(!hash) return {error:'no hash'};
   if(killmailCache.has(stub.killmail_id)) return killmailCache.get(stub.killmail_id);
+  // v2026.10.14.81 (D4 "killmails cached forever (they never change)"): kept in IndexedDB too, across visits
+  const stored = await dscanCacheGet('killmails', stub.killmail_id, Infinity);
+  if(stored && stored.km && stored.hash === hash){ killmailCache.set(stub.killmail_id, stored); return stored; }
   // CACHE-FAILURE FIX (independent review finding #17, 2026-10-11): a FAILED
   // fetch (network error or non-ok ESI response) is NOT "a killmail's own
   // contents" -- it's a transient fetch outcome that can easily succeed on
@@ -8505,6 +8800,7 @@ async function fetchKillmail(stub){
   const km = await res.json();
   const result = {killmail_id: stub.killmail_id, hash, km};
   killmailCache.set(stub.killmail_id, result);
+  dscanCacheSet('killmails', stub.killmail_id, result);
   return result;
 }
 
@@ -9793,6 +10089,7 @@ async function runSharedKillmail(id, hash){
   if(isBusy('fitStatus')) return;
   for(const x of ['fitResults', 'fitCandidates', 'lastKillInfo']) document.getElementById(x).innerHTML = '';
   document.getElementById('pilotHeadName').textContent = '';
+  sideTagForPilot(null);
   lastFitRun = null;
   const btn = document.getElementById('fitBtn');
   return withBusy('fitStatus', btn, 'Loading the shared killmail…', async () => { try{
@@ -9857,6 +10154,7 @@ async function runFitCheck(opts){
   document.getElementById('fitCandidates').innerHTML = '';
   document.getElementById('lastKillInfo').innerHTML = '';
   document.getElementById('pilotHeadName').textContent = '';
+  sideTagForPilot(null);
   lastFitRun = null;
   const pilotName = document.getElementById('pilotName').value.trim();
   const shipName = (document.getElementById('manualShip').value.trim()) || document.getElementById('shipSelect').value;
@@ -9883,6 +10181,7 @@ async function runFitCheck(opts){
     }
     currentCharacter = character;
     document.getElementById('pilotHeadName').textContent = character.name || pilotName;
+    sideTagForPilot(character.id);   // v2026.10.14.81: Friendly / Hostile beside the name (Your Side set)
     await renderLastKill(character, pilotName, statusEl);
 
     if(shipName){
@@ -19697,6 +19996,636 @@ async function mysRenderMineView(mv){
     if(e.key === 'Escape' && myShipPanelIsOpen()){ e.preventDefault(); closeMyShipPanel(); }
   });
 })();
+// ==== SYSTEM ANALYZER (v2026.10.14.81; roadmap/local-and-fleet-plan.md step 1 = L1 friendlies + L2 local list) ====
+// the owner 2026-10-27: "a local system tab with two inputs for a dscan and a copy/paste of the local chat window ...
+// identified non-blues in system"; "The local chat window will show everyone in the entire system, in space or docked
+// up" while D-Scan reaches ~14 AU. Decisions D1-D7 in the plan: replaces the D-Scan tab (D1); friendlies from your
+// pilot's corp + alliance plus any you add, neutral and hostile separate (D2); hostile = your list, then zKillboard
+// evidence, your list wins (D2b); small gang / fleet threshold 15, a setting, at most 30 (D3, D4); Your Side is a chip
+// beside My Ship (D7, "A: chip by My Ship"); evidence in step 1; "Paste a list of alliances" and "Suggested
+// friendlies"; up to 6 names per corporation (D7 "Both fine"). the owner: "go ahead with the System Analyzer but do not make
+// the login the first step" -- EVE login stays L7. Nothing here changes a number the engine works out.
+//
+// Requests (D4): Local = ESI only: /universe/ids/ (500 names each), /characters/affiliation/ (1000 each), /universe/names/
+// (1000 each); tickers from /alliances/{id}/ and /corporations/{id}/, filled in after the page is drawn and kept a week.
+// zKillboard: 1 request per Analyze for the evidence (your alliance's losses in the past 7 days), 1 per "Find" for the
+// suggestions (its kills), each kept 1 hour (IndexedDB 'zkb'); up to SA_KM_MAX of those killmails from ESI, kept
+// forever (IndexedDB 'killmails'). Every zKillboard request goes through zkbFetch's queue (spacing, budget, back-off).
+const SIDE_KEY = 'dscanSide';                 // localStorage, this browser only
+const SIDE_ROWS_DEFAULT = 15, SIDE_ROWS_MAX = 30;
+const SA_PAST_SECONDS = 604800;               // zKillboard pastSeconds: 7 days, its maximum (whole hours)
+const SA_KM_MAX = 50;                         // killmails read for the evidence and for the suggestions
+const SA_NAMES_PER_CORP = 6;                  // D7: then "+N more"
+const SA_FOLD_SIZE = 2, SA_FOLD_AFTER = 6;    // neutral groups of 1-2 pilots fold into one row past 6 groups
+const SA_SUGGEST_MIN = 2, SA_SUGGEST_MAX = 8; // a suggestion needs 2 shared kills; 8 shown at most
+const EVE_NAME_MAX = 37;
+function isNpcCorp(id){ return id >= 1000000 && id < 2000000; }   // NPC corporations' ID range (CCP)
+
+// ---- Your Side: stored record ----
+const side = {rec: null, sug: null, sugBusy: false, msg: {}};
+function sideEmpty(){ return {pilot: null, corp: null, alliance: null, friendly: [], hostile: [], rows: SIDE_ROWS_DEFAULT}; }
+function sideRows(v){ const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(SIDE_ROWS_MAX, Math.max(1, n)) : SIDE_ROWS_DEFAULT; }
+function sideOrg(o){ return o && Number.isFinite(Number(o.id)) && Number(o.id) > 0 ? {id: Number(o.id), name: String(o.name || ''), kind: o.kind === 'corporation' ? 'corporation' : 'alliance'} : null; }
+function sideNormalize(r){
+  const out = sideEmpty();
+  if(!r || typeof r !== 'object') return out;
+  if(r.pilot && Number(r.pilot.id) > 0) out.pilot = {id: Number(r.pilot.id), name: String(r.pilot.name || '')};
+  if(r.corp && Number(r.corp.id) > 0) out.corp = {id: Number(r.corp.id), name: String(r.corp.name || ''), kind: 'corporation'};
+  if(r.alliance && Number(r.alliance.id) > 0) out.alliance = {id: Number(r.alliance.id), name: String(r.alliance.name || ''), kind: 'alliance'};
+  for(const k of ['friendly', 'hostile']) if(Array.isArray(r[k])) out[k] = r[k].map(sideOrg).filter(Boolean);
+  out.rows = sideRows(r.rows);
+  return out;
+}
+function sideRead(){ try{ return sideNormalize(JSON.parse(localStorage.getItem(SIDE_KEY) || 'null')); }catch(e){ return sideEmpty(); } }
+function sideWrite(){ try{ localStorage.setItem(SIDE_KEY, JSON.stringify(side.rec)); }catch(e){ /* private window: this visit only */ } }
+function sideIsSet(){ return !!(side.rec && side.rec.corp); }
+function sideOwnGroup(){ const r = side.rec; return r && (r.alliance || r.corp) || null; }   // whose losses / kills
+// Friendly and hostile sets. A corporation entry beats its alliance's (a hostile corp inside a friendly alliance is
+// hostile); your own corporation and alliance are friendly.
+function sideSets(){
+  const r = side.rec || sideEmpty(), s = {fA: new Set(), fC: new Set(), hA: new Set(), hC: new Set()};
+  if(r.alliance) s.fA.add(r.alliance.id);
+  if(r.corp) s.fC.add(r.corp.id);
+  for(const g of r.friendly) (g.kind === 'alliance' ? s.fA : s.fC).add(g.id);
+  for(const g of r.hostile) (g.kind === 'alliance' ? s.hA : s.hC).add(g.id);
+  return s;
+}
+// One pilot's side from their corporation and alliance: corporation entries first, then alliance entries, then the
+// zKillboard evidence (keyed by alliance, or corporation without one), else neutral.
+function sideOf(corpId, allianceId, sets, evidence){
+  if(sets.fC.has(corpId)) return {side: 'f'};
+  if(sets.hC.has(corpId)) return {side: 'h', why: 'list', corpLevel: true};   // grouped by the corporation, not its alliance
+  if(allianceId && sets.fA.has(allianceId)) return {side: 'f'};
+  if(allianceId && sets.hA.has(allianceId)) return {side: 'h', why: 'list'};
+  const ev = evidence && !isNpcCorp(corpId) ? evidence.byKey.get(allianceId || corpId) : null;
+  if(ev) return {side: 'h', why: 'zkb', n: ev};
+  return {side: 'n'};
+}
+
+// ---- organisations: names and tickers (ESI, kept a week in IndexedDB 'orgs') ----
+const orgCache = new Map();   // 'alliance:id' / 'corporation:id' -> {name, ticker}
+async function getOrg(kind, id){
+  const key = `${kind}:${id}`;
+  if(orgCache.has(key)) return orgCache.get(key);
+  const p = (async () => {
+    const cached = await dscanCacheGet('orgs', key);
+    if(cached !== undefined) return cached;
+    const res = await fetch(`${ESI}/${kind === 'alliance' ? 'alliances' : 'corporations'}/${id}/?datasource=tranquility`);
+    if(!res.ok) throw new Error(`status ${res.status}`);
+    const j = await res.json(), data = {name: j.name || '', ticker: j.ticker || ''};
+    dscanCacheSet('orgs', key, data);
+    return data;
+  })();
+  orgCache.set(key, p);
+  try{ const v = await p; orgCache.set(key, v); return v; }catch(e){ orgCache.delete(key); throw e; }
+}
+function orgTickerHtml(kind, id){ return id ? `<span class="tk" data-org-tk="${kind}:${Number(id)}"></span>` : ''; }
+// Fills every ticker placeholder under root (several at a time; a failed lookup leaves it out: the name is there).
+async function fillOrgTickers(root){
+  const els = [...root.querySelectorAll('[data-org-tk]:not([data-filled])')];
+  if(!els.length) return;
+  for(const el of els) el.dataset.filled = '1';
+  const keys = [...new Set(els.map(el => el.dataset.orgTk))];
+  const got = new Map();
+  await analyzeChunks(keys, async (k) => { const [kind, id] = k.split(':'); try{ const o = await getOrg(kind, Number(id)); got.set(k, o.ticker); }catch(e){ /* leave it out */ } }, 6);
+  for(const el of els){
+    const t = got.get(el.dataset.orgTk); if(!t) continue;
+    const kind = el.dataset.orgTk.split(':')[0];
+    el.textContent = kind === 'alliance' ? `<${t}>` : `[${t}]`;
+    const logo = el.closest('[data-sa-g]') && el.closest('[data-sa-g]').querySelector('.sa-logo > span');
+    if(logo && logo.dataset.tkFor === el.dataset.orgTk) logo.textContent = t.slice(0, 5);
+  }
+}
+const SIDE_MARK = {h: '<span class="sa-mark h" aria-hidden="true">−</span>', n: '<span class="sa-mark n" aria-hidden="true"></span>', f: '<span class="sa-mark f" aria-hidden="true">+</span>'};
+const SIDE_WORD = {h: 'Hostile', n: 'Neutral', f: 'Friendly'};
+
+// ---- ESI helpers for many names / IDs ----
+async function saResolveNames(names, onStep){
+  const out = {characters: [], alliances: [], corporations: []};
+  for(let i = 0; i < names.length; i += 500){
+    if(onStep) onStep(i);
+    const r = await resolveNamesToIds(names.slice(i, i + 500));
+    for(const k of Object.keys(out)) if(Array.isArray(r[k])) out[k].push(...r[k]);
+  }
+  return out;
+}
+async function saAffiliation(ids){
+  const out = [];
+  for(let i = 0; i < ids.length; i += 1000){
+    const chunk = ids.slice(i, i + 1000);
+    let res;
+    try{
+      res = await fetch(`${ESI}/characters/affiliation/?datasource=tranquility`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(chunk)});
+    }catch(e){ throw codedError('SYS-01', describeEsiFailure(`Affiliation lookup (${chunk.length} pilot(s))`, undefined)); }
+    if(!res.ok){ let d = ''; try{ d = await res.text(); }catch(e){} throw codedError('SYS-01', describeEsiFailure(`Affiliation lookup (${chunk.length} pilot(s))`, res.status, d)); }
+    out.push(...await res.json());
+  }
+  return out;
+}
+async function saIdsToNames(ids){
+  const out = new Map();
+  for(let i = 0; i < ids.length; i += 1000) for(const r of await resolveIdsToNames(ids.slice(i, i + 1000))) out.set(r.id, r.name);
+  return out;
+}
+// A zKillboard answer, kept ZKB_CACHE_TTL_MS in IndexedDB 'zkb' (D4 "Not asking twice"); force skips the copy kept.
+const ZKB_CACHE_TTL_MS = 60 * 60 * 1000;
+async function zkbCachedJson(url, force, what){
+  if(!force){
+    const c = await dscanCacheGet('zkb', url, ZKB_CACHE_TTL_MS, true);
+    if(c !== undefined) return {data: c.data, at: c.ts, cached: true};
+  }
+  let res;
+  try{ res = await zkbFetch(url); }
+  catch(e){ if(e.zkbUnavailable || e.code) throw e; throw codedError('ZKB-05', describeEsiFailure(`zKillboard ${what}`, undefined)); }
+  if(!res.ok) throw codedError('ZKB-05', describeEsiFailure(`zKillboard ${what}`, res.status));
+  const data = await res.json();
+  if(!Array.isArray(data)) throw codedError('ZKB-05', `zKillboard ${what}: unexpected answer`);
+  dscanCacheSet('zkb', url, data);
+  return {data, at: Date.now(), cached: false};
+}
+// The newest SA_KM_MAX killmails of a zKillboard list (killmail ID + hash), from ESI (fetchKillmail keeps them).
+async function saKillmails(stubs){
+  const take = [...stubs].filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, SA_KM_MAX);
+  const got = await analyzeChunks(take, (s) => fetchKillmail(s), 5);
+  return got.filter(r => r && r.km).map(r => r.km);
+}
+function zkbGroupPath(g){ return `${g.kind === 'alliance' ? 'allianceID' : 'corporationID'}/${g.id}`; }
+function attackerKey(a){ return a.alliance_id || a.corporation_id; }
+
+// D2b evidence: which groups killed your side lately. {byKey: Map(group key -> killmails), n, capped, at}
+async function saEvidence(force){
+  const g = sideOwnGroup();
+  if(!g) return null;
+  const {data, at} = await zkbCachedJson(`${ZKB}/losses/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'losses lookup');
+  const kms = await saKillmails(data);
+  const byKey = new Map();
+  for(const km of kms){
+    const keys = new Set();
+    for(const a of (km.attackers || [])){
+      if(!a.character_id || !a.corporation_id || isNpcCorp(a.corporation_id)) continue;   // NPCs, structures
+      keys.add(attackerKey(a));
+    }
+    for(const k of keys) byKey.set(k, (byKey.get(k) || 0) + 1);
+  }
+  return {byKey, n: kms.length, listed: data.length, capped: data.length > SA_KM_MAX, at, group: g.id};
+}
+// Suggested friendlies: who shot alongside your side on its recent kills (not yours, not already listed, not NPC).
+async function saSuggestions(force){
+  const g = sideOwnGroup();
+  if(!g) return null;
+  const {data} = await zkbCachedJson(`${ZKB}/kills/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'kills lookup');
+  const kms = await saKillmails(data);
+  const sets = sideSets(), count = new Map(), kind = new Map();
+  for(const km of kms){
+    const seen = new Set();
+    for(const a of (km.attackers || [])){
+      if(!a.character_id || !a.corporation_id || isNpcCorp(a.corporation_id)) continue;
+      if(sideOf(a.corporation_id, a.alliance_id, sets, null).side !== 'n') continue;   // already friendly or listed hostile
+      const k = attackerKey(a);
+      if(seen.has(k)) continue;
+      seen.add(k); kind.set(k, a.alliance_id ? 'alliance' : 'corporation');
+      count.set(k, (count.get(k) || 0) + 1);
+    }
+  }
+  const top = [...count].filter(([, n]) => n >= SA_SUGGEST_MIN).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, SA_SUGGEST_MAX);
+  const names = top.length ? await saIdsToNames(top.map(([k]) => k)) : new Map();
+  return {n: kms.length, list: top.map(([k, n]) => ({id: k, kind: kind.get(k), name: names.get(k) || String(k), shared: n}))};
+}
+
+// ---- the Local paste ----
+// One pilot per line, as the Local window copies; spaces tidied; a line that can't be a pilot name is skipped.
+function parseLocalNames(text){
+  const out = [], seen = new Set();
+  for(const raw of String(text || '').split(/\r?\n/)){
+    const n = raw.replace(/\s+/g, ' ').trim();
+    if(!n || n.length > EVE_NAME_MAX || /\t/.test(raw)) continue;
+    const k = n.toLowerCase();
+    if(seen.has(k)) continue;
+    seen.add(k); out.push(n);
+  }
+  return out;
+}
+// A D-Scan (tab-separated rows) or a fit pasted into the Local box.
+function localLooksWrong(text){
+  const lines = String(text || '').split(/\r?\n/).filter(l => l.trim());
+  if(!lines.length) return null;
+  if(detectFitPaste(text)) return 'fit';
+  if(lines.filter(l => /\t/.test(l)).length >= Math.max(1, lines.length / 2)) return 'dscan';
+  return null;
+}
+
+const sa = {last: null, open: new Set(), more: new Set(), friendOpen: false, evidence: null, evidenceErr: null};
+
+async function runLocal(text, statusEl, force){
+  const names = parseLocalNames(text);
+  if(!names.length){ setStatus(statusEl, 'No pilot names in the Local box.', true); return; }
+  setStatus(statusEl, `Looking up ${names.length} name(s)…`);
+  const ids = await saResolveNames(names, (i) => { if(i) setStatus(statusEl, `Looking up names ${i + 1}–${Math.min(names.length, i + 500)} of ${names.length}…`); });
+  const byLower = new Map(ids.characters.map(c => [String(c.name).toLowerCase(), c]));
+  const chars = [], notFound = [];
+  for(const n of names){ const c = byLower.get(n.toLowerCase()); if(c) chars.push(c); else notFound.push(n); }
+  const own = side.rec && side.rec.pilot ? side.rec.pilot.id : null;
+  setStatus(statusEl, `Looking up the corporations and alliances of ${chars.length} pilot(s)…`);
+  const aff = chars.length || own ? await saAffiliation([...new Set([...chars.map(c => c.id), ...(own ? [own] : [])])]) : [];
+  const affBy = new Map(aff.map(a => [a.character_id, a]));
+  // your pilot's corp / alliance, as of now (a corp change is picked up here)
+  if(own && affBy.has(own)) await sideUpdateFromAffiliation(affBy.get(own));
+  const pilots = chars.filter(c => affBy.has(c.id)).map(c => ({id: c.id, name: c.name, corp: affBy.get(c.id).corporation_id, alliance: affBy.get(c.id).alliance_id || null}));
+  const orgIds = [...new Set(pilots.flatMap(p => [p.corp, p.alliance]).filter(Boolean))];
+  const orgNames = orgIds.length ? await saIdsToNames(orgIds) : new Map();
+  // the zKillboard evidence (D2b): failures leave the lists working and say so
+  sa.evidence = null; sa.evidenceErr = null;
+  if(sideOwnGroup()){
+    setStatus(statusEl, 'Checking who killed your side lately (zKillboard)…');
+    try{ sa.evidence = await saEvidence(force); }catch(e){ sa.evidenceErr = e; }
+  }
+  sa.last = {pilots, notFound, orgNames, names: names.length};
+  saRender();
+  const ev = sa.evidence;
+  setStatus(statusEl, `${names.length} name(s): ${pilots.length} pilot(s) found${notFound.length ? `, ${notFound.length} not found` : ''}.${ev ? ` Evidence: ${ev.n} of your side's losses${ev.capped ? ` (the last ${SA_KM_MAX})` : ''} in 7 days.` : ''}`);
+}
+
+// ---- drawing the result ----
+function saGroups(){
+  const L = sa.last, sets = sideSets(), cols = {h: new Map(), n: new Map(), f: new Map()};
+  for(const p of L.pilots){
+    const s = sideOf(p.corp, p.alliance, sets, sa.evidence);
+    const npc = s.side === 'n' && isNpcCorp(p.corp);
+    const byCorp = !p.alliance || s.corpLevel;
+    const key = npc ? 'npc' : byCorp ? `c${p.corp}` : `a${p.alliance}`;
+    let g = cols[s.side].get(key);
+    if(!g){
+      g = npc ? {key, npc: true, name: 'NPC corporations', corps: new Map(), n: 0}
+              : {key, kind: byCorp ? 'corporation' : 'alliance', id: byCorp ? p.corp : p.alliance, name: L.orgNames.get(byCorp ? p.corp : p.alliance) || '', corps: new Map(), n: 0, why: s.why, ev: s.n};
+      cols[s.side].set(key, g);
+    }
+    if(s.why === 'list') g.why = 'list';
+    let c = g.corps.get(p.corp);
+    if(!c){ c = {id: p.corp, name: L.orgNames.get(p.corp) || '', pilots: []}; g.corps.set(p.corp, c); }
+    c.pilots.push(p.name); g.n++;
+  }
+  const order = (a, b) => b.n - a.n || a.name.localeCompare(b.name);
+  const out = {};
+  for(const k of ['h', 'n', 'f']){
+    let list = [...cols[k].values()].sort(order);
+    for(const g of list){ g.corps = [...g.corps.values()].sort((a, b) => b.pilots.length - a.pilots.length || a.name.localeCompare(b.name)); for(const c of g.corps) c.pilots.sort((a, b) => a.localeCompare(b)); }
+    if(k === 'n' && list.length > SA_FOLD_AFTER){
+      const small = list.filter(g => !g.npc && g.n <= SA_FOLD_SIZE);
+      if(small.length > 1){
+        list = list.filter(g => !small.includes(g));
+        list.push({key: 'small', small: true, name: `${small.length} smaller groups`, n: small.reduce((s, g) => s + g.n, 0),
+                   corps: small.flatMap(g => g.corps.map(c => ({...c, group: g})))});
+      }
+    }
+    out[k] = list;
+  }
+  return out;
+}
+function saWhyText(g){
+  if(g.why === 'list') return 'Your hostile list';
+  const ev = sa.evidence;
+  if(g.why === 'zkb' && ev) return ev.capped ? `Killed ${g.ev} of your last ${ev.n} losses` : `Killed ${g.ev} of yours in 7 days`;
+  return '';
+}
+function saPilotsHtml(c, gkey){
+  const all = sa.more.has(`${gkey}|${c.id}`), shown = all ? c.pilots : c.pilots.slice(0, SA_NAMES_PER_CORP), rest = c.pilots.length - shown.length;
+  return `<div class="sa-pilots">${shown.map(n => `<button type="button" class="sa-pilot" data-pilot="${escapeHtml(n)}" title="${escapeHtml(n)}: open in the Pilot Analyzer">${escapeHtml(n)}</button>`).join('')}${rest > 0 ? `<button type="button" class="sa-link" data-more="${escapeHtml(`${gkey}|${c.id}`)}">+${rest} more</button>` : ''}</div>`;
+}
+function saGroupHtml(g, colKey){
+  const gk = `${colKey}:${g.key}`;
+  const open = sa.open.has(gk);
+  let logo, sub;
+  if(g.npc){ logo = '<span class="sa-logo corp" aria-hidden="true"><span>NPC</span></span>'; sub = ctxHtml('new pilots and alts'); }
+  else if(g.small){ logo = `<span class="sa-logo corp" aria-hidden="true"><span>+${g.corps.length}</span></span>`; sub = ctxHtml(`${SA_FOLD_SIZE === 2 ? '1 or 2' : `up to ${SA_FOLD_SIZE}`} pilots each`); }
+  else{
+    const k = `${g.kind}:${g.id}`, path = g.kind === 'alliance' ? 'alliances' : 'corporations';
+    logo = `<span class="sa-logo${g.kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span data-tk-for="${k}"></span><img src="https://images.evetech.net/${path}/${g.id}/logo?size=64" alt="" loading="lazy" onerror="this.remove()"></span>`;
+    const why = saWhyText(g);
+    sub = why ? `<span class="sa-why ${g.why}" title="${escapeHtml(why)}">${escapeHtml(why)}</span>`
+              : ctxHtml(g.kind === 'corporation' ? 'no alliance' : `${g.corps.length} corporation${g.corps.length === 1 ? '' : 's'}`);
+  }
+  const title = g.npc || g.small ? escapeHtml(g.name) : `${escapeHtml(g.name)} ${orgTickerHtml(g.kind, g.id)}`;
+  const body = `<div class="sa-gbody">${g.corps.map(c => {
+      const ck = g.small ? `${c.group.kind}:${c.group.id}` : null;
+      const label = g.small ? `${escapeHtml(c.group.name)} ${orgTickerHtml(c.group.kind, c.group.id)}${c.group.kind === 'alliance' ? ` · ${escapeHtml(c.name)}` : ''}`
+                            : `${escapeHtml(c.name)} ${orgTickerHtml('corporation', c.id)}`;
+      return `<div class="sa-corp"><span${ck ? ` data-org="${ck}"` : ''}>${label}</span><span class="c">${c.pilots.length}</span></div>${saPilotsHtml(c, gk)}`;
+    }).join('')}</div>`;
+  return `<details class="sa-g" data-sa-g="${escapeHtml(gk)}"${open ? ' open' : ''}><summary>${logo}<span class="sa-gname"><span class="nm">${title}</span>${sub}</span><span class="sa-gn">${g.n}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>${body}</details>`;
+}
+function saColHtml(k, groups){
+  const n = groups.reduce((s, g) => s + g.n, 0), key = k === 'h' ? 'hostile' : 'neutral';
+  return `<div class="card sa-col" data-sa-col="${k}"><div class="card-head">${SIDE_MARK[k]}<h3>${escapeHtml(cardName(key))}</h3><span class="sa-n">${n}</span>${k === 'h' ? infoBtnHtml('hostile') : infoBtnHtml('neutral')}</div>
+    ${groups.length ? groups.map(g => saGroupHtml(g, k)).join('') : `<div class="sa-empty">None in local.</div>`}</div>`;
+}
+function saRender(){
+  const host = document.getElementById('saResults');
+  if(!host) return;
+  if(!sa.last){ host.innerHTML = ''; return; }
+  const G = saGroups(), cnt = (k) => G[k].reduce((s, g) => s + g.n, 0);
+  const S = {h: cnt('h'), n: cnt('n'), f: cnt('f')}, tot = S.h + S.n + S.f, threat = S.h + S.n, rows = side.rec.rows;
+  const warn = (title, ctx, extra = '') => `<div class="sa-warn"><span class="ewar-badge danger">!</span><span class="warn-text"><span class="warn-title" title="${escapeHtml(title)}">${escapeHtml(title)}</span>${ctx}</span>${extra}</div>`;
+  const nf = sa.last.notFound;
+  const ev = sa.evidence, evErr = sa.evidenceErr;
+  let notes = '';
+  if(nf.length) notes += warn(`${nf.length} name${nf.length === 1 ? '' : 's'} not found`, ctxHtml(nf.join(', '), '', `Not pilots ESI knows (a typo or a renamed pilot): ${nf.join(', ')}`));
+  if(!sideIsSet()) notes += warn(`Set ${cardName('side')} to mark friendlies`, ctxHtml('until then everyone is neutral'), `<button type="button" class="sa-link" data-sa-act="side">Set</button>`);
+  else if(evErr) notes += warn('zKillboard evidence unavailable', ctxHtml(`hostile list only (${errorCodeOf(evErr)})`, '', withCode(evErr.message, errorCodeOf(evErr))), `<button type="button" class="sa-link" data-sa-act="refresh">Retry</button>`);
+  const evLine = ev ? `<span class="ctx" title="zKillboard: your side's losses in the past 7 days, kept for an hour">evidence ${saAgo(ev.at)}</span><button type="button" class="sa-link" data-sa-act="refresh">Refresh</button>` : '';
+  host.innerHTML = `
+    <div class="sa-sum">
+      <div class="sa-sum-top"><span class="sa-total">${tot}</span><span class="sa-total-l">in local</span></div>
+      <div class="sa-bar" role="img" aria-label="${S.h} hostile, ${S.n} neutral, ${S.f} friendly">${['h', 'n', 'f'].filter(k => S[k]).map(k => `<i class="${k}" style="flex:${S[k]}"></i>`).join('')}</div>
+      <div class="sa-keys">${['h', 'n', 'f'].map(k => `<span class="sa-key">${SIDE_MARK[k]}${SIDE_WORD[k]} <b>${S[k]}</b></span>`).join('')}</div>
+      <div class="sa-mode">${threat > rows ? `<span class="sa-pill fleet">Fleet: ${threat} hostile + neutral</span>${ctxHtml(`over ${rows}: shown by group`)}`
+                                          : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}</div>
+      ${notes}
+    </div>
+    <div class="sa-cols">${saColHtml('h', G.h)}${saColHtml('n', G.n)}</div>
+    <details class="sa-g sa-friendly" data-sa-g="friendly"${sa.friendOpen ? ' open' : ''}><summary>${SIDE_MARK.f}<span class="sa-gname"><span class="nm">${escapeHtml(cardName('friendly'))}</span><span class="ctx sa-ftk">${G.f.slice(0, 6).map(g => g.kind ? orgTickerHtml(g.kind, g.id) : '').join(' ')}</span></span><span class="sa-gn">${S.f}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>
+      <div class="sa-friendly-body">${G.f.length ? G.f.map(g => saGroupHtml(g, 'f')).join('') : '<div class="sa-empty">None in local.</div>'}</div></details>`;
+  fillOrgTickers(host);
+}
+function saAgo(ts){ const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'just now' : `from ${m} min ago`; }
+
+async function runSystemAnalyzer(force){
+  const localEl = document.getElementById('localInput'), scanEl = document.getElementById('dscanInput');
+  const local = localEl.value, scan = scanEl.value, statusEl = document.getElementById('localStatus');
+  setStatus(statusEl, ''); setStatus(document.getElementById('scanStatus'), '');
+  if(!local.trim() && !scan.trim()){ setStatus(statusEl, 'Paste Local, a D-Scan, or both.', true); return; }
+  const wrong = local.trim() ? localLooksWrong(local) : null;
+  const jobs = [];
+  if(scan.trim()) jobs.push(runAnalysis());
+  else { document.getElementById('resultsWrap').style.display = 'none'; }
+  if(wrong){
+    setStatus(statusEl, withCode(wrong === 'fit' ? 'That\'s a ship fit, not the Local member list: use the Fit Analyzer.' : 'That looks like D-Scan results, not the Local member list: paste it in the D-Scan box.', 'SYS-02'), true);
+  }else if(local.trim()){
+    jobs.push(withBusy('localStatus', document.getElementById('analyzeBtn'), 'Checking Local…', async () => {
+      try{ await runLocal(local, statusEl, force); }
+      catch(e){ setStatus(statusEl, withCode('Error: ' + e.message + (e.zkbUnavailable ? '.' : '. Check your network connection to esi.evetech.net.'), errorCodeOf(e)), true); }
+    }));
+  }else{ sa.last = null; saRender(); }
+  await Promise.all(jobs);
+}
+function saClear(){
+  for(const id of ['localInput', 'dscanInput']) document.getElementById(id).value = '';
+  for(const id of ['localStatus', 'scanStatus']) setStatus(document.getElementById(id), '');
+  sa.last = null; sa.evidence = null; sa.evidenceErr = null; saRender();
+  document.getElementById('resultsWrap').style.display = 'none';
+  showDscanFitHint('');
+  document.getElementById('localInput').focus();
+}
+
+// ---- Your Side: chip and panel ----
+async function sideUpdateFromAffiliation(a){
+  const r = side.rec;
+  if(!r || !r.pilot || !a) return;
+  const corpId = a.corporation_id, allianceId = a.alliance_id || null;
+  if(r.corp && r.corp.id === corpId && ((r.alliance && r.alliance.id) || null) === allianceId) return;
+  const names = await saIdsToNames([corpId, ...(allianceId ? [allianceId] : [])]);
+  r.corp = {id: corpId, name: names.get(corpId) || '', kind: 'corporation'};
+  r.alliance = allianceId ? {id: allianceId, name: names.get(allianceId) || '', kind: 'alliance'} : null;
+  sideWrite(); renderSideChip();
+  if(sidePanelIsOpen()) renderSidePanel();
+}
+function renderSideChip(){
+  const chip = document.getElementById('sideChip');
+  if(!chip) return;
+  const r = side.rec, g = sideOwnGroup();
+  const more = r.friendly.length, hostile = r.hostile.length;
+  if(!g){
+    chip.classList.add('is-empty');
+    chip.innerHTML = `${SIDE_MARK.f}<span class="side-chip-name">${escapeHtml(cardName('side'))}</span>`;   // a phone shows the mark alone
+    chip.title = `${cardName('side')}: not set. Your pilot, friendlies and hostiles`;
+    chip.setAttribute('aria-label', `${cardName('side')}: not set`);
+    return;
+  }
+  chip.classList.remove('is-empty');
+  const label = `${g.name}${more ? ` +${more} friendly` : ''}${hostile ? ` · ${hostile} hostile` : ''}`;
+  chip.innerHTML = `${SIDE_MARK.f}<span class="side-chip-name">${escapeHtml(g.name)}</span><span class="side-chip-more">${more ? `+${more} friendly` : ''}${hostile ? `${more ? ' · ' : ''}${hostile} hostile` : ''}</span><span class="side-chip-short">${orgTickerHtml(g.kind, g.id) || escapeHtml(g.name.slice(0, 5))}</span>`;
+  chip.title = `${cardName('side')}: ${label}`;
+  chip.setAttribute('aria-label', `${cardName('side')}: ${label}. Open ${cardName('side')}`);
+  fillOrgTickers(chip);
+}
+function sidePanelEl(){ return document.getElementById('sidePanel'); }
+function sidePanelIsOpen(){ const p = sidePanelEl(); return !!(p && !p.hidden); }
+function openSidePanel(){
+  const p = sidePanelEl();
+  p.hidden = false;
+  document.getElementById('sideBackdrop').hidden = false;
+  document.getElementById('sideChip').setAttribute('aria-expanded', 'true');
+  renderSidePanel();
+  const first = p.querySelector('#sidePilot');
+  if(first) first.focus({preventScroll: true});
+  try{ p.scrollIntoView({block: 'nearest'}); }catch(e){}
+}
+function closeSidePanel(returnFocus = true){
+  const p = sidePanelEl();
+  if(!p || p.hidden) return;
+  p.hidden = true;
+  document.getElementById('sideBackdrop').hidden = true;
+  const chip = document.getElementById('sideChip');
+  chip.setAttribute('aria-expanded', 'false');
+  side.msg = {};
+  if(returnFocus) chip.focus({preventScroll: true});
+}
+function sideMsgHtml(k){ const m = side.msg[k]; return m ? `<div class="status side-msg${m.err ? ' err' : ''}">${escapeHtml(m.text)}</div>` : ''; }
+function sideChipsHtml(list, which){
+  return `<div class="side-chips">${list.map(g => `<span><span class="nm" title="${escapeHtml(g.name)}">${escapeHtml(g.name)}</span>${orgTickerHtml(g.kind, g.id)}<button type="button" class="side-x" data-side-rm="${which}:${g.kind}:${g.id}" aria-label="Remove ${escapeHtml(g.name)}" title="Remove">×</button></span>`).join('')}</div>`;
+}
+function sideListFieldHtml(which){
+  const r = side.rec, pasting = side.msg[`${which}Paste`];
+  return `<div class="side-fld" data-side-list="${which}"><div class="side-lab">${which === 'friendly' ? `${SIDE_MARK.f}Also friendly` : `${SIDE_MARK.h}Hostile`}</div>
+    ${sideChipsHtml(r[which], which)}
+    <div class="side-row"><input type="text" data-side-add="${which}" placeholder="Alliance or corporation name" maxlength="60" aria-label="${which === 'friendly' ? 'Add a friendly' : 'Add a hostile'} alliance or corporation"><button type="button" data-side-act="add:${which}">Add</button></div>
+    ${pasting ? `<textarea data-side-paste="${which}" placeholder="One alliance or corporation name per line (tickers in &lt; &gt; or [ ] are ignored)" spellcheck="false"></textarea>
+      <div class="side-row" style="margin-top:6px;"><button type="button" data-side-act="addall:${which}">Add all</button><button type="button" class="sa-link" data-side-act="pasteoff:${which}">Cancel</button></div>`
+      : `<button type="button" class="sa-link" data-side-act="paste:${which}" style="margin-top:6px;">Paste a list</button>`}
+    ${sideMsgHtml(which)}</div>`;
+}
+function renderSidePanel(){
+  const p = sidePanelEl();
+  if(!p || p.hidden) return;
+  const r = side.rec, g = sideOwnGroup();
+  const sug = side.sug;
+  const sugHtml = !g ? ctxHtml('set your pilot first')
+    : side.sugBusy ? '<div class="status">Checking zKillboard…</div>'
+    : sug ? (sug.list.length ? sug.list.map(s => `<div class="side-sug"><span class="side-sug-t"><span class="nm" title="${escapeHtml(s.name)}">${escapeHtml(s.name)} ${orgTickerHtml(s.kind, s.id)}</span>${ctxHtml(`on ${s.shared} of your last ${sug.n} kills`)}</span><button type="button" data-side-act="sugadd:${s.kind}:${s.id}">Add</button></div>`).join('')
+                                     : ctxHtml(sug.n ? 'no other group on 2+ of your kills' : 'no kills by your side in 7 days'))
+    : '';
+  p.innerHTML = `
+    <div class="sa-head"><h2>${escapeHtml(cardName('side'))}</h2><span class="sa-sp"></span>${infoBtnHtml('side')}<button type="button" class="mys-x" data-side-act="close" aria-label="Close" title="Close">×</button></div>
+    <div class="side-fld"><label class="side-lab" for="sidePilot">Your pilot</label>
+      <div class="side-row"><input type="text" id="sidePilot" value="${escapeHtml(r.pilot ? r.pilot.name : '')}" placeholder="Your pilot's name" maxlength="${EVE_NAME_MAX}"><button type="button" data-side-act="pilot">Set</button></div>
+      ${r.corp ? `<div class="side-res">${SIDE_MARK.f}<span>${escapeHtml(r.corp.name)} ${orgTickerHtml('corporation', r.corp.id)}${r.alliance ? ` · ${escapeHtml(r.alliance.name)} ${orgTickerHtml('alliance', r.alliance.id)}` : ' · no alliance'}</span></div>` : ''}
+      ${sideMsgHtml('pilot')}</div>
+    ${sideListFieldHtml('friendly')}
+    ${sideListFieldHtml('hostile')}
+    <div class="side-fld"><div class="side-lab">Suggested friendlies</div>
+      <button type="button" data-side-act="suggest"${g && !side.sugBusy ? '' : ' disabled'}>${sug ? 'Check again' : 'Find on zKillboard'}</button>
+      <div style="margin-top:6px;">${sugHtml}</div>${sideMsgHtml('sug')}</div>
+    <div class="side-fld"><label class="side-lab" for="sideRows">Pilot rows up to</label>
+      <div class="side-num"><input type="text" id="sideRows" inputmode="numeric" value="${r.rows}" maxlength="2">${ctxHtml(`hostile + neutral; at most ${SIDE_ROWS_MAX}`)}</div></div>
+    <div class="side-foot">${ctxHtml('Saved in this browser only')}</div>`;
+  fillOrgTickers(p);
+}
+// After any change: save, redraw the chip, the panel and the analysis on screen (no new lookups).
+function sideChanged(){ sideWrite(); renderSideChip(); renderSidePanel(); if(sa.last) saRender(); }
+async function sideSetPilot(name){
+  name = String(name || '').replace(/\s+/g, ' ').trim();
+  const r = side.rec;
+  if(!name){ Object.assign(r, {pilot: null, corp: null, alliance: null}); side.sug = null; side.msg.pilot = null; sa.evidence = null; sideChanged(); return; }
+  side.msg.pilot = {text: 'Looking up your pilot…'}; renderSidePanel();
+  try{
+    const ids = await resolveNamesToIds([name]);
+    const c = (ids.characters || []).find(x => x.name.toLowerCase() === name.toLowerCase()) || (ids.characters || [])[0];
+    if(!c){ side.msg.pilot = {text: withCode(`No pilot named "${name}" (names must match exactly).`, 'SIDE-01'), err: true}; renderSidePanel(); return; }
+    const [a] = await saAffiliation([c.id]);
+    const names = await saIdsToNames([a.corporation_id, ...(a.alliance_id ? [a.alliance_id] : [])]);
+    r.pilot = {id: c.id, name: c.name};
+    r.corp = {id: a.corporation_id, name: names.get(a.corporation_id) || '', kind: 'corporation'};
+    r.alliance = a.alliance_id ? {id: a.alliance_id, name: names.get(a.alliance_id) || '', kind: 'alliance'} : null;
+    // your own groups can't be on the lists
+    for(const k of ['friendly', 'hostile']) r[k] = r[k].filter(x => !(x.kind === 'corporation' ? x.id === r.corp.id : r.alliance && x.id === r.alliance.id));
+    side.msg.pilot = null; side.sug = null; sa.evidence = null;
+    sideChanged();
+  }catch(e){ side.msg.pilot = {text: withCode('Error: ' + e.message, errorCodeOf(e)), err: true}; renderSidePanel(); }
+}
+// Adds alliances / corporations by name to one list (and takes them off the other). Lines may carry a ticker.
+async function sideAddNames(which, lines){
+  const names = [...new Set(lines.map(l => String(l).replace(/[<\[][^>\]]*[>\]]/g, ' ').replace(/\s+/g, ' ').trim()).filter(n => n && n.length <= 60))];
+  if(!names.length){ side.msg[which] = {text: 'Type an alliance or corporation name.', err: true}; renderSidePanel(); return; }
+  side.msg[which] = {text: `Looking up ${names.length} name(s)…`}; renderSidePanel();
+  try{
+    const ids = await saResolveNames(names);
+    const found = new Map();
+    for(const k of ['corporations', 'alliances']) for(const x of ids[k]) found.set(x.name.toLowerCase(), {id: x.id, name: x.name, kind: k === 'alliances' ? 'alliance' : 'corporation'});   // an alliance wins a shared name
+    const r = side.rec, other = which === 'friendly' ? 'hostile' : 'friendly', added = [], missing = [], own = [];
+    for(const n of names){
+      const g = found.get(n.toLowerCase());
+      if(!g){ missing.push(n); continue; }
+      if((r.corp && g.kind === 'corporation' && g.id === r.corp.id) || (r.alliance && g.kind === 'alliance' && g.id === r.alliance.id)){ own.push(g.name); continue; }
+      r[other] = r[other].filter(x => !(x.kind === g.kind && x.id === g.id));
+      if(!r[which].some(x => x.kind === g.kind && x.id === g.id)){ r[which].push(g); added.push(g.name); }
+    }
+    side.msg[`${which}Paste`] = missing.length && names.length > 1 ? side.msg[`${which}Paste`] : null;
+    const parts = [];
+    if(added.length) parts.push(`Added ${added.length}`);
+    if(own.length) parts.push(`yours already: ${own.join(', ')}`);
+    if(missing.length) parts.push(`not found: ${missing.join(', ')}`);
+    side.msg[which] = missing.length ? {text: withCode(parts.join('; ') + (names.length === 1 ? ' (use the exact name, not the ticker)' : ''), 'SIDE-02'), err: !added.length} : {text: parts.join('; ') || 'Already on the list'};
+    if(side.sug) side.sug.list = side.sug.list.filter(s => !r[which].some(x => x.kind === s.kind && x.id === s.id));
+    sideChanged();
+  }catch(e){ side.msg[which] = {text: withCode('Error: ' + e.message, errorCodeOf(e)), err: true}; renderSidePanel(); }
+}
+async function sideFindSuggestions(){
+  side.sugBusy = true; side.msg.sug = null; renderSidePanel();
+  try{ side.sug = await saSuggestions(!!side.sug); }
+  catch(e){ side.msg.sug = {text: withCode('Error: ' + e.message, errorCodeOf(e)), err: true}; }
+  finally{ side.sugBusy = false; renderSidePanel(); }
+}
+function sidePanelAction(act, el){
+  const r = side.rec;
+  const [verb, a, b] = act.split(':');
+  if(verb === 'close') return closeSidePanel();
+  if(verb === 'pilot') return sideSetPilot(sidePanelEl().querySelector('#sidePilot').value);
+  if(verb === 'add'){ const inp = sidePanelEl().querySelector(`[data-side-add="${a}"]`); return sideAddNames(a, [inp.value]); }
+  if(verb === 'paste'){ side.msg[`${a}Paste`] = true; renderSidePanel(); const t = sidePanelEl().querySelector(`[data-side-paste="${a}"]`); if(t) t.focus(); return; }
+  if(verb === 'pasteoff'){ side.msg[`${a}Paste`] = null; return renderSidePanel(); }
+  if(verb === 'addall'){ const t = sidePanelEl().querySelector(`[data-side-paste="${a}"]`); return sideAddNames(a, t ? t.value.split(/\r?\n/) : []); }
+  if(verb === 'suggest') return sideFindSuggestions();
+  if(verb === 'sugadd'){
+    const s = side.sug && side.sug.list.find(x => x.kind === a && x.id === Number(b));
+    if(!s) return;
+    r.hostile = r.hostile.filter(x => !(x.kind === s.kind && x.id === s.id));
+    if(!r.friendly.some(x => x.kind === s.kind && x.id === s.id)) r.friendly.push({id: s.id, name: s.name, kind: s.kind});
+    side.sug.list = side.sug.list.filter(x => x !== s);
+    side.msg.friendly = {text: `Added ${s.name}`};
+    return sideChanged();
+  }
+}
+
+// ---- the Pilot Analyzer's tag (D2: "a friendly opened in the Pilot Analyzer is tagged") ----
+let sideTagToken = 0;
+async function sideTagForPilot(charId){
+  const el = document.getElementById('pilotSideTag');
+  if(!el) return;
+  const token = ++sideTagToken;
+  el.innerHTML = '';
+  if(!sideIsSet() || !charId) return;
+  let a;
+  try{ [a] = await saAffiliation([charId]); }catch(e){ return; }   // the tag is extra: no tag rather than an error
+  if(token !== sideTagToken || !a) return;
+  const s = sideOf(a.corporation_id, a.alliance_id || null, sideSets(), sa.evidence);
+  if(s.side === 'n') return;
+  const gid = a.alliance_id || a.corporation_id, kind = a.alliance_id ? 'alliance' : 'corporation';
+  let name = '';
+  try{ name = (await saIdsToNames([gid])).get(gid) || ''; }catch(e){}
+  if(token !== sideTagToken) return;
+  const why = s.side === 'h' ? (s.why === 'list' ? 'your hostile list' : `killed ${s.n} of yours lately`) : name;
+  el.innerHTML = `<span class="side-tag ${s.side}" title="${escapeHtml(`${SIDE_WORD[s.side]} (${cardName('side')}): ${name}`)}">${SIDE_MARK[s.side]}<span class="nm">${SIDE_WORD[s.side]} · ${escapeHtml(why)}</span>${s.side === 'f' ? orgTickerHtml(kind, gid) : ''}</span>`;
+  fillOrgTickers(el);
+}
+
+(function systemAnalyzerInit(){
+  const chip = document.getElementById('sideChip');
+  if(!chip || !chip.classList || typeof document.querySelectorAll !== 'function') return;   // LESSON #36: stub DOM in the suites
+  for(const el of document.querySelectorAll('[data-card]')) el.textContent = cardName(el.dataset.card);
+  const info = document.getElementById('saInfo'); if(info) info.innerHTML = infoBtnHtml('sysan');
+  sidePanelEl().setAttribute('aria-label', cardName('side'));
+  side.rec = sideRead();
+  renderSideChip();
+  chip.addEventListener('click', () => { if(sidePanelIsOpen()) closeSidePanel(); else openSidePanel(); });
+  const p = sidePanelEl();
+  p.addEventListener('click', (e) => {
+    const rm = e.target.closest('[data-side-rm]');
+    if(rm){ const [which, kind, id] = rm.dataset.sideRm.split(':'); side.rec[which] = side.rec[which].filter(x => !(x.kind === kind && x.id === Number(id))); side.msg[which] = null; return sideChanged(); }
+    const b = e.target.closest('[data-side-act]');
+    if(b && !b.disabled){ e.preventDefault(); sidePanelAction(b.dataset.sideAct, b); }
+  });
+  p.addEventListener('keydown', (e) => {
+    if(e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+    e.preventDefault();
+    if(e.target.id === 'sidePilot') sidePanelAction('pilot');
+    else if(e.target.dataset.sideAdd) sidePanelAction(`add:${e.target.dataset.sideAdd}`);
+    else if(e.target.id === 'sideRows') e.target.blur();
+  });
+  p.addEventListener('change', (e) => {
+    if(e.target.id !== 'sideRows') return;
+    side.rec.rows = sideRows(e.target.value);
+    sideChanged();
+  });
+  document.getElementById('sideBackdrop').addEventListener('click', () => closeSidePanel(false));
+  document.addEventListener('pointerdown', (e) => {
+    if(!sidePanelIsOpen()) return;
+    if(p.contains(e.target) || chip.contains(e.target)) return;
+    closeSidePanel(false);
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    if(e.key !== 'Escape' || !sidePanelIsOpen()) return;
+    if(p.querySelector('details.info-pop[open]')) return;   // Escape closes the (i) panel first
+    e.preventDefault(); closeSidePanel();
+  });
+  // the System Analyzer's own buttons
+  document.getElementById('saClearBtn').addEventListener('click', saClear);
+  const res = document.getElementById('saResults');
+  res.addEventListener('toggle', (e) => {
+    const d = e.target;
+    if(!d.matches || !d.matches('details.sa-g')) return;
+    const k = d.dataset.saG;
+    if(k === 'friendly'){ sa.friendOpen = d.open; return; }
+    if(d.open) sa.open.add(k); else sa.open.delete(k);   // kept for the next redraw (a change to Your Side)
+  }, true);
+  res.addEventListener('click', (e) => {
+    const pb = e.target.closest('button.sa-pilot');
+    if(pb){ runPilotFromLink({name: pb.dataset.pilot}); return; }
+    const mb = e.target.closest('[data-more]');
+    if(mb){ sa.more.add(mb.dataset.more); saRender(); return; }
+    const ab = e.target.closest('[data-sa-act]');
+    if(ab){ if(ab.dataset.saAct === 'side') openSidePanel(); else if(ab.dataset.saAct === 'refresh') runSystemAnalyzer(true); }
+  });
+})();
+
 // v2026.10.14.79: a shared killmail link (#kill=<id>/<hash>) opens that loss, on load and when the address changes;
 // v.80: the extension's #zkill=, #pilot= and #pilotname= links too
 (function sharedKillLinkInit(){

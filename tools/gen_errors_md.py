@@ -42,7 +42,7 @@ for c, r in sorted(reg.items()):
 
 def names(t): return re.sub(r'\{card:([\w.]+)\}', lambda mm: CARD_NAMES.get(mm.group(1), mm.group(0)), t or '')
 def cell(t): return names(t).replace('|', '\\|').replace('\n', ' ')
-groups = {'APP': 'The page itself', 'ESI': 'ESI (CCP\'s API)', 'ZKB': 'zKillboard', 'DSCAN': 'D-Scan Analyzer',
+groups = {'APP': 'The page itself', 'ESI': 'ESI (CCP\'s API)', 'ZKB': 'zKillboard', 'DSCAN': 'System Analyzer: the D-Scan box', 'SYS': 'System Analyzer: Local', 'SIDE': 'Your Side',
           'PILOT': 'Pilot Analyzer', 'FIT': 'Fit Analyzer', 'MYSHIP': 'My Ship'}
 order = list(groups)
 out = ['# Error codes', '',
