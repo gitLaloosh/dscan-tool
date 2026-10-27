@@ -1967,6 +1967,51 @@
   }
   .sa-onscan-head .count{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
   .is-busy#saResults{opacity:0.45; pointer-events:none; transition:opacity 0.15s 0.25s;}
+  /* PILOT ROWS (v2026.10.14.82; local-and-fleet-plan.md L3, D8 "A: Pilots / Groups switch"): one row per hostile or
+     neutral pilot in a small gang. A grid of 8 columns on a wide screen; a small card per pilot on a phone. */
+  .pr-seg{display:inline-flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-left:auto;}
+  .pr-seg button{border:none; border-radius:0; padding:5px 14px; min-height:30px; color:var(--text-dim); font:600 12px var(--sans); letter-spacing:0; background:transparent;}
+  .pr-seg button.on{background:var(--panel-2); color:var(--heading);}
+  .pr-card{margin-top:16px; padding:14px 14px 6px; position:relative;}
+  .pr-head{display:flex; align-items:center; gap:6px 10px; margin-bottom:6px; flex-wrap:wrap;}
+  .pr-head h3{margin:0; font:600 14px var(--sans); color:var(--heading);}
+  .pr-head .ctx{display:inline-block;}
+  .pr-cols, button.pr-row{display:grid; grid-template-columns:minmax(140px,1.2fr) minmax(170px,1.5fr) 112px 64px 76px 62px 76px 14px; gap:12px; align-items:center;}
+  .pr-cols{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); padding:6px 4px; border-bottom:1px solid var(--line);}
+  .pr-cols .r{text-align:right;}
+  button.pr-row{width:100%; padding:8px 4px; border:none; border-bottom:1px solid var(--line-soft); border-radius:0; min-height:52px; background:transparent; color:var(--text); font:400 13px var(--sans); letter-spacing:0; text-align:left; cursor:pointer;}
+  button.pr-row:hover{background:var(--panel);}
+  button.pr-row:focus-visible{outline:2px solid var(--cyan); outline-offset:-2px;}
+  .pr-pilot, .pr-hull{display:flex; align-items:center; gap:8px; min-width:0;}
+  .pr-pn, .pr-hn{min-width:0;}
+  .pr-pilot .nm, .pr-hull .nm{display:block; font:600 13px/16px var(--sans); color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pr-hull .cls{font:400 11.5px var(--sans); color:var(--text-dim); margin-left:6px;}
+  .pr-ico{width:32px; height:32px; border-radius:4px; background:#222b33; border:1px solid var(--line); flex:none; box-sizing:border-box;}
+  .pr-num{font:600 14px var(--mono); color:var(--heading); text-align:right; white-space:nowrap;}
+  .pr-dps{display:flex; flex-direction:column; gap:3px; align-items:flex-end;}
+  .pr-dbar{display:flex; gap:1px; width:90px; height:5px; border-radius:2px; overflow:hidden;}
+  .pr-dbar i{display:block; height:100%;}
+  .pr-fu{font:600 11.5px var(--sans); color:var(--text-dim); white-space:nowrap;}
+  .pr-weak{font:600 12px var(--sans); white-space:nowrap;}
+  .pr-ew{display:flex; gap:3px;}
+  .pr-dash{color:var(--text-dim);}
+  .pr-scan{font:600 12px var(--sans); color:var(--cap-good); white-space:nowrap;}
+  .pr-scan.no{color:var(--text-dim); font-weight:400;}
+  .pr-chev{color:var(--text-dim);}
+  .pr-msg{grid-column:2 / -1; display:flex; align-items:center; gap:8px; font:400 12px var(--sans); color:var(--text-dim);}
+  .pr-msg.err{color:var(--danger);}
+  .pr-mob{display:none;}
+  .pr-more{padding:10px 4px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .pr-more .ctx{display:inline-block;}
+  @media (max-width: 760px){
+    .pr-cols{display:none;}
+    button.pr-row{grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"p d" "h h" "x x"; row-gap:6px; padding:10px 4px;}
+    button.pr-row > .pr-pilot{grid-area:p;} button.pr-row > .pr-hull{grid-area:h;} button.pr-row > .pr-dps{grid-area:d;}
+    button.pr-row > .pr-mob{grid-area:x; display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; font:400 12px var(--sans); color:var(--text-dim);}
+    button.pr-row > .pr-ehp, button.pr-row > .pr-weak, button.pr-row > .pr-ew, button.pr-row > .pr-scan, button.pr-row > .pr-chev{display:none;}
+    .pr-msg{grid-column:1 / -1;}
+    .pr-seg button{min-height:40px;}
+  }
 </style>
 </head>
 <body>
@@ -1974,7 +2019,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.81</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.82</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2119,7 +2164,8 @@ const CARD_NAMES = {
  "hostile": "Hostile",
  "neutral": "Neutral",
  "friendly": "Friendly",
- "onscan": "On Scan"
+ "onscan": "On Scan",
+ "pilots": "Pilots"
 };
 function cardName(key){
   const n = CARD_NAMES[key];
@@ -2243,6 +2289,13 @@ const CARD_INFO = {
  "neutral": [
   "Neutral: everyone in Local who isn't friendly or hostile. Pilots in NPC corporations (starter corporations, often new pilots and alts) are one group. With more than 6 groups, the groups of 1 or 2 pilots share one row.",
   "Each name opens the Pilot Analyzer."
+ ],
+ "pilots": [
+  "With 15 or fewer hostile + neutral pilots in Local (your “pilot rows up to” number in {card:side}), each gets a row. Groups shows the columns instead.",
+  "Likely ship: the newest ship they were seen in within 30 days on zKillboard, the ship they flew on one of their last 5 kills or lost in one of their last 10 losses; a ship of theirs that's on your D-Scan comes first. Nothing that recent: the hull they lost most among those losses.",
+  "The numbers come from their newest loss in that hull, worked out as in the Pilot Analyzer (pyfa's numbers): DPS (a range when their charges are guessed from cargo) with its damage types, EHP, the weakest resist and the EWAR letters of the {card:ewar} card. No loss of that hull among those losses: the bare hull's EHP and resists, marked fit unknown.",
+  "Each pilot is 2 zKillboard requests (kills and losses, kept for an hour), 15 pilots at a time; Load more asks for the next ones. Rows keep their place while they fill, then sort once: hostile first, then by DPS.",
+  "A row opens that pilot in the Pilot Analyzer, on that hull."
  ]
 };
 const CTX_MAX = 40;
@@ -20214,7 +20267,8 @@ function localLooksWrong(text){
   return null;
 }
 
-const sa = {last: null, open: new Set(), more: new Set(), friendOpen: false, evidence: null, evidenceErr: null};
+const sa = {last: null, open: new Set(), more: new Set(), friendOpen: false, evidence: null, evidenceErr: null,
+  view: 'pilots', rows: new Map(), rowLimit: 0, gen: 0, scanTypes: new Set(), scanReady: Promise.resolve(), rowOrder: null, lastGroups: null};   // v.82: pilot rows (L3)
 
 async function runLocal(text, statusEl, force){
   const names = parseLocalNames(text);
@@ -20240,6 +20294,7 @@ async function runLocal(text, statusEl, force){
     try{ sa.evidence = await saEvidence(force); }catch(e){ sa.evidenceErr = e; }
   }
   sa.last = {pilots, notFound, orgNames, names: names.length};
+  sa.gen++; sa.rows = new Map(); sa.rowLimit = SA_ROWS_PER_BATCH; sa.rowOrder = null;   // v.82: a new paste, new pilot rows
   saRender();
   const ev = sa.evidence;
   setStatus(statusEl, `${names.length} name(s): ${pilots.length} pilot(s) found${notFound.length ? `, ${notFound.length} not found` : ''}.${ev ? ` Evidence: ${ev.n} of your side's losses${ev.capped ? ` (the last ${SA_KM_MAX})` : ''} in 7 days.` : ''}`);
@@ -20262,13 +20317,13 @@ function saGroups(){
     if(s.why === 'list') g.why = 'list';
     let c = g.corps.get(p.corp);
     if(!c){ c = {id: p.corp, name: L.orgNames.get(p.corp) || '', pilots: []}; g.corps.set(p.corp, c); }
-    c.pilots.push(p.name); g.n++;
+    c.pilots.push(p); g.n++;   // v.82: the pilot (id, name, corp, alliance), for the rows
   }
   const order = (a, b) => b.n - a.n || a.name.localeCompare(b.name);
   const out = {};
   for(const k of ['h', 'n', 'f']){
     let list = [...cols[k].values()].sort(order);
-    for(const g of list){ g.corps = [...g.corps.values()].sort((a, b) => b.pilots.length - a.pilots.length || a.name.localeCompare(b.name)); for(const c of g.corps) c.pilots.sort((a, b) => a.localeCompare(b)); }
+    for(const g of list){ g.corps = [...g.corps.values()].sort((a, b) => b.pilots.length - a.pilots.length || a.name.localeCompare(b.name)); for(const c of g.corps) c.pilots.sort((a, b) => a.name.localeCompare(b.name)); }
     if(k === 'n' && list.length > SA_FOLD_AFTER){
       const small = list.filter(g => !g.npc && g.n <= SA_FOLD_SIZE);
       if(small.length > 1){
@@ -20289,7 +20344,7 @@ function saWhyText(g){
 }
 function saPilotsHtml(c, gkey){
   const all = sa.more.has(`${gkey}|${c.id}`), shown = all ? c.pilots : c.pilots.slice(0, SA_NAMES_PER_CORP), rest = c.pilots.length - shown.length;
-  return `<div class="sa-pilots">${shown.map(n => `<button type="button" class="sa-pilot" data-pilot="${escapeHtml(n)}" title="${escapeHtml(n)}: open in the Pilot Analyzer">${escapeHtml(n)}</button>`).join('')}${rest > 0 ? `<button type="button" class="sa-link" data-more="${escapeHtml(`${gkey}|${c.id}`)}">+${rest} more</button>` : ''}</div>`;
+  return `<div class="sa-pilots">${shown.map(({name: n}) => `<button type="button" class="sa-pilot" data-pilot="${escapeHtml(n)}" title="${escapeHtml(n)}: open in the Pilot Analyzer">${escapeHtml(n)}</button>`).join('')}${rest > 0 ? `<button type="button" class="sa-link" data-more="${escapeHtml(`${gkey}|${c.id}`)}">+${rest} more</button>` : ''}</div>`;
 }
 function saGroupHtml(g, colKey){
   const gk = `${colKey}:${g.key}`;
@@ -20324,6 +20379,8 @@ function saRender(){
   if(!sa.last){ host.innerHTML = ''; return; }
   const G = saGroups(), cnt = (k) => G[k].reduce((s, g) => s + g.n, 0);
   const S = {h: cnt('h'), n: cnt('n'), f: cnt('f')}, tot = S.h + S.n + S.f, threat = S.h + S.n, rows = side.rec.rows;
+  const small = threat > 0 && threat <= rows;   // v.82 (D8 "A: Pilots / Groups switch"): a small gang gets one row per pilot
+  sa.lastGroups = G;
   const warn = (title, ctx, extra = '') => `<div class="sa-warn"><span class="ewar-badge danger">!</span><span class="warn-text"><span class="warn-title" title="${escapeHtml(title)}">${escapeHtml(title)}</span>${ctx}</span>${extra}</div>`;
   const nf = sa.last.notFound;
   const ev = sa.evidence, evErr = sa.evidenceErr;
@@ -20338,15 +20395,182 @@ function saRender(){
       <div class="sa-bar" role="img" aria-label="${S.h} hostile, ${S.n} neutral, ${S.f} friendly">${['h', 'n', 'f'].filter(k => S[k]).map(k => `<i class="${k}" style="flex:${S[k]}"></i>`).join('')}</div>
       <div class="sa-keys">${['h', 'n', 'f'].map(k => `<span class="sa-key">${SIDE_MARK[k]}${SIDE_WORD[k]} <b>${S[k]}</b></span>`).join('')}</div>
       <div class="sa-mode">${threat > rows ? `<span class="sa-pill fleet">Fleet: ${threat} hostile + neutral</span>${ctxHtml(`over ${rows}: shown by group`)}`
-                                          : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}</div>
+                                          : `<span class="sa-pill">Small gang: ${threat} hostile + neutral</span>${ctxHtml(`${rows} or fewer`)}`}${evLine}${small ? saViewSwitchHtml() : ''}</div>
       ${notes}
     </div>
-    <div class="sa-cols">${saColHtml('h', G.h)}${saColHtml('n', G.n)}</div>
+    ${small && sa.view === 'pilots' ? `<div class="card pr-card" id="saPilots">${saPilotsCardHtml(G)}</div>` : `<div class="sa-cols">${saColHtml('h', G.h)}${saColHtml('n', G.n)}</div>`}
     <details class="sa-g sa-friendly" data-sa-g="friendly"${sa.friendOpen ? ' open' : ''}><summary>${SIDE_MARK.f}<span class="sa-gname"><span class="nm">${escapeHtml(cardName('friendly'))}</span><span class="ctx sa-ftk">${G.f.slice(0, 6).map(g => g.kind ? orgTickerHtml(g.kind, g.id) : '').join(' ')}</span></span><span class="sa-gn">${S.f}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>
       <div class="sa-friendly-body">${G.f.length ? G.f.map(g => saGroupHtml(g, 'f')).join('') : '<div class="sa-empty">None in local.</div>'}</div></details>`;
   fillOrgTickers(host);
+  if(small && sa.view === 'pilots') saPumpRows();
 }
 function saAgo(ts){ const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'just now' : `from ${m} min ago`; }
+
+// ---- L3: one row per pilot in a small gang (v2026.10.14.82; plan D8, the owner's answers to the mockup: "A: Pilots / Groups
+// switch", "Most recently seen", "Hull only, fit unknown", "Hostile first, then DPS") ----
+// Per pilot: zKillboard's list of their kills and of their losses (2 requests through the page's queue, each kept an
+// hour), then the newest SA_ROW_KILLS kills and SA_ROW_LOSSES losses from ESI (kept forever). The likely ship is the
+// newest one seen (the ship they flew on a kill, or lost) within SA_RECENT_DAYS, a ship of theirs on the D-Scan first;
+// nothing that recent: the hull they lost most among those losses (the Pilot Analyzer's rule, on fewer losses). Its
+// numbers come from their newest loss in that hull through the same engine as everywhere (pyfa's numbers); no loss in it
+// among those: the bare hull, marked "fit unknown". SA_ROWS_PER_BATCH pilots per paste (2 requests each = D4's 30), then
+// "Load more". Rows keep the order they were asked in while loading (nothing jumps), then sort once: hostile first, then
+// by DPS.
+const SA_ROW_KILLS = 5, SA_ROW_LOSSES = 10, SA_RECENT_DAYS = 30, SA_ROWS_PER_BATCH = 15, SA_ROW_WORKERS = 3;
+const DAY_MS = 86400000;
+function saViewSwitchHtml(){
+  return `<span class="pr-seg" role="group" aria-label="Show pilots or groups">${[['pilots', cardName('pilots')], ['groups', 'Groups']].map(([v, l]) =>
+    `<button type="button" data-sa-view="${v}" aria-pressed="${sa.view === v}"${sa.view === v ? ' class="on"' : ''}>${escapeHtml(l)}</button>`).join('')}</span>`;
+}
+// Hostile then neutral, in the columns' order (largest group first), each with its side.
+function saThreatList(G){
+  const out = [];
+  for(const k of ['h', 'n']) for(const g of G[k]) for(const c of g.corps) for(const p of c.pilots) out.push({p, side: k, org: c});
+  return out;
+}
+function saAgoShort(t){
+  const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+  if(m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60); if(h < 48) return `${h} h ago`;
+  const d = Math.round(h / 24); if(d < 60) return `${d} d ago`;
+  return `${Math.round(d / 30)} mo ago`;
+}
+function saFmtK(n){ return n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e4 ? `${Math.round(n / 1e3)}k` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : String(Math.round(n)); }
+// The DPS a row shows: the Pilot Analyzer's own rule (a range when charges are guessed from cargo), and the number it sorts by.
+function saRowDps(e){
+  const am = e.ammoEstimates && e.ammoEstimates.length ? e.ammoEstimates : null;
+  if(am) return {text: `${am[0].dps.toLocaleString()}–${am[am.length - 1].dps.toLocaleString()}`, v: Math.max(...am.map(a => a.dps))};
+  return {text: e.dpsFixed.toLocaleString(), v: e.dpsFixed};
+}
+function saRowTypeDps(e){
+  const acc = {}, app = e.application || {};
+  for(const w of [...(app.weapons || []), ...(app.drones || []), ...(app.fighters || [])]) for(const d of DMG) acc[d] = (acc[d] || 0) + ((w.typeDps || {})[d] || 0);
+  return acc;
+}
+async function saPilotData(p){
+  const kills = await zkbCachedJson(`${ZKB}/kills/characterID/${p.id}/`, false, 'kills lookup');
+  const losses = await zkbCachedJson(`${ZKB}/losses/characterID/${p.id}/`, false, 'losses lookup');
+  const newest = (list, n) => [...list.data].filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, n);
+  const [kk, lk] = await Promise.all([analyzeChunks(newest(kills, SA_ROW_KILLS), fetchKillmail, 3), analyzeChunks(newest(losses, SA_ROW_LOSSES), fetchKillmail, 3)]);
+  const seen = [];
+  for(const r of kk){
+    if(!r || !r.km) continue;
+    const a = (r.km.attackers || []).find(x => x.character_id === p.id);
+    if(a && a.ship_type_id) seen.push({typeId: a.ship_type_id, t: Date.parse(r.km.killmail_time), kind: 'kill'});
+  }
+  for(const r of lk) if(r && r.km && r.km.victim) seen.push({typeId: r.km.victim.ship_type_id, t: Date.parse(r.km.killmail_time), kind: 'loss', km: r.km});
+  if(!seen.length) return {state: 'none', any: kills.data.length + losses.data.length > 0};
+  await sa.scanReady;
+  const types = new Map();
+  await analyzeChunks([...new Set(seen.map(s => s.typeId))], async (id) => { const t = await getType(id); types.set(id, t); }, 4);
+  // capsules, shuttles, rookie ships and MTUs aren't a ship worth assessing (EXCLUDED_HULL_GROUP_IDS, as the Pilot Analyzer)
+  const ok = seen.filter(s => types.has(s.typeId) && !EXCLUDED_HULL_GROUP_IDS.has(types.get(s.typeId).group_id)).sort((a, b) => b.t - a.t);
+  if(!ok.length) return {state: 'none', any: true, onlyPods: true};
+  const recent = ok.filter(s => Date.now() - s.t <= SA_RECENT_DAYS * DAY_MS);
+  const how = (s) => `${s.kind === 'kill' ? 'on a kill' : 'lost one'} ${saAgoShort(s.t)}`;
+  let pick, basis;
+  const onScan = recent.find(s => sa.scanTypes.has(s.typeId));
+  if(onScan){ pick = onScan.typeId; basis = `on scan; ${how(onScan)}`; }
+  else if(recent.length){ pick = recent[0].typeId; basis = how(recent[0]); }
+  else{
+    const ls = ok.filter(s => s.kind === 'loss');
+    if(ls.length){
+      const n = new Map(); for(const s of ls) n.set(s.typeId, (n.get(s.typeId) || 0) + 1);
+      pick = [...n].sort((a, b) => b[1] - a[1] || ls.findIndex(s => s.typeId === a[0]) - ls.findIndex(s => s.typeId === b[0]))[0][0];
+      basis = `${n.get(pick)} of ${ls.length} losses, latest ${saAgoShort(ls.find(s => s.typeId === pick).t)}`;
+    }else{ pick = ok[0].typeId; basis = how(ok[0]); }
+  }
+  const t = types.get(pick), g = await getGroup(t.group_id);
+  const loss = ok.find(s => s.kind === 'loss' && s.typeId === pick);
+  const built = buildLossTally(loss ? loss.km : {victim: {items: []}});
+  const est = await estimateHpAndDps(pick, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag);
+  return {state: 'done', typeId: pick, hull: t.name, cls: (g && g.name) || '', basis, est, fitUnknown: !loss, lossAt: loss ? loss.t : null};
+}
+function saPumpRows(){
+  const G = sa.lastGroups;
+  if(!G) return;
+  const list = saThreatList(G).slice(0, sa.rowLimit), gen = sa.gen;
+  const todo = list.filter(x => !sa.rows.has(x.p.id));
+  if(!todo.length) return;
+  for(const x of todo) sa.rows.set(x.p.id, {state: 'wait'});
+  let i = 0;
+  const worker = async () => {
+    while(i < todo.length){
+      const x = todo[i++];
+      if(gen !== sa.gen) return;
+      sa.rows.set(x.p.id, {state: 'load'}); saUpdatePilots();
+      let r;
+      try{ r = await saPilotData(x.p); }
+      catch(e){ r = {state: 'err', msg: withCode(e.message, errorCodeOf(e))}; }
+      if(gen !== sa.gen) return;
+      sa.rows.set(x.p.id, r); saUpdatePilots();
+    }
+  };
+  for(let w = 0; w < SA_ROW_WORKERS; w++) worker();
+}
+function saOpenRow(name, hull){
+  switchTab('pilot');
+  document.getElementById('pilotName').value = name;
+  document.getElementById('manualShip').value = hull;
+  document.getElementById('shipSelect').value = '';
+  runFitCheck();
+}
+function saRowHtml(x){
+  const p = x.p, r = sa.rows.get(p.id) || {state: 'later'};
+  const org = x.org;
+  const ally = p.alliance ? orgTickerHtml('alliance', p.alliance) : '';
+  const pilot = `<span class="pr-pilot">${SIDE_MARK[x.side]}<span class="pr-pn"><span class="nm" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="ctx">${ally} ${escapeHtml(org.name)}</span></span></span>`;
+  const open = (hull) => `data-pr-pilot="${escapeHtml(p.name)}" data-pr-hull="${escapeHtml(hull || '')}" title="${escapeHtml(`${p.name}: open in the Pilot Analyzer`)}"`;
+  if(r.state === 'wait' || r.state === 'load') return `<button type="button" class="pr-row" ${open('')}>${pilot}<span class="pr-msg"><span class="busy-spin" aria-hidden="true"></span>${r.state === 'load' ? 'Looking up on zKillboard…' : 'Waiting for zKillboard…'}</span></button>`;
+  if(r.state === 'later') return `<button type="button" class="pr-row" ${open('')}>${pilot}<span class="pr-msg">Not looked up yet</span></button>`;
+  if(r.state === 'err') return `<button type="button" class="pr-row" ${open('')}>${pilot}<span class="pr-msg err">${escapeHtml(r.msg)}</span></button>`;
+  if(r.state === 'none') return `<button type="button" class="pr-row" ${open('')}>${pilot}<span class="pr-msg">${r.onlyPods ? 'Only capsules, shuttles or rookie ships on zKillboard' : 'No kills or losses on zKillboard: a new pilot or an alt'}</span></button>`;
+  const e = r.est, dps = r.fitUnknown ? null : saRowDps(e), td = r.fitUnknown ? {} : saRowTypeDps(e);
+  const bar = dps && dps.v > 0 ? `<span class="pr-dbar" aria-hidden="true">${DMG.filter(d => td[d] > 0).map(d => `<i style="flex:${td[d]};background:var(--${d})"></i>`).join('')}</span>` : '';
+  const cats = ['tackle', 'disrupt', 'drain', 'boost'].filter(c => (e.ewarModules || []).some(m => m.category === c));
+  const ew = r.fitUnknown ? '' : cats.map(c => `<span class="ewar-badge ${c}">${EWAR_BADGE_LETTER[c]}</span>`).join('');
+  const weak = `<span style="color:var(--${e.weakest})">${escapeHtml(DMG_FULL[e.weakest] || '')}</span>`;
+  const scan = sa.scanTypes.has(r.typeId);
+  const ehpTitle = r.fitUnknown ? 'The hull with nothing fitted: no loss of it among their recent losses' : `From their loss ${saAgoShort(r.lossAt)}`;
+  return `<button type="button" class="pr-row" ${open(r.fitUnknown ? '' : r.hull)}>${pilot}
+    <span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${r.typeId}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(r.hull)}<span class="cls">${escapeHtml(r.cls)}</span></span>${ctxHtml(r.basis)}</span></span>
+    <span class="pr-dps">${dps ? `<span class="pr-num">${dps.text}</span>${bar}` : `<span class="pr-fu" title="No loss of this hull among their recent losses, so no fit to read">fit unknown</span>`}</span>
+    <span class="pr-num pr-ehp" title="${escapeHtml(ehpTitle)}">${saFmtK(e.totalHP)}</span>
+    <span class="pr-weak">${weak}</span>
+    <span class="pr-ew">${ew || (r.fitUnknown ? '' : '<span class="pr-dash">—</span>')}</span>
+    <span class="pr-scan${scan ? '' : ' no'}">${scan ? '✓ on scan' : '—'}</span>
+    <span class="pr-chev" aria-hidden="true">›</span>
+    <span class="pr-mob">EHP ${saFmtK(e.totalHP)} · ${weak}${ew ? ` ${ew}` : ''}${scan ? ' · <span class="pr-scan">✓ on scan</span>' : ''}</span></button>`;
+}
+function saPilotsCardHtml(G){
+  const list = saThreatList(G), inBatch = list.slice(0, sa.rowLimit), later = list.slice(sa.rowLimit);
+  const st = (x) => (sa.rows.get(x.p.id) || {}).state;
+  const done = inBatch.filter(x => ['done', 'none', 'err'].includes(st(x))).length;
+  // sorted once every row of the batch has its answer: hostile first, then DPS (no fit last), then the rest
+  let shown = inBatch;
+  if(done === inBatch.length){
+    const key = (x) => { const r = sa.rows.get(x.p.id); return r.state === 'done' ? (r.fitUnknown ? -1 : saRowDps(r.est).v) : -2; };
+    if(!sa.rowOrder || sa.rowOrder.length !== inBatch.length) sa.rowOrder = inBatch.map((x, i) => ({x, i})).sort((a, b) => (a.x.side === b.x.side ? 0 : a.x.side === 'h' ? -1 : 1) || key(b.x) - key(a.x) || a.i - b.i).map(o => o.x.p.id);
+    const byId = new Map(inBatch.map(x => [x.p.id, x]));
+    shown = sa.rowOrder.map(id => byId.get(id)).filter(Boolean);
+  }
+  const errs = inBatch.some(x => st(x) === 'err');
+  return `<div class="pr-head"><h3>${escapeHtml(cardName('pilots'))}</h3>${ctxHtml(`${done} of ${inBatch.length} looked up`)}${errs ? '<button type="button" class="sa-link" data-pr-retry="1">Retry</button>' : ''}<span class="sa-sp"></span>${infoBtnHtml('pilots')}</div>
+    <div class="pr-cols" aria-hidden="true"><span>Pilot</span><span>Likely ship</span><span class="r">DPS</span><span class="r">EHP</span><span>Weakest</span><span>EWAR</span><span>Scan</span><span></span></div>
+    ${shown.map(saRowHtml).join('')}${later.map(saRowHtml).join('')}
+    ${later.length ? `<div class="pr-more"><button type="button" data-pr-more="1">Load ${Math.min(later.length, SA_ROWS_PER_BATCH)} more pilot${Math.min(later.length, SA_ROWS_PER_BATCH) === 1 ? '' : 's'}</button>${ctxHtml(`${2 * Math.min(later.length, SA_ROWS_PER_BATCH)} zKillboard requests`)}</div>` : ''}`;
+}
+function saUpdatePilots(){
+  const el = document.getElementById('saPilots');
+  if(!el || !sa.lastGroups) return;
+  const open = el.querySelector('details.info-pop[open]');
+  if(open) return setTimeout(saUpdatePilots, 400);   // don't redraw under an open info panel
+  const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.prPilot : null;
+  el.innerHTML = saPilotsCardHtml(sa.lastGroups);
+  fillOrgTickers(el);
+  if(focused){ const f = el.querySelector(`[data-pr-pilot="${CSS.escape(focused)}"]`); if(f) f.focus({preventScroll: true}); }
+}
+
 
 async function runSystemAnalyzer(force){
   const localEl = document.getElementById('localInput'), scanEl = document.getElementById('dscanInput');
@@ -20355,7 +20579,13 @@ async function runSystemAnalyzer(force){
   if(!local.trim() && !scan.trim()){ setStatus(statusEl, 'Paste Local, a D-Scan, or both.', true); return; }
   const wrong = local.trim() ? localLooksWrong(local) : null;
   const jobs = [];
-  if(scan.trim()) jobs.push(runAnalysis());
+  // v.82: the pilot rows prefer a ship that is on this scan; they wait for it (lastScanShips, only when the scan worked)
+  const scanJob = scan.trim() ? runAnalysis() : null;
+  sa.scanReady = (scanJob || Promise.resolve()).then(() => {
+    const shown = scanJob && getComputedStyle(document.getElementById('resultsWrap')).display !== 'none';
+    sa.scanTypes = new Set(shown ? lastScanShips.map(s => s.typeId) : []);
+  });
+  if(scanJob) jobs.push(scanJob);
   else { document.getElementById('resultsWrap').style.display = 'none'; }
   if(wrong){
     setStatus(statusEl, withCode(wrong === 'fit' ? 'That\'s a ship fit, not the Local member list: use the Fit Analyzer.' : 'That looks like D-Scan results, not the Local member list: paste it in the D-Scan box.', 'SYS-02'), true);
@@ -20370,7 +20600,7 @@ async function runSystemAnalyzer(force){
 function saClear(){
   for(const id of ['localInput', 'dscanInput']) document.getElementById(id).value = '';
   for(const id of ['localStatus', 'scanStatus']) setStatus(document.getElementById(id), '');
-  sa.last = null; sa.evidence = null; sa.evidenceErr = null; saRender();
+  sa.last = null; sa.evidence = null; sa.evidenceErr = null; sa.gen++; sa.rows = new Map(); saRender();
   document.getElementById('resultsWrap').style.display = 'none';
   showDscanFitHint('');
   document.getElementById('localInput').focus();
@@ -20621,6 +20851,14 @@ async function sideTagForPilot(charId){
     if(pb){ runPilotFromLink({name: pb.dataset.pilot}); return; }
     const mb = e.target.closest('[data-more]');
     if(mb){ sa.more.add(mb.dataset.more); saRender(); return; }
+    const vb = e.target.closest('[data-sa-view]');   // v.82
+    if(vb){ sa.view = vb.dataset.saView; saRender(); const again = res.querySelector(`[data-sa-view="${sa.view}"]`); if(again) again.focus({preventScroll: true}); return; }
+    const rb = e.target.closest('[data-pr-pilot]');
+    if(rb){ saOpenRow(rb.dataset.prPilot, rb.dataset.prHull || ''); return; }
+    const lm = e.target.closest('[data-pr-more]');
+    if(lm){ sa.rowLimit += SA_ROWS_PER_BATCH; sa.rowOrder = null; saPumpRows(); saUpdatePilots(); return; }
+    const rr = e.target.closest('[data-pr-retry]');
+    if(rr){ for(const [k, v] of [...sa.rows]) if(v.state === 'err') sa.rows.delete(k); sa.rowOrder = null; saPumpRows(); saUpdatePilots(); return; }
     const ab = e.target.closest('[data-sa-act]');
     if(ab){ if(ab.dataset.saAct === 'side') openSidePanel(); else if(ab.dataset.saAct === 'refresh') runSystemAnalyzer(true); }
   });

@@ -174,6 +174,9 @@ with sync_playwright() as p:
     check(n2 == 0 and len(M.ZKB_CALLS) == 1, f'a second Analyze asks zKillboard nothing (kept an hour); Refresh asks once ({n2}, {len(M.ZKB_CALLS)})')
     # small gang
     analyze(pg, '\n'.join(M.SMALL_LOCAL))
+    # v.82: a small gang opens on its pilot rows; let them finish (their zKillboard requests) before the queue checks below
+    pg.wait_for_function("() => { const c = document.querySelector('#saPilots .pr-head .ctx'); return c && /^(\\d+) of \\1 looked up$/.test(c.textContent); }", timeout=120000)
+    pg.click('[data-sa-view="groups"]'); pg.wait_for_timeout(200)
     r2 = pg.evaluate(RESULT)
     check('Small gang: %d hostile + neutral' % E['small_threat'] in r2['mode'], f"15 or fewer: small gang ({r2['mode']!r})")
     # --- the queue: spacing and budget ---

@@ -1,4 +1,4 @@
-# Local and fleet assessment (plan, decided 2026-10-27; step 1 built in v2026.10.14.81)
+# Local and fleet assessment (plan, decided 2026-10-27; steps 1-2 built in v2026.10.14.81-.82)
 
 Started 2026-10-27. the owner, after "what do you think is the biggest gap in the tool right now?" (the tool sizes up one
 pilot at a time; a fight is usually against a group) and "what happens when there are 100+ people in system?": "I've been
@@ -185,6 +185,11 @@ because we'll need to do some real security analysis of the tool first". What it
   **"Paste a list of alliances"** and **"Suggested friendlies"** both; up to 6 pilot names per corporation then
   "+N more", and the names System Analyzer / Your Side / Hostile / Neutral / Friendly / On Scan ("Both fine").
 
+- **D8. Step 2 (L3) details — decided** (the owner's answers to the pilot-rows mockup, 2026-10-27, all as recommended):
+  **"A: Pilots / Groups switch"** (in a small gang the rows replace the columns; Groups brings them back); likely ship
+  **"Most recently seen"** (newest ship on a kill or loss in 30 days, a ship of theirs on the D-Scan first, else the
+  hull lost most); **"Hull only, fit unknown"** when they have no loss of that hull; order **"Hostile first, then DPS"**.
+
 ## Step 1 as built (v2026.10.14.81)
 
 - **Tab:** the D-Scan tab is the System Analyzer (CARD_NAMES `sysan`), last; Local and D-Scan boxes side by side, one
@@ -213,7 +218,24 @@ because we'll need to do some real security analysis of the tool first". What it
   per-visit lists and its Refresh losses button as before.
 - **Pilot Analyzer:** a Friendly / Hostile tag beside the pilot's name when Your Side is set (one affiliation request).
 - **Checks:** `tools/page_checks/system_analyzer_check.py` with `sa_mocks.py` (made-up data; expected values worked out
-  in Python). Next step: L3 (one row per pilot in a small gang).
+  in Python).
+
+## Step 2 as built (v2026.10.14.82)
+
+- **Pilots** (`pilots`, the card in a small gang: hostile + neutral at most "pilot rows up to"), with a Pilots / Groups
+  switch on the summary line. One row per pilot: side, name, alliance ticker and corporation; likely ship with its class
+  and why ("on a kill 2 h ago", "lost one 3 d ago", "on scan; ...", "2 of 3 losses, latest 40 d ago"); DPS (the Pilot
+  Analyzer's rule: a range when charges are guessed from cargo) with a bar by damage type; EHP; weakest resist; EWAR
+  letters (T D C B); "✓ on scan". A row opens the Pilot Analyzer on that pilot and hull. A phone shows each as a card.
+- **Per pilot:** zKillboard /kills/characterID/{id}/ and /losses/characterID/{id}/ (kept an hour, through the queue),
+  the newest 5 kills and 10 losses from ESI (kept forever). Capsules, shuttles, rookie ships and MTUs don't count. The
+  numbers: their newest loss in that hull through `estimateHpAndDps` (as the Pilot Analyzer); no loss of it among those
+  10: the bare hull, "fit unknown", no DPS. No history: "No kills or losses on zKillboard: a new pilot or an alt".
+- **Batches (D4):** 15 pilots per paste (2 requests each = 30), then "Load N more pilots". Rows keep the order they were
+  asked in (hostile groups first) while they fill, then sort once: hostile first, then DPS (fit unknown, then no
+  history, last). Three pilots are looked up at a time; the zKillboard queue keeps them 1 s apart.
+- **Checks:** `tools/page_checks/pilot_rows_check.py` (histories built from golden-fit killmails: DPS and EHP checked
+  against the pyfa-verified pins; the ship rules against `sa_mocks.expected_rows()`). Next step: L4 + L5 (fleets).
 
 ## Checks (as for every delivery)
 

@@ -35,6 +35,7 @@ types a name by hand.
 | `neutral` | Neutral | v2026.10.14.81: the System Analyzer column and side |
 | `friendly` | Friendly | v2026.10.14.81: the System Analyzer's collapsed line and side; the Pilot Analyzer's tag |
 | `onscan` | On Scan | v2026.10.14.81: the D-Scan contacts under the System Analyzer (what the D-Scan tab showed) |
+| `pilots` | Pilots | v2026.10.14.82: one row per hostile / neutral pilot in a small gang (local-and-fleet-plan.md L3, D8 "A: Pilots / Groups switch") |
 
 Settled: Title Case for every name (the open capitalisation question is closed).
 

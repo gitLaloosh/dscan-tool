@@ -45,8 +45,6 @@ NAME_ID = {v[0].lower(): k for k, v in PILOTS.items()}
 TURNCOAT_PILOT = next(v[0] for v in PILOTS.values() if v[1] == TURNCOAT)
 NOT_FOUND = ['Kaell Varos', 'Old Alt 3']
 LOCAL = '\n'.join(sorted(v[0] for v in PILOTS.values() if v[1] not in (98000041,)) + NOT_FOUND)
-_small = [v[0] for v in PILOTS.values() if v[1] == 98000003][:3] + [v[0] for v in PILOTS.values() if v[1] == 98000007][:4] + [v[0] for v in PILOTS.values() if v[1] == 98000002][:2]
-SMALL_LOCAL = _small
 SCAN = '\n'.join(f"{byname[t]}\tSomeone's {t}\t{t}\t{d}" for t, d in [('Ferox', '3.2 AU'), ('Ferox', '420 km'), ('Scimitar', '6.8 AU')])
 FIT = '[Rifter, test]\nDamage Control I\n\n1MN Afterburner I\n\n200mm AutoCannon I, EMP S'
 
@@ -78,6 +76,66 @@ KM = {k: km(k, a, CORP) for k, a in LOSSES.items()}
 KM.update({k: km(k, a, 98000013) for k, a in KILLS.items()})
 H = {k: hashlib.sha1(str(k).encode()).hexdigest() for k in KM}
 ZKB_CALLS = []
+
+# v2026.10.14.82 pilot rows (L3): each SMALL_LOCAL threat pilot's zKillboard history, built from golden-fit killmails
+# (their pinned numbers are pyfa-verified: Curse 177 DPS / 22,648 EHP, Vedmak 507 DPS). Times are relative to now.
+GOLDEN = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'regression_suite', 'golden_fits.json')))
+GF = {'Curse': 'curse_zkb139073592_ewar', 'Vedmak': 'vedmak_zkb139012125_precursor_role_bonus', 'Loki': 'loki_zkb138935092'}
+PIN = {h: GOLDEN[k]['expected'] for h, k in GF.items()}
+def _iso(days): return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(time.time() - days * 86400))
+_kid = [9400000]
+def _loss(cid, hull, days):
+    _kid[0] += 1; k = _kid[0]
+    if hull == 'Capsule': victim = {'ship_type_id': byname['Capsule'], 'items': []}
+    else: victim = json.loads(json.dumps(GOLDEN[GF[hull]]['killmail']['victim']))
+    victim.update(character_id=cid, corporation_id=PILOTS[cid][1], damage_taken=1000, position={'x': 0, 'y': 0, 'z': 0})
+    KM[k] = {'killmail_id': k, 'killmail_time': _iso(days), 'solar_system_id': 30000142, 'victim': victim,
+             'attackers': [dict(att(pick(98000013)), final_blow=True)]}
+    H[k] = hashlib.sha1(str(k).encode()).hexdigest(); return k
+def _kill(cid, hull, days):
+    _kid[0] += 1; k = _kid[0]
+    KM[k] = {'killmail_id': k, 'killmail_time': _iso(days), 'solar_system_id': 30000142,
+             'victim': {'character_id': pick(98000013), 'corporation_id': 98000013, 'ship_type_id': byname['Ferox'], 'damage_taken': 100, 'items': [], 'position': {'x': 0, 'y': 0, 'z': 0}},
+             'attackers': [dict(aff(cid), final_blow=True, damage_done=100, ship_type_id=byname[hull], security_status=0)]}
+    H[k] = hashlib.sha1(str(k).encode()).hexdigest(); return k
+_red = [i for i, v in PILOTS.items() if v[1] == 98000003]
+_frost = sorted([i for i, v in PILOTS.items() if v[1] == 98000007], key=lambda i: PILOTS[i][0])
+HIST = {}   # character id -> {'kills': [...], 'losses': [...]}
+def _h(cid, kills=(), losses=()): HIST[cid] = {'kills': [_kill(cid, h, d) for h, d in kills], 'losses': [_loss(cid, h, d) for h, d in losses]}
+SMALL_RED = sorted(_red[:3], key=lambda i: PILOTS[i][0])
+SMALL_FROST = sorted(_frost[:4], key=lambda i: PILOTS[i][0])
+_h(SMALL_RED[0], losses=[('Curse', 3)])                                        # lost a Curse 3 d ago
+_h(SMALL_RED[1], kills=[('Vedmak', 2 / 24)], losses=[('Vedmak', 5)])            # a kill in a Vedmak 2 h ago
+_h(SMALL_RED[2], kills=[('Loki', 1)])                                          # a Loki on a kill, never lost: fit unknown
+_h(SMALL_FROST[0], losses=[('Curse', 40), ('Vedmak', 45), ('Curse', 50)])       # nothing in 30 days: most lost = Curse
+_h(SMALL_FROST[1])                                                             # no history
+_h(SMALL_FROST[2], kills=[('Vedmak', 1 / 24)], losses=[('Curse', 2)])          # Curse on the D-Scan wins over the newer Vedmak
+_h(SMALL_FROST[3], losses=[('Capsule', 1)])                                     # only a capsule
+SMALL_LOCAL = [PILOTS[i][0] for i in SMALL_RED + SMALL_FROST] + [v[0] for v in PILOTS.values() if v[1] == 98000002][:2]
+SCAN_ROWS = SCAN + '\n' + f"{byname['Curse']}\tSomeone's Curse\tCurse\t2.1 AU"
+def expected_rows():
+    """The rows, worked out here from HIST (plan D8): newest ship seen in 30 days (a ship on the scan first), else the
+    hull lost most; numbers from the newest loss in it (the golden pins), else fit unknown; hostile first, then DPS."""
+    scan = {'Ferox', 'Scimitar', 'Curse'}
+    rows = []
+    for idx, (cid, side) in enumerate([(i, 'h') for i in SMALL_RED] + [(i, 'n') for i in SMALL_FROST]):
+        seen = [(KM[k]['killmail_time'], 'kill', next(a['ship_type_id'] for a in KM[k]['attackers'] if a.get('character_id') == cid)) for k in HIST[cid]['kills']]
+        seen += [(KM[k]['killmail_time'], 'loss', KM[k]['victim']['ship_type_id']) for k in HIST[cid]['losses']]
+        name = {v: k for k, v in byname.items()}
+        seen = [(t, kd, name[s]) for t, kd, s in seen if name[s] != 'Capsule']
+        seen.sort(reverse=True)
+        if not seen: rows.append((idx, side, PILOTS[cid][0], None, None, -2)); continue
+        recent = [x for x in seen if x[0] >= _iso(30)]
+        on = [x for x in recent if x[2] in scan]
+        if on: hull = on[0][2]
+        elif recent: hull = recent[0][2]
+        else:
+            ls = [x[2] for x in seen if x[1] == 'loss']; hull = max(dict.fromkeys(ls), key=ls.count)
+        has_loss = any(x[1] == 'loss' and x[2] == hull for x in seen)
+        dps = PIN[hull]['dpsFixed'] if has_loss else None
+        rows.append((idx, side, PILOTS[cid][0], hull, dps, dps if dps is not None else -1))
+    rows.sort(key=lambda r: (0 if r[1] == 'h' else 1, -r[5], r[0]))
+    return [(r[2], r[3], r[4]) for r in rows]
 
 def expected():
     """What the page should show, worked out here. Side rules (plan D2, D2b): corporation entries first (yours, the
@@ -179,6 +237,8 @@ def zkb(route):
     stubs = lambda ids: route.fulfill(status=200, content_type='application/json', headers=cors, body=json.dumps([{'killmail_id': k, 'zkb': {'hash': H[k]}} for k in sorted(ids, reverse=True)]))
     if f'/losses/allianceID/{ALLIANCE}/' in url: return stubs(LOSSES)
     if f'/kills/allianceID/{ALLIANCE}/' in url: return stubs(KILLS)
+    m = re.search(r'/(kills|losses)/characterID/(\d+)/', url)
+    if m and int(m.group(2)) in HIST: return stubs(HIST[int(m.group(2))][m.group(1)])
     return route.fulfill(status=200, content_type='application/json', headers=cors, body='[]')
 def route(ctx):
     ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)

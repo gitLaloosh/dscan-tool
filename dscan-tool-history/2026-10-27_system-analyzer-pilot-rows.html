@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — System Analyzer, step 2: pilot rows</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>System Analyzer, step 2: one row per pilot in a small gang</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.81</code> &rarr; <code>v2026.10.14.82</code> &middot; plan: <code>roadmap/local-and-fleet-plan.md</code> (L3, decision D8).</p>
+<p>the owner: "ok proceed" after step 1, then his answers to the pilot-rows mockup (<code>Claude outputs/pilot_rows_mockup.html</code>): "A: Pilots / Groups switch", "Most recently seen", "Hull only, fit unknown", "Hostile first, then DPS".</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Pilots:</b> with "pilot rows up to" (15) or fewer hostile + neutral pilots in Local, the System Analyzer shows one row per pilot instead of the columns; a <b>Pilots / Groups</b> switch on the summary line brings the columns back.</li>
+<li><b>Each row:</b> the pilot (side, alliance ticker, corporation); the <b>likely ship</b> with its class and why ("on a kill 2 h ago", "lost one 3 d ago", "on scan; &hellip;", "2 of 3 losses, latest 40 d ago"); <b>DPS</b> with a bar by damage type; <b>EHP</b>; the <b>weakest</b> resist; the <b>EWAR</b> letters of the EWAR / Misc card; <b>&check; on scan</b>. Click a row for the Pilot Analyzer on that pilot and hull. On a phone each row is a small card.</li>
+<li><b>Likely ship:</b> the newest ship they were seen in within 30 days (on one of their last 5 kills, or lost in one of their last 10 losses), a ship of theirs on your D-Scan first; nothing that recent: the hull they lost most. Capsules, shuttles, rookie ships and MTUs don't count.</li>
+<li><b>The numbers</b> come from their newest loss in that hull, worked out as in the Pilot Analyzer (pyfa's numbers). If they haven't lost one among those 10 losses, the row shows the bare hull's EHP and resists, marked <b>fit unknown</b>, with no DPS. A pilot with no zKillboard history says so.</li>
+<li><b>zKillboard:</b> 2 requests per pilot (kills, losses), kept an hour, through the page's queue (1 s apart); 15 pilots per paste, then <b>Load N more pilots</b>. Rows fill in place in the order asked (hostile first), then sort once: hostile first, then DPS.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/pilot_rows_check.py</code> (17 checks): each threat pilot's history is built from golden-fit killmails, so a row's DPS, EHP and EWAR letters are checked against the regression suite's pyfa-verified pins (Curse 177 DPS / 22,648 EHP, T D C; Vedmak 507), and which ship it picks against <code>sa_mocks.expected_rows()</code>, the D8 rules written out in Python. v.81 fails (no rows).</li>
+<li>Mutations, each caught: no D-Scan preference; kills ignored; no 30-day window; the bare hull never marked "fit unknown"; no final sort; capsules kept; a batch of 16.</li>
+<li><code>system_analyzer_check.py</code> waits for the rows before its zKillboard-queue checks. CARD_NAMES + roadmap/card-names.md: <code>pilots</code>.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 33 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #74: a request log shared by several pages counts the other pages' work too. The check had just opened the Pilot Analyzer on its first page; that page's queued zKillboard request landed in the shared mock log after the check cleared it for the second page (31 instead of 30). Count only the requests that belong to what you're testing, or give each page its own context and log: clearing a list doesn't stop work already in flight.</p>
+</body></html>

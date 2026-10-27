@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 74. A request log shared by several pages counts the other pages' work too
+
+- **What happened (v2026.10.14.82):** `pilot_rows_check.py` counts zKillboard requests to prove each pilot costs 2 and a
+  batch stops at 30. The mock's log (`sa_mocks.ZKB_CALLS`) is one list for every page in the run. The check had just
+  clicked a pilot row on the first page, which started the Pilot Analyzer there; its queued zKillboard request landed
+  in the log after the check cleared it for the second page, and the count came out 31 instead of 30.
+- **Do this instead:** when a check counts requests, count only the ones that belong to what it's testing (here: the
+  `/kills/` and `/losses/characterID/` URLs of the pilots in that paste), or give each page its own browser context and
+  log. Clearing a shared log doesn't stop work another page already has in flight (the zKillboard queue delays requests
+  by design).
+
 ## 73. What's inside a closed <details> still has a box
 
 - **What happened (v2026.10.14.81):** `system_analyzer_check.py` looks at 390 px for anything running off the page. It
