@@ -21,7 +21,7 @@ pilot name.", "Paste a fit first.") carry no code: they are instructions, not er
 | ESI-02 | ESI type fetch failed | Any analysis | ESI's /universe/types/{id}/ failed for one item. A 404 usually means an id ESI doesn't know (often a new or removed item). | The type id in the message; whether ESI has it. | ARCH-4: show which type id failed and why. | 2026-10-10 ([2026-10-10_esi-error-messages-phase4.html](dscan-tool-history/2026-10-10_esi-error-messages-phase4.html)) |
 | ESI-03 | ESI group fetch failed | Any analysis | ESI's /universe/groups/{id}/ failed. | The group id in the message; ESI status. | ARCH-4. | 2026-10-10 ([2026-10-10_esi-error-messages-phase4.html](dscan-tool-history/2026-10-10_esi-error-messages-phase4.html)) |
 | ESI-04 | ESI id-to-name lookup failed | Pilot Analyzer | ESI's /universe/names/ failed. | ESI status, the user's connection. | ARCH-4. | 2026-10-10 ([2026-10-10_esi-error-messages-phase4.html](dscan-tool-history/2026-10-10_esi-error-messages-phase4.html)) |
-| ESI-05 | Killmail fetch failed | Pilot Analyzer (losses, last kill) | ESI's /killmails/{id}/{hash}/ failed for one killmail. | The killmail id in the message; ESI status. | ARCH-4. | 2026-10-10 ([2026-10-10_esi-error-messages-phase4.html](dscan-tool-history/2026-10-10_esi-error-messages-phase4.html)) |
+| ESI-05 | Killmail fetch failed | Pilot Analyzer (losses, last kill, a shared killmail link) | ESI's /killmails/{id}/{hash}/ failed for one killmail. | The killmail id in the message; ESI status. | ARCH-4. | 2026-10-10 ([2026-10-10_esi-error-messages-phase4.html](dscan-tool-history/2026-10-10_esi-error-messages-phase4.html)) |
 
 ## zKillboard
 
@@ -74,6 +74,13 @@ pilot name.", "Paste a fit first.") carry no code: they are instructions, not er
 |---|---|---|---|---|---|---|
 | DMG-01 | No ship to apply their damage to | Damage Application card (Fit Analyzer and Pilot losses) | The typical-class preset fit (a hull with its MWD, built from EFT text like any pasted fit) failed to build (the message includes the underlying code, e.g. ESI-01), or your saved ship's hull has no dogma effects, so pyfa's speed and signature can't be worked out for it. | The underlying code in the message; pick another class, or set your own ship. | The chart needs a real target fit (speed, signature, what their scram switches off); it says so rather than charting against made-up numbers. | v2026.10.14.36 ([2026-10-23_their-damage-on-you-chart.html](dscan-tool-history/2026-10-23_their-damage-on-you-chart.html)) |
 | DMG-02 | No chart of the damage applied to them | Damage Application card in the My Ship Perspective | Your ship's or the threat's hull record has no dogma effects (no application or no projected target), so pyfa's damage graph can't be worked out for your guns on them. | Which hull it is; the Matchup shows the same gap as dashes. | This chart is the same fight as the board's "DPS applied to them"; without both ships' pyfa inputs it says so rather than charting made-up numbers. | v2026.10.14.55 ([2026-10-24_damage-application-in-my-ship-perspective.html](dscan-tool-history/2026-10-24_damage-application-in-my-ship-perspective.html)) |
+
+## SHARE
+
+| Code | What | Where | Cause | What to check | Why it exists | Since |
+|---|---|---|---|---|---|---|
+| SHARE-01 | zKillboard has no such killmail | Pilot Analyzer status line, a zKillboard kill link pasted into the pilot box | zKillboard's /api/killID/{id}/ didn't return that killmail (no killmail with that ID, or a non-5xx error status; 5xx is ZKB-01). | The killmail ID in the link; open the link on zkillboard.com. | The hash ESI needs comes from zKillboard; without it the killmail can't be fetched. | v2026.10.14.79 ([2026-10-27_shared-killmail-links.html](dscan-tool-history/2026-10-27_shared-killmail-links.html)) |
+| SHARE-02 | Incomplete shared killmail link | Pilot Analyzer status line, a page opened from a link | The address has #kill= but not a killmail ID and a 40-character hash (#kill={id}/{hash}), e.g. a link cut short when pasted. | Copy the link again with "Copy share link" in the loss's ⋮ menu. |  | v2026.10.14.79 ([2026-10-27_shared-killmail-links.html](dscan-tool-history/2026-10-27_shared-killmail-links.html)) |
 
 ## WP
 

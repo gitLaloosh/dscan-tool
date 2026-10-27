@@ -875,6 +875,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 71. A mock that accepts anything can't check what the feature adds
+
+- **What happened (v2026.10.14.79):** a shared killmail link carries the killmail ID and its hash, because ESI's
+  /killmails/{id}/{hash}/ needs both. The page checks' ESI mock (from `last_kill_check.py`) answered any hash with the
+  killmail, and its zKillboard stubs used made-up hashes ("h9100001"). A link with a wrong or cut-short hash would have
+  passed every check.
+- **Do this instead:** when a feature depends on part of an API's contract, make the mock enforce that part: here the
+  mock answers 422 to a wrong hash, as ESI does, and the stubs carry real-looking 40-character hashes. Then check the
+  failure on purpose (`shared_kill_check.py`: a wrong hash shows ESI-05, a cut-short link SHARE-02), and run a mutant
+  that sends a slightly wrong hash to prove the check notices.
+
 ## 70. A "skip" that a shared helper doesn't know about, and a cycle that isn't only the module's speed
 
 - **What happened (v2026.10.14.78):** bombs had been left out of the DPS since 2026-10-11 (counted as missiles they had

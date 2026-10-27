@@ -1431,6 +1431,12 @@
   .ph-name:empty, #fitCandidates:empty, #lastKillInfo:empty{display:none;}
   .pilot-head > * + *:not(:empty){padding-left:14px; border-left:1px solid var(--line);}
   .hull-static{font-size:14px; font-weight:600; color:var(--heading);}
+  /* v2026.10.14.79: the shared-killmail header (the hull tagged "shared killmail"; when, where, zKillboard, their losses) */
+  .km-shared{display:inline-flex; align-items:baseline; gap:6px; flex-wrap:wrap;}
+  .km-shared-tag{font:600 10.5px var(--sans); color:var(--cyan); border:1px solid rgba(79,195,217,0.45); border-radius:10px; padding:1px 8px; margin-left:4px; white-space:nowrap;}
+  .km-shared-acts{display:flex; align-items:center; gap:8px 16px; flex-wrap:wrap; font-size:13px;}
+  .km-shared-acts a{color:var(--cyan);}
+  .km-when{color:var(--text-dim);}
   .hull-pick{position:relative;}
   .hull-pick-btn{display:flex; align-items:center; gap:8px; min-height:34px; padding:0 12px; background:var(--panel-2); border:1px solid var(--line); border-radius:6px;
     color:var(--heading); font-size:14px; font-weight:600; cursor:pointer; list-style:none; user-select:none;}
@@ -1832,7 +1838,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.78</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.79</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -1894,7 +1900,7 @@
     <h2>Pilot Analyzer</h2>
     <p class="sub">Enter a pilot's name and, optionally, a ship type (from a D-Scan, or typed manually). Leave the ship blank and it'll sample their recent losses to guess which hull they fly most.</p>
     <div class="row">
-      <input type="text" id="pilotName" placeholder="Pilot name">
+      <input type="text" id="pilotName" placeholder="Pilot name or zKillboard link">
       <select id="shipSelect"><option value="">— pick ship from scan (optional) —</option></select>
       <input type="text" id="manualShip" placeholder="or type a ship name (optional)">
       <button id="fitBtn">Analyze Pilot</button>
@@ -2137,7 +2143,7 @@ const ERROR_CODES = {
  },
  "ESI-05": {
   "title": "Killmail fetch failed",
-  "where": "Pilot Analyzer (losses, last kill)",
+  "where": "Pilot Analyzer (losses, last kill, a shared killmail link)",
   "trigger": "ESI's /killmails/{id}/{hash}/ failed for one killmail.",
   "check": "The killmail id in the message; ESI status.",
   "why": "ARCH-4.",
@@ -2170,6 +2176,24 @@ const ERROR_CODES = {
   "why": "ARCH-4.",
   "since": "2026-10-10",
   "doc": "2026-10-10_esi-error-messages-phase4.html"
+ },
+ "SHARE-01": {
+  "title": "zKillboard has no such killmail",
+  "where": "Pilot Analyzer status line, a zKillboard kill link pasted into the pilot box",
+  "trigger": "zKillboard's /api/killID/{id}/ didn't return that killmail (no killmail with that ID, or a non-5xx error status; 5xx is ZKB-01).",
+  "check": "The killmail ID in the link; open the link on zkillboard.com.",
+  "why": "The hash ESI needs comes from zKillboard; without it the killmail can't be fetched.",
+  "since": "v2026.10.14.79",
+  "doc": "2026-10-27_shared-killmail-links.html"
+ },
+ "SHARE-02": {
+  "title": "Incomplete shared killmail link",
+  "where": "Pilot Analyzer status line, a page opened from a link",
+  "trigger": "The address has #kill= but not a killmail ID and a 40-character hash (#kill={id}/{hash}), e.g. a link cut short when pasted.",
+  "check": "Copy the link again with \"Copy share link\" in the loss's ⋮ menu.",
+  "why": "",
+  "since": "v2026.10.14.79",
+  "doc": "2026-10-27_shared-killmail-links.html"
  },
  "DSCAN-01": {
   "title": "A fit was pasted into the D-Scan box",
@@ -9703,6 +9727,93 @@ async function renderOtherAttackers(km, mainCharacterId, container){
   });
 }
 
+// SHARED KILLMAIL (v2026.10.14.79; the owner: "maybe we should look at sharing assessment of a zkill entry instead. that way
+// we know what to compare to", the link "just carrying the killmail", then from the mockup: the share action in the loss's
+// ⋮ menu, no Last Kill line, a pasted zKillboard kill link opens it too, the tool's default module states). A link
+// #kill=<killmail id>/<hash> opens the Pilot Analyzer on that one loss. The hash is what ESI's /killmails/{id}/{hash}/
+// asks for, so the killmail comes straight from ESI and zKillboard isn't needed; a pasted zKillboard link
+// (zkillboard.com/kill/<id>/) costs one zKillboard call (/api/killID/<id>/) for the hash. Each viewer compares the loss
+// with their own My Ship. Inputs only: the fit is built and computed exactly as any Pilot loss (buildLossFits).
+const SHARE_KILL_RE = /(?:^|[#&?])kill=(\d+)\/([0-9a-f]{40})(?![0-9a-z])/i;
+const ZKB_KILL_LINK_RE = /zkillboard\.com\/kill\/(\d+)/i;
+function parseKillLink(text){
+  const t = String(text || '').trim();
+  let m = t.match(SHARE_KILL_RE);
+  if(m) return {id: Number(m[1]), hash: m[2].toLowerCase()};
+  m = t.match(ZKB_KILL_LINK_RE);
+  return m ? {id: Number(m[1]), hash: null} : null;
+}
+function shareLinkFor(f){
+  const base = String((typeof location !== 'undefined' && location.href) || '').split('#')[0];
+  return `${base}#kill=${f.killmailId}/${f.killmailHash}`;
+}
+function setShareHash(id, hash){   // the address bar shows the link of what's on screen (no hashchange: replaceState)
+  try{ history.replaceState(null, '', id ? `#kill=${id}/${hash}` : location.pathname + location.search); }catch(e){ /* file:// in some browsers */ }
+}
+async function runSharedKillmail(id, hash){
+  const statusEl = document.getElementById('fitStatus');
+  switchTab('pilot');
+  if(isBusy('fitStatus')) return;
+  for(const x of ['fitResults', 'fitCandidates', 'lastKillInfo']) document.getElementById(x).innerHTML = '';
+  document.getElementById('pilotHeadName').textContent = '';
+  lastFitRun = null;
+  const btn = document.getElementById('fitBtn');
+  return withBusy('fitStatus', btn, 'Loading the shared killmail…', async () => { try{
+    await sharedKillmailRun(id, hash, statusEl);
+  }catch(e){
+    setStatus(statusEl, withCode('Error: ' + e.message + (e.zkbUnavailable ? '.' : '. Check your network connection to zkillboard.com and esi.evetech.net.'), errorCodeOf(e)), true);
+  } });
+}
+async function sharedKillmailRun(id, hash, statusEl){
+  if(!hash){
+    setStatus(statusEl, `Looking up killmail ${id} on zKillboard…`);
+    const res = await zkbFetch(`${ZKB}/killID/${id}/`);
+    const list = res.ok ? await res.json() : [];
+    const stub = (Array.isArray(list) ? list : []).find(k => Number(k.killmail_id) === id);
+    hash = stub && stub.zkb && stub.zkb.hash;
+    if(!hash){
+      setStatus(statusEl, withCode(`zKillboard has no killmail ${id}${res.ok ? '' : ` (status ${res.status})`}: check the link.`, 'SHARE-01'), true);
+      return;
+    }
+  }
+  setShareHash(id, hash);
+  setStatus(statusEl, `Fetching killmail ${id} from ESI…`);
+  const r = await fetchKillmail({killmail_id: id, zkb: {hash}});
+  if(r.error){ setStatus(statusEl, withCode(r.error + '.', r.code), true); return; }
+  const km = r.km, victim = km.victim || {};
+  const charId = victim.character_id || null, shipTypeId = victim.ship_type_id;
+  const names = await resolveIdsToNames([shipTypeId, charId, km.solar_system_id].filter(Boolean));
+  const nameOf = new Map(names.map(n => [n.id, n.name]));
+  const shipName = nameOf.get(shipTypeId) || `type ${shipTypeId}`;
+  const pilot = charId ? (nameOf.get(charId) || `character ${charId}`) : null;
+  currentPilotName = pilot || 'Unknown pilot';
+  currentCharacter = charId ? {id: charId, name: pilot} : null;
+  document.getElementById('pilotName').value = pilot || '';
+  document.getElementById('manualShip').value = '';
+  document.getElementById('shipSelect').value = '';
+  document.getElementById('pilotHeadName').textContent = currentPilotName;
+  setStatus(statusEl, `Estimating hull HP and DPS for ${shipName}…`);
+  const {fits, idToName} = await buildLossFits([r], shipTypeId);
+  renderFitTabs(currentPilotName, shipName, fits, idToName);
+  // the header: the hull (no dropdown) tagged "shared killmail"; when and where; zKillboard; their losses in this hull
+  const t = km.killmail_time ? new Date(km.killmail_time) : null;
+  const day = t ? t.toLocaleDateString() : '', time = t ? t.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}) : '';
+  const sys = km.solar_system_id ? nameOf.get(km.solar_system_id) : null;
+  document.getElementById('fitCandidates').innerHTML = `<span class="km-shared"><span class="hull-static">${escapeHtml(shipName)}</span>${hullClassHtml(shipTypeId)}<span class="km-shared-tag">shared killmail</span></span>`;
+  document.getElementById('lastKillInfo').innerHTML = `<div class="km-shared-acts"><span class="km-when">${escapeHtml([day, time, sys].filter(Boolean).join(' · '))}</span>`
+    + `<a href="https://zkillboard.com/kill/${id}/" target="_blank" rel="noopener">view on zKillboard ↗</a>`
+    + (charId ? `<button type="button" class="lk-toggle" id="kmSeeLosses">See ${escapeHtml(pilot)}'s ${escapeHtml(shipName)} losses</button>` : '') + '</div>';
+  const see = document.getElementById('kmSeeLosses');
+  if(see) see.addEventListener('click', () => {
+    if(isBusy('fitStatus')) return;
+    document.getElementById('pilotName').value = pilot;
+    document.getElementById('manualShip').value = shipName;
+    runFitCheck();   // the normal Pilot analysis of that hull (it clears the link from the address bar)
+  });
+  lastFitRun = () => sharedKillmailRun(id, hash, statusEl);   // Refresh losses: the killmail never changes, the view is drawn again
+  setStatus(statusEl, `Shared killmail: ${pilot ? `${pilot}'s` : 'a'} ${shipName}${day ? `, lost ${day}` : ''}.`);
+}
+
 async function runFitCheck(){
   const statusEl = document.getElementById('fitStatus');
   document.getElementById('fitResults').innerHTML = '';
@@ -9714,6 +9825,10 @@ async function runFitCheck(){
   const shipName = (document.getElementById('manualShip').value.trim()) || document.getElementById('shipSelect').value;
 
   if(!pilotName){ setStatus(statusEl, 'Enter a pilot name.', true); return; }
+  // v2026.10.14.79: a zKillboard kill link (or this tool's share link) in the pilot box opens that killmail
+  const link = parseKillLink(pilotName);
+  if(link) return runSharedKillmail(link.id, link.hash);
+  if(typeof location !== 'undefined' && /kill=/.test(location.hash || '')) setShareHash(null);   // a new analysis: the address bar drops the shared link
 
   const btn = document.getElementById('fitBtn');
   if(isBusy('fitStatus')) return;
@@ -10262,6 +10377,42 @@ function renderFitAnalyzerResult(shipName, fitName, f, idToName, unresolved, imp
 
 document.getElementById('fitAnalyzerBtn').addEventListener('click', runFitAnalyzer);
 
+// The fits of these killmails (fetchKillmail results), each on its own: the engine's estimate (every mode on a hull with
+// modes) and its input. v2026.10.14.79: shared by runFitForShip and the shared-killmail view (runSharedKillmail).
+async function buildLossFits(valid, shipTypeId){
+  const fits = [];
+  const allItemIds = new Set();
+  for(const v of valid){
+    const built = buildLossTally(v.km);
+    const estimate = await estimateHpAndDps(shipTypeId, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag);
+    for(const id of built.allItemIds) allItemIds.add(id);
+    // Hulls with modes (MODE_ITEMS / MODE_EFFECT_ROWS, PYFA CORE): since
+    // which Mode was active can never be known from a killmail/dscan
+    // snapshot, compute all 3 up front (getType/getGroup are cached, so
+    // this costs no extra network calls) and let the viewer toggle between
+    // them — defaulting to Sharpshooter. tacticalModes/activeMode are left
+    // undefined on every other hull, which renderFitSummaryHtml treats as
+    // "no mode toggle to show".
+    let tacticalModes, activeMode;
+    const modeOrder = hullModeOrder(shipTypeId); // v2026.10.14.6: Tactical Destroyers and the Anhinga
+    if(modeOrder){
+      activeMode = resolveModeKey(shipTypeId, null);
+      tacticalModes = {};
+      for(const m of modeOrder) tacticalModes[m] = m === activeMode ? estimate
+        : await estimateHpAndDps(shipTypeId, built.tally, built.cargoItemIds, built.highSlotByFlag, m, built.midSlotByFlag);
+    }
+    // highSlotByFlag retained on the pushed fit object (2026-10-12) so the
+    // EFT-export context menu below can pair each High-slot module with
+    // its loaded charge -- same reason fitToEftText() above needs it,
+    // rather than re-deriving it from the tally (which has already lost
+    // the per-flag module/charge association by this point).
+    fits.push({ km: v.km, killmailId: v.killmail_id, killmailHash: v.hash, tally: built.tally, highSlotByFlag: built.highSlotByFlag, estimate, tacticalModes, activeMode,
+      input: {shipTypeId, tally: built.tally, cargoItemIds: built.cargoItemIds, highSlotByFlag: built.highSlotByFlag, midSlotByFlag: built.midSlotByFlag} }); // v.22 module states
+  }
+
+  const names = await resolveIdsToNames([...allItemIds]);
+  return {fits, idToName: new Map(names.map(n => [n.id, n.name]))};
+}
 async function runFitForShip(character, shipTypeId, shipName, statusEl, forceRefresh){
   setStatus(statusEl, `Querying zKillboard for ${shipName} losses…`);
   try{
@@ -10283,40 +10434,7 @@ async function runFitForShip(character, shipTypeId, shipName, statusEl, forceRef
     }
 
     setStatus(statusEl, `Estimating hull HP and DPS for ${shipName}…`);
-
-    const fits = [];
-    const allItemIds = new Set();
-    for(const v of valid){
-      const built = buildLossTally(v.km);
-      const estimate = await estimateHpAndDps(shipTypeId, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag);
-      for(const id of built.allItemIds) allItemIds.add(id);
-      // Hulls with modes (MODE_ITEMS / MODE_EFFECT_ROWS, PYFA CORE): since
-      // which Mode was active can never be known from a killmail/dscan
-      // snapshot, compute all 3 up front (getType/getGroup are cached, so
-      // this costs no extra network calls) and let the viewer toggle between
-      // them — defaulting to Sharpshooter. tacticalModes/activeMode are left
-      // undefined on every other hull, which renderFitSummaryHtml treats as
-      // "no mode toggle to show".
-      let tacticalModes, activeMode;
-      const modeOrder = hullModeOrder(shipTypeId); // v2026.10.14.6: Tactical Destroyers and the Anhinga
-      if(modeOrder){
-        activeMode = resolveModeKey(shipTypeId, null);
-        tacticalModes = {};
-        for(const m of modeOrder) tacticalModes[m] = m === activeMode ? estimate
-          : await estimateHpAndDps(shipTypeId, built.tally, built.cargoItemIds, built.highSlotByFlag, m, built.midSlotByFlag);
-      }
-      // highSlotByFlag retained on the pushed fit object (2026-10-12) so the
-      // EFT-export context menu below can pair each High-slot module with
-      // its loaded charge -- same reason fitToEftText() above needs it,
-      // rather than re-deriving it from the tally (which has already lost
-      // the per-flag module/charge association by this point).
-      fits.push({ km: v.km, killmailId: v.killmail_id, tally: built.tally, highSlotByFlag: built.highSlotByFlag, estimate, tacticalModes, activeMode,
-        input: {shipTypeId, tally: built.tally, cargoItemIds: built.cargoItemIds, highSlotByFlag: built.highSlotByFlag, midSlotByFlag: built.midSlotByFlag} }); // v.22 module states
-    }
-
-    const names = await resolveIdsToNames([...allItemIds]);
-    const idToName = new Map(names.map(n => [n.id, n.name]));
-
+    const {fits, idToName} = await buildLossFits(valid, shipTypeId);
     renderFitTabs(currentPilotName, shipName, fits, idToName);
     setStatus(statusEl, `Showing the ${fits.length} most recent loss${fits.length>1?'es':''} of ${shipName}.`);
   }catch(e){
@@ -16122,6 +16240,7 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
       <details class="fit-menu">
         <summary class="fit-menu-btn" title="Fit actions">&#8942;</summary>
         <div class="fit-menu-dropdown">
+          ${fits.every(f => f.killmailHash) ? '<button type="button" class="fit-menu-item" data-action="share-link">Copy share link</button>' : ''}
           <button type="button" class="fit-menu-item" data-action="export-eft">Export fit to clipboard (EFT)</button>
         </div>
       </details>
@@ -16155,6 +16274,19 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   // tab button itself shows, so the exported header traces straight back
   // to which loss it came from.
   const fitMenuEl = el.querySelector('.fit-menu');
+  // v2026.10.14.79: the share link of the loss on screen (#kill=<id>/<hash>), "Copied!" for a moment as Export fit
+  const shareBtn = el.querySelector('.fit-menu-item[data-action="share-link"]');
+  if(shareBtn){
+    const label = shareBtn.textContent;
+    shareBtn.addEventListener('click', async () => {
+      const activeBtn = el.querySelector('.subtab-btn.active');
+      const f = fits[activeBtn ? Number(activeBtn.dataset.idx) : 0];
+      shareBtn.disabled = true;
+      try{ await navigator.clipboard.writeText(shareLinkFor(f)); shareBtn.textContent = 'Copied!'; }
+      catch(e){ shareBtn.textContent = 'Copy failed'; }
+      setTimeout(() => { shareBtn.textContent = label; shareBtn.disabled = false; if(fitMenuEl) fitMenuEl.open = false; }, 1100);
+    });
+  }
   const exportBtn = el.querySelector('.fit-menu-item[data-action="export-eft"]');
   if(exportBtn){
     const originalLabel = exportBtn.textContent;
@@ -19526,6 +19658,20 @@ async function mysRenderMineView(mv){
   document.addEventListener('keydown', (e) => {
     if(e.key === 'Escape' && myShipPanelIsOpen()){ e.preventDefault(); closeMyShipPanel(); }
   });
+})();
+// v2026.10.14.79: a shared killmail link (#kill=<id>/<hash>) opens that loss, on load and when the address changes
+(function sharedKillLinkInit(){
+  if(typeof window === 'undefined' || !window.addEventListener || typeof location === 'undefined'
+     || typeof document === 'undefined' || !document.getElementById || !document.getElementById('fitResults')) return;   // LESSON #36: stub DOM
+  const go = () => {
+    if(!/kill=/.test(location.hash || '')) return;
+    const k = parseKillLink(location.hash);
+    if(k && k.hash){ runSharedKillmail(k.id, k.hash); return; }
+    switchTab('pilot');
+    setStatus(document.getElementById('fitStatus'), withCode('This link isn\'t a complete killmail link: it needs the killmail ID and its hash. Copy it again with "Copy share link".', 'SHARE-02'), true);
+  };
+  window.addEventListener('hashchange', go);
+  go();
 })();
 </script>
 

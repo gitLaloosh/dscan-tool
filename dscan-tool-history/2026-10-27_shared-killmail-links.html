@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-27 — Shared killmail links</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Shared killmail links</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.78</code> &rarr; <code>v2026.10.14.79</code>.</p>
+<p>the owner first asked about sharing a pilot analysis with the My Ship side included, then: "maybe we should look at sharing assessment of a zkill entry instead. that way we know what to compare to", and "for now let's start with it just carrying the killmail." From the mockup (<code>killmail_share_mockup.html</code>): "a. menu b. agreed c. yes d. fine for now".</p>
+
+<h2>What you see</h2>
+<ul>
+<li><b>Copy share link</b> is the first item of a loss's &#8942; menu, above Export fit. It copies the link of the loss on screen and reads "Copied!" for a moment.</li>
+<li><b>The link</b> is the page's address plus <code>#kill=&lt;killmail ID&gt;/&lt;hash&gt;</code>. The hash is the one ESI asks for, so the page fetches the killmail straight from ESI: zKillboard being slow or down doesn't affect a shared link.</li>
+<li><b>Opening a link</b> shows the Pilot Analyzer on that one loss:
+<ul>
+<li>the pilot's name, and the hull with a <b>shared killmail</b> tag instead of the hull dropdown;</li>
+<li>the date, time and system, <b>view on zKillboard</b>, and <b>See &lt;pilot&gt;'s &lt;hull&gt; losses</b>, which runs the normal analysis;</li>
+<li>one tab with the usual cards, compared against the viewer's own My Ship;</li>
+<li>no Last Kill line (it's about the pilot's latest kill, and it's the part that needs zKillboard);</li>
+<li>the tool's default module states, the same as any loss.</li>
+</ul></li>
+<li><b>A zKillboard kill link pasted into the pilot box</b> (<code>zkillboard.com/kill/123456789/</code>) opens the same view. This one makes a single zKillboard call to get the hash, and the address bar then shows the share link.</li>
+<li>A link typed into the address bar of an open page loads too.</li>
+<li><b>New error codes:</b> SHARE-01 (zKillboard has no such killmail) and SHARE-02 (a link cut short). A wrong hash shows ESI-05, as any killmail ESI refuses.</li>
+</ul>
+<p>Inputs only: the shared loss is built and computed by the same code as every Pilot loss (<code>buildLossFits</code>, split out of <code>runFitForShip</code>). This is also the base for the browser extension on the backlog (right-click a kill on zkillboard.com &rarr; open it here).</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/page_checks/shared_kill_check.py</code>:</b> the menu item and the copied link (both tabs); opening a link with no zKillboard call, the header, one tab, Firepower equal to the same loss in the normal analysis, the address, Refresh losses; See their losses; a pasted zKillboard link, an unknown ID (SHARE-01); a cut-short link (SHARE-02); a wrong hash (ESI-05); a link typed into an open page; 390 px. v.78 fails 1 (no share item: it stops there); mutations: a zKillboard call in the shared view fails 2; the address bar never updated fails 2; no hashchange listener fails 1; a pasted zKillboard link not recognized fails 2; a wrong hash sent to ESI fails 1.</li>
+<li>Regression ALL PASS (269 fits), update chain all 42 steps OK, all 30 page checks 0 failures, the three lints 0 problems; ERRORS.md regenerated (31 codes). PYFA CORE untouched.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #71: a mock that accepts anything can't check what the feature adds.</p>
+<ul>
+<li>The page checks' ESI mock returned the killmail for any hash, and the zKillboard stubs used made-up hashes. A broken share link would have passed.</li>
+<li>When a feature depends on part of an API's contract, make the mock enforce it (here: 422 for a wrong hash, as ESI does), check the failure on purpose, and run a mutant that gets it slightly wrong.</li>
+</ul>
+</body>
+</html>
