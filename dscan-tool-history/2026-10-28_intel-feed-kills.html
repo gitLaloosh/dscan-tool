@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-28 — Kills nearby in the Intel Feed</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Kills nearby, who's who and filters in the Intel Feed</h1>
+<p><span class="tag">Feature</span><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-28 &middot; <code>v2026.10.14.98</code> &rarr; <code>v2026.10.14.99</code></p>
+<p>With a screenshot of an Intel Feed window, the owner: "a layout reference and we might want to use some of the same concepts for communicating standing, alliance/corp, etc. data source as well", then "ok proceed with those follow ups". Mockup <code>Claude outputs/intel_feed_kills_mockup.html</code>. His answers, all as recommended: kills in the Feed "within range"; "Mark and alert"; who's who "As drawn"; the filter bar. During the build, from his live use: "ESS refers to the Encounter Surveillance System that null sec systems have. so this person was typing 'inside ess'".</p>
+
+<h2>What I checked first</h2>
+<ul>
+<li>The window in the screenshot matches RIFT's Intel Feed (a desktop app), which mixes intel reports with zKillboard's kills. I found nothing saying the EVE client has a kill feed a page could read.</li>
+<li>zKillboard's live feed is <b>R2Z2</b>, which replaced RedisQ (shut down 31 May 2026). Its API docs say:
+  <ul>
+  <li>read <code>sequence.json</code>, then each numbered file in turn until a 404;</li>
+  <li>"Filter locally after retrieval";</li>
+  <li>wait at least 6 s after a 404;</li>
+  <li>at most 15 requests a second per IP;</li>
+  <li>files are kept at least 24 hours.</li>
+  </ul></li>
+<li>Tried from the GitHub Pages address in the owner's browser: the page can read it, and each record carries the full killmail (with <code>solar_system_id</code>) and zKillboard's values. zKillboard has 13,000-20,000 kills a day, so following the feed is about 10-15 small requests a minute.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Kills in the Feed</b>, only while Intel is on. The page follows R2Z2 one file at a time, at most 12 requests per 2-second tick, and waits 6 s after it catches up. At the start it reads back about 15 minutes; those kills show but don't alert.
+  <ul>
+  <li>Kept: kills within your alert range, or within the Feed's Distance if that's wider.</li>
+  <li>Left out: NPC kills, kills older than the time set, and a reprocessed copy of a kill already shown.</li>
+  <li>A kill row shows the system, how long ago, <b>Kill</b>, then who lost what and its ISK, then who killed them (the final blow, "+N more" or solo), with a zKillboard link.</li>
+  <li>If R2Z2 doesn't answer, a note says so (INTEL-05). The page tries again after 30 s, then less and less often, up to every 5 minutes; reports from your channels carry on.</li>
+  </ul></li>
+<li><b>Kills mark Near You</b>: a kill puts its attackers and their ships in that system, shows "1 kill" on the row, and alerts by the same rule as a report. Friendlies' ships don't count, so a kill by friendlies only stays quiet. Each attacker is paired with the ship the killmail names, so a pilot link or Assess opens them in it.</li>
+<li><b>Who's who</b>, as drawn:
+  <ul>
+  <li>a standing mark (blue +, red −, a ring for neutral);</li>
+  <li>corporation and alliance logos from CCP's image server;</li>
+  <li>the name coloured by standing;</li>
+  <li><code>[CORP] &lt;ALLIANCE&gt;</code> tickers;</li>
+  <li>systems coloured by security, read once per system from ESI and kept.</li>
+  </ul></li>
+<li><b>Filters</b> on the Feed: Types (all, reports, kills), Distance, Sort (newest or nearest) and Search (pilot, corporation or alliance name or ticker, ship, system). They're kept in this browser. While the bar has the focus, only the lists and notes redraw, so typing isn't interrupted.</li>
+<li><b>Fix, from the owner's live use</b>: words for places and intel are no longer looked up as pilots.
+  <ul>
+  <li>Keywords now include ESS, jump bridge, structures, belt, anom, site, MTU, d-scan, probes, hunter and roam.</li>
+  <li>Plain words such as inside, outside and sitting are now filler.</li>
+  </ul>
+  Real characters are named "Inside" and "ESS", so before this they showed as pilots. A ship named on its own and again in brackets after a pilot now counts once.</li>
+<li>New error code INTEL-05; ERRORS.md has 46. No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/intel_kills_check.py</code>. R2Z2 is answered with made-up killmails using the page checks' made-up pilots and groups. It covers:
+  <ul>
+  <li>request order, the 6-second wait after a 404, and at most 15 requests a second;</li>
+  <li>what's kept and what's left out;</li>
+  <li>the kill row, who's who, and the security colour;</li>
+  <li>Near You's "1 kill" and the alert, with the friendly-only kill staying quiet;</li>
+  <li>attackers paired with their ships;</li>
+  <li>every filter, and the search box keeping its focus;</li>
+  <li>INTEL-05 and recovery, and no requests while off;</li>
+  <li>390 px.</li>
+  </ul>
+  v.98 fails.</li>
+<li><code>intel_assess_check.py</code>: an "inside ... ess" line whose words would match mock characters "Inside" and "ESS", and ships named twice. <code>intel_check.py</code> answers R2Z2 quietly and reads a pilot's name inside the new who's-who chip.</li>
+<li>Mutants caught (12):
+  <ul>
+  <li>no 6-second wait;</li>
+  <li>NPC kills kept;</li>
+  <li>range ignored;</li>
+  <li>kills read at the start alerting;</li>
+  <li>no dedupe;</li>
+  <li>friendlies' ships counted;</li>
+  <li>kills not in Near You;</li>
+  <li>search ignoring tickers;</li>
+  <li>the bar losing focus;</li>
+  <li>notes not refreshed with the lists;</li>
+  <li>ESS / inside looked up;</li>
+  <li>ships named twice summed.</li>
+  </ul></li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain (43 steps); all 44 page checks (<code>extension_check.py</code> failed once in the full run with a network error under load, the known flaky one in the backlog, and passed on its own); lints 0 problems.</li>
+</ul>
+
+<h2>Lessons for future models</h2>
+<p>LESSON #86: a partial redraw must cover everything that can change while it is the only redraw. With the focus in the filter bar, the INTEL-05 note never showed because only the lists were redrawn.</p>
+<p>LESSON #88: in free text, a word that is also a character's name is not a pilot until the domain says so. Take the domain's vocabulary out before a lookup that matches any name, and make the mock answer for those words.</p>
+<p>LESSON #87, from the v.98 mockup: read a mockup's numbers, not only its layout.</p>
+</body></html>

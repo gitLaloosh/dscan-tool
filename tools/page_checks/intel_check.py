@@ -71,7 +71,7 @@ REAL = {30004025: "8-YNBE", 30004028: "E-VKJV", 30004714: "QX-LIJ", 30004716: "4
 SYSNAME = {i: REAL.get(i, f'N{i}') for i in ids}
 SYSID = {v: k for k, v in SYSNAME.items()}
 D0 = bfs(SYSID['1DQ1-A'])
-ONE_WORD = {'Marrek': 96000001, 'Ketter': 96000002}
+ONE_WORD = {'Marrek': 96000001, 'Ketter': 96000002, 'Inside': 96000003, 'ESS': 96000004}   # v.99: real characters have such names; a place word must never reach them
 NAMES_CALLS, STATUS = [], {'v': str(J['build']), 'names_fail': False}
 def esi(route):
     url, body = route.request.url, route.request.post_data or ''
@@ -102,6 +102,9 @@ def route(ctx):
     ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
     ctx.route(re.compile(r'https://zkillboard\.com/.*'), M.zkb)
     ctx.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))
+    # v.99: zKillboard's live feed (R2Z2), quiet here: a sequence, then nothing new (intel_kills_check.py feeds it kills)
+    ctx.route(re.compile(r'https://r2z2\.zkillboard\.com/.*'), lambda r: r.fulfill(status=200, content_type='application/json', body='{"sequence": 1000}')
+              if r.request.url.endswith('/sequence.json') else r.fulfill(status=404, body=''))
 
 # ---- a made-up Chatlogs folder, written as EVE writes it ----
 FS = r"""(() => {
@@ -142,7 +145,7 @@ def setup_logs(pg):
 SIDE = {'pilot': {'id': 90000001, 'name': 'Test Pilot'}, 'corp': {'id': M.CORP, 'name': 'Example Corp'}, 'alliance': {'id': M.ALLIANCE, 'name': 'Example Alliance'},
         'friendly': [], 'hostile': [{'id': M.CRTS, 'name': 'Crimson Tide Syndicate', 'kind': 'alliance'}], 'rows': 15}
 NEAR = """() => [...document.querySelectorAll('#intelPanel .it-nb')].map(r => [r.querySelector('.sys').textContent, r.querySelector('.j').textContent, r.querySelector('.st b').textContent, r.querySelector('.who').textContent, r.classList.contains('alert')])"""
-FEED = """() => [...document.querySelectorAll('#intelPanel .it-fd')].map(r => ({chips: [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), c.textContent]), left: (r.querySelector('.it-left') || {}).textContent || '', raw: r.querySelector('.raw').textContent}))"""
+FEED = """() => [...document.querySelectorAll('#intelPanel .it-fd')].map(r => ({chips: [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), (c.querySelector('.nm') || c).textContent]), left: (r.querySelector('.it-left') || {}).textContent || '', raw: r.querySelector('.raw').textContent}))"""
 def tick(pg, ms=2600): pg.wait_for_timeout(ms)
 
 with sync_playwright() as p:

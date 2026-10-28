@@ -102,6 +102,31 @@ Location / Distance / Types / Sorting): "a layout reference and we might want to
 communicating standing, alliance/corp, etc. data source as well."
 - N1. The Feed's layout and how it shows standing and alliance / corporation, modeled on that window (mockup first).
 - N2. Whether those kill events can be read by the page at all (client files, ESI): to be checked, not assumed.
+
+Findings (2026-10-28), mockup `Claude outputs/intel_feed_kills_mockup.html`:
+- The screenshot matches RIFT's Intel Feed (RIFT Intel Fusion Tool, a desktop app): "live intel, whether from intel
+  reports or killboard feeds", coloring "based on your standings"; its kills come from zKillboard. Nothing found saying
+  the EVE client has a kill feed a page could read.
+- zKillboard's live feed is R2Z2 (RedisQ shut down 2026-05-31). API docs (zkillboard.com/api/docs/): sequence.json, then
+  <n>.json until a 404; "Filter locally after retrieval"; wait 6 s after a 404; 15 requests/s per IP; non-empty
+  User-Agent; files kept 24 h. Tried from the GitHub Pages origin in the owner's browser: the page can read it (CORS allowed);
+  a record = killmail_id, hash, esi (attackers, killmail_time, solar_system_id, victim), zkb (locationID, values, points,
+  npc, solo, awox, labels, attackerCount, href), uploaded_at, sequence_id; about 2.5 KB.
+- Volume: 13,000-20,000 kills a day (history/totals.json, 18-25 Oct), about 10-15 requests a minute while Intel is on.
+- Mockup questions: Q1 kills in the Feed from R2Z2 within range; Q2 a kill marks its system in Near You (attackers as
+  reported, same alert rule); Q3 who's who (standing mark, logos, coloured name, tickers); Q4 Types / Distance / Sort /
+  Search filters. the owner: all four as recommended.
+- **v2026.10.14.99: done.** itKillPump (sequence.json, then one file at a time, 12 per 2 s tick at most, 6 s after a 404,
+  backoff 30 s to 5 min on errors, INTEL-05), itKills / itAddKill (kept within max(alert range, Distance), NPC kills
+  and >forget-window kills dropped, killmail_id deduped; friendlies' ships not counted), itNearAdd (one place for
+  reports and kills; "N kill" on the row), who's who (itWhoHtml: mark, logos, coloured name, tickers), itSecFetch
+  (security colour, ESI /universe/systems/, kept), the filter bar (it.set.feed, it.q; itRenderLists keeps focus).
+  `tools/page_checks/intel_kills_check.py`.
+- Also in v.99, from the owner's live use ("ESS refers to the Encounter Surveillance System that null sec systems have"):
+  place and intel words (ESS, jump bridge, structures, belt, anom, site, MTU, d-scan, probes, hunter, roam...) are
+  keywords, and inside / outside / sitting / holding and other plain words are filler, so they never reach the pilot
+  lookup (real characters are named "Inside" and "ESS"); a ship named on its own and again in brackets after a pilot
+  counts once. LESSON #88.
 - the owner: all four as recommended ("Paired ship", "Everyone until clear", "Intel's pairing wins", "Add it").
 - **v2026.10.14.98: done.** itPairs, itLive (the union), itOpenPilot / itAssess / itShape; saRowPick takes `sa.intel`
   pairs first; `tools/page_checks/intel_assess_check.py`.

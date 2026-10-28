@@ -37,6 +37,8 @@ def pa_done(pg):
     pg.wait_for_function("() => !document.querySelector('#fitBtn').disabled && document.querySelector('#pilotBusy').hidden", timeout=120000); pg.wait_for_timeout(500)
 def sa_done(pg, n):
     pg.wait_for_function(f"() => {{ const c = document.querySelector('#tabDscan .pr-head .ctx'); return c && c.textContent.startsWith('{n} of {n} looked up'); }}", timeout=120000); pg.wait_for_timeout(500)
+FEED_ONE = """(raw) => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(f => (f.querySelector('.raw') || {}).textContent === 'Gate Watcher > ' + raw);
+  return r ? [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), (c.querySelector('.nm') || c).textContent]) : null; }"""
 SA_ROWS = """() => [...document.querySelectorAll('#tabDscan button.pr-row')].map(b => [b.querySelector('.pr-pilot .nm').firstChild.textContent.trim(), b.querySelector('.pr-hull .nm').firstChild.textContent.trim(), (b.querySelector('.pr-basis') || b.querySelector('.pr-hull .ctx') || {}).textContent || ''])"""
 
 with sync_playwright() as p:
@@ -61,11 +63,13 @@ with sync_playwright() as p:
       + line(T + 4, 'Someone', 'MO-GZ5 Vesna Dossier sabre +1')
       + line(T + 5, 'Scout Alt', '8WA-Z6 Vesna Dossier vedmak')
       + line(T + 6, 'Someone', 'New Caldari Jita jita blorp zzt')
-      + line(T + 7, 'Gate Watcher', '5BTK-M Seren Ketter (Sabre) Kirra Longtail loki'))
+      + line(T + 7, 'Gate Watcher', '5BTK-M Seren Ketter (Sabre) Kirra Longtail loki')
+      + line(T + 8, 'Gate Watcher', 'inside 3-DMQT ess loki and curse Seren Ketter (Curse) Kirra Longtail (Loki)'))   # v.99: the shape of the owner's report
     tick(pg, 3200)
     pairs = pg.evaluate("() => Object.fromEntries(it.feed.map(e => [e.raw, [...e.pairs].map(([id, s]) => [e.pilots.find(x => x.id === id).name, s.name])]))")
     want = {LONG: [], 'Anouk Morrow (Scimitar) jumped QX-L from 4K-TRB': [['Anouk Morrow', 'Scimitar']], 'Y-OMTZ Seren Ketter Kirra Longtail sabre': [],
             'D-W7F0 Marrek Ketter vedmak x2': [], 'MO-GZ5 Vesna Dossier sabre +1': [], '8WA-Z6 Vesna Dossier vedmak': [['Vesna Dossier', 'Vedmak']], 'New Caldari Jita jita blorp zzt': [], '5BTK-M Seren Ketter (Sabre) Kirra Longtail loki': [['Seren Ketter', 'Sabre']],
+            'inside 3-DMQT ess loki and curse Seren Ketter (Curse) Kirra Longtail (Loki)': [['Seren Ketter', 'Curse'], ['Kirra Longtail', 'Loki']],
             'T5ZI-S* Kirra Longtail* loki': [['Kirra Longtail', 'Loki']]}   # the setup's line already in the log: one pilot, one ship
     check(pairs == want, f'pairing: "Pilot (Ship)" (also beside another pilot and ship); one pilot + one ship; none for two pilots, x2 or +N {pairs}')
     r = near_row(pg, '8WA-Z6')
@@ -74,7 +78,7 @@ with sync_playwright() as p:
     gone = pg.evaluate("() => { const st = it.near.get(it.names.byLower.get('8wa-z6')); const L = itLive(st, Date.now() + 16 * 60000); return [L.pilots.length, L.ships.length, L.extra]; }")
     check(gone == [0, 0, 0], f'the time set drops old names and ships {gone}')
     # ---- a pilot link in the Feed: paired ----
-    btn = pg.evaluate("() => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith('8WA-Z6 Vesna Dossier vedmak')); const c = r.querySelector('button.it-chip.p'); return [c.tagName, c.textContent, c.title]; }")
+    btn = pg.evaluate("() => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith('8WA-Z6 Vesna Dossier vedmak')); const c = r.querySelector('button.it-chip.p'); return [c.tagName, c.querySelector('.nm').textContent, c.title]; }")
     check(btn == ['BUTTON', 'Vesna Dossier', 'Neutral (Standings). Open Vesna Dossier in the Pilot Analyzer, in the Vedmak reported with them'], f'a pilot in the Feed is a button, its title names the paired ship {btn}')
     pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith('8WA-Z6 Vesna Dossier vedmak')).querySelector('button.it-chip.p').click()")
     pa_done(pg)
@@ -126,11 +130,16 @@ with sync_playwright() as p:
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', '8WA-Z6 Kirra Longtail')); tick(pg)
     r = near_row(pg, '8WA-Z6')
     check(r == ['8WA-Z6', '1 neutral', 'Kirra Longtail', True], f'after the clear a report starts again {r}')
+    # ---- v.99 (the owner's report: "ESS refers to the Encounter Surveillance System"): place words never become pilots; a ship
+    # named on its own and again in brackets after a pilot counts once
+    ess = pg.evaluate(FEED_ONE, 'inside 3-DMQT ess loki and curse Seren Ketter (Curse) Kirra Longtail (Loki)')
+    check(ess == [['sys', '3-DMQT 2j'], ['h', 'Seren Ketter'], ['n', 'Kirra Longtail'], ['ship', 'Loki'], ['ship', 'Curse'], ['kw', 'ESS']],
+          f'"inside ... ess": no pilot "Inside" or "ESS" (real characters have those names); Loki and Curse once each, paired {ess}')
     # ---- the Feed keeps the time set (the owner: "drop entries older than 15 minutes") ----
     n0 = pg.evaluate("() => document.querySelectorAll('#intelPanel .it-fd').length")
     pg.evaluate("() => { const e = it.feed.find(x => x.raw === 'D-W7F0 Marrek Ketter vedmak x2'); e.t -= 16 * 60000; itRender(true); }")
     feed = pg.evaluate("() => [document.querySelectorAll('#intelPanel .it-fd').length, [...document.querySelectorAll('#intelPanel .it-fd .raw')].some(r => r.textContent.endsWith('D-W7F0 Marrek Ketter vedmak x2')), document.querySelector('#intelPanel .it-cols > div:last-child .it-h .ctx').textContent]")
-    check(feed == [n0 - 1, False, 'last 15 min, newest first'], f'the Feed drops a line older than 15 minutes {feed} (was {n0})')
+    check(feed == [n0 - 1, False, 'last 15 min, reports and kills'], f'the Feed drops a line older than 15 minutes {feed} (was {n0})')
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', 'T5ZI-S Kirra Longtail')); tick(pg)
     check(pg.evaluate("() => !it.feed.some(x => x.raw === 'D-W7F0 Marrek Ketter vedmak x2')"), 'and lets it go from memory with the next line')
     # ---- copy shape ----

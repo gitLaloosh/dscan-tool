@@ -878,7 +878,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
-## 85. Read a mockup's numbers, not only its layout
+## 88. In free text, a word that is also a character's name is not a pilot until the domain says so
+
+- **What happened (v2026.10.14.98, the owner's live use):** an intel line "<system> inside ess loki and curse <pilot> (Curse)
+  <pilot> (Loki)" showed "Inside" and "ESS" as pilots. Every word the parser couldn't place went to ESI's name lookup,
+  and EVE has real characters named "Inside" and "ESS". The made-up check lines never used such words, so nothing
+  failed. The same line also counted Loki and Curse twice (named on their own and again in brackets).
+- **Do this instead:** before a lookup that matches anything with a name, take out the domain's own vocabulary (places
+  in a system: ESS, gate, station, structure names; intel shorthand; plain English filler). In a check, make the mock
+  answer for those words (here "Inside" and "ESS" are mock characters), so a word list that misses one fails.
+
+## 87. Read a mockup's numbers, not only its layout
 
 - **What happened (v2026.10.14.98 mockup):** the Intel delivery 2 mockup was drawn from the real v.97 page with made-up
   lines. Its Near You row for 8WA-Z6 said "1 neutral, Vesna Dossier · Vedmak" one line after "5 hostile": Near You kept
@@ -886,6 +896,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   noticed in v.96/v.97; the mockup's numbers showed it, and it became a question for the owner ("Everyone until clear").
 - **Do this instead:** when a mockup runs on the real page, read every number and name in its frames as output to
   check, as a page check would. A frame that looks wrong is a finding, even when the frame is about something else.
+
+## 86. A partial redraw must cover everything that can change while it is the only redraw
+
+- **What happened (v2026.10.14.99):** so a focused search box keeps its caret, Intel redraws only its two lists while the
+  Feed's filter bar has the focus. The notes above them (zKillboard not answering, INTEL-05) were left out of that
+  path, so with focus in the bar the error never showed. `intel_kills_check.py` failed R2Z2 right after using the
+  filters and caught it.
+- **Do this instead:** when a full redraw gets a lighter path, list what the full one draws that can change on its own
+  (lists, notes, badges, status) and give each a box the light path refreshes. Test the light path by leaving focus
+  where it applies before the change.
 
 ## 85. A list kept in arrival order isn't in time order
 

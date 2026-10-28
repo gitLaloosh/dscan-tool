@@ -2299,6 +2299,28 @@
   .it-chip.ship{border-style:dashed;} .it-chip.kw{background:var(--panel); color:var(--text-dim); border-color:transparent;} .it-chip.clr{border-color:var(--it-clear); color:var(--it-clear);}
   .it-chip .j{font:700 10.5px var(--mono); opacity:.85;}
   .it-left{color:var(--text-dim); font-size:11.5px;}
+  /* v2026.10.14.99 the Feed: a head line per row, who's who, kills, the filter bar, security colours */
+  .it-fd{display:block;} .it-fh{display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-bottom:4px;}
+  .it-age{font:400 11.5px var(--mono); color:var(--text-dim);}
+  .it-ty{font:700 10px var(--sans); letter-spacing:.5px; text-transform:uppercase; padding:1px 6px; border-radius:3px; background:var(--panel); color:var(--text-dim);}
+  .it-ty.kill{background:color-mix(in srgb, var(--danger) 22%, transparent); color:#f08b7e;} .it-ty.clr{color:var(--it-clear);} .it-ty.rep{color:var(--cyan);}
+  .it-fd.kill{background:color-mix(in srgb, var(--danger) 5%, transparent); padding-left:6px; padding-right:6px;} .it-fd .it-chips + .it-chips{margin-top:3px;}
+  .it-sn.hs{color:#4fc3d9;} .it-sn.ls{color:#d9a43c;} .it-sn.ns{color:#e0703a;}
+  .it-chip.p, .it-chip.ent{gap:4px; padding:1px 7px 1px 4px;}
+  .it-mk{width:13px; height:13px; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; font:700 11px/1 var(--sans); color:#fff; flex:none;}
+  .it-mk.h{background:var(--side-hostile);} .it-mk.f{background:var(--side-friendly);} .it-mk.n{border:1.5px solid var(--text-dim); border-radius:50%; width:11px; height:11px;}
+  .it-lg{width:18px; height:18px; border-radius:3px; background:#222b33; overflow:hidden; display:inline-block; flex:none;} .it-lg.c{border-radius:50%;} .it-lg img{width:100%; height:100%; display:block;}
+  .it-chip .nm{font-weight:600;} .it-chip.h .nm{color:var(--side-hostile);} .it-chip.f .nm{color:var(--side-friendly);} .it-chip.n .nm{color:var(--heading);}
+  .it-tks .tk{font:600 10.5px var(--mono); color:var(--text-dim); margin-left:3px;}
+  .it-chip.ship img{width:18px; height:18px; border-radius:3px; margin-left:-3px;}
+  .it-by{font:400 12px var(--sans); color:var(--text-dim); align-self:center;} .it-isk{font:600 11.5px var(--mono); color:var(--amber); align-self:center;}
+  a.it-zk{font:600 11.5px var(--sans); color:var(--cyan); align-self:center; margin-left:4px;}
+  .it-kl{display:inline-block; margin-left:6px; padding:0 6px; border-radius:3px; background:color-mix(in srgb, var(--danger) 22%, transparent); color:#f08b7e; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.4px; vertical-align:1px;}
+  .it-fbar{display:flex; gap:6px 10px; flex-wrap:wrap; align-items:center; margin:2px 0 8px;}
+  .it-fbar label{display:inline-flex; gap:5px; align-items:center; font:600 11.5px var(--sans); color:var(--text-dim);}
+  .it-fbar select{width:auto; min-width:0; min-height:28px; padding:0 6px; background:var(--bg); color:var(--heading); color-scheme:dark; border:1px solid var(--line); border-radius:6px; font:600 12px var(--sans);}
+  .it-fbar select option{background:var(--panel); color:var(--heading);}
+  .it-fbar input{flex:1; min-width:140px; min-height:28px; padding:0 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); font:400 12px var(--sans);}
   /* v2026.10.14.98 Intel delivery 2: pilot links, Assess, copy shape, the From Intel lines */
   .it-nb{grid-template-columns:92px 44px minmax(0,1fr) 54px 78px;}
   button.it-assess{min-height:28px; padding:0 10px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0; white-space:nowrap;}
@@ -2318,6 +2340,7 @@
   @media (max-width: 900px){
     .it-nb{grid-template-columns:84px 40px minmax(0,1fr) auto;} button.it-assess{min-height:40px;}
     button.it-shape{opacity:1; width:36px; height:36px;} .it-fd .it-chips{padding-right:42px;} .from-intel button{min-height:40px;}
+    .it-fd.kill .it-chips{padding-right:0;} .it-fbar select, .it-fbar input{min-height:40px;}
   }
   @media (max-width: 900px){
     .it-setup, .it-pop .it-setup{grid-template-columns:1fr 1fr;} .it-cols{grid-template-columns:1fr;} .it-sw{margin-left:0;}
@@ -2333,7 +2356,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.98</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.99</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2671,6 +2694,7 @@ const CARD_INFO = {
   "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from the stargate list in the EVE client's own data (no jump bridges, no wormholes); the page says when EVE has been patched since that list was checked.",
   "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
   "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
+  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 10-15 small requests a minute) and keeps the kills within your alert range (or the Feed's Distance, if wider), NPC kills left out. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser.",
   "{card:itnear}: each system reported in the time you set, nearest first: everyone and every ship reported there in that time until someone reports it clear (the same ship type twice counts once, at its larger number); clear or no visual when that is the latest word. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
   "A pilot's name (in {card:itfeed} and {card:itnear}) opens them in the Pilot Analyzer; when the line puts them in a ship (\"Pilot (Ship)\", or one pilot and one ship), in that ship. Assess sends a system's reported pilots and ships to the {card:sysan}, where Intel's pairing is their possible ship; Restore my paste puts back what you had there. The copy button on a line copies its shape with system and pilot names replaced, to report a line read wrong.",
   "Nothing from your logs leaves the browser except the words looked up on ESI, and none of it is kept after you close the page."
@@ -2976,6 +3000,16 @@ const ERROR_CODES = {
   "why": "",
   "since": "2026-10-28 (v2026.10.14.96)",
   "doc": "2026-10-28_intel-feed.html"
+ },
+
+ "INTEL-05": {
+  "title": "zKillboard's live kill feed isn't answering",
+  "where": "{card:intel} tab, kills in the {card:itfeed}",
+  "trigger": "R2Z2 (r2z2.zkillboard.com, zKillboard's live feed) gave an error or no answer. The page tries again after 30 seconds, then longer (up to 5 minutes); reports from your channels carry on.",
+  "check": "zKillboard's status; the connection. A 403 or 429 means zKillboard is limiting this address.",
+  "why": "",
+  "since": "2026-10-28 (v2026.10.14.99)",
+  "doc": "2026-10-28_intel-feed-kills.html"
  },
 
  "FLEET-01": {
@@ -22538,15 +22572,28 @@ const IT_RECENT_DAYS = 2;                    // channels and characters offered:
 const IT_FIRST_READ = 2 * 1024 * 1024;       // a long session's log: only its last 2 MB is read at the start
 const IT_FEED_MAX = 300, IT_FEED_SHOWN = 80, IT_NEAR_MAX = 14;
 const IT_ALERT_GAP_MS = 30000;               // one alert per system per 30 s
+// v2026.10.14.99 (the owner: kills in the Feed "within range", "Mark and alert"): zKillboard's live feed, R2Z2. Its API docs
+// (zkillboard.com/api/docs/): read ephemeral/sequence.json, then each numbered file in turn until a 404; "Filter locally
+// after retrieval"; after a 404 "wait at least six seconds"; "up to 15 requests per second per IP"; files kept 24 hours.
+// Tried from the GitHub Pages address: the page may read it. About 13,000-20,000 kills a day (history/totals.json).
+const IT_R2Z2 = 'https://r2z2.zkillboard.com';
+const IT_KILL_BACK = 240;                    // at the start, about the last 15 minutes of kills (240 at ~15 a minute)
+const IT_KILL_PER_TICK = 12;                 // at most 12 requests per 2 s tick, one at a time (the limit is 15 a second)
+const IT_KILL_WAIT_MS = 6000;                // after a 404, at least 6 s (zKillboard's rule)
+const IT_FEED_TYPES = [['all', 'All'], ['reports', 'Reports'], ['kills', 'Kills']];
+const IT_FEED_DIST = [0, 1, 2, 3, 5, 10];   // 0: any distance
+const IT_FEED_SORT = [['new', 'Newest'], ['near', 'Nearest']];
 const IT_RANGES = [1, 2, 3, 4, 5, 7, 10], IT_FORGET = [5, 10, 15, 20, 30, 60];
 const IT_NAME_MAX = 37, IT_NAME_WORDS = 3;   // EVE character names: at most 37 characters (and 3 words here)
 const it = {
   set: null, on: false, dir: null, dirName: '', perm: '', files: new Map(), local: null, me: null,
   feed: [], near: new Map(), chans: [], chars: new Map(), lastLine: 0, err: '', note: '', pop: false,
   ticker: null, busy: false, lastScan: 0, gen: 0, alerted: new Map(), names: null, namesBusy: null,
-  pilots: new Map(), aff: new Map(), patched: '', supported: false, loaded: false
+  pilots: new Map(), aff: new Map(), patched: '', supported: false, loaded: false,
+  kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: ''   // v.99: kills, names on kills, security, the Feed's search
 };
-function itDefaults(){ return {channels: [], me: null, range: 3, sound: true, notify: true, forget: 15, hideFriendly: true}; }
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0}; }
+function itDefaults(){ return {channels: [], me: null, range: 3, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
 function itReadSet(){
   const d = itDefaults();
   try{
@@ -22557,6 +22604,10 @@ function itReadSet(){
       if(IT_RANGES.includes(Number(r.range))) d.range = Number(r.range);
       if(IT_FORGET.includes(Number(r.forget))) d.forget = Number(r.forget);
       for(const k of ['sound', 'notify', 'hideFriendly']) if(typeof r[k] === 'boolean') d[k] = r[k];
+      const f = r.feed && typeof r.feed === 'object' ? r.feed : {};   // v.99: the Feed's filters
+      if(IT_FEED_TYPES.some(x => x[0] === f.types)) d.feed.types = f.types;
+      if(IT_FEED_DIST.includes(Number(f.dist))) d.feed.dist = Number(f.dist);
+      if(IT_FEED_SORT.some(x => x[0] === f.sort)) d.feed.sort = f.sort;
     }
   }catch(e){ /* private window: defaults */ }
   return d;
@@ -22670,8 +22721,18 @@ function itShips(){
 // Words that are never a pilot (filler, intel shorthand); KW are shown as chips.
 const IT_KW = {clr: 'clear', clear: 'clear', nv: 'no visual', novis: 'no visual', status: 'status?', stat: 'status?',
   cyno: 'cyno', bubble: 'bubble', bubbled: 'bubble', camp: 'camp', camped: 'camp', spike: 'spike', cloaky: 'cloaky', cloaked: 'cloaky',
-  docked: 'docked', dock: 'docked', gate: 'gate', jumped: 'jumped', red: 'red', reds: 'red', neut: 'neut', neuts: 'neut', hostile: 'red', hostiles: 'red'};
-const IT_FILLER = new Set(['in', 'on', 'at', 'to', 'from', 'and', '&', '+', '-', 'the', 'a', 'x', 'is', 'still', 'now', 'local', 'pilot', 'pilots', 'gang', 'fleet', 'ship', 'ships', 'with', 'of', 'near', 'heading', 'towards', 'toward', 'into', 'out', 'warped', 'warp', 'landed', 'jump', 'jumping', 'no', 'visual', 'vis', 'afk', 'or']);
+  docked: 'docked', dock: 'docked', gate: 'gate', jumped: 'jumped', red: 'red', reds: 'red', neut: 'neut', neuts: 'neut', hostile: 'red', hostiles: 'red',
+  // v2026.10.14.99 (the owner: "ESS refers to the Encounter Surveillance System that null sec systems have"): places in a
+  // system and other intel words. Real characters are named "ESS" and "Inside", so a word like these must never reach
+  // the pilot lookup.
+  ess: 'ESS', jb: 'jump bridge', ansi: 'jump bridge', ansiblex: 'jump bridge', bridge: 'jump bridge', bridged: 'jump bridge',
+  citadel: 'structure', keepstar: 'structure', fortizar: 'structure', fort: 'structure', astrahus: 'structure', astra: 'structure',
+  raitaru: 'structure', azbel: 'structure', sotiyo: 'structure', athanor: 'structure', tatara: 'structure', station: 'structure',
+  structure: 'structure', pos: 'structure', tower: 'structure', belt: 'belt', belts: 'belt', anom: 'anom', anoms: 'anom', site: 'site',
+  mtu: 'MTU', dscan: 'd-scan', probes: 'probes', probing: 'probes', hunter: 'hunter', hunters: 'hunter', roam: 'roam', roaming: 'roam'};
+const IT_FILLER = new Set(['in', 'on', 'at', 'to', 'from', 'and', '&', '+', '-', 'the', 'a', 'x', 'is', 'still', 'now', 'local', 'pilot', 'pilots', 'gang', 'fleet', 'ship', 'ships', 'with', 'of', 'near', 'heading', 'towards', 'toward', 'into', 'out', 'warped', 'warp', 'landed', 'jump', 'jumping', 'no', 'visual', 'vis', 'afk', 'or',
+  'inside', 'outside', 'under', 'sitting', 'holding', 'by', 'for', 'just', 'here', 'there', 'up', 'down', 'back', 'around', 'over', 'off', 'onto',
+  'through', 'via', 'entering', 'entered', 'leaving', 'moving', 'going', 'coming', 'spotted', 'seen', 'sighted', 'lots', 'many', 'some', 'few']);   // v.99
 // Splits a message into words: '*' after a linked name ends it, '(' ')' split ("Pilot (Ship) jumped ..."); the
 // punctuation around a word is dropped but remembered for the raw text.
 function itWords(msg){
@@ -22723,7 +22784,7 @@ function itFindSystems(W, used, mySys){
 function itParse(msg, mySys){
   const W = itWords(msg), used = new Array(W.length).fill(null);
   const sys = itFindSystems(W, used, mySys);
-  const S = itShips(), ships = [], kw = new Set();
+  const S = itShips(), ships = [], kw = new Set(), mentions = [];
   let extra = 0;
   for(let i = 0; i < W.length; i++){
     if(used[i]) continue;
@@ -22737,7 +22798,12 @@ function itParse(msg, mySys){
       else if(pv && !used[i - 1] && /^\d{1,3}x?$/i.test(pv.w)){ n = Number(pv.w.replace(/x$/i, '')); used[i - 1] = 'c'; }
       for(let j = 0; j < k; j++) used[i + j] = 'ship';
       const prev = ships.find(x => x.id === hit.id);
-      if(prev) prev.n += n; else ships.push({id: hit.id, name: hit.name, n: Math.max(1, n), at: i});
+      // v.99: "loki and curse Pilot A (Curse) Pilot B (Loki)": a ship named in brackets after a pilot is the same ship as
+      // one named on its own in that line, so a type counts as the larger of the two, not their sum (the owner's report)
+      const inP = W[i].paren, m = Math.max(1, n);
+      mentions.push({id: hit.id, name: hit.name, at: i, n: m, paren: inP});
+      if(prev){ prev[inP ? 'pp' : 'np'] += m; prev.n = prev.np && prev.pp ? Math.max(prev.np, prev.pp) : prev.np + prev.pp; }
+      else ships.push({id: hit.id, name: hit.name, n: m, at: i, np: inP ? 0 : m, pp: inP ? m : 0});
       i += k - 1;
       break;
     }
@@ -22761,7 +22827,7 @@ function itParse(msg, mySys){
     if(W[i].linked){ runs.push(run); run = []; }
   }
   if(run.length) runs.push(run);
-  return {W, used, sys, ships, kw, extra, runs: runs.filter(r => r.length)};
+  return {W, used, sys, ships, kw, extra, mentions, runs: runs.filter(r => r.length)};
 }
 // Candidate pilot names in a run: every 1-3 word stretch within EVE's 37 characters.
 function itCandidates(p){
@@ -22797,8 +22863,8 @@ function itPilotsOf(p){
 // pilot's name; else a line with exactly one pilot and one ship (and no +N). Nothing is guessed beyond that.
 function itPairs(p, pilots){
   const pairs = new Map();
-  for(const sh of p.ships){
-    if(sh.n !== 1 || !p.W[sh.at].paren) continue;
+  for(const sh of p.mentions || []){   // v.99: each mention (a type can be named on its own and in brackets)
+    if(sh.n !== 1 || !sh.paren) continue;
     const pl = pilots.find(x => x.to === sh.at - 1 && !p.W[x.to].paren);
     if(pl) pairs.set(pl.id, {typeId: sh.id, name: sh.name});
   }
@@ -22992,22 +23058,30 @@ function itAddReport(l, p, pilots){
   if(it.feed.length > IT_FEED_MAX || it.feed.some(x => x.t < old)) it.feed = it.feed.filter(x => x.t >= old).slice(0, IT_FEED_MAX);
   const sys = p.sys[0] && p.sys[0].id;
   if(!sys || e.kind === 'status' || e.kind === 'info') return;
-  // v.98: a system keeps everyone and every ship reported there within the time set, until someone reports it clear;
-  // the same ship type reported twice counts once at its larger number (two lines about one gang, not two gangs)
-  const prev = it.near.get(sys), keep = l.t - it.set.forget * 60000;
-  const st = {sys, t: l.t, who: l.who, kind: e.kind, pilots: [], ships: [], extra: [], pairs: new Map()};
+  itNearAdd(e, sys);
+}
+// v.98: a system keeps everyone and every ship reported there within the time set, until someone reports it clear;
+// the same ship type reported twice counts once at its larger number (two lines about one gang, not two gangs).
+// v.99: a kill is one more report there: its attackers and their ships (the owner: "Mark and alert").
+function itNearAdd(e, sys){
+  const prev = it.near.get(sys), keep = e.t - it.set.forget * 60000, kind = e.kind === 'kill' ? 'seen' : e.kind;
+  if(prev && prev.t > e.t && e.kind === 'kill' && prev.kind === 'clear') return;   // a kill from before the system was reported clear
+  const st = {sys, t: Math.max(e.t, prev ? prev.t : 0), who: e.who, kind, pilots: [], ships: [], extra: [], pairs: new Map(), kills: []};
   if(e.kind !== 'clear' && prev && prev.kind !== 'clear'){
     st.pilots = prev.pilots.filter(x => x.t >= keep); st.ships = prev.ships.filter(x => x.t >= keep);
     st.extra = prev.extra.filter(x => x.t >= keep); for(const [k, v] of prev.pairs) if(v.t >= keep) st.pairs.set(k, v);
+    st.kills = (prev.kills || []).filter(x => x.t >= keep);
+    if(prev.t > e.t){ st.kind = prev.kind; st.who = prev.who; }   // an older kill read late doesn't change the latest word
   }
-  if(e.kind === 'seen' || e.kind === 'nv'){
-    for(const x of sides){ const i = st.pilots.findIndex(y => y.id === x.id), v = {...x, t: l.t}; if(i < 0) st.pilots.push(v); else st.pilots[i] = v; }   // first-reported order kept
-    for(const sh of p.ships){ const i = st.ships.findIndex(y => y.id === sh.id); if(i < 0) st.ships.push({...sh, t: l.t}); else st.ships[i] = {...sh, n: Math.max(sh.n, st.ships[i].n), t: l.t}; }
-    if(p.extra) st.extra.push({n: p.extra, t: l.t});
-    for(const [id, sh] of e.pairs) st.pairs.set(id, {...sh, t: l.t, who: l.who});
+  if(kind === 'seen' || kind === 'nv'){
+    for(const x of e.pilots){ const i = st.pilots.findIndex(y => y.id === x.id), v = {...x, t: e.t}; if(i < 0) st.pilots.push(v); else st.pilots[i] = v; }   // first-reported order kept
+    for(const sh of e.p.ships){ const i = st.ships.findIndex(y => y.id === sh.id); if(i < 0) st.ships.push({...sh, t: e.t}); else st.ships[i] = {...sh, n: Math.max(sh.n, st.ships[i].n), t: e.t}; }
+    if(e.p.extra) st.extra.push({n: e.p.extra, t: e.t});
+    for(const [id, sh] of e.pairs) st.pairs.set(id, {...sh, t: e.t, who: e.who});
+    if(e.kind === 'kill') st.kills.push({t: e.t, id: e.kill.id});
   }
   it.near.set(sys, st);
-  if(!l.history) itAlert(st, e);
+  if(!e.history) itAlert(st, e);
 }
 // What a system has within the time set now: its pilots, ships and +N (the largest +N reported).
 function itLive(st, now = Date.now()){
@@ -23018,6 +23092,100 @@ function itLive(st, now = Date.now()){
 }
 function itThreat(st){ const L = itLive(st); return st.kind === 'seen' ? !L.friendlyOnly : st.kind === 'nv' ? L.pilots.some(x => x.side !== 'f') || !L.pilots.length : false; }
 function itCount(st){ const L = itLive(st), n = L.pilots.filter(x => x.side !== 'f').length + L.extra; return n || L.ships.reduce((s, x) => s + x.n, 0); }
+
+// ---- v.99: kills nearby, from zKillboard's live feed (R2Z2), read only while Intel is on ----
+function itKillRange(){ return Math.max(it.set.range, it.set.feed.dist || 0); }   // kept: within your alert range, or the Feed's Distance if wider
+async function itKillPump(){
+  const kf = it.kf;
+  if(!it.on || !kf || kf.busy || Date.now() < kf.waitUntil || !it.names) return;
+  kf.busy = true;
+  const gen = it.gen, got = [];
+  try{
+    if(kf.seq === null){
+      kf.reqs++;
+      const r = await fetch(`${IT_R2Z2}/ephemeral/sequence.json`);
+      if(!r.ok) throw new Error(`status ${r.status}`);
+      kf.seq = Math.max(0, Number((await r.json()).sequence) - IT_KILL_BACK);
+    }
+    for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen; n++){
+      kf.reqs++;
+      const r = await fetch(`${IT_R2Z2}/ephemeral/${kf.seq}.json`);
+      if(r.status === 404){ kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; kf.head = true; break; }
+      if(!r.ok) throw new Error(`status ${r.status}`);
+      got.push({rec: await r.json(), history: !kf.head});
+      kf.seq++;
+    }
+    kf.fails = 0; it.kfNote = '';
+  }catch(e){
+    kf.fails++;
+    kf.waitUntil = Date.now() + Math.min(300000, 30000 * 2 ** (kf.fails - 1));   // 30 s, then longer, at most 5 minutes
+    it.kfNote = withCode(`zKillboard's live kill feed isn't answering (${e.message || 'network error'}); kills nearby will show again when it does.`, 'INTEL-05');
+  }finally{ kf.busy = false; }
+  if(gen !== it.gen) return;
+  if(got.length) await itKills(got, gen);
+  itRender();
+}
+function itShipOf(typeId){ const r = INTEL_SHIPS[typeId]; return typeId ? {typeId: Number(typeId), name: r ? r[0] : `type ${typeId}`} : null; }
+async function itKills(got, gen){
+  const my = itMySys();
+  if(!my) return;
+  const keepT = Date.now() - it.set.forget * 60000, keepJ = itKillRange(), recs = [];
+  for(const {rec, history} of got){
+    const km = rec && rec.esi, z = (rec && rec.zkb) || {};
+    if(!km || !km.killmail_id || it.kf.seen.has(km.killmail_id)) continue;
+    it.kf.seen.add(km.killmail_id);
+    if(z.npc) continue;   // NPC kills left out
+    const t = Date.parse(km.killmail_time), j = itJumps(my, km.solar_system_id);
+    if(!(t >= keepT) || j === null || j > keepJ) continue;
+    recs.push({km, z, t, history});
+  }
+  if(!recs.length) return;
+  const ids = new Set();
+  for(const r of recs){ if(r.km.victim && r.km.victim.character_id) ids.add(r.km.victim.character_id); for(const a of r.km.attackers || []) if(a.character_id) ids.add(a.character_id); }
+  const need = [...ids].filter(id => !it.charNames.has(id));
+  try{ for(let i = 0; i < need.length; i += 1000) for(const x of await resolveIdsToNames(need.slice(i, i + 1000))) it.charNames.set(x.id, x.name); }
+  catch(e){ it.note = withCode(`Names on kills: ${e.message}`, e.code || 'ESI-04'); }
+  if(gen !== it.gen) return;
+  for(const r of recs.sort((a, b) => a.t - b.t)) itAddKill(r);
+}
+function itAddKill({km, z, t, history}){
+  const sets = sideSets();
+  const ent = (o) => ({id: o.character_id || null, name: o.character_id ? it.charNames.get(o.character_id) || `pilot ${o.character_id}` : '', corp: o.corporation_id || null,
+    alliance: o.alliance_id || null, side: o.corporation_id ? sideOf(o.corporation_id, o.alliance_id || null, sets, null).side : 'n', ship: itShipOf(o.ship_type_id)});
+  const att = (km.attackers || []).filter(a => a.character_id).sort((a, b) => (b.final_blow ? 1 : 0) - (a.final_blow ? 1 : 0) || (b.damage_done || 0) - (a.damage_done || 0)).map(ent);
+  const ships = [], pairs = new Map();
+  for(const a of att){
+    if(!a.ship) continue;
+    pairs.set(a.id, a.ship);   // a killmail names each attacker's ship: the surest pairing there is
+    if(a.side === 'f') continue;   // a friendly's ship isn't a threat (a kill by friendlies only stays friendly-only)
+    const s = ships.find(x => x.id === a.ship.typeId);
+    if(s) s.n++; else ships.push({id: a.ship.typeId, name: a.ship.name, n: 1});
+  }
+  const victim = ent(km.victim || {});
+  const e = {id: ++itEntryId, kind: 'kill', t, who: 'zKillboard', chan: '', raw: '', history, pilots: att, pairs,
+    p: {sys: [{id: km.solar_system_id, at: 0, k: 1}], ships, kw: new Set(), extra: 0, W: [], used: []},
+    kill: {id: km.killmail_id, victim, value: Number(z.totalValue) || 0, solo: !!z.solo, n: Number(z.attackerCount) || (km.attackers || []).length, href: `https://zkillboard.com/kill/${km.killmail_id}/`}};
+  e.friendlyOnly = !!att.length && att.every(x => x.side === 'f');
+  it.feed.unshift(e);
+  if(att.length) itNearAdd(e, km.solar_system_id);
+}
+function itIsk(v){ return v >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}k` : String(Math.round(v)); }
+// System security, for the colour of a system's name (ESI /universe/systems/{id}/, asked once per system shown, kept)
+async function itSecFetch(ids){
+  const ask = [...new Set(ids)].filter(id => id && !it.sec.has(id) && !it.secAsk.has(id)).slice(0, 12);
+  if(!ask.length) return;
+  for(const id of ask) it.secAsk.add(id);
+  let any = false;
+  await Promise.all(ask.map(async (id) => {
+    let v = await itKvGet(`sec:${id}`);
+    if(typeof v !== 'number'){
+      try{ const r = await fetch(`${ESI}/universe/systems/${id}/?datasource=tranquility`); if(r.ok){ v = Number((await r.json()).security_status); if(Number.isFinite(v)) itKvSet(`sec:${id}`, v); } }catch(e){ /* the name stays uncoloured */ }
+    }
+    if(typeof v === 'number' && Number.isFinite(v)){ it.sec.set(id, v); any = true; }
+  }));
+  if(any) itRenderLists();
+}
+function itSecClass(id){ const v = it.sec.get(id); if(v === undefined) return ''; const r = Math.round(v * 10) / 10; return r >= 0.5 ? 'hs' : r > 0 ? 'ls' : 'ns'; }
 
 // ---- alerts: a sound and a desktop notification ----
 let itAudio = null;
@@ -23043,7 +23211,8 @@ function itAlert(st, e){
   it.alerts = (it.alerts || 0) + 1;
   if(it.set.sound) itBeep();
   if(it.set.notify && typeof Notification !== 'undefined' && Notification.permission === 'granted'){
-    try{ new Notification(`${itSysName(st.sys)} · ${j} jump${j === 1 ? '' : 's'}`, {body: `${e.who}: ${e.raw}`.slice(0, 180), tag: `intel-${st.sys}`}); }catch(err){ /* not shown */ }
+    const body = e.kind === 'kill' ? `Kill: ${e.kill.victim.name} lost a ${e.kill.victim.ship ? e.kill.victim.ship.name : 'ship'}${e.kill.value ? ` (${itIsk(e.kill.value)} ISK)` : ''}` : `${e.who}: ${e.raw}`;
+    try{ new Notification(`${itSysName(st.sys)} · ${j} jump${j === 1 ? '' : 's'}`, {body: body.slice(0, 180), tag: `intel-${st.sys}`}); }catch(err){ /* not shown */ }
   }
 }
 
@@ -23053,11 +23222,11 @@ function itTickerStart(){
   try{
     const src = `let t=null;onmessage=(e)=>{clearInterval(t);if(e.data>0)t=setInterval(()=>postMessage(1),e.data);};`;
     const w = new Worker(URL.createObjectURL(new Blob([src], {type: 'text/javascript'})));
-    w.onmessage = () => itTick();
+    w.onmessage = () => { itTick(); itKillPump(); };
     w.postMessage(IT_TICK_MS);
     it.ticker = {kind: 'worker', stop: () => { try{ w.postMessage(0); w.terminate(); }catch(e){} }};
   }catch(e){
-    const t = setInterval(itTick, IT_TICK_MS);   // no worker: an ordinary timer (slowed in a hidden tab)
+    const t = setInterval(() => { itTick(); itKillPump(); }, IT_TICK_MS);   // no worker: an ordinary timer (slowed in a hidden tab)
     it.ticker = {kind: 'timer', stop: () => clearInterval(t)};
   }
 }
@@ -23077,6 +23246,7 @@ async function itStart(){
   if(it.set.notify && typeof Notification !== 'undefined' && Notification.permission === 'default'){ try{ Notification.requestPermission().then(() => itRender()).catch(() => {}); }catch(e){} }
   it.on = true; it.gen++;
   it.feed = []; it.near = new Map(); it.alerted = new Map(); it.lastLine = 0; it.files = new Map(); it.lastScan = 0;
+  it.kf = itKfNew(); it.kfNote = '';   // v.99
   itRender();
   try{ await itLoadNames(); }catch(e){ it.err = withCode(e.message, e.code || 'INTEL-03'); itStop(); return; }
   itCheckBuild();
@@ -23084,6 +23254,7 @@ async function itStart(){
   if(!it.set.channels.length){ it.pop = true; }
   itTickerStart();
   itTick();
+  itKillPump();
 }
 function itStop(){
   it.on = false; it.gen++;
@@ -23128,31 +23299,108 @@ function itNearList(){
 function itNearCount(){ return it.on ? itNearList().filter(x => x.j !== null && x.j <= it.set.range && itThreat(x.st)).length : 0; }
 // v.98: a pilot's name opens them in the Pilot Analyzer (in the ship the line pairs them with, the owner: "Paired ship")
 function itPilotTitle(x, pair){ return `${SIDE_WORD[x.side]} (${cardName('side')}). Open ${x.name} in the Pilot Analyzer${pair ? `, in the ${pair.name} reported with them` : ''}`; }
-function itPilotChip(x, e){ const pair = e.pairs.get(x.id); return `<button type="button" class="it-chip p ${x.side}" data-it-pilot="${x.id}" data-it-e="${e.id}" title="${escapeHtml(itPilotTitle(x, pair))}">${escapeHtml(x.name)}</button>`; }
+// v.99 (the owner: "As drawn"): who's who as EVE's intel tools show it: a standing mark, the corporation and alliance logos, the
+// name coloured by standing, then [CORP] <ALLIANCE>. Logos from CCP's image server (none shown if it doesn't answer).
+const IT_MK = {h: '−', f: '+', n: ''};
+function itOrgOf(x){ const a = it.aff.get(x.id); return {corp: x.corp || (a && a.corp) || null, alliance: x.alliance || (a && a.alliance) || null}; }
+function itTkHtml(kind, id){
+  if(!id) return '';
+  const v = orgCache.get(`${kind}:${id}`);
+  if(v && typeof v.then !== 'function' && v.ticker) return `<span class="tk">${escapeHtml(kind === 'alliance' ? `<${v.ticker}>` : `[${v.ticker}]`)}</span>`;
+  return orgTickerHtml(kind, id);
+}
+function itLogo(kind, id){ return id ? `<span class="it-lg${kind === 'corporation' ? ' c' : ''}"><img src="https://images.evetech.net/${kind === 'corporation' ? 'corporations' : 'alliances'}/${id}/logo?size=32" alt="" loading="lazy" onerror="this.remove()"></span>` : ''; }
+function itWhoHtml(x){
+  const o = itOrgOf(x);
+  return `<span class="it-mk ${x.side}" aria-hidden="true">${IT_MK[x.side]}</span>${itLogo('corporation', o.corp)}${itLogo('alliance', o.alliance)}<span class="nm">${escapeHtml(x.name)}</span><span class="it-tks">${itTkHtml('corporation', o.corp)}${itTkHtml('alliance', o.alliance)}</span>`;
+}
+function itPilotChip(x, e){
+  if(!x.id) return `<span class="it-chip ent ${x.side}">${itWhoHtml({...x, name: 'no pilot'})}</span>`;
+  const pair = e.pairs.get(x.id);
+  return `<button type="button" class="it-chip p ${x.side}" data-it-pilot="${x.id}" data-it-e="${e.id}" title="${escapeHtml(itPilotTitle(x, pair))}">${itWhoHtml(x)}</button>`;
+}
+function itShipChip(s){ return `<span class="it-chip ship"><img src="https://images.evetech.net/types/${s.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(itShipText(s))}</span>`; }
 function itShipText(s){ return `${s.name}${s.n > 1 ? ` ×${s.n}` : ''}`; }
 function itNearRowHtml({st, j}){
   const L = itLive(st), alert = itThreat(st) && j !== null && j <= it.set.range;
   const n = itCount(st), hostile = L.pilots.some(x => x.side === 'h') || !L.pilots.length;
   const word = st.kind === 'clear' ? 'clear' : st.kind === 'nv' ? 'no visual' : L.friendlyOnly ? 'friendly' : `${n} ${hostile ? 'hostile' : 'neutral'}`;
+  const nk = st.kind === 'clear' ? 0 : (st.kills || []).filter(x => x.t >= Date.now() - it.set.forget * 60000).length;   // v.99
   const shipsTxt = L.ships.map(itShipText).join(', ');
   const whoTxt = st.kind === 'clear' ? `reported clear by ${st.who}`
     : [L.pilots.map(x => x.name).join(', ') + (L.extra ? ` +${L.extra}` : ''), shipsTxt].filter(Boolean).join(' · ') || `reported by ${st.who}`;
   const whoHtml = st.kind === 'clear' || !L.pilots.length ? escapeHtml(whoTxt)
     : [L.pilots.map(x => `<button type="button" class="it-pl ${x.side}" data-it-pilot="${x.id}" data-it-sys="${st.sys}" title="${escapeHtml(itPilotTitle(x, st.pairs.get(x.id)))}">${escapeHtml(x.name)}</button>`).join(', ') + (L.extra ? ` +${L.extra}` : ''), escapeHtml(shipsTxt)].filter(Boolean).join(' · ');
   const can = st.kind !== 'clear' && (L.pilots.length || L.ships.length);
-  return `<div class="it-nb${alert ? ' alert' : ''}" data-it-sys="${st.sys}"><span class="sys">${escapeHtml(itSysName(st.sys))}</span><span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${j === null ? '–' : `${j}j`}</span><span class="it-what"><span class="st ${st.kind === 'clear' ? 'clr' : L.friendlyOnly ? 'fr' : ''}"><b>${escapeHtml(word)}</b></span><span class="who" title="${escapeHtml(whoTxt)}">${whoHtml}</span></span><span class="age">${itAgo(st.t)}</span>${can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span></span>'}</div>`;
+  return `<div class="it-nb${alert ? ' alert' : ''}" data-it-sys="${st.sys}"><span class="sys">${escapeHtml(itSysName(st.sys))}</span><span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${j === null ? '–' : `${j}j`}</span><span class="it-what"><span class="st ${st.kind === 'clear' ? 'clr' : L.friendlyOnly ? 'fr' : ''}"><b>${escapeHtml(word)}</b>${nk ? ` <span class="it-kl">${nk} kill${nk === 1 ? '' : 's'}</span>` : ''}</span><span class="who" title="${escapeHtml(whoTxt)}">${whoHtml}</span></span><span class="age">${itAgo(st.t)}</span>${can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span></span>'}</div>`;
 }
 function itFeedRowHtml(e){
-  const my = itMySys(), chips = [];
-  for(const s of e.p.sys){ const j = itJumps(my, s.id); chips.push(`<span class="it-chip sys" title="${escapeHtml(itSysName(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}">${escapeHtml(itSysName(s.id))}${j === null ? '' : ` <span class="j">${j}j</span>`}</span>`); }
+  const my = itMySys(), head = [], chips = [];
+  for(const s of e.p.sys){ const j = itJumps(my, s.id); head.push(`<span class="it-chip sys" title="${escapeHtml(itSysName(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}"><span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${j === null ? '' : ` <span class="j">${j}j</span>`}</span>`); }
+  const ty = e.kind === 'kill' ? ['kill', 'Kill'] : e.kind === 'clear' ? ['clr', 'Clear'] : ['rep', 'Report'];
+  const hd = `<div class="it-fh">${head.join('')}<span class="it-age" title="your time ${itClock(e.t)}">${itAgo(e.t)}</span><span class="it-ty ${ty[0]}">${ty[1]}</span></div>`;
+  if(e.kind === 'kill'){   // v.99: who lost what, and who killed them
+    const k = e.kill, a = e.pilots[0];
+    const l1 = `${itPilotChip(k.victim, e)}<span class="it-by">lost a</span>${k.victim.ship ? itShipChip({id: k.victim.ship.typeId, name: k.victim.ship.name, n: 1}) : '<span class="it-by">ship</span>'}${k.value ? `<span class="it-isk">${itIsk(k.value)} ISK</span>` : ''}`;
+    const more = k.n > 1 ? `<span class="it-by">+${k.n - 1} more</span>` : '<span class="it-by">solo</span>';
+    const l2 = a ? `<span class="it-by">by</span>${itPilotChip(a, e)}${a.ship ? itShipChip({id: a.ship.typeId, name: a.ship.name, n: 1}) : ''}${more}<a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a>`
+      : `<span class="it-by">by NPCs or a structure</span><a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a>`;
+    return `<div class="it-fd kill">${hd}<div class="it-chips">${l1}</div><div class="it-chips">${l2}</div></div>`;
+  }
   for(const x of e.pilots) chips.push(itPilotChip(x, e));
   if(e.p.extra) chips.push(`<span class="it-chip kw">+${e.p.extra}</span>`);
-  for(const s of e.p.ships) chips.push(`<span class="it-chip ship">${escapeHtml(itShipText(s))}</span>`);
+  for(const s of e.p.ships) chips.push(itShipChip(s));
   for(const k of e.p.kw) chips.push(`<span class="it-chip ${k === 'clear' ? 'clr' : 'kw'}">${escapeHtml(k)}</span>`);
   const left = e.p.W.filter((x, i) => !e.p.used[i]).map(x => x.w);
   if(left.length) chips.push(`<span class="it-left" title="Words the page couldn't place">${escapeHtml(left.join(' '))}</span>`);
   const toast = it.shape && it.shape.id === e.id ? `<div class="it-toast">${it.shape.ok ? 'Copied the shape' : 'The shape (copy it from here)'}: <code>${escapeHtml(it.shape.text)}</code><br>System and pilot names are replaced, so it's safe to share when a line is read wrong.</div>` : '';
-  return `<div class="it-fd"><span class="t" title="your time">${itClock(e.t)}</span><span><span class="it-chips">${chips.join('')}</span><span class="raw">${escapeHtml(e.who)} &gt; ${escapeHtml(e.raw)}</span>${toast}</span><button type="button" class="it-shape" data-it-shape="${e.id}" aria-label="Copy this line's shape" title="Copy this line's shape: system and pilot names replaced, to report a line read wrong">${IT_COPY}</button></div>`;
+  return `<div class="it-fd ${ty[0]}">${hd}${chips.length ? `<div class="it-chips">${chips.join('')}</div>` : ''}<span class="raw">${escapeHtml(e.who)} &gt; ${escapeHtml(e.raw)}</span>${toast}<button type="button" class="it-shape" data-it-shape="${e.id}" aria-label="Copy this line's shape" title="Copy this line's shape: system and pilot names replaced, to report a line read wrong">${IT_COPY}</button></div>`;
+}
+// v.99 (the owner: "Add it"): the Feed's filters: Types, Distance, Sort and Search
+function itFeedShown(){
+  const keepT = Date.now() - it.set.forget * 60000, f = it.set.feed, q = it.q.trim().toLowerCase(), my = itMySys();
+  const jOf = (e) => { const s = e.p.sys[0]; return s ? itJumps(my, s.id) : null; };
+  let L = it.feed.filter(e => e.t >= keepT && !(it.set.hideFriendly && e.friendlyOnly));
+  if(f.types === 'reports') L = L.filter(e => e.kind !== 'kill');
+  if(f.types === 'kills') L = L.filter(e => e.kind === 'kill');
+  if(f.dist) L = L.filter(e => { const j = jOf(e); return j !== null && j <= f.dist; });
+  if(q) L = L.filter(e => itSearchText(e).includes(q));
+  L.sort(f.sort === 'near' ? (a, b) => ((jOf(a) ?? 999) - (jOf(b) ?? 999)) || b.t - a.t : (a, b) => b.t - a.t);
+  return L.slice(0, IT_FEED_SHOWN);
+}
+function itSearchText(e){
+  const who = [...e.pilots, ...(e.kill ? [e.kill.victim] : [])], parts = [e.raw, e.who];
+  for(const s of e.p.sys) parts.push(itSysName(s.id));
+  for(const s of e.p.ships) parts.push(s.name);
+  if(e.kill && e.kill.victim.ship) parts.push(e.kill.victim.ship.name);
+  for(const x of who){
+    parts.push(x.name);
+    const o = itOrgOf(x);
+    for(const [kind, id] of [['corporation', o.corp], ['alliance', o.alliance]]){ const v = id && orgCache.get(`${kind}:${id}`); if(v && typeof v.then !== 'function') parts.push(v.name, v.ticker); }
+  }
+  return parts.filter(Boolean).join(' ').toLowerCase();
+}
+function itFeedBarHtml(){
+  const f = it.set.feed, sel = (k, opts) => `<select data-it-f="${k}">${opts.map(([v, l]) => `<option value="${v}"${String(f[k]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
+  return `<div class="it-fbar"><label>Types ${sel('types', IT_FEED_TYPES)}</label><label>Distance ${sel('dist', IT_FEED_DIST.map(d => [d, d ? `≤ ${d} jump${d === 1 ? '' : 's'}` : 'any']))}</label><label>Sort ${sel('sort', IT_FEED_SORT)}</label><input type="search" data-it-q placeholder="Search pilot, corp, ship, system" aria-label="Search the ${escapeHtml(cardName('itfeed'))}" value="${escapeHtml(it.q)}"></div>`;
+}
+function itFeedListHtml(){ const feed = itFeedShown(); return feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`; }
+function itNearListHtml(){ const near = itNearList(); return near.length ? near.map(itNearRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing reported in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`; }
+// Redraw only the two lists (the filter bar in use keeps its focus and caret)
+function itNotesHtml(){ return `${it.err ? `<div class="pr-msg err">${escapeHtml(it.err)}</div>` : ''}${it.note ? `<div class="pr-msg">${escapeHtml(it.note)}</div>` : ''}${it.on && it.kfNote ? `<div class="pr-msg" data-it-kfnote>${escapeHtml(it.kfNote)}</div>` : ''}`; }
+function itRenderLists(){
+  itHeaderSync();
+  const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('intelPanel');
+  if(!el || !el.querySelector) return;
+  const n = el.querySelector('#itNearList'), f = el.querySelector('#itFeedList'), m = el.querySelector('#itNotes');
+  if(m) m.innerHTML = itNotesHtml();
+  if(n) n.innerHTML = itNearListHtml();
+  if(f) f.innerHTML = itFeedListHtml();
+  itAfterDraw(el);
+}
+function itAfterDraw(el){
+  fillOrgTickers(el);
+  itSecFetch([...el.querySelectorAll('[data-it-sys]')].map(x => Number(x.dataset.itSys)).concat(it.feed.slice(0, IT_FEED_SHOWN).map(e => e.p.sys[0] && e.p.sys[0].id)));
 }
 // v.98 (the owner: "Add it"): a line's shape, safe to share: systems SYS, pilots PILOT, any other word that isn't a ship, a
 // count, an intel word or a common filler word WORD; brackets, '*' and '?' kept; then what the page read.
@@ -23191,7 +23439,7 @@ async function itCopyShape(id){
 // ---- v.98: from Intel to the Pilot Analyzer and the System Analyzer ----
 function itFromIntelHtml(text, restore){ return `<span>${text}</span>${restore ? '<button type="button" data-fi-act="restore">Restore my paste</button>' : ''}<button type="button" data-fi-act="back">← Back to ${escapeHtml(cardName('intel'))}</button>`; }
 function itOpenPilot(id, pair, sys, t){
-  const x = [...it.feed.flatMap(e => e.pilots), ...[...it.near.values()].flatMap(s => s.pilots)].find(p => p.id === id);
+  const x = [...it.feed.flatMap(e => e.kill && e.kill.victim.id ? [...e.pilots, e.kill.victim] : e.pilots), ...[...it.near.values()].flatMap(s => s.pilots)].find(p => p.id === id);
   if(!x) return;
   if(pair) saOpenRow(x.name, pair.name, 'all', pair.typeId); else saOpenRow(x.name, '', null);
   const j = sys ? itJumps(itMySys(), sys) : null;
@@ -23261,6 +23509,7 @@ function itRender(force){   // force: a press that changes what is open (the gea
   const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('intelPanel');
   if(!el || !el.querySelector) return;
   const act = document.activeElement;
+  if(!force && act && el.contains(act) && act.closest('.it-fbar')){ itRenderLists(); return; }   // v.99: the filter bar in use
   if(!force && (el.querySelector('details.info-pop[open]') || (act && el.contains(act) && (act.tagName === 'SELECT' || act.closest('.it-pop'))))) return;   // don't redraw under an open info panel, an open list or the settings in use
   // v2026.10.14.97 (the owner: "shouldn't one slider control it?" -> "keep the intel slider"): the on/off switch is only the Intel
   // slider at the top (#intelHdrSw); the card keeps the gear
@@ -23271,20 +23520,19 @@ function itRender(force){   // force: a press that changes what is open (the gea
     body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The ${escapeHtml(cardName('intel'))} slider at the top, beside ${escapeHtml(cardName('side'))}, starts and stops it from any tab; closing the page stops it too.</div>${itSettingsHtml(true)}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
   } else {
     // v.98 (the owner: "the feed keeps growing ... drop entries older than 15 minutes"): the Feed keeps the same time as Near You
-    const keepT = Date.now() - it.set.forget * 60000;
-    const near = itNearList(), feed = it.feed.filter(e => e.t >= keepT && !(it.set.hideFriendly && e.friendlyOnly)).slice(0, IT_FEED_SHOWN);
     body = `${it.on ? `<div class="it-sub" data-it-status>${itStatusLine()}</div>` : `<div class="it-sub">Stopped. The ${escapeHtml(cardName('intel'))} slider at the top starts it again.</div>`}
       ${it.patched ? `<div class="it-sub it-warn">${escapeHtml(it.patched)}: a gate EVE added since may be missing.</div>` : ''}
       ${it.on && it.me && !itMySys() ? `<div class="it-sub it-warn">Your system isn’t known yet (it’s read from your Local log when you jump), so no jumps and no alerts until then.</div>` : ''}
       <div class="it-cols">
-        <div><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3>${ctxHtml(`last ${it.set.forget} min, nearest first`)}</div>${near.length ? near.map(itNearRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing reported in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`}</div>
-        <div><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3>${ctxHtml(`last ${it.set.forget} min, newest first`)}</div>${feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`}</div>
+        <div><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3>${ctxHtml(`last ${it.set.forget} min, nearest first`)}</div><div id="itNearList">${itNearListHtml()}</div></div>
+        <div><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3>${ctxHtml(`last ${it.set.forget} min, reports and kills`)}</div>${itFeedBarHtml()}<div id="itFeedList">${itFeedListHtml()}</div></div>
       </div>`;
   }
   const pop = it.pop && !setup ? `<div class="it-pop" role="dialog" aria-label="Intel settings"><div class="it-h"><h3>Intel settings</h3><span class="sa-sp"></span><button type="button" class="info-close" data-it-act="gear" aria-label="Close">×</button></div>${itSettingsHtml(false)}</div>` : '';
   el.innerHTML = `<div class="card it-card"><div class="it-head"><h2>${escapeHtml(cardName('intel'))}</h2>${infoBtnHtml('intel')}${sw}</div>
-    ${it.err ? `<div class="pr-msg err">${escapeHtml(it.err)}</div>` : ''}${it.note ? `<div class="pr-msg">${escapeHtml(it.note)}</div>` : ''}
+    <div id="itNotes">${itNotesHtml()}</div>
     ${body}${pop}</div>`;
+  itAfterDraw(el);
 }
 function itHeaderSync(){
   if(typeof document === 'undefined' || !document.getElementById) return;
@@ -23326,6 +23574,10 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
       return;
     }
     if(t.dataset.itMe !== undefined){ it.set.me = Number(t.dataset.itMe); itWriteSet(); it.me = it.chars.get(it.set.me) || null; it.lastScan = 0; it.alerted = new Map(); itRender(); return; }
+    if(t.dataset.itF){   // v.99: the Feed's filters, kept in this browser
+      it.set.feed[t.dataset.itF] = t.dataset.itF === 'dist' ? Number(t.value) : t.value;
+      itWriteSet(); itRenderLists(); return;
+    }
     const k = t.dataset.itSet;
     if(!k) return;
     if(k === 'range' || k === 'forget') it.set[k] = Number(t.value);
@@ -23333,6 +23585,7 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
     if(k === 'notify' && t.checked && typeof Notification !== 'undefined' && Notification.permission === 'default'){ Notification.requestPermission().then(() => itRender()).catch(() => {}); }
     itWriteSet(); itRender();
   });
+  el.addEventListener('input', (e) => { if(e.target.matches('[data-it-q]')){ it.q = e.target.value; itRenderLists(); } });   // v.99: Search
   el.addEventListener('click', (e) => {
     const pl = e.target.closest('[data-it-pilot]');
     if(pl){
