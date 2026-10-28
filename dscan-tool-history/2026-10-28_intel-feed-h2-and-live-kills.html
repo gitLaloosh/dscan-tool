@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-28 — The H2 Feed, and kills that actually arrive</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The H2 Feed, and kills that actually arrive</h1>
+<p><span class="tag">Feature</span><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-28 &middot; <code>v2026.10.14.99</code> &rarr; <code>v2026.10.14.100</code></p>
+<p>On a Feed row, the owner: "i dont like any of the pill stuff on the feed ... the bright borders just draw your attention away from the actual information." Over several mockups (in <code>Claude outputs/</code>: <code>intel_feed_style_mockup.html</code>, <code>intel_feed_hybrids_mockup.html</code>, <code>intel_feed_h2_h3_mockup.html</code>, <code>intel_feed_h2_final_mockup.html</code>) he picked "H2" with five changes, then "IN SYSTEM", enemy kills shown and Near You's badges matched. Before the build he asked: "are we actually capturing kills right now? i haven't seen any in the feed".</p>
+
+<h2>What I checked first</h2>
+<ul>
+<li>I read zKillboard's live feed (R2Z2) from the GitHub Pages address, in the browser pane, at 21:06 UTC:
+  <ul>
+  <li><code>sequence.json</code> said 100263992. Its last-modified was 17:56 UTC, even fetched with <code>no-store</code>.</li>
+  <li>Files kept going far past that number: +3,000 was a kill from 20:48 UTC.</li>
+  <li>A file not there yet answers 404 <b>without the CORS header</b>. A <code>no-cors</code> request to it succeeds, but a normal one throws "Failed to fetch". So the page never sees the 404.</li>
+  </ul></li>
+<li>So v.99 began about three hours back and took about 10 minutes to reach live. After that, every "nothing new yet" looked like the feed being down: INTEL-05, then waits of 30 s up to 5 minutes.</li>
+<li>The standing icons: the client's <code>res:/ui/texture/classes/flagicon/1..11.png</code> are white 9&times;9 symbols (star, plus, minus, equals, skull ...) that the game tints on a 12&times;12 square (<code>bgframe.png</code>). The page draws its own versions; no CCP files are in the repository.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Kills that arrive.</b>
+  <ul>
+  <li>The page finds the newest kill itself. From <code>sequence.json</code>'s number it steps 64, 128, 256 ... ahead until a file is missing, then halves the gap. That's about 15-20 requests, at least 80 ms apart.</li>
+  <li>It reads back the 240 before the newest in batches: requests start 80 ms apart, and it doesn't wait for each answer. That takes about 20 s; one at a time took a minute or more.</li>
+  <li>A missing or blocked file means "not there yet". The page checks <code>sequence.json</code> and waits 6 s with no note. INTEL-05 shows only when <code>sequence.json</code> fails too.</li>
+  <li>If the kills it reads were uploaded over an hour ago (a sleeping tab), it finds the newest again, at most once every 5 minutes.</li>
+  </ul></li>
+<li><b>The H2 look</b>, on the Feed and Near You:
+  <ul>
+  <li>Each row sits on a quiet panel, with no borders, pills or rules between rows.</li>
+  <li>Pilots and ships sit on quiet tags (ships in a cooler fill); keywords are in small caps.</li>
+  <li>"Clear" shows once, in the title line.</li>
+  </ul></li>
+<li><b>The line as typed</b>: a small chevron at the right of each report opens a strip along the bottom. It shows who sent the line, the line and the channel, plus the copy-shape button (moved here). It stays open through redraws.</li>
+<li><b>Security colours</b>: the system name in EVE's colour for its tenth, from 1.0 to 0.0 and below. A security above 0.0 but under 0.05 shows as 0.1 (low-sec); v.99 called it null. The system's title gives its security.</li>
+<li><b>"x Jumps"</b> in grey ("1 Jump", "3 Jumps"). Your own system gets an amber <b>IN SYSTEM</b> tag; in Near You its text lines up with the jumps below. Near You no longer colours jumps by distance; on a phone the jumps go under the system name.</li>
+<li><b>Standing icons</b>: a star for your corporation (green) and alliance (blue), + friendly, = neutral, &minus; hostile. The page knows friendly or hostile, not +5 or +10.</li>
+<li><b>Kills by who died</b>:
+  <ul>
+  <li>The label reads <b>Friendly lost</b>, <b>Hostile killed</b> or <b>Neutral killed</b>.</li>
+  <li>The label and the row take the victim's standing colour: blue, red or plain.</li>
+  <li>Near You's badges use the same words and colours ("1 friendly lost").</li>
+  <li>The notification starts "Friendly lost: ...".</li>
+  <li>A kill of a hostile or a neutral by friendlies only now shows with "hide friendly" on. It still gives no alert and no Near You row.</li>
+  </ul></li>
+<li>No number the engine works out changed. ERRORS.md is unchanged (46 codes).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_kills_check.py</code> now answers R2Z2 the way the real feed does. <code>sequence.json</code> is stale (2000, while kills run to 5000), and every number up to the newest is a kill. A missing file is an aborted request, because Playwright's <code>route.fulfill()</code> skips the CORS check: a header-less 404 sent that way reaches the page as a plain 404, which the real browser never shows. The check covers:
+  <ul>
+  <li>finding the newest (at most 30 requests), then reading from 240 before it, with the kill in range shown within 30 s;</li>
+  <li><b>no INTEL-05 note while the feed is up</b>;</li>
+  <li>a missing file not asked for again within 6 s, and never over 15 requests a second;</li>
+  <li>finding the newest again when far behind;</li>
+  <li>the three kill words and row colours, the enemy and neutral kills shown, Near You's badges and the notification;</li>
+  <li>the icons, and the security tenths from 1.0 down to &minus;0.3, including 0.04 &rarr; 0.1.</li>
+  </ul>
+  v.98 and v.99 fail.</li>
+<li><code>intel_check.py</code>:
+  <ul>
+  <li>the words "1 Jump", "3 Jumps" and the IN SYSTEM tag;</li>
+  <li>&minus; and = icons;</li>
+  <li>"Clear" once;</li>
+  <li>the line-as-typed toggle (hidden on every report; opened it shows who, line, channel and copy button; stays open through a redraw; closes).</li>
+  </ul>
+  Its <code>sequence.json</code> now carries the CORS header, as the real one does. <code>intel_assess_check.py</code> checks the toggle (36&times;32 px) and the copy button at 390 px.</li>
+<li>Mutants caught (14):
+  <ul>
+  <li>trusting <code>sequence.json</code> (no find);</li>
+  <li>a blocked answer taken as an error;</li>
+  <li>no <code>sequence.json</code> check after a miss (caught only once the failure test waits until the page is live: reading back has its own check);</li>
+  <li>no 80 ms spacing;</li>
+  <li>no re-find when far behind;</li>
+  <li>enemy kills hidden again;</li>
+  <li>one word for every kill;</li>
+  <li>Near You badges of one kind;</li>
+  <li>no corporation star;</li>
+  <li>no 0.05 rule;</li>
+  <li>"0 Jumps";</li>
+  <li>the line's toggle not kept;</li>
+  <li>"Clear" twice;</li>
+  <li>neutral drawn as friendly.</li>
+  </ul></li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain (43 steps, UP TO DATE); all 44 page checks, <code>extension_check.py</code> included; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #89: before writing the test double for a live service, read its edges from the page's real origin: the missing item, the end of the list, any index it publishes, the headers on an error. Then build the double from what came back, and know what the double itself skips. Playwright's <code>route.fulfill()</code> is never CORS-checked, so a response the real browser blocks must be an <b>aborted</b> request in the double. v.99's double sent a header-less 404 that the page read as a plain 404, so it could never show the real failure. My first v.100 double did the same; a mutant that treats a network error as "feed down" passed until I changed it to abort. In the happy path, also check that the error note is <b>absent</b>: a check that only bounds a delay ("nothing for 6 s after a 404") still passes when the page is failing slowly.</p>
+</body></html>

@@ -19,7 +19,7 @@ mocks and system names (its first part, run here); every line, pilot and charact
   * the Feed keeps the time set (the owner: "drop entries older than 15 minutes"): an older line goes, from the page and memory;
   * copy shape: the clipboard holds the line with SYS / PILOT / WORD (one per multi-word name), ship names, counts,
     brackets, '*' and what was read; no system or pilot name in it;
-  * 390 px: Assess and the copy button big enough, nothing off the page; no page errors.
+  * 390 px: Assess, the line's toggle (v.100) and the copy button big enough, nothing off the page; no page errors.
 v2026.10.14.97 fails.
 """
 import sys, os, time, re, json
@@ -37,7 +37,7 @@ def pa_done(pg):
     pg.wait_for_function("() => !document.querySelector('#fitBtn').disabled && document.querySelector('#pilotBusy').hidden", timeout=120000); pg.wait_for_timeout(500)
 def sa_done(pg, n):
     pg.wait_for_function(f"() => {{ const c = document.querySelector('#tabDscan .pr-head .ctx'); return c && c.textContent.startsWith('{n} of {n} looked up'); }}", timeout=120000); pg.wait_for_timeout(500)
-FEED_ONE = """(raw) => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(f => (f.querySelector('.raw') || {}).textContent === 'Gate Watcher > ' + raw);
+FEED_ONE = """(raw) => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(f => (f.querySelector('.raw') || {}).textContent === raw && (f.querySelector('.it-raw .who') || {}).textContent === 'Gate Watcher');
   return r ? [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), (c.querySelector('.nm') || c).textContent]) : null; }"""
 SA_ROWS = """() => [...document.querySelectorAll('#tabDscan button.pr-row')].map(b => [b.querySelector('.pr-pilot .nm').firstChild.textContent.trim(), b.querySelector('.pr-hull .nm').firstChild.textContent.trim(), (b.querySelector('.pr-basis') || b.querySelector('.pr-hull .ctx') || {}).textContent || ''])"""
 
@@ -133,7 +133,7 @@ with sync_playwright() as p:
     # ---- v.99 (the owner's report: "ESS refers to the Encounter Surveillance System"): place words never become pilots; a ship
     # named on its own and again in brackets after a pilot counts once
     ess = pg.evaluate(FEED_ONE, 'inside 3-DMQT ess loki and curse Seren Ketter (Curse) Kirra Longtail (Loki)')
-    check(ess == [['sys', '3-DMQT 2j'], ['h', 'Seren Ketter'], ['n', 'Kirra Longtail'], ['ship', 'Loki'], ['ship', 'Curse'], ['kw', 'ESS']],
+    check(ess == [['sys', '3-DMQT 2 Jumps'], ['h', 'Seren Ketter'], ['n', 'Kirra Longtail'], ['ship', 'Loki'], ['ship', 'Curse'], ['kw', 'ESS']],
           f'"inside ... ess": no pilot "Inside" or "ESS" (real characters have those names); Loki and Curse once each, paired {ess}')
     # ---- the Feed keeps the time set (the owner: "drop entries older than 15 minutes") ----
     n0 = pg.evaluate("() => document.querySelectorAll('#intelPanel .it-fd').length")
@@ -160,8 +160,9 @@ with sync_playwright() as p:
     # ---- phone ----
     ctx, pg = start(390)
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', LONG)); tick(pg, 3200)
-    sz = pg.evaluate("() => { const a = document.querySelector('[data-it-assess]').getBoundingClientRect(), s = document.querySelector('[data-it-shape]').getBoundingClientRect(); return [Math.round(a.height), Math.round(s.width), Math.round(s.height), getComputedStyle(document.querySelector('[data-it-shape]')).opacity]; }")
-    check(sz[0] >= 40 and sz[1] >= 36 and sz[2] >= 36 and sz[3] == '1', f'390 px: Assess 40 px, the copy button 36 px and shown {sz}')
+    pg.click('#itFeedList [data-it-raw]'); pg.wait_for_timeout(200)   # v.100: the copy button is in the strip a toggle opens
+    sz = pg.evaluate("() => { const a = document.querySelector('[data-it-assess]').getBoundingClientRect(), t = document.querySelector('#itFeedList [data-it-raw]').getBoundingClientRect(), b = document.querySelector('#itFeedList .it-fd.open [data-it-shape]'), s = b.getBoundingClientRect(); return [Math.round(a.height), Math.round(t.width), Math.round(t.height), Math.round(s.width), Math.round(s.height), +getComputedStyle(b).opacity >= 0.6]; }")
+    check(sz[0] >= 40 and sz[1] >= 36 and sz[2] >= 32 and sz[3] >= 36 and sz[4] >= 36 and sz[5], f'390 px: Assess 40 px, the toggle 36 x 32 px, the copy button 36 px and shown {sz}')
     over = pg.evaluate("() => [document.documentElement.scrollWidth, [...document.querySelectorAll('#intelPanel *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.right > innerWidth + 1 || r.left < -1); }).map(e => e.className || e.tagName).slice(0, 5)]")
     check(over[0] <= 390 and not over[1], f'390 px: nothing off the page {over}')
     pg.screenshot(path='/tmp/intel98_390.png', full_page=True)

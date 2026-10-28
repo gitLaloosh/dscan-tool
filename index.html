@@ -2283,64 +2283,92 @@
   .it-pop .it-h{margin-top:0;}
   .it-cols{display:grid; grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr); gap:6px 20px;}
   .it-nb{display:grid; grid-template-columns:92px 44px minmax(0,1fr) 54px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line-soft); font:400 12.5px var(--sans); color:var(--text);}
-  .it-nb .sys{font:600 13px var(--sans); color:var(--heading); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .it-nb .j{font:700 12px var(--mono); text-align:center; border-radius:10px; padding:2px 0; color:var(--heading);}
-  .it-nb .j.j0{background:var(--danger); color:#fff;} .it-nb .j.j1{background:color-mix(in srgb, var(--danger) 60%, transparent); color:#fff;}
-  .it-nb .j.j2{background:color-mix(in srgb, var(--amber) 55%, transparent); color:#111;} .it-nb .j.j3, .it-nb .j.jf{background:var(--panel);} .it-nb .j.jx{color:var(--text-dim);}
+  .it-nb .sys{font:700 13px var(--sans); color:var(--heading); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .it-nb .j{font:500 12px var(--sans); color:var(--text-dim); white-space:nowrap;}   /* v.100: "x Jumps" in grey, no pill (the owner) */
   .it-what{min-width:0;} .it-nb .st{display:block;} .it-nb .st b{color:var(--danger);} .it-nb .st.clr b{color:var(--it-clear);} .it-nb .st.fr b{color:var(--side-friendly);}
   .it-nb .who{display:block; color:var(--text-dim); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .it-nb .age{text-align:right; font:400 11.5px var(--mono); color:var(--text-dim);}
   .it-nb.alert{box-shadow:inset 3px 0 0 var(--danger); background:color-mix(in srgb, var(--danger) 8%, transparent); padding-left:8px;}
   .it-fd{display:grid; grid-template-columns:62px minmax(0,1fr); gap:10px; padding:8px 0; border-bottom:1px solid var(--line-soft); font:400 12.5px var(--sans); color:var(--text);}
   .it-fd .t{font:400 11.5px var(--mono); color:var(--text-dim); padding-top:2px;} .it-fd .raw{color:var(--text-dim); font-size:11.5px; display:block; margin-top:3px; overflow-wrap:anywhere;}
-  .it-chips{display:flex; flex-wrap:wrap; gap:3px 4px; align-items:center;}
-  .it-chip{display:inline-flex; align-items:center; gap:5px; padding:1px 7px; border-radius:10px; border:1px solid var(--line); font:600 11.5px var(--sans); color:var(--heading);}
-  .it-chip.sys{border-color:var(--cyan); color:var(--cyan);} .it-chip.h{border-color:var(--side-hostile); color:var(--side-hostile);} .it-chip.f{border-color:var(--side-friendly); color:var(--side-friendly);} .it-chip.n{color:var(--text);}
-  .it-chip.ship{border-style:dashed;} .it-chip.kw{background:var(--panel); color:var(--text-dim); border-color:transparent;} .it-chip.clr{border-color:var(--it-clear); color:var(--it-clear);}
-  .it-chip .j{font:700 10.5px var(--mono); opacity:.85;}
+  /* v.100 (the owner: H2): no borders or pills; pilots and ships on quiet tags (ships a cooler fill), words in small caps */
+  .it-chips{display:flex; flex-wrap:wrap; gap:4px 6px; align-items:center;}
+  .it-chip{display:inline-flex; align-items:center; gap:5px; padding:0; border:none; border-radius:3px; font:500 13px var(--sans); color:var(--text);}
+  .it-chip.sys{font:700 14px var(--sans); color:var(--heading); margin-right:2px;}
+  .it-chip.ship{padding:2px 7px; background:rgba(79,195,217,.08); color:var(--heading); font-weight:600;}
+  .it-chip.kw{padding:2px; color:var(--text-dim); font:600 11px var(--sans); text-transform:uppercase; letter-spacing:.4px;}
+  .it-chip.clr{padding:2px; color:var(--it-clear); font:700 11px var(--sans); text-transform:uppercase; letter-spacing:.4px;}
+  .it-chip .j{font:500 12px var(--sans); color:var(--text-dim); margin-left:3px;}
   .it-left{color:var(--text-dim); font-size:11.5px;}
   /* v2026.10.14.99 the Feed: a head line per row, who's who, kills, the filter bar, security colours */
-  .it-fd{display:block;} .it-fh{display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-bottom:4px;}
+  .it-fd{display:block;} .it-fh{display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-bottom:5px;}
   .it-age{font:400 11.5px var(--mono); color:var(--text-dim);}
-  .it-ty{font:700 10px var(--sans); letter-spacing:.5px; text-transform:uppercase; padding:1px 6px; border-radius:3px; background:var(--panel); color:var(--text-dim);}
-  .it-ty.kill{background:color-mix(in srgb, var(--danger) 22%, transparent); color:#f08b7e;} .it-ty.clr{color:var(--it-clear);} .it-ty.rep{color:var(--cyan);}
-  .it-fd.kill{background:color-mix(in srgb, var(--danger) 5%, transparent); padding-left:6px; padding-right:6px;} .it-fd .it-chips + .it-chips{margin-top:3px;}
-  .it-sn.hs{color:#4fc3d9;} .it-sn.ls{color:#d9a43c;} .it-sn.ns{color:#e0703a;}
-  .it-chip.p, .it-chip.ent{gap:4px; padding:1px 7px 1px 4px;}
-  .it-mk{width:13px; height:13px; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; font:700 11px/1 var(--sans); color:#fff; flex:none;}
-  .it-mk.h{background:var(--side-hostile);} .it-mk.f{background:var(--side-friendly);} .it-mk.n{border:1.5px solid var(--text-dim); border-radius:50%; width:11px; height:11px;}
+  .it-ty{font:700 10px var(--sans); letter-spacing:.5px; text-transform:uppercase; color:var(--text-dim);}
+  .it-ty.clr{color:var(--it-clear);} .it-ty.rep{color:var(--cyan);} .it-fd .it-chips + .it-chips{margin-top:4px;}
+  /* v.100 (the owner: "should also reflect the standing of the person/ship killed"): a kill's label and panel take the victim's
+     standing colour: Friendly lost (blue), Hostile killed (red), Neutral killed (plain) */
+  .it-ty.kill{padding:1px 6px; border-radius:3px;}
+  .it-ty.kf, .it-kl.kf{background:color-mix(in srgb, var(--side-friendly) 20%, transparent); color:#8db8f2;}
+  .it-ty.kh, .it-kl.kh{background:color-mix(in srgb, var(--danger) 22%, transparent); color:#f08b7e;}
+  .it-ty.kn, .it-kl.kn{background:rgba(255,255,255,.07); color:var(--text-dim);}
+  /* v.100 (the owner: "System font color should match the security level"): EVE's colour for each tenth of security */
+  .it-sn.s10{color:#2e74df;} .it-sn.s9{color:#389cf6;} .it-sn.s8{color:#4acff3;} .it-sn.s7{color:#62daa6;} .it-sn.s6{color:#71e452;} .it-sn.s5{color:#eeff83;}
+  .it-sn.s4{color:#de6a0c;} .it-sn.s3{color:#ce4611;} .it-sn.s2{color:#bb1014;} .it-sn.s1{color:#6d221d;} .it-sn.s0{color:#8f2f69;}
+  .it-chip.p, .it-chip.ent{gap:4px; padding:2px 7px 2px 4px; background:rgba(255,255,255,.055);}
+  /* v.100 (the owner: "we should use those instead"): EVE's standing icons, drawn here: a coloured square, a white symbol with a slight
+     shadow; a star for your corporation (green) and alliance (blue), + friendly, = neutral, - hostile */
+  .it-st{width:13px; height:13px; flex:none;} .it-st .gl{fill:#fff;} .it-st .sh{fill:rgba(0,0,0,.5);}
+  .it-st.corp rect{fill:#3f9b3f;} .it-st.all rect{fill:#3d55d6;} .it-st.good rect{fill:#4a86e0;} .it-st.neu rect{fill:#6f777f;} .it-st.bad rect{fill:#d03a2e;}
   .it-lg{width:18px; height:18px; border-radius:3px; background:#222b33; overflow:hidden; display:inline-block; flex:none;} .it-lg.c{border-radius:50%;} .it-lg img{width:100%; height:100%; display:block;}
   .it-chip .nm{font-weight:600;} .it-chip.h .nm{color:var(--side-hostile);} .it-chip.f .nm{color:var(--side-friendly);} .it-chip.n .nm{color:var(--heading);}
   .it-tks .tk{font:600 10.5px var(--mono); color:var(--text-dim); margin-left:3px;}
   .it-chip.ship img{width:18px; height:18px; border-radius:3px; margin-left:-3px;}
   .it-by{font:400 12px var(--sans); color:var(--text-dim); align-self:center;} .it-isk{font:600 11.5px var(--mono); color:var(--amber); align-self:center;}
   a.it-zk{font:600 11.5px var(--sans); color:var(--cyan); align-self:center; margin-left:4px;}
-  .it-kl{display:inline-block; margin-left:6px; padding:0 6px; border-radius:3px; background:color-mix(in srgb, var(--danger) 22%, transparent); color:#f08b7e; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.4px; vertical-align:1px;}
+  .it-kl{display:inline-block; margin-left:6px; padding:0 6px; border-radius:3px; background:color-mix(in srgb, var(--danger) 22%, transparent); color:#f08b7e; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.4px; vertical-align:1px; white-space:nowrap;}
   .it-fbar{display:flex; gap:6px 10px; flex-wrap:wrap; align-items:center; margin:2px 0 8px;}
   .it-fbar label{display:inline-flex; gap:5px; align-items:center; font:600 11.5px var(--sans); color:var(--text-dim);}
   .it-fbar select{width:auto; min-width:0; min-height:28px; padding:0 6px; background:var(--bg); color:var(--heading); color-scheme:dark; border:1px solid var(--line); border-radius:6px; font:600 12px var(--sans);}
   .it-fbar select option{background:var(--panel); color:var(--heading);}
   .it-fbar input{flex:1; min-width:140px; min-height:28px; padding:0 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); font:400 12px var(--sans);}
   /* v2026.10.14.98 Intel delivery 2: pilot links, Assess, copy shape, the From Intel lines */
-  .it-nb{grid-template-columns:92px 44px minmax(0,1fr) 54px 78px;}
-  button.it-assess{min-height:28px; padding:0 10px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0; white-space:nowrap;}
-  button.it-assess:hover{border-color:var(--text-dim);}
-  button.it-chip.p{cursor:pointer; letter-spacing:0; min-height:0; background:transparent;} button.it-chip.p:hover, button.it-chip.p:focus-visible{text-decoration:underline; text-underline-offset:2px; background:color-mix(in srgb, currentColor 10%, transparent);}
+  .it-nb{grid-template-columns:92px 74px minmax(0,1fr) 54px 78px;}
+  button.it-assess{min-height:28px; padding:0 10px; border:none; border-radius:3px; background:rgba(255,255,255,.06); color:var(--heading); font:600 12px var(--sans); letter-spacing:0; white-space:nowrap;}
+  button.it-assess:hover{background:rgba(255,255,255,.11);}
+  button.it-chip.p{cursor:pointer; letter-spacing:0; min-height:0;} button.it-chip.p:hover, button.it-chip.p:focus-visible{text-decoration:underline; text-underline-offset:2px; background:color-mix(in srgb, currentColor 10%, transparent);}
   button.it-pl{all:unset; cursor:pointer; color:inherit;} button.it-pl.h{color:var(--side-hostile);} button.it-pl.f{color:var(--side-friendly);}
   button.it-pl:hover, button.it-pl:focus-visible{text-decoration:underline; text-underline-offset:2px; color:var(--heading);}
   .it-fd{position:relative;}
-  button.it-shape{position:absolute; right:0; top:6px; width:28px; height:28px; min-height:0; padding:0; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text-dim); display:inline-flex; align-items:center; justify-content:center; opacity:0; letter-spacing:0;}
-  .it-fd:hover button.it-shape, button.it-shape:focus-visible{opacity:1;} button.it-shape svg{width:14px; height:14px;}
-  .it-fd .it-chips{padding-right:34px;}
+  button.it-shape{flex:none; width:24px; height:22px; min-height:0; padding:0; border:none; border-radius:3px; background:transparent; color:var(--text-dim); display:inline-flex; align-items:center; justify-content:center; opacity:.7; letter-spacing:0;}
+  button.it-shape:hover, button.it-shape:focus-visible{opacity:1; background:rgba(255,255,255,.07);} button.it-shape svg{width:14px; height:14px;}
   .it-toast{margin-top:6px; padding:8px 10px; border:1px solid var(--cyan); border-radius:6px; background:color-mix(in srgb, var(--cyan) 8%, transparent); font:400 12px var(--sans); color:var(--text);}
   .it-toast code{font:600 12px var(--mono); color:var(--heading); background:transparent; overflow-wrap:anywhere;}
   .from-intel{display:flex; gap:8px 10px; align-items:center; flex-wrap:wrap; margin:0 0 12px; padding:8px 12px; border:1px solid var(--cyan); border-radius:6px; background:color-mix(in srgb, var(--cyan) 7%, transparent); font:400 12.5px var(--sans); color:var(--text);}
   .from-intel[hidden]{display:none;} .from-intel b{color:var(--heading);}
   .from-intel button{min-height:28px; padding:0 10px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0;}
+  /* v2026.10.14.100 (the owner: "Let's go with H2"): each Near You and Feed row on a quiet panel, no rules between rows */
+  .it-nb, .it-fd{border-bottom:none; border-radius:4px; margin-bottom:6px; padding:8px 10px;}
+  .it-nb{background:rgba(255,255,255,.025);} .it-fd{background:rgba(255,255,255,.035);}
+  .it-nb.alert{background:color-mix(in srgb, var(--danger) 9%, rgba(255,255,255,.02)); padding-left:10px;}
+  .it-fd.kill.kf{background:color-mix(in srgb, var(--side-friendly) 10%, rgba(255,255,255,.025));}
+  .it-fd.kill.kh{background:color-mix(in srgb, var(--danger) 9%, rgba(255,255,255,.025));}
+  /* v.100 (the owner: "a callout like 'IN SYSTEM'"): your own system, a small amber tag; in Near You its text lines up with the jumps below */
+  .it-here{display:inline-block; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.5px; color:var(--amber); background:color-mix(in srgb, var(--amber) 15%, transparent); padding:0 6px; border-radius:3px; white-space:nowrap;}
+  .it-nb .j .it-here{margin-left:-6px;}
+  /* v.100 (the owner: "a subtle button to expand the text to be at the bottom"): the line as typed, who sent it and the channel */
+  button.it-rawt{margin-left:auto; flex:none; width:24px; height:20px; min-height:0; padding:0; border:none; border-radius:3px; background:transparent; color:var(--text-dim); opacity:.6; display:inline-flex; align-items:center; justify-content:center; letter-spacing:0; cursor:pointer;}
+  button.it-rawt:hover, button.it-rawt:focus-visible{opacity:1; background:rgba(255,255,255,.07);} button.it-rawt[aria-expanded="true"]{opacity:.9;} button.it-rawt[aria-expanded="true"] svg{transform:rotate(180deg);}
+  .it-fd.open{padding-bottom:0; overflow:hidden;}
+  .it-raw{display:flex; align-items:center; gap:6px; margin:7px -10px 0; padding:4px 6px 4px 10px; background:rgba(0,0,0,.24); font:400 11.5px var(--mono); color:var(--text-dim); min-width:0;}
+  .it-raw[hidden]{display:none;}
+  .it-raw .who{font:600 12px var(--sans); color:var(--text); white-space:nowrap;} .it-raw .gt{opacity:.6;}
+  .it-raw .raw{display:inline; margin:0; color:var(--text); font:400 11.5px var(--mono); overflow-wrap:anywhere; min-width:0;}
+  .it-raw .ch{margin-left:auto; font:400 11px var(--sans); white-space:nowrap; opacity:.8;}
   @media (max-width: 900px){
-    .it-nb{grid-template-columns:84px 40px minmax(0,1fr) auto;} button.it-assess{min-height:40px;}
-    button.it-shape{opacity:1; width:36px; height:36px;} .it-fd .it-chips{padding-right:42px;} .from-intel button{min-height:40px;}
-    .it-fd.kill .it-chips{padding-right:0;} .it-fbar select, .it-fbar input{min-height:40px;}
+    .it-nb{grid-template-columns:86px minmax(0,1fr) auto; row-gap:1px;} button.it-assess{min-height:40px;}
+    .it-nb .sys{grid-column:1; grid-row:1;} .it-nb .j{grid-column:1; grid-row:2;} .it-nb .it-what{grid-column:2; grid-row:1 / 3;} .it-nb > :last-child{grid-column:3; grid-row:1 / 3;}
+    button.it-shape{width:36px; height:36px;} button.it-rawt{width:36px; height:32px;} .from-intel button{min-height:40px;}
+    .it-raw{flex-wrap:wrap; row-gap:2px;} .it-raw .raw{flex-basis:100%; order:5;} .it-fbar select, .it-fbar input{min-height:40px;}
   }
   @media (max-width: 900px){
     .it-setup, .it-pop .it-setup{grid-template-columns:1fr 1fr;} .it-cols{grid-template-columns:1fr;} .it-sw{margin-left:0;}
@@ -2356,7 +2384,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.99</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.100</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -22579,7 +22607,13 @@ const IT_ALERT_GAP_MS = 30000;               // one alert per system per 30 s
 const IT_R2Z2 = 'https://r2z2.zkillboard.com';
 const IT_KILL_BACK = 240;                    // at the start, about the last 15 minutes of kills (240 at ~15 a minute)
 const IT_KILL_PER_TICK = 12;                 // at most 12 requests per 2 s tick, one at a time (the limit is 15 a second)
+const IT_KILL_PER_TICK_BACK = 28;            // v.100: reading back, 28 at a time, started one per 80 ms, not waiting for each
+const IT_KILL_BATCHES = 10;                  //   answer; up to 10 such batches in one go: the 240 read back in ~20 s, where one at a time took a minute or more
 const IT_KILL_WAIT_MS = 6000;                // after a 404, at least 6 s (zKillboard's rule)
+const IT_KILL_STEP = 64;                     // v.100: finding the newest kill: steps of 64, 128, 256 ... past sequence.json's number
+const IT_KILL_PROBE_MS = 80;                 // v.100: requests at least 80 ms apart while finding it and reading back (12.5 a second; the limit is 15)
+const IT_KILL_FAR_MS = 60 * 60000;           // v.100: a kill uploaded over an hour ago means the page has fallen far behind (a sleeping tab):
+const IT_KILL_REFIND_MS = 5 * 60000;         //   find the newest again, at most once per 5 minutes
 const IT_FEED_TYPES = [['all', 'All'], ['reports', 'Reports'], ['kills', 'Kills']];
 const IT_FEED_DIST = [0, 1, 2, 3, 5, 10];   // 0: any distance
 const IT_FEED_SORT = [['new', 'Newest'], ['near', 'Nearest']];
@@ -22590,9 +22624,10 @@ const it = {
   feed: [], near: new Map(), chans: [], chars: new Map(), lastLine: 0, err: '', note: '', pop: false,
   ticker: null, busy: false, lastScan: 0, gen: 0, alerted: new Map(), names: null, namesBusy: null,
   pilots: new Map(), aff: new Map(), patched: '', supported: false, loaded: false,
-  kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: ''   // v.99: kills, names on kills, security, the Feed's search
+  kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: '',   // v.99: kills, names on kills, security, the Feed's search
+  rawOpen: new Set()   // v.100: Feed rows showing the line as typed
 };
-function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0}; }
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0}; }
 function itDefaults(){ return {channels: [], me: null, range: 3, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
 function itReadSet(){
   const d = itDefaults();
@@ -23078,7 +23113,7 @@ function itNearAdd(e, sys){
     for(const sh of e.p.ships){ const i = st.ships.findIndex(y => y.id === sh.id); if(i < 0) st.ships.push({...sh, t: e.t}); else st.ships[i] = {...sh, n: Math.max(sh.n, st.ships[i].n), t: e.t}; }
     if(e.p.extra) st.extra.push({n: e.p.extra, t: e.t});
     for(const [id, sh] of e.pairs) st.pairs.set(id, {...sh, t: e.t, who: e.who});
-    if(e.kind === 'kill') st.kills.push({t: e.t, id: e.kill.id});
+    if(e.kind === 'kill') st.kills.push({t: e.t, id: e.kill.id, v: e.kill.victim.side || 'n'});   // v.100: the victim's standing, for the badges
   }
   it.near.set(sys, st);
   if(!e.history) itAlert(st, e);
@@ -23095,6 +23130,41 @@ function itCount(st){ const L = itLive(st), n = L.pilots.filter(x => x.side !== 
 
 // ---- v.99: kills nearby, from zKillboard's live feed (R2Z2), read only while Intel is on ----
 function itKillRange(){ return Math.max(it.set.range, it.set.feed.dist || 0); }   // kept: within your alert range, or the Feed's Distance if wider
+// v.100: zKillboard's live feed as it really behaves (checked from the GitHub Pages address, 2026-10-28, after the owner: "are we
+// actually capturing kills right now?"):
+//  * sequence.json can lag far behind: it read 100263992 (last changed 17:56 UTC) while kills to 21:06 UTC were already
+//    numbered 3,000+ past it. Starting 240 before it put the page three hours back and ~10 minutes from live. So the page
+//    finds the newest kill itself (itKillFindHead) and starts 240 before that.
+//  * a kill not there yet answers 404 WITHOUT the header that lets a page read the answer, so the browser reports a network
+//    error, never the 404. v.99 took that for the feed being down (INTEL-05, then waits of 30 s up to 5 minutes). Now a
+//    failed read is "not there yet" when sequence.json still answers (wait 6 s, no note); only when sequence.json fails too
+//    is the feed down. LESSON #89
+async function itKillGet(n){   // kill number n, or null when it isn't there yet (404, or the browser blocked the answer)
+  it.kf.reqs++;
+  let r;
+  try{ r = await fetch(`${IT_R2Z2}/ephemeral/${n}.json`); }catch(e){ return null; }
+  if(r.status === 404) return null;
+  if(!r.ok) throw new Error(`status ${r.status}`);
+  return await r.json();
+}
+async function itKillSeq(){
+  it.kf.reqs++;
+  const r = await fetch(`${IT_R2Z2}/ephemeral/sequence.json`);
+  if(!r.ok) throw new Error(`status ${r.status}`);
+  return Number((await r.json()).sequence) || 0;
+}
+const itKillPause = () => new Promise(res => setTimeout(res, IT_KILL_PROBE_MS));
+async function itKillFindHead(seq, gen){   // the newest kill at or past seq: steps doubling until one is missing, then halving the gap
+  if(!(await itKillGet(seq))) return seq - 1;
+  let lo = seq, step = IT_KILL_STEP, hi;
+  for(;;){
+    if(gen !== it.gen) return lo;
+    await itKillPause();
+    if(await itKillGet(lo + step)){ lo += step; step *= 2; } else { hi = lo + step; break; }
+  }
+  while(hi - lo > 1 && gen === it.gen){ const m = Math.floor((lo + hi) / 2); await itKillPause(); if(await itKillGet(m)) lo = m; else hi = m; }
+  return lo;
+}
 async function itKillPump(){
   const kf = it.kf;
   if(!it.on || !kf || kf.busy || Date.now() < kf.waitUntil || !it.names) return;
@@ -23102,20 +23172,34 @@ async function itKillPump(){
   const gen = it.gen, got = [];
   try{
     if(kf.seq === null){
-      kf.reqs++;
-      const r = await fetch(`${IT_R2Z2}/ephemeral/sequence.json`);
-      if(!r.ok) throw new Error(`status ${r.status}`);
-      kf.seq = Math.max(0, Number((await r.json()).sequence) - IT_KILL_BACK);
+      const head = await itKillFindHead(await itKillSeq(), gen);
+      if(gen !== it.gen) return;
+      kf.seq = Math.max(0, head + 1 - IT_KILL_BACK); kf.found = Date.now(); kf.head = false;
     }
-    for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen; n++){
-      kf.reqs++;
-      const r = await fetch(`${IT_R2Z2}/ephemeral/${kf.seq}.json`);
-      if(r.status === 404){ kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; kf.head = true; break; }
-      if(!r.ok) throw new Error(`status ${r.status}`);
-      got.push({rec: await r.json(), history: !kf.head});
-      kf.seq++;
+    if(!kf.head){   // reading back: requests started 80 ms apart, each batch drawn as it comes; stops at the first kill not there yet
+      for(let b = 0; b < IT_KILL_BATCHES && !kf.head && gen === it.gen; b++){
+        await itKillPause();
+        const from = kf.seq, part = [];
+        const recs = await Promise.all(Array.from({length: IT_KILL_PER_TICK_BACK}, (_, i) => new Promise(res => setTimeout(res, i * IT_KILL_PROBE_MS)).then(() => gen === it.gen ? itKillGet(from + i) : null)));
+        if(gen !== it.gen) return;
+        for(const rec of recs){ if(!rec) break; part.push({rec, history: true}); kf.seq++; }
+        if(part.length < recs.length){ await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; kf.head = true; }   // not there yet: the feed is up, nothing new
+        kf.fails = 0; it.kfNote = '';   // answering again: the note goes with this batch, not after all of them
+        if(part.length){ await itKills(part, gen); if(gen !== it.gen) return; }
+        itRender();
+      }
+    } else {
+      for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen; n++){
+        if(n) await itKillPause();
+        const rec = await itKillGet(kf.seq);
+        if(!rec){ await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; kf.head = true; break; }   // not there yet: the feed is up, nothing new
+        got.push({rec, history: false});
+        kf.seq++;
+      }
     }
     kf.fails = 0; it.kfNote = '';
+    const last = got.length ? got[got.length - 1].rec : null;
+    if(last && last.uploaded_at && Date.now() - last.uploaded_at * 1000 > IT_KILL_FAR_MS && Date.now() - kf.found > IT_KILL_REFIND_MS){ kf.seq = null; kf.head = false; }   // far behind: find the newest again
   }catch(e){
     kf.fails++;
     kf.waitUntil = Date.now() + Math.min(300000, 30000 * 2 ** (kf.fails - 1));   // 30 s, then longer, at most 5 minutes
@@ -23185,7 +23269,12 @@ async function itSecFetch(ids){
   }));
   if(any) itRenderLists();
 }
-function itSecClass(id){ const v = it.sec.get(id); if(v === undefined) return ''; const r = Math.round(v * 10) / 10; return r >= 0.5 ? 'hs' : r > 0 ? 'ls' : 'ns'; }
+// v.100: the tenth EVE shows (0.0 < sec < 0.05 shows as 0.1, low-sec), for the colour of each tenth (the owner: "should match the
+// security level of the actual system"); hs / ls / ns as before
+function itSecKey(id){ const v = it.sec.get(id); if(v === undefined) return null; return v > 0 && v < 0.05 ? 1 : Math.max(0, Math.round(v * 10)); }
+function itSecText(id){ const v = it.sec.get(id); return v === undefined ? '' : (v > 0 && v < 0.05 ? 0.1 : Math.round(v * 10) / 10).toFixed(1); }
+function itSecClass(id){ const k = itSecKey(id); return k === null ? '' : `${k >= 5 ? 'hs' : k > 0 ? 'ls' : 'ns'} s${k}`; }
+function itSysTitle(id){ const t = itSecText(id); return `${itSysName(id)}${t ? ` (security ${t})` : ''}`; }
 
 // ---- alerts: a sound and a desktop notification ----
 let itAudio = null;
@@ -23211,7 +23300,7 @@ function itAlert(st, e){
   it.alerts = (it.alerts || 0) + 1;
   if(it.set.sound) itBeep();
   if(it.set.notify && typeof Notification !== 'undefined' && Notification.permission === 'granted'){
-    const body = e.kind === 'kill' ? `Kill: ${e.kill.victim.name} lost a ${e.kill.victim.ship ? e.kill.victim.ship.name : 'ship'}${e.kill.value ? ` (${itIsk(e.kill.value)} ISK)` : ''}` : `${e.who}: ${e.raw}`;
+    const body = e.kind === 'kill' ? `${itKillWord(e)[1]}: ${e.kill.victim.name} lost a ${e.kill.victim.ship ? e.kill.victim.ship.name : 'ship'}${e.kill.value ? ` (${itIsk(e.kill.value)} ISK)` : ''}` : `${e.who}: ${e.raw}`;
     try{ new Notification(`${itSysName(st.sys)} · ${j} jump${j === 1 ? '' : 's'}`, {body: body.slice(0, 180), tag: `intel-${st.sys}`}); }catch(err){ /* not shown */ }
   }
 }
@@ -23301,7 +23390,18 @@ function itNearCount(){ return it.on ? itNearList().filter(x => x.j !== null && 
 function itPilotTitle(x, pair){ return `${SIDE_WORD[x.side]} (${cardName('side')}). Open ${x.name} in the Pilot Analyzer${pair ? `, in the ${pair.name} reported with them` : ''}`; }
 // v.99 (the owner: "As drawn"): who's who as EVE's intel tools show it: a standing mark, the corporation and alliance logos, the
 // name coloured by standing, then [CORP] <ALLIANCE>. Logos from CCP's image server (none shown if it doesn't answer).
-const IT_MK = {h: '−', f: '+', n: ''};
+// v.100 (the owner: "we should use those instead"): EVE's standing icons, drawn here (not CCP's files): a star for your corporation
+// and your alliance, + friendly, = neutral, - hostile. The page knows friendly or hostile, not +5 or +10, so one of each.
+const IT_ST_G = {star: '<path d="M6 1.6l1.25 2.7 2.9.3-2.15 2 .6 2.9L6 8.1 3.4 9.5l.6-2.9-2.15-2 2.9-.3z"/>', plus: '<path d="M5 2.5h2v2.5h2.5v2H7v2.5H5V7H2.5V5H5z"/>',
+  minus: '<path d="M2.5 5h7v2h-7z"/>', eq: '<path d="M2.5 3.6h7v1.7h-7zM2.5 6.7h7v1.7h-7z"/>'};
+const IT_ST = {corp: ['star', 'Your corporation'], all: ['star', 'Your alliance'], good: ['plus', 'Friendly'], neu: ['eq', 'Neutral'], bad: ['minus', 'Hostile']};
+function itStandKind(x){
+  const o = itOrgOf(x), r = side.rec || {};
+  if(x.side === 'f' && r.corp && o.corp && o.corp === r.corp.id) return 'corp';
+  if(x.side === 'f' && r.alliance && o.alliance && o.alliance === r.alliance.id) return 'all';
+  return x.side === 'f' ? 'good' : x.side === 'h' ? 'bad' : 'neu';
+}
+function itStandIcon(k){ const [g, t] = IT_ST[k]; return `<svg class="it-st ${k}" viewBox="0 0 12 12" role="img" aria-label="${t}"><title>${t}</title><rect x=".5" y=".5" width="11" height="11" rx="1.5"/><g class="sh" transform="translate(.6 .6)">${IT_ST_G[g]}</g><g class="gl">${IT_ST_G[g]}</g></svg>`; }
 function itOrgOf(x){ const a = it.aff.get(x.id); return {corp: x.corp || (a && a.corp) || null, alliance: x.alliance || (a && a.alliance) || null}; }
 function itTkHtml(kind, id){
   if(!id) return '';
@@ -23312,7 +23412,7 @@ function itTkHtml(kind, id){
 function itLogo(kind, id){ return id ? `<span class="it-lg${kind === 'corporation' ? ' c' : ''}"><img src="https://images.evetech.net/${kind === 'corporation' ? 'corporations' : 'alliances'}/${id}/logo?size=32" alt="" loading="lazy" onerror="this.remove()"></span>` : ''; }
 function itWhoHtml(x){
   const o = itOrgOf(x);
-  return `<span class="it-mk ${x.side}" aria-hidden="true">${IT_MK[x.side]}</span>${itLogo('corporation', o.corp)}${itLogo('alliance', o.alliance)}<span class="nm">${escapeHtml(x.name)}</span><span class="it-tks">${itTkHtml('corporation', o.corp)}${itTkHtml('alliance', o.alliance)}</span>`;
+  return `${itStandIcon(itStandKind(x))}${itLogo('corporation', o.corp)}${itLogo('alliance', o.alliance)}<span class="nm">${escapeHtml(x.name)}</span><span class="it-tks">${itTkHtml('corporation', o.corp)}${itTkHtml('alliance', o.alliance)}</span>`;
 }
 function itPilotChip(x, e){
   if(!x.id) return `<span class="it-chip ent ${x.side}">${itWhoHtml({...x, name: 'no pilot'})}</span>`;
@@ -23325,42 +23425,60 @@ function itNearRowHtml({st, j}){
   const L = itLive(st), alert = itThreat(st) && j !== null && j <= it.set.range;
   const n = itCount(st), hostile = L.pilots.some(x => x.side === 'h') || !L.pilots.length;
   const word = st.kind === 'clear' ? 'clear' : st.kind === 'nv' ? 'no visual' : L.friendlyOnly ? 'friendly' : `${n} ${hostile ? 'hostile' : 'neutral'}`;
-  const nk = st.kind === 'clear' ? 0 : (st.kills || []).filter(x => x.t >= Date.now() - it.set.forget * 60000).length;   // v.99
+  const ks = st.kind === 'clear' ? [] : (st.kills || []).filter(x => x.t >= Date.now() - it.set.forget * 60000);   // v.99
   const shipsTxt = L.ships.map(itShipText).join(', ');
   const whoTxt = st.kind === 'clear' ? `reported clear by ${st.who}`
     : [L.pilots.map(x => x.name).join(', ') + (L.extra ? ` +${L.extra}` : ''), shipsTxt].filter(Boolean).join(' · ') || `reported by ${st.who}`;
   const whoHtml = st.kind === 'clear' || !L.pilots.length ? escapeHtml(whoTxt)
     : [L.pilots.map(x => `<button type="button" class="it-pl ${x.side}" data-it-pilot="${x.id}" data-it-sys="${st.sys}" title="${escapeHtml(itPilotTitle(x, st.pairs.get(x.id)))}">${escapeHtml(x.name)}</button>`).join(', ') + (L.extra ? ` +${L.extra}` : ''), escapeHtml(shipsTxt)].filter(Boolean).join(' · ');
   const can = st.kind !== 'clear' && (L.pilots.length || L.ships.length);
-  return `<div class="it-nb${alert ? ' alert' : ''}" data-it-sys="${st.sys}"><span class="sys">${escapeHtml(itSysName(st.sys))}</span><span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${j === null ? '–' : `${j}j`}</span><span class="it-what"><span class="st ${st.kind === 'clear' ? 'clr' : L.friendlyOnly ? 'fr' : ''}"><b>${escapeHtml(word)}</b>${nk ? ` <span class="it-kl">${nk} kill${nk === 1 ? '' : 's'}</span>` : ''}</span><span class="who" title="${escapeHtml(whoTxt)}">${whoHtml}</span></span><span class="age">${itAgo(st.t)}</span>${can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span></span>'}</div>`;
+  return `<div class="it-nb${alert ? ' alert' : ''}" data-it-sys="${st.sys}"><span class="sys it-sn ${itSecClass(st.sys)}" title="${escapeHtml(itSysTitle(st.sys))}">${escapeHtml(itSysName(st.sys))}</span><span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : j === 0 ? 'your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${itJumpsHtml(j)}</span><span class="it-what"><span class="st ${st.kind === 'clear' ? 'clr' : L.friendlyOnly ? 'fr' : ''}"><b>${escapeHtml(word)}</b>${itKillBadges(ks)}</span><span class="who" title="${escapeHtml(whoTxt)}">${whoHtml}</span></span><span class="age">${itAgo(st.t)}</span>${can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span></span>'}</div>`;
 }
+// v.100 (the owner: "let's go ahead and use the format of 'x Jumps'", and "a callout like 'IN SYSTEM'" for your own system)
+function itJumpsHtml(j){ return j === null ? '–' : j === 0 ? '<span class="it-here">In system</span>' : `${j} Jump${j === 1 ? '' : 's'}`; }
+// v.100: kills by who died (the owner: "if it was an enemy being killed by allies or the other way around")
+const IT_KILL_WORD = {f: ['kf', 'Friendly lost', 'friendly lost', 'friendlies lost'], h: ['kh', 'Hostile killed', 'hostile killed', 'hostiles killed'], n: ['kn', 'Neutral killed', 'neutral killed', 'neutrals killed']};
+function itKillWord(e){ return IT_KILL_WORD[e.kill.victim.side] || IT_KILL_WORD.n; }
+function itKillBadges(ks){
+  const by = {f: 0, h: 0, n: 0};
+  for(const k of ks) by[IT_KILL_WORD[k.v] ? k.v : 'n']++;
+  return ['f', 'h', 'n'].filter(v => by[v]).map(v => ` <span class="it-kl ${IT_KILL_WORD[v][0]}">${by[v]} ${IT_KILL_WORD[v][by[v] === 1 ? 2 : 3]}</span>`).join('');
+}
+// v.100 (the owner: "Definitely show enemy kills as well"): a kill counts as friendly-only (hidden with "hide friendly") only when
+// the victim was friendly too; v.99 hid every kill made by friendlies only, so an enemy killed by allies never showed
+function itFriendlyOnlyRow(e){ return !!e.friendlyOnly && !(e.kind === 'kill' && e.kill.victim.side !== 'f'); }
+const IT_CHEV = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function itFeedRowHtml(e){
   const my = itMySys(), head = [], chips = [];
-  for(const s of e.p.sys){ const j = itJumps(my, s.id); head.push(`<span class="it-chip sys" title="${escapeHtml(itSysName(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}"><span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${j === null ? '' : ` <span class="j">${j}j</span>`}</span>`); }
-  const ty = e.kind === 'kill' ? ['kill', 'Kill'] : e.kind === 'clear' ? ['clr', 'Clear'] : ['rep', 'Report'];
-  const hd = `<div class="it-fh">${head.join('')}<span class="it-age" title="your time ${itClock(e.t)}">${itAgo(e.t)}</span><span class="it-ty ${ty[0]}">${ty[1]}</span></div>`;
+  for(const s of e.p.sys){ const j = itJumps(my, s.id); head.push(`<span class="it-chip sys" title="${escapeHtml(itSysTitle(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}"><span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${j === null ? '' : ` <span class="j">${itJumpsHtml(j)}</span>`}</span>`); }
+  const kw = e.kind === 'kill' ? itKillWord(e) : null;
+  const ty = kw ? [`kill ${kw[0]}`, kw[1]] : e.kind === 'clear' ? ['clr', 'Clear'] : ['rep', 'Report'];
+  const open = e.kind !== 'kill' && it.rawOpen.has(e.id);
+  const tog = e.kind === 'kill' ? '' : `<button type="button" class="it-rawt" data-it-raw="${e.id}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} the line as typed" title="${open ? 'Hide' : 'Show'} the line as it was typed, and who sent it">${IT_CHEV}</button>`;
+  const hd = `<div class="it-fh">${head.join('')}<span class="it-age" title="your time ${itClock(e.t)}">${itAgo(e.t)}</span><span class="it-ty ${ty[0]}">${ty[1]}</span>${tog}</div>`;
   if(e.kind === 'kill'){   // v.99: who lost what, and who killed them
     const k = e.kill, a = e.pilots[0];
     const l1 = `${itPilotChip(k.victim, e)}<span class="it-by">lost a</span>${k.victim.ship ? itShipChip({id: k.victim.ship.typeId, name: k.victim.ship.name, n: 1}) : '<span class="it-by">ship</span>'}${k.value ? `<span class="it-isk">${itIsk(k.value)} ISK</span>` : ''}`;
     const more = k.n > 1 ? `<span class="it-by">+${k.n - 1} more</span>` : '<span class="it-by">solo</span>';
     const l2 = a ? `<span class="it-by">by</span>${itPilotChip(a, e)}${a.ship ? itShipChip({id: a.ship.typeId, name: a.ship.name, n: 1}) : ''}${more}<a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a>`
       : `<span class="it-by">by NPCs or a structure</span><a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a>`;
-    return `<div class="it-fd kill">${hd}<div class="it-chips">${l1}</div><div class="it-chips">${l2}</div></div>`;
+    return `<div class="it-fd kill ${kw[0]}">${hd}<div class="it-chips">${l1}</div><div class="it-chips">${l2}</div></div>`;
   }
   for(const x of e.pilots) chips.push(itPilotChip(x, e));
   if(e.p.extra) chips.push(`<span class="it-chip kw">+${e.p.extra}</span>`);
   for(const s of e.p.ships) chips.push(itShipChip(s));
-  for(const k of e.p.kw) chips.push(`<span class="it-chip ${k === 'clear' ? 'clr' : 'kw'}">${escapeHtml(k)}</span>`);
+  for(const k of e.p.kw) if(!(k === 'clear' && e.kind === 'clear')) chips.push(`<span class="it-chip ${k === 'clear' ? 'clr' : 'kw'}">${escapeHtml(k)}</span>`);   // v.100: "Clear" once, in the title line
   const left = e.p.W.filter((x, i) => !e.p.used[i]).map(x => x.w);
   if(left.length) chips.push(`<span class="it-left" title="Words the page couldn't place">${escapeHtml(left.join(' '))}</span>`);
   const toast = it.shape && it.shape.id === e.id ? `<div class="it-toast">${it.shape.ok ? 'Copied the shape' : 'The shape (copy it from here)'}: <code>${escapeHtml(it.shape.text)}</code><br>System and pilot names are replaced, so it's safe to share when a line is read wrong.</div>` : '';
-  return `<div class="it-fd ${ty[0]}">${hd}${chips.length ? `<div class="it-chips">${chips.join('')}</div>` : ''}<span class="raw">${escapeHtml(e.who)} &gt; ${escapeHtml(e.raw)}</span>${toast}<button type="button" class="it-shape" data-it-shape="${e.id}" aria-label="Copy this line's shape" title="Copy this line's shape: system and pilot names replaced, to report a line read wrong">${IT_COPY}</button></div>`;
+  const raw = `<div class="it-raw"${open ? '' : ' hidden'}><span class="who">${escapeHtml(e.who)}</span><span class="gt">&gt;</span><span class="raw">${escapeHtml(e.raw)}</span><span class="ch">${escapeHtml(e.chan || '')}</span><button type="button" class="it-shape" data-it-shape="${e.id}" aria-label="Copy this line's shape" title="Copy this line's shape: system and pilot names replaced, to report a line read wrong">${IT_COPY}</button></div>`;
+  return `<div class="it-fd ${ty[0]}${open ? ' open' : ''}">${hd}${chips.length ? `<div class="it-chips">${chips.join('')}</div>` : ''}${toast}${raw}</div>`;
 }
 // v.99 (the owner: "Add it"): the Feed's filters: Types, Distance, Sort and Search
 function itFeedShown(){
   const keepT = Date.now() - it.set.forget * 60000, f = it.set.feed, q = it.q.trim().toLowerCase(), my = itMySys();
   const jOf = (e) => { const s = e.p.sys[0]; return s ? itJumps(my, s.id) : null; };
-  let L = it.feed.filter(e => e.t >= keepT && !(it.set.hideFriendly && e.friendlyOnly));
+  let L = it.feed.filter(e => e.t >= keepT && !(it.set.hideFriendly && itFriendlyOnlyRow(e)));
   if(f.types === 'reports') L = L.filter(e => e.kind !== 'kill');
   if(f.types === 'kills') L = L.filter(e => e.kind === 'kill');
   if(f.dist) L = L.filter(e => { const j = jOf(e); return j !== null && j <= f.dist; });
@@ -23598,6 +23716,8 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
     if(as){ itAssess(Number(as.dataset.itAssess)); return; }
     const sh = e.target.closest('[data-it-shape]');
     if(sh){ itCopyShape(Number(sh.dataset.itShape)); return; }
+    const rw = e.target.closest('[data-it-raw]');   // v.100: show or hide the line as typed
+    if(rw){ const id = Number(rw.dataset.itRaw); if(it.rawOpen.has(id)) it.rawOpen.delete(id); else it.rawOpen.add(id); itRenderLists(); const b = el.querySelector(`[data-it-raw="${id}"]`); if(b) b.focus(); return; }
     const a = e.target.closest('[data-it-act]');
     if(!a) return;
     if(a.dataset.itAct === 'gear'){ it.pop = !it.pop; itRender(true); return; }

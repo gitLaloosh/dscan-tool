@@ -102,9 +102,11 @@ def route(ctx):
     ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
     ctx.route(re.compile(r'https://zkillboard\.com/.*'), M.zkb)
     ctx.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))
-    # v.99: zKillboard's live feed (R2Z2), quiet here: a sequence, then nothing new (intel_kills_check.py feeds it kills)
-    ctx.route(re.compile(r'https://r2z2\.zkillboard\.com/.*'), lambda r: r.fulfill(status=200, content_type='application/json', body='{"sequence": 1000}')
-              if r.request.url.endswith('/sequence.json') else r.fulfill(status=404, body=''))
+    # v.99: zKillboard's live feed (R2Z2), quiet here: a sequence, then nothing new (intel_kills_check.py feeds it kills).
+    # v.100: as the real one answers: sequence.json readable; a missing kill a 404 without the CORS header, which the page
+    # sees as a network error (aborted here: Playwright's route.fulfill() skips the CORS check; LESSON #89)
+    ctx.route(re.compile(r'https://r2z2\.zkillboard\.com/.*'), lambda r: r.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body='{"sequence": 1000}')
+              if r.request.url.endswith('/sequence.json') else r.abort('failed'))
 
 # ---- a made-up Chatlogs folder, written as EVE writes it ----
 FS = r"""(() => {
@@ -144,8 +146,11 @@ def setup_logs(pg):
     W(pg, F_CORP, header('Corp', 'Your Main', NOW - 3 * 86400) + line(NOW - 3 * 86400 + 60, 'Someone', 'hi'))
 SIDE = {'pilot': {'id': 90000001, 'name': 'Test Pilot'}, 'corp': {'id': M.CORP, 'name': 'Example Corp'}, 'alliance': {'id': M.ALLIANCE, 'name': 'Example Alliance'},
         'friendly': [], 'hostile': [{'id': M.CRTS, 'name': 'Crimson Tide Syndicate', 'kind': 'alliance'}], 'rows': 15}
-NEAR = """() => [...document.querySelectorAll('#intelPanel .it-nb')].map(r => [r.querySelector('.sys').textContent, r.querySelector('.j').textContent, r.querySelector('.st b').textContent, r.querySelector('.who').textContent, r.classList.contains('alert')])"""
-FEED = """() => [...document.querySelectorAll('#intelPanel .it-fd')].map(r => ({chips: [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), (c.querySelector('.nm') || c).textContent]), left: (r.querySelector('.it-left') || {}).textContent || '', raw: r.querySelector('.raw').textContent}))"""
+# v.100: jumps read back as "Nj" here ("3 Jumps", "1 Jump", "In system" on the page; the exact words are checked on their own);
+# the line as typed is "who > line" (v.100: who, the line and the channel in the strip that opens under a row)
+JN = "const jn = (t) => t.replace(/ ?(\\d+) Jumps?$/, (m, n) => (m.startsWith(' ') ? ' ' : '') + n + 'j').replace(/ ?In system$/, (m) => (m.startsWith(' ') ? ' ' : '') + '0j');"
+NEAR = """() => { """ + JN + """ return [...document.querySelectorAll('#intelPanel .it-nb')].map(r => [r.querySelector('.sys').textContent, jn(r.querySelector('.j').textContent), r.querySelector('.st b').textContent, r.querySelector('.who').textContent, r.classList.contains('alert')]); }"""
+FEED = """() => { """ + JN + """ return [...document.querySelectorAll('#intelPanel .it-fd')].map(r => ({chips: [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), c.classList.contains('sys') ? jn(c.textContent) : (c.querySelector('.nm') || c).textContent]), left: (r.querySelector('.it-left') || {}).textContent || '', raw: ((r.querySelector('.it-raw .who') || {}).textContent || '') + ' > ' + r.querySelector('.raw').textContent})); }"""
 def tick(pg, ms=2600): pg.wait_for_timeout(ms)
 
 with sync_playwright() as p:
@@ -225,6 +230,26 @@ with sync_playwright() as p:
           ['Y-OMTZ', '3j', 'no visual', 'Seren Ketter', True],
           ['QX-LIJ', '4j', '1 neutral', 'Anouk Morrow · Scimitar', False]]
     check(near == wn, f'Near You: nearest first, red within 3 jumps, nv keeps who was seen, clr, friendly-only hidden, status no row {near}')
+    # v.100 (the owner: "x Jumps", "a callout like 'IN SYSTEM'", the standing icons, the line as typed behind a toggle)
+    jw = pg.evaluate("() => [[...document.querySelectorAll('#intelPanel .it-nb .j')].map(j => j.textContent), !!document.querySelector('#intelPanel .it-nb .j .it-here'), [...document.querySelectorAll('#itFeedList .it-chip.sys')].map(c => c.textContent).filter(t => /^(8WA-Z6|1DQ1-A|Y-OMTZ) /.test(t))]")
+    jw.append(pg.evaluate("() => [document.querySelectorAll('#itFeedList .it-fd.clr').length, document.querySelectorAll('#itFeedList .it-fd.clr .it-chip.clr').length]"))
+    check(jw[0] == ['In system', '1 Jump', '1 Jump', '2 Jumps', '3 Jumps', '4 Jumps'] and jw[1] and jw[2][:3] == ['1DQ1-A In system', 'Y-OMTZ 3 Jumps', '8WA-Z6 1 Jump'] and jw[3] == [1, 0],
+          f'the words: "1 Jump", "3 Jumps", and "In system" (a tag) for your own system, in Near You and the Feed; "Clear" once on a clear row {jw}')
+    ic = pg.evaluate("() => Object.fromEntries([...document.querySelectorAll('#itFeedList .it-chip.p')].map(c => [c.querySelector('.nm').textContent, [c.querySelector('svg.it-st').getAttribute('class'), c.querySelector('svg.it-st title').textContent]]))")
+    check(ic.get('Marrek Ketter') == ['it-st bad', 'Hostile'] and ic.get('Vesna Dossier') == ['it-st neu', 'Neutral'] and not pg.evaluate("() => !!document.querySelector('#intelPanel .it-mk')"),
+          f'standing icons: hostile "-", neutral "=" (v.99: an empty ring) {ic}')
+    RAWQ = """(raw) => { const r = [...document.querySelectorAll('#itFeedList .it-fd')].find(f => (f.querySelector('.raw') || {}).textContent === raw); const t = r.querySelector('[data-it-raw]'), s = r.querySelector('.it-raw');
+      return [t.getAttribute('aria-expanded'), s.hidden, s.checkVisibility(), (s.querySelector('.who') || {}).textContent, (s.querySelector('.ch') || {}).textContent, !!s.querySelector('[data-it-shape]'), r.classList.contains('open')]; }"""
+    L8 = '8WA-Z6*  Marrek Ketter*  Vesna Dossier +3  sabre vedmak x2 loki'
+    r0 = pg.evaluate(RAWQ, L8)
+    shut = pg.evaluate("() => [...document.querySelectorAll('#itFeedList .it-fd:not(.kill)')].every(f => f.querySelector('[data-it-raw]') && f.querySelector('.it-raw').hidden)")
+    pg.evaluate(f"(raw) => [...document.querySelectorAll('#itFeedList .it-fd')].find(f => f.querySelector('.raw').textContent === raw).querySelector('[data-it-raw]').click()", L8); pg.wait_for_timeout(150)
+    r1 = pg.evaluate(RAWQ, L8)
+    pg.evaluate("() => itRender(true)"); r2 = pg.evaluate(RAWQ, L8)
+    pg.evaluate(f"(raw) => [...document.querySelectorAll('#itFeedList .it-fd')].find(f => f.querySelector('.raw').textContent === raw).querySelector('[data-it-raw]').click()", L8); pg.wait_for_timeout(150)
+    r3 = pg.evaluate(RAWQ, L8)
+    check(shut and r0[:3] == ['false', True, False] and r1 == ['true', False, True, 'Scout Alt', 'region.intel', True, True] and r2 == r1 and r3[:3] == ['false', True, False],
+          f'the line as typed: hidden behind a toggle on every report; opened it shows who sent it, the line, the channel and the copy button; stays open through a redraw; closes {r0} {r1} {r3}')
     al = pg.evaluate("() => [__fs.beeps, __fs.notes.map(n => n[0])]")
     check(al == [3, ['8WA-Z6 · 1 jump', 'Y-OMTZ · 3 jumps', 'D-W7F0 · 2 jumps']], f'alerts: sound and notification for hostile/neutral within 3 jumps, not 4, not friendlies {al}')
     badge = pg.evaluate("() => [document.querySelector('#intelNear').hidden, document.querySelector('#intelNear').textContent]")

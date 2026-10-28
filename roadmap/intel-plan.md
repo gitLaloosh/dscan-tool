@@ -136,3 +136,36 @@ Findings (2026-10-28), mockup `Claude outputs/intel_feed_kills_mockup.html`:
   Data source: nearby kills; research how a page can get them before promising (the client may not write them anywhere
   a page can read; zKillboard's live kill stream is a candidate). Mockup first.
 
+
+## The Feed's look and the kill feed's real behaviour (v2026.10.14.100)
+
+the owner, on a Feed row: "i dont like any of the pill stuff on the feed ... the bright borders just draw your attention away
+from the actual information." Mockups `Claude outputs/intel_feed_style_mockup.html` (A/B/C), `intel_feed_hybrids_mockup.html`
+(H1-H4), `intel_feed_h2_h3_mockup.html`, `intel_feed_h2_final_mockup.html`. His picks: H2 ("Let's go with H2"), with:
+1. the line as typed behind "a subtle button to expand the text to be at the bottom" (who sent it, the line, the channel;
+   the copy-shape button moved into that strip);
+2. system names in the security colour of the actual system (EVE's colour per tenth; 0.0 < sec < 0.05 shows 0.1);
+3. "x Jumps" in the quiet grey, and "a callout like 'IN SYSTEM'" for your own system (an amber tag; in Near You its text
+   lines up with the jumps below);
+4. EVE's standing icons instead of the old marks: the client's `res:/ui/texture/classes/flagicon/*.png` are white 9x9
+   symbols tinted on a 12x12 square (`bgframe.png`); the page draws its own (not CCP's files): a star for your
+   corporation (green) and alliance (blue), + friendly, = neutral, - hostile. The page knows friendly or hostile, not
+   +5 or +10;
+5. kills by who died: Friendly lost (blue), Hostile killed (red), Neutral killed (plain), on the label and the row; Near
+   You's badges in the same words (the owner: "Near You's badges should be inline with the Feed"). And: "Definitely show
+   enemy kills as well": a kill by friendlies only of a hostile or a neutral shows with "hide friendly" on (no alert, no
+   Near You row).
+
+the owner: "are we actually capturing kills right now? i haven't seen any in the feed". Read from the GitHub Pages origin
+(2026-10-28 21:06 UTC): `sequence.json` said 100263992 (last-modified 17:56 UTC) while kills uploaded to 21:06 were
+numbered 3,000+ past it; a file not there yet answers 404 without the CORS header (a `no-cors` request to it succeeds,
+a normal one throws), so the page never saw a 404. v.99 started three hours back (~10 minutes to reach live) and then
+took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up to 5 minutes). LESSON #89.
+
+- **v2026.10.14.100: done.** itKillFindHead (from `sequence.json`, steps of 64, 128 ... then halving; ~15-20 requests,
+  80 ms apart), the read-back in batches of 28 started 80 ms apart (240 in ~20 s), itKillGet (a blocked or 404 answer =
+  not there yet), a `sequence.json` check after each miss (only when that fails too: INTEL-05), finding the newest again
+  when the kills read were uploaded over an hour ago (at most once per 5 minutes). The H2 Feed and Near You;
+  itStandIcon / itStandKind, itSecKey / itSecText / itSysTitle, itJumpsHtml, itKillWord / itKillBadges,
+  itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
+- Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.

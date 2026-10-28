@@ -878,6 +878,25 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 89. Check a live service's edges from where the page runs before writing its test double
+
+- **What happened (v2026.10.14.99, the owner: "are we actually capturing kills right now?"):** v.99 followed zKillboard's live
+  feed (R2Z2) as its docs describe: read `sequence.json`, then each numbered file until a 404. Read from the GitHub Pages
+  address on 2026-10-28, the real feed did two things the docs don't say: `sequence.json` was three hours stale (kills
+  were already 3,000+ numbers past it), and a file not there yet answers 404 without the CORS header, so the browser
+  reports a network error and the page never sees the 404. v.99 started three hours back, took ~10 minutes to reach
+  live, then took every "nothing new yet" for the feed being down (INTEL-05, waits of up to 5 minutes). The check's
+  mock answered `sequence.json` with the true newest number, and its header-less 404 reached the page as a plain 404:
+  Playwright's `route.fulfill()` skips the browser's CORS check, so the double could never show the real failure (a
+  mutant that treats a network error as "down" passed until the double aborted the request instead). The v.99 test of
+  R2Z2 from the live origin had only read files that existed.
+- **Do this instead:** before writing a double for a live service, probe its edges from the page's real origin: the
+  missing item, the end of the list, an index or pointer it publishes, the headers on an error. Build the double from
+  what came back (here: a stale `sequence.json`, a header-less 404). Know what the double itself skips: a fulfilled
+  route is never CORS-checked, so a response the browser would block must be an aborted request in the double. In the
+  happy path, check that the error note is absent; a check that only bounds a delay passes when the page is failing
+  slowly. Then run a mutant that breaks the handling and see the check fail.
+
 ## 88. In free text, a word that is also a character's name is not a pilot until the domain says so
 
 - **What happened (v2026.10.14.98, the owner's live use):** an intel line "<system> inside ess loki and curse <pilot> (Curse)
