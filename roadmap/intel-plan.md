@@ -76,3 +76,38 @@ as well." Mockup: `Claude outputs/intel_mockup.html` (revised to the answers bel
   own button and opens the Intel tab (it sat inside the slider's label and switched Intel off); the settings' lists readable
   on Windows.
 - Next: delivery 2 (a reported pilot to the Pilot Analyzer; a system's pilots to the System Analyzer rows).
+
+## Delivery 2 (mockup `Claude outputs/intel_assess_mockup.html`, 2026-10-28)
+
+the owner: "proceed with #1 and #2" (#1 delivery 2, #2 his feedback from real use, with no raw intel in the repository).
+- Pilot names in Feed and Near You open the Pilot Analyzer; in the paired ship when the line pairs one pilot with one ship
+  (or "Pilot (Ship)"), with a "From Intel" line and Back to Intel.
+- Assess ▸ on a Near You row: the System Analyzer with Local = the system's reported pilots, D-Scan = its reported ships,
+  analyzed; "Restore my paste" when it replaced the user's own.
+- Intel's pairing as a pilot's possible ship in the System Analyzer ("reported in it on Intel").
+- Copy shape: a Feed line with systems/pilots/unplaced words replaced (SYS, PILOT, WORD), ship names and keywords kept,
+  plus what the page read; for the owner to send misreads without raw intel.
+- Questions: Q1 pilot links open in the paired ship; Q2 a system's pilots = everyone reported in the window until a clear
+  (today Near You shows only the latest report); Q3 Intel's pairing wins in the System Analyzer; Q4 the copy-shape button.
+- the owner: all four as recommended ("Paired ship", "Everyone until clear", "Intel's pairing wins", "Add it"). Also: "the feed
+  keeps growing on the intel page. we should probably drop entries older than 15 minutes" (the Feed keeps the time set).
+- **v2026.10.14.98: delivery 2 done.** itPairs, itLive (a system's union until a clear), itOpenPilot / itAssess /
+  itAssessEnd, itShape / itCopyShape, the From Intel lines (#pilotFromIntel, #saFromIntel), sa.intel in saRowPick;
+  `tools/page_checks/intel_assess_check.py`.
+
+## Next (the owner, 2026-10-28)
+
+With a screenshot of EVE's own Intel Feed window (kill rows: system, time, victim ship and corp ticker, killer; filters
+Location / Distance / Types / Sorting): "a layout reference and we might want to use some of the same concepts for
+communicating standing, alliance/corp, etc. data source as well."
+- N1. The Feed's layout and how it shows standing and alliance / corporation, modeled on that window (mockup first).
+- N2. Whether those kill events can be read by the page at all (client files, ESI): to be checked, not assumed.
+- the owner: all four as recommended ("Paired ship", "Everyone until clear", "Intel's pairing wins", "Add it").
+- **v2026.10.14.98: done.** itPairs, itLive (the union), itOpenPilot / itAssess / itShape; saRowPick takes `sa.intel`
+  pairs first; `tools/page_checks/intel_assess_check.py`.
+- Next (the owner 2026-10-28, a screenshot of EVE's own Intel Feed window): "a layout reference and we might want to use some
+  of the same concepts for communicating standing, alliance/corp, etc. data source as well." Layout ideas: standing icon,
+  corp/alliance logo and ticker per pilot, one-row events, filter chips (location, distance, types, sorting, search).
+  Data source: nearby kills; research how a page can get them before promising (the client may not write them anywhere
+  a page can read; zKillboard's live kill stream is a candidate). Mockup first.
+

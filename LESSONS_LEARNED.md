@@ -878,6 +878,24 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 85. Read a mockup's numbers, not only its layout
+
+- **What happened (v2026.10.14.98 mockup):** the Intel delivery 2 mockup was drawn from the real v.97 page with made-up
+  lines. Its Near You row for 8WA-Z6 said "1 neutral, Vesna Dossier · Vedmak" one line after "5 hostile": Near You kept
+  only a system's latest report, so a short follow-up line erased everyone reported a minute earlier. Nobody had
+  noticed in v.96/v.97; the mockup's numbers showed it, and it became a question for the owner ("Everyone until clear").
+- **Do this instead:** when a mockup runs on the real page, read every number and name in its frames as output to
+  check, as a page check would. A frame that looks wrong is a finding, even when the frame is about something else.
+
+## 85. A list kept in arrival order isn't in time order
+
+- **What happened (v2026.10.14.98):** to keep Intel's Feed to the last 15 minutes, the first try dropped lines from the
+  end of the list while the last one was too old. The list is in the order lines were read, not by their time (several
+  channel logs, a log read from the start when Intel is turned on), so an old line in the middle stayed for good.
+  `intel_assess_check.py` aged a line in the middle and caught it.
+- **Do this instead:** to drop by time, filter by time; don't assume a list's order unless the code sorts it. In a
+  check, age an entry that isn't at either end.
+
 ## 84. One state, one control: a switch shown on every tab needs no twin on the page it controls
 
 - **What happened (v2026.10.14.96):** Intel got an "Intel" slider beside Standings (on every tab) and a "Watching" slider

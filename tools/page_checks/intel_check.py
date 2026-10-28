@@ -142,7 +142,7 @@ def setup_logs(pg):
 SIDE = {'pilot': {'id': 90000001, 'name': 'Test Pilot'}, 'corp': {'id': M.CORP, 'name': 'Example Corp'}, 'alliance': {'id': M.ALLIANCE, 'name': 'Example Alliance'},
         'friendly': [], 'hostile': [{'id': M.CRTS, 'name': 'Crimson Tide Syndicate', 'kind': 'alliance'}], 'rows': 15}
 NEAR = """() => [...document.querySelectorAll('#intelPanel .it-nb')].map(r => [r.querySelector('.sys').textContent, r.querySelector('.j').textContent, r.querySelector('.st b').textContent, r.querySelector('.who').textContent, r.classList.contains('alert')])"""
-FEED = """() => [...document.querySelectorAll('#intelPanel .it-fd')].map(r => ({chips: [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', ''), c.textContent]), left: (r.querySelector('.it-left') || {}).textContent || '', raw: r.querySelector('.raw').textContent}))"""
+FEED = """() => [...document.querySelectorAll('#intelPanel .it-fd')].map(r => ({chips: [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), c.textContent]), left: (r.querySelector('.it-left') || {}).textContent || '', raw: r.querySelector('.raw').textContent}))"""
 def tick(pg, ms=2600): pg.wait_for_timeout(ms)
 
 with sync_playwright() as p:

@@ -2299,9 +2299,29 @@
   .it-chip.ship{border-style:dashed;} .it-chip.kw{background:var(--panel); color:var(--text-dim); border-color:transparent;} .it-chip.clr{border-color:var(--it-clear); color:var(--it-clear);}
   .it-chip .j{font:700 10.5px var(--mono); opacity:.85;}
   .it-left{color:var(--text-dim); font-size:11.5px;}
+  /* v2026.10.14.98 Intel delivery 2: pilot links, Assess, copy shape, the From Intel lines */
+  .it-nb{grid-template-columns:92px 44px minmax(0,1fr) 54px 78px;}
+  button.it-assess{min-height:28px; padding:0 10px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0; white-space:nowrap;}
+  button.it-assess:hover{border-color:var(--text-dim);}
+  button.it-chip.p{cursor:pointer; letter-spacing:0; min-height:0; background:transparent;} button.it-chip.p:hover, button.it-chip.p:focus-visible{text-decoration:underline; text-underline-offset:2px; background:color-mix(in srgb, currentColor 10%, transparent);}
+  button.it-pl{all:unset; cursor:pointer; color:inherit;} button.it-pl.h{color:var(--side-hostile);} button.it-pl.f{color:var(--side-friendly);}
+  button.it-pl:hover, button.it-pl:focus-visible{text-decoration:underline; text-underline-offset:2px; color:var(--heading);}
+  .it-fd{position:relative;}
+  button.it-shape{position:absolute; right:0; top:6px; width:28px; height:28px; min-height:0; padding:0; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text-dim); display:inline-flex; align-items:center; justify-content:center; opacity:0; letter-spacing:0;}
+  .it-fd:hover button.it-shape, button.it-shape:focus-visible{opacity:1;} button.it-shape svg{width:14px; height:14px;}
+  .it-fd .it-chips{padding-right:34px;}
+  .it-toast{margin-top:6px; padding:8px 10px; border:1px solid var(--cyan); border-radius:6px; background:color-mix(in srgb, var(--cyan) 8%, transparent); font:400 12px var(--sans); color:var(--text);}
+  .it-toast code{font:600 12px var(--mono); color:var(--heading); background:transparent; overflow-wrap:anywhere;}
+  .from-intel{display:flex; gap:8px 10px; align-items:center; flex-wrap:wrap; margin:0 0 12px; padding:8px 12px; border:1px solid var(--cyan); border-radius:6px; background:color-mix(in srgb, var(--cyan) 7%, transparent); font:400 12.5px var(--sans); color:var(--text);}
+  .from-intel[hidden]{display:none;} .from-intel b{color:var(--heading);}
+  .from-intel button{min-height:28px; padding:0 10px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0;}
+  @media (max-width: 900px){
+    .it-nb{grid-template-columns:84px 40px minmax(0,1fr) auto;} button.it-assess{min-height:40px;}
+    button.it-shape{opacity:1; width:36px; height:36px;} .it-fd .it-chips{padding-right:42px;} .from-intel button{min-height:40px;}
+  }
   @media (max-width: 900px){
     .it-setup, .it-pop .it-setup{grid-template-columns:1fr 1fr;} .it-cols{grid-template-columns:1fr;} .it-sw{margin-left:0;}
-    .it-nb{grid-template-columns:84px 40px minmax(0,1fr);} .it-nb .age{display:none;}
+    .it-nb .age{display:none;}
     .it-pop{position:fixed; left:8px; right:8px; top:auto; bottom:8px; width:auto; max-height:80vh; overflow:auto;}
     button.it-gear{width:44px; height:44px;} .it-box label{min-height:36px;} button.it-near-btn{min-height:44px;}
   }
@@ -2313,7 +2333,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.97</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.98</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2359,6 +2379,8 @@
        (tabDscan, dscanInput, analyzeBtn, resultsWrap) so the scan code and its checks are unchanged. -->
   <section class="panel">
     <div class="sa-head"><h2 data-card="sysan"></h2><span class="sa-sp"></span><span id="saInfo"></span></div>
+    <!-- v2026.10.14.98: Intel delivery 2: a system sent from Intel (Assess) -->
+    <div class="from-intel" id="saFromIntel" hidden></div>
     <div class="sa-inputs">
       <div class="sa-in"><label for="localInput">Local</label><span class="ctx">Everyone in system: select all, Ctrl+C</span>
         <textarea id="localInput" placeholder="Paste the Local member list here (one pilot per line)" spellcheck="false"></textarea></div>
@@ -2397,6 +2419,8 @@
   <div id="tabIntel" class="tab-panel" style="display:none;"><section class="panel it-panel" id="intelPanel"></section></div>
   <div id="tabPilot" class="tab-panel">
   <section class="panel">
+    <!-- v2026.10.14.98: Intel delivery 2 (roadmap/intel-plan.md): where a pilot opened from Intel came from -->
+    <div class="from-intel" id="pilotFromIntel" hidden></div>
     <div class="pa-top"><div class="pa-main">
     <h2>Pilot Analyzer</h2>
     <p class="sub">Enter a pilot's name and, optionally, a ship type (from a D-Scan, or typed manually). Leave the ship blank and it'll sample their recent losses to guess which hull they fly most.</p>
@@ -2646,7 +2670,9 @@ const CARD_INFO = {
   "The Intel slider at the top, beside {card:side}, turns it on and off from any tab: on, the page reads the new end of each chosen log every 2 seconds, from a background worker so it keeps going in a hidden tab; off, or closing the page, stops it.",
   "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from the stargate list in the EVE client's own data (no jump bridges, no wormholes); the page says when EVE has been patched since that list was checked.",
   "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
-  "{card:itnear}: each system reported in the time you set, nearest first, with its latest report: clear, no visual, or who and what was seen. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
+  "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
+  "{card:itnear}: each system reported in the time you set, nearest first: everyone and every ship reported there in that time until someone reports it clear (the same ship type twice counts once, at its larger number); clear or no visual when that is the latest word. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
+  "A pilot's name (in {card:itfeed} and {card:itnear}) opens them in the Pilot Analyzer; when the line puts them in a ship (\"Pilot (Ship)\", or one pilot and one ship), in that ship. Assess sends a system's reported pilots and ships to the {card:sysan}, where Intel's pairing is their possible ship; Restore my paste puts back what you had there. The copy button on a line copies its shape with system and pilot names replaced, to report a line read wrong.",
   "Nothing from your logs leaves the browser except the words looked up on ESI, and none of it is kept after you close the page."
  ],
  "fkpilots": [
@@ -10642,6 +10668,7 @@ async function sharedKillmailRun(id, hash, statusEl){
 }
 
 async function runFitCheck(opts){
+  itFromPilotCheck();   // v.98: a "From Intel" line only for the pilot it was about
   const statusEl = document.getElementById('fitStatus');
   document.getElementById('fitResults').innerHTML = '';
   document.getElementById('fitCandidates').innerHTML = '';
@@ -21198,9 +21225,13 @@ async function saRowPick(r, p){
   const recent = r.ok.filter(s => Date.now() - s.t <= SA_RECENT_DAYS * DAY_MS);
   const how = (s) => `${s.kind === 'kill' ? 'on a kill' : 'lost one'} ${saAgoShort(s.t)}`;
   let pick, basis, tag = '', title = '';
-  const onScan = recent.find(s => sa.scanTypes.has(s.typeId));
-  const top = onScan ? null : pdRows(r.d, size)[0];
-  if(onScan){ pick = onScan.typeId; basis = `on scan; ${how(onScan)}`; title = `A ship of theirs from the last ${SA_RECENT_DAYS} days is on your D-Scan, so it comes first.`; }
+  // v2026.10.14.98 (the owner: "Intel's pairing wins"): a pilot Intel reported in a ship ("Pilot (Ship)", or one pilot and one
+  // ship in the line) gets that ship; the rest as before
+  const ip = sa.intel && sa.intel.pairs.get(String(p.name || '').toLowerCase());
+  const onScan = ip ? null : recent.find(s => sa.scanTypes.has(s.typeId));
+  const top = ip || onScan ? null : pdRows(r.d, size)[0];
+  if(ip){ pick = ip.typeId; basis = `reported in it on ${cardName('intel')}, ${saAgoShort(ip.t)}`; title = `${cardName('intel')}: ${ip.who} reported them in a ${ip.name}, so it comes first.`; }
+  else if(onScan){ pick = onScan.typeId; basis = `on scan; ${how(onScan)}`; title = `A ship of theirs from the last ${SA_RECENT_DAYS} days is on your D-Scan, so it comes first.`; }
   else if(top && size === 'all'){
     const k = top.h.kills.length, l = top.h.losses.length;
     pick = top.h.id; basis = `${k} kill${k === 1 ? '' : 's'} · ${l} loss${l === 1 ? '' : 'es'} · ${saAgoShort(top.last)}`;
@@ -21814,6 +21845,7 @@ async function runSystemAnalyzer(force){
   await Promise.all(jobs);
 }
 function saClear(){
+  if(typeof itAssessEnd === 'function') itAssessEnd(false);   // v.98
   for(const id of ['localInput', 'dscanInput']) document.getElementById(id).value = '';
   for(const id of ['localStatus', 'scanStatus']) setStatus(document.getElementById(id), '');
   sa.last = null; sa.evidence = null; sa.evidenceErr = null; sa.gen++; sa.rows = new Map(); sa.fleet = new Map(); sa.fleetExtra = new Set(); saRender();
@@ -22644,11 +22676,14 @@ const IT_FILLER = new Set(['in', 'on', 'at', 'to', 'from', 'and', '&', '+', '-',
 // punctuation around a word is dropped but remembered for the raw text.
 function itWords(msg){
   const out = [];
-  for(const raw of String(msg).replace(/[()（）\[\],;]/g, ' ').split(/\s+/)){
+  let depth = 0;   // v.98: inside ( ): "Pilot (Ship) jumped A from B"
+  for(const raw of String(msg).replace(/[()（）]/g, (c) => ` ${c === '（' ? '(' : c === '）' ? ')' : c} `).replace(/[\[\],;]/g, ' ').split(/\s+/)){
     if(!raw) continue;
+    if(raw === '('){ depth++; continue; }
+    if(raw === ')'){ depth = Math.max(0, depth - 1); continue; }
     const linked = /\*$/.test(raw);
     const w = raw.replace(/\*+$/, '').replace(/^[.:!?"]+|[.:!?"]+$/g, '');
-    if(w) out.push({w, lw: w.toLowerCase(), linked, q: /\?$/.test(raw)});
+    if(w) out.push({w, lw: w.toLowerCase(), linked, q: /\?$/.test(raw), paren: depth > 0});
   }
   return out;
 }
@@ -22681,7 +22716,7 @@ function itFindSystems(W, used, mySys){
         }
       }
     }
-    if(hit){ for(let j = 0; j < hit.k; j++) used[i + j] = 's'; found.push({id: hit.id, at: i, short: !!hit.short}); i += hit.k - 1; }
+    if(hit){ for(let j = 0; j < hit.k; j++) used[i + j] = 's'; found.push({id: hit.id, at: i, k: hit.k, short: !!hit.short}); i += hit.k - 1; }
   }
   return found;
 }
@@ -22702,7 +22737,7 @@ function itParse(msg, mySys){
       else if(pv && !used[i - 1] && /^\d{1,3}x?$/i.test(pv.w)){ n = Number(pv.w.replace(/x$/i, '')); used[i - 1] = 'c'; }
       for(let j = 0; j < k; j++) used[i + j] = 'ship';
       const prev = ships.find(x => x.id === hit.id);
-      if(prev) prev.n += n; else ships.push({id: hit.id, name: hit.name, n: Math.max(1, n)});
+      if(prev) prev.n += n; else ships.push({id: hit.id, name: hit.name, n: Math.max(1, n), at: i});
       i += k - 1;
       break;
     }
@@ -22753,9 +22788,22 @@ function itPilotsOf(p){
       }
       best[i] = b;
     }
-    for(const pk of best[n].picks){ for(let j = 0; j < pk.k; j++) p.used[r[pk.from + j]] = 'p'; pilots.push(pk.hit); }
+    for(const pk of best[n].picks){ for(let j = 0; j < pk.k; j++) p.used[r[pk.from + j]] = 'p'; pilots.push({...pk.hit, from: r[pk.from], to: r[pk.from + pk.k - 1]}); }
   }
   return pilots;
+}
+
+// v.98 (the owner: "Paired ship"): which pilot a line puts in which ship. "Pilot (Ship)": the ship in brackets right after the
+// pilot's name; else a line with exactly one pilot and one ship (and no +N). Nothing is guessed beyond that.
+function itPairs(p, pilots){
+  const pairs = new Map();
+  for(const sh of p.ships){
+    if(sh.n !== 1 || !p.W[sh.at].paren) continue;
+    const pl = pilots.find(x => x.to === sh.at - 1 && !p.W[x.to].paren);
+    if(pl) pairs.set(pl.id, {typeId: sh.id, name: sh.name});
+  }
+  if(!pairs.size && pilots.length === 1 && p.ships.length === 1 && p.ships[0].n === 1 && !p.extra) pairs.set(pilots[0].id, {typeId: p.ships[0].id, name: p.ships[0].name});
+  return pairs;
 }
 
 // ---- pilots: ESI ids and Standings ----
@@ -22933,25 +22981,43 @@ function itKind(p, pilots){
   if(p.kw.has('status?')) return 'status';
   return 'info';
 }
+let itEntryId = 0;
 function itAddReport(l, p, pilots){
   const sides = pilots.map(x => ({...x, side: itSide(x.id)}));
-  const e = {t: l.t, who: l.who, chan: l.chan, raw: l.msg, p, pilots: sides, kind: itKind(p, sides), history: l.history};
+  const e = {id: ++itEntryId, t: l.t, who: l.who, chan: l.chan, raw: l.msg, p, pilots: sides, kind: itKind(p, sides), history: l.history, pairs: itPairs(p, sides)};
   e.friendlyOnly = e.kind === 'seen' && sides.length && sides.every(x => x.side === 'f') && !p.ships.length && !p.extra;
   it.lastLine = Math.max(it.lastLine, l.t);
   it.feed.unshift(e);
-  if(it.feed.length > IT_FEED_MAX) it.feed.length = IT_FEED_MAX;
+  const old = Date.now() - it.set.forget * 60000;   // v.98: lines older than the time set go (kept to IT_FEED_MAX meanwhile)
+  if(it.feed.length > IT_FEED_MAX || it.feed.some(x => x.t < old)) it.feed = it.feed.filter(x => x.t >= old).slice(0, IT_FEED_MAX);
   const sys = p.sys[0] && p.sys[0].id;
   if(!sys || e.kind === 'status' || e.kind === 'info') return;
-  const prev = it.near.get(sys);
-  const st = {sys, t: l.t, who: l.who, kind: e.kind, pilots: [], ships: [], extra: 0, friendlyOnly: e.friendlyOnly};
-  if(e.kind === 'seen'){ st.pilots = sides; st.ships = p.ships; st.extra = p.extra; }
-  else if(e.kind === 'nv' && prev && prev.kind !== 'clear'){ st.pilots = sides.length ? sides : prev.pilots; st.ships = prev.ships; st.extra = prev.extra; st.seenShips = prev.ships.length ? prev.ships : prev.seenShips; }
-  else if(e.kind === 'nv'){ st.pilots = sides; }
+  // v.98: a system keeps everyone and every ship reported there within the time set, until someone reports it clear;
+  // the same ship type reported twice counts once at its larger number (two lines about one gang, not two gangs)
+  const prev = it.near.get(sys), keep = l.t - it.set.forget * 60000;
+  const st = {sys, t: l.t, who: l.who, kind: e.kind, pilots: [], ships: [], extra: [], pairs: new Map()};
+  if(e.kind !== 'clear' && prev && prev.kind !== 'clear'){
+    st.pilots = prev.pilots.filter(x => x.t >= keep); st.ships = prev.ships.filter(x => x.t >= keep);
+    st.extra = prev.extra.filter(x => x.t >= keep); for(const [k, v] of prev.pairs) if(v.t >= keep) st.pairs.set(k, v);
+  }
+  if(e.kind === 'seen' || e.kind === 'nv'){
+    for(const x of sides){ const i = st.pilots.findIndex(y => y.id === x.id), v = {...x, t: l.t}; if(i < 0) st.pilots.push(v); else st.pilots[i] = v; }   // first-reported order kept
+    for(const sh of p.ships){ const i = st.ships.findIndex(y => y.id === sh.id); if(i < 0) st.ships.push({...sh, t: l.t}); else st.ships[i] = {...sh, n: Math.max(sh.n, st.ships[i].n), t: l.t}; }
+    if(p.extra) st.extra.push({n: p.extra, t: l.t});
+    for(const [id, sh] of e.pairs) st.pairs.set(id, {...sh, t: l.t, who: l.who});
+  }
   it.near.set(sys, st);
   if(!l.history) itAlert(st, e);
 }
-function itThreat(st){ return st.kind === 'seen' ? !st.friendlyOnly : st.kind === 'nv' ? st.pilots.some(x => x.side !== 'f') || !st.pilots.length : false; }
-function itCount(st){ const n = st.pilots.filter(x => x.side !== 'f').length + st.extra; return n || st.ships.reduce((s, x) => s + x.n, 0); }
+// What a system has within the time set now: its pilots, ships and +N (the largest +N reported).
+function itLive(st, now = Date.now()){
+  const keep = now - it.set.forget * 60000;
+  const pilots = st.pilots.filter(x => x.t >= keep), ships = st.ships.filter(x => x.t >= keep);
+  const extra = Math.max(0, ...st.extra.filter(x => x.t >= keep).map(x => x.n));
+  return {pilots, ships, extra, friendlyOnly: !!pilots.length && pilots.every(x => x.side === 'f') && !ships.length && !extra};
+}
+function itThreat(st){ const L = itLive(st); return st.kind === 'seen' ? !L.friendlyOnly : st.kind === 'nv' ? L.pilots.some(x => x.side !== 'f') || !L.pilots.length : false; }
+function itCount(st){ const L = itLive(st), n = L.pilots.filter(x => x.side !== 'f').length + L.extra; return n || L.ships.reduce((s, x) => s + x.n, 0); }
 
 // ---- alerts: a sound and a desktop notification ----
 let itAudio = null;
@@ -23053,33 +23119,122 @@ function itNearList(){
   const keep = Date.now() - it.set.forget * 60000, my = itMySys(), out = [];
   for(const st of it.near.values()){
     if(st.t < keep) continue;
-    if(st.friendlyOnly && it.set.hideFriendly) continue;
+    if(it.set.hideFriendly && st.kind === 'seen' && itLive(st).friendlyOnly) continue;
     out.push({st, j: itJumps(my, st.sys)});
   }
   out.sort((a, b) => (a.j === null ? 999 : a.j) - (b.j === null ? 999 : b.j) || b.st.t - a.st.t);
   return out.slice(0, IT_NEAR_MAX);
 }
 function itNearCount(){ return it.on ? itNearList().filter(x => x.j !== null && x.j <= it.set.range && itThreat(x.st)).length : 0; }
-function itPilotChip(x){ return `<span class="it-chip ${x.side}" title="${escapeHtml(SIDE_WORD[x.side])} (${escapeHtml(cardName('side'))})">${escapeHtml(x.name)}</span>`; }
+// v.98: a pilot's name opens them in the Pilot Analyzer (in the ship the line pairs them with, the owner: "Paired ship")
+function itPilotTitle(x, pair){ return `${SIDE_WORD[x.side]} (${cardName('side')}). Open ${x.name} in the Pilot Analyzer${pair ? `, in the ${pair.name} reported with them` : ''}`; }
+function itPilotChip(x, e){ const pair = e.pairs.get(x.id); return `<button type="button" class="it-chip p ${x.side}" data-it-pilot="${x.id}" data-it-e="${e.id}" title="${escapeHtml(itPilotTitle(x, pair))}">${escapeHtml(x.name)}</button>`; }
 function itShipText(s){ return `${s.name}${s.n > 1 ? ` ×${s.n}` : ''}`; }
 function itNearRowHtml({st, j}){
-  const alert = itThreat(st) && j !== null && j <= it.set.range;
-  const n = itCount(st), hostile = st.pilots.some(x => x.side === 'h') || !st.pilots.length;
-  const word = st.kind === 'clear' ? 'clear' : st.kind === 'nv' ? 'no visual' : st.friendlyOnly ? 'friendly' : `${n} ${hostile ? 'hostile' : 'neutral'}`;
-  const who = st.kind === 'clear' ? `reported clear by ${st.who}`
-    : [st.pilots.map(x => x.name).join(', ') + (st.extra ? ` +${st.extra}` : ''), (st.ships.length ? st.ships : st.seenShips || []).map(itShipText).join(', ')].filter(Boolean).join(' · ') || `reported by ${st.who}`;
-  return `<div class="it-nb${alert ? ' alert' : ''}" data-it-sys="${st.sys}"><span class="sys">${escapeHtml(itSysName(st.sys))}</span><span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${j === null ? '–' : `${j}j`}</span><span class="it-what"><span class="st ${st.kind === 'clear' ? 'clr' : st.friendlyOnly ? 'fr' : ''}"><b>${escapeHtml(word)}</b></span><span class="who" title="${escapeHtml(who)}">${escapeHtml(who)}</span></span><span class="age">${itAgo(st.t)}</span></div>`;
+  const L = itLive(st), alert = itThreat(st) && j !== null && j <= it.set.range;
+  const n = itCount(st), hostile = L.pilots.some(x => x.side === 'h') || !L.pilots.length;
+  const word = st.kind === 'clear' ? 'clear' : st.kind === 'nv' ? 'no visual' : L.friendlyOnly ? 'friendly' : `${n} ${hostile ? 'hostile' : 'neutral'}`;
+  const shipsTxt = L.ships.map(itShipText).join(', ');
+  const whoTxt = st.kind === 'clear' ? `reported clear by ${st.who}`
+    : [L.pilots.map(x => x.name).join(', ') + (L.extra ? ` +${L.extra}` : ''), shipsTxt].filter(Boolean).join(' · ') || `reported by ${st.who}`;
+  const whoHtml = st.kind === 'clear' || !L.pilots.length ? escapeHtml(whoTxt)
+    : [L.pilots.map(x => `<button type="button" class="it-pl ${x.side}" data-it-pilot="${x.id}" data-it-sys="${st.sys}" title="${escapeHtml(itPilotTitle(x, st.pairs.get(x.id)))}">${escapeHtml(x.name)}</button>`).join(', ') + (L.extra ? ` +${L.extra}` : ''), escapeHtml(shipsTxt)].filter(Boolean).join(' · ');
+  const can = st.kind !== 'clear' && (L.pilots.length || L.ships.length);
+  return `<div class="it-nb${alert ? ' alert' : ''}" data-it-sys="${st.sys}"><span class="sys">${escapeHtml(itSysName(st.sys))}</span><span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${j === null ? '–' : `${j}j`}</span><span class="it-what"><span class="st ${st.kind === 'clear' ? 'clr' : L.friendlyOnly ? 'fr' : ''}"><b>${escapeHtml(word)}</b></span><span class="who" title="${escapeHtml(whoTxt)}">${whoHtml}</span></span><span class="age">${itAgo(st.t)}</span>${can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span></span>'}</div>`;
 }
 function itFeedRowHtml(e){
   const my = itMySys(), chips = [];
   for(const s of e.p.sys){ const j = itJumps(my, s.id); chips.push(`<span class="it-chip sys" title="${escapeHtml(itSysName(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}">${escapeHtml(itSysName(s.id))}${j === null ? '' : ` <span class="j">${j}j</span>`}</span>`); }
-  for(const x of e.pilots) chips.push(itPilotChip(x));
+  for(const x of e.pilots) chips.push(itPilotChip(x, e));
   if(e.p.extra) chips.push(`<span class="it-chip kw">+${e.p.extra}</span>`);
   for(const s of e.p.ships) chips.push(`<span class="it-chip ship">${escapeHtml(itShipText(s))}</span>`);
   for(const k of e.p.kw) chips.push(`<span class="it-chip ${k === 'clear' ? 'clr' : 'kw'}">${escapeHtml(k)}</span>`);
   const left = e.p.W.filter((x, i) => !e.p.used[i]).map(x => x.w);
   if(left.length) chips.push(`<span class="it-left" title="Words the page couldn't place">${escapeHtml(left.join(' '))}</span>`);
-  return `<div class="it-fd"><span class="t" title="your time">${itClock(e.t)}</span><span><span class="it-chips">${chips.join('')}</span><span class="raw">${escapeHtml(e.who)} &gt; ${escapeHtml(e.raw)}</span></span></div>`;
+  const toast = it.shape && it.shape.id === e.id ? `<div class="it-toast">${it.shape.ok ? 'Copied the shape' : 'The shape (copy it from here)'}: <code>${escapeHtml(it.shape.text)}</code><br>System and pilot names are replaced, so it's safe to share when a line is read wrong.</div>` : '';
+  return `<div class="it-fd"><span class="t" title="your time">${itClock(e.t)}</span><span><span class="it-chips">${chips.join('')}</span><span class="raw">${escapeHtml(e.who)} &gt; ${escapeHtml(e.raw)}</span>${toast}</span><button type="button" class="it-shape" data-it-shape="${e.id}" aria-label="Copy this line's shape" title="Copy this line's shape: system and pilot names replaced, to report a line read wrong">${IT_COPY}</button></div>`;
+}
+// v.98 (the owner: "Add it"): a line's shape, safe to share: systems SYS, pilots PILOT, any other word that isn't a ship, a
+// count, an intel word or a common filler word WORD; brackets, '*' and '?' kept; then what the page read.
+const IT_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>';
+function itShape(e){
+  const W = e.p.W, U = e.p.used, more = new Set();   // the 2nd and 3rd words of one name: one SYS / PILOT
+  const star = new Set();   // a '*' after the last word of a linked name goes on its one SYS / PILOT
+  for(const x of e.p.sys){ for(let j = 1; j < (x.k || 1); j++) more.add(x.at + j); if(W[x.at + (x.k || 1) - 1].linked) star.add(x.at); }
+  for(const x of e.pilots){ for(let j = x.from + 1; j <= x.to; j++) more.add(j); if(W[x.to].linked) star.add(x.from); }
+  const words = W.map((x, i) => {
+    const u = U[i];
+    if(more.has(i)) return null;
+    let t = u === 's' ? 'SYS' : u === 'p' ? 'PILOT' : u === 'ship' ? x.lw : u === 'c' || u === 'kw' ? x.w
+      : u === 'f' && (IT_FILLER.has(x.lw) || /^\d+$/.test(x.w)) ? x.w : 'WORD';
+    if(x.linked || star.has(i)) t += '*';
+    if(x.q) t += '?';
+    if(x.paren && !(W[i - 1] && W[i - 1].paren)) t = '(' + t;
+    if(x.paren && !(W[i + 1] && W[i + 1].paren)) t += ')';
+    return t;
+  }).filter(t => t !== null);
+  const nShips = e.p.ships.reduce((a, b) => a + b.n, 0), left = W.filter((x, i) => !U[i] || (U[i] === 'f' && !(IT_FILLER.has(x.lw) || /^\d+$/.test(x.w)))).length;
+  const read = [`${e.p.sys.length} system${e.p.sys.length === 1 ? '' : 's'}`, `${e.pilots.length} pilot${e.pilots.length === 1 ? '' : 's'}`, e.p.extra ? `+${e.p.extra}` : '',
+    `${nShips} ship${nShips === 1 ? '' : 's'}`, ...[...e.p.kw], e.pairs.size ? `${e.pairs.size} paired` : '', left ? `${left} not placed` : ''].filter(Boolean).join(', ');
+  return `${words.join(' ')}  [read: ${read}]`;
+}
+async function itCopyShape(id){
+  const e = it.feed.find(x => x.id === id);
+  if(!e) return;
+  const text = itShape(e);
+  let ok = false;
+  try{ await navigator.clipboard.writeText(text); ok = true; }catch(err){ /* shown to copy by hand */ }
+  it.shape = {id, text, ok};
+  itRender(true);
+  clearTimeout(it.shapeT); it.shapeT = setTimeout(() => { if(it.shape && it.shape.id === id){ it.shape = null; itRender(); } }, 12000);
+}
+// ---- v.98: from Intel to the Pilot Analyzer and the System Analyzer ----
+function itFromIntelHtml(text, restore){ return `<span>${text}</span>${restore ? '<button type="button" data-fi-act="restore">Restore my paste</button>' : ''}<button type="button" data-fi-act="back">← Back to ${escapeHtml(cardName('intel'))}</button>`; }
+function itOpenPilot(id, pair, sys, t){
+  const x = [...it.feed.flatMap(e => e.pilots), ...[...it.near.values()].flatMap(s => s.pilots)].find(p => p.id === id);
+  if(!x) return;
+  if(pair) saOpenRow(x.name, pair.name, 'all', pair.typeId); else saOpenRow(x.name, '', null);
+  const j = sys ? itJumps(itMySys(), sys) : null;
+  const where = sys ? ` at <b>${escapeHtml(itSysName(sys))}</b>${j === null ? '' : ` (${j} jump${j === 1 ? '' : 's'})`}` : '';
+  const n = document.getElementById('pilotFromIntel');
+  it.fromPilot = x.name;
+  n.innerHTML = itFromIntelHtml(`<b>From ${escapeHtml(cardName('intel'))}</b> · ${escapeHtml(x.name)} reported${pair ? ` in a <b>${escapeHtml(pair.name)}</b>` : ''}${where}${t ? ` · ${escapeHtml(itAgo(t))} ago` : ''}`, false);
+  n.hidden = false;
+}
+// Another pilot analyzed by hand: the line goes.
+function itFromPilotCheck(){
+  const n = typeof document !== 'undefined' && document.getElementById && document.getElementById('pilotFromIntel');
+  if(!n || n.hidden) return;
+  const v = (document.getElementById('pilotName').value || '').trim().toLowerCase();
+  if(v !== (it.fromPilot || '').toLowerCase()){ n.hidden = true; it.fromPilot = null; }
+}
+// Assess: the system's reported pilots as Local, its ships as a D-Scan (the owner: "Everyone until clear"), analyzed; a paste
+// of the user's own is kept to restore. Intel's pairings become those pilots' possible ships (the owner: "Intel's pairing wins").
+function itAssess(sys){
+  const st = it.near.get(sys);
+  if(!st) return;
+  const L = itLive(st), lEl = document.getElementById('localInput'), sEl = document.getElementById('dscanInput');
+  const own = {local: lEl.value, dscan: sEl.value};
+  if(!sa.intel && (own.local.trim() || own.dscan.trim())) it.saved = own;
+  else if(!sa.intel) it.saved = null;
+  lEl.value = L.pilots.map(x => x.name).join('\n');
+  sEl.value = L.ships.flatMap(x => Array(Math.min(x.n, 50)).fill(x.name)).join('\n');
+  const pairs = new Map();
+  for(const x of L.pilots){ const pr = st.pairs.get(x.id); if(pr) pairs.set(x.name.toLowerCase(), pr); }
+  sa.intel = {sys, pairs};
+  const j = itJumps(itMySys(), sys), nS = L.ships.reduce((a, b) => a + b.n, 0);
+  const paired = [...pairs].map(([k, v]) => `${escapeHtml(L.pilots.find(x => x.name.toLowerCase() === k).name)} in the ${escapeHtml(v.name)}`).join(', ');
+  const n = document.getElementById('saFromIntel');
+  n.innerHTML = itFromIntelHtml(`<b>From ${escapeHtml(cardName('intel'))}</b> · <b>${escapeHtml(itSysName(sys))}</b>${j === null ? '' : ` (${j} jump${j === 1 ? '' : 's'})`}, reported in the last ${it.set.forget} min: ${L.pilots.length} pilot${L.pilots.length === 1 ? '' : 's'}${L.extra ? ` +${L.extra} unnamed` : ''}, ${nS} ship${nS === 1 ? '' : 's'}${paired ? ` (${paired})` : ''}${it.saved ? ' · your own Local and D-Scan paste was replaced' : ''}`, !!it.saved);
+  n.hidden = false;
+  switchTab('dscan');
+  runSystemAnalyzer(false);
+}
+function itAssessEnd(restore){
+  const n = document.getElementById('saFromIntel');
+  if(restore && it.saved){ document.getElementById('localInput').value = it.saved.local; document.getElementById('dscanInput').value = it.saved.dscan; }
+  it.saved = null; sa.intel = null;
+  if(n) n.hidden = true;
 }
 function itSettingsHtml(numbered){
   const n = (i, t) => `<div class="k">${numbered ? `${i} · ` : ''}${t}</div>`;
@@ -23115,13 +23270,15 @@ function itRender(force){   // force: a press that changes what is open (the gea
   if(setup){
     body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The ${escapeHtml(cardName('intel'))} slider at the top, beside ${escapeHtml(cardName('side'))}, starts and stops it from any tab; closing the page stops it too.</div>${itSettingsHtml(true)}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
   } else {
-    const near = itNearList(), feed = it.feed.filter(e => !(it.set.hideFriendly && e.friendlyOnly)).slice(0, IT_FEED_SHOWN);
+    // v.98 (the owner: "the feed keeps growing ... drop entries older than 15 minutes"): the Feed keeps the same time as Near You
+    const keepT = Date.now() - it.set.forget * 60000;
+    const near = itNearList(), feed = it.feed.filter(e => e.t >= keepT && !(it.set.hideFriendly && e.friendlyOnly)).slice(0, IT_FEED_SHOWN);
     body = `${it.on ? `<div class="it-sub" data-it-status>${itStatusLine()}</div>` : `<div class="it-sub">Stopped. The ${escapeHtml(cardName('intel'))} slider at the top starts it again.</div>`}
       ${it.patched ? `<div class="it-sub it-warn">${escapeHtml(it.patched)}: a gate EVE added since may be missing.</div>` : ''}
       ${it.on && it.me && !itMySys() ? `<div class="it-sub it-warn">Your system isn’t known yet (it’s read from your Local log when you jump), so no jumps and no alerts until then.</div>` : ''}
       <div class="it-cols">
         <div><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3>${ctxHtml(`last ${it.set.forget} min, nearest first`)}</div>${near.length ? near.map(itNearRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing reported in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`}</div>
-        <div><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3>${ctxHtml('newest first')}</div>${feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Waiting for the next line…' : 'Nothing yet.'}</div>`}</div>
+        <div><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3>${ctxHtml(`last ${it.set.forget} min, newest first`)}</div>${feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`}</div>
       </div>`;
   }
   const pop = it.pop && !setup ? `<div class="it-pop" role="dialog" aria-label="Intel settings"><div class="it-h"><h3>Intel settings</h3><span class="sa-sp"></span><button type="button" class="info-close" data-it-act="gear" aria-label="Close">×</button></div>${itSettingsHtml(false)}</div>` : '';
@@ -23152,6 +23309,14 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
   document.getElementById('tabBtnIntel').addEventListener('click', () => switchTab('intel'));
   document.getElementById('intelHdrSw').addEventListener('change', (e) => itToggle(e.target.checked));
   document.getElementById('intelNear').addEventListener('click', () => switchTab('intel'));   // the pill opens the tab; only the slider switches
+  // v.98: the "From Intel" lines
+  document.getElementById('pilotFromIntel').addEventListener('click', (e) => { const b = e.target.closest('[data-fi-act]'); if(b) switchTab('intel'); });
+  document.getElementById('saFromIntel').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fi-act]');
+    if(!b) return;
+    if(b.dataset.fiAct === 'restore') itAssessEnd(true); else switchTab('intel');
+  });
+  for(const id of ['localInput', 'dscanInput']) document.getElementById(id).addEventListener('input', (e) => { if(e.isTrusted && sa.intel) itAssessEnd(false); });   // typed over: no longer Intel's
   el.addEventListener('change', (e) => {
     const t = e.target;
     if(t.dataset.itChan !== undefined){
@@ -23169,6 +23334,17 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
     itWriteSet(); itRender();
   });
   el.addEventListener('click', (e) => {
+    const pl = e.target.closest('[data-it-pilot]');
+    if(pl){
+      const id = Number(pl.dataset.itPilot);
+      if(pl.dataset.itE){ const en = it.feed.find(x => x.id === Number(pl.dataset.itE)); if(en) itOpenPilot(id, en.pairs.get(id), en.p.sys[0] && en.p.sys[0].id, en.t); }
+      else { const st = it.near.get(Number(pl.dataset.itSys)); const pr = st && st.pairs.get(id); const x = st && st.pilots.find(y => y.id === id); itOpenPilot(id, pr, st && st.sys, x && x.t); }
+      return;
+    }
+    const as = e.target.closest('[data-it-assess]');
+    if(as){ itAssess(Number(as.dataset.itAssess)); return; }
+    const sh = e.target.closest('[data-it-shape]');
+    if(sh){ itCopyShape(Number(sh.dataset.itShape)); return; }
     const a = e.target.closest('[data-it-act]');
     if(!a) return;
     if(a.dataset.itAct === 'gear'){ it.pop = !it.pop; itRender(true); return; }

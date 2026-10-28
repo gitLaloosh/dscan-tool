@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-28 — From Intel to assessment</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel delivery 2: from Intel to assessment</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-28 &middot; <code>v2026.10.14.97</code> &rarr; <code>v2026.10.14.98</code></p>
+<p>the owner: "proceed with #1 and #2": delivery 2 of <code>roadmap/intel-plan.md</code>, and his feedback from real use without raw intel in the repository. Mockup <code>Claude outputs/intel_assess_mockup.html</code>; his answers, all as recommended: "Paired ship", "Everyone until clear", "Intel's pairing wins", "Add it". Then: "the feed keeps growing on the intel page. we should probably drop entries older than 15 minutes."</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Pilot names are links</b>, in the Feed and in Near You. One press opens that pilot in the Pilot Analyzer. When the line puts them in a ship, it opens in that ship with the dossier on that hull. That means "Pilot (Ship)", or a line with exactly one pilot and one ship and no +N. Otherwise the dossier picks, as before. A "From Intel" line above the analyzer says who was reported, in what and where, with Back to Intel; it goes when you analyze another pilot.</li>
+<li><b>Assess ▸</b> on each Near You row sends that system to the System Analyzer, analyzed. Local is the pilots reported there, D-Scan is the ships with their counts. A "From Intel" line says what came across: pilots, +N, ships and who Intel paired with which ship. <b>Restore my paste</b> appears when it replaced a Local or D-Scan of yours. Typing in the boxes ends it.</li>
+<li><b>Intel's pairing wins</b> in the System Analyzer. A pilot Intel paired with a ship gets that ship as their possible ship ("reported in it on Intel, 2 min ago"). Everyone else keeps the old rule. This stops the case the mockup showed, where a pilot reported in a Vedmak was given a Sabre that someone else in the system flew.</li>
+<li><b>Near You keeps everyone until a clear.</b> A system now holds everyone and every ship reported there in the time set, not just the latest line, until someone reports it clear. The same ship type reported twice counts once, at its larger number, since two lines about one gang aren't two gangs. No visual keeps who was seen.</li>
+<li><b>The Feed keeps the same time</b>: 15 minutes unless changed under the gear. Older lines go from the page and from memory.</li>
+<li><b>Copy shape</b>: a small button on each Feed line copies the line with system names as SYS, pilot names as PILOT (one per name, however many words) and any other word that isn't a ship, a count, an intel word or a common filler word as WORD. Brackets, '*' and '?' stay, followed by what the page read. the owner can send a misread line this way without its names.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/intel_assess_check.py</code>, built on <code>intel_check.py</code>'s made-up folder, mocks and names. It covers:
+  <ul>
+  <li>pairing, including a bracketed ship beside a second pilot;</li>
+  <li>Near You adding up two lines, emptying on a clear and starting again;</li>
+  <li>the time window, for Near You and the Feed;</li>
+  <li>pilot links from both lists, paired and unpaired;</li>
+  <li>Assess with and without a paste of your own, Intel's pairing in the rows, Restore, and typing ending it;</li>
+  <li>copy shape on three kinds of line, with no system or pilot name in the copied text;</li>
+  <li>390 px.</li>
+  </ul>
+  v.97 fails. Mutants caught (9): the bracket rule off, no adding up, ships summed, a clear that keeps names, Intel's pairing ignored, the paste not kept, names in the shape, the Feed not trimmed, the From Intel line left on another pilot.</li>
+<li><code>intel_check.py</code> reads a pilot chip's side past the new "link" class.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain (43 steps); all 43 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Next</h2>
+<p>With a screenshot of EVE's own Intel Feed window, the owner: "a layout reference and we might want to use some of the same concepts for communicating standing, alliance/corp, etc. data source as well." The plan's N1 (the Feed's layout, mockup first) and N2 (whether those kill events can be read at all, to be checked, not assumed).</p>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #85: a list kept in arrival order isn't in time order. The first way of trimming the Feed dropped lines from the end while the last was too old. Lines arrive from several logs, and a log is read from its start when Intel turns on, so an old line in the middle stayed. To drop by time, filter by time, and in a check age an entry that isn't at either end.</p>
+</body></html>
