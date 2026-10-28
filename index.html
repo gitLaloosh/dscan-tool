@@ -2172,13 +2172,32 @@
   button.pd-exp{position:absolute; left:9px; top:50%; margin-top:-13px; z-index:1; width:26px; height:26px; min-height:0; padding:0; border:1px solid var(--line); border-radius:5px; background:transparent; color:var(--text-dim); font:600 10px var(--sans); letter-spacing:0; display:inline-flex; align-items:center; justify-content:center;}
   button.pd-exp:hover, .pd-rw.open button.pd-exp{color:var(--heading); background:var(--panel-2);}
   .pd-kills{border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--panel-2) 55%, transparent); padding:2px 10px 10px 44px;}
-  .pdk{display:grid; grid-template-columns:96px minmax(170px,1.2fr) 86px 74px minmax(150px,1.1fr) minmax(120px,1fr) 58px 96px; gap:12px; align-items:center; font:400 12.5px var(--sans); color:var(--text); padding:6px 0; border-bottom:1px solid var(--line-soft); min-height:40px;}
+  .pdk{display:grid; grid-template-columns:96px minmax(170px,1.2fr) 86px 74px minmax(150px,1.1fr) minmax(120px,1fr) 58px 176px; gap:12px; align-items:center; font:400 12.5px var(--sans); color:var(--text); padding:6px 0; border-bottom:1px solid var(--line-soft); min-height:40px;}
   .pdk > span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .pdk b{font-weight:600; color:var(--heading);} .pdk .pd-dim{font-size:11.5px;}
   .pdk-t, .pdk-v{display:flex; flex-direction:column;}
   .pdk-g i{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px;}
   .pdk-val, .pdk-l{text-align:right;} .pdk-val{font-family:var(--mono);}
   .pdk-l a{color:var(--cyan); text-decoration:none; font-weight:600;} .pdk-l a:hover{text-decoration:underline;}
+  .pdk-fl{min-height:26px; padding:2px 9px; margin-right:10px; font:600 11.5px var(--sans); letter-spacing:0; border:1px solid var(--line); border-radius:5px; background:transparent; color:var(--heading);}
+  .pdk-fl:hover{background:var(--panel-2);}
+  /* v.94: the Fleet tab */
+  .tab-fleet{display:inline-flex; align-items:center;} .tab-fleet[hidden]{display:none;}
+  .tab-x{min-height:0; width:24px; height:24px; padding:0; margin-left:-6px; border:none; background:transparent; color:var(--text-dim); font:400 15px var(--sans); border-radius:4px;}
+  .tab-x:hover{color:var(--heading); background:var(--panel-2);}
+  .fk-panel > .card{margin-top:14px;} .fk-panel > .card:first-child{margin-top:0;}
+  .fk-head{padding:14px 16px;} .fk-top{display:flex; gap:10px 16px; align-items:center; flex-wrap:wrap;}
+  .fk-top h2{margin:0; font:600 18px var(--sans); color:var(--heading);}
+  .fk-acts{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;}
+  .fk-acts button, .fk-acts a{min-height:32px; padding:4px 12px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0; text-decoration:none; display:inline-flex; align-items:center;}
+  .fk-sub{margin-top:6px; color:var(--text-dim); font:400 12.5px var(--sans);} .fk-sub b{color:var(--text); font-weight:600;}
+  .fk-cov{font:400 12px var(--sans); color:var(--text-dim); margin-top:2px;}
+  .fk-ewl{display:flex; gap:6px 14px; flex-wrap:wrap; margin-top:6px; font:400 12.5px var(--sans); color:var(--text);} .fk-ewl b{font:600 13px var(--mono); color:var(--heading); margin-left:4px;}
+  .fk-card .pr-cols, .fk-card button.pr-row{grid-template-columns:minmax(140px,1.1fr) minmax(230px,1.9fr) 112px 64px 76px 62px 14px;}
+  .fk-w, .fk-src, .fk-mis{display:block; font:400 11.5px var(--sans); color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .fk-src.ally, .fk-mis{color:var(--amber);} .fk-mis{font-weight:600;} .fk-src.unk{font-style:italic;} .fk-src.err{color:var(--danger);}
+  .fk-src .busy-spin{margin-right:6px;}
+  .fk-you{display:inline-block; margin-left:6px; padding:0 5px; border:1px solid var(--line); border-radius:8px; font:600 10px/14px var(--sans); color:var(--text-dim); vertical-align:1px;}
   .pdk-m{display:none;}
   .pdk-h{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); min-height:0; padding:8px 0 5px;}
   .pdk-more{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:9px 0 0; font:400 12px var(--sans); color:var(--text-dim);}
@@ -2220,6 +2239,12 @@
     .pdk-m{display:inline;}
     .pdk-l a{display:inline-flex; align-items:center; min-height:40px;}
     .pdk-more button{min-height:40px;}
+    .pdk-fl{min-height:40px; margin-right:6px;}
+    .fk-card .pr-cols{display:none;}
+    .fk-card button.pr-row{grid-template-columns:minmax(0,1fr) auto;}
+    .fk-w, .fk-src, .fk-mis{white-space:normal;}
+    .fk-acts{margin-left:0;} .fk-acts button, .fk-acts a{min-height:40px;}
+    .tab-x{width:40px; height:40px;}
     button.pd-row{grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"h n" "g g" "w w" "f f"; row-gap:5px;}
     .pd-row > .pd-hull{grid-area:h;} .pd-row > .pd-n.k{grid-area:n;} .pd-row > .pd-gang{grid-area:g; flex-direction:row; align-items:center; gap:8px;}
     .pd-row > .pd-w{grid-area:w;} .pd-row > .pd-f{grid-area:f;} .pd-row > .pd-v, .pd-row > .pd-last{display:none;}
@@ -2235,7 +2260,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.93</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.94</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2256,6 +2281,8 @@
     <button type="button" class="tab-btn" id="tabBtnFit">Fit Analyzer</button>
     <!-- v2026.10.14.81: the D-Scan tab is the System Analyzer now (its name from CARD_NAMES 'sysan', filled by systemAnalyzerInit) -->
     <button type="button" class="tab-btn" id="tabBtnDscan" data-card="sysan"></button>
+    <!-- v2026.10.14.94: the Fleet tab, shown only while a fleet from a kill is open (roadmap/fleet-from-kill-plan.md) -->
+    <span class="tab-fleet" id="fleetTabWrap" hidden><button type="button" class="tab-btn" id="tabBtnFleet" data-card="fleet"></button><button type="button" class="tab-x" id="fleetCloseBtn" aria-label="Close the Fleet tab" title="Close the Fleet tab">×</button></span>
     <div class="mys-bar" id="myShipBar">
       <!-- v2026.10.14.81 Your Side (System Analyzer step 1, D7 "A: chip by My Ship"): labels set by renderSideChip -->
       <button type="button" class="side-chip is-empty" id="sideChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="sidePanel"></button>
@@ -2309,6 +2336,7 @@
   </div>
   </div>
 
+  <div id="tabFleet" class="tab-panel" style="display:none;"><section class="panel fk-panel" id="fleetPanel"></section></div>
   <div id="tabPilot" class="tab-panel">
   <section class="panel">
     <div class="pa-top"><div class="pa-main">
@@ -2391,7 +2419,9 @@ const CARD_NAMES = {
  "fleet": "Fleet",
  "vs": "Against Your Ship",
  "aff": "Pilot Affiliation",
- "dossier": "Pilot Dossier"
+ "dossier": "Pilot Dossier",
+ "fksum": "Their fleet on this kill",
+ "fkpilots": "Pilots on the kill"
 };
 function cardName(key){
   const n = CARD_NAMES[key];
@@ -2545,11 +2575,22 @@ const CARD_INFO = {
   "zKillboard, all time: zKillboard's own numbers, as its pilot page shows them, not the tool's. Danger: zKillboard's dangerous / snuggly rating, from what they've destroyed against what they've lost. Gang: how many of their kills were solo, and their average gang size. Kills, losses and ISK destroyed: zKillboard's totals.",
   "One zKillboard request per pilot, after the analysis' own, kept an hour; the corporation lookups are kept an hour, names and tickers a week."
  ],
+ "fksum": [
+  "Added up from the pilots on the kill who are looked up so far: who flew what is on the killmail; each fit is an estimate (where it came from is the line above the numbers). Raw DPS: every looked-up pilot's DPS at their best, no application or resists; fits unknown add none.",
+  "Tackle and EWAR: the modules on those fits, counted by kind. Logistics: the logistics cruisers and force auxiliaries on the kill. Combined EHP: their fits' EHP added up, against uniform damage."
+ ],
+ "fkpilots": [
+  "Every player on the kill in a ship (NPCs, capsules and pilots with no ship left out), with the ship and the weapon the killmail credits them with.",
+  "Each fit by the Pilot Analyzer's rule for a chosen hull: their newest loss in that hull; none, their alliance's (or corporation's) most common fit for it, said as not theirs; none, fit unknown (the bare hull, no DPS). A weapon the killmail credits them with that the fit doesn't carry is said under the ship.",
+  "One zKillboard request per pilot (their losses in that hull), 15 at a time; Load more asks for the next ones. Rows keep the killmail's order while they fill, then sort once: the pilot whose dossier you came from first, then by DPS. A row opens that pilot in the Pilot Analyzer on that hull.",
+  "Copy share link: the kill and, for each pilot looked up, the loss their fit came from, so whoever opens it sees the same fleet without asking zKillboard for those fits."
+ ],
  "dossier": [
   "What they fly, from their newest 50 kills and 30 losses on zKillboard (each killmail read from ESI and kept): one row per hull, the busiest first. Pick a row to see that hull below: their own losses in it, or, when they've never lost one, their alliance's (or corporation's) common fit, said as not theirs.",
   "Gang size on a kill is the players on that killmail (NPCs left out; anyone who joined in counts): Solo is 1, Small gang 2–10, Fleet 11 or more. The switch keeps only those kills, so you see what they fly alone, in a small gang or in a fleet. Losses show a hull but not a gang size (only who killed them).",
   "Weapons seen: the weapon each killmail credits them with. Flies with: the other players' hulls on those kills. Kills mostly: what they killed, by ship class. Every number is a count, so a pilot with few kills shows few.",
   "Active: the hours of their kills in your own time zone. Usual systems: where their kills and losses were. Capsules, shuttles, rookie ships and Mobile Tractor Units aren't counted as hulls.",
+  "Fleet ▸ on a kill with 2 or more pilots opens the {card:fleet} tab: everyone on that kill in a ship, with their fits.",
   "▶ opens their kills in that hull under its row (in the switch's gang size), newest first, 10 at a time: when, the victim, the players on the kill, the system, their weapon, who flew with them, zKillboard's value and a link to the kill. Show 10 more reads older kills from ESI once those are shown (no new zKillboard request)."
  ]
 };
@@ -2802,6 +2843,16 @@ const ERROR_CODES = {
   "why": "",
   "since": "2026-10-27 (v2026.10.14.93)",
   "doc": "2026-10-27_dossier-kills-under-a-row.html"
+ },
+
+ "FLEET-01": {
+  "title": "A fleet link that isn't complete",
+  "where": "{card:fleet} tab, opened from a link",
+  "trigger": "A #fleet= link without a killmail ID and its 40-character hash, or with a pilot entry the page can't read (cut short when copied).",
+  "check": "Copy the link again with Copy share link on the {card:fleet} tab.",
+  "why": "",
+  "since": "2026-10-28 (v2026.10.14.94)",
+  "doc": "2026-10-28_fleet-from-a-kill.html"
  },
 
  "FIT-01": {
@@ -8723,7 +8774,7 @@ document.getElementById('debugToggle').addEventListener('click', () => {
 // Generalized to 3 tabs (2026-10-10, Fit Analyzer added) -- was a 2-way
 // dscan/not-dscan toggle before. Keyed by panel id suffix so a 4th tab later
 // is just one more entry in TAB_PANELS, not another rewrite of this function.
-const TAB_PANELS = ['pilot', 'fit', 'dscan'];   // v.62: the order of the tabs
+const TAB_PANELS = ['pilot', 'fit', 'dscan', 'fleet'];   // v.62: the order of the tabs (v.94: Fleet, shown only while a fleet is open)
 function switchTab(tab){
   for(const key of TAB_PANELS){
     const active = key === tab;
@@ -10724,7 +10775,7 @@ function pdKillsHtml(h){
       <span class="pdk-w">${escapeHtml(nm(k.weapon) || '—')}<span class="pdk-m">${mates ? ` · with ${escapeHtml(mates)}` : ''}</span></span>
       <span class="pdk-x">${escapeHtml(mates) || '<span class="pd-dim">alone</span>'}</span>
       <span class="pdk-val">${isk}</span>
-      <span class="pdk-l"><a href="https://zkillboard.com/kill/${k.id}/" target="_blank" rel="noopener">zKillboard ↗</a></span></div>`;
+      <span class="pdk-l">${k.n >= 2 ? `<button type="button" class="pdk-fl" data-pd-fleet="${k.id}" title="Assess the ${k.n} pilots on this kill">Fleet ▸</button>` : ''}<a href="https://zkillboard.com/kill/${k.id}/" target="_blank" rel="noopener">zKillboard ↗</a></span></div>`;   // v.94: Fleet ▸
   }).join('');
   const unread = pd.read < pd.kStubs.length, nf = pd.failed.length;
   const what = `${word}${h.name} kill${list.length === 1 ? '' : 's'}`;
@@ -10857,6 +10908,8 @@ async function pdShowHull(character, hull, statusEl, forceRefresh){
     if(x){ const id = Number(x.dataset.pdExp); pd.open = pd.open === id ? null : id; pd.shown = PD_SHOW_STEP; pdRender(); const again = el.querySelector(`[data-pd-exp="${id}"]`); if(again) again.focus({preventScroll: true}); return; }
     const mo = e.target.closest('[data-pd-more]');
     if(mo){ const id = Number(mo.dataset.pdMore); await pdMore(id); const again = el.querySelector(`[data-pd-more="${id}"]`) || el.querySelector(`[data-pd-exp="${id}"]`); if(again) again.focus({preventScroll: true}); return; }
+    const fb = e.target.closest('[data-pd-fleet]');   // v.94: the fleet on that kill, in the Fleet tab
+    if(fb){ const id = Number(fb.dataset.pdFleet), st = pd.kStubs.find(x => x && x.killmail_id === id); if(st && st.zkb && st.zkb.hash) fkOpen(id, st.zkb.hash, pd.charId); return; }
     if(e.target.closest('.pd-kills')) return;   // a zKillboard link opens on its own
     const r = e.target.closest('[data-pd-hull]');
     if(!r || !pd.d || isBusy('fitStatus')) return;
@@ -22060,6 +22113,265 @@ async function sideTagForPilot(charId){
   });
 })();
 
+
+// ==== FLEET FROM A KILL (v2026.10.14.94; roadmap/fleet-from-kill-plan.md) ====
+// the owner: "choose a row from the kills list (not a loss) in the pilot dossier ... use that killmail to build out the 'fleet'
+// from that kill using each pilot/participant's specified ship and weapon"; then: the Pilot Analyzer's fit rule, NPCs /
+// capsules / pilots with no ship left out, no victim's side yet, "its own tab ... only visible when the user has chosen to
+// assess a fleet", shareable, laid out like the System Analyzer; mockup Claude outputs/fleet_from_kill_mockup.html, all
+// four answers as recommended (Fleet ▸ on every kill with 2+ pilots, tackle and EWAR counted by kind, the pilot you came
+// from first then DPS, one fleet at a time).
+// Who flew what is the killmail's (each player attacker's ship and credited weapon); each fit is an estimate, by the rule
+// the Pilot Analyzer uses for a chosen hull (pdShowHull): their newest loss in that hull; none, their alliance's (else
+// corporation's) common fit (saHullFits), said as not theirs; none, "fit unknown" (the bare hull, no DPS counted). One
+// zKillboard request per pilot (their losses in that hull, through the page's queue), FK_BATCH at a time, then Load more.
+// A share link carries the kill and, for each pilot looked up, the loss their fit came from, so everyone who opens it sees
+// the same fleet and asks zKillboard nothing for those pilots (the killmails come from ESI).
+const FK_BATCH = 15, FK_WORKERS = 3;
+const fk = {gen: 0, killId: null, hash: null, km: null, origin: null, members: [], players: 0, limit: 0, order: null,
+            shared: null, err: null, info: new Map(), sys: '', victim: null};
+const FK_EWAR_KINDS = [['point', 'points'], ['scram', 'scrams'], ['web', 'webs'], ['bubble', 'bubbles'], ['damp', 'damps'], ['neut', 'neuts'],
+  ['nos', 'nos'], ['ecm', 'ECM'], ['paint', 'paints'], ['trackingDisruptor', 'TDs'], ['guidanceDisruptor', 'GDs']];
+function fkKind(m){   // a warp scrambler group module: a scram (stops MWDs) or a point, by its name
+  if(m.kind === 'scram') return /scrambl/i.test(m.name || '') ? 'scram' : 'point';
+  return m.kind;
+}
+function fkShow(on){
+  const w = document.getElementById('fleetTabWrap');
+  if(w) w.hidden = !on;
+}
+// Opens the Fleet tab on a kill. originId: the pilot whose dossier it came from; shared: {charId: entry} from a link.
+async function fkOpen(killId, hash, originId, shared){
+  const gen = ++fk.gen;
+  Object.assign(fk, {killId, hash, km: null, origin: originId || null, members: [], players: 0, limit: 0, order: null, shared: shared || null, err: null, sys: '', victim: null});
+  fkShow(true); switchTab('fleet'); fkRender();
+  const r = await fetchKillmail({killmail_id: killId, zkb: {hash}});
+  if(gen !== fk.gen) return;
+  if(r.error || !r.km){ fk.err = withCode(`Couldn't read killmail ${killId}: ${r.error || 'no killmail'}.`, r.code || 'ESI-05'); fkRender(); return; }
+  const km = fk.km = r.km;
+  const players = (km.attackers || []).filter(a => a.character_id);
+  fk.players = players.length;
+  const ids = new Set([km.victim && km.victim.ship_type_id, km.solar_system_id]);
+  for(const a of players) for(const x of [a.character_id, a.corporation_id, a.alliance_id, a.ship_type_id, a.weapon_type_id]) if(x) ids.add(x);
+  const all = [...ids].filter(Boolean);
+  for(let i = 0; i < all.length; i += 1000){ try{ for(const n of await resolveIdsToNames(all.slice(i, i + 1000))) fk.info.set(n.id, n.name); }catch(e){} }
+  // ships only: a capsule, a structure or no ship at all isn't a fleet member (NPCs have no character_id)
+  const kept = [];
+  await analyzeChunks(players.filter(a => a.ship_type_id), async (a) => {
+    try{ const t = await getType(a.ship_type_id), g = await getGroup(t.group_id); if(g.category_id === 6 && t.group_id !== 29) kept.push({a, cls: g.name, logi: /Logistics|Force Auxiliary/i.test(g.name)}); }catch(e){}
+  }, 6);
+  if(gen !== fk.gen) return;
+  const order = new Map(players.map((a, i) => [a, i]));
+  kept.sort((x, y) => (x.a.character_id === fk.origin ? -1 : y.a.character_id === fk.origin ? 1 : 0) || order.get(x.a) - order.get(y.a));
+  fk.members = kept.map(({a, cls, logi}) => ({id: a.character_id, corp: a.corporation_id, alliance: a.alliance_id || null, hull: a.ship_type_id, cls, logi,
+    weapon: a.weapon_type_id && a.weapon_type_id !== a.ship_type_id ? a.weapon_type_id : null, state: 'later'}));
+  try{ const t = await getType(km.victim.ship_type_id), g = await getGroup(t.group_id); fk.victim = {name: t.name, cls: g.name}; }catch(e){ fk.victim = {name: fk.info.get(km.victim.ship_type_id) || `type ${km.victim.ship_type_id}`, cls: ''}; }
+  fk.sys = fk.info.get(km.solar_system_id) || '';
+  fk.limit = FK_BATCH;
+  fkPump(); fkRender();
+}
+function fkPump(){
+  const gen = fk.gen, todo = fk.members.slice(0, fk.limit).filter(m => m.state === 'later');
+  if(!todo.length) return;
+  for(const m of todo) m.state = 'wait';
+  let i = 0;
+  const worker = async () => {
+    while(i < todo.length){
+      const m = todo[i++];
+      if(gen !== fk.gen) return;
+      m.state = 'load'; fkRender();
+      let r;
+      try{ r = await fkMemberFit(m); }catch(e){ r = {state: 'err', msg: withCode(e.message, errorCodeOf(e))}; }
+      if(gen !== fk.gen) return;
+      Object.assign(m, r); fkRender();
+    }
+  };
+  for(let w = 0; w < FK_WORKERS; w++) worker();
+}
+// One pilot's fit for their hull on the kill (the Pilot Analyzer's rule for a chosen hull), or the shared link's loss.
+async function fkMemberFit(m){
+  const s = fk.shared && fk.shared[m.id];
+  let src = 'unknown', km = null, est = null, built = null, n = 0, of = 0, lossId = null, lossHash = null, lossAt = null;
+  if(s){
+    if(s.src !== 'u'){
+      const r = await fetchKillmail({killmail_id: s.id, zkb: {hash: s.hash}});
+      if(r.error || !r.km) throw codedError(r.code || 'ESI-05', `Couldn't read the loss this fit came from: ${r.error || 'no killmail'}`);
+      km = r.km; src = s.src === 'a' ? 'ally' : 'own'; n = s.n || 0; of = s.of || 0; lossId = s.id; lossHash = s.hash; lossAt = Date.parse(km.killmail_time);
+    }
+  }else{
+    const stubs = await fetchLossesStubs(m.id, m.hull);
+    const rs = await analyzeChunks(stubs.slice(0, 3), fetchKillmail, 3);   // the Pilot Analyzer's 3 newest; the first is shown first
+    const i = rs.findIndex(r => r && !r.error && r.km && r.km.victim && r.km.victim.ship_type_id === m.hull);
+    if(i >= 0){ km = rs[i].km; src = 'own'; lossId = stubs[i].killmail_id; lossHash = stubs[i].zkb && stubs[i].zkb.hash; lossAt = Date.parse(km.killmail_time); }
+    else{
+      const g = m.alliance ? {kind: 'alliance', id: m.alliance} : {kind: 'corporation', id: m.corp};
+      if(!isNpcCorp(g.id) || m.alliance){
+        const h = await saHullFits(g, m.hull);
+        if(h && !h.none && h.variants && h.variants.length){
+          const v = h.variants[0];
+          src = 'ally'; km = v.km; est = v.est; built = v.built; n = v.n; of = h.of; lossId = v.killmail_id; lossHash = v.hash;
+          lossAt = Date.parse((v.fits && v.fits[0] && v.fits[0].km.killmail_time) || km.killmail_time);
+        }
+      }
+    }
+  }
+  if(!est){
+    built = buildLossTally(km || {victim: {items: []}});
+    est = await estimateHpAndDps(m.hull, built.tally, built.cargoItemIds, built.highSlotByFlag, 'sharpshooter', built.midSlotByFlag);
+  }
+  // the weapon check: a module or drone the killmail credits them with that the fit doesn't carry
+  let mis = '';
+  if(km && m.weapon){
+    try{
+      const t = await getType(m.weapon), g = await getGroup(t.group_id);
+      if([7, 18].includes(g.category_id) && !(km.victim.items || []).some(it => it.item_type_id === m.weapon)){
+        // what the fit has instead, of the same kind: its drones, or the weapons in its high slots (not neuts, not charges)
+        const drone = g.category_id === 18, others = [];
+        for(const id of [...new Set((km.victim.items || []).filter(it => drone ? it.flag === 87 : it.flag >= 27 && it.flag <= 34).map(it => it.item_type_id))]){
+          try{ const ot = await getType(id), og = await getGroup(ot.group_id); if(og.category_id === g.category_id && (drone || isWeaponLikeGroupName(og.name))) others.push(ot.name); }catch(e){}
+        }
+        mis = `this fit carries ${others.slice(0, 2).join(', ') || `no ${drone ? 'drones' : 'weapons'}`}, not the ${t.name} they used on the kill`;
+      }
+    }catch(e){}
+  }
+  return {state: 'done', src, est, built, n, of, lossId, lossHash, lossAt, mis, fitUnknown: src === 'unknown'};
+}
+function fkSummary(){
+  let dps = 0, ehp = 0, ships = 0; const td = {}, weak = {}, kinds = {}, logi = new Map(), cov = {own: 0, ally: 0, unknown: 0}; let mis = 0;
+  for(const m of fk.members){
+    if(m.state !== 'done') continue;
+    const e = m.est; ships++; cov[m.src]++; if(m.mis) mis++;
+    ehp += e.totalHP || 0;
+    weak[e.weakest] = (weak[e.weakest] || 0) + 1;
+    if(m.logi){ const nm = fk.info.get(m.hull) || ''; logi.set(nm, (logi.get(nm) || 0) + 1); }
+    if(m.fitUnknown) continue;
+    dps += saRowDps(e).v;
+    const t = saRowTypeDps(e); for(const k of DMG) td[k] = (td[k] || 0) + (t[k] || 0);
+    for(const x of (e.ewarModules || [])){ const k = fkKind(x); kinds[k] = (kinds[k] || 0) + (x.qty || 1); }
+  }
+  return {dps, ehp, ships, td, weak, kinds, logi, cov, mis};
+}
+function fkAgo(t){ return t ? saAgoShort(t) : ''; }
+function fkRowHtml(m){
+  const nm = fk.info.get(m.id) || `character ${m.id}`, hull = fk.info.get(m.hull) || `type ${m.hull}`;
+  const s = sideOf(m.corp, m.alliance, sideSets(), sa.evidence).side;
+  const ally = m.alliance ? orgTickerHtml('alliance', m.alliance) : '';
+  const pilot = `<span class="pr-pilot">${SIDE_MARK[s]}<span class="pr-pn"><span class="nm" title="${escapeHtml(nm)}">${escapeHtml(nm)}${m.id === fk.origin ? '<span class="fk-you">dossier</span>' : ''}</span><span class="ctx">${ally} ${escapeHtml(fk.info.get(m.corp) || '')}</span></span></span>`;
+  const open = `data-fk-pilot="${escapeHtml(nm)}" data-fk-type="${m.hull}" title="${escapeHtml(`${nm}: open in the Pilot Analyzer, on the ${hull}`)}"`;
+  const weapon = m.weapon ? (fk.info.get(m.weapon) || `type ${m.weapon}`) : '';
+  const hullCell = (src) => `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${m.hull}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(hull)}<span class="cls">${escapeHtml(m.cls || '')}</span></span>${weapon ? `<span class="fk-w" title="${escapeHtml(`The weapon the killmail credits them with: ${weapon}`)}">on the kill: ${escapeHtml(weapon)}</span>` : ''}${src}</span></span>`;
+  if(m.state === 'later') return `<button type="button" class="pr-row" ${open}>${pilot}${hullCell('<span class="fk-src unk">not looked up yet</span>')}</button>`;
+  if(m.state === 'wait' || m.state === 'load') return `<button type="button" class="pr-row" ${open}>${pilot}${hullCell(`<span class="fk-src"><span class="busy-spin" aria-hidden="true"></span>${m.state === 'load' ? 'looking up their fit…' : 'waiting for zKillboard…'}</span>`)}</button>`;
+  if(m.state === 'err') return `<button type="button" class="pr-row" ${open}>${pilot}${hullCell(`<span class="fk-src err">${escapeHtml(m.msg)}</span>`)}</button>`;
+  const e = m.est, dps = m.fitUnknown ? null : saRowDps(e), td = m.fitUnknown ? {} : saRowTypeDps(e);
+  const bar = dps && dps.v > 0 ? `<span class="pr-dbar" aria-hidden="true">${DMG.filter(d => td[d] > 0).map(d => `<i style="flex:${td[d]};background:var(--${d})"></i>`).join('')}</span>` : '';
+  const cats = ['tackle', 'disrupt', 'drain', 'boost'].filter(c => (e.ewarModules || []).some(x => x.category === c));
+  const ew = m.fitUnknown ? '' : cats.map(c => `<span class="ewar-badge ${c}">${EWAR_BADGE_LETTER[c]}</span>`).join('');
+  const weak = `<span style="color:var(--${e.weakest})">${escapeHtml(DMG_FULL[e.weakest] || '')}</span>`;
+  const src = m.src === 'own' ? `<span class="fk-src">their loss ${escapeHtml(fkAgo(m.lossAt))}</span>`
+    : m.src === 'ally' ? `<span class="fk-src ally" title="${escapeHtml(`No loss of theirs in a ${hull}: the most common fit among their ${m.alliance ? 'alliance' : 'corporation'}'s newest ${m.of} ${hull} losses (${m.n} of them), not their own`)}">${m.alliance ? 'alliance' : 'corporation'}'s common fit (${m.n} of ${m.of})</span>`
+    : `<span class="fk-src unk">fit unknown: no loss of theirs or their ${m.alliance ? 'alliance' : 'corporation'}'s</span>`;
+  const misH = m.mis ? `<span class="fk-mis" title="${escapeHtml(m.mis)}">${escapeHtml(m.mis)}</span>` : '';
+  return `<button type="button" class="pr-row" ${open}>${pilot}${hullCell(src + misH)}
+    <span class="pr-dps">${dps ? `<span class="pr-num">${dps.text}</span>${bar}` : m.fitUnknown ? '<span class="pr-fu" title="No fit to read: the bare hull">fit unknown</span>' : '<span class="pr-num">0</span>'}</span>
+    <span class="pr-num pr-ehp">${saFmtK(e.totalHP)}</span>
+    <span class="pr-weak">${weak}</span>
+    <span class="pr-ew">${ew || (m.fitUnknown ? '' : '<span class="pr-dash">—</span>')}</span>
+    <span class="pr-chev" aria-hidden="true">›</span>
+    <span class="pr-mob">EHP ${saFmtK(e.totalHP)} · ${weak}${ew ? ` ${ew}` : ''}</span></button>`;
+}
+function fkRender(){
+  const el = document.getElementById('fleetPanel');
+  if(!el) return;
+  if(el.querySelector('details.info-pop[open]')) return setTimeout(fkRender, 400);
+  const killUrl = fk.killId ? `https://zkillboard.com/kill/${fk.killId}/` : '#';
+  const acts = `<span class="fk-acts"><button type="button" data-fk-share="1"${fk.km ? '' : ' disabled'}>Copy share link</button><a href="${killUrl}" target="_blank" rel="noopener">zKillboard ↗</a><button type="button" data-fk-close="1">Close</button></span>`;
+  let sub = '';
+  if(fk.km){
+    const x = new Date(Date.parse(fk.km.killmail_time)), when = `${x.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}, ${x.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'})} your time`;
+    const from = fk.shared ? 'A shared fleet' : `Chosen from <b>${escapeHtml(fk.info.get(fk.origin) || currentPilotName || '')}</b>'s ${escapeHtml(cardName('dossier'))}`;
+    sub = `<div class="fk-sub">${from} · killed a <b>${escapeHtml(fk.victim ? fk.victim.name : '')}</b>${fk.victim && fk.victim.cls ? ` (${escapeHtml(fk.victim.cls)})` : ''} · ${when}${fk.sys ? ` · <b>${escapeHtml(fk.sys)}</b>` : ''} · <b>${fk.players}</b> pilot${fk.players === 1 ? '' : 's'} on the kill, <b>${fk.members.length}</b> in ships</div>`;
+  }
+  const head = `<div class="card fk-head"><div class="fk-top"><h2>${escapeHtml(cardName('fleet'))} on a kill</h2>${acts}</div>${sub}${fk.err ? `<div class="pr-msg err">${escapeHtml(fk.err)}</div>` : ''}${!fk.km && !fk.err ? `<div class="pr-msg"><span class="busy-spin" aria-hidden="true"></span>Reading killmail ${fk.killId || ''} from ESI…</div>` : ''}</div>`;
+  if(!fk.km){ el.innerHTML = head; return; }
+  const batch = fk.members.slice(0, fk.limit), later = fk.members.slice(fk.limit);
+  const done = batch.filter(m => ['done', 'err'].includes(m.state)).length;
+  let shown = batch;
+  if(done === batch.length && batch.length){   // sorted once the batch is in: the dossier's pilot first, then DPS (no fit, then errors, last)
+    const key = (m) => m.state !== 'done' ? -2 : m.fitUnknown ? -1 : saRowDps(m.est).v;
+    if(!fk.order || fk.order.length !== batch.length) fk.order = batch.map((m, i) => ({m, i})).sort((a, b) => (a.m.id === fk.origin ? -1 : b.m.id === fk.origin ? 1 : 0) || key(b.m) - key(a.m) || a.i - b.i).map(o => o.m);
+    shown = fk.order;
+  }
+  const S = fkSummary(), tot = DMG.reduce((s, k) => s + (S.td[k] || 0), 0);
+  const w = Object.entries(S.weak).sort((a, b) => b[1] - a[1])[0];
+  const cov = [S.cov.own ? `${S.cov.own} their own` : '', S.cov.ally ? `${S.cov.ally} their alliance's common fit` : '', S.cov.unknown ? `${S.cov.unknown} unknown (no DPS counted)` : '', S.mis ? `${S.mis} weapon${S.mis === 1 ? '' : 's'} differ${S.mis === 1 ? 's' : ''} from the kill` : ''].filter(Boolean).join(' · ');
+  const kinds = FK_EWAR_KINDS.filter(([k]) => S.kinds[k]).map(([k, l]) => `<span>${l}<b>${S.kinds[k]}</b></span>`).join('');
+  const sum = `<div class="card fl-sum fk-sum"><div class="pr-head"><h3>${escapeHtml(cardName('fksum'))}</h3>${ctxHtml(`${done} of ${batch.length} looked up${later.length ? `, ${later.length} not yet` : ''}`)}<span class="sa-sp"></span>${infoBtnHtml('fksum')}</div>
+    ${S.ships ? `<div class="fk-cov">fits: ${escapeHtml(cov)}</div>
+    <div class="fl-row">
+      <div class="fl-stat"><div class="k">Raw DPS, all of it</div><div class="v">${Math.round(S.dps).toLocaleString()}</div>
+        ${tot ? `<span class="fl-dbar" aria-hidden="true">${DMG.filter(k => S.td[k] > 0).map(k => `<i style="flex:${S.td[k]};background:var(--${k})"></i>`).join('')}</span>
+        <div class="fl-dk">${DMG.filter(k => S.td[k] > 0).sort((a, b) => S.td[b] - S.td[a]).map(k => `<span style="color:var(--${k})">${DMG_FULL[k]} <b>${Math.round(S.td[k] / tot * 100)}%</b></span>`).join('')}</div>` : ''}</div>
+      <div class="fl-stat"><div class="k">Their ships are weakest to</div><div class="v" style="color:var(--${w[0]})">${escapeHtml(DMG_FULL[w[0]])}</div>${ctxHtml(`${w[1]} of the ${S.ships} ships`)}</div>
+      <div class="fl-stat"><div class="k">Tackle and EWAR</div><div class="fk-ewl">${kinds || '<span class="pr-dash">none seen</span>'}</div></div>
+      <div class="fl-stat"><div class="k">Logistics</div><div class="v">${[...S.logi.values()].reduce((a, b) => a + b, 0)}</div>${ctxHtml([...S.logi].map(([n, c]) => `${n} ×${c}`).join(', ') || 'none seen')}</div>
+      <div class="fl-stat"><div class="k">Combined EHP</div><div class="v">${saFmtK(S.ehp)}</div>${ctxHtml('uniform damage')}</div>
+    </div>` : `<div class="pr-msg fl-msg">${fk.members.length ? 'Adds up as the pilots come in…' : 'No pilots in ships on this kill.'}</div>`}</div>`;
+  const rows = `<div class="card pr-card fk-card"><div class="pr-head"><h3>${escapeHtml(cardName('fkpilots'))}</h3>${ctxHtml(fk.order ? 'the dossier’s pilot first, then DPS' : 'in the killmail’s order while they load')}<span class="sa-sp"></span>${infoBtnHtml('fkpilots')}</div>
+    <div class="pr-cols" aria-hidden="true"><span>Pilot</span><span>Ship on the kill · fit from</span><span class="r">DPS</span><span class="r">EHP</span><span>Weakest</span><span>EWAR</span><span></span></div>
+    ${shown.map(fkRowHtml).join('')}${later.map(fkRowHtml).join('')}
+    ${later.length ? `<div class="pr-more"><button type="button" data-fk-more="1">Load ${Math.min(later.length, FK_BATCH)} more pilot${Math.min(later.length, FK_BATCH) === 1 ? '' : 's'}</button>${ctxHtml(`${later.length} not looked up yet`, '', `${later.length} not looked up yet: about 1 zKillboard request each`)}</div>` : ''}</div>`;
+  const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.fkPilot : null;
+  el.innerHTML = head + sum + rows;
+  fillOrgTickers(el);
+  if(focused){ const f = el.querySelector(`[data-fk-pilot="${CSS.escape(focused)}"]`); if(f) f.focus({preventScroll: true}); }
+}
+// The share link: the kill, then for each pilot looked up the loss their fit came from (o: theirs, a: their group's, n of
+// of), or u (fit unknown). Pilots not in the link are looked up as usual.
+function fkShareLink(){
+  const base = String((typeof location !== 'undefined' && location.href) || '').split('#')[0];
+  const ms = fk.members.filter(m => m.state === 'done').map(m => m.src === 'unknown' ? `${m.id}.u` : `${m.id}.${m.src === 'ally' ? 'a' : 'o'}.${m.lossId}.${m.lossHash}${m.src === 'ally' ? `.${m.n}.${m.of}` : ''}`);
+  return `${base}#fleet=${fk.killId}/${fk.hash}/${ms.join('~')}`;
+}
+function fkParseLink(s){
+  const m = String(s || '').match(/^(\d+)\/([0-9a-f]{40})(?:\/(.*))?$/i);
+  if(!m) return null;
+  const shared = {};
+  for(const e of (m[3] || '').split('~').filter(Boolean)){
+    const p = e.split('.');
+    const id = Number(p[0]);
+    if(!id) return null;
+    if(p[1] === 'u'){ shared[id] = {src: 'u'}; continue; }
+    if(!['o', 'a'].includes(p[1]) || !/^\d+$/.test(p[2] || '') || !/^[0-9a-f]{40}$/i.test(p[3] || '')) return null;
+    shared[id] = {src: p[1], id: Number(p[2]), hash: p[3], n: Number(p[4]) || 0, of: Number(p[5]) || 0};
+  }
+  return {killId: Number(m[1]), hash: m[2], shared};
+}
+function fkClose(){
+  fk.gen++; Object.assign(fk, {killId: null, km: null, members: [], err: null});
+  fkShow(false); switchTab('pilot');
+  if(typeof location !== 'undefined' && /(?:^|[#&])fleet=/.test(location.hash || '')){ try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){} }
+}
+(function fkInit(){
+  const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('fleetPanel');
+  if(!el || !el.addEventListener) return;   // LESSON #36: stub DOM
+  document.getElementById('tabBtnFleet').addEventListener('click', () => switchTab('fleet'));
+  document.getElementById('fleetCloseBtn').addEventListener('click', fkClose);
+  el.addEventListener('click', async (e) => {
+    if(e.target.closest('[data-fk-close]')){ fkClose(); return; }
+    const sh = e.target.closest('[data-fk-share]');
+    if(sh){
+      const label = sh.textContent; sh.disabled = true;
+      try{ await navigator.clipboard.writeText(fkShareLink()); sh.textContent = 'Copied!'; }catch(err){ sh.textContent = 'Copy failed'; }
+      setTimeout(() => { const b = el.querySelector('[data-fk-share]'); if(b){ b.textContent = label; b.disabled = false; } }, 1100);
+      return;
+    }
+    if(e.target.closest('[data-fk-more]')){ fk.limit += FK_BATCH; fk.order = null; fkPump(); fkRender(); return; }
+    const r = e.target.closest('[data-fk-pilot]');
+    if(r) saOpenRow(r.dataset.fkPilot, '', 'all', r.dataset.fkType);   // the dossier on that hull: its losses, or their group's fit
+  });
+})();
+
 // v2026.10.14.79: a shared killmail link (#kill=<id>/<hash>) opens that loss, on load and when the address changes;
 // v.80: the extension's #zkill=, #pilot= and #pilotname= links too
 (function sharedKillLinkInit(){
@@ -22067,7 +22379,13 @@ async function sideTagForPilot(charId){
      || typeof document === 'undefined' || !document.getElementById || !document.getElementById('fitResults')) return;   // LESSON #36: stub DOM
   const go = () => {
     const h = location.hash || '';
-    let m = h.match(/(?:^|[#&])zkill=(\d+)(?!\d)/);
+    let m = h.match(/(?:^|[#&])fleet=([^&]*)/);   // v.94: a shared fleet
+    if(m){
+      const f = fkParseLink(m[1]);
+      if(f){ if(f.killId !== fk.killId || !fk.km) fkOpen(f.killId, f.hash, null, f.shared); return; }
+      fkShow(true); switchTab('fleet'); fk.km = null; fk.err = withCode('This fleet link isn\'t complete: it needs the killmail ID, its hash and the pilots as Copy share link writes them. Copy it again.', 'FLEET-01'); fkRender(); return;
+    }
+    m = h.match(/(?:^|[#&])zkill=(\d+)(?!\d)/);
     if(m){ runSharedKillmail(Number(m[1]), null); return; }
     m = h.match(/(?:^|[#&])pilot=(\d+)(?!\d)/);
     if(m){ runPilotFromLink({id: Number(m[1])}); return; }

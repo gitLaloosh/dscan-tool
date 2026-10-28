@@ -33,7 +33,7 @@ def run(b, W):
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     h = pg.evaluate("""() => { const hero = document.querySelector('header.hero'), b = document.getElementById('refreshCacheBtn');
         return {title: document.title, h1: hero.querySelector('h1').textContent, p: [...hero.querySelectorAll('p')].map(p => p.textContent),
-          btn: b.title, tabs: [...document.querySelectorAll('.tab-btn')].map(t => t.textContent.trim())}; }""")
+          btn: b.title, tabs: [...document.querySelectorAll('.tab-btn')].filter(t => t.checkVisibility()).map(t => t.textContent.trim())}   /* v.94: the Fleet tab is hidden until a fleet is open */; }""")
     check(h['title'] == 'EVE Threat Assessment (ETA)' and h['h1'] == 'EVE Threat Assessment', f'{W}: tab title "{h["title"]}", header "{h["h1"]}"')
     check(h['p'] == ["Who's in system, what they fly, and how to beat them."], f'{W}: one tagline {h["p"]}')
     check('ESI' in h['btn'] and 'week' in h['btn'], f'{W}: the caching sentence is the Refresh button\'s hover ("{h["btn"]}")')

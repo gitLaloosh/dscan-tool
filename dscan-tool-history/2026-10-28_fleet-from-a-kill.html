@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-28 — Fleet from a kill</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fleet from a kill: the Fleet tab</h1>
+<p><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-28 &middot; <code>v2026.10.14.93</code> &rarr; <code>v2026.10.14.94</code></p>
+<p>the owner: "choose a row from the kills list (not a loss) in the pilot dossier ... use that killmail to build out the 'fleet' from that kill using each pilot/participant's specified ship and weapon ... we actually know the composition of the fleet". His decisions and the mockup's answers are in <code>roadmap/fleet-from-kill-plan.md</code> (F1&ndash;F9); mockup <code>Claude outputs/fleet_from_kill_mockup.html</code>.</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Fleet ▸</b> on every kill with 2 or more players in the dossier's kills list (▶ under a hull row). It opens a <b>Fleet</b> tab after the System Analyzer, with × to close it. The tab exists only while a fleet is open, and another kill replaces the fleet.</li>
+<li><b>The kill</b>: what died, when (your time), where, and how many players were on it and how many in ships. NPCs, capsules and pilots with no ship are left out. Then Copy share link, zKillboard ↗ and Close.</li>
+<li><b>Their fleet on this kill</b>, the System Analyzer's fleet summary counted exactly:
+  <ul>
+  <li>raw DPS with its damage types, and what their ships are weakest to;</li>
+  <li>tackle and EWAR modules by kind (points, scrams, webs, bubbles, damps, neuts, nos, ECM, paints, TDs, GDs);</li>
+  <li>logistics and combined EHP;</li>
+  <li>above them, where the fits came from ("4 their own · 1 their alliance's common fit · 1 unknown · 1 weapon differs from the kill").</li>
+  </ul></li>
+<li><b>Pilots on the kill</b>, one row per pilot as on the Pilots card: their ship and the weapon the killmail credits them with; where the fit came from and how old it is; DPS with damage types, EHP, weakest resist and EWAR letters.
+  <ul>
+  <li><b>The fit:</b> the Pilot Analyzer's rule for a chosen hull. Their newest loss in that hull; none, their alliance's (else corporation's) common fit, said as not theirs; none, "fit unknown" (the bare hull, no DPS counted).</li>
+  <li><b>The weapon check:</b> a module or drone the killmail credits them with that the fit doesn't carry is said in amber, with what the fit has instead.</li>
+  <li><b>Order:</b> the dossier's pilot first, then by DPS, once the batch is in.</li>
+  <li><b>A row</b> opens that pilot in the Pilot Analyzer, the dossier on that hull.</li>
+  </ul></li>
+<li><b>Requests</b>: one zKillboard request per pilot (their losses in that hull, none again if the Pilot Analyzer already asked), plus one per group when they've never lost it (kept an hour, shared). Pilots load 15 at a time, with Load more.</li>
+<li><b>Share</b>: the link (<code>#fleet=</code>) carries the kill and, for each pilot looked up, the loss their fit came from. Whoever opens it sees the same fleet, and the page asks zKillboard nothing for those pilots (the killmails come from ESI). New code FLEET-01 for a link that's cut short; ERRORS.md has 41 codes. One simplification: a shared link's alliance fits use that loss's own charges, while the tab uses the most common charge, as the dossier does.</li>
+<li>No number the engine works out changed: every fit goes through the same engine.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/fleet_kill_check.py</code>. The mock pilot Orla Fleetwood has a Thanatos kill with 8 players and an NPC:
+  <ul>
+  <li>golden Curse and Vedmak losses for the pilots' own fits;</li>
+  <li>a Loki pilot with only his alliance's 2 golden Lokis;</li>
+  <li>a Sabre with no fit;</li>
+  <li>a launcher his Vedmak fit doesn't carry;</li>
+  <li>a capsule and a pilot with no ship.</li>
+  </ul>
+  She also has a 21-pilot kill and a solo kill. DPS is checked against the regression suite's pinned values. v.93 fails. Mutants caught (6): capsules kept, no group fallback, no weapon check, dossier pilot not first, the link's losses ignored, no batching.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 41 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #81: mock data must keep the real data's rules, or a check tests a case that can't happen. The check opened a fleet member in the Pilot Analyzer and found no dossier. The mock had given him no kills although he's an attacker on that very kill, and on zKillboard every attacker's kill list includes it. When a mock adds a killmail, give it to everyone it involves; before calling a failure a page bug, ask whether the mock could exist for real.</p>
+</body></html>

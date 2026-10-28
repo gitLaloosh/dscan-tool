@@ -74,7 +74,7 @@ with sync_playwright() as p:
     pg.evaluate(GROUPS_VIEW)
     pg.wait_for_timeout(300)
     # --- the tab ---
-    tabs = pg.evaluate("() => [...document.querySelectorAll('.tabs .tab-btn')].map(b => b.textContent.trim())")
+    tabs = pg.evaluate("() => [...document.querySelectorAll('.tabs .tab-btn')].filter(b => b.checkVisibility()).map(b => b.textContent.trim())")   # v.94: the Fleet tab is hidden until a fleet is open
     check(tabs == ['Pilot Analyzer', 'Fit Analyzer', 'System Analyzer'], f'the tabs: System Analyzer in the D-Scan tab\'s place, last {tabs}')
     pg.click('#tabBtnDscan')
     ins = pg.evaluate("() => [!!document.querySelector('#localInput'), !!document.querySelector('#dscanInput'), document.querySelector('#tabDscan h2').textContent]")

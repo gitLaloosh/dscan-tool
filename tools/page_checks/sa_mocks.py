@@ -242,6 +242,31 @@ def _lkill(hull, n, mates, victim, days):
 for _d in range(61, 49, -1): LONG_KILLS.append(_lkill('Sabre', 1, [], 'Rifter', _d))                  # oldest first: IDs grow with time
 for _d in range(48, 0, -1): LONG_KILLS.append(_lkill('Vedmak', 3, ['Sabre', 'Curse'], 'Stabber', _d))
 HIST[LONG_PILOT] = {'kills': LONG_KILLS, 'losses': []}
+# v.94 (fleet_kill_check): Orla Fleetwood's dossier has a fleet kill (a Thanatos, 8 players + an NPC): Orla in a Curse
+# (her own Curse loss), Vesna in a Vedmak (hers), the Curse pilot of pilot_rows_check (his Curse loss), the Vedmak pilot
+# credited with a Heavy Assault Missile Launcher II his Vedmak fit doesn't carry, Rando in a Loki (no loss of his: Random
+# Third Party's 2 golden Lokis), Tessa in a Sabre (no loss of hers or her alliance's: fit unknown), a pilot in a capsule
+# and one with no ship (both left out). Then a 20-pilot Rifter kill (Load more) and a solo kill (no Fleet ▸).
+ORLA = 92000005; PILOTS[ORLA] = ('Orla Fleetwood', 98000042); NAME_ID['orla fleetwood'] = ORLA
+def _fatt(cid, hull, weapon=None, final=False):
+    return dict(aff(cid), final_blow=final, damage_done=100, security_status=0, **({'ship_type_id': byname[hull]} if hull else {}), **({'weapon_type_id': byname[weapon]} if weapon else {}))
+def _fkill(attackers, victim, days, system=30004759):
+    _kid[0] += 1; k = _kid[0]
+    KM[k] = {'killmail_id': k, 'killmail_time': _diso(days, 21), 'solar_system_id': system,
+             'victim': {'character_id': pick(98000013), 'corporation_id': 98000013, 'ship_type_id': byname[victim], 'damage_taken': 90000, 'items': [], 'position': {'x': 0, 'y': 0, 'z': 0}},
+             'attackers': attackers}
+    H[k] = hashlib.sha1(str(k).encode()).hexdigest(); VALUE[k] = 1.6e9; return k
+ORLA_LOSS = _loss(ORLA, 'Curse', 2)
+FLEET_KILL = _fkill([_fatt(ORLA, 'Curse', 'Acolyte II', True), _fatt(DOSSIER_PILOT, 'Vedmak', 'Heavy Entropic Disintegrator II'),
+    _fatt(SMALL_RED[0], 'Curse', 'Acolyte II'), _fatt(SMALL_RED[1], 'Vedmak', 'Heavy Assault Missile Launcher II'),
+    _fatt(THIRD_PILOT, 'Loki', 'Heavy Assault Missile Launcher II'), _fatt(ANNEX_PILOT, 'Sabre', '125mm Gatling AutoCannon II'),
+    _fatt(SMALL_FROST[0], 'Capsule'), _fatt(SMALL_FROST[1], None),
+    {'faction_id': 500001, 'ship_type_id': byname['Rifter'], 'damage_done': 5, 'final_blow': False, 'security_status': 0}], 'Thanatos', 1.5)
+BIG_PILOTS = [i for i, v in PILOTS.items() if v[1] in (98000007, 98000008)][:20]
+BIG_KILL = _fkill([_fatt(ORLA, 'Curse', 'Acolyte II', True)] + [_fatt(i, 'Rifter') for i in BIG_PILOTS], 'Megathron', 3)
+SOLO_KILL = _fkill([_fatt(ORLA, 'Curse', 'Acolyte II', True)], 'Rifter', 4)
+HIST[ORLA] = {'kills': [FLEET_KILL, BIG_KILL, SOLO_KILL], 'losses': [ORLA_LOSS]}
+HIST[THIRD_PILOT] = {'kills': [FLEET_KILL], 'losses': []}   # his dossier: the Loki, never lost (his alliance's fit)
 
 def expected_fleet():
     """The fleet view worked out here: shares from the kills (each attacker of the group counts its hull; capsules

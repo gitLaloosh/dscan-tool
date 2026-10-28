@@ -875,6 +875,15 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 81. Mock data must keep the real data's rules, or a check tests a case that can't happen
+
+- **What happened (v2026.10.14.94):** `fleet_kill_check.py` opened a fleet member (Rando, flying a Loki on the mocked
+  kill) in the Pilot Analyzer and expected his dossier on the Loki. It came up empty: the mock gave him no kills at all,
+  although he is an attacker on that very kill, and on zKillboard every attacker's kill list includes it. The page was
+  right; the mock broke a rule the real data always keeps.
+- **Do this instead:** when a mock adds a killmail, give it to everyone it involves (each attacker's kills, the victim's
+  losses), or say in the mock why not. Before calling a failure a page bug, ask whether the mock could exist for real.
+
 ## 80. A check that still passes after a change may never reach the change
 
 - **What happened (v2026.10.14.92):** the System Analyzer's pilot rows started picking the possible ship for a gang
