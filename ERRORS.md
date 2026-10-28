@@ -99,6 +99,15 @@ pilot name.", "Paste a fit first.") carry no code: they are instructions, not er
 |---|---|---|---|---|---|---|
 | FLEET-01 | A fleet link that isn't complete | Fleet tab, opened from a link | A #fleet= link without a killmail ID and its 40-character hash, or with a pilot entry the page can't read (cut short when copied). | Copy the link again with Copy share link on the Fleet tab. |  | 2026-10-28 (v2026.10.14.94) ([2026-10-28_fleet-from-a-kill.html](dscan-tool-history/2026-10-28_fleet-from-a-kill.html)) |
 
+## INTEL
+
+| Code | What | Where | Cause | What to check | Why it exists | Since |
+|---|---|---|---|---|---|---|
+| INTEL-01 | This browser can't read the chat logs | Intel tab | The browser has no File System Access API (showDirectoryPicker): Firefox, Safari, or a page not served over https. | Use Chrome or Edge on the GitHub Pages address. |  | 2026-10-28 (v2026.10.14.96) ([2026-10-28_intel-feed.html](dscan-tool-history/2026-10-28_intel-feed.html)) |
+| INTEL-02 | The chat logs folder can't be read | Intel tab | The browser didn't allow reading the chosen folder (Allow not pressed after a restart), or the folder was moved or deleted while watching. | Turn the slider on again and choose Allow; or choose the folder again under the gear. |  | 2026-10-28 (v2026.10.14.96) ([2026-10-28_intel-feed.html](dscan-tool-history/2026-10-28_intel-feed.html)) |
+| INTEL-03 | The system names didn't load | Intel tab, turning it on | ESI's /universe/names/ failed for the stargate table's systems (asked once, then kept in the browser), or named fewer than 90% of them. | ESI status, the connection; turn the slider on again. |  | 2026-10-28 (v2026.10.14.96) ([2026-10-28_intel-feed.html](dscan-tool-history/2026-10-28_intel-feed.html)) |
+| INTEL-04 | No EVE chat logs in the folder | Intel tab | The chosen folder has no file named like an EVE chat log (<Channel>_<date>_<time>_<character>.txt). | Choose Documents\EVE\logs\Chatlogs (OneDrive may have moved Documents); in EVE turn on Log Chat to File. |  | 2026-10-28 (v2026.10.14.96) ([2026-10-28_intel-feed.html](dscan-tool-history/2026-10-28_intel-feed.html)) |
+
 ## SHARE
 
 | Code | What | Where | Cause | What to check | Why it exists | Since |

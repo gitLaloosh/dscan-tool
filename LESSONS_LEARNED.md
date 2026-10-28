@@ -878,6 +878,36 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 84. One state, one control: a switch shown on every tab needs no twin on the page it controls
+
+- **What happened (v2026.10.14.96):** Intel got an "Intel" slider beside Standings (on every tab) and a "Watching" slider
+  on the Intel card, wired as one switch. On the Intel tab both showed at once under two names, and the owner asked why there
+  were two. The mockup had them both; nobody asked what each one was for that the other wasn't.
+- **Do this instead:** when a mockup puts a control somewhere global, check every page it's already visible on before
+  adding a local copy; one state gets one control (a second place may show the state, not switch it). v.97 kept the
+  Intel slider and removed the card's.
+- **Same delivery:** the "N near" pill sat inside the slider's `<label>`, and a press anywhere in a label presses its
+  control: the owner turned Intel off thinking the pill was a button. Anything inside a switch's label is part of the switch;
+  a badge that looks pressable gets its own element and its own action (here: open the Intel tab).
+
+## 83. A test double must replace the real thing, not fill in when it is missing
+
+- **What happened (v2026.10.14.96):** `intel_check.py` stubbed the File System Access API with
+  `if(!window.__noFsApi) window.showDirectoryPicker = ...`, meaning "leave it out to test INTEL-01". But Chromium has its
+  own `showDirectoryPicker`; leaving the stub out left the real one, so the "no API" case never happened and the check
+  timed out waiting for an error the page was right not to show.
+- **Do this instead:** when a check stands in for a browser API, assign it in every case (`= stub` or `= undefined`),
+  never only when absent; and confirm the case the check means to test is the one that ran (here: `it.supported`).
+
+## 82. A lint's pattern can run for minutes on a long data string
+
+- **What happened (v2026.10.14.96):** `check_card_names.py` hung once the page carried `INTEL_JUMPS`, a 50 KB base64
+  string. Its "<Name> card" pattern, `((?:[A-Z][\w&/]*\s?)+?) card`, backtracks without end on capital letters and `/`
+  with no spaces, which is what base64 is. The lint was fine for prose and never meant to read data.
+- **Do this instead:** generated data in the page is not text a person reads; lints that scan the page's strings skip
+  long strings with no whitespace (`len > 400`, no `\s`). When a lint suddenly takes minutes, look for a new long
+  string before suspecting the machine.
+
 ## 81. Mock data must keep the real data's rules, or a check tests a case that can't happen
 
 - **What happened (v2026.10.14.94):** `fleet_kill_check.py` opened a fleet member (Rando, flying a Loki on the mocked
@@ -1410,6 +1440,10 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
     formatted 51.25m with Python's `f'{x:.1f}'` (ties to even: "51.2") against the page's "51.3"; it now uses
     `Decimal(...).quantize(..., ROUND_HALF_UP)` on the exact value. A mismatch on a tie is the check's rounding first.
     Pin the reference unrounded and let `tolerancePct` do the comparing.
+  - Again (v2026.10.14.96), and only on some days: `sa_size_check.py` worked out "N d ago" with Python's `round` against
+    the page's `Math.round`. When the hours came to exactly 36.5 days (the mock's ages are offsets from the moment the
+    check starts), Python said 36 and the page 37. Use `math.floor(x + 0.5)` for a value the page rounds with
+    `Math.round`; a check that fails on one run and passes the next may be hitting a tie.
 
 ## 36. Code that runs at page load also runs inside the regression suites
 

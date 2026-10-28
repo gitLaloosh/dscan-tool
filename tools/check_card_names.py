@@ -134,6 +134,7 @@ multi = {k: v for k, v in flat.items() if ' ' in v or '/' in v or not v.isalpha(
 single = {k: v for k, v in flat.items() if k not in multi}
 named = []
 for where, t in frags:
+    if len(t) > 400 and not re.search(r'\s', t): continue   # v.96: data, not words (INTEL_JUMPS' base64: the card-word pattern backtracks for minutes on it)
     t1 = re.sub(r'\{card:[\w.]+\}', '', t)
     hit = False
     for k, v in multi.items():

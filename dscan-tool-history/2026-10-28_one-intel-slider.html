@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-28 — One Intel slider</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>One Intel slider; the "N near" pill opens Intel; readable lists in the Intel settings</h1>
+<p><span class="tag">UI</span><span class="tag">Tests</span> 2026-10-28 &middot; <code>v2026.10.14.96</code> &rarr; <code>v2026.10.14.97</code></p>
+<p>the owner: "why is there an 'Intel' slider and a 'Watching' slider? shouldn't one slider control it?" They were one switch drawn twice: the Intel slider beside Standings (every tab) and a Watching slider on the Intel card, so on the Intel tab the same switch showed twice under two names. Of three options (keep the top one, keep both with one name, keep the card's), the owner: "let's go with option 1. keep the intel slider."</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The Intel card has no slider now; its gear stays where it was. The Intel slider at the top, beside Standings, is the only on/off switch, on every tab.</li>
+<li>The card's first-time text says "The Intel slider at the top, beside Standings, starts and stops it from any tab"; stopped, it says "Stopped. The Intel slider at the top starts it again." The info panel says the same.</li>
+<li><b>The lists in the Intel settings</b> (alert range, how long reports stay) were unreadable when opened on Windows: the owner's screenshot of v.96 showed near-white numbers on a white list. The selects had a transparent background, and Windows draws an open list with each option's own colours, so the options got the select's light text on the system's white. They now have the page's dark background (and <code>color-scheme: dark</code>), and the options a dark background with light text.</li>
+<li><b>The "N near" pill</b>: the owner: "probably need to move the notification pill. i accidently turned intel off thinking the pill was clickable." The pill sat inside the slider's label, and a press anywhere in a label presses its control, so the pill switched Intel off. It is now its own button right after the slider and opens the Intel tab (hover: "4 systems with a hostile or neutral report within 3 jumps: open Intel"); only the slider switches Intel. On a phone it stays on one line and its button is 44 px tall.</li>
+<li>Nothing else about Intel changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_check.py</code>: exactly one Intel on/off switch on the page and none on the card, with the card's text naming the slider at the top; on and off both from the Intel slider (off from the Pilot Analyzer tab). v.96 fails 3 checks. New: the pill outside the slider's label; pressing it from the Pilot Analyzer opens Intel and leaves it on (v.96 turned it off); on a phone one line, 44 px. Every option in the settings' lists has a dark background and light text (v.96: transparent, so the browser's white).</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain (43 steps); all 42 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #84: one state, one control. When a mockup puts a switch somewhere global, check every page where it's already visible before adding a local copy there. A second place may show the state, but it shouldn't be a second switch. And anything put inside a switch's <code>&lt;label&gt;</code> becomes part of that switch: a badge that looks pressable there will flip it. Give a badge its own element and its own action.</p>
+</body></html>

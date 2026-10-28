@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-28 — Intel feed (delivery 1)</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel: watching your intel channels (delivery 1)</h1>
+<p><span class="tag">Feature</span><span class="tag">Data</span><span class="tag">Tests</span> 2026-10-28 &middot; <code>v2026.10.14.95</code> &rarr; <code>v2026.10.14.96</code></p>
+<p>the owner via todo-inbox: "the tool actively polls the game's chat log for the intel channel and tracks neutral and hostile ships that are reported via that channel"; then "it needs to have an on/off mechanism. once started it will be watching that chat log constantly so an off switch is a must as well." Mockup answers: "the tab has the feed in a card. settings button (little gear icon or something), prefer a slider for off/on similar just like 'use in assessments'"; jumps from a built-in table "as long as it is accurate and doesn't get out of sync with eve updates"; two deliveries; his logs read for the format only. Mid-build: "do not save any raw intel to the repository ... if you need to build your own test data, fine but dont use raw intel." Plan: <code>roadmap/intel-plan.md</code>; mockup <code>Claude outputs/intel_mockup.html</code>.</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>An Intel tab</b> after the System Analyzer, with one <b>Intel</b> card, and an <b>Intel</b> slider beside Standings on every tab, in the "Use in assessments" style. The two sliders are one switch; either turns it off, and so does closing the page. While on, the top slider shows "N near": systems with a hostile or neutral report within your alert range.</li>
+<li><b>Setup</b> (the card the first time; the gear afterwards): EVE's Chatlogs folder (Chrome or Edge ask once; after a browser restart the slider asks once more), the intel channels found there (logs of the last 2 days), which character is you (from your Local logs, with their current systems), and alerts: range (3 jumps), sound, desktop notification, how long reports stay (15 min), hide friendlies. Kept in this browser.</li>
+<li><b>Near You</b>: each system reported in that time, nearest first, with jumps from you and its latest report: <i>clear</i>, <i>no visual</i> (keeping who was seen), or how many hostile or neutral and who and what. A red row is a hostile or neutral report within range.</li>
+<li><b>Feed</b>: every line, newest first: the system and its jumps, pilots coloured by your Standings, +N, ships with counts, the words recognized; words it couldn't place stay plain; the raw line underneath.</li>
+<li><b>Alerts</b>: a short sound and a desktop notification ("8WA-Z6 · 1 jump") for a hostile or neutral report within range, once per system every 30 seconds; never for friendlies, never for lines already in the log when it starts.</li>
+<li><b>Your system</b> follows you: the page reads your Local log's "Channel changed to Local" as you jump, and jumps are redrawn. A relog's new log file is found within 15 seconds.</li>
+</ul>
+
+<h2>How it works</h2>
+<ul>
+<li><b>Reading the logs.</b> The File System Access API (no EVE login: ESI has no chat). The folder handle is kept in IndexedDB (<code>eta-intel</code>). A worker ticks every 2 seconds (a hidden tab slows the page's own timers to once a minute; a worker's are not), and each tick reads only the new end of each watched file: UTF-16 LE, a BOM on every line, a header with the channel and listener, then <code>[ yyyy.mm.dd hh:mm:ss ] Speaker &gt; message</code> in EVE time. A long session's log is read from its last 2 MB.</li>
+<li><b>Reading a report.</b> Word by word: systems first (whole names in any case when they have a digit or '-', Title Case for names like Jita, up to three words like New Caldari; or the start of a null-sec name, read as the nearest such system to you), then ships (every published ship's English and Chinese name, with x2 / 2x), then +N, clr, nv, status? and filler words. What's left is looked up on ESI as pilot names, 1 to 3 words at a time (one request per tick), keeping the split that names the most words with the fewest pilots; ESI also answers near matches, so only exact names count. A '*' after a linked name ends it.</li>
+<li><b>Jumps that stay in sync.</b> The stargate list is the EVE client's own <code>res:/staticdata/jumps.static</code>: 6,989 connections between 5,268 systems, client build 3654997 (read from <code>C:\CCP\EVE</code>, read only; checked against ESI's stargates for 1DQ1-A and Jita). <code>tools/gen_intel_tables.py</code> writes it into the page (51 KB) with the build and the file's md5, and a new update-check step compares it with the client whenever the files are staged. When Intel starts, the page asks ESI which build Tranquility runs; after a patch it says so in the card until the table is re-checked. Stargates only: no jump bridges, no wormholes.</li>
+<li><b>System names</b> come from ESI's <code>/universe/names/</code> the first time Intel starts (6 requests) and are kept in the browser; the client's file has IDs only.</li>
+<li><b>Requests</b>: ESI only (names, pilot IDs, affiliation for Standings, the build). Nothing from the logs is sent anywhere else or kept after the page closes.</li>
+<li>New error codes INTEL-01 (a browser without the API), INTEL-02 (the folder can't be read), INTEL-03 (system names didn't load), INTEL-04 (no chat logs in the folder); ERRORS.md has 45. New card names Intel, Near You, Feed.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/intel_check.py</code> with a made-up Chatlogs folder written the way EVE writes it. Every line, pilot, character and channel in it is invented; no raw intel is in the repository. It decodes the page's table in Python and compares jumps from 1DQ1-A (17 systems, Jita 42) and, with <code>EVE_RES</code>, the table with the client's file. v.95 fails (no Intel tab).</li>
+<li>Mutants caught: the BOM left on lines, a shortened system read as the first match instead of the nearest, alerts ignoring the range, alerts for lines already in the log, a timer instead of the worker, pilot names split into single words, the header slider not following the card's, the 15-minute window ignored at the start.</li>
+<li><code>sa_size_check.py</code> failed once on its own arithmetic: it rounded "N d ago" the Python way (36.5 days became 36; the page says 37). It now rounds as JavaScript does (LESSON #34 again).</li>
+<li><code>header_check.py</code> and <code>system_analyzer_check.py</code> expect the Intel tab. <code>check_card_names.py</code> skips long strings with no whitespace (LESSON #82).</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain (43 steps); all 42 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #83: a test double must replace the real thing, not fill in when it's missing. The check left <code>showDirectoryPicker</code> unstubbed to test the "no API" error, but Chromium has its own, so the case never ran. Assign the stub in every case (<code>= stub</code> or <code>= undefined</code>). And LESSON #82: a lint that scans the page's strings hung for minutes on the 50 KB base64 table; data strings aren't prose, skip them.</p>
+</body></html>

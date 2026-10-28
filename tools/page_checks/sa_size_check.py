@@ -22,7 +22,7 @@ killmails (players per kill, times), not from the page. Checks:
   * 390 px: the switch and the tag on the page, nothing off it; no page errors.
 v2026.10.14.91 fails (no switch).
 """
-import sys, os, re, json, time
+import sys, os, math, re, json, time
 from datetime import datetime, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -41,13 +41,14 @@ NAME = {v: k for k, v in M.byname.items()}
 
 # ---- expected, from the mock's killmails ----
 def ts(iso): return datetime.strptime(iso, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc).timestamp() * 1000
+def jround(x): return math.floor(x + 0.5)   # JavaScript's Math.round: a tie goes up (Python's round goes to even; LESSON #34)
 def ago(t):   # the page's saAgoShort
-    m = max(0, round((time.time() * 1000 - t) / 60000))
+    m = max(0, jround((time.time() * 1000 - t) / 60000))
     if m < 60: return f'{m} min ago'
-    h = round(m / 60)
+    h = jround(m / 60)
     if h < 48: return f'{h} h ago'
-    d = round(h / 24)
-    return f'{d} d ago' if d < 60 else f'{round(d / 30)} mo ago'
+    d = jround(h / 24)
+    return f'{d} d ago' if d < 60 else f'{jround(d / 30)} mo ago'
 size = lambda n: 'solo' if n <= 1 else 'small' if n <= 10 else 'fleet'
 def kills_of(cid):
     out = []
