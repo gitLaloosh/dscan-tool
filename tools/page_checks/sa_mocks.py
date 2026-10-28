@@ -1,6 +1,6 @@
 """Made-up ESI and zKillboard data for system_analyzer_check.py (v2026.10.14.81). Every name and ID here is invented
 (no real alliance or pilot). expected() works out, in plain Python and independently of the page, what the System
-Analyzer should show for LOCAL with the Your Side the check sets up:
+Analyzer should show for LOCAL with the Standings the check sets up:
   your pilot Test Pilot (Example Corp, Example Alliance); also friendly: Blue Coalition Member, Allied Wing; hostile list:
   Crimson Tide Syndicate (an alliance) and Turncoat Corp (a corporation inside Blue Coalition Member); pilot rows 15."""
 import os, re, json, hashlib, time

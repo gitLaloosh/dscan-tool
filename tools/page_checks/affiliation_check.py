@@ -7,7 +7,7 @@ too?", the place he marked (top right of the Pilot Analyzer), and "let's use you
 Claude outputs/pilot_affiliation_mockup.html. The real page with ESI and zKillboard answered from sa_mocks.py (its
 pilots' ESI character records and corporation histories; zKillboard stats for one of them). Checks:
   * the box: corporation and alliance names and tickers (sa_mocks ORGS), In corp since (the newest corporation history
-    record), Pilot since (birthday year), Sec (security status to one decimal); Your Side's tag inside the box;
+    record), Pilot since (birthday year), Sec (security status to one decimal); the Standings tag inside the box;
   * zKillboard, all time, as zKillboard gives it: Danger = dangerRatio %, solo = 100 - gangRatio %, gang ≈ avgGangSize,
     kills, losses, ISK destroyed (shortened); the link to the pilot's zKillboard page;
   * one zKillboard stats request, after the analysis' own (kills, losses); the same pilot again within the hour: none;
@@ -59,7 +59,7 @@ with sync_playwright() as p:
     corp, alli = M.ORGS[M.PILOTS[VED][1]], M.ORGS[M.CRTS]
     check(not r['hidden'] and r['orgs'] == [f'{corp[1]}[{corp[2]}]', f'{alli[1]}<{alli[2]}>'], f"corporation and alliance with tickers {r['orgs']}")
     check(r['facts'] == 'In corp since Mar 2025Pilot since 2019Sec −2.4', f"In corp since (newest history record), Pilot since, Sec to one decimal ({r['facts']!r})")
-    check(r['side'].startswith('Hostile · your hostile list'), f"Your Side's tag in the box ({r['side']!r})")
+    check(r['side'].startswith('Hostile · your hostile list'), f"the Standings tag in the box ({r['side']!r})")
     S = M.ZK_STATS[VED]
     want = [f"{S['dangerRatio']}% dangerous", f"{100 - S['gangRatio']}% solo · gang ≈{round(S['avgGangSize'])}", f"{S['shipsDestroyed']:,}", f"{S['shipsLost']:,}", '212.4b']
     got = [r['danger'], r['gang'], r['kills'], r['losses'], r['isk']]

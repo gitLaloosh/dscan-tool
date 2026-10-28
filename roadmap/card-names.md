@@ -30,7 +30,7 @@ types a name by hand.
 | `myshippage` | Viewing My Ship | the Fit Analyzer page that shows your saved ship on its own (no Matchup); a different thing from the My Ship Perspective, so it keeps its own key |
 | `tdmode` | Mode | the Tactical Destroyer / Anhinga mode row (v2026.10.14.49); its label was typed by hand ("Mode:") |
 | `sysan` | System Analyzer | v2026.10.14.81: the tab that replaced the D-Scan tab (local-and-fleet-plan.md D1; the owner: "System Analyzer sounds fine"); also its heading |
-| `side` | Your Side | v2026.10.14.81: your pilot, friendly and hostile lists, the pilot-rows number (the chip beside My Ship and its panel; D7 "A: chip by My Ship") |
+| `side` | Standings | v2026.10.14.95 (was Your Side, v2026.10.14.81): your pilot, friendly and hostile lists, the pilot-rows number (the chip beside My Ship and its panel; D7 "A: chip by My Ship") |
 | `hostile` | Hostile | v2026.10.14.81: the System Analyzer column and side (D2: "Neutral and hostile should probably be separated") |
 | `neutral` | Neutral | v2026.10.14.81: the System Analyzer column and side |
 | `friendly` | Friendly | v2026.10.14.81: the System Analyzer's collapsed line and side; the Pilot Analyzer's tag |

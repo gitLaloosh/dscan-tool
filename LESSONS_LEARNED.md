@@ -673,6 +673,9 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **A trap found on the way:** `${cardName('fit')}` inside a `'...'` string is printed literally, and in a `'...'`
   string that also contains `'fit'` it is a syntax error that stops the whole script (the regression suite caught
   it). Use backticks for any string with `${...}`; the check flags `${cardName(` inside quotes.
+- **Again (v2026.10.14.95), a rename:** "Your Side" became "Standings" with one line of `CARD_NAMES`. Retiring the old name
+  lower-cased would have flagged ordinary prose ("your side's losses"), so `check_card_names.py` gained `RETIRED_EXACT`,
+  matched as written. Retire a name whose words are also plain English by its exact spelling.
 
 ## 43. A collapsed card that only updates while it's open
 

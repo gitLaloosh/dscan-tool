@@ -6,7 +6,7 @@ The real page with ESI and zKillboard answered from made-up data (sa_mocks.py). 
 worked out here, in Python, from the same data -- not read back from the page. Checks:
   * the tab: "System Analyzer" in the D-Scan tab's place (last), two inputs; a D-Scan alone still shows its contacts
     under "On Scan"; Local pasted in the D-Scan box's place (a scan) or a fit refused with SYS-02;
-  * Your Side (D7 "A: chip by My Ship"): the chip on every tab; your pilot sets corp + alliance (SIDE-01 for an unknown
+  * Standings (Your Side until v.95; D7 "A: chip by My Ship"): the chip on every tab; your pilot sets corp + alliance (SIDE-01 for an unknown
     name); a friendly added by name; a pasted list (tickers ignored, not-found names named with SIDE-02); adding to one
     list takes a group off the other; pilot rows clamped to 1-30; everything back after a reload;
   * Local: counts per side, groups by alliance then corporation, largest first; a corporation entry beats its alliance
@@ -91,14 +91,14 @@ with sync_playwright() as p:
     analyze(pg, M.FIT)
     st = pg.inner_text('#localStatus')
     check('(SYS-02)' in st and 'Fit Analyzer' in st, f'a fit in the Local box: SYS-02 ({st!r})')
-    # --- Local with Your Side not set: everyone neutral (no zKillboard request) ---
+    # --- Local with Standings not set: everyone neutral (no zKillboard request) ---
     M.ZKB_CALLS.clear()
     analyze(pg, M.LOCAL)
     r = pg.evaluate(RESULT)
-    check(r['total'] == E['found'] and r['h']['n'] == 0 and r['f'] == 0 and r['n']['n'] == E['found'] and any('Your Side' in w for w in r['warns']) and not M.ZKB_CALLS,
-          f"Your Side not set: all {E['found']} found pilots neutral, a note to set it, no zKillboard request ({r['keys']}, {r['warns']}, {len(M.ZKB_CALLS)})")
-    # --- Your Side ---
-    check(side_text(pg) == 'Your Side' and pg.evaluate("() => document.querySelector('#sideChip').classList.contains('is-empty')"), f'the chip, not set: "Your Side" ({side_text(pg)!r})')
+    check(r['total'] == E['found'] and r['h']['n'] == 0 and r['f'] == 0 and r['n']['n'] == E['found'] and any('Set your Standings' in w for w in r['warns']) and not M.ZKB_CALLS,
+          f"Standings not set: all {E['found']} found pilots neutral, a note to set it, no zKillboard request ({r['keys']}, {r['warns']}, {len(M.ZKB_CALLS)})")
+    # --- Standings ---
+    check(side_text(pg) == 'Standings' and pg.evaluate("() => document.querySelector('#sideChip').classList.contains('is-empty')"), f'the chip, not set: "Standings" ({side_text(pg)!r})')
     for t in ('#tabBtnPilot', '#tabBtnFit'):
         pg.click(t); check(pg.is_visible('#sideChip'), f'the chip shows on {t}')
     open_side(pg)
@@ -146,7 +146,7 @@ with sync_playwright() as p:
     pg.keyboard.press('Escape')
     # set the D3 threshold back to 15 for the fleet check
     open_side(pg); pg.fill('#sideRows', '15'); pg.press('#sideRows', 'Enter'); pg.keyboard.press('Escape')
-    # --- Local with Your Side ---
+    # --- Local with Standings ---
     M.ZKB_CALLS.clear()
     analyze(pg, M.LOCAL, M.SCAN)
     r = pg.evaluate(RESULT)
@@ -215,7 +215,7 @@ with sync_playwright() as p:
     check(over[0] <= 390 and not over[1], f'390 px: nothing runs off the page {over}')
     open_side(pg)
     sheet = pg.evaluate("() => { const r = document.querySelector('#sidePanel').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), Math.round(r.bottom)]; }")
-    check(sheet == [0, 390, 844], f'390 px: Your Side is a sheet from the bottom {sheet}')
+    check(sheet == [0, 390, 844], f'390 px: Standings is a sheet from the bottom {sheet}')
     check(not errs, f'no page errors {errs[:3]}')
     b.close()
 print(f'FAILURES: {fails}')

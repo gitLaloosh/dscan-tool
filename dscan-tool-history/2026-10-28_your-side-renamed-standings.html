@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-28 — Your Side renamed Standings</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>"Your Side" renamed "Standings"</h1>
+<p><span class="tag">UI</span><span class="tag">Tests</span> 2026-10-28 &middot; <code>v2026.10.14.94</code> &rarr; <code>v2026.10.14.95</code></p>
+<p>the owner: "we need to rename 'your side'. feel free to give suggestions but i think 'Affiliations' or something along that line works". I suggested Standings, EVE's own word for who's blue and who's red, since "Affiliations" would sit too close to the Pilot Analyzer's Pilot Affiliation box. the owner: "Standings works. let's do it. no need to mock it up for me, let's just fix it."</p>
+
+<h2>What changed</h2>
+<ul>
+<li>The chip beside My Ship, its panel and its info text, the System Analyzer's note ("Set your Standings to mark friendlies"), the pilot tag's hover, and ERRORS.md all say <b>Standings</b>. The name lives in one place (<code>CARD_NAMES.side</code>), so that one change reached everything.</li>
+<li>Two info-panel sentences read better with it: names are sorted "by your Standings"; the Pilot Affiliation box shows "where they stand in your Standings".</li>
+<li>The descriptive "your side" (your alliance's losses and kills, as in "killed your side lately") stays: it describes your group, not the card.</li>
+<li>Stored settings, element IDs and code names (<code>side.*</code>, <code>dscanSide</code>) are unchanged, so nothing you've saved is lost.</li>
+<li><code>tools/check_card_names.py</code> has a new <code>RETIRED_EXACT</code> list, matched with capitals, so "Your Side" can't come back while lower-case "your side" stays ordinary prose. A test copy with "Set Your Side to mark friendlies" is flagged.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>system_analyzer_check.py</code> expects "Standings" on the chip and in the note; v.94 fails both. <code>affiliation_check.py</code> and <code>sa_mocks.py</code> wording updated.</li>
+<li>Regression suite ALL PASS (269 fits); the update-check chain; all 41 page checks; lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>When a retired name's words are also ordinary prose ("your side's losses"), retire it by its exact spelling, not lower-cased, or the lint pushes you to rewrite sentences that were never about the card. Here the card's name lived in one place (<code>CARD_NAMES</code>, LESSON #42's rule), which is why a rename touched one line of the page.</p>
+</body></html>

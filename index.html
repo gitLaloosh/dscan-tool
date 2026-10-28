@@ -1835,7 +1835,7 @@
      "A: chip by My Ship", evidence in step 1, "Paste a list of alliances" + "Suggested friendlies", details "Both fine").
      Sides: hostile = --danger, friendly = --side-friendly (the pair passes validate_palette.js --mode dark on #12171c and
      #161c22: CVD dE 21.9, normal 26.0, 3:1), neutral grey on purpose; each side also has a shape (- square, o circle,
-     + square) and its name, so colour is never the only cue. Classes sa-* (the tab) and side-* (Your Side). */
+     + square) and its name, so colour is never the only cue. Classes sa-* (the tab) and side-* (Standings, was Your Side). */
   :root{--side-friendly:#4f8fe0; --side-hostile:var(--danger); --side-neutral:#5d6a73;}
   .sa-head{display:flex; align-items:center; gap:8px; position:relative;}
   .sa-head h2{margin:0;}
@@ -1906,7 +1906,7 @@
   .sa-onscan-head h2{margin:0;}
   .sa-onscan-head .ctx{display:inline-block;}
   .sa-onscan-head .legend{margin:0 0 0 auto;}
-  /* Your Side: a chip beside My Ship, on every tab; the panel is a popover (a sheet from the bottom on a phone) */
+  /* Standings (v.95, was Your Side): a chip beside My Ship, on every tab; the panel is a popover (a sheet from the bottom on a phone) */
   button.side-chip{display:inline-flex; align-items:center; gap:8px; min-height:36px; max-width:320px; padding:0 12px 0 9px; border:1px solid var(--line); border-radius:18px;
     background:var(--panel); color:var(--text); font:600 12.5px var(--sans); letter-spacing:0; white-space:nowrap;}
   button.side-chip:hover, button.side-chip[aria-expanded="true"]{background:var(--panel-2); border-color:var(--side-friendly);}
@@ -1954,7 +1954,7 @@
   }
   @media (max-width: 599px){
     button.side-chip{min-height:44px; min-width:44px; flex:none; max-width:30vw; justify-content:center; padding:0 10px;}
-    .mys-chip-ship{flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}   /* v.81: room for Your Side */
+    .mys-chip-ship{flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}   /* v.81: room for the Standings chip */
     .side-chip-name, .side-chip-more{display:none;}
     .side-chip-short{display:inline;}
     .side-panel{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-height:88vh; border-radius:14px 14px 0 0; padding:16px 16px 24px; z-index:61;}
@@ -2260,7 +2260,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.94</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.95</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2284,7 +2284,7 @@
     <!-- v2026.10.14.94: the Fleet tab, shown only while a fleet from a kill is open (roadmap/fleet-from-kill-plan.md) -->
     <span class="tab-fleet" id="fleetTabWrap" hidden><button type="button" class="tab-btn" id="tabBtnFleet" data-card="fleet"></button><button type="button" class="tab-x" id="fleetCloseBtn" aria-label="Close the Fleet tab" title="Close the Fleet tab">×</button></span>
     <div class="mys-bar" id="myShipBar">
-      <!-- v2026.10.14.81 Your Side (System Analyzer step 1, D7 "A: chip by My Ship"): labels set by renderSideChip -->
+      <!-- v2026.10.14.81 Standings (Your Side until v.95; System Analyzer step 1, D7 "A: chip by My Ship"): labels set by renderSideChip -->
       <button type="button" class="side-chip is-empty" id="sideChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="sidePanel"></button>
       <div class="side-backdrop" id="sideBackdrop" hidden></div>
       <div class="side-panel" id="sidePanel" role="dialog" hidden></div>
@@ -2357,7 +2357,7 @@
       <div id="lastKillInfo"></div>
     </div>
     </div>
-    <!-- v2026.10.14.87: the pilot's corporation, alliance and zKillboard stats (Your Side's tag moved in here) -->
+    <!-- v2026.10.14.87: the pilot's corporation, alliance and zKillboard stats (the Standings tag moved in here) -->
     <aside class="pa-aff" id="pilotAff" hidden><div class="pa-aff-side"><span id="pilotSideTag"></span></div><div id="pilotAffBody"></div></aside>
     </div>
     <!-- v2026.10.14.90: what they fly, by gang size; its rows choose the hull (roadmap/pilot-dossier-plan.md) -->
@@ -2394,6 +2394,7 @@ const ZKB = 'https://zkillboard.com/api';
 // is one edit here plus the same row in roadmap/card-names.md. tools/check_card_names.py (in the update-check chain)
 // fails when a name is typed by hand anywhere the page shows text. Title Case (the owner: "card names should use my
 // structure"). JSON on purpose, so the Python tools can read it.
+// v.95: "side" was "Your Side" (the owner: "we need to rename 'your side'", "Standings works"); kept as JSON (tools read it)
 const CARD_NAMES = {
  "weak": "Weaknesses",
  "ewar": "EWAR / Misc",
@@ -2410,7 +2411,7 @@ const CARD_NAMES = {
  "myshippage": "Viewing My Ship",
  "tdmode": "Mode",
  "sysan": "System Analyzer",
- "side": "Your Side",
+ "side": "Standings",
  "hostile": "Hostile",
  "neutral": "Neutral",
  "friendly": "Friendly",
@@ -2526,7 +2527,7 @@ const CARD_INFO = {
  ],
  "sysan": [
   "Paste the Local member list (in the Local window, select the members and press Ctrl+C) and, if you have one, your D-Scan. Local lists everyone in the system, in space or docked; the D-Scan shows only ships within about 14 AU of you. So who is here comes from Local, and the scan only says what is near you now.",
-  "Each name is looked up on ESI (its corporation and alliance) and sorted into hostile, neutral and friendly with {card:side}. A name ESI doesn't know (a typo, a renamed pilot) is listed as not found.",
+  "Each name is looked up on ESI (its corporation and alliance) and sorted into hostile, neutral and friendly by your {card:side}. A name ESI doesn't know (a typo, a renamed pilot) is listed as not found.",
   "Up to the “pilot rows up to” number of hostile + neutral pilots (15 unless you change it) is a small gang: one row per pilot ({card:pilots}). More is shown by group, as the columns. Groups shows the columns for a small gang too.",
   "With only a D-Scan pasted, {card:onscan} shows the ships on scan, as the D-Scan tab did."
  ],
@@ -2571,7 +2572,7 @@ const CARD_INFO = {
   "Estimates from killmails, not a count: their fits may differ, they won't all shoot you at once, and remote repairs, command bursts and overheating aren't in it."
  ],
  "aff": [
-  "The pilot's corporation and alliance (ESI), and their side by {card:side} when it's set. In corp since: when they joined that corporation (their corporation history). Pilot since: the year the character was made. Sec: their security status.",
+  "The pilot's corporation and alliance (ESI), and where they stand in your {card:side} when it's set. In corp since: when they joined that corporation (their corporation history). Pilot since: the year the character was made. Sec: their security status.",
   "zKillboard, all time: zKillboard's own numbers, as its pilot page shows them, not the tool's. Danger: zKillboard's dangerous / snuggly rating, from what they've destroyed against what they've lost. Gang: how many of their kills were solo, and their average gang size. Kills, losses and ISK destroyed: zKillboard's totals.",
   "One zKillboard request per pilot, after the analysis' own, kept an hour; the corporation lookups are kept an hour, names and tickers a week."
  ],
@@ -20643,7 +20644,7 @@ async function mysRenderMineView(mv){
 // identified non-blues in system"; "The local chat window will show everyone in the entire system, in space or docked
 // up" while D-Scan reaches ~14 AU. Decisions D1-D7 in the plan: replaces the D-Scan tab (D1); friendlies from your
 // pilot's corp + alliance plus any you add, neutral and hostile separate (D2); hostile = your list, then zKillboard
-// evidence, your list wins (D2b); small gang / fleet threshold 15, a setting, at most 30 (D3, D4); Your Side is a chip
+// evidence, your list wins (D2b); small gang / fleet threshold 15, a setting, at most 30 (D3, D4); Standings (was Your Side) is a chip
 // beside My Ship (D7, "A: chip by My Ship"); evidence in step 1; "Paste a list of alliances" and "Suggested
 // friendlies"; up to 6 names per corporation (D7 "Both fine"). the owner: "go ahead with the System Analyzer but do not make
 // the login the first step" -- EVE login stays L7. Nothing here changes a number the engine works out.
@@ -20663,7 +20664,7 @@ const SA_SUGGEST_MIN = 2, SA_SUGGEST_MAX = 8; // a suggestion needs 2 shared kil
 const EVE_NAME_MAX = 37;
 function isNpcCorp(id){ return id >= 1000000 && id < 2000000; }   // NPC corporations' ID range (CCP)
 
-// ---- Your Side: stored record ----
+// ---- Standings (was Your Side): stored record ----
 const side = {rec: null, sug: null, sugBusy: false, msg: {}};
 function sideEmpty(){ return {pilot: null, corp: null, alliance: null, friendly: [], hostile: [], rows: SIDE_ROWS_DEFAULT}; }
 function sideRows(v){ const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(SIDE_ROWS_MAX, Math.max(1, n)) : SIDE_ROWS_DEFAULT; }
@@ -20979,7 +20980,7 @@ function saRender(){
   const ev = sa.evidence, evErr = sa.evidenceErr;
   let notes = '';
   if(nf.length) notes += warn(`${nf.length} name${nf.length === 1 ? '' : 's'} not found`, ctxHtml(nf.join(', '), '', `Not pilots ESI knows (a typo or a renamed pilot): ${nf.join(', ')}`));
-  if(!sideIsSet()) notes += warn(`Set ${cardName('side')} to mark friendlies`, ctxHtml('until then everyone is neutral'), `<button type="button" class="sa-link" data-sa-act="side">Set</button>`);
+  if(!sideIsSet()) notes += warn(`Set your ${cardName('side')} to mark friendlies`, ctxHtml('until then everyone is neutral'), `<button type="button" class="sa-link" data-sa-act="side">Set</button>`);
   else if(evErr) notes += warn('zKillboard evidence unavailable', ctxHtml(`hostile list only (${errorCodeOf(evErr)})`, '', withCode(evErr.message, errorCodeOf(evErr))), `<button type="button" class="sa-link" data-sa-act="refresh">Retry</button>`);
   const evLine = ev ? `<span class="ctx" title="zKillboard: your side's losses in the past 7 days, kept for an hour">evidence ${saAgo(ev.at)}</span><button type="button" class="sa-link" data-sa-act="refresh">Refresh</button>` : '';
   host.innerHTML = `
@@ -21715,7 +21716,7 @@ function saClear(){
   document.getElementById('localInput').focus();
 }
 
-// ---- Your Side: chip and panel ----
+// ---- Standings (was Your Side): chip and panel ----
 async function sideUpdateFromAffiliation(a){
   const r = side.rec;
   if(!r || !r.pilot || !a) return;
@@ -21894,7 +21895,7 @@ function sidePanelAction(act, el){
 // analysis' own zKillboard requests, one zKillboard /api/stats/characterID/{id}/ through the zKillboard queue, kept an
 // hour: its all-time dangerRatio and gangRatio (percentages, as zKillboard's pilot page shows them), avgGangSize,
 // shipsDestroyed, shipsLost, iskDestroyed. zKillboard's numbers, shown as zKillboard shows them, not the tool's.
-// Your Side's tag (sideTagForPilot) sits in the box since v.87.
+// The Standings tag (sideTagForPilot) sits in the box since v.87.
 const PA_AFF_TTL_MS = 60 * 60 * 1000;
 const paAff = {token: 0, id: null, d: null, esi: null};
 async function paAffEsi(path, key){
@@ -22074,7 +22075,7 @@ async function sideTagForPilot(charId){
     if(!d.matches || !d.matches('details.sa-g')) return;
     const k = d.dataset.saG;
     if(k === 'friendly'){ sa.friendOpen = d.open; return; }
-    if(d.open) sa.open.add(k); else sa.open.delete(k);   // kept for the next redraw (a change to Your Side)
+    if(d.open) sa.open.add(k); else sa.open.delete(k);   // kept for the next redraw (a change to Standings)
   }, true);
   res.addEventListener('click', (e) => {
     const pb = e.target.closest('button.sa-pilot');

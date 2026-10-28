@@ -49,6 +49,10 @@ RETIRED = {
     'dps on you': "'DPS applied to you'",
     'dps on them': "'DPS applied to them'",
 }
+# Retired names matched as written (capitals and all): their lower-case words stay ordinary prose.
+RETIRED_EXACT = {
+    'Your Side': "cardName('side') (Standings, v2026.10.14.95)",
+}
 
 def line_of(pos): return src.count('\n', 0, pos) + 1
 
@@ -148,6 +152,8 @@ for where, t in frags:
     tl = t1.lower()
     for old, new in RETIRED.items():
         if old in tl: problems.append(f"{where}: old name '{old}' -- now {new}"); hit = True
+    for old, new in RETIRED_EXACT.items():   # v.95: names whose lower-case words are ordinary prose ("your side's losses")
+        if old in t1: problems.append(f"{where}: old name '{old}' -- now {new}"); hit = True
     if '{card:' in t or 'cardName' in t: named.append((where, t))
     if hit: named.append((where, t))
 for pos in quoted_template: problems.append(f"line {line_of(pos)}: ${{cardName(...)}} inside a '...' or \"...\" string (needs backticks)")
