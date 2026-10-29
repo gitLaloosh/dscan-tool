@@ -776,7 +776,7 @@ were read, rounded the JavaScript way (half up; Python's `round` is half-even an
 Pilot Analyzer switch and passes on both:
 
 - `rorqual_eft_full_quadfeed_implants_boosters_pyfa` and `rorqual_eft_pyfa_active_state_implants_boosters`:
-  the owner's Rorqual with its Genolution CA-1..4 set and two boosters, pinned to his pyfa screenshot
+  The owner's Rorqual with its Genolution CA-1..4 set and two boosters, pinned to his pyfa screenshot
   (EHP 1.78M, capacitor 102k, align 280 s, shield repair 17,030 HP/s raw, capacitor delta -5.98 GJ/s).
 - `abaddon_constructed_armor_implants_boosters` (Amulet set, repair / hull / structure hardwirings,
   Exile and Halcyon Y boosters), `drake_constructed_shield_implants_boosters` (Crystal set, shield
@@ -802,7 +802,7 @@ range 60 -> 76 km, Halcyon Y-4), and `rangeFalloffM` 0 -> 1 on six Precursor / V
 falloff attribute is its SDE default, 1 m, as in pyfa; LESSON #22).
 
 **v2026.10.14.14: expired boosters.** `rupture_constructed_projectile_implants_boosters` is PYFA-VERIFIED from
-the owner's screenshot (284 DPS, 1,048 volley, 1.8 + 14.4 km, EHP 8.72k, speed 262, align 5.71 s, sig 125,
+The owner's screenshot (284 DPS, 1,048 volley, 1.8 + 14.4 km, EHP 8.72k, speed 262, align 5.71 s, sig 125,
 targeting 62.5 km, scan res 362 mm, sensor 18, capacitor 1.59k GJ). pyfa dropped its Strokar Booster VI (an
 event booster whose last injection date is before pyfa's data dump; `db_update.py` deletes those). The fixture
 keeps the booster in its tally, so the pins also guard the engine's skip of `PYFA_REMOVED_IMPLANT_IDS`;

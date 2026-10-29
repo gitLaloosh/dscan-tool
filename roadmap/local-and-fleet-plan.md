@@ -1,6 +1,6 @@
 # Local and fleet assessment (plan, decided 2026-10-27; steps 1-3 built in v2026.10.14.81-.83)
 
-Started 2026-10-27. the owner, after "what do you think is the biggest gap in the tool right now?" (the tool sizes up one
+Started 2026-10-27. The owner, after "what do you think is the biggest gap in the tool right now?" (the tool sizes up one
 pilot at a time; a fight is usually against a group) and "what happens when there are 100+ people in system?": "I've been
 contemplating how to do something like this as a way to assess matchups in doctrines at a larger scale. this seems like a
 good place to start. we'll also want to have the ability for the user to have their own alliance affiliation saved so any
@@ -34,7 +34,7 @@ friendly pilots can be filtered out when assessing potential threats."
 
 ## The two inputs (the owner 2026-10-27)
 
-the owner's picture: "a local system tab with two inputs for a dscan and a copy/paste of the local chat window ... identified
+The owner's picture: "a local system tab with two inputs for a dscan and a copy/paste of the local chat window ... identified
 non-blues in system and what they're likely flying. best case, gives an outline of what kind of fleet is there and it's
 makeup." And on how far each can be trusted: "a dscan result is going to be far less reliable in the following sense: it
 has a very limited range in system from the player's ship (~14 AU). The local chat window will show everyone in the
@@ -85,7 +85,7 @@ against weapon types), logistics. pyfa has no fleet simulation, so these are the
 per-ship numbers (DEVIATIONS.md section 3, like the time to kill). Needs its own design discussion.
 
 **L7 (later, optional). Log in with EVE.** EVE SSO (no secret needed in a public repo: the PKCE flow) to read your
-alliance's contacts and fill the friendly list from real standings. the owner 2026-10-27: "not something i'd like to do now
+alliance's contacts and fill the friendly list from real standings. The owner 2026-10-27: "not something i'd like to do now
 because we'll need to do some real security analysis of the tool first". What it would take (CCP's docs, checked
 2026-10-27: [SSO](https://developers.eveonline.com/docs/services/sso/),
 [native / PKCE flow](https://docs.esi.evetech.net/docs/sso/native_sso_flow.html)):
@@ -135,7 +135,7 @@ because we'll need to do some real security analysis of the tool first". What it
   friendly = neutral. **After the EVE login (L7):** real standings replace the hand-entered lists for pilots who log in
   (negative standing = hostile). The hand-entered lists stay for anyone who doesn't log in (the login is optional). The
   zKillboard evidence stays too: standings say who your side has declared hostile, the evidence says who has actually
-  been shooting you, so a neutral with kills on your side is still worth flagging. the owner asked whether this part would be
+  been shooting you, so a neutral with kills on your side is still worth flagging. The owner asked whether this part would be
   deprecated then: to decide when L7 is built.
 - **D3. Small gang / fleet threshold — decided** (the owner: "let's have it be configurable but default to 15. that way we can
   easily change it later on w/out a code change"): up to 15 hostile + neutral pilots in local, one row each (L3); more than
@@ -276,7 +276,7 @@ because we'll need to do some real security analysis of the tool first". What it
 
 ## Step 3 status: hidden (v2026.10.14.89)
 
-the owner (2026-10-27, screenshots of a high-sec trade hub: 1499 in Local, 1468 hostile + neutral; the fleet view's summary
+The owner (2026-10-27, screenshots of a high-sec trade hub: 1499 in Local, 1468 hostile + neutral; the fleet view's summary
 covering 78 of them, ZKB-01 on several hull lookups): "please create a backlog item for us to discuss the 'fleet' content
 on the system analysis page. it's just not on point, again, due to the lack of other ships on-grid. just too many
 assumptions based on local. we should strip the fleet stuff out of that page temporarily until we have a better method
@@ -315,7 +315,7 @@ those pilots are docked up and likely not even flying a combat ship of any kind.
 
 ## Step 4 status: hidden (v2026.10.14.88)
 
-the owner (todo-inbox, 2026-10-27): "The assumptions in the 'against your ship' section on the system analyzer tab just aren't
+The owner (todo-inbox, 2026-10-27): "The assumptions in the 'against your ship' section on the system analyzer tab just aren't
 reliable. in limited use so far, I've found it to be inaccurate and even misleading. probably need to back it out until it
 can be refined a bit more." Then: "a lot of pilots simply fly a wide variety of hulls and/or do not get killed very often.
 taking a guess and what ship multiple pilots could be flying and getting any number of those wrong, can result in some
@@ -328,7 +328,7 @@ wildly inaccurate assumptions resulting in poor decision making."
 - To discuss before it comes back (not decided): count only what's certain (hulls on your D-Scan, with the fit as
   the only guess), say how much of the fleet the numbers cover, no verdict when that's low; ties to the backlog items on
   hulls seen on kills, non-combat ships and ships named after a pilot in Local.
-- the owner's context for that talk (2026-10-27): "in some cases you might see a 50:50 split between friendlies and enemies in
+- The owner's context for that talk (2026-10-27): "in some cases you might see a 50:50 split between friendlies and enemies in
   local while maybe 10% or 20% of that number shows up as ships on d-scan (maybe less). friendlies will fly many of those
   same hulls because good pvp hulls are good pvp hulls." So a hull on D-Scan can't be pinned to a side or a pilot by its
   type alone, and D-Scan shows a small part of Local: "only what's certain" may cover very little.
@@ -341,7 +341,7 @@ common-fit method checked against a hand-built set of losses; fleet-level number
 
 ## Status: building, login stays L7 (2026-10-27)
 
-the owner: "go ahead with the System Analyzer but do not make the login the first step. I will think about the login bit at a
+The owner: "go ahead with the System Analyzer but do not make the login the first step. I will think about the login bit at a
 later time but for now let's go ahead and build the rest out. login can remain as #7". So the D6 order stands (L1 + L2,
 L3, L4 + L5, L6; L7 later); the "login first" proposal below is not taken. The mockup questions below still need answers
 before step 1 is built.
@@ -357,7 +357,7 @@ beside the pilot's name in the Pilot Analyzer. Colours: hostile = --danger, frie
 validate_palette.js on #161c22 and #12171c), neutral grey on purpose; every side also has a shape (− square, ○ circle,
 + square) and its name.
 
-the owner: "is it worth waiting to do this until we have eve login? seems like the usefulness would greatly increase. i am in a
+The owner: "is it worth waiting to do this until we have eve login? seems like the usefulness would greatly increase. i am in a
 large coalition and this implementation will have a lot of non-alliance coalition members resolve to being neutrals."
 Then: "preserve what we have decided so far ... maybe we can work on something else while i think about this one."
 

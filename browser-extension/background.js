@@ -1,4 +1,4 @@
-// EVE Threat Assessment for zKillboard (v1.0.0, with the tool's v2026.10.14.80). the owner: "create a google chrome extension
+// EVE Threat Assessment for zKillboard (v1.0.0, with the tool's v2026.10.14.80). The owner: "create a google chrome extension
 // that would let me right click on a pilot name or killmail in zkillboard.com and send it to the tool"; the menu items:
 // "all three" (kill links and pages, pilot links and pages, a selected pilot name).
 //

@@ -14,7 +14,7 @@ td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; v
 <p><span class="tag">Test suite</span><span class="tag">Closed gap</span> 2026-10-14 &middot; <code>index.html</code> unchanged (still <code>v2026.10.14.1</code>) &middot; the owner: "did you still need a screen shot from the ishtar fit? if so, send me the eft"</p>
 
 <h2>What was wrong</h2>
-<p>The <code>ishtar_zkb137694046</code> golden fit (a pilot's real loss, zKill 137694046) said capacitor stable 96.9%. the owner's pyfa screenshot of the same fit said 40.5%. The gap had been blamed on the capacitor model: first the closed form, then on inputs once v2026.10.14.1 made the simulator match pyfa exactly.</p>
+<p>The <code>ishtar_zkb137694046</code> golden fit (a real loss, zKill 137694046) said capacitor stable 96.9%. The owner's pyfa screenshot of the same fit said 40.5%. The gap had been blamed on the capacitor model: first the closed form, then on inputs once v2026.10.14.1 made the simulator match pyfa exactly.</p>
 <p>Preparing the EFT for a fresh screenshot, I ran the fit as an EFT paste, which loads full game-data records. That run gave <b>stable 40.5%</b>, exactly pyfa.</p>
 <p>The cause was the fixture: it had no <b>group record</b> (40, Shield Booster) for the X-Large C5-L Compact Shield Booster. Without it, the engine dropped the booster entirely, so the pinned drain was only the two hardeners (5.2 GJ/s). The live page fetches the group from ESI, so <b>the tool itself was already right</b>. Only the test was wrong.</p>
 
@@ -25,7 +25,7 @@ td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; v
 <li>Re-pinned:</li>
 </ul>
 <table>
-<tr><th>Field</th><th>Before</th><th>After</th><th>the owner's pyfa</th></tr>
+<tr><th>Field</th><th>Before</th><th>After</th><th>The owner's pyfa</th></tr>
 <tr><td>Capacitor stable %</td><td>96.9</td><td>40.5</td><td>40.5</td></tr>
 <tr><td>Net cap rate</td><td>+79.1</td><td>+7.1</td><td>+7.12</td></tr>
 <tr><td>Active drain</td><td>5.2 GJ/s</td><td>77.2 GJ/s</td><td>&mdash;</td></tr>

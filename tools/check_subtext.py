@@ -2,7 +2,7 @@
 
     python3 -I tools/check_subtext.py [index.html]          # must end with "0 problems"
 
-the owner (2026-10-24): "the subtext in the tool is a little overwhelming and distracts from important values ... address
+The owner (2026-10-24): "the subtext in the tool is a little overwhelming and distracts from important values ... address
 it as a site wide design choice"; decided: "works as written. info icon opens a panel over the page. the 40 character
 limit is fine." The rule, enforced here as far as a static read can:
   1. one line of context under a value: every ctxHtml(...) whose text is written in the code is <= CTX_MAX (40)

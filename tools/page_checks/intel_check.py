@@ -2,7 +2,7 @@
 
     PYFA_SRC=/path/to/pyfa [EVE_RES=/path] python3 -I tools/page_checks/intel_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner: "the tool actively polls the game's chat log for the intel channel and tracks neutral and hostile ships that are
+The owner: "the tool actively polls the game's chat log for the intel channel and tracks neutral and hostile ships that are
 reported via that channel"; "it needs to have an on/off mechanism"; mockup answers: the feed in a card on its own tab, a gear
 for settings, "a slider for off/on similar just like 'use in assessments'", jumps from a built-in table that doesn't drift
 from EVE. The real page with a made-up Chatlogs folder (the File System Access API replaced by an in-page folder of

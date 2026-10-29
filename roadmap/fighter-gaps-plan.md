@@ -1,6 +1,6 @@
 # Fighter gaps: carriers assessed accurately
 
-the owner, 2026-10-25: "Ok lets get the fighter gaps closed. Carriers need to be accurately assessed in the tool."
+The owner, 2026-10-25: "Ok lets get the fighter gaps closed. Carriers need to be accurately assessed in the tool."
 Every number checked against pyfa (eos, `graphs/data/fitDamageStats`), as everywhere in the tool.
 
 ## the owner's decisions (2026-10-25)
@@ -42,7 +42,7 @@ Every number checked against pyfa (eos, `graphs/data/fitDamageStats`), as everyw
    - Checked by `check_application.py` (pyfa's getVolley from the charge and the bomb branch), the golden fit
      `hel_constructed_ametat_bombs_on` and `fighter_bombs_check.py`.
 4. **Weaknesses picks: done in v2026.10.14.72.**
-   - the owner: "One tile per class" and abilities "As set in the Fighter bay".
+   - The owner: "One tile per class" and abilities "As set in the Fighter bay".
    - "Your light fighters" / "Your heavy fighters" ("Their ..." in the My Ship Perspective): each damage-dealing type in the
      bay flown in that class's squadrons (bay, class limit, the tubes left by the other classes), ranked by the strip's
      time to kill with the rest of the fit as it is.

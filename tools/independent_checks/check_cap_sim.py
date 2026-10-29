@@ -58,7 +58,7 @@ ab = module_drains([(T('1MN Afterburner II'), 1)])
 asb = module_drains([(T('Medium Ancillary Shield Booster'), 1)])
 print('Hawk ASB charged:', sim(cap, rech, ab), '| ASB out of charges:', sim(cap, rech, ab + asb))
 
-# ---- Ishtar (a pilot, zKill 137694046; golden ishtar_zkb137694046). the owner's older pyfa screenshot:
+# ---- Ishtar (zKill 137694046; golden ishtar_zkb137694046). The owner's older pyfa screenshot:
 # stable 40.5%, capDelta +7.12 GJ/s. Republic Fleet Large Cap Battery adds flat capacity (attr67,
 # Capacitor Battery effect); both Flux Coils multiply capacity and recharge, NOT penalized
 # (pyfa capacitorCapacityMultiply / modifyPowerRechargeRate pass no stackingPenalties).

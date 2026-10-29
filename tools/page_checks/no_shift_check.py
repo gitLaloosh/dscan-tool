@@ -2,7 +2,7 @@
 
     PYFA_SRC=... python3 tools/page_checks/no_shift_check.py [index.html]
 
-the owner (2026-10-24): "when making changes to the damage application slider, numbers change on multiple cards which
+The owner (2026-10-24): "when making changes to the damage application slider, numbers change on multiple cards which
 causes the content to shuffle and move elements on the page ... this redesign should also address that."
 
 The real page (Fit Analyzer, a Hecate threat against a saved Vexor, ESI served from the SDE) at 1440, 1100 and

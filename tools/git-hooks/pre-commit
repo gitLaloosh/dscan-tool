@@ -1,0 +1,14 @@
+#!/bin/sh
+# Refuses a commit that would put personal data in this public repository: tools/check_pii.py on the staged files
+# (paths with a user name, e-mail addresses, keys and tokens, screenshots, unreviewed embedded images, and the names
+# in the git-ignored tools/pii_terms.local.txt). LESSON #90.
+# Turn it on once, in the repository folder:   git config core.hooksPath tools/git-hooks
+root="$(git rev-parse --show-toplevel)"
+for py in py python3 python; do
+  if "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" >/dev/null 2>&1; then
+    exec "$py" -I "$root/tools/check_pii.py" "$root" --staged
+  fi
+done
+echo "pre-commit: no Python 3 found, so the personal-data check (tools/check_pii.py) could not run." >&2
+echo "Install Python 3, or commit with --no-verify only after checking the files yourself." >&2
+exit 1

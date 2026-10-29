@@ -3,7 +3,7 @@
     python3 -I tools/check_card_names.py [index.html]        # must end with "0 problems"
     python3 -I tools/check_card_names.py [index.html] --list # also print every string that names a part
 
-the owner (2026-10-23): "i see a recurring issue with not having definitive names for each card. it results in subtext
+The owner (2026-10-23): "i see a recurring issue with not having definitive names for each card. it results in subtext
 and explanatory info referencing card titles that should be interchangeable." So CARD_NAMES in index.html is the one
 place a card or page part is named; titles, collapsed rows, notes and tooltips call cardName('key'), and ERROR_CODES
 writes {card:key}, which gen_errors_md.py resolves. Renaming a card is then one edit.

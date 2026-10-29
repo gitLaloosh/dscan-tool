@@ -1,5 +1,15 @@
 # Notes for AI assistants working on this repo
 
+**This repository is public. Nothing personal goes in it (LESSON #90).** No real names (the
+owner's, his characters', other players', corporations' or alliances' from his screenshots, logs
+or pastes), no paths from his computer (`C:\Users\<name>\...`), no e-mail addresses, no keys or
+tokens, no screenshots and no raw intel (chat lines, D-Scan or Local pastes). Refer to him as "the
+owner". Test data is made up; real pastes and logs are read for their format only. A mockup shows
+the real page with made-up data, and every picture embedded in a page is looked at and listed in
+`tools/pii_reviewed_images.json`. `python3 -I tools/check_pii.py` refuses all of it (a chain step
+and a git pre-commit hook: `git config core.hooksPath tools/git-hooks`); personal names it looks for
+are in the git-ignored `tools/pii_terms.local.txt` on the owner's computer.
+
 EVE Threat Assessment (ETA; called D-Scan Analyzer until v2026.10.14.60, and the repo, file and
 saved-data names still say dscan) is a single-file tool (`index.html`) that estimates EVE Online
 ship stats from killmails and EFT fits. Its calculations must match **pyfa**

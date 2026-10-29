@@ -2,7 +2,7 @@
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/fleet_kill_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner: "choose a row from the kills list (not a loss) in the pilot dossier ... use that killmail to build out the 'fleet'
+The owner: "choose a row from the kills list (not a loss) in the pilot dossier ... use that killmail to build out the 'fleet'
 from that kill using each pilot/participant's specified ship and weapon"; the Pilot Analyzer's fit rule; NPCs, capsules and
 pilots with no ship left out; "its own tab ... only visible when the user has chosen to assess a fleet"; shareable; laid
 out like the System Analyzer; mockup Claude outputs/fleet_from_kill_mockup.html, all four answers as recommended. The real

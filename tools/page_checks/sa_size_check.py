@@ -2,7 +2,7 @@
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/sa_size_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner on the dossier mockup: "for #4 that's fine but give users the option to switch between group sizes"; then "One
+The owner on the dossier mockup: "for #4 that's fine but give users the option to switch between group sizes"; then "One
 switch, Auto default", "Their alliance". The real page with ESI and zKillboard answered from sa_mocks.py. Vesna Dossier
 (sa_mocks DOSSIER_SPEC: 45 kills in all three sizes, each with an NPC attacker that mustn't count; losses Curse, Vedmak)
 is pasted in Local, alone or with another pilot of her alliance; the expected rows are worked out here from the mock's

@@ -1,6 +1,6 @@
 # Pilot Dossier: what a pilot flies, by gang size (plan, 2026-10-27)
 
-the owner: "i wonder if we should add a filter of some kind that let's you switch between what they fly solo vs small gang or
+The owner: "i wonder if we should add a filter of some kind that let's you switch between what they fly solo vs small gang or
 larger fleets. hunters generally fly in pairs or small gang for example. some ship types are used for large whaling
 fleets (bombers, kikis, etc.) there is a lot to consider so maybe building a dossier of the pilot based on how many are
 involved when they're flying each ship type?" It grows out of the backlog item "Pilot Analyzer: guess the hull from what

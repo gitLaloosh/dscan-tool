@@ -2,7 +2,7 @@
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/dossier_kills_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner via todo-inbox: "in pilot analyzer > pilot dossier > hull row > add ability to expand/collapse. expanding shows a list
+The owner via todo-inbox: "in pilot analyzer > pilot dossier > hull row > add ability to expand/collapse. expanding shows a list
 of their kills with that hull (shows 10 by default with 'show more' link that continues to load more). add a link to the
 zKillboard entry for each one of those kills." Mockup Claude outputs/pilot_kills_list_mockup.html; his answers: "▶ button
 per row", "Follow the switch", "Keep reading older kills", columns "As drawn". The real page with ESI and zKillboard

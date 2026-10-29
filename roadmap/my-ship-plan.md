@@ -23,7 +23,7 @@ You save your own fit once (EFT paste), and the tool can then assess every threa
 
 ## Mockup details
 
-the owner: "ok, work on 1" (2026-10-23), i.e. build phase 1 as drawn. Built in phase 1: the chip and switch, the
+The owner: "ok, work on 1" (2026-10-23), i.e. build phase 1 as drawn. Built in phase 1: the chip and switch, the
 panel (paste, summary, Replace, Copy EFT, Delete), "Set as my ship", "Viewing my ship", the threat ⇄ my ship
 switch with module states kept, storage, the phone layout. Not yet: the matchup strip, Weaknesses flipping its
 point of view, the "vs my ship" tag and the amber changed numbers (M6), which all need numbers that compare the
@@ -106,7 +106,7 @@ then the loaded charge), while the number shown stays pyfa's applied DPS.
 
 ## The matchup inside the loss (DONE v2026.10.14.43, `dscan-tool-history/2026-10-23_matchup-scoreboard-inside-the-loss.html`)
 
-the owner (2026-10-23): the strip "seems out of place"; merge it into the threat / my ship toggle and put it inside the
+The owner (2026-10-23): the strip "seems out of place"; merge it into the threat / my ship toggle and put it inside the
 container of the fit or loss being assessed. Then, on the v.42 page: "the UI is just too busy with all of the hulls
 from their losses. the threat/my ship toggle is outside of the actual assessment window so it feels disjointed."
 Options A (big tabs), B (scoreboard bar), C (inside the damage card) drawn on the My Ship canvas, page "Matchup

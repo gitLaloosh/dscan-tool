@@ -15,7 +15,7 @@ td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; v
 
 <h2>Why</h2>
 <p>The Ishtar capacitor gap turned out to be a trimmed test record (history <code>2026-10-14_ishtar-capacitor-gap-was-a-fixture-defect.html</code>). A follow-up measurement showed about 20 more fits whose fitted modules lacked attributes the engine reads. Some tests therefore exercised data the live page never sees. The live page always fetches full records from ESI.</p>
-<p>Reference data: CCP's SDE as shipped with pyfa v2.69.2, client build 3579973 (2026-10-06). the owner's updated pyfa shows <b>exactly this version and data build</b>, so the tool, its tests and his pyfa now all use the same game data.</p>
+<p>Reference data: CCP's SDE as shipped with pyfa v2.69.2, client build 3579973 (2026-10-06). The owner's updated pyfa shows <b>exactly this version and data build</b>, so the tool, its tests and his pyfa now all use the same game data.</p>
 
 <h2>What changed</h2>
 <ul>
@@ -37,7 +37,7 @@ td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; v
 
 <h2>Effect on the tests</h2>
 <p>15 of 161 fits' outputs moved. <b>Only one pinned check failed</b>: <code>legion_owner</code> capacitor 300 &rarr; 2,100. Every other move was in a field those tests never pinned, and each test still checks what its name says.</p>
-<p><b>The strongest confirmation:</b> after the refresh, the killmail copy of owner's Legion gives <i>exactly</i> the numbers of its full-data twin <code>legion_owner_eft_pyfa_verified</code>, which the owner checked in pyfa, on every moved field:</p>
+<p><b>The strongest confirmation:</b> after the refresh, the killmail copy of the owner's Legion gives <i>exactly</i> the numbers of its full-data twin <code>legion_owner_eft_pyfa_verified</code>, which the owner checked in pyfa, on every moved field:</p>
 <ul>
 <li>capacitor 2,100, drain 29</li>
 <li>signature 184 / 1,050</li>
@@ -49,7 +49,7 @@ td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; v
 </ul>
 <table>
 <tr><th>New pin</th><th>Old (trimmed)</th><th>New</th><th>Independent source</th></tr>
-<tr><td>Legion: 11 fields above</td><td>e.g. capacitor 300, targeting 0, signature 5</td><td>= pyfa-verified twin</td><td>the owner's pyfa screenshot</td></tr>
+<tr><td>Legion: 11 fields above</td><td>e.g. capacitor 300, targeting 0, signature 5</td><td>= pyfa-verified twin</td><td>The owner's pyfa screenshot</td></tr>
 <tr><td>Rifter armor layering: raw armor</td><td>563</td><td>6,563</td><td>(450 + 4,800 plate) &times; 1.25 Hull Upgrades, SDE</td></tr>
 <tr><td>Vedmak: neutralizer GJ/s</td><td>0</td><td>15</td><td>Medium Energy Neutralizer II 180 GJ / 12 s, SDE</td></tr>
 <tr><td>Vargur: capacitor</td><td>0</td><td>5,813</td><td>6,200 &times; 1.25 &times; 0.75 (MWD penalty), SDE</td></tr>

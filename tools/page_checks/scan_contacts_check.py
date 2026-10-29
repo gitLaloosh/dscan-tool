@@ -2,7 +2,7 @@
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/scan_contacts_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner via todo-inbox 2026-10-27: "run a dscan analysis that contains a scanner probe in it > scanner probes are showing up
+The owner via todo-inbox 2026-10-27: "run a dscan analysis that contains a scanner probe in it > scanner probes are showing up
 in the resistance results"; then "your recommendation sounds fine" (fold every non-ship into one line, as celestials).
 The real page, ESI answered from pyfa's SDE (sa_mocks.route). A D-Scan of 2 Ferox, a Caracal, 4 Core Scanner Probe I, a
 Combat Scanner Probe I, a Mobile Depot and 5 Hobgoblin II. Checks:

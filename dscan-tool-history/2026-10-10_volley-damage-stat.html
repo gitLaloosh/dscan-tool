@@ -28,7 +28,7 @@ th{background:#f4f4f4}
 <table>
 <tr><th>Check</th><th>Result</th></tr>
 <tr><td>Full regression suite (29 golden fits, including the new Loki fit)</td><td>ALL PASS — purely additive new return-object field, no existing calculation touched</td></tr>
-<tr><td>Exact match against a real pyfa report</td><td>the owner's own pyfa output for killmail 138935092 (the Loki scaffolded earlier this session) reported Volley 1349 — this implementation computes 1349 exactly, from the real killmail data, with zero tuning</td></tr>
+<tr><td>Exact match against a real pyfa report</td><td>The owner's own pyfa output for killmail 138935092 (the Loki scaffolded earlier this session) reported Volley 1349 — this implementation computes 1349 exactly, from the real killmail data, with zero tuning</td></tr>
 <tr><td>Sanity check on 2 more real golden fits exercising the drone and fighter code paths (Leshak: turret+drone; Thanatos: fighter-only)</td><td>Both produced plausible, nonzero volley figures (volley/dps ratio lines up with each fit's own known cycle times) — no throw, no NaN</td></tr>
 <tr><td>Real-Chromium render check (actual <code>renderFitSummaryHtml()</code> called live against the real Loki data)</td><td>"Volley 1,349" renders correctly formatted, positioned under Total DPS, legible against the tool's real CSS</td></tr>
 </table>

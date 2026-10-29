@@ -1,6 +1,6 @@
 # How the numbers are worked out
 
-This was the "How effective HP and DPS are calculated" note at the bottom of every fit, one long paragraph. the owner
+This was the "How effective HP and DPS are calculated" note at the bottom of every fit, one long paragraph. The owner
 (2026-10-24): "At this point it's impossible to read and comprehend in that format. perhaps it needs to be it's own
 document." It moved here in v2026.10.14.51, split into sections and brought up to date. The short version of each
 section is behind the matching card's ⓘ button on the page (`CARD_INFO` in index.html).

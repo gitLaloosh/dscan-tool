@@ -10,7 +10,7 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <body>
 <h1>Pilot Dossier: the fallback fit's zKillboard link</h1>
 <p><span class="tag">Bug fix</span><span class="tag">Tests</span> 2026-10-27 &middot; <code>v2026.10.14.90</code> &rarr; <code>v2026.10.14.91</code></p>
-<p>the owner (screenshot: owner's Svipul, "No loss of owner's in a Svipul: showing an alliance's common Svipul fit (15 of 20 of their losses)"): "if a pilot has zero losses for a hull that they have kills in, how is that being handled? i am seeing a fit but if you use the 'view on zkillboard' link, it does not work."</p>
+<p>The owner (screenshot of a pilot's Svipul, "No loss of &lt;pilot&gt;'s in a Svipul: showing &lt;alliance&gt;'s common Svipul fit (15 of 20 of their losses)"): "if a pilot has zero losses for a hull that they have kills in, how is that being handled? i am seeing a fit but if you use the 'view on zkillboard' link, it does not work."</p>
 
 <h2>How a hull with no loss of theirs is handled</h2>
 <ul>
@@ -22,7 +22,7 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <h2>The bug</h2>
 <ul>
 <li>The fallback passed the fit builder only the killmail's contents, not its ID and hash. The tab's loss row linked to <code>zkillboard.com/kill/undefined/</code>, said "killmail undefined", and the ⋮ menu's "Copy share link" was left out.</li>
-<li>Fixed: each variant keeps the ID and hash of the newest loss it was read from (<code>saHullFits</code>). The link opens that loss, the share link is offered again, and the loss row says whose it is: "killmail N · an alliance's loss, the newest of 15 with this fit".</li>
+<li>Fixed: each variant keeps the ID and hash of the newest loss it was read from (<code>saHullFits</code>). The link opens that loss, the share link is offered again, and the loss row says whose it is: "killmail N · &lt;alliance&gt;'s loss, the newest of 15 with this fit".</li>
 <li>No number changed. The hidden fleet view uses the same lookup, and only gains the two fields.</li>
 </ul>
 

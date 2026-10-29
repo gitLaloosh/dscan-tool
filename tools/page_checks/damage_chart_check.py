@@ -304,7 +304,7 @@ def desktop(b):
     adj = pg.evaluate("[...document.querySelectorAll('#fitResults .mys-threat-view .fl-dmg .dmg-adjust')].map(d => ({open: d.open, shown: d.offsetParent !== null}))")
     check(len(adj) == 2 and all(a['open'] for a in adj), f'Pilot losses: Adjust open on every loss tab, also one that was hidden when drawn ({adj})')
     pg.locator('#fitResults .assess-tabs button').nth(0).click(); pg.wait_for_timeout(300)
-    # the owner's repro (bug list #1) on the Pilot Analyzer itself: collapse the card on the shown loss, switch "Use in
+    # The owner's repro (bug list #1) on the Pilot Analyzer itself: collapse the card on the shown loss, switch "Use in
     # assessments" off -> the row follows the preset
     P = '#fitResults .subtab-panel:not([hidden]) .mys-threat-view .fl-dmg'
     pg.click(f'{P} .cc-toggle[data-card="dmg"]'); pg.wait_for_timeout(150)

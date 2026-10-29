@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- build: 2026-10-12-moved-to-github-repo-index-html (bump this on every future change -- lets anyone confirm which copy of this file they are looking at without diffing, per the 2026-10-08 stale-local-file incident). Renamed dscan-tool.html -> index.html 2026-10-12 as part of migrating this project into the the dscan-tool git repo, so GitHub Pages can serve it at the site root. -->
+<!-- build: 2026-10-12-moved-to-github-repo-index-html (bump this on every future change -- lets anyone confirm which copy of this file they are looking at without diffing, per the 2026-10-08 stale-local-file incident). Renamed dscan-tool.html -> index.html 2026-10-12 as part of migrating this project into the dscan-tool git repo, so GitHub Pages can serve it at the site root. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2384,7 +2384,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.100</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.101</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2520,7 +2520,7 @@
 const ESI = 'https://esi.evetech.net/latest';
 const ZKB = 'https://zkillboard.com/api';
 
-// CARD NAMES (v2026.10.14.45, roadmap/card-names.md). the owner 2026-10-23: "i see a recurring issue with not having
+// CARD NAMES (v2026.10.14.45, roadmap/card-names.md). The owner 2026-10-23: "i see a recurring issue with not having
 // definitive names for each card. it results in subtext and explanatory info referencing card titles that should be
 // interchangeable." This is the one place a card or page part is named: titles, collapsed rows, notes and tooltips
 // call cardName(<key>); ERROR_CODES writes {card:key} (tools/gen_errors_md.py fills the name in). Renaming a card
@@ -6381,7 +6381,7 @@ const EWAR_NOS_TRANSFER_AMOUNT_ATTR = 90; // powerTransferAmount (GJ/cycle, cond
 // Misc flags #2/#3 (architecture backlog, 2026-10-12 full-module-dogma-audit
 // -- "Interdiction Nullifier module has zero representation" /
 // "Micro Jump Drive / Micro Jump Field Generator have zero representation"),
-// the owner: "Micro Jump Drives and interdiction nullifiers can be flagged in the
+// The owner: "Micro Jump Drives and interdiction nullifiers can be flagged in the
 // Misc category of the ewar card" -- agreed, same MISC_TRAIT_GROUP_INFO
 // mechanism as the cyno flag above. Confirmed live via the local SDE cache
 // (first-party CCP data), not the audit's own notes:
@@ -6784,7 +6784,7 @@ const SHIP_EWAR_BONUS = {
 // originally modeled as FLAT (10%/7.5%) because neither subsystem's OWN
 // effect list has a self-scaling ItemModifier on its own container
 // attribute (1515/1519) -- that earlier check was real but incomplete.
-// the owner's pyfa numbers for a Tengu+Core-Obfuscation Manifold+Multispectral
+// The owner's pyfa numbers for a Tengu+Core-Obfuscation Manifold+Multispectral
 // ECM II fit (51.8km+32.4km/4.88) didn't match the flat-10% prediction
 // (38016/32400/3.575) at all; re-grounded live and found the real
 // mechanism: each subsystem's REQUIRED skill (not the subsystem's own
@@ -7138,7 +7138,7 @@ const CAPACITOR_NEED_ATTR = 6;
 const MAX_CAPACITOR_MANAGEMENT_MULT = 1.25;
 const MAX_CAPACITOR_SYSTEMS_OPERATION_MULT = 0.75;
 // Capacitor Battery/Power Relay/Flux Coil/Cap Recharger fix (2026-10-12,
-// the owner: "are you accounting for cap batteries?"). Confirmed live via
+// The owner: "are you accounting for cap batteries?"). Confirmed live via
 // everef.net dogma-attribute data, none of these 3 attributes were read
 // anywhere in this file before this fix -- every fitted module affecting
 // capacity/recharge besides a T3 subsystem's own self-add (see
@@ -7558,7 +7558,7 @@ const ARMOR_PLATE_GROUP_NAME = 'armor plate';
 //    ("the stability value as the EVE client computes it"): solve
 //    avgDrain = rechargeRate(x) for x using just the AVERAGE drain rate
 //    across every active module, no per-module timing modeled at all. Per
-//    the owner's explicit choice (asked directly, given the fidelity/complexity
+//    The owner's explicit choice (asked directly, given the fidelity/complexity
 //    tradeoff), this file implements the SECOND one -- it's what the
 //    in-game capacitor readout itself shows (matches the "Stable" badge +
 //    live Δ GJ/s the owner's own in-game screenshot showed), and is dramatically
@@ -7960,7 +7960,7 @@ function buildTurretRecs(weakest, secondWeakest){
   return out;
 }
 
-// the owner, 2026-10-13 (after confirming the Rorqual/Maelstrom "no laser
+// The owner, 2026-10-13 (after confirming the Rorqual/Maelstrom "no laser
 // answer" reports were both correct, not bugs -- buildTurretRecs() returns
 // null for a weapon system only when NEITHER the fit's weakest NOR its
 // second-weakest damage type is one that system can ever produce, e.g. a
@@ -8092,7 +8092,7 @@ const MISSILE_AMMO_CATALOG = {
 const MISSILE_AMMO_NAME_BY_DMG_TYPE = {em: 'Mjolnir', therm: 'Inferno', kin: 'Scourge', exp: 'Nova'};
 
 // --- Applied-DPS ranking metric (2026-10-12) ---
-// the owner's own design correction to the 2026-10-11 T1-only pass: ranking
+// The owner's own design correction to the 2026-10-11 T1-only pass: ranking
 // purely by applicationPct (how much of a hit lands) is NOT the same as
 // ranking by actual damage dealt over time. A tighter-explosion-radius
 // ammo (Precision, or any class vs. a small/fast target) buys a higher
@@ -8284,7 +8284,7 @@ function droneRecommendation(weakest, droneSizes, targetSpeed){
   const entries = droneSizes.map(sz => ({size: sz, name: line[sz]}));
   const primary = entries[0];
 
-  // the owner, 2026-10-13 follow-up to the Rorqual fix: "what data points would
+  // The owner, 2026-10-13 follow-up to the Rorqual fix: "what data points would
   // most accurately tell you which drones to use... accounting for every
   // bit of work we do to determine speed, agility, sig radius..." --
   // targetSpeed (see the call site's own "droneSpeedBasis" comment for the
@@ -8853,7 +8853,7 @@ function sizeClassFromGroup(groupName){
   return {label: groupName, droneSizes:['medium']};
 }
 
-// the owner, 2026-10-13, following the Rorqual fix: "what data points would
+// The owner, 2026-10-13, following the Rorqual fix: "what data points would
 // most accurately tell you which drones to use against it... do we
 // determine weaknesses AFTER we run calculations for the fit or are we
 // making assumptions based on potentially arbitrary names or classes we
@@ -9687,7 +9687,7 @@ function resistanceCardHtml(f, estimate){
   //
   // ALL-THREE-LAYERS-ALWAYS-SHOWN (2026-10-13, the owner: on a buffer-armor fit
   // the strip only showed a Shield row -- Armor/Hull vanished entirely
-  // since neither has a rep module fitted. the owner: "i think it's beneficial
+  // since neither has a rep module fitted. The owner: "i think it's beneficial
   // to show all three layers because the dashes in and of themselves both
   // indicate that something isn't missing in the data, and that there is,
   // in fact, no repair value. further highlighting if something is a
@@ -11907,7 +11907,7 @@ const ASSAULT_DAMAGE_CONTROL_EFFECT_ID = 7012, RESISTANCE_MULTIPLIER_ATTR = 2746
 // the best case the game allows -- ACTIVE if the module can be activated,
 // otherwise ONLINE -- except modules carrying one of these active effects,
 // which default to ONLINE:
-//   the owner's D3 (short or situational; "active" would make the other numbers
+//   The owner's D3 (short or situational; "active" would make the other numbers
 //   impossible, e.g. cloaked with guns firing): cloaks 607/980/5945, Micro
 //   Jump Drive 4921, Micro Jump Field Generators 6208/12126, Signature
 //   Suppressor burst 8109, Entosis Link 6063.
@@ -15748,7 +15748,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
 
   // Navigation & targeting, Phase 4: capacitor stability -- see the
   // CAPACITOR_CAPACITY_ATTR comment block above for the verified formula,
-  // the the owner-chosen simplified-approximation scope, and the 3 flagged gaps.
+  // the owner-chosen simplified-approximation scope, and the 3 flagged gaps.
   // Backlog #16 fix (2026-10-11): flatCapacitorCapacityAdd (T3 Core
   // subsystem self-add, see SUBSYSTEM_CAPACITOR_CAPACITY_SELFADD_ATTR
   // above, PLUS a fitted Capacitor Battery's own flat add since the
@@ -15756,7 +15756,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // skill multiplier, same "flat adds first, then the max-skill multiply"
   // order already used for shieldHP/armorHP/hullHP above.
   // Capacitor Battery/Power Relay/Flux Coil/Cap Recharger fix (2026-10-12,
-  // the owner: "are you accounting for cap batteries?" -- answer was no, these
+  // The owner: "are you accounting for cap batteries?" -- answer was no, these
   // module-driven pct pools are the fix): applied AFTER the flat add and
   // skill multiplier, same "flat adds, then skill mult, then module %
   // mults" order as shieldHP/armorHP's own shieldHpPctMults/armorHpPctMults
@@ -15817,7 +15817,7 @@ async function estimateHpAndDps(shipTypeId, tally, cargoItemIds, highSlotByFlag,
   // one CONFIDENT tier (only flag-paired/cargo-inferred charges -- never
   // guessed) and one ASSUMED tier (snaps to the best case when a
   // boost-capable module is fitted but no charge was found anywhere, per
-  // the owner: "assume the opponent is at their best rather than underestimating").
+  // The owner: "assume the opponent is at their best rather than underestimating").
   const capBoosterGainIdentified = capBoosterGainPerSec > 0; // confirmed/cargo-inferred Capacitor Booster injection
   const capBoosterRangeIdentified = capBoosterRangeMaxPerSec > 0; // no charge found anywhere, but a real grounded min-max envelope exists (module capacity bounds it)
   const asbDrainIfConfirmed = (hasAncillaryShieldBooster && asbChargeConfirmed) ? ancillaryShieldBoosterCapDrainPerSec : 0;
@@ -16466,7 +16466,7 @@ function fitLayoutHtml(f, idToName, cardOpts = {}){
 }
 
 // ==== FIT LAYOUT TABLE (v2026.10.14.37) ====
-// the owner 2026-10-23: "place the new card for applied damage at the top above the other cards", option B (two
+// The owner 2026-10-23: "place the new card for applied damage at the top above the other cards", option B (two
 // columns at 1280 px and up), "built on a layout table" so a later "Edit layout" mode (backlog) only has to
 // change this table. Layout only: no numbers.
 //   stacks: the cards stacked in each column, top to bottom (the same at every width).
@@ -16721,7 +16721,7 @@ function renderModuleListHtml(tally, idToName){
 // skipped and why. The request is kept on the fit object as per-type copy
 // counts (f.moduleStates, the engine's 7th argument) and every card is
 // recalculated. Charges, drones and cargo stay plain rows.
-// the owner's D1: shown on both the Fit Analyzer (open) and each Pilot Analyzer
+// The owner's D1: shown on both the Fit Analyzer (open) and each Pilot Analyzer
 // loss (collapsed by default, since a killmail never says what was running).
 const MODULE_STATE_SLOT_GROUPS = ['High slots', 'Mid slots', 'Low slots', 'Rigs', 'Subsystems'];
 const MODULE_STATE_LABEL = {active: 'Active', online: 'Online', offline: 'Offline'};
@@ -17202,7 +17202,7 @@ function fitCardHtml(f, idToName, opts = {}){
   const moduleCount = MODULE_STATE_SLOT_GROUPS.reduce((t, g) => t + Object.values(tally[g] || {}).reduce((u, d) => u + (d.totalQty || 0), 0), 0);
   const custom = hasStates && (!!(f.moduleStates && Object.keys(f.moduleStates).length) || !!f.droneStates || !!f.fighterStates || !!f.chargePicks);
   if(!cardIsOpen(f, 'fit')){
-    // the owner: "'Fit' header row should show the name of the fit when collapsed. Similar font as 'Total DPS'":
+    // The owner: "'Fit' header row should show the name of the fit when collapsed. Similar font as 'Total DPS'":
     // f.fitTitle (ship — fit name, or ship — loss date in the Pilot Analyzer), in the stat-label style (.cc-fit).
     return collapsedCardHtml('fit', f.fitTitle || `${moduleCount} module${moduleCount === 1 ? '' : 's'}`, 'fit-summary', 'cc-fit');
   }
@@ -17214,7 +17214,7 @@ function fitCardHtml(f, idToName, opts = {}){
     </div>`;
   }
   const view = fitViewPref(); // v.16: Ring / List
-  // the owner: "i assume we need an input to reset to the default load state. just do a little reload icon/button
+  // The owner: "i assume we need an input to reset to the default load state. just do a little reload icon/button
   // next to the Ring/List toggle": always there, active (cyan) once a module or drone state was changed,
   // disabled while everything is in its default state. Same .ms-reset wiring as the old text button.
   const resetTip = custom ? 'Reset every module, drone and fighter to its default state, and the fit\'s own charges' : 'Every module, drone and fighter is in its default state, with the fit\'s own charges';
@@ -17502,7 +17502,7 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
   fits.forEach((f, i) => wireTab(i));
 }
 // ==== THEIR DAMAGE ON YOU (v2026.10.14.36, turret-application-plan.md Phase 2b) ====
-// the owner 2026-10-23, after the "Their damage on you — chart mockup" canvas: Option B (its own full-width card under
+// The owner 2026-10-23, after the "Their damage on you — chart mockup" canvas: Option B (its own full-width card under
 // the three columns), the signature slider scales your fit's own signature, the engagement range starts at their
 // optimal + falloff, and until a ship is saved a class preset stands in, treated as a FIT (so their scram switches
 // its MWD off as it would yours; DMG_CLASS_PRESETS, chosen by tools/select_class_presets.py).
@@ -17624,7 +17624,7 @@ function dmgDefaults(app){
 // you 'still' | 'straight' | 'orbit'; them 'still' | 'toward' | 'orbit'.
 const FIGHT_MOVE_NAME = {still: 'Stopped', straight: 'Approach', toward: 'Approach', orbit: 'Orbit', keep: 'Keep at Range'};
 // Speeds the fight uses (pyfa graph inputs): a stopped ship has speed 0; Orbit is 90° to the line of sight, the rest 0°.
-// KEEP AT RANGE (v2026.10.14.53, fight setup F2; turret-application-plan.md "Keep at Range in pyfa's inputs"). the owner
+// KEEP AT RANGE (v2026.10.14.53, fight setup F2; turret-application-plan.md "Keep at Range in pyfa's inputs"). The owner
 // 2026-10-24: "if one ship is faster than the other, and is outside of the target's scram/web range, it's possible for
 // them to maintain a specified distance from the target". pyfa's damage graph has no such state; it is mapped onto
 // the graph's own inputs (PYFA_CORE rule: inputs only). The ship keeping range moves straight away along the line of
@@ -17671,7 +17671,7 @@ function dmgPoint(app, tgt, q){
   const pt = pyfaProjectedPoint(app, tgt, p);
   return {dps: pyfaAppliedDps(app, Object.assign({}, p, {tgtSpeed: pt.tgtSpeed, tgtSigRadius: pt.tgtSigRadius, tgtRadius: tgt.radius}, pyfaFighterTargetParams(tgt))), speed: pt.tgtSpeed, sig: pt.tgtSigRadius};
 }
-// CHART MARKERS (v2026.10.14.54, fight setup F3; turret-application-plan.md "Chart markers", boards 5b + 5c). the owner
+// CHART MARKERS (v2026.10.14.54, fight setup F3; turret-application-plan.md "Chart markers", boards 5b + 5c). The owner
 // 2026-10-24: "the shading really makes it clear when you're inside of tackle range", with "the same letter codes
 // that you use in the EWAR tab". Their EWAR that reaches you is shaded from 0 out to its range in the EWAR card's
 // badge colour, its letter on a badge above the plot (darker where two overlap): T their scram and furthest web (the
@@ -17738,7 +17738,7 @@ function dmgModel(f, T, st){
 }
 
 // DAMAGE APPLICATION IN THE MY SHIP PERSPECTIVE (v2026.10.14.55, fight setup F4; turret-application-plan.md board 4).
-// the owner 2026-10-24: "we still need to add a damage application card to the 'my ship' perspective". Your guns on the
+// The owner 2026-10-24: "we still need to add a damage application card to the 'my ship' perspective". Your guns on the
 // threat, in the SAME fight as the threat's card (its settings, tf.dmg: one fight for both perspectives): the
 // attacker is your ship, the target the threat as the Matchup board takes it (mysFight: their running prop, their
 // fit's signature), and the point is the board's "DPS applied to them" (qOut: your speed and angle as the
@@ -18283,7 +18283,7 @@ function dmgRefreshAll(){
 }
 
 // ==== MATCHUP STRIP (v2026.10.14.41, roadmap/my-ship-plan.md phase 2a) ====
-// the owner 2026-10-23 (P1-P4): their DPS on you, your DPS on them, how long each of you lasts, who's faster, for the
+// The owner 2026-10-23 (P1-P4): their DPS on you, your DPS on them, how long each of you lasts, who's faster, for the
 // fight the "Their damage on you" card describes (its range and movement; your DPS on them uses the mirror: your
 // speed as the attacker's, theirs as the target's). Shown with the threat / my ship switch, so it stays in place in
 // both views. Numbers that differ from your pasted fit's own module states are amber (M6).
@@ -18686,10 +18686,10 @@ async function mysMarkChanged(wrap, idToName){
 }
 
 // ==== WEAKNESS PICKS (v2026.10.14.42, roadmap/my-ship-plan.md phase 2b) ====
-// the owner 2026-10-23: with a ship saved and "Use in assessments" on, Weaknesses flips its point of view with the
+// The owner 2026-10-23: with a ship saved and "Use in assessments" on, Weaknesses flips its point of view with the
 // threat / my ship switch. Threat view ("your guns"): the ammo and drones YOUR ship carries, best first by how long
 // they last against it. My ship view ("their guns"): the threat's own ammo and drones, best first by how long you last.
-// the owner's decisions (B1-B4): only what the ship carries (charges loaded + compatible charges in cargo; the drone
+// The owner's decisions (B1-B4): only what the ship carries (charges loaded + compatible charges in cargo; the drone
 // types in its bay); ranked in the fight the "Their damage on you" card describes (mysFight, the strip's fight);
 // these tiles replace the generic Drone / Missile / Laser / Hybrid / Projectile tiles; built from the mockup.
 // The DPS numbers are pyfa's; the order uses the strip's time to kill (not a pyfa number, DEVIATIONS.md section 3)
@@ -18835,7 +18835,7 @@ async function wpBuildCandidates(f, est){
     fighters: false};
 }
 
-// CHARGES (v2026.10.14.76, roadmap/charges-plan.md delivery 2). the owner: "a dropdown that gives you a list of every usable
+// CHARGES (v2026.10.14.76, roadmap/charges-plan.md delivery 2). The owner: "a dropdown that gives you a list of every usable
 // charge for those weapons/launchers ... even if we had to flag items missing from a fit as not being available to the
 // fit, the user might want to see what affect each ammo type has on the numbers"; then drag and drop, "dropping on a single
 // module loads it there. dropping in middle of ring loads to all possible modules", and "not on board" for a charge the
@@ -19013,7 +19013,7 @@ function chgEngineOptions(f, x, extra = {}){
 // Load `chargeId` into copies of module `typeId` (copy index, or every copy when null; every copy for the per-type kinds). A
 // pick equal to the fit's own charge in every copy is dropped, so the fit is back to its own.
 // v2026.10.14.77 (roadmap/charges-plan.md delivery 3): chargeId 0 = "No charge", an unload the user picked (a killmail's
-// own empty slot is null, and keeps the assumed charge of v.67). the owner: "just put it in the online state" -- EVE can't run
+// own empty slot is null, and keeps the assumed charge of v.67). The owner: "just put it in the online state" -- EVE can't run
 // a weapon with no charge (pyfa would let it be Active, using capacitor for no damage: Module.capUse counts capacitorNeed
 // whenever Active) -- so an unloaded copy that was Active goes Online. No memory of what it held (the owner: "make them choose a
 // new charge using the list"): a charge loaded into an empty copy makes it Active, as a freshly fitted weapon in pyfa.
@@ -19685,9 +19685,9 @@ async function wpFill(host, tf, mf, st, fight){
 }
 
 // ==== ASSUMED CHARGES (v2026.10.14.67) ====
-// the owner 2026-10-25 (inbox: a pasted Nergal "shows zero dps" on the Matchup): its Light Entropic Disintegrator II has no
+// The owner 2026-10-25 (inbox: a pasted Nergal "shows zero dps" on the Matchup): its Light Entropic Disintegrator II has no
 // charge loaded and four in cargo. pyfa computes the fit as given (no charge: no damage, eos Module.getVolleyParameters),
-// so the Matchup said 0 / "holds" / "edge: you". the owner chose "Assume a charge" and "Their best against you": for the
+// so the Matchup said 0 / "holds" / "edge: you". The owner chose "Assume a charge" and "Their best against you": for the
 // Damage Application card and the Matchup, a weapon type with NO charge loaded in any copy (and a charge aboard that it
 // loads, pyfa isValidCharge) is taken as loaded with the charge the Weaknesses picks rank first at this fight -- the
 // one that kills the target fastest (wpRank: the strip's time to kill against its resists, then its buffer). Its numbers
@@ -19785,7 +19785,7 @@ function dmgAssumedText(assumed, whose){
 }
 
 // ==== MY SHIP (v2026.10.14.33, phase 1) ====
-// the owner: "a 'my ship' feature that can be utilized on ALL tabs ... set by providing an EFT fit ... persist until a
+// The owner: "a 'my ship' feature that can be utilized on ALL tabs ... set by providing an EFT fit ... persist until a
 // new one is uploaded or the user chooses to delete it ... a simple toggle ... whether any assessments will use
 // 'my ship'"; then "if i can toggle the state of my ship's modules and see how that affects the resulting
 // analysis ... an easy way to toggle between the two fits (the threat and the user's)". Decisions M1-M7 and
@@ -20615,7 +20615,7 @@ function ttkWhyWire(host){
   window.addEventListener('resize', () => { if(ttkWhyPop.mode === 'hover' || ttkWhyPop.mode === 'focus') ttkWhyHide(); else if(ttkWhyPop.cell) ttkWhyPlace(ttkWhyPop.cell); });
 })();
 // ==== FIGHT STRIP (v2026.10.14.51, fight setup F1; turret-application-plan.md "Fight setup mockup", board 2b) ====
-// the owner 2026-10-24: "incorporate some of the subtext as visuals attached to the bottom of the matchup card" ... "a series
+// The owner 2026-10-24: "incorporate some of the subtext as visuals attached to the bottom of the matchup card" ... "a series
 // of little tabs" showing Orbit or Approach, tied to the Damage Application card's settings; then "option C is my
 // preference": one strip joined under the Matchup, each part under the board's own column (the threat's movement,
 // the range, your movement), each opening a short menu (a sheet on a phone). In-game names for both ships and ONE
@@ -20835,13 +20835,13 @@ async function mysRenderMineView(mv){
   });
 })();
 // ==== SYSTEM ANALYZER (v2026.10.14.81; roadmap/local-and-fleet-plan.md step 1 = L1 friendlies + L2 local list) ====
-// the owner 2026-10-27: "a local system tab with two inputs for a dscan and a copy/paste of the local chat window ...
+// The owner 2026-10-27: "a local system tab with two inputs for a dscan and a copy/paste of the local chat window ...
 // identified non-blues in system"; "The local chat window will show everyone in the entire system, in space or docked
 // up" while D-Scan reaches ~14 AU. Decisions D1-D7 in the plan: replaces the D-Scan tab (D1); friendlies from your
 // pilot's corp + alliance plus any you add, neutral and hostile separate (D2); hostile = your list, then zKillboard
 // evidence, your list wins (D2b); small gang / fleet threshold 15, a setting, at most 30 (D3, D4); Standings (was Your Side) is a chip
 // beside My Ship (D7, "A: chip by My Ship"); evidence in step 1; "Paste a list of alliances" and "Suggested
-// friendlies"; up to 6 names per corporation (D7 "Both fine"). the owner: "go ahead with the System Analyzer but do not make
+// friendlies"; up to 6 names per corporation (D7 "Both fine"). The owner: "go ahead with the System Analyzer but do not make
 // the login the first step" -- EVE login stays L7. Nothing here changes a number the engine works out.
 //
 // Requests (D4): Local = ESI only: /universe/ids/ (500 names each), /characters/affiliation/ (1000 each), /universe/names/
@@ -21698,14 +21698,14 @@ async function saOpenFleetFit(gkey, typeId){
 // them (Fit.addDrain: amount × calculateRangeFactor(optimal, falloff, distance), cycle = duration; DEVIATIONS.md for
 // what isn't applied). Kill first: logistics, then the damage each puts on you ÷ the time your fire takes to break one.
 // Nothing here changes a number the engine works out.
-// v2026.10.14.88: HIDDEN. the owner (todo-inbox): "The assumptions in the 'against your ship' section ... just aren't reliable
+// v2026.10.14.88: HIDDEN. The owner (todo-inbox): "The assumptions in the 'against your ship' section ... just aren't reliable
 // ... inaccurate and even misleading. probably need to back it out until it can be refined"; then: "a lot of pilots simply
 // fly a wide variety of hulls and/or do not get killed very often. taking a guess and what ship multiple pilots could be
 // flying and getting any number of those wrong, can result in some wildly inaccurate assumptions resulting in poor
 // decision making." The card adds up guessed hulls and guessed fits into one verdict, so one wrong guess per pilot
 // compounds. Kept, switched off, until it's refined (dscan-backlog; plan L5 "Status"); vs_check.py switches it on.
 let saVsOn = false;
-// v2026.10.14.89: the FLEET VIEW (L4) is switched off too. the owner: "it's just not on point, again, due to the lack of other
+// v2026.10.14.89: the FLEET VIEW (L4) is switched off too. The owner: "it's just not on point, again, due to the lack of other
 // ships on-grid. just too many assumptions based on local. we should strip the fleet stuff out of that page temporarily
 // until we have a better method" (his screenshot: a high-sec trade hub, 1499 in Local, most of them docked and not in a
 // combat ship at all). Over "pilot rows up to" Local now shows the Groups columns only: no Fleet / Groups switch, no
@@ -22316,7 +22316,7 @@ async function sideTagForPilot(charId){
 
 
 // ==== FLEET FROM A KILL (v2026.10.14.94; roadmap/fleet-from-kill-plan.md) ====
-// the owner: "choose a row from the kills list (not a loss) in the pilot dossier ... use that killmail to build out the 'fleet'
+// The owner: "choose a row from the kills list (not a loss) in the pilot dossier ... use that killmail to build out the 'fleet'
 // from that kill using each pilot/participant's specified ship and weapon"; then: the Pilot Analyzer's fit rule, NPCs /
 // capsules / pilots with no ship left out, no victim's side yet, "its own tab ... only visible when the user has chosen to
 // assess a fleet", shareable, laid out like the System Analyzer; mockup Claude outputs/fleet_from_kill_mockup.html, all
@@ -22578,7 +22578,7 @@ const INTEL_JUMPS = {"build":3654997,"md5":"ee3d12afbd4c05d628e0fb497aec990c","n
 const INTEL_SHIPS = {"582":["Bantam","矮脚鸡级"],"583":["Condor","秃鹫级"],"584":["Griffin","狮鹫级"],"585":["Slasher","伐木者级"],"586":["Probe","探索级"],"587":["Rifter","裂谷级"],"588":["Reaper","死神号"],"589":["Executioner","刽子手级"],"590":["Inquisitor","检察官级"],"591":["Tormentor","巨神兵级"],"592":["Navitas","纳维达斯级"],"593":["Tristan","特里斯坦级"],"594":["Incursus","因卡萨斯级"],"596":["Impairor","帝国号"],"597":["Punisher","惩罚者级"],"598":["Breacher","分裂者级"],"599":["Burst","爆发级"],"601":["Ibis","伊毕斯号"],"602":["Kestrel","茶隼级"],"603":["Merlin","小鹰级"],"605":["Heron","苍鹭级"],"606":["Velator","维拉托尔号"],"607":["Imicus","伊米卡斯级"],"608":["Atron","阿特龙级"],"609":["Maulus","毛鲁斯级"],"615":["Immolator","献祭者级"],"617":["Echo","回声级"],"620":["Osprey","鱼鹰级"],"621":["Caracal","狞獾级"],"622":["Stabber","刺客级"],"623":["Moa","巨鸟级"],"624":["Maller","暴君级"],"625":["Augoror","奥格诺级"],"626":["Vexor","狂怒者级"],"627":["Thorax","托勒克斯级"],"628":["Arbitrator","主宰级"],"629":["Rupture","断崖级"],"630":["Bellicose","挑战级"],"631":["Scythe","镰刀级"],"632":["Blackbird","黑鸟级"],"633":["Celestis","星空级"],"634":["Exequror","送葬者级"],"635":["Opux Luxury Yacht","奥普克斯级豪华游轮"],"638":["Raven","乌鸦级"],"639":["Tempest","狂暴级"],"640":["Scorpion","毒蝎级"],"641":["Megathron","万王宝座级"],"642":["Apocalypse","灾难级"],"643":["Armageddon","末日沙场级"],"644":["Typhoon","台风级"],"645":["Dominix","多米尼克斯级"],"648":["Badger","獾级"],"649":["Tayra","狐鼬级"],"650":["Nereus","涅鲁斯级"],"651":["Hoarder","囤积者级"],"652":["Mammoth","猛犸级"],"653":["Wreathe","环绕级"],"654":["Kryos","克琉斯级"],"655":["Epithal","埃比斯级"],"656":["Miasmos","米亚莫斯级"],"657":["Iteron Mark V","伊特龙级MKV"],"670":["Capsule","太空舱"],"671":["Erebus","俄洛巴斯级"],"672":["Caldari Shuttle","加达里穿梭机"],"1944":["Bestower","恩赐者级"],"2006":["Omen","启示级"],"2078":["Zephyr","微风级"],"2161":["Crucifier","磨难级"],"2834":["Utu","乌图级"],"2836":["Adrestia","复仇女神级"],"2863":["Primae","元始级"],"2998":["Noctis","黑夜级"],"3514":["Revenant","归魂者级"],"3516":["Malice","恶意级"],"3518":["Vangel","传道者级"],"3532":["Echelon","梯队级"],"3756":["Gnosis","灵感级"],"3764":["Leviathan","勒维亚坦级"],"3766":["Vigil","守夜者级"],"4302":["Oracle","预言级"],"4306":["Naga","娜迦级"],"4308":["Talos","塔洛斯级"],"4310":["Tornado","龙卷风级"],"4363":["Miasmos Quafe Ultra Edition","米亚莫斯级酷菲特强版"],"4388":["Miasmos Quafe Ultramarine Edition","米亚莫斯级酷菲深蓝版"],"11011":["Guardian-Vexor","狂怒守卫者级"],"11129":["Gallente Shuttle","盖伦特穿梭机"],"11132":["Minmatar Shuttle","米玛塔尔穿梭机"],"11134":["Amarr Shuttle","艾玛穿梭机"],"11172":["Helios","太阳神级"],"11174":["Keres","克勒斯级"],"11176":["Crow","黑鸦级"],"11178":["Raptor","猛禽级"],"11182":["Cheetah","猎豹级"],"11184":["Crusader","十字军级"],"11186":["Malediction","咒灭级"],"11188":["Anathema","咒逐级"],"11190":["Sentinel","哨兵级"],"11192":["Buzzard","秃鹰级"],"11194":["Kitsune","狐妖级"],"11196":["Claw","利爪级"],"11198":["Stiletto","短剑级"],"11200":["Taranis","塔纳尼斯级"],"11202":["Ares","阿瑞斯级"],"11365":["Vengeance","复仇级"],"11371":["Wolf","猎狼级"],"11377":["Nemesis","纳美西斯级"],"11379":["Hawk","战鹰级"],"11381":["Harpy","女妖级"],"11387":["Hyena","土狼级"],"11393":["Retribution","审判者级"],"11400":["Jaguar","美洲虎级"],"11567":["Avatar","神使级"],"11936":["Apocalypse Imperial Issue","灾难级帝国型"],"11938":["Armageddon Imperial Issue","末日沙场级帝国型"],"11940":["Gold Magnate","黄金富豪级"],"11942":["Silver Magnate","白银富豪级"],"11957":["Falcon","战隼级"],"11959":["Rook","白嘴鸦级"],"11961":["Huginn","休津级"],"11963":["Rapier","长剑级"],"11965":["Pilgrim","朝圣级"],"11969":["Arazu","埃拉兹级"],"11971":["Lachesis","拉克希斯级"],"11978":["Scimitar","曲剑级"],"11985":["Basilisk","皇冠蜥级"],"11987":["Guardian","守卫级"],"11989":["Oneiros","奥内罗斯级"],"11993":["Cerberus","希尔博拉斯级"],"11995":["Onyx","奥尼克斯级"],"11999":["Vagabond","流浪级"],"12003":["Zealot","狂热级"],"12005":["Ishtar","伊什塔级"],"12011":["Eagle","银鹰级"],"12013":["Broadsword","阔刀级"],"12015":["Muninn","缪宁级"],"12017":["Devoter","奉献级"],"12019":["Sacrilege","渎圣级"],"12021":["Phobos","伏波斯级"],"12023":["Deimos","戴默斯级"],"12032":["Manticore","蝎尾怪级"],"12034":["Hound","猎犬级"],"12038":["Purifier","净化级"],"12042":["Ishkur","伊什库尔级"],"12044":["Enyo","恩尤级"],"12729":["Crane","天鹤级"],"12731":["Bustard","大鸨级"],"12733":["Prorator","分裂级"],"12735":["Prowler","徘徊者级"],"12743":["Viator","旅行者级"],"12745":["Occator","奥卡托级"],"12747":["Mastodon","巨象级"],"12753":["Impel","激进级"],"13202":["Megathron Federate Issue","万王宝座级联邦型"],"16227":["Ferox","猛鲑级"],"16229":["Brutix","布鲁提克斯级"],"16231":["Cyclone","飓风级"],"16233":["Prophecy","先知级"],"16236":["Coercer","强制者级"],"16238":["Cormorant","海燕级"],"16240":["Catalyst","促进级"],"16242":["Thrasher","长尾鲛级"],"17476":["Covetor","妄想级"],"17478":["Retriever","回旋者级"],"17480":["Procurer","猎获级"],"17619":["Caldari Navy Hookbill","加达里海军霍克比尔级"],"17634":["Caracal Navy Issue","狞獾级海军型"],"17636":["Raven Navy Issue","乌鸦级海军型"],"17703":["Imperial Navy Slicer","帝国海军切割机级"],"17709":["Omen Navy Issue","启示级海军型"],"17713":["Stabber Fleet Issue","刺客级舰队型"],"17715":["Gila","毒蜥级"],"17718":["Phantasm","幽灵级"],"17720":["Cynabal","塞纳波级"],"17722":["Vigilant","警惕级"],"17726":["Apocalypse Navy Issue","灾难级海军型"],"17728":["Megathron Navy Issue","万王宝座级海军型"],"17732":["Tempest Fleet Issue","狂暴级舰队型"],"17736":["Nightmare","噩梦级"],"17738":["Machariel","马克瑞级"],"17740":["Vindicator","复仇者级"],"17812":["Republic Fleet Firetail","共和舰队火尾鸡级"],"17841":["Federation Navy Comet","联邦海军彗星级"],"17843":["Vexor Navy Issue","狂怒者级海军型"],"17918":["Rattlesnake","响尾蛇级"],"17920":["Bhaalgorn","巴戈龙级"],"17922":["Ashimmu","阿什姆级"],"17924":["Succubus","魔女级"],"17926":["Cruor","凝血级"],"17928":["Daredevil","夜魔侠级"],"17930":["Worm","潜龙级"],"17932":["Dramiel","德拉米尔级"],"19720":["Revelation","神示级"],"19722":["Naglfar","纳迦法级"],"19724":["Moros","莫洛级"],"19726":["Phoenix","凤凰级"],"19744":["Sigil","魔符级"],"20125":["Curse","诅咒级"],"20183":["Providence","普罗维登斯级"],"20185":["Charon","渡神级"],"20187":["Obelisk","方尖塔级"],"20189":["Fenrir","芬利厄级"],"21097":["Goru's Shuttle","高鲁的穿梭机"],"21628":["Guristas Shuttle","古斯塔斯穿梭机"],"22428":["Redeemer","救世级"],"22430":["Sin","罪恶级"],"22436":["Widow","寡妇级"],"22440":["Panther","黑豹级"],"22442":["Eos","曙光女神级"],"22444":["Sleipnir","斯雷普尼级"],"22446":["Vulture","兀鹫级"],"22448":["Absolution",""],"22452":["Heretic","异端级"],"22456":["Sabre","剑齿虎级"],"22460":["Eris","厄里斯级"],"22464":["Flycatcher","飞燕级"],"22466":["Astarte","阿施塔特级"],"22468":["Claymore","月刃级"],"22470":["Nighthawk","夜鹰级"],"22474":["Damnation","永灭级"],"22544":["Hulk","霍克级"],"22546":["Skiff","轻舟级"],"22548":["Mackinaw","麦基诺级"],"22852":["Hel","冥府级"],"23757":["Archon","执政官级"],"23773":["Ragnarok","拉格纳洛克级"],"23911":["Thanatos","绝念级"],"23913":["Nyx","夜神级"],"23915":["Chimera","奇美拉级"],"23917":["Wyvern","飞龙级"],"23919":["Aeon","万古级"],"24483":["Nidhoggur","尼铎格尔级"],"24688":["Rokh","鹏鲲级"],"24690":["Hyperion","亥伯龙神级"],"24692":["Abaddon","地狱天使级"],"24694":["Maelstrom","死亡漩涡级"],"24696":["Harbinger","先驱者级"],"24698":["Drake","幼龙级"],"24700":["Myrmidon","弥洱米顿级"],"24702":["Hurricane","暴风级"],"26840":["Raven State Issue","乌鸦级政府型"],"26842":["Tempest Tribal Issue","狂暴级部族型"],"28352":["Rorqual","长须鲸级"],"28606":["Orca","逆戟鲸级"],"28659":["Paladin","帕拉丁级"],"28661":["Kronos","克洛诺斯级"],"28665":["Vargur","恶狼级"],"28710":["Golem","魔像级"],"28844":["Rhea","奥鸟级"],"28846":["Nomad","游牧者级"],"28848":["Anshar","安莎尔级"],"28850":["Ark","方舟级"],"29248":["Magnate","富豪级"],"29266":["Apotheosis","神圣穿梭机"],"29336":["Scythe Fleet Issue","镰刀级舰队型"],"29337":["Augoror Navy Issue","奥格诺级海军型"],"29340":["Osprey Navy Issue","鱼鹰级海军型"],"29344":["Exequror Navy Issue","送葬者级海军型"],"29984":["Tengu","金鹏级"],"29986":["Legion","圣卒级"],"29988":["Proteus","海神级"],"29990":["Loki","洛基级"],"30842":["InterBus Shuttle","星际捷运穿梭机"],"32207":["Freki","暴狼级"],"32209":["Mimir","弥米尔级"],"32305":["Armageddon Navy Issue","末日沙场级海军型"],"32307":["Dominix Navy Issue","多米尼克斯级海军型"],"32309":["Scorpion Navy Issue","毒蝎级海军型"],"32311":["Typhoon Fleet Issue","台风级舰队型"],"32788":["Cambion","魔裔级"],"32790":["Etana","伊塔那级"],"32811":["Miasmos Amastris Edition","米亚莫斯级阿玛斯翠丝版"],"32872":["Algos","阿尔格斯级"],"32874":["Dragoon","龙骑兵级"],"32876":["Corax","渡鸦级"],"32878":["Talwar","弯刀级"],"32880":["Venture","冲锋者级"],"33079":["Hematos","未来人类级"],"33081":["Taipan","毒蛇级"],"33083":["Violator","违逆者级"],"33151":["Brutix Navy Issue","布鲁提克斯级海军型"],"33153":["Drake Navy Issue","幼龙级海军型"],"33155":["Harbinger Navy Issue","先驱者级海军型"],"33157":["Hurricane Fleet Issue","暴风级舰队型"],"33328":["Capsule - Genolution 'Auroral' 197-variant","太空舱 - 格鲁汀 曙光 197-衍生型"],"33395":["Moracha","莫拉查级"],"33397":["Chremoas","克雷默斯级"],"33468":["Astero","阿斯特罗级"],"33470":["Stratios","斯特修斯级"],"33472":["Nestor","涅斯托级"],"33513":["Leopard","美洲豹级"],"33553":["Stratios Emergency Responder","斯特修斯级应急反应型"],"33673":["Whiptail","长尾蜥级"],"33675":["Chameleon","变色龙级"],"33697":["Prospect","掘金者级"],"33816":["Garmur","加姆级"],"33818":["Orthrus","奥苏斯级"],"33820":["Barghest","巴盖斯级"],"34317":["Confessor","忏悔者级"],"34328":["Bowhead","弓头鲸级"],"34496":["Council Diplomatic Shuttle","议会外交穿梭机"],"34562":["Svipul","斯威普级"],"34590":["Victorieux Luxury Yacht","凯旋奢华游艇"],"34828":["Jackdaw","寒鸦级"],"35683":["Hecate","赫卡特级"],"35779":["Imp","小鬼级"],"35781":["Fiend","恶魔级"],"37135":["Endurance","永恒者级"],"37453":["Crucifier Navy Issue","磨难级海军型"],"37454":["Vigil Fleet Issue","守夜者级舰队型"],"37455":["Griffin Navy Issue","狮鹫级海军型"],"37456":["Maulus Navy Issue","毛鲁斯级海军型"],"37457":["Deacon","执事级"],"37458":["Kirin","麒麟级"],"37459":["Thalia","塔利亚级"],"37460":["Scalpel","手术刀级"],"37480":["Bifrost","天梯级"],"37481":["Pontifex","教皇级"],"37482":["Stork","鹳鸟级"],"37483":["Magus","占星级"],"37604":["Apostle","使徒级"],"37605":["Minokawa","龙鸟级"],"37606":["Lif","利夫级"],"37607":["Ninazu","尼纳苏级"],"42124":["Vehement","猛烈级"],"42125":["Vendetta","仇恨级"],"42126":["Vanquisher","征服者级"],"42241":["Molok","摩洛克级"],"42242":["Dagon","大衮级"],"42243":["Chemosh","基抹级"],"42244":["Porpoise","海豚级"],"42245":["Rabisu","拉比苏级"],"42246":["Caedes","凯帝斯级"],"42685":["Sunesis","旭日级"],"44993":["Pacifier","安抚者"],"44995":["Enforcer","执法者级"],"44996":["Marshal","元帅级"],"45530":["Virtuoso","收藏家级"],"45531":["Victor","胜利者级"],"45534":["Monitor","监视者级"],"45645":["Loggerhead","赤龟级"],"45647":["Caiman","凯门鳄级"],"45649":["Komodo","科莫多级"],"47269":["Damavik","达玛维克级"],"47270":["Vedmak","维德马克级"],"47271":["Leshak","勒沙克级"],"47466":["Praxis","实践级"],"48635":["Tiamat","提亚玛特级"],"48636":["Hydra","九头蛇级"],"49710":["Kikimora","奇奇莫拉级"],"49711":["Drekavac","德雷卡瓦级"],"49712":["Rodiva","洛迪瓦级"],"49713":["Zarmazd","扎玛德级"],"52250":["Nergal","涅伽尔级"],"52252":["Ikitursa","伊基图萨级"],"52254":["Draugur","德拉古级"],"52907":["Zirnitra","泽尼塔级"],"54731":["Skybreaker","破天级"],"54732":["Stormbringer","唤风级"],"54733":["Thunderchild","雷裔级"],"60764":["Laelaps","猎獒级"],"60765":["Raiju","雷兽级"],"64034":["Boobook","鹰鸮级"],"72811":["Cyclone Fleet Issue","飓风级舰队型"],"72812":["Ferox Navy Issue","猛鲑级海军型"],"72869":["Myrmidon Navy Issue","弥洱米顿级海军型"],"72872":["Prophecy Wavy Issue","先知级海军型"],"72903":["Probe Fleet Issue","探索级舰队型"],"72904":["Heron Navy Issue","苍鹭级海军型"],"72907":["Magnate Navy Issue","富豪级海军型"],"72913":["Imicus Navy Issue","伊米卡斯级海军型"],"73787":["Naglfar Fleet Issue","纳迦法级舰队型"],"73789":["Coercer Navy Issue","强制者级海军型"],"73790":["Revelation Navy Issue","神示级海军型"],"73792":["Moros Navy Issue","莫洛级海军型"],"73793":["Phoenix Navy Issue","凤凰级海军型"],"73794":["Thrasher Fleet Issue","长尾鲛级舰队型"],"73795":["Cormorant Navy Issue","海燕级海军型"],"73796":["Catalyst Navy Issue","促进级海军型"],"74141":["Geri","格里级"],"74316":["Bestla","贝斯特拉"],"77114":["Metamorphosis","变形级"],"77281":["Hubris","狂徒"],"77283":["Bane","破坏者"],"77284":["Karura","迦楼罗"],"77288":["Valravn","血鸦"],"77726":["Cybele","西布勒级"],"78333":["Mekubal","梅库巴尔级"],"78366":["Alligator","短吻鳄级"],"78367":["Mamba","曼巴级"],"78369":["Khizriel","希兹里尔级"],"78414":["Shapash","沙帕什级"],"78576":["Azariel","阿扎里尔级"],"81008":["Squall","狂风级"],"81040":["Avalanche","雪崩级"],"81046":["Deluge","洪水级"],"81047":["Torrent","湍流级"],"85062":["Sidewinder","侧进蛇级"],"85086":["Cenotaph","纪念碑级"],"85087":["Tholos","穹顶级"],"85229":["Cobra","眼镜蛇级"],"85236":["Python","巨蟒级"],"87381":["Sarathiel","萨拉希尔"],"88001":["Babaroga","巴巴罗加号"],"89240":["Pioneer","开拓者级"],"89607":["Odysseus","奥德修斯级"],"89647":["Pioneer Consortium Issue","开拓者级财团型"],"89648":["Venture Consortium Issue","冲锋者级财团型"],"89649":["Outrider","先驱级"],"89807":["Anhinga","蛇鹈号"],"89808":["Skua","贼鸥号"],"91174":["Perseverance","坚毅者级"],"91775":["Dragoon Navy Issue","龙骑兵级海军型"],"91849":["Algos Navy Issue","阿尔格斯级海军型"],"91857":["Corax Navy Issue","渡鸦级海军型"],"91858":["Talwar Fleet Issue","弯刀级舰队型"],"92282":["Tenzin YC128 Campaign Bus","YC128年丹增竞选巴士"],"92283":["Moreau YC128 Campaign Bus","YC128年莫罗竞选巴士"],"92284":["Roden YC128 Campaign Bus","YC128年莱登竞选巴士"],"92822":["Salvation",""],"92823":["Simurgh","西莫夫级"],"92824":["Gaia","盖亚级"],"92825":["Ymir","伊米尔级"],"95741":["Akoman","阿科曼级"]};
 // ---- END INTEL TABLES ----
 // ==== INTEL (v2026.10.14.96; roadmap/intel-plan.md) ====
-// the owner 2026-10-28: "the tool actively polls the game's chat log for the intel channel and tracks neutral and hostile
+// The owner 2026-10-28: "the tool actively polls the game's chat log for the intel channel and tracks neutral and hostile
 // ships that are reported via that channel ... it needs to have an on/off mechanism. once started it will be watching
 // that chat log constantly so an off switch is a must as well." Mockup answers: "the tab has the feed in a card.
 // settings button (little gear icon or something), prefer a slider for off/on similar just like 'use in assessments'";

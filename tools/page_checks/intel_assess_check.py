@@ -3,7 +3,7 @@ Claude outputs/intel_assess_mockup.html).
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/intel_assess_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner's answers, all as recommended: "Paired ship" (a pilot link opens the Pilot Analyzer in the ship the line pairs them
+The owner's answers, all as recommended: "Paired ship" (a pilot link opens the Pilot Analyzer in the ship the line pairs them
 with), "Everyone until clear" (a system keeps everyone reported there in the time set until a clear), "Intel's pairing
 wins" (in the System Analyzer), "Add it" (copy a line's shape with names replaced). Uses intel_check.py's made-up folder,
 mocks and system names (its first part, run here); every line, pilot and character is made up. Checks:

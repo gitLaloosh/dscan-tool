@@ -663,7 +663,7 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   (`cardLabelHtml('dmg', 'Their damage on you')`), and notes, tooltips and ERROR_CODES typed the names again. Over a
   few builds they disagreed: "Navigation & targeting" vs the agreed "Navigation & Targeting", a Capacitor note
   pointing at an "EWAR card" whose title is "EWAR / Misc", error codes naming a "last-kill box" and a "threat / my
-  ship switch" that no longer existed. the owner: "subtext and explanatory info referencing card titles that should be
+  ship switch" that no longer existed. The owner: "subtext and explanatory info referencing card titles that should be
   interchangeable."
 - **Do this instead:** name each card or page part once, in `CARD_NAMES` (roadmap/card-names.md has the same
   table), and refer to it by key: `cardName('dmg')` in text, `cardLabelHtml(key)` / `collapsedCardHtml(key, summary)`
@@ -694,7 +694,7 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 - **What happened (fixed v2026.10.14.48, found by the owner):** the Damage Application card showed a "Reset to my
   ship" button only once a setting left its default. The button's row was taller than the title row without it, so
   the first touch of any slider made the card 16 px taller (42 px on a phone) and pushed every card below it down.
-  the owner: "numbers change on multiple cards which causes the content to shuffle and move elements on the page".
+  The owner: "numbers change on multiple cards which causes the content to shuffle and move elements on the page".
 - **Do this instead:** anything that can appear while the user is working keeps its space from the start. Show
   the control disabled rather than hidden, and give live numbers a box as wide as their widest possible value
   (`numBoxStyle`). Then measure it: `tools/page_checks/no_shift_check.py` uses every control and fails if a covered
@@ -796,7 +796,7 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 
 - **What happened (v2026.10.14.57):** `check_matchup.py` compared the Matchup's "you last" / "they last" against an
   independent build of the rule, and passed for weeks, but it left out every fit with an Ancillary Shield Booster
-  ("an ancillary booster's rate isn't a plain amount / duration"). the owner's first real ASB matchup showed the rule was
+  ("an ancillary booster's rate isn't a plain amount / duration"). The owner's first real ASB matchup showed the rule was
   wrong for them: it stopped the ASB when the capacitor ran dry (an ASB on charges needs none) and never reloaded it.
 - **Do this instead:** when a check skips a case because it isn't simple, write down what it skips (in the check's
   output, not only a comment) and close it next, or check that case another way before trusting the number there.
@@ -877,6 +877,27 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 90. A public repository keeps everything you save in it: check every saved file for personal data, pictures included
+
+- **What happened (v2026.10.14.100, the owner: "that comment with my personal file location makes it pretty clear that
+  we need to make that our first priority"):** the public repository held a comment with the owner's Windows user path,
+  his first name about 1,600 times (quotes in comments, docs and test notes), his character names in test-fit IDs and
+  labels, his alliance named from a screenshot, other players named from killmails and from his screenshots, and two
+  real D-Scan pastes (186 custom ship names, many with pilot names: raw intel). Each was saved for a good reason (a
+  quote of a decision, a fixture label, a real paste to test the parser), and nothing checked what was saved. The
+  repository is served on GitHub Pages and the git history keeps every old version.
+- **Do this instead:** before saving anything to the repository, ask whether it names or points at a person. Refer to
+  the owner as "the owner"; label fixtures by hull and killmail ID, not by pilot; make test data up; read real logs,
+  pastes and screenshots for their format only and never save them. A screenshot never goes in; a mockup shows the real
+  page with made-up data, and each embedded picture is looked at before it is listed in
+  `tools/pii_reviewed_images.json`. `tools/check_pii.py` refuses home paths with a user name, e-mail addresses, keys and
+  tokens, image files outside the icon folders, unreviewed embedded pictures, and the personal names kept in the
+  git-ignored `tools/pii_terms.local.txt` (a list of names must not itself be public). It runs in the chain and as the
+  git pre-commit hook (`git config core.hooksPath tools/git-hooks`). Cleaning the files is not enough: the old
+  versions stay in the git history until it is rewritten (git-filter-repo) and force-pushed. When replacing a list of
+  names in bulk, replace only the full, distinctive strings: replacing every word of a pasted ship name rewrote
+  `cargo` and `tackle` in the code before the diff was read.
 
 ## 89. Check a live service's edges from where the page runs before writing its test double
 
@@ -996,7 +1017,7 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   not only the happy one. Mutation `m6` (the label back after the fit) is caught by that case.
 - **Again (v2026.10.14.91), the other direction: a new path into an old renderer.** The dossier's "no loss of theirs"
   fallback handed `buildLossFits` only `{km}`; the fit tabs also read `killmail_id` and `hash` (the loss row's "view on
-  zKillboard" link, the share link), so the tab linked to `zkillboard.com/kill/undefined/`. the owner found it in use;
+  zKillboard" link, the share link), so the tab linked to `zkillboard.com/kill/undefined/`. The owner found it in use;
   `dossier_check.py` had checked the note, the DPS and the tab count, not the links. When a new path feeds an existing
   renderer, grep every field the renderer reads off its input and check each one on the new path.
 
@@ -1010,7 +1031,7 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   does to the answer; show how much of the answer rests on what's known (a ship on D-Scan) versus guessed, and don't give
   a verdict when that share is low. Checks of the arithmetic don't cover this; say so in the mockup.
 - **Again (v2026.10.14.89):** the fleet view (v.83) read Local as a fleet: everyone in Local counted, the largest groups'
-  hulls and fits added up. the owner, from a high-sec trade hub with 1499 in Local: "most of those pilots are docked up and
+  hulls and fits added up. The owner, from a high-sec trade hub with 1499 in Local: "most of those pilots are docked up and
   likely not even flying a combat ship of any kind." Local says who is in the system, not who is undocked, in a ship, or
   in the fight; the summary covered 78 of 1468 pilots and still read as "their fleet". Switched off. Ask what the source
   really proves (here: presence, nothing more) before building a picture on it.

@@ -21,7 +21,7 @@ th{background:#f5f5f5}
 <p class="small">2026-10-12 &middot; dscan-tool.html &middot; bug report: "log a bug that the scan resolution and sensor strength for the following fit differs in pyfa than it does in the tool" (real Svipul EFT fit)</p>
 
 <h2>The report</h2>
-<p>the owner pasted a real Svipul fit and a pyfa screenshot showing Scan res. 662mm / Sensor str. 13.2 / Range (targeting) 50km. The tool's own Navigation &amp; targeting card showed the hull's raw, unmultiplied base attributes instead.</p>
+<p>The owner pasted a real Svipul fit and a pyfa screenshot showing Scan res. 662mm / Sensor str. 13.2 / Range (targeting) 50km. The tool's own Navigation &amp; targeting card showed the hull's raw, unmultiplied base attributes instead.</p>
 
 <h2>Root cause #1 &mdash; universal skill multiplier entirely missing</h2>
 <p><code>scanResolution</code> and <code>sensorStrength</code> were read straight off ship dogma attributes 564 (scanResolution) and 208-211 (the 4 scan-strength types), with <strong>no skill multiplier at all</strong> &mdash; unlike targeting range, which already carries <code>MAX_LONG_RANGE_TARGETING_MULT=1.25</code>.</p>
@@ -48,7 +48,7 @@ th{background:#f5f5f5}
 <tr><th>Mode</th><th>Scan res.</th><th>Sensor str.</th><th>Targeting range</th></tr>
 <tr><td>Defense/Propulsion (no T3D sensor bonus)</td><td>662.5mm</td><td>13.2 Ladar</td><td>50,000m</td></tr>
 <tr><td>Sharpshooter (tool default, stacks mode bonus)</td><td>662.5mm (unchanged)</td><td>26.4 Ladar</td><td>100,000m</td></tr>
-<tr><td>the owner's pyfa screenshot</td><td>662mm</td><td>13.2</td><td>50km</td></tr>
+<tr><td>The owner's pyfa screenshot</td><td>662mm</td><td>13.2</td><td>50km</td></tr>
 </table>
 <p>The pyfa screenshot matches the non-Sharpshooter row exactly &mdash; consistent with pyfa not having that T3D mode selected in that screenshot. The tool's own default (Sharpshooter) view will correctly show the higher, mode-boosted numbers; toggling to Defense/Propulsion Mode in the UI reproduces pyfa's figures.</p>
 

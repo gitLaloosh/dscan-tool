@@ -11,12 +11,12 @@ table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; pad
 <body>
 <h1>A weapon with no charge loaded: the charge aboard that's their best against you</h1>
 <p><span class="tag">Fix</span><span class="tag">Feature</span><span class="tag">Tests</span> 2026-10-25 &middot; <code>v2026.10.14.66</code> &rarr; <code>v2026.10.14.67</code>.</p>
-<p>the owner reported it through the inbox: "the following fit shows zero dps" (a pasted Nergal). Then: "the zero was on the matchup card." The Nergal's Light Entropic Disintegrator II has no charge loaded, and four charges sit in cargo.</p>
+<p>The owner reported it through the inbox: "the following fit shows zero dps" (a pasted Nergal). Then: "the zero was on the matchup card." The Nergal's Light Entropic Disintegrator II has no charge loaded, and four charges sit in cargo.</p>
 <ul>
 <li>pyfa computes a fit as it is given. With no charge, a weapon deals no damage (<code>eos Module.getVolleyParameters</code> reads the damage from the charge).</li>
 <li>The Matchup therefore said "0 DPS applied to you", "you last: holds" and "edge: you", while Firepower showed a range from the cargo ammo.</li>
 </ul>
-<p>the owner's decisions: "Assume a charge", and of which charge, "Their best against you".</p>
+<p>The owner's decisions: "Assume a charge", and of which charge, "Their best against you".</p>
 
 <h2>What changed</h2>
 <ul>
@@ -39,7 +39,7 @@ table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; pad
 <li><b>Code:</b> one block, <code>// ==== ASSUMED CHARGES</code>. <code>mysFight</code>'s attacker applications and <code>dmgModel</code> pass through <code>dmgAssumeApp</code>.</li>
 <li><b>DEVIATIONS.md:</b> a type with some copies loaded and some empty counts only its loaded copies.</li>
 </ul>
-<p>the owner's Nergal against his Osprey Navy Issue, at the default 7 km:</p>
+<p>The owner's Nergal against his Osprey Navy Issue, at the default 7 km:</p>
 <ul>
 <li>before: 0 DPS, you hold;</li>
 <li>now: 506 DPS applied with Tetryon Exotic Plasma S assumed. You last 1 min 23 s; edge: you.</li>

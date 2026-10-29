@@ -3,7 +3,7 @@ mockup", Option C, board 2b).
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/fight_strip_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner 2026-10-24: "option C is my preference" (one strip joined under the Matchup, each part under the board's own
+The owner 2026-10-24: "option C is my preference" (one strip joined under the Matchup, each part under the board's own
 column), in-game movement names for both ships, and one fight for both perspectives. The real page (Hecate threat,
 saved Vexor, ESI served from the SDE):
   * the strip sits right under the board, its three parts under the board's three columns (1440 and 1100 px);

@@ -14,7 +14,7 @@ td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; v
 <p><span class="tag">Verification</span><span class="tag">Bug fix</span><span class="tag">Requested by the owner</span> 2026-10-13 &middot; <code>v2026.10.13.9</code> &rarr; <code>v2026.10.13.10</code></p>
 
 <h2>Result of the check</h2>
-<p>the owner's full <code>[Rorqual, QuadFeed]</code> EFT was run through the tool's real <code>parseEftFit()</code> and compared with his pyfa screenshot. Every stat the tool models matches pyfa, except three. Those three differ only because of the Genolution "Core Augmentation" CA-1 to CA-4 implant set, which pyfa applies and the tool doesn't model.</p>
+<p>The owner's full <code>[Rorqual, QuadFeed]</code> EFT was run through the tool's real <code>parseEftFit()</code> and compared with his pyfa screenshot. Every stat the tool models matches pyfa, except three. Those three differ only because of the Genolution "Core Augmentation" CA-1 to CA-4 implant set, which pyfa applies and the tool doesn't model.</p>
 <table>
 <tr><th>Stat</th><th>Tool</th><th>pyfa</th><th>Explanation</th></tr>
 <tr><td>Resists (shield / armor / hull)</td><td>84/73/80/83 &middot; 57/45/45/24 &middot; 60</td><td>same</td><td>Exact</td></tr>
@@ -41,7 +41,7 @@ td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; v
 <p>The fix adds two small helpers, <code>unpenalizedReduction()</code> and <code>unpenalizedBonus()</code>. They replace the stacking calls in four places: shield HP, shield recharge time, capacitor capacity and capacitor recharge time.</p>
 <ul>
 <li><b>Rorqual:</b> 3&times; Caldari Navy PDS gives capacity 84,375 &times; 1.05&sup3; = 97,675 GJ (it was 95,082). EHP is now 1,735,654 (it was 1,714,471).</li>
-<li><b>Ishtar (a pilot):</b> capacity is now 2,576 GJ (it was 2,660). pyfa's own figure for that fit is 2,580, so the long-standing "~3% off" capacity gap is closed.</li>
+<li><b>Ishtar (killmail 137694046):</b> capacity is now 2,576 GJ (it was 2,660). pyfa's own figure for that fit is 2,580, so the long-standing "~3% off" capacity gap is closed.</li>
 <li><b>Rokh (3&times; PDS II):</b> shield HP 161,706 &rarr; 166,114.</li>
 </ul>
 

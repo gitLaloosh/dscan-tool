@@ -1,0 +1,19 @@
+# Kept on this computer, never committed (LESSON #90: this repository is public)
+# - personal term lists and any other *.local.* file (tools/pii_terms.local.txt)
+*.local.*
+# - the owner's inbox for Claude
+todo-inbox/
+# - screenshots and other pictures: only the game icons below are committed
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp
+!img/fighter-abilities/*.png
+!browser-extension/icons/*.png
+# - old copies of the page
+index-[0-9]*.html
+# Python caches
+__pycache__/
+*.pyc

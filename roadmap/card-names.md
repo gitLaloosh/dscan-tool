@@ -5,7 +5,7 @@ Status: **built in v2026.10.14.45** (2026-10-24): `CARD_NAMES` + `cardName()` in
 
 Names are Title Case (the owner 2026-10-23: "card names should use my structure", after "Navigation & Targeting").
 
-the owner (2026-10-23): "i see a recurring issue with not having definitive names for each card. it results in subtext and
+The owner (2026-10-23): "i see a recurring issue with not having definitive names for each card. it results in subtext and
 explanatory info referencing card titles that should be interchangeable."
 
 ## The names

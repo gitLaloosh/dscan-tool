@@ -1,6 +1,6 @@
 # Intel feed (plan, 2026-10-28)
 
-the owner via todo-inbox: "add Intel - this is likely the most important source of information that will go into this tool
+The owner via todo-inbox: "add Intel - this is likely the most important source of information that will go into this tool
 ... the tool actively polls the game's chat log for the intel channel and tracks neutral and hostile ships that are
 reported via that channel. the user specifies what they want to see in the intel feed, when they want to be notified of
 an incoming threat and how to present it. see tools like RIFT and https://voidsonar.space/. this is a big one." Then: "it
@@ -79,7 +79,7 @@ as well." Mockup: `Claude outputs/intel_mockup.html` (revised to the answers bel
 
 ## Delivery 2 (mockup `Claude outputs/intel_assess_mockup.html`, 2026-10-28)
 
-the owner: "proceed with #1 and #2" (#1 delivery 2, #2 his feedback from real use, with no raw intel in the repository).
+The owner: "proceed with #1 and #2" (#1 delivery 2, #2 his feedback from real use, with no raw intel in the repository).
 - Pilot names in Feed and Near You open the Pilot Analyzer; in the paired ship when the line pairs one pilot with one ship
   (or "Pilot (Ship)"), with a "From Intel" line and Back to Intel.
 - Assess ▸ on a Near You row: the System Analyzer with Local = the system's reported pilots, D-Scan = its reported ships,
@@ -89,7 +89,7 @@ the owner: "proceed with #1 and #2" (#1 delivery 2, #2 his feedback from real us
   plus what the page read; for the owner to send misreads without raw intel.
 - Questions: Q1 pilot links open in the paired ship; Q2 a system's pilots = everyone reported in the window until a clear
   (today Near You shows only the latest report); Q3 Intel's pairing wins in the System Analyzer; Q4 the copy-shape button.
-- the owner: all four as recommended ("Paired ship", "Everyone until clear", "Intel's pairing wins", "Add it"). Also: "the feed
+- The owner: all four as recommended ("Paired ship", "Everyone until clear", "Intel's pairing wins", "Add it"). Also: "the feed
   keeps growing on the intel page. we should probably drop entries older than 15 minutes" (the Feed keeps the time set).
 - **v2026.10.14.98: delivery 2 done.** itPairs, itLive (a system's union until a clear), itOpenPilot / itAssess /
   itAssessEnd, itShape / itCopyShape, the From Intel lines (#pilotFromIntel, #saFromIntel), sa.intel in saRowPick;
@@ -115,7 +115,7 @@ Findings (2026-10-28), mockup `Claude outputs/intel_feed_kills_mockup.html`:
 - Volume: 13,000-20,000 kills a day (history/totals.json, 18-25 Oct), about 10-15 requests a minute while Intel is on.
 - Mockup questions: Q1 kills in the Feed from R2Z2 within range; Q2 a kill marks its system in Near You (attackers as
   reported, same alert rule); Q3 who's who (standing mark, logos, coloured name, tickers); Q4 Types / Distance / Sort /
-  Search filters. the owner: all four as recommended.
+  Search filters. The owner: all four as recommended.
 - **v2026.10.14.99: done.** itKillPump (sequence.json, then one file at a time, 12 per 2 s tick at most, 6 s after a 404,
   backoff 30 s to 5 min on errors, INTEL-05), itKills / itAddKill (kept within max(alert range, Distance), NPC kills
   and >forget-window kills dropped, killmail_id deduped; friendlies' ships not counted), itNearAdd (one place for
@@ -127,7 +127,7 @@ Findings (2026-10-28), mockup `Claude outputs/intel_feed_kills_mockup.html`:
   keywords, and inside / outside / sitting / holding and other plain words are filler, so they never reach the pilot
   lookup (real characters are named "Inside" and "ESS"); a ship named on its own and again in brackets after a pilot
   counts once. LESSON #88.
-- the owner: all four as recommended ("Paired ship", "Everyone until clear", "Intel's pairing wins", "Add it").
+- The owner: all four as recommended ("Paired ship", "Everyone until clear", "Intel's pairing wins", "Add it").
 - **v2026.10.14.98: done.** itPairs, itLive (the union), itOpenPilot / itAssess / itShape; saRowPick takes `sa.intel`
   pairs first; `tools/page_checks/intel_assess_check.py`.
 - Next (the owner 2026-10-28, a screenshot of EVE's own Intel Feed window): "a layout reference and we might want to use some
@@ -139,7 +139,7 @@ Findings (2026-10-28), mockup `Claude outputs/intel_feed_kills_mockup.html`:
 
 ## The Feed's look and the kill feed's real behaviour (v2026.10.14.100)
 
-the owner, on a Feed row: "i dont like any of the pill stuff on the feed ... the bright borders just draw your attention away
+The owner, on a Feed row: "i dont like any of the pill stuff on the feed ... the bright borders just draw your attention away
 from the actual information." Mockups `Claude outputs/intel_feed_style_mockup.html` (A/B/C), `intel_feed_hybrids_mockup.html`
 (H1-H4), `intel_feed_h2_h3_mockup.html`, `intel_feed_h2_final_mockup.html`. His picks: H2 ("Let's go with H2"), with:
 1. the line as typed behind "a subtle button to expand the text to be at the bottom" (who sent it, the line, the channel;
@@ -156,7 +156,7 @@ from the actual information." Mockups `Claude outputs/intel_feed_style_mockup.ht
    enemy kills as well": a kill by friendlies only of a hostile or a neutral shows with "hide friendly" on (no alert, no
    Near You row).
 
-the owner: "are we actually capturing kills right now? i haven't seen any in the feed". Read from the GitHub Pages origin
+The owner: "are we actually capturing kills right now? i haven't seen any in the feed". Read from the GitHub Pages origin
 (2026-10-28 21:06 UTC): `sequence.json` said 100263992 (last-modified 17:56 UTC) while kills uploaded to 21:06 were
 numbered 3,000+ past it; a file not there yet answers 404 without the CORS header (a `no-cors` request to it succeeds,
 a normal one throws), so the page never saw a 404. v.99 started three hours back (~10 minutes to reach live) and then

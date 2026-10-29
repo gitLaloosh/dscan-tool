@@ -3,7 +3,7 @@ Claude outputs/intel_feed_kills_mockup.html). v2026.10.14.100: R2Z2 as it really
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/intel_kills_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner's answers, all as recommended: kills in the Feed "within range" from zKillboard's live feed (R2Z2); "Mark and alert"
+The owner's answers, all as recommended: kills in the Feed "within range" from zKillboard's live feed (R2Z2); "Mark and alert"
 (a kill marks its system in Near You, attackers as reported, same alert rule); who's who "As drawn" (standing mark, corp
 and alliance logos, name coloured by standing, tickers); the filter bar (Types, Distance, Sort, Search). R2Z2 is answered
 here with made-up killmails (pilots, corporations and alliances from sa_mocks.py; no real data); everything else as

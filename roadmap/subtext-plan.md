@@ -2,7 +2,7 @@
 
 Status: **BUILT 2026-10-24 (S1–S3, v2026.10.14.48–.50); DECIDED 2026-10-24** (the owner: "works as written. info icon opens a panel over the page. the 40 character limit is fine."). Mockup: layout canvas page "Subtext rule". Build phases in section 5.
 
-the owner (2026-10-24): "the subtext in the tool is a little overwhelming and distracts from important values ... come up
+The owner (2026-10-24): "the subtext in the tool is a little overwhelming and distracts from important values ... come up
 with a solution that will address it across the entire tool, not just one card here and there. we need to address it
 as a site wide design choice." And: "when making changes to the damage application slider, numbers change on multiple
 cards which causes the content to shuffle and move elements on the page in some cases (long subtext that contains

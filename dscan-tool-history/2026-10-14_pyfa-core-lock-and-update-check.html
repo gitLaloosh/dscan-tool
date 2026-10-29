@@ -12,7 +12,7 @@ td,th{border:1px solid #ddd; padding:6px 9px; text-align:left; font-size:13px; v
 <body>
 <h1>PYFA CORE lock, deviations list, pyfa update check</h1>
 <p><span class="tag">Process</span><span class="tag">Tooling</span> 2026-10-14 &middot; <code>v2026.10.14.1</code> &rarr; <code>v2026.10.14.2</code> (no calculation change)</p>
-<p>the owner: "does the code have any mechanism for walling off code that is meant to directly replicate calculations being performed by pyfa that should NOT be changed directly for the purpose of being used by the tool differently?" He suggested: "1. wall off pyfa code from changes outside of pyfa version changes. 2. determine process for identifying and handling pyfa updates". Then: "yes".</p>
+<p>The owner: "does the code have any mechanism for walling off code that is meant to directly replicate calculations being performed by pyfa that should NOT be changed directly for the purpose of being used by the tool differently?" He suggested: "1. wall off pyfa code from changes outside of pyfa version changes. 2. determine process for identifying and handling pyfa updates". Then: "yes".</p>
 
 <h2>What was there before</h2>
 <p>Nothing walled the pyfa code off. <code>estimateHpAndDps()</code> is one 3,300-line function in which pyfa formulas sit next to the tool's own choices. Generated tables had diff scripts, and the capacitor had pyfa's simulator as a reference, but the formulas were protected only by tests. Deliberate differences from pyfa were scattered through comments.</p>

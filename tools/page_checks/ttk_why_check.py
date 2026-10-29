@@ -2,7 +2,7 @@
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/ttk_why_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner 2026-10-24: "Option A works for the board" (a sentence or two in a panel on hover / tap), and for Weaknesses
+The owner 2026-10-24: "Option A works for the board" (a sentence or two in a panel on hover / tap), and for Weaknesses
 "Threat Weaknesses" and "Your Weaknesses" in the perspective's colour, no "your guns" / "their guns" pill, the
 capacitor under the picks. The times in the words are checked against pyfa's inputs by
 tools/independent_checks/check_matchup.py and the sentence kinds by regression_suite/run_regression.mjs; this checks

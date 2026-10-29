@@ -2,7 +2,7 @@
 
 Status: **STEP 1 DONE** (v2026.10.14.37, 2026-10-23; `dscan-tool-history/2026-10-23_damage-card-on-top-and-layout-table.html`).
 **STEP 2 DONE** (v2026.10.14.38, 2026-10-23; `dscan-tool-history/2026-10-23_cards-sized-by-their-own-width.html`).
-Step 3 is backlog (the owner: steps separately, step 2 first; My Ship phase 2 next). the owner 2026-10-23 asked whether the cards should be "so modular that the user can move the
+Step 3 is backlog (the owner: steps separately, step 2 first; My Ship phase 2 next). The owner 2026-10-23 asked whether the cards should be "so modular that the user can move the
 cards around and define how many columns they span", then "ok, let's go with your suggestion" for this staged plan.
 
 ## Why staged

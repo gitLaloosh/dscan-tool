@@ -1,6 +1,6 @@
 # Fleet from a kill (plan, 2026-10-28)
 
-the owner: "add a backlog item that allows the user to choose a row from the kills list (not a loss) in the pilot dossier.
+The owner: "add a backlog item that allows the user to choose a row from the kills list (not a loss) in the pilot dossier.
 when chosen, the tool will use that killmail to build out the 'fleet' from that kill using each pilot/participant's
 specified ship and weapon. it would be similar to the previous fleet functionality but in this case we actually know the
 composition of the fleet so we can pull that pilot's most prominent, recent fit for the specified hull."

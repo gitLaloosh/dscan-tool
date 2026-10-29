@@ -2,7 +2,7 @@
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/header_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner 2026-10-25: "EVE Threat Assessment", tagline A, tab title with "(ETA)", only what users see renamed. Checks, at
+The owner 2026-10-25: "EVE Threat Assessment", tagline A, tab title with "(ETA)", only what users see renamed. Checks, at
 1440, 375 and 320 px (v.63):
   * the browser tab title, the header's name and its one-line tagline; the ESI caching sentence is the Refresh item
     data button's hover; the three tabs keep their names; v2026.10.14.62: in the order Pilot, Fit, D-Scan, the page

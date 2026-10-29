@@ -1,6 +1,6 @@
 # Charges in the Fit card (plan, 2026-10-26)
 
-the owner: "let's work on the ammo in the fit card but i also think we should have a dropdown that gives you a list of every
+The owner: "let's work on the ammo in the fit card but i also think we should have a dropdown that gives you a list of every
 usable charge for those weapons/launchers. they have it in eve workbench and it's really useful. even if we had to flag
 items missing from a fit as not being available to the fit, the user might want to see what affect each ammo type has
 on the numbers." Also: "i also prefer how much easier it is to see the icons in their fits." Screenshots: EVE Workbench's
@@ -56,7 +56,7 @@ the Weaknesses picks rank only the charges on board.
 
 ## Delivery 3: unloading, and the list inside the Fit card (done, v2026.10.14.77)
 
-the owner, after v.76: "this brings me to the next problem. unloading charges." Screenshots of Workbench: a weapon's hover
+The owner, after v.76: "this brings me to the next problem. unloading charges." Screenshots of Workbench: a weapon's hover
 icons (unload module, unload ammo, online), the menu at the start of each rack (Online / Activate / Overheat / Offline /
 Unload Ammo / Unload Module), the right-click menu (information only). Mockup: `unload_mockup.html` (the real v.76 page;
 unloading one of six launchers takes the Drake's weapon DPS 328 -> 273). Discussed one section at a time:
@@ -101,7 +101,7 @@ after a state change. LESSON #69. Checks: unload_check.py (pyfa per step), two p
 
 ## Delivery 4: charges in modules that aren't turrets or launchers (built, v2026.10.14.78)
 
-the owner: "weapons aren't the only modules that hold charges. we're not evaluating modules that load cap charges, scripts,
+The owner: "weapons aren't the only modules that hold charges. we're not evaluating modules that load cap charges, scripts,
 bubbles, etc." (the numbers already used the fit's own charges in those modules; what was missing is choosing them),
 then "let's do it as a fourth delivery". Mockup: `charges_d4_mockup.html` (real page, a Megathron with a Heavy Capacitor
 Booster II, Tracking Computer II, Sensor Booster II and Large Ancillary Armor Repairer). Decisions:
@@ -127,7 +127,7 @@ Booster II, Tracking Computer II, Sensor Booster II and Large Ancillary Armor Re
 - **Bombs into the DPS** (found while answering "why are we not including ... bombs"): pyfa's getVolleyParameters counts
   any Active module whose charge carries damage, bombs included (a Hound with a Bomb Launcher I and a Shrapnel Bomb: pyfa
   80.56 DPS -- its 10 s cycle plus a 160 s reactivation delay halved by Bomb Deployment V; an early note here said 725,
-  which left the delay out -- and 7,250 volley; the tool 0, bomb launchers skipped since 2026-10-11). the owner: "fold it into
+  which left the delay out -- and 7,250 volley; the tool 0, bomb launchers skipped since 2026-10-11). The owner: "fold it into
   the delivery".
 
 ### As built (v2026.10.14.78)

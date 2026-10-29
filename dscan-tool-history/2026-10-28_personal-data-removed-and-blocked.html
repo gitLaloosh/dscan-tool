@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-28 — Personal data removed from the repository, and blocked from coming back</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Personal data removed from the repository, and blocked from coming back</h1>
+<p><span class="tag">Privacy</span><span class="tag">Tools</span> 2026-10-28 &middot; <code>v2026.10.14.100</code> &rarr; <code>v2026.10.14.101</code></p>
+<p>The owner, after a comment with his Windows user path was found in <code>index.html</code>: "that comment with my personal file location makes it pretty clear that we need to make that our first priority. please start on that next. part of the cleanup should include a lesson about ensuring that any saved data (including screen shots) call out or disallow such data from being saved to the repository." His answers, all as recommended: replace his first name; neutralize his character names and the test fits named after them; neutralize every other player's name; and give him the steps for the old page copies and the git history.</p>
+
+<h2>What the scan found</h2>
+<p>Every file in the repository folder was read (not <code>.git</code>), and every picture embedded in a page was extracted and read by OCR. Found:</p>
+<ul>
+<li><b>His Windows user path</b> in a comment near the top of <code>index.html</code>, and in the three old copies <code>index-1.html</code>, <code>index-2.html</code> and <code>index-3.html</code> at the root.</li>
+<li><b>His first name</b>: about 1,600 times in 250 files, as quotes of his decisions in comments, history docs, plans and test notes.</li>
+<li><b>His character names</b>, in test-fit IDs and labels (<code>legion_…</code>, <code>megathron_…</code>, an Osprey Navy Issue label), in plans and in history docs. One history doc also named his alliance, from a screenshot.</li>
+<li><b>Other players</b>:
+  <ul>
+  <li>a killmail victim's name in two test-fit IDs and labels;</li>
+  <li>a pilot he fought, named from his screenshot;</li>
+  <li>two real D-Scan pastes in <code>regression_suite/dscan_parse_tests.mjs</code>, with 186 custom ship names, many of which carry pilot names. That is raw intel.</li>
+  </ul></li>
+<li><b>No</b> e-mail addresses, keys or tokens. No screenshot files: the only pictures are the game icons. The embedded pictures in the mockups (66) show only made-up data.</li>
+<li><b>Not in the files but still public</b>: the git history (every old version of every file), and each commit's author name and e-mail.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li>The owner is "the owner" everywhere. His characters are gone: the test fits are renamed (<code>legion_owner</code>, <code>legion_owner_eft_pyfa_verified</code>, <code>megathron_owner</code>), with every check and doc that names them. The manifest key for his pyfa version is now <code>ownerPyfa</code>.</li>
+<li>Other players:
+  <ul>
+  <li>the killmail fits are named by hull and killmail (<code>ishtar_zkb137694046</code>, <code>caracal_zkb136427798</code>);</li>
+  <li>the pilot from the screenshot is "an Orthrus", and the alliance is <code>&lt;alliance&gt;</code>;</li>
+  <li>every custom ship name in the D-Scan pastes is scrambled letter for letter (same case, punctuation, digits, script; ship-type words kept). The parser tests still pass: 293/293, and 257 real-paste rows with 0 misread.</li>
+  </ul></li>
+<li>The path comment now says "the dscan-tool git repo". This only changes comments inside five PYFA CORE sections, so those were re-verified by the chain and re-locked (<code>check_pyfa_core.mjs --update</code>). No number the engine works out changed.</li>
+<li>New <code>tools/check_pii.py</code>. It refuses:
+  <ul>
+  <li>home paths with a user name;</li>
+  <li>e-mail addresses;</li>
+  <li>keys and tokens;</li>
+  <li>image files outside the two icon folders;</li>
+  <li>embedded pictures nobody has reviewed (<code>tools/pii_reviewed_images.json</code>);</li>
+  <li>personal names from the git-ignored <code>tools/pii_terms.local.txt</code>, so the list of names is never public itself.</li>
+  </ul>
+  It is a step in the update-check chain (now 44 steps) and the git pre-commit hook <code>tools/git-hooks/pre-commit</code> (turn it on once with <code>git config core.hooksPath tools/git-hooks</code>).</li>
+<li>New <code>.gitignore</code>: <code>*.local.*</code>, <code>todo-inbox/</code>, pictures other than the icons, <code>index-&lt;n&gt;.html</code> copies, Python caches.</li>
+<li><code>CLAUDE.md</code> starts with the rule: nothing personal in this public repository.</li>
+</ul>
+
+<h2>What only the owner can do</h2>
+<ul>
+<li>Delete the three old copies (<code>index-1.html</code>, <code>index-2.html</code>, <code>index-3.html</code>). Stop tracking <code>todo-inbox/</code> (<code>git rm -r --cached todo-inbox</code>). Commit the cleanup.</li>
+<li>Rewrite the git history with <code>git-filter-repo --sensitive-data-removal</code>, using the git-ignored replacement list <code>pii_history_replacements.local.txt</code> and removing the three copies, then <code>git push --force --mirror origin</code>, as GitHub's guide "Removing sensitive data from a repository" describes. The commit author name and e-mail can be changed in the same pass with a mailmap.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>check_pii.py</code> on this build: 0 problems (379 text files, 66 reviewed pictures). On v2026.10.14.100: 1,718 problems.</li>
+<li>Run through its own pre-commit hook in a scratch repository, it blocked each of the following, and let placeholders (<code>C:\Users\...</code>, <code>&lt;user&gt;</code>, example.com, noreply) through:
+  <ul>
+  <li>a user path;</li>
+  <li>an e-mail address;</li>
+  <li>a listed name;</li>
+  <li>a bearer token;</li>
+  <li>an API key;</li>
+  <li>a PNG screenshot;</li>
+  <li>an unreviewed embedded picture.</li>
+  </ul></li>
+<li>Regression suite ALL PASS (269 fits; D-Scan parser 293/293). Update-check chain: 44 steps; every re-verification the five touched PYFA CORE sections ask for passed (mode, implant, projected and effect tables up to date; modes, implants, application, projected, damage chart, matchup 0 mismatches), and then the sections were re-locked (comment changes only: the owner's name in six comment lines). All 44 page checks pass. Card-name, subtext and error-code lints 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #90: a public repository keeps everything you save in it, so check every saved file for personal data, pictures included. Each piece here was saved for a good reason: a quote of a decision, a fixture label, a real paste to test the parser. Nothing asked who it pointed at. Make test data up, label fixtures by hull and killmail, never save a screenshot or raw intel, review every embedded picture, and let <code>check_pii.py</code> refuse the rest. Cleaning the files does not clean the history. And when replacing names in bulk, replace only full, distinctive strings. A first pass replaced the single words of scrambled ship names everywhere, which rewrote <code>cargo</code> and <code>tackle</code> in the code; it was caught by reading the diff before anything was delivered.</p>
+</body></html>

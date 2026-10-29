@@ -6,7 +6,7 @@ getFighterAbilityMult per damage ability; the owner chose pyfa's default for the
 for the 5% / 10% fighter missile resistances. Drones and fighters both follow-ups are now done.
 **PHASE 2a DONE** (v2026.10.14.35, 2026-10-23; `dscan-tool-history/2026-10-23_projected-webs-painters-scram.html`).
 **PHASE 2b DONE** (v2026.10.14.36, 2026-10-23; `dscan-tool-history/2026-10-23_their-damage-on-you-chart.html`).
-All six decisions in section 4 made. the owner 2026-10-23: Phase 2 split into 2a (pyfa's `applyProjected`, engine only)
+All six decisions in section 4 made. The owner 2026-10-23: Phase 2 split into 2a (pyfa's `applyProjected`, engine only)
 and 2b (the "Their damage on you" chart with sliders). Phase 3 (your guns vs them, optional) was closed on 2026-10-26 (the owner: "yes, close those three"):
 the My Ship Perspective's Damage Application card (v2026.10.14.55) and the "your guns" Weaknesses picks (v.42) cover it. Earlier: the drones /
 fighters follow-up (D5; drones done v2026.10.14.40, `dscan-tool-history/2026-10-23_drone-damage-application.html`); My Ship
@@ -220,7 +220,7 @@ webs and target painters slow the target and grow its signature before applicati
 getTackledSpeed / getSigRadiusMult, recomputing the TARGET fit's speed and signature with those multipliers,
 its scrammed MWD off). For "their damage on you" that is your speed and signature under their tackle, from My
 Ship's fit. Phase 2 has to port it (or show it as a separate line) to match pyfa's default graph.
-the owner 2026-10-23 ("yes please"): port it first, as Phase 2a, before the chart.
+The owner 2026-10-23 ("yes please"): port it first, as Phase 2a, before the chart.
 
 ## Phase 2a as built (v2026.10.14.35)
 
@@ -244,8 +244,8 @@ the owner 2026-10-23 ("yes please"): port it first, as Phase 2a, before the char
 
 ## Open: clearer chart labels (the owner, 2026-10-23, task)
 
-the owner: "have the graph be more clear about some of the labeling (like drone range). the vertical dotted lines on either
-side of the text are confusing." His screenshot (the owner, Osprey Navy Issue vs his Legion, distance axis to 80 km) has
+The owner: "have the graph be more clear about some of the labeling (like drone range). the vertical dotted lines on either
+side of the text are confusing." His screenshot (the owner's Osprey Navy Issue vs his Legion, distance axis to 80 km) has
 two dotted lines near the right edge with one label, "their drone range", printed BETWEEN them.
 
 Cause, from the code (`dmgChartSvg`, marker loop): every marker (scram, web, their lock range, their drone range) is the
@@ -263,7 +263,7 @@ Also in the same screenshot: the card's "Adjust" column shows only its heading, 
 
 ## Fight setup mockup (2026-10-24): tabs, Keep at Range, your damage card, chart markers
 
-the owner asked for these together (2026-10-24): fight settings as tabs under the Matchup ("Orbit", "Approach"; "things that
+The owner asked for these together (2026-10-24): fight settings as tabs under the Matchup ("Orbit", "Approach"; "things that
 can tie directly into the damage application card's settings"), a "Keep at range" movement ("if one ship is faster than
 the other, and is outside of the target's scram/web range, it's possible for them to maintain a specified distance"),
 a Damage Application card in the My Ship Perspective, plus the chart labels above. Mockup: chart canvas page
@@ -321,7 +321,7 @@ Fix: decide from the viewport when the card isn't laid out yet, or keep Adjust o
 Built as mapped below, with the card names registry (roadmap/card-names.md); the chart labels (section above) are
 still open.
 
-the owner first asked to rename "Their damage on you" to "Damage Application"; after the wording boards (canvas
+The owner first asked to rename "Their damage on you" to "Damage Application"; after the wording boards (canvas
 "Their damage on you -- chart mockup", page "Damage application wording") he settled the convention: "changing phrases
 like 'Their damage on you' and 'Your damage on them' to 'Damage applied to you' and 'Damage applied to them' ... We're
 trying to communicate damage application so let's use the term." Do it with the chart-labels task (same card).

@@ -28,7 +28,7 @@
         "python3 -I tools/independent_checks/compare_modes.py index.html (0 mismatches: every golden fit on a hull with modes, in every mode, vs pyfa_fit_oracle)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "aeb29ddf4305d20cf016b016737b69f3a93eff758afc6684651e4622b37429d8"
+      "sha256": "eccd7385ba0e74ec21e421babc70592fb14e8ce2e74cba86dcbb036dd86ace3b"
     },
     "speed-calc": {
       "kind": "generated + port",
@@ -59,7 +59,7 @@
         "python3 -I tools/independent_checks/compare_speed.py index.html ; compare_resists.py ; compare_ewar.py (the same fits, 0 mismatches)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "dc3cc71752070ddc8ba0e66b1b7435832f9357c884e8a89e292fe6fa79573d91"
+      "sha256": "859c383d14b7d0fca16d0217eadfed4d1acc274f5a1a0c5f7fd2409e8c835d82"
     },
     "sig-effect-tables": {
       "kind": "audited",
@@ -96,7 +96,7 @@
         "python3 -I tools/independent_checks/compare_fit_stats.py index.html (0 mismatches: the application inputs per weapon vs pyfa's handlers)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "c2bc49c50a87eea7e2e1034bc2e0c069de2dc7238ce29cc19cbb1a3e82095af3"
+      "sha256": "06db719ca1cd74093b84c7ac4995d390b74e55ecf2642f30e4e8acd6856a6b85"
     },
     "projected": {
       "kind": "generated + port",
@@ -115,7 +115,7 @@
         "node tools/dump_effect_tables.mjs index.html > /tmp/t.json && python3 -I tools/audit_effect_tables.py /tmp/t.json (must print no MISSING/EXTRA/DIFF)",
         "node regression_suite/run_regression.mjs index.html"
       ],
-      "sha256": "799bf39ded36f2f4550d476bd848c03a85aed8d3b8b928fe501b54577963de34"
+      "sha256": "c0ed0eabff94e45dfd3d8fb706a6af994b4d23dda37e83044c9455d334c8e3cd"
     },
     "cap-sim": {
       "kind": "port",

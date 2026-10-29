@@ -2,7 +2,7 @@
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/affiliation_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
-the owner via todo-inbox: "add pilot affiliation info (alliance, corp, etc). is it possible to pull their zkill threat level
+The owner via todo-inbox: "add pilot affiliation info (alliance, corp, etc). is it possible to pull their zkill threat level
 too?", the place he marked (top right of the Pilot Analyzer), and "let's use your pick for all three questions" on
 Claude outputs/pilot_affiliation_mockup.html. The real page with ESI and zKillboard answered from sa_mocks.py (its
 pilots' ESI character records and corporation histories; zKillboard stats for one of them). Checks:

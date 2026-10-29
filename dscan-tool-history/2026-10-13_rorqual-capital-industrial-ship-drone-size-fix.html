@@ -20,7 +20,7 @@ td,th{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:13px}
 <p class="small">2026-10-13 &middot; index.html</p>
 
 <h2>The bug report</h2>
-<p>the owner, pasting a fully-fit Rorqual (<code>[Rorqual, QuadFeed]</code>, capital shield tank, mixed combat/mining drone bay including Acolyte/Warrior/Valkyrie/Berserker/Praetor/Bouncer/Curator/Warden plus Mining Drones and Maintenance Bots): "the tool is recommending warrior light drones to attack it. this is a capital ship (XL in size) huge sig radius and the tool is recommending light drones. how are we coming to this conclusion when i've seen plenty of other fits that recommend larger drones to attack them?"</p>
+<p>The owner, pasting a fully-fit Rorqual (<code>[Rorqual, QuadFeed]</code>, capital shield tank, mixed combat/mining drone bay including Acolyte/Warrior/Valkyrie/Berserker/Praetor/Bouncer/Curator/Warden plus Mining Drones and Maintenance Bots): "the tool is recommending warrior light drones to attack it. this is a capital ship (XL in size) huge sig radius and the tool is recommending light drones. how are we coming to this conclusion when i've seen plenty of other fits that recommend larger drones to attack them?"</p>
 
 <h2>Root cause</h2>
 <p>Drone size recommendation runs through two steps: <code>sizeClassFromGroup(shipGroup.name)</code> picks a size tier (light/medium/bc/bs/capital/industrial) from the ship's ESI group name via a lookup table (<code>GROUP_TIER</code>), then that tier's <code>droneSizes</code> array feeds <code>droneRecommendation()</code>, which only picks the drone RACE (from the target's weakest damage type) -- it has no sig-radius or EHP awareness of its own, it just trusts whatever size tier it's handed.</p>

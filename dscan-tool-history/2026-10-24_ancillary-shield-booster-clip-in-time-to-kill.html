@@ -11,7 +11,7 @@ table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; pad
 <body>
 <h1>Fix: an Ancillary Shield Booster's clip in "you last" / "they last"</h1>
 <p><span class="tag">Fix</span> 2026-10-24 &middot; <code>v2026.10.14.56</code> &rarr; <code>v2026.10.14.57</code>.</p>
-<p>the owner (2026-10-24, Pilot Analyzer screenshot, his Osprey Navy Issue against a pilot's Orthrus): "seeing discrepancies in the various calculated stats ... would the EFT fits for both ships help you investigate?" He sent both fits. After the findings: "lets go with your recommendation", which was to simulate the clip.</p>
+<p>The owner (2026-10-24, Pilot Analyzer screenshot, his Osprey Navy Issue against an Orthrus): "seeing discrepancies in the various calculated stats ... would the EFT fits for both ships help you investigate?" He sent both fits. After the findings: "lets go with your recommendation", which was to simulate the clip.</p>
 
 <h2>What was checked</h2>
 <p>Both fits were run through the tool's engine and through pyfa's own code (projected effects and damage application, by item name). At 48.9 km, with the Orthrus stopped and the Osprey orbiting at 2,500 m/s, every damage number matched exactly:</p>
@@ -66,7 +66,7 @@ table{border-collapse:collapse; margin:8px 0;} td, th{border:1px solid #ddd; pad
 <ul>
 <li>The rule is written again independently (<code>asb_windows</code>, <code>asb_input</code>, the time to kill by segments) on pyfa's numbers: capacity, charge volume, chargeRate, reloadTime, shieldBonus, duration.</li>
 <li>Fits with an ASB are no longer left out. 4 golden fits are covered: charges loaded, taken from cargo, and none.</li>
-<li>the owner's two fits are now in the repo (<code>tools/independent_checks/fits/orthrus_threat.eft</code>, <code>osprey_navy_issue_mine.eft</code>) and are checked both ways, through the tool's engine (<code>eft_engine</code>) and pyfa by item names.</li>
+<li>The owner's two fits are now in the repo (<code>tools/independent_checks/fits/orthrus_threat.eft</code>, <code>osprey_navy_issue_mine.eft</code>) and are checked both ways, through the tool's engine (<code>eft_engine</code>) and pyfa by item names.</li>
 <li>Result: 0 mismatches over 47,104 points.</li>
 <li>v2026.10.14.56 fails 4 pairs. So do a mutated page where a spent ASB keeps running on the capacitor, and one whose clip is one cycle too long.</li>
 </ul></li>
