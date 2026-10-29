@@ -878,6 +878,22 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 101. A component's border shorthand quietly cancels the site's focus rule: measure each state, then write the rule down and check it
+
+- **What happened (v2026.10.29.7, the owner: "would you mind taking a look at how text input boxes are being treated
+  differently as well (differing border colors)"):** reading the CSS suggested one text-field style. Measuring the computed
+  style of every field at rest and focused, in the page, found three: the main fields turned amber-dim on focus, the Intel
+  search showed the browser's own ring, and Intel's selects showed no focus at all. Their rules (`.it-fbar select`,
+  `.it-box select`) set `border:` as a shorthand, and being as specific as the global `select:focus` and later in the
+  file, they reset its border colour. The tags, switches and sliders had drifted the same way (two copies of one switch,
+  four corner radii, the browser's own slider).
+- **Do this instead:** inventory a control by its computed style in every state (rest, hover, focus, disabled), not by
+  reading the CSS. Write the state rules once, after the component rules, and name the components' own selectors in
+  them. Once the owner settles a look, write it down (CLAUDE.md "UI rules") and check it both ways: statically
+  (`tools/check_ui_rules.py`, in the chain) and in the real page (`tools/page_checks/ui_rules_check.py`). A value only
+  code sets (a slider's fill, `--p`) needs a hook wherever the value changes: input events, new elements (a
+  MutationObserver), and code that sets `.value` itself.
+
 ## 100. A warning that fires on a routine event teaches people to ignore it: check the thing itself, out of their sight
 
 - **What happened (v2026.10.29.5, the owner: "Eve deploys patches very often. is there a way to automate the update so the

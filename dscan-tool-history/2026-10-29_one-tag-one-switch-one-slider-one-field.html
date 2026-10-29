@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — One tag, one switch, one slider, one text field</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>One tag, one switch, one slider, one text field</h1>
+<p><span class="tag">UI</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.29.6</code> &rarr; <code>v2026.10.29.7</code></p>
+<p>The first of the UI deliveries the owner settled from mockups that day. He reviewed the controls mockup ("all of your recommendations seem good") and asked: "would you mind taking a look at how text input boxes are being treated differently as well (differing border colors)". Then, on the text-field mockup: "looks good". Planned order: controls (this one), status colours, the "My Fit" rename, then the profile.</p>
+
+<h2>How it was found</h2>
+<ul>
+<li>Tags: the header chips were 18px round with bright borders on hover, in two blues. The charge chips were 13px round and the Standings names 15px round. Empty states had dashed borders.</li>
+<li>Switches: two copies of one round switch (<code>.dmg-sw</code>, <code>input.mys-sw</code>). Sliders: the browser's own.</li>
+<li>Text fields, measured in the page in each state rather than read from the CSS: all had the same border at rest, but focus differed. The main fields went amber-dim, the Intel search showed the browser's own ring, and Intel's selects showed nothing. Their <code>border:</code> shorthand reset the global <code>select:focus</code> colour (LESSON #101). Corners were 3px, or 6px in Intel.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Tags, not pills.</b> Every chip, pill and tag has 3&ndash;4px corners, a faint fill and no border at rest. Hover or open gives a slightly lighter fill with a soft cyan edge, and pressed is a cyan-tinted fill. Empty states ("Standings", "+ My Ship") use the same fill with dim text, with no dashes. The ammo count on a charge icon is square-cornered too.</li>
+<li><b>One switch.</b> A 36&times;20 track with 3px corners and a square knob. It is faint when off and teal (#1f6f80) when on.</li>
+<li><b>One slider.</b> A thin track filled cyan up to an upright bar handle. The handle brightens on hover and gets a cyan outline from the keyboard. It is used everywhere: the Damage Application card and the fight strip's menus.</li>
+<li><b>One text field.</b> Fit boxes, pilot names, selects, the Intel search and Intel's selects all share a quiet border and 4px corners. The border brightens on hover. Focus is a cyan border with a soft cyan ring, never amber and never the browser's own. Disabled fields are dimmed. Paste boxes stay monospace.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>tools/check_ui_rules.py</code> (new, in the update-check chain) reads the page's styles. It fails on:
+  <ul>
+  <li>a chip, pill or tag rule with corners over 4px or a dashed border;</li>
+  <li>a switch that isn't 36&times;20 with 3px corners and #1f6f80 when on;</li>
+  <li>a slider styled anywhere but the global rules, or <code>rangeFillSet</code> missing;</li>
+  <li>a field whose focus isn't the cyan border, or whose corners aren't 4px;</li>
+  <li>the search, Intel's selects or the textarea without the ring.</li>
+  </ul>
+  Five mutations each fail 1.</li>
+<li><code>tools/page_checks/ui_rules_check.py</code> (new) checks the real page:
+  <ul>
+  <li>the header chips and the switch, as measured;</li>
+  <li>the fit box at rest, on hover and on focus (v2026.10.29.6 fails: amber);</li>
+  <li>every slider filled to its handle when the fit renders, after keyboard steps, and after the fight strip sets a slider's value by code.</li>
+  </ul>
+  Mutations:
+  <ul>
+  <li>no refill on new elements: fails 3;</li>
+  <li>the shared focus rule amber: fails 1;</li>
+  <li>dropping the direct refill call in the fight strip passes, because the same render's refill covers it (kept anyway).</li>
+  </ul></li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 48 steps, all OK. All 46 page checks pass (45 before, plus the new one). The lints, the personal-data check and the request-gate check report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #101: a component's <code>border:</code> shorthand quietly cancels the site's focus rule.</p>
+<ul>
+<li>Inventory a control by its computed style in every state, not by reading the CSS.</li>
+<li>Write the state rules once, after the component rules, naming the components' selectors.</li>
+<li>Once a look is settled, write it down (CLAUDE.md "UI rules") and check it statically and in the page.</li>
+<li>A value only code can set (a slider's fill) needs a hook wherever the value changes.</li>
+</ul>
+</body></html>

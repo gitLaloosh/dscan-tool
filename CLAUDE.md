@@ -71,6 +71,19 @@ numbers, which are recomputed from the text). Code: the `MY SHIP` block at the e
 script; classes `mys-*` (`ms-*` means module state). Start-up code must survive the suites'
 stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
 
+**UI rules** (v2026.10.29.7; approved by the owner from mockups, 2026-10-29; LESSON #101). One of each, site-wide:
+- **Tag** (chips, pills, labels): 3-4px corners, never round; a faint fill (`--tag-fill`), no visible border at rest;
+  hover/open `--tag-fill-hover` with `--accent-edge`; pressed `--tag-on`. Empty states: the same fill, dim text, no dashes.
+  Cyan is the one accent.
+- **Switch** (`.dmg-sw`, `input.mys-sw`): 36x20 track, 3px corners, square 14px knob; off faint, on `#1f6f80`.
+- **Slider**: the global `input[type=range]` style, a 4px track filled cyan to an upright 10x18 handle. The fill is
+  `--p`, set by `rangeFillSet` (input events, new sliders, and code that sets `.value`/`.max` calls it). No local slider CSS.
+- **Text field** (text, search, select, textarea): `--bg` fill, `--field-border`, 4px corners; hover
+  `--field-border-hover`; focus a cyan border and the `--accent-ring` ring (never amber, never the browser's own);
+  disabled 45%. 36px tall, 32px in filter bars; paste boxes stay monospace.
+Checked by `tools/check_ui_rules.py` (chain) and `tools/page_checks/ui_rules_check.py`. Status colours (error, IN SYSTEM)
+wait for the colour inventory (backlog).
+
 When you find a new kind of mistake, add it to `LESSONS_LEARNED.md` and give
 the history doc a "Lesson for future models" section. In code, mark the site
 with a `// LESSON #n` comment that points at the entry.
