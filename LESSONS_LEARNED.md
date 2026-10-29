@@ -878,6 +878,26 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 98. A reader that waits for data must notice when it has waited too long; and a hard bug may need a recording, not a probe
+
+- **What happened (v2026.10.29.4, the owner: "i still have not seen a single killmail show up in the feed"):** v.103 read
+  zKillboard's live kills by number and treated a missing number as a hole only when one of the next 3 answered. On
+  2026-10-29 at 10:05 UTC four numbers in a row (100274284-287) were missing for good, with kills after them. The page read
+  "nothing new yet", waited 6 s and asked the same four again, for 40 minutes, with no note. Its "far behind" check only
+  ran after a kill was read, so it never ran. Gaps of 2 had been seen before, so v.103 fixed the gap it had seen, not the
+  next one. Probes from a fresh start couldn't show it: a restart finds the newest kill again and works until the next gap.
+- **How it was found:** the owner asked for a test over time. The page's own reader ran unchanged in the browser pane for
+  40 minutes, slowed to at most 3 requests a second, logging every request and every kill and why it was kept or dropped.
+  A kill he saw in RIFT was then missing from the log, and the log showed the reader asking the same 4 numbers since 10:05.
+- **Do this instead:**
+  - Don't size a look-ahead from the gaps you've seen. Give the reader a time limit instead: no kill read for a minute,
+    look much further ahead (4 to 2048 past), and read forward from there.
+  - Show the reader's health where the user looks: "last kill read N s ago", amber after 5 minutes. A stuck reader must
+    not look like a quiet night.
+  - Any recovery path must run whether or not data arrived; one that only runs after a success never runs when stuck.
+  - When a bug comes and goes, record the real thing over time (paced well under the service's limit) rather than
+    probing once from a fresh start.
+
 ## 97. A limit the user can't see reads as a bug: name it where they set things
 
 - **What happened (v2026.10.29.3, the owner: "the kills in this RIFT feed are not showing up in the tool's Feed. Should it

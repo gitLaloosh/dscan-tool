@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — Intel: kills after a long gap</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel: kills after a long gap</h1>
+<p><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.29.3</code> &rarr; <code>v2026.10.29.4</code></p>
+<p>The owner, on v2026.10.29.3 with the kill range at 10: "I should note that i still have not seen a single killmail show up in the feed." Kills 6 and 9 jumps away that RIFT showed were missing from the Feed. He asked whether this could be tested over a period of time instead of in one sitting.</p>
+
+<h2>How it was found</h2>
+<ul>
+<li>A recording, not a probe. The page's own kill reader, unchanged, ran in the built-in browser pane from 10:04 to 10:47 UTC. It was slowed to at most 3 requests a second (1,879 requests, no error from zKillboard) and logged every request and every kill with why it was kept or dropped.</li>
+<li>Finding the newest kill worked (9 s), and so did the read-back. zKillboard had kills 1 to 3 minutes after they happened. Distances from the page's own jump table matched RIFT's.</li>
+<li>At 10:05, numbers 100274284 to 100274287 were missing, and still were 40 minutes later, while 100274288 onward were there.</li>
+<li>v.103 looks only 3 numbers past a missing one. Four missing in a row read as "nothing new yet", so the page asked for the same four every 8 s and read no kill after 10:05. The owner then sent a kill from RIFT (10:41, TZN-2V, 9 jumps). The log showed it was never asked for.</li>
+<li>The page's "far behind" check runs only after a kill is read, so it never ran.</li>
+<li>Restarting Intel finds the newest kill again, which is why kills sometimes appeared for a while.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>No kill read for a minute: the page looks further ahead.</b> It probes 4, 5, 6, 7, 8, then 12, 16, 24 ... up to 2048 numbers past where it is (at most 16 requests, at most once a minute). When it finds a kill, it finds the newest from there and reads forward to it.</li>
+<li><b>A gap is not the end.</b> Missing numbers before a kill known further on are read past, even a gap wider than one read-back batch of 28.</li>
+<li><b>Missing numbers are still asked for again</b> (at 6 s, 30 s, 2 min and 5 min), as in v.103, but at most 40 of them, so a long gap isn't asked for 4 times over.</li>
+<li><b>The Intel status line says whether kills are coming in</b>: "last kill read N s ago", "kills: catching up" while reading back, and "no kill read for N min" in amber after 5 minutes without one. A stuck reader no longer looks like a quiet night. The info panel says so too.</li>
+<li>No change to how often the page asks while kills arrive. Every request still goes through the one gate (at most 10 a second).</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_kills_check.py</code>, a new part:
+  <ul>
+  <li>Four numbers missing for good, then kills, as recorded. After a minute with no kill read (set, not waited), the kill 7 jumps away shows within seconds and the page is at the newest.</li>
+  <li>Then 40 missing in a row, wider than a read-back batch: read past, the kill shown, at most 40 numbers kept to ask again.</li>
+  <li>At most 12 requests in any second throughout.</li>
+  <li>The status line's "last kill read N s ago", and "no kill read for 6 min" in amber.</li>
+  </ul>
+  v2026.10.29.3 fails: it stays at the gap (5007 while kills run to 5016).</li>
+<li>Four broken versions, each caught: no look-ahead after a minute, misses before a known kill taken as the end, no cap on the numbers kept, no status.</li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 45 steps, all OK. All 45 page checks pass. The lints, the personal-data check and the request-gate check report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #98: a reader that waits for data must notice when it has waited too long. Don't size a look-ahead from the gaps you've seen; give it a time limit, and make every recovery path run whether or not data arrived. Show the reader's health where the user looks. When a bug comes and goes, record the real thing over time, paced well under the service's limit, rather than probing once from a fresh start.</p>
+</body></html>

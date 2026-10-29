@@ -2274,6 +2274,7 @@
   button.it-gear:hover, button.it-gear[aria-expanded="true"]{color:var(--heading); border-color:var(--text-dim);}
   .it-sub{color:var(--text-dim); font:400 12.5px var(--sans); margin-top:8px;} .it-sub b{color:var(--text); font-weight:600;}
   .it-warn{color:var(--amber);}
+  .it-kslow{color:var(--amber);}   /* v2026.10.29.4: no kill read for 5 minutes */
   .it-setup{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px; margin-top:14px;}
   .it-box{border:1px solid var(--line); border-radius:8px; padding:12px; min-width:0;}
   .it-box .k{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;}
@@ -2390,7 +2391,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.3</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.4</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2729,7 +2730,7 @@ const CARD_INFO = {
   "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from the stargate list in the EVE client's own data (no jump bridges, no wormholes); the page says when EVE has been patched since that list was checked.",
   "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
   "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
-  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 10-15 small requests a minute) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser.",
+  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 10-15 small requests a minute) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser. The line under the title says when a kill was last read; after 5 minutes without one it says so in amber (the page keeps looking further ahead every minute).",
   "{card:itnear}: each system reported in the time you set, nearest first: everyone and every ship reported there in that time until someone reports it clear (the same ship type twice counts once, at its larger number); clear or no visual when that is the latest word. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
   "A pilot's name (in {card:itfeed} and {card:itnear}) opens them in the Pilot Analyzer; when the line puts them in a ship (\"Pilot (Ship)\", or one pilot and one ship), in that ship. Assess sends a system's reported pilots and ships to the {card:sysan}, where Intel's pairing is their possible ship; Restore my paste puts back what you had there. The copy button on a line copies its shape with system and pilot names replaced, to report a line read wrong.",
   "Nothing from your logs leaves the browser except the words looked up on ESI, and none of it is kept after you close the page."
@@ -22638,6 +22639,16 @@ const IT_KILL_STEP = 64;                     // v.100: finding the newest kill: 
 const IT_KILL_PROBE_MS = 100;                // v.103: every R2Z2 request starts at least 100 ms after the one before, by the clock (10 a second; the limit is 15)
 const IT_KILL_FAR_MS = 60 * 60000;           // v.100: a kill uploaded over an hour ago means the page has fallen far behind (a sleeping tab):
 const IT_KILL_REFIND_MS = 5 * 60000;         //   find the newest again, at most once per 5 minutes
+// v2026.10.29.4 (the owner: "i still have not seen a single killmail show up in the feed"). Recorded live from his machine,
+// 2026-10-29 10:04-10:47 UTC: numbers 100274284-100274287 were missing for good while 100274288 on were there. v.103 looked
+// only 3 past a missing number, so 4 missing in a row read as "nothing new yet" and the page waited there for ever (40 min, no
+// kill read). Gaps of 2 and 4 have both been seen, so no fixed look-ahead is enough: when no kill has been read for a minute,
+// the page looks further ahead (4 to 8, then 12, 16 ... 2048 past where it is) and, finding a kill there, reads forward to the
+// newest, the gap's numbers kept to ask again (at most 40). LESSON #98
+const IT_KILL_STALL_MS = 60000;              // no kill read for this long while live: look further ahead (at most once per this long)
+const IT_KILL_JUMPS = [4, 5, 6, 7, 8, 12, 16, 24, 32, 48, 64, 128, 256, 512, 1024, 2048];   //   how far ahead it looks, in turn, stopping at the first kill (1-3 were just found missing)
+const IT_KILL_HOLES_MAX = 40;                // missing numbers kept to ask again; past that they're skipped (a long gap isn't asked for 4 times over)
+const IT_KILL_SLOW_MS = 5 * 60000;           // no kill read for 5 minutes: the status line says so, in amber
 const IT_FEED_TYPES = [['all', 'All'], ['reports', 'Reports'], ['kills', 'Kills']];
 const IT_FEED_DIST = [0, 1, 2, 3, 5, 10, 15, 20, 30];   // 0: any distance (v2026.10.29.3: up to 30, as far as kills can reach)
 const IT_FEED_SORT = [['new', 'Newest'], ['near', 'Nearest']];
@@ -22655,7 +22666,7 @@ const it = {
   kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: '',   // v.99: kills, names on kills, security, the Feed's search
   rawOpen: new Set()   // v.100: Feed rows showing the line as typed
 };
-function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0, asked: new Map(), holes: new Map()}; }   // v.103: asked = when each number was last asked for; holes = missing numbers with kills after them
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0, asked: new Map(), holes: new Map(), lastGot: 0, stallAt: 0, target: 0}; }   // v2026.10.29.4: lastGot = when a kill was last read; stallAt = when the page last looked further ahead; target = a kill known to be there, read up to   // v.103: asked = when each number was last asked for; holes = missing numbers with kills after them
 function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
 function itReadSet(){
   const d = itDefaults();
@@ -23262,12 +23273,19 @@ async function itKillFindHead(seq, gen){   // the newest kill at or past seq: st
   }
   return lo;
 }
-function itKillHole(n){ if(!it.kf.holes.has(n)) it.kf.holes.set(n, {tries: 0, at: Date.now() + IT_KILL_RETRY_MS[0]}); }
+function itKillHole(n){ if(!it.kf.holes.has(n) && it.kf.holes.size < IT_KILL_HOLES_MAX) it.kf.holes.set(n, {tries: 0, at: Date.now() + IT_KILL_RETRY_MS[0]}); }
+async function itKillAhead(from, gen){   // v2026.10.29.4: the first kill found 4 ... 2048 past from (IT_KILL_JUMPS), or null (nothing new anywhere ahead)
+  for(const d of IT_KILL_JUMPS){
+    if(gen !== it.gen) return null;
+    if(await itKillGet(from + d)) return from + d;
+  }
+  return null;
+}
 async function itKillHoles(gen, got){   // the holes due: asked for again; found ones join the kills read this time
   for(const [n, h] of [...it.kf.holes]){
     if(gen !== it.gen || Date.now() < h.at) continue;
     const rec = await itKillGet(n);
-    if(rec){ it.kf.holes.delete(n); got.push({rec, history: false}); continue; }
+    if(rec){ it.kf.holes.delete(n); it.kf.lastGot = Date.now(); got.push({rec, history: false}); continue; }
     h.tries++;
     if(h.tries >= IT_KILL_RETRY_MS.length) it.kf.holes.delete(n); else h.at = Date.now() + IT_KILL_RETRY_MS[h.tries];
   }
@@ -23282,7 +23300,7 @@ async function itKillPump(){
     if(kf.seq === null){
       const head = await itKillFindHead(await itKillSeq(), gen);
       if(gen !== it.gen) return;
-      kf.seq = Math.max(0, head + 1 - IT_KILL_BACK); kf.found = Date.now(); kf.head = false;
+      kf.seq = Math.max(0, head + 1 - IT_KILL_BACK); kf.found = Date.now(); kf.head = false; kf.target = head; kf.lastGot = Date.now();
     }
     if(!kf.head){   // reading back: up to 28 asked at a time (each in its turn at the gate), each batch drawn as it comes
       for(let b = 0; b < IT_KILL_BATCHES && !kf.head && gen === it.gen; b++){
@@ -23291,6 +23309,8 @@ async function itKillPump(){
         if(gen !== it.gen) return;
         let last = recs.length - 1;
         while(last >= 0 && !recs[last]) last--;
+        if(last >= 0) kf.lastGot = Date.now();
+        if(kf.target >= from + recs.length) last = recs.length - 1;   // v2026.10.29.4: a kill is known further on: misses here are a gap, not the end
         for(let i = 0; i <= last; i++){ if(recs[i]) part.push({rec: recs[i], history: true}); else itKillHole(from + i); }   // v.103: a missing one before a kill: a hole
         kf.seq = from + last + 1;
         if(last < recs.length - 1){
@@ -23302,11 +23322,23 @@ async function itKillPump(){
       }
     } else {
       await itKillHoles(gen, got);
+      if(Date.now() - kf.lastGot >= IT_KILL_STALL_MS && Date.now() - kf.stallAt >= IT_KILL_STALL_MS){   // v2026.10.29.4: a minute with no kill: a long gap?
+        kf.stallAt = Date.now();
+        const ahead = await itKillAhead(kf.seq, gen);
+        if(gen !== it.gen) return;
+        if(ahead !== null){
+          const head = await itKillFindHead(ahead, gen);
+          if(gen !== it.gen) return;
+          kf.target = head; kf.head = false;   // read forward from here to it (reading back), the gap's numbers as holes
+          if(head + 1 - IT_KILL_BACK > kf.seq) kf.seq = head + 1 - IT_KILL_BACK;   // far behind: only the last 240 (older ones are past the forget window)
+          return;
+        }
+      }
       for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen && Date.now() >= kf.waitUntil; n++){
         const rec = await itKillGet(kf.seq);
-        if(rec){ got.push({rec, history: false}); kf.seq++; continue; }
+        if(rec){ got.push({rec, history: false}); kf.seq++; kf.lastGot = Date.now(); continue; }
         const a = await itKillAfter(kf.seq);   // v.103: a kill just past it: this one is a hole, not the end
-        if(a){ for(let m = kf.seq; m < a.n; m++) itKillHole(m); got.push({rec: a.rec, history: false}); kf.seq = a.n + 1; continue; }
+        if(a){ for(let m = kf.seq; m < a.n; m++) itKillHole(m); got.push({rec: a.rec, history: false}); kf.seq = a.n + 1; kf.lastGot = Date.now(); continue; }
         await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; break;   // not there yet: the feed is up, nothing new
       }
     }
@@ -23729,12 +23761,21 @@ function itSettingsHtml(numbered){
     <div class="it-box">${n(4, 'Range and alerts')}<label title="The ring of awareness: kills this close show in ${escapeHtml(cardName('itfeed'))} and ${escapeHtml(cardName('itnear'))} (chat reports show at any distance)">Feed: kills within <select data-it-set="killRange">${opts(IT_KILL_RANGES, it.set.killRange, '')}</select> jumps</label><label title="The ring of being alert: a hostile or neutral this close sounds and notifies">Alert: within <select data-it-set="range">${opts(IT_RANGES, it.set.range, '')}</select> jumps</label><label><input type="checkbox" data-it-set="sound"${it.set.sound ? ' checked' : ''}> sound</label><label><input type="checkbox" data-it-set="notify"${it.set.notify ? ' checked' : ''}> desktop notification${notifyNote}</label><label>forget reports after <select data-it-set="forget">${opts(IT_FORGET, it.set.forget, ' min')}</select></label><label><input type="checkbox" data-it-set="hideFriendly"${it.set.hideFriendly ? ' checked' : ''}> hide friendlies</label></div>
   </div>`;
 }
+// v2026.10.29.4: whether kills are still coming in, beside "last line": a reader stuck without saying so looked like a quiet night
+function itKillStatus(){
+  const kf = it.kf;
+  if(!kf || it.kfNote) return '';   // INTEL-05 says it already
+  if(kf.seq === null || !kf.head) return ' · kills: catching up';
+  const ago = Date.now() - kf.lastGot;
+  if(ago < IT_KILL_SLOW_MS) return ` · last kill read ${itAgo(kf.lastGot)} ago`;
+  return ` · <span class="it-kslow" title="No kill has come from zKillboard's live feed for ${escapeHtml(itAgo(kf.lastGot))}. The page keeps looking further ahead every minute; zKillboard may be slow or down.">no kill read for ${itAgo(kf.lastGot)}</span>`;
+}
 function itStatusLine(){
   if(!it.on) return '';
   const me = it.me ? `${it.me.name} in ${it.me.sys || 'an unknown system'}` : 'choose which character is you';
   const ch = it.set.channels.join(', ');
   const last = it.lastLine ? `last line ${itAgo(it.lastLine)} ago` : 'no lines yet';
-  return `${escapeHtml(me)} · ${escapeHtml(ch)} · ${last}`;
+  return `${escapeHtml(me)} · ${escapeHtml(ch)} · ${last}${itKillStatus()}`;
 }
 function itRender(force){   // force: a press that changes what is open (the gear, Escape) redraws even with focus inside
   itHeaderSync();

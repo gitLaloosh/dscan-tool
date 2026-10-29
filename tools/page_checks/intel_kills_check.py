@@ -42,6 +42,12 @@ v2026.10.14.102 fails.
 v2026.10.29.3 (the owner: "i definitely want to see kills well before enemies reach the alert range"): the first part runs with
 the kill range set to 3 (the v.99 rule: kills only within the alert range); then the gear sets it to 10, and a kill 9 jumps away
 shows in the Feed and Near You without an alert while one 12 jumps away doesn't. v2026.10.29.2 fails.
+v2026.10.29.4 (the owner: "i still have not seen a single killmail show up in the feed"; recorded live from his machine: 4 numbers
+missing for good, 100274284-287, with kills after them): four missing in a row, then kills. After a minute with no kill read
+(set, not waited) the page looks further ahead, finds them and reads on, the kill 7 jumps away shown, at most 12 requests a
+second; then 40 missing (wider than a read-back batch of 28), read past too, at most 40 of them kept to ask again; the
+status line says "last kill read N s ago", and after 5 minutes without one "no kill read for N min" in amber.
+v2026.10.29.3 fails (it waits at the gap for ever).
 """
 import sys, os, time, re, json
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -218,6 +224,49 @@ with sync_playwright() as p:
     near9 = pg.evaluate("(n) => [...document.querySelectorAll('#itNearList .it-nb')].filter(r => r.querySelector('.sys').textContent === n).map(r => r.classList.contains('alert'))", SYSNAME[S9])
     check(k9 == [f'{SYSNAME[S9]} 9 Jumps'] and not k12 and near9 == [False] and pg.evaluate("() => __fs.beeps") == b0 and pg.evaluate("() => itKillRange()") == 10,
           f'the kill range set to 10 under the gear: a kill 9 jumps away shows in the Feed and Near You, beyond the alert range (no alert); one 12 jumps away does not ({k9}, {k12}, {near9})')
+    # ---- v2026.10.29.4: a gap of 4 missing numbers, then kills (the owner's feed, 2026-10-29 10:05 UTC: 100274284-287 missing for good) ----
+    for _ in range(60):
+        if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
+        pg.wait_for_timeout(250)
+    s1 = pg.evaluate("() => (document.querySelector('[data-it-status]') || {}).textContent || ''")
+    check(re.search(r' · last kill read \d+ s ago$', s1) is not None, f'the status line says when a kill was last read {s1!r}')
+    S7 = next(i for i, d in sorted(D0.items()) if d == 7 and i in SYSNAME)
+    G0 = SEQ['last'] + 1
+    HOLES.update(range(G0, G0 + 4))   # four missing for good
+    REC[G0 + 4] = km(9200030, None, 30, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 3e6, sysid=S7)
+    SEQ['last'] = G0 + 9              # and kills after them
+    pg.wait_for_timeout(8000)         # v2026.10.29.3 waits here for ever: 1-3 past the gap missing reads as "nothing new yet"
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; }")   # a minute with no kill read (instead of waiting the minute)
+    r0 = len(REQS); t0 = time.time(); k7 = []
+    for _ in range(40):
+        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
+        if k7: break
+        pg.wait_for_timeout(500)
+    took = time.time() - t0; _, per_s = gaps_ok()
+    st = pg.evaluate("() => [it.kf.seq, it.kf.head, it.kf.holes.size, it.kf.target]")
+    check(k7 == [f'{SYSNAME[S7]} 7 Jumps'] and st[0] == SEQ['last'] + 1 and per_s <= 12,
+          f'4 missing in a row, then kills: after a minute with no kill the page looks further ahead, finds them and reads on; the kill 7 jumps away shown {took:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), holes {st[2]}, {len(REQS) - r0} requests, at most {per_s} in any second ({k7})')
+    # a gap wider than one read-back batch (28): 40 missing, then kills; the gap's numbers kept to ask again, at most 40
+    G1 = SEQ['last'] + 1
+    HOLES.update(range(G1, G1 + 40))
+    REC[G1 + 40] = km(9200031, None, 20, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 5e6, sysid=S7)
+    SEQ['last'] = G1 + 60
+    pg.wait_for_timeout(8000)
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; it.kf.stallAt = 0; }")   # (and the last look ahead a minute ago: at most once a minute)
+    t0 = time.time(); k7 = []
+    for _ in range(80):
+        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
+        if len(k7) == 2 and pg.evaluate("() => it.kf.head && !it.kf.busy"): break
+        pg.wait_for_timeout(500)
+    took = time.time() - t0; _, per_s = gaps_ok()
+    st = pg.evaluate("() => [it.kf.seq, it.kf.head, it.kf.holes.size]")
+    check(len(k7) == 2 and st[0] == SEQ['last'] + 1 and st[2] <= 40 and per_s <= 12,
+          f'40 missing in a row (wider than a read-back batch), then kills: read past them, the kill shown {took:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), {st[2]} numbers kept to ask again (at most 40), at most {per_s} requests in any second')
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 6 * 60000; }")
+    pg.wait_for_timeout(1200)
+    s2 = pg.evaluate("() => { const e = document.querySelector('[data-it-status] .it-kslow'); return e ? [e.textContent, getComputedStyle(e).color] : null; }")
+    check(s2 is not None and s2[0] == 'no kill read for 6 min' and s2[1] == 'rgb(217, 154, 60)', f'no kill read for 5 minutes or more: the status line says so in amber {s2}')
+    pg.evaluate("() => { it.kf.lastGot = Date.now(); }")
     pg.evaluate("() => [...[...document.querySelectorAll('#itFeedList .it-fd.kill')].find(x => x.querySelector('.it-chip.sys').textContent.startsWith('8WA-Z6')).querySelectorAll('.it-chip.p')].find(x => x.querySelector('.nm').textContent === 'Marrek Ketter').click()")
     pg.wait_for_function("() => !document.querySelector('#fitBtn').disabled && document.querySelector('#pilotBusy').hidden", timeout=120000); pg.wait_for_timeout(300)
     got = pg.evaluate("() => [document.querySelector('#pilotName').value, document.querySelector('#manualShip').value]")
@@ -231,7 +280,7 @@ with sync_playwright() as p:
     # ---- the filters ----
     def rows(): return pg.evaluate(ROWS)
     pg.select_option('[data-it-f="types"]', 'kills'); pg.wait_for_timeout(200)
-    check(all(r['ty'] in LABELS for r in rows()) and len(rows()) == 5, f'Types: kills only {[r["ty"] for r in rows()]}')
+    check(all(r['ty'] in LABELS for r in rows()) and len(rows()) == 7, f'Types: kills only {[r["ty"] for r in rows()]}')
     pg.select_option('[data-it-f="types"]', 'reports'); pg.wait_for_timeout(200)
     check(rows() and all(r['ty'] not in LABELS for r in rows()), 'Types: reports only')
     pg.select_option('[data-it-f="types"]', 'all'); pg.select_option('[data-it-f="dist"]', '1'); pg.wait_for_timeout(200)
@@ -245,7 +294,7 @@ with sync_playwright() as p:
     check(rows() and all('Ketter' in json.dumps(r) for r in rows()), f'Search by name: "ketter" {len(rows())} rows')
     pg.fill('[data-it-q]', 'crts'); pg.wait_for_timeout(200)
     kk = sorted(r['sys'] for r in rows() if r['ty'] in LABELS)
-    check(kk == sorted(['8WA-Z6 1 Jump', 'Y-OMTZ 3 Jumps', f'{SYSNAME[S9]} 9 Jumps']), f'Search by ticker: "crts" finds the kills with Crimson Tide pilots in them {kk}')
+    check(kk == sorted(['8WA-Z6 1 Jump', 'Y-OMTZ 3 Jumps', f'{SYSNAME[S9]} 9 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps']), f'Search by ticker: "crts" finds the kills with Crimson Tide pilots in them {kk}')
     pg.focus('[data-it-q]'); pg.keyboard.type('x'); pg.wait_for_timeout(4500)
     foc = pg.evaluate("() => [document.activeElement.matches('[data-it-q]'), document.activeElement.value, document.activeElement.selectionStart]")
     check(foc == [True, 'crtsx', 5], f'the search box keeps its focus and text while the lists redraw {foc}')
@@ -257,8 +306,11 @@ with sync_playwright() as p:
     for _ in range(60):   # caught up first (reading back has its own check of sequence.json), so this tests the live path
         if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
         pg.wait_for_timeout(500)
-    SEQ['fail'] = True; pg.evaluate("() => { it.kf.waitUntil = 0; }"); pg.wait_for_timeout(3000)
-    note = pg.evaluate(NOTE)
+    SEQ['fail'] = True; pg.evaluate("() => { it.kf.waitUntil = 0; }")
+    for _ in range(30):   # v2026.10.29.4: numbers kept to ask again go first (up to 40 here, 100 ms apart), then the note
+        note = pg.evaluate(NOTE)
+        if note: break
+        pg.wait_for_timeout(500)
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', 'T5ZI-S Kirra Longtail loki')); pg.wait_for_timeout(2600)
     still = pg.evaluate("() => [...document.querySelectorAll('#itFeedList .raw')].some(r => r.textContent.endsWith('T5ZI-S Kirra Longtail loki'))")
     check(note.endswith('(INTEL-05)') and still, f'R2Z2 failing (sequence.json too): INTEL-05, reports carry on ({note!r})')

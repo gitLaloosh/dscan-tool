@@ -170,6 +170,26 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
 
+## Kills after a long gap (v2026.10.29.4)
+
+The owner: "I should note that i still have not seen a single killmail show up in the feed" (v2026.10.29.3, kill range 10;
+kills 6 and 9 jumps away seen in RIFT were missing). At his request, a recording rather than a probe: the page's own kill
+reader, unchanged, in the browser pane from 10:04 to 10:47 UTC, slowed to at most 3 requests a second (1,879 requests, no
+error from zKillboard), logging each request and each kill with why it was kept or dropped.
+
+- Finding the newest worked (9 s), and so did the read-back. zKillboard had kills 1-3 minutes after they happened.
+- At 10:05 numbers 100274284-100274287 were missing, and still were 40 minutes later, while 100274288 on were there.
+  v.103 looks only 3 past a missing number, so the page read "nothing new yet" and asked for the same four every 8 s.
+  No kill was read after 10:05; the owner's kill (10:41, TZN-2V, 9 jumps) was never asked for. The far-behind check ran
+  only after a kill was read, so never.
+
+- **v2026.10.29.4: done.** No kill read for a minute while live: the page looks further ahead (4, 5, 6, 7, 8, 12, 16 ...
+  2048 past where it is; at most 16 requests, at most once a minute), and finding a kill there, finds the newest from it
+  and reads forward to it. Misses before a kill known further on are a gap, not the end (a gap wider than a read-back
+  batch is read past too). The gap's numbers are kept to ask again as before, at most 40. Intel's status line ends with
+  "last kill read N s ago" ("kills: catching up" while reading back), and after 5 minutes without one, "no kill read for
+  N min" in amber. No change to how often the page asks while kills arrive; every request still goes through itKillTurn.
+
 ## Three rings: kill range, alert range, in system (v2026.10.29.3)
 
 The owner, 2026-10-29, after a kill 9 jumps away (seen in RIFT) never reached the Feed: "i didn't understand that kills were
