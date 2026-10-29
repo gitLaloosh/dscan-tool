@@ -170,6 +170,21 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
 
+## Wider gaps (v2026.10.29.6)
+
+The owner, after committing v.29.5, with his console line: stuck at 100277236 for 6 minutes, waiting 4 minutes between
+looks, while RIFT showed two kills 8 jumps away. Probed from the browser pane: 100277236-275 missing (40 in a row), 276-295
+there (all published at 14:53:03-15, his two kills at 286 and 287), then more gaps. That day about 4 in 10 numbers were
+missing. sequence.json's file was last modified 2026-10-28 17:56 (and zKillboard's docs give it a 1-day cache), so it gives no
+newest to aim at; with a query added it isn't served at all. zKillboard's WebSocket (wss://zkillboard.com/websocket/) refuses
+connections (1006), and its current API docs list only R2Z2 as the live feed.
+
+- **v2026.10.29.6: done.** Live: 8 looked at past a missing number (was 3). After 30 s with no kill: reading through up to
+  128 missing in a row (was 32), then 16 in a row at 160, 256, 512, 1024 and 2048 past (was 8 at each of 32 ... 2048).
+  Finding the newest looks up to 64 past where halving stops (was 32). Finding nothing anywhere, the next look waits twice as
+  long, at most 1 minute (was 5). The owner: "what is the reason for waiting as long as 2 minutes between looks?"; agreed 1
+  minute. A quiet feed then costs at most one look (about 200 requests, nearly all misses) a minute.
+
 ## Patchy numbers, and the jump table kept current without a warning (v2026.10.29.5)
 
 **Kills.** The owner, the same afternoon: "it looks like that last kill feed fix didn't work" ("no kill read for 15 min" on

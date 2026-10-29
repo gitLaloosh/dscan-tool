@@ -54,6 +54,10 @@ v.29.4 looked at; after 30 s with no kill the page reads on number by number and
 one look costs at most 32 + 56 requests and the next comes a minute later (the wait doubles to 5 minutes). A start with 19
 missing in a row near the newest (his restart stopped there): the newest found past them. Requests per second are timed in the
 page (window.__r2t), not by the route handler, whose times bunch under load. v2026.10.29.4 fails.
+v2026.10.29.6 (the owner's console line and a probe of his feed at 14:47-14:53 UTC: 40 missing in a row, then 20 kills published
+together, then nothing more yet): read through the gap and the kill shown; one look costs at most 128 + 80 requests; the wait
+between looks finding nothing grows to 1 minute at most; 6 missing in a row while live are crossed at once (8 looked at past a
+missing number, was 3). Finding the newest at the start may take up to 120 requests. v2026.10.29.5 fails.
 """
 import sys, os, time, re, json
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -166,7 +170,7 @@ with sync_playwright() as p:
     took = time.time() - t0
     seq = [p_ for _, p_, _ in REQS]
     i0 = seq.index(f'/ephemeral/{START}.json') if f'/ephemeral/{START}.json' in seq else -1
-    check(seq[:1] == ['/ephemeral/sequence.json'] and 0 < i0 <= 80 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and took < 40,
+    check(seq[:1] == ['/ephemeral/sequence.json'] and 0 < i0 <= 120 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and took < 40,
           f'R2Z2: sequence.json (stale: {SEQ["stale"]}), the newest kill found in {i0 - 1} requests past a hole where halving stops ({SEQ["last"] - 8}), then read from 240 before it ({START}) past two more holes; the kill in range shown after {took:.0f} s')
     pg.wait_for_timeout(3000)
     R = pg.evaluate(ROWS)
@@ -297,10 +301,54 @@ with sync_playwright() as p:
     # nothing new anywhere: it looks less often (30 s, then 1, 2, 4, 5 min), so a quiet feed isn't asked hundreds of times a minute
     r0 = len(REQS); s0 = pg.evaluate("() => it.kf.seq")
     pg.evaluate("() => { it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; it.kf.waitUntil = 0; }")
-    pg.wait_for_timeout(16000)
+    for _ in range(80):   # one look: up to 208 requests at 10 a second
+        pg.wait_for_timeout(500)
+        if pg.evaluate("() => it.kf.stallAt > 0 && !it.kf.busy"): break
     gap1 = pg.evaluate("() => it.kf.stallGap")
-    n1 = sum(1 for _, p_, _ in REQS[r0:] if re.search(r'/(\d+)\.json$', p_) and int(re.search(r'/(\d+)\.json$', p_).group(1)) >= s0 + 3)   # past the live end's own 3 (the numbers kept to ask again are older)
-    check(gap1 == 60000 and n1 <= 32 + 7 * 8, f'nothing new anywhere: {n1} requests for one look (32 read on, 8 at each of 7 places further), then the next look a minute later, not 30 s (stallGap {gap1})')
+    n1 = sum(1 for _, p_, _ in REQS[r0:] if re.search(r'/(\d+)\.json$', p_) and int(re.search(r'/(\d+)\.json$', p_).group(1)) >= s0 + 9)   # past the live end's own 8 (v2026.10.29.6; the numbers kept to ask again are older)
+    check(gap1 == 60000 and n1 <= 128 + 5 * 16, f'nothing new anywhere: {n1} requests for one look (v2026.10.29.6: 128 read on, 16 at each of 5 places further), then the next look a minute later, not 30 s (stallGap {gap1})')
+    # v2026.10.29.6: the wait grows to 2 minutes at most (v.29.5: 5; the owner's page was looking every 4 minutes when his kills came)
+    CAP = pg.evaluate("() => typeof IT_KILL_STALL_MAX_MS === 'number' ? IT_KILL_STALL_MAX_MS : 0")
+    pg.evaluate("(c) => { it.kf.stallGap = c; it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; it.kf.waitUntil = 0; }", CAP)
+    for _ in range(80):
+        pg.wait_for_timeout(500)
+        if pg.evaluate("() => it.kf.stallAt > 0 && !it.kf.busy"): break
+    gap2 = pg.evaluate("() => it.kf.stallGap")
+    check(CAP == 60000 and gap2 == CAP, f'nothing found again with the wait at its longest: it stays there, 1 minute (v.29.5: 5; {gap2})')
+    # ---- v2026.10.29.6: 6 missing in a row while live: crossed at once (8 looked at past a missing number, was 3), no 30 s wait ----
+    for _ in range(60):
+        if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
+        pg.wait_for_timeout(250)
+    pg.evaluate("() => { it.kf.lastGot = Date.now(); it.kf.stallGap = 30000; }")
+    R0 = SEQ['last'] + 1
+    HOLES.update(range(R0, R0 + 6))
+    REC[R0 + 6] = km(9200034, None, 10, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 7e6, sysid=S7)
+    SEQ['last'] = R0 + 8
+    t0 = time.time(); k7 = []
+    for _ in range(30):
+        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
+        if len(k7) == 4: break
+        pg.wait_for_timeout(500)
+    check(len(k7) == 4 and time.time() - t0 < 15, f'6 missing in a row while live: the kill after them shown in {time.time() - t0:.0f} s, without the 30 s look (v.29.5 looked 3 past a missing number)')
+    # ---- v2026.10.29.6: the owner's feed at 14:47-14:53 UTC: 40 missing in a row, then 20 kills published together, then nothing
+    # more yet. v.29.5 read through 32 and its first window further on (32-39 past) fell inside the gap ----
+    for _ in range(60):
+        if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
+        pg.wait_for_timeout(250)
+    Q0 = SEQ['last'] + 1
+    HOLES.update(range(Q0, Q0 + 40))
+    REC[Q0 + 50] = km(9200033, None, 10, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 6e6, sysid=S7)
+    SEQ['last'] = Q0 + 59
+    pg.wait_for_timeout(8000)
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; it.kf.stallGap = 30000; }")
+    t0 = time.time(); k7 = []
+    for _ in range(80):
+        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
+        if len(k7) == 5 and pg.evaluate("() => it.kf.head && !it.kf.busy && it.kf.seq > " + str(SEQ['last'])): break
+        pg.wait_for_timeout(500)
+    st = pg.evaluate("() => [it.kf.seq, it.kf.stallGap]"); per_s = per_s_page(pg)
+    check(len(k7) == 5 and st[0] == SEQ['last'] + 1 and per_s <= 12,
+          f'40 missing in a row, then 20 kills and nothing more yet (the owner\'s feed at 14:53): read through the gap, the kill shown {time.time() - t0:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), at most {per_s} requests in any second')
     pg.evaluate("() => { it.kf.lastGot = Date.now() - 6 * 60000; }")
     pg.wait_for_timeout(1200)
     s2 = pg.evaluate("() => { const e = document.querySelector('[data-it-status] .it-kslow'); return e ? [e.textContent, getComputedStyle(e).color] : null; }")
@@ -325,7 +373,7 @@ with sync_playwright() as p:
     # ---- the filters ----
     def rows(): return pg.evaluate(ROWS)
     pg.select_option('[data-it-f="types"]', 'kills'); pg.wait_for_timeout(200)
-    check(all(r['ty'] in LABELS for r in rows()) and len(rows()) == 8, f'Types: kills only {[r["ty"] for r in rows()]}')
+    check(all(r['ty'] in LABELS for r in rows()) and len(rows()) == 10, f'Types: kills only {[r["ty"] for r in rows()]}')
     pg.select_option('[data-it-f="types"]', 'reports'); pg.wait_for_timeout(200)
     check(rows() and all(r['ty'] not in LABELS for r in rows()), 'Types: reports only')
     pg.select_option('[data-it-f="types"]', 'all'); pg.select_option('[data-it-f="dist"]', '1'); pg.wait_for_timeout(200)
@@ -339,7 +387,7 @@ with sync_playwright() as p:
     check(rows() and all('Ketter' in json.dumps(r) for r in rows()), f'Search by name: "ketter" {len(rows())} rows')
     pg.fill('[data-it-q]', 'crts'); pg.wait_for_timeout(200)
     kk = sorted(r['sys'] for r in rows() if r['ty'] in LABELS)
-    check(kk == sorted(['8WA-Z6 1 Jump', 'Y-OMTZ 3 Jumps', f'{SYSNAME[S9]} 9 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps']), f'Search by ticker: "crts" finds the kills with Crimson Tide pilots in them {kk}')
+    check(kk == sorted(['8WA-Z6 1 Jump', 'Y-OMTZ 3 Jumps', f'{SYSNAME[S9]} 9 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps']), f'Search by ticker: "crts" finds the kills with Crimson Tide pilots in them {kk}')
     pg.focus('[data-it-q]'); pg.keyboard.type('x'); pg.wait_for_timeout(4500)
     foc = pg.evaluate("() => [document.activeElement.matches('[data-it-q]'), document.activeElement.value, document.activeElement.selectionStart]")
     check(foc == [True, 'crtsx', 5], f'the search box keeps its focus and text while the lists redraw {foc}')

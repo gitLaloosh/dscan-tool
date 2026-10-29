@@ -2391,7 +2391,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.5</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.6</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -22651,15 +22651,25 @@ const IT_KILL_REFIND_MS = 5 * 60000;         //   find the newest again, at most
 // console): stuck at 100275281 for 24 minutes. From 12:30 UTC the numbers were patchy: 100275281-299 missing, 300 there, then
 // many more missing between kills (305, 313, 320, 329, 345, 409 ...). v.29.4 looked ahead at fixed numbers only, and every one
 // of them was a missing one. Now, after 30 s with no kill, it reads forward one number after another until 32 in a row are
-// missing past the last kill it found (at most 400), so any gap under 32 is crossed whatever its pattern; only then does it
-// look further, 8 numbers in a row at each of 32, 64, 128 ... 2048 past. Finding nothing at all, it waits longer before the next
+// missing past the last kill it found, so any gap under that is crossed whatever its pattern; only then does it look
+// further, several numbers in a row at each spot (the numbers: v2026.10.29.6 below). Finding nothing at all, it waits longer before the next
 // look (30 s, 1, 2, 4, then 5 min), so a quiet feed isn't asked hundreds of times a minute.
 const IT_KILL_STALL_MS = 30000;              // no kill read for this long while live: read forward past the gap (v.29.4: a minute)
-const IT_KILL_STALL_MAX_MS = 5 * 60000;      //   and when that finds nothing at all, twice as long before the next look, at most 5 minutes
-const IT_KILL_SCAN_GAP = 32;                 // reading forward stops after 32 missing in a row past the last kill found
-const IT_KILL_SCAN_MAX = 400;                //   or after 400 numbers (the next look carries on from there at once)
-const IT_KILL_JUMPS = [32, 64, 128, 256, 512, 1024, 2048];   // then further on: 8 numbers in a row at each, stopping at the first kill
-const IT_KILL_WINDOW = 8;
+// v2026.10.29.6 (the owner, the same afternoon, with his console line: stuck at 100277236 for 6 minutes while RIFT showed two
+// kills 8 jumps away). Probed from the browser pane: 100277236-275 missing (40 in a row), 276-295 there (all published at
+// 14:53, his two kills among them), then more gaps. v.29.5 read through 32 and its first window (268-275) stopped one short of
+// 276; finding nothing, it had backed off to a look every 4 minutes. About 4 in 10 numbers were missing that day, in runs of up
+// to 40, and sequence.json (Last-Modified 2026-10-28 17:56) gives no newest to aim at. Now: 8 looked at past a missing number
+// while live (was 3), reading through up to 128 missing (was 32), 16 in a row at each spot further on (was 8), and at most 1
+// minute between looks (was 5). The wait only grows when a look finds nothing anywhere, so a quiet feed costs at most one
+// look (about 200 requests, nearly all misses) a minute, about 3.5 a second; the owner: "what is the reason for waiting as long
+// as 2 minutes between looks?" LESSON #99
+const IT_KILL_STALL_MAX_MS = 60000;          //   and when that finds nothing at all, twice as long before the next look, at most 1 minute (v.29.5: 5)
+const IT_KILL_SCAN_GAP = 128;                // reading forward stops after 128 missing in a row past the last kill found (v.29.5: 32)
+const IT_KILL_SCAN_MAX = 600;                //   or after 600 numbers (the next look carries on from there at once)
+const IT_KILL_JUMPS = [160, 256, 512, 1024, 2048];   // then further on: 16 numbers in a row at each, stopping at the first kill
+const IT_KILL_WINDOW = 16;
+const IT_KILL_HEAD_LOOK = 64;                // finding the newest: past where halving stops, up to 64 on (v.29.5: 32; v.103: 3)
 const IT_KILL_HOLES_MAX = 40;                // missing numbers kept to ask again; past that they're skipped (a long gap isn't asked for 4 times over)
 const IT_KILL_SLOW_MS = 5 * 60000;           // no kill read for 5 minutes: the status line says so, in amber
 const IT_FEED_TYPES = [['all', 'All'], ['reports', 'Reports'], ['kills', 'Kills']];
@@ -23259,7 +23269,7 @@ async function itKillSeq(){
   if(!r.ok) throw new Error(`status ${r.status}`);
   return Number((await r.json()).sequence) || 0;
 }
-const IT_KILL_LOOK = 3;                        // v.103: a missing number: the next 3 are looked at; one there makes it a hole
+const IT_KILL_LOOK = 8;                        // v.103: a missing number: the next ones are looked at; one there makes it a hole (v2026.10.29.6: 8, was 3)
 const IT_KILL_RETRY_MS = [6000, 30000, 120000, 300000];   // v.103: a hole is asked for again after these, then dropped
 function itKillMissedLately(n){ const t = it.kf.asked.get(n); return t !== undefined && Date.now() - t < IT_KILL_WAIT_MS; }
 async function itKillAfter(n){   // the first kill in n+1 .. n+IT_KILL_LOOK, skipping numbers found missing in the last 6 s
@@ -23284,14 +23294,14 @@ async function itKillFindHead(seq, gen){   // the newest kill at or past seq: st
       if(await itKillGet(lo + step)){ lo += step; step *= 2; } else { hi = lo + step; break; }
     }
     while(hi - lo > 1 && gen === it.gen){ const m = Math.floor((lo + hi) / 2); if(await itKillGet(m)) lo = m; else hi = m; }
-    const a = await itKillAfterN(lo, IT_KILL_SCAN_GAP);   // v.103: stopped at a hole? a kill just past it means the newest is further on (v2026.10.29.5: up to 32 on, was 3)
+    const a = await itKillAfterN(lo, IT_KILL_HEAD_LOOK);   // v.103: stopped at a hole? a kill just past it means the newest is further on (v2026.10.29.5: up to 32 on, was 3)
     if(!a) return lo;
     lo = a.n;
   }
   return lo;
 }
 function itKillHole(n){ if(!it.kf.holes.has(n) && it.kf.holes.size < IT_KILL_HOLES_MAX) it.kf.holes.set(n, {tries: 0, at: Date.now() + IT_KILL_RETRY_MS[0]}); }
-async function itKillScan(gen, got){   // v2026.10.29.5: read forward from kf.seq until 32 missing in a row past the last kill found; true when one was
+async function itKillScan(gen, got){   // v2026.10.29.5: read forward from kf.seq until IT_KILL_SCAN_GAP missing in a row past the last kill found; true when one was
   const kf = it.kf, from = kf.seq;
   let last = -1, miss = 0, n = from;
   for(; n < from + IT_KILL_SCAN_MAX && miss < IT_KILL_SCAN_GAP && gen === it.gen; n++){
@@ -23305,7 +23315,7 @@ async function itKillScan(gen, got){   // v2026.10.29.5: read forward from kf.se
   if(miss < IT_KILL_SCAN_GAP) kf.stallAt = 0;   // stopped at 400 while still finding kills: carry on at once
   return true;
 }
-async function itKillAhead(from, gen){   // v2026.10.29.5: the first kill in 8 numbers in a row at 32, 64 ... 2048 past from, or null
+async function itKillAhead(from, gen){   // v2026.10.29.5: the first kill in IT_KILL_WINDOW numbers in a row at each of IT_KILL_JUMPS past from, or null
   for(const d of IT_KILL_JUMPS){
     for(let w = 0; w < IT_KILL_WINDOW; w++){
       if(gen !== it.gen) return null;

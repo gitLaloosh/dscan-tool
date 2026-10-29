@@ -901,6 +901,11 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   to mean "the end" (here 32), then probe further with windows (8 in a row), not single spots. Back off when nothing is
   found anywhere, so a quiet source isn't hammered. Test with the pattern that broke it, including a check that the old
   build fails. When a user says a fix didn't work, ask for the program's own state first (a console line is enough).
+- **And again (v2026.10.29.6), the same day:** v.29.5 read through 32; the owner's feed then had 40 missing in a row, and v.29.5's
+  first window further on fell inside the gap. It had also backed off to a look every 4 minutes. Sizes taken from the gaps
+  seen so far were outgrown within hours. Size limits from measurements of the live source over a longer stretch (here about
+  4 in 10 numbers missing, runs up to 40), leave a wide margin (128), and keep the back-off short enough that a missed kill
+  is still news (1 minute).
 
 ## 98. A reader that waits for data must notice when it has waited too long; and a hard bug may need a recording, not a probe
 

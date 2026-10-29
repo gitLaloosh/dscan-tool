@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — Intel: kills past wider gaps</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel: kills past wider gaps</h1>
+<p><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.29.5</code> &rarr; <code>v2026.10.29.6</code></p>
+<p>The owner, after committing v.29.5, sent his console line and two kill links: the page had read no kill for 6 minutes and was waiting 4 minutes between looks, while RIFT showed both kills 8 jumps away.</p>
+
+<h2>How it was found</h2>
+<ul>
+<li>His page's state: waiting at 100277236, last look 165 s earlier, the next one 4 minutes after it.</li>
+<li>Probed from the browser pane: 100277236 to 275 missing, 40 in a row; 276 to 295 there, all published together at 14:53 (his two kills at 286 and 287); then more gaps. v.29.5 read through 32 missing, and its first window further on (32 to 39 past) fell inside the gap. Finding nothing, it had doubled its wait three times.</li>
+<li>About 4 in 10 numbers were missing that day. sequence.json was last changed the day before (zKillboard's docs give it a 1-day cache) and can't be asked for fresh, so the page has no newest number to aim at.</li>
+<li>The owner also asked about two articles on zKillboard's WebSocket. Tried from the pane, <code>wss://zkillboard.com/websocket/</code> refuses the connection, and zKillboard's current API docs list only R2Z2 as the live feed.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>While live,</b> 8 numbers are looked at past a missing one (was 3), so short gaps are crossed with no wait.</li>
+<li><b>After 30 s with no kill,</b> the page reads through up to 128 missing in a row (was 32), then checks 16 in a row at 160, 256, 512, 1024 and 2048 past (was 8 at each spot).</li>
+<li><b>Finding the newest</b> at the start looks up to 64 past where it stops (was 32).</li>
+<li><b>The wait between looks</b> that find nothing grows to 1 minute at most (was 5). The owner asked why it waits at all: it keeps a quiet feed from being asked about 7 times a second, nearly all misses, for as long as it stays quiet. Now a quiet feed costs at most one look a minute, about 3.5 requests a second, and every request still goes through the one gate (at most 10 a second).</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_kills_check.py</code>, new parts: his feed at 14:53 (40 missing in a row, then 20 kills, then nothing more yet): read through and the kill shown; 6 missing while live: the kill after them shown in under 15 s, with no 30 s wait; the wait at its longest stays at 1 minute. v2026.10.29.5 fails.</li>
+<li>Three broken versions, each caught: reading through only 32, a 5-minute cap, a look of 3 past a missing number.</li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 47 steps, all OK. All 45 page checks pass. The lints, the personal-data check and the request-gate check report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #99, again: sizes taken from the gaps seen so far were outgrown within hours. Size limits from measurements of the live source over a longer stretch, leave a wide margin, and keep the back-off short enough that a missed kill is still news.</p>
+</body></html>
