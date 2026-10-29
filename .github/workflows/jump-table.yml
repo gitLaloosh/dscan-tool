@@ -1,0 +1,46 @@
+# v2026.10.29.5 (the owner: "Eve deploys patches very often. is there a way to automate the update so the user never has
+# to see it?"): twice a day, compare the page's jump table with the stargates in CCP's newest published static data
+# (tools/jump_table_update.py). Nothing happens when no gate changed (nearly every patch). When one did, it opens a pull
+# request with the new table for the owner to merge; it never commits to the main branch itself.
+# Needs, once: Settings > Actions > General > Workflow permissions: "Read and write permissions" and "Allow GitHub
+# Actions to create and approve pull requests". Run it by hand from the Actions tab ("Run workflow").
+name: Jump table
+on:
+  schedule:
+    - cron: '47 11 * * *'   # after EVE's daily downtime (11:00 UTC); CCP published build 3660036 at 11:10
+    - cron: '17 23 * * *'   # a second look, for a late publish
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: jump-table
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare with CCP's static data
+        id: check
+        run: python3 -I tools/jump_table_update.py index.html --write --body "$RUNNER_TEMP/jump-pr.md"
+      - name: Open a pull request (only when a gate changed)
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD: ${{ steps.check.outputs.build }}
+          BASE: ${{ github.event.repository.default_branch }}
+        run: |
+          branch="jump-table/build-$BUILD"
+          if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            echo "A pull request branch for build $BUILD already exists ($branch); nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add index.html
+          git commit -m "Jump table: stargates changed in EVE build $BUILD"
+          git push origin "$branch"
+          gh pr create --base "$BASE" --head "$branch" --title "Jump table: stargates changed in EVE build $BUILD" --body-file "$RUNNER_TEMP/jump-pr.md"
