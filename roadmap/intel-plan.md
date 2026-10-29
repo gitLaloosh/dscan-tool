@@ -169,3 +169,17 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itStandIcon / itStandKind, itSecKey / itSecText / itSysTitle, itJumpsHtml, itKillWord / itKillBadges,
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
+
+## No system, no report (v2026.10.14.102)
+
+The owner's bug report (a screenshot of the Feed, 2026-10-29): two rows with no system, one "CLEAR" and one "STATUS?", and
+a "Probe" ship chip. The lines behind them, read in his log for their shape only: `78 status?` (a system shortened to two
+characters, too short to place), then a bare `clr` (its answer), and `<system> <pilot> probe` followed three seconds
+later by `<system> clr`: a pilot passing through in a Probe frigate, read correctly. The owner: "we shouldn't generate a
+'report' if it doesn't contain a valid system name."
+
+- **v2026.10.14.102: done.** itReports drops a line with no system it can read before anything else: no Feed row, no
+  Near You change, its words not looked up as pilots (no /universe/ids/ request for them); it still counts as the
+  channel's last line. itParse no longer makes "status?" from a question with no system (it could not reach a row).
+- Not done: tying an answer ("clr") to the question it answers ("78 status?"). A two-character system can't be placed,
+  and a guessed answer could clear the wrong system.

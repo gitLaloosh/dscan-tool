@@ -2384,7 +2384,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.101</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.102</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -22851,8 +22851,7 @@ function itParse(msg, mySys){
     if(x.lw === 'no' && W[i + 1] && /^vis(ual)?$/.test(W[i + 1].lw) && !used[i + 1]){ kw.add('no visual'); used[i] = used[i + 1] = 'kw'; i++; continue; }
     if(IT_KW[x.lw]){ kw.add(IT_KW[x.lw]); used[i] = 'kw'; continue; }
     if(IT_FILLER.has(x.lw) || /^\d+$/.test(x.w)){ used[i] = 'f'; continue; }
-    if(x.q && !sys.length) kw.add('status?');
-  }
+  }   // v.102: a question with no system ("loc?") no longer becomes "status?": a line with no system makes no report (itReports)
   // what is left: runs of words that may be pilot names (a '*' ends a linked name)
   const runs = [];
   let run = [];
@@ -23066,7 +23065,13 @@ async function itTick(){
   }
 }
 async function itReports(lines, gen){
-  const mySys = itMySys(), parsed = lines.map(l => ({l, p: itParse(l.msg, mySys)}));
+  // v2026.10.14.102 (the owner: "we shouldn't generate a 'report' if it doesn't contain a valid system name"): a line with
+  // no system the page can read ("78 status?", a bare "clr", "<pilot> loc?") is chatter or an answer to another line. It
+  // gets no Feed row and changes nothing in Near You, and its words are not looked up as pilots. It still counts as the
+  // channel's last line.
+  for(const l of lines) it.lastLine = Math.max(it.lastLine, l.t);
+  const mySys = itMySys(), parsed = lines.map(l => ({l, p: itParse(l.msg, mySys)})).filter(x => x.p.sys.length);
+  if(!parsed.length) return;
   const cands = new Set();
   for(const x of parsed) for(const c of itCandidates(x.p)) cands.add(c);
   try{ await itResolve(cands); }catch(e){ it.note = withCode(`Pilot names: ${e.message}`, e.code || 'ESI-01'); }

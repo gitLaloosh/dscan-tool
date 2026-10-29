@@ -19,6 +19,9 @@ names: the real names of the 17 systems within 4 jumps of 1DQ1-A, Jita and New C
   * reports: linked names with '*', two pilots in a run, +3, ships with x2, Standings colours (hostile, neutral, friendly),
     nv keeps who was seen, clr, status? (no row), "QX-L" read as the nearest QX- system (QX-LIJ, not QX-LOO), the
     "Pilot (Ship) jumped A from B" shape, a Chinese ship name, "New Caldari" and "Jita" but not "jita", words left plain;
+  * v2026.10.14.102 (the owner: no "report" without a valid system name): "78 status?", a bare "clr" and "<pilot> loc?"
+    make no Feed row and change nothing in Near You, their words are never looked up, and they still count as the last
+    line; every report row in the Feed names a system;
   * Near You: nearest first, a red row and an alert (sound + notification) for hostile/neutral within 3 jumps only, once per
     system; friendly-only hidden; the header's "N near";
   * your system follows a jump in Local (jumps redrawn); a relog's new file is read; settings kept;
@@ -73,6 +76,7 @@ SYSID = {v: k for k, v in SYSNAME.items()}
 D0 = bfs(SYSID['1DQ1-A'])
 ONE_WORD = {'Marrek': 96000001, 'Ketter': 96000002, 'Inside': 96000003, 'ESS': 96000004}   # v.99: real characters have such names; a place word must never reach them
 NAMES_CALLS, STATUS = [], {'v': str(J['build']), 'names_fail': False}
+IDS_ASKED = set()   # v.102: every name sent to /universe/ids/
 def esi(route):
     url, body = route.request.url, route.request.post_data or ''
     if '/universe/names/' in url:
@@ -81,6 +85,7 @@ def esi(route):
             NAMES_CALLS.append(len(q))
             if STATUS['names_fail']: return route.fulfill(status=503, content_type='application/json', body='{"error":"down"}')
             return route.fulfill(status=200, content_type='application/json', body=json.dumps([{'id': i, 'name': SYSNAME[i], 'category': 'solar_system'} for i in q]))
+    if '/universe/ids/' in url: IDS_ASKED.update(n.lower() for n in json.loads(body))
     if '/universe/ids/' in url:   # two made-up one-word pilots, "Marrek" and "Ketter": "Marrek Ketter" must still read as one pilot
         q = [n.lower() for n in json.loads(body)]
         one = [{'id': i, 'name': n} for n, i in ONE_WORD.items() if n.lower() in q]
@@ -205,7 +210,10 @@ with sync_playwright() as p:
       + line(T + 4, 'Gate Watcher', 'Anouk Morrow (Scimitar) jumped QX-L from 4K-TRB')
       + line(T + 5, 'Someone', 'D-W7F0 秃鹫级 x2')
       + line(T + 6, 'Someone', f'MO-GZ5 {FRIEND}')
-      + line(T + 7, 'Someone', 'New Caldari Jita jita blorp zzt'))
+      + line(T + 7, 'Someone', 'New Caldari Jita jita blorp zzt')
+      + line(T + 8, 'Kai Rhenn', '78 status?')            # v.102: no system the page can read (the owner's live report shape)
+      + line(T + 9, 'Scout Alt', 'clr')
+      + line(T + 10, 'Gate Watcher', 'Zorvan Quill loc?'))
     tick(pg, 3200)
     F = pg.evaluate(FEED)
     got = {f['raw']: f for f in F}
@@ -222,6 +230,11 @@ with sync_playwright() as p:
     r = got.get('Someone > New Caldari Jita jita blorp zzt')
     check(r and r['chips'] == [['sys', f'New Caldari {D0[30000145]}j'], ['sys', f'Jita {D0[30000142]}j']] and r['left'] == 'jita blorp zzt',
           f'"New Caldari" and "Jita" but not "jita"; words left plain {r}')
+    nosys = ['Kai Rhenn > 78 status?', 'Scout Alt > clr', 'Gate Watcher > Zorvan Quill loc?']
+    last = pg.evaluate("() => it.lastLine")
+    check(not [r for r in nosys if r in got] and all(any(c[0] == 'sys' for c in f['chips']) for f in F if f['chips'] is not None)
+          and not {'zorvan quill', 'zorvan', 'quill', 'loc'} & IDS_ASKED and abs(last / 1000 - (T + 10)) < 1.5,
+          f'no system, no report: "78 status?", "clr", "Zorvan Quill loc?" make no Feed row and are not looked up; still the last line ({[r for r in nosys if r in got]}, {sorted({"zorvan quill", "zorvan", "quill", "loc"} & IDS_ASKED)})')
     near = pg.evaluate(NEAR)
     wn = [['1DQ1-A', '0j', 'clear', 'reported clear by Scout Alt', False],
           ['8WA-Z6', '1j', '5 hostile', 'Marrek Ketter, Vesna Dossier +3 · Sabre, Vedmak ×2, Loki', True],

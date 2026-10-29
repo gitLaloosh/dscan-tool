@@ -878,6 +878,17 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 92. Before fixing what a screenshot shows, read the line that produced it
+
+- **What happened (v2026.10.14.102, the owner's bug report: a screenshot of the Feed):** two rows had no system, and a
+  report showed a pilot with a "Probe" ship chip. From the picture alone, "Probe" looked like the scanning-probes word
+  read as the Probe frigate, and a fix was being planned for it. The intel line itself, read in the owner's log for its
+  shape only, was `<system> <pilot> probe`, then `<system> clr` three seconds later: a pilot passing through in a Probe,
+  read correctly. The rows with no system were `78 status?` and its bare answer `clr`.
+- **Do this instead:** a screenshot shows the page's output, not its input. Find the input (the log line, the paste,
+  the killmail) and decide from it what the page should have shown before changing the parser; a fix built on a
+  guess about the input can break a reading that was right. Read real logs for their shape only and never save them.
+
 ## 91. Before handing over a history rewrite, run its replacement list on the cleaned tree first
 
 - **What happened (v2026.10.14.101, after the owner rewrote the git history):** the replacement list for

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — No system, no report</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>No system, no report</h1>
+<p><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.14.101</code> &rarr; <code>v2026.10.14.102</code></p>
+<p>The owner's bug report, through the inbox: "intel feed parsing error", with a screenshot of the Feed. Two rows had no system: one said "CLEAR", the other had only "STATUS?". Another report showed a pilot with a "Probe" ship. When asked to fix it, he added: "perhaps we shouldn't generate a 'report' if it doesn't contain a valid system name."</p>
+
+<h2>What the lines were</h2>
+<p>I read his intel log around the screenshot's minute, for the lines' shape only (nothing from it is saved here):</p>
+<ul>
+<li><code>78 status?</code>: a system shortened to two characters. That's too short to place, so the page made a "STATUS?" row with no system.</li>
+<li><code>clr</code>, on its own: the answer to that question. The page made a "CLEAR" row with no system.</li>
+<li><code>&lt;system&gt; &lt;pilot&gt; probe</code>, then <code>&lt;system&gt; clr</code> three seconds later: a pilot passing through in a Probe frigate. The page read it correctly, so nothing changes there.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li>A line with no system the page can read makes no report. It gets no Feed row and changes nothing in Near You. Its words aren't looked up as pilots either, which saves an ESI request for chatter.</li>
+<li>Such a line still counts as the channel's "last line" in the status line, so a busy channel still looks busy.</li>
+<li>Lines with a system are unchanged, including "&lt;system&gt; status?".</li>
+<li>Not done: linking an answer ("clr") to the question it answers. A two-character system can't be placed, and a guess could clear the wrong system.</li>
+<li>No number the engine works out changed. ERRORS.md is unchanged (46 codes).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_check.py</code> adds <code>78 status?</code>, a bare <code>clr</code> and <code>Zorvan Quill loc?</code> (a made-up name) to its batch of reports. It checks that:
+  <ul>
+  <li>none of them gets a Feed row;</li>
+  <li>every report row names a system;</li>
+  <li>none of their words reaches <code>/universe/ids/</code>;</li>
+  <li>the last line's time is the last of them.</li>
+  </ul>
+  v2026.10.14.101 fails.</li>
+<li>Mutants caught:
+  <ul>
+  <li>the last line not updated for a dropped line;</li>
+  <li>the words looked up before the line is dropped.</li>
+  </ul></li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 44 steps, UP TO DATE. The personal-data step flagged only an old mockup that was never in the repository; on the repository's files it reports 0 problems. All 44 page checks pass. The card-name, subtext and error-code lints report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #92: a screenshot shows the page's output, not its input. From the picture, "Probe" looked like the scanning-probes word read as a ship, and a fix was being planned for it. The line itself showed a pilot in a Probe, read correctly. Find the input (the log line, the paste, the killmail) and decide from it what the page should have shown before changing the parser. Read real logs for their shape only and never save them.</p>
+</body></html>
