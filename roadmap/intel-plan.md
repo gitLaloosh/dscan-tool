@@ -170,6 +170,20 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
 
+## Three rings: kill range, alert range, in system (v2026.10.29.3)
+
+The owner, 2026-10-29, after a kill 9 jumps away (seen in RIFT) never reached the Feed: "i didn't understand that kills were
+limited only to the Alert range. i definitely want to see kills well before enemies reach the alert range. i think of this in
+three stages ... I'd consider feed range as the ring of awareness, alert range is my ring of being alert and then the 'IN
+SYSTEM' badge to say, hey, they're here." He chose a setting under the gear.
+
+- **v2026.10.29.3: done.** Gear box 4 is "Range and alerts": "Feed: kills within N jumps" (3, 5, 7, 10, 15, 20, 30; default
+  10; kept as killRange in dscanIntel) and "Alert: within N jumps" as before. Kills are kept within the larger of the two
+  (itKillRange); the Feed's Distance no longer widens it, and its list goes to 30. Chat reports still show at any distance.
+  A widened range applies to kills read from then on.
+- Requests don't change: the page reads every kill on the live feed either way and keeps the near ones; a wider ring only
+  adds name lookups on ESI for the kills kept.
+
 ## The switch back on the card (v2026.10.29.1)
 
 The owner, via the inbox, 2026-10-29: "high prio - move the intel toggle back inside the intel tab next to the settings

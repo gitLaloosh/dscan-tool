@@ -177,7 +177,7 @@ with sync_playwright() as p:
     check(hdr == ['sideChip', True, 0], f'v2026.10.29.1: no Intel switch in the header, only the "N near" pill beside Standings, hidden {hdr}')
     pg.click('#tabBtnIntel'); pg.wait_for_timeout(200)
     box = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-setup .it-box .k')].map(k => k.textContent)")
-    check(box == ['1 · Chat logs folder', '2 · Intel channels', '3 · You', '4 · Alerts'], f'the card: four setup boxes {box}')
+    check(box == ['1 · Chat logs folder', '2 · Intel channels', '3 · You', '4 · Range and alerts'], f'the card: four setup boxes {box}')
     sws = pg.evaluate("() => { const l = document.querySelector('#intelSwLabel'); return [document.querySelectorAll('input.mys-sw[aria-label=\"Watch the intel channels\"]').length, !!l && !!l.closest('#intelPanel .it-head'), l && l.nextElementSibling && l.nextElementSibling.dataset.itAct, l && l.querySelector('input').checked, l && l.textContent.trim(), (document.querySelector('#intelPanel .it-sub') || {}).textContent || '']; }")
     check(sws[:5] == [1, True, 'gear', False, 'Off'] and 'The switch beside the gear starts and stops it' in sws[5], f'v2026.10.29.1 (the owner: users "didn\'t see how to turn intel on while on the intel tab"): one on/off switch, on the Intel card beside the gear, off; the card says so {sws[:5]}')
     setup_logs(pg)
@@ -307,13 +307,17 @@ with sync_playwright() as p:
     # ---- the gear ----
     pg.click('[data-it-act="gear"]'); pg.wait_for_timeout(200)
     pop = pg.evaluate("() => { const p = document.querySelector('.it-pop'); return p && [...p.querySelectorAll('.it-box .k')].map(k => k.textContent); }")
-    check(pop == ['Chat logs folder', 'Intel channels', 'You', 'Alerts'], f'the gear opens the settings while watching {pop}')
+    check(pop == ['Chat logs folder', 'Intel channels', 'You', 'Range and alerts'], f'the gear opens the settings while watching {pop}')
     opt = pg.evaluate("""() => [...document.querySelectorAll('.it-pop select option')].map(o => { const c = getComputedStyle(o); return [c.backgroundColor, c.color]; })""")
     lum = lambda c: (lambda v: 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2])([int(x) for x in re.findall(r'\d+', c)[:3]])
     check(opt and all(re.match(r'rgb\(', bg) and lum(bg) < 60 and lum(fg) > 180 for bg, fg in opt),
           f'the open lists of the settings: light text on a dark background (v.96: light on white on Windows) {sorted(set(map(tuple, opt)))}')
     pg.select_option('.it-pop [data-it-set="range"]', '5'); pg.wait_for_timeout(100)
     check(pg.evaluate("() => JSON.parse(localStorage.getItem('dscanIntel')).range") == 5, 'alert range kept')
+    kr = pg.evaluate("() => [document.querySelector('.it-pop [data-it-set=\"killRange\"]').value, [...document.querySelectorAll('.it-pop [data-it-set=\"killRange\"] option')].map(o => o.value).join(',')]")
+    pg.select_option('.it-pop [data-it-set="killRange"]', '15'); pg.wait_for_timeout(100)
+    check(kr == ['10', '3,5,7,10,15,20,30'] and pg.evaluate("() => [JSON.parse(localStorage.getItem('dscanIntel')).killRange, itKillRange()]") == [15, 15],
+          f'v2026.10.29.3: the Feed\'s kill range under the gear, 10 jumps unless changed, kept (15) {kr}')
     pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
     check(pg.evaluate("() => !document.querySelector('.it-pop')"), 'Escape closes the settings')
     # ---- off ----

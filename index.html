@@ -2390,7 +2390,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.2</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.3</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2729,7 +2729,7 @@ const CARD_INFO = {
   "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from the stargate list in the EVE client's own data (no jump bridges, no wormholes); the page says when EVE has been patched since that list was checked.",
   "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
   "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
-  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 10-15 small requests a minute) and keeps the kills within your alert range (or the Feed's Distance, if wider), NPC kills left out. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser.",
+  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 10-15 small requests a minute) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser.",
   "{card:itnear}: each system reported in the time you set, nearest first: everyone and every ship reported there in that time until someone reports it clear (the same ship type twice counts once, at its larger number); clear or no visual when that is the latest word. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
   "A pilot's name (in {card:itfeed} and {card:itnear}) opens them in the Pilot Analyzer; when the line puts them in a ship (\"Pilot (Ship)\", or one pilot and one ship), in that ship. Assess sends a system's reported pilots and ships to the {card:sysan}, where Intel's pairing is their possible ship; Restore my paste puts back what you had there. The copy button on a line copies its shape with system and pilot names replaced, to report a line read wrong.",
   "Nothing from your logs leaves the browser except the words looked up on ESI, and none of it is kept after you close the page."
@@ -22639,9 +22639,13 @@ const IT_KILL_PROBE_MS = 100;                // v.103: every R2Z2 request starts
 const IT_KILL_FAR_MS = 60 * 60000;           // v.100: a kill uploaded over an hour ago means the page has fallen far behind (a sleeping tab):
 const IT_KILL_REFIND_MS = 5 * 60000;         //   find the newest again, at most once per 5 minutes
 const IT_FEED_TYPES = [['all', 'All'], ['reports', 'Reports'], ['kills', 'Kills']];
-const IT_FEED_DIST = [0, 1, 2, 3, 5, 10];   // 0: any distance
+const IT_FEED_DIST = [0, 1, 2, 3, 5, 10, 15, 20, 30];   // 0: any distance (v2026.10.29.3: up to 30, as far as kills can reach)
 const IT_FEED_SORT = [['new', 'Newest'], ['near', 'Nearest']];
 const IT_RANGES = [1, 2, 3, 4, 5, 7, 10], IT_FORGET = [5, 10, 15, 20, 30, 60];
+// v2026.10.29.3 (the owner: "i definitely want to see kills well before enemies reach the alert range ... feed range as the ring of
+// awareness, alert range is my ring of being alert and then the 'IN SYSTEM' badge to say, hey, they're here"): how far kills
+// reach in the Feed and Near You, set under the gear; never less than the alert range. (Chat reports show at any distance.)
+const IT_KILL_RANGES = [3, 5, 7, 10, 15, 20, 30], IT_KILL_RANGE_DEFAULT = 10;
 const IT_NAME_MAX = 37, IT_NAME_WORDS = 3;   // EVE character names: at most 37 characters (and 3 words here)
 const it = {
   set: null, on: false, dir: null, dirName: '', perm: '', files: new Map(), local: null, me: null,
@@ -22652,7 +22656,7 @@ const it = {
   rawOpen: new Set()   // v.100: Feed rows showing the line as typed
 };
 function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0, asked: new Map(), holes: new Map()}; }   // v.103: asked = when each number was last asked for; holes = missing numbers with kills after them
-function itDefaults(){ return {channels: [], me: null, range: 3, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
+function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
 function itReadSet(){
   const d = itDefaults();
   try{
@@ -22661,6 +22665,7 @@ function itReadSet(){
       if(Array.isArray(r.channels)) d.channels = r.channels.filter(c => typeof c === 'string').slice(0, 20);
       if(Number(r.me) > 0) d.me = Number(r.me);
       if(IT_RANGES.includes(Number(r.range))) d.range = Number(r.range);
+      if(IT_KILL_RANGES.includes(Number(r.killRange))) d.killRange = Number(r.killRange);   // v2026.10.29.3
       if(IT_FORGET.includes(Number(r.forget))) d.forget = Number(r.forget);
       for(const k of ['sound', 'notify', 'hideFriendly']) if(typeof r[k] === 'boolean') d[k] = r[k];
       const f = r.feed && typeof r.feed === 'object' ? r.feed : {};   // v.99: the Feed's filters
@@ -23173,7 +23178,7 @@ function itThreat(st){ const L = itLive(st); return st.kind === 'seen' ? !L.frie
 function itCount(st){ const L = itLive(st), n = Math.max(L.pilots.filter(x => x.side !== 'f').length + L.extra, L.count); return n || L.ships.reduce((s, x) => s + x.n, 0); }   // v.104: a head count ("3 red") counts when larger
 
 // ---- v.99: kills nearby, from zKillboard's live feed (R2Z2), read only while Intel is on ----
-function itKillRange(){ return Math.max(it.set.range, it.set.feed.dist || 0); }   // kept: within your alert range, or the Feed's Distance if wider
+function itKillRange(){ return Math.max(it.set.range, it.set.killRange || IT_KILL_RANGE_DEFAULT); }   // v2026.10.29.3: kept within the Feed's kill range (the gear), at least the alert range (was: the alert range, or the Feed's Distance if wider)
 // v.100: zKillboard's live feed as it really behaves (checked from the GitHub Pages address, 2026-10-28, after the owner: "are we
 // actually capturing kills right now?"):
 //  * sequence.json can lag far behind: it read 100263992 (last changed 17:56 UTC) while kills to 21:06 UTC were already
@@ -23721,7 +23726,7 @@ function itSettingsHtml(numbered){
     <div class="it-box">${n(1, 'Chat logs folder')}<div class="v">${it.dir ? escapeHtml(it.dirName) : 'not chosen'}</div><div class="c">${it.dir ? 'EVE’s Chatlogs folder' : 'Documents\\EVE\\logs\\Chatlogs; the browser asks once'}</div><button type="button" data-it-act="folder">${it.dir ? 'Change…' : 'Choose folder…'}</button></div>
     <div class="it-box">${n(2, 'Intel channels')}${chans.length ? chans.map(c => `<label><input type="checkbox" data-it-chan="${escapeHtml(c)}"${it.set.channels.includes(c) ? ' checked' : ''}> ${escapeHtml(c)}</label>`).join('') : `<div class="c">${it.dir ? 'No channel logs from the last 2 days.' : 'Found in the folder.'}</div>`}</div>
     <div class="it-box">${n(3, 'You')}${chars.length ? chars.map(c => `<label><input type="radio" name="itMe" data-it-me="${c.id}"${c.id === it.set.me ? ' checked' : ''}> ${escapeHtml(c.name)} <span class="it-dim">${escapeHtml(c.sys || '')}</span></label>`).join('') : `<div class="c">${it.dir ? 'No Local log from the last 2 days: log in once with Log Chat to File on.' : 'From your Local log; follows you as you jump.'}</div>`}</div>
-    <div class="it-box">${n(4, 'Alerts')}<label>within <select data-it-set="range">${opts(IT_RANGES, it.set.range, '')}</select> jumps</label><label><input type="checkbox" data-it-set="sound"${it.set.sound ? ' checked' : ''}> sound</label><label><input type="checkbox" data-it-set="notify"${it.set.notify ? ' checked' : ''}> desktop notification${notifyNote}</label><label>forget reports after <select data-it-set="forget">${opts(IT_FORGET, it.set.forget, ' min')}</select></label><label><input type="checkbox" data-it-set="hideFriendly"${it.set.hideFriendly ? ' checked' : ''}> hide friendlies</label></div>
+    <div class="it-box">${n(4, 'Range and alerts')}<label title="The ring of awareness: kills this close show in ${escapeHtml(cardName('itfeed'))} and ${escapeHtml(cardName('itnear'))} (chat reports show at any distance)">Feed: kills within <select data-it-set="killRange">${opts(IT_KILL_RANGES, it.set.killRange, '')}</select> jumps</label><label title="The ring of being alert: a hostile or neutral this close sounds and notifies">Alert: within <select data-it-set="range">${opts(IT_RANGES, it.set.range, '')}</select> jumps</label><label><input type="checkbox" data-it-set="sound"${it.set.sound ? ' checked' : ''}> sound</label><label><input type="checkbox" data-it-set="notify"${it.set.notify ? ' checked' : ''}> desktop notification${notifyNote}</label><label>forget reports after <select data-it-set="forget">${opts(IT_FORGET, it.set.forget, ' min')}</select></label><label><input type="checkbox" data-it-set="hideFriendly"${it.set.hideFriendly ? ' checked' : ''}> hide friendlies</label></div>
   </div>`;
 }
 function itStatusLine(){
@@ -23806,7 +23811,7 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
     }
     const k = t.dataset.itSet;
     if(!k) return;
-    if(k === 'range' || k === 'forget') it.set[k] = Number(t.value);
+    if(k === 'range' || k === 'forget' || k === 'killRange') it.set[k] = Number(t.value);
     else it.set[k] = t.checked;
     if(k === 'notify' && t.checked && typeof Notification !== 'undefined' && Notification.permission === 'default'){ Notification.requestPermission().then(() => itRender()).catch(() => {}); }
     itWriteSet(); itRender();

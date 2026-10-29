@@ -878,6 +878,18 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 97. A limit the user can't see reads as a bug: name it where they set things
+
+- **What happened (v2026.10.29.3, the owner: "the kills in this RIFT feed are not showing up in the tool's Feed. Should it
+  have?"):** since v.99 the page kept kills only within the alert range (or the Feed's Distance if wider), while chat reports
+  showed at any distance. The rule was in the code and the info panel, but not where the alert range is set, so a kill 9
+  jumps away was missing from a Feed that showed reports about the same system. The owner: "i didn't understand that kills
+  were limited only to the Alert range."
+- **Do this instead:** when a setting also narrows what is collected, give that limit its own control, named for what it
+  does, beside the related settings. Here the gear has "Feed: kills within N jumps" next to "Alert: within N jumps". Before
+  answering "should it have shown?", check the input against every rule that drops data; here that was the jump count from
+  the page's own table. Don't stop at the rule you remember.
+
 ## 96. A scroll area inside the page must not trap the wheel; test scrolling with the mouse over it
 
 - **What happened (v2026.10.29.2, users: "you can't scroll the page if your mouse is over any part of that card"):**

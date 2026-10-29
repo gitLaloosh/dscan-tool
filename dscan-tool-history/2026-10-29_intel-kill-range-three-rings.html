@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — Intel: a kill range of its own, three rings</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel: a kill range of its own, three rings</h1>
+<p><span class="tag">Change</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.29.2</code> &rarr; <code>v2026.10.29.3</code></p>
+<p>The owner had RIFT open beside the tool and asked why its kills weren't in the tool's Feed. One was 9 jumps away, in a system the Feed already showed chat reports for. Since v.99, kills had been kept only within the alert range (3 jumps by default), or within the Feed's Distance filter if that was wider. Chat reports show at any distance.</p>
+<p>The owner: "i didn't understand that kills were limited only to the Alert range. i definitely want to see kills well before enemies reach the alert range ... I'd consider feed range as the ring of awareness, alert range is my ring of being alert and then the 'IN SYSTEM' badge to say, hey, they're here." He chose a setting under the gear.</p>
+
+<h2>How it was checked</h2>
+<ul>
+<li>The two kills, from their zKillboard pages: one in C-N4OD and one in N3-JBX.</li>
+<li>Jumps from the owner's system, counted with the page's own table of stargates: 35 and 9.</li>
+<li>Both were beyond a 3-jump alert range, so the tool dropped them by design.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>The gear's fourth box</b> is now called "Range and alerts" and has two settings:
+  <ul>
+  <li><b>Feed: kills within N jumps</b>: 3, 5, 7, 10, 15, 20 or 30, default 10. Kills this close show in the Feed and Near You.</li>
+  <li><b>Alert: within N jumps</b>, as before: a hostile or neutral this close sounds an alert and sends a notification.</li>
+  </ul></li>
+<li>"In system" still marks your own system.</li>
+<li>Kills are kept within the larger of the two ranges. The Feed's Distance filter no longer widens what is kept; it only filters what's shown, and its list now goes up to 30.</li>
+<li>Chat reports still show at any distance.</li>
+<li>A wider range applies to kills read from then on.</li>
+<li><b>No extra zKillboard requests.</b> The page already reads every kill on the live feed and drops the far ones. A wider ring only adds ESI name lookups for the kills it keeps.</li>
+<li>The info panel explains the three rings.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_kills_check.py</code> runs its first part with the kill range at 3, which is the old rule. It then sets the range to 10 in the gear. A kill 9 jumps away then shows in the Feed and Near You with no alert, and a kill 12 jumps away doesn't.</li>
+<li><code>intel_check.py</code> checks that box 4 is "Range and alerts", that the kill range defaults to 10 with options 3 to 30, and that a new choice is kept.</li>
+<li>v2026.10.29.2 fails: there is no kill range in the gear, the 9-jump kill is missing, and the kill counts are short.</li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 45 steps, all OK. All 45 page checks pass. The lints, the personal-data check and the request-gate check report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #97: a limit the user can't see reads as a bug. When a setting also narrows what is collected, give that limit its own control, named for what it does, beside the related settings. Before answering "should it have shown?", check the input against every rule that drops data, not just the one you remember.</p>
+</body></html>

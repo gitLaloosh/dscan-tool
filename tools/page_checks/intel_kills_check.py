@@ -39,6 +39,9 @@ missing between kills, and a hidden tab's timers firing late and together. Check
   * never over 12 requests in any second, here and in a tab whose timers fire only every 2 s (as a hidden tab's do),
     where the read-back still finishes (v.100 started 28 at once there; zKillboard blocks an address over 15 a second).
 v2026.10.14.102 fails.
+v2026.10.29.3 (the owner: "i definitely want to see kills well before enemies reach the alert range"): the first part runs with
+the kill range set to 3 (the v.99 rule: kills only within the alert range); then the gear sets it to 10, and a kill 9 jumps away
+shows in the Feed and Near You without an alert while one 12 jumps away doesn't. v2026.10.29.2 fails.
 """
 import sys, os, time, re, json
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -134,7 +137,7 @@ with sync_playwright() as p:
         ctx = new_ctx(w)
         if init: ctx.add_init_script(init)
         pg = ctx.new_page(); pg.goto('file://' + HTML)
-        pg.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); localStorage.setItem('dscanIntel', JSON.stringify({channels: ['region.intel'], me: 95000001, range: 3, sound: true, notify: true, forget: 15, hideFriendly: true})); }", SIDE)
+        pg.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); localStorage.setItem('dscanIntel', JSON.stringify({channels: ['region.intel'], me: 95000001, range: 3, killRange: 3, sound: true, notify: true, forget: 15, hideFriendly: true})); }", SIDE)
         pg.reload(); pg.wait_for_timeout(400)
         setup_logs(pg); pg.click('#tabBtnIntel'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300); pg.click('#intelSwLabel')
         return ctx, pg
@@ -193,6 +196,28 @@ with sync_playwright() as p:
     check(al[0] == 1 and al[1] == [['8WA-Z6 · 1 jump', f'Friendly lost: {FRIEND} lost a Sabre (62.4M ISK)']], f'the live kill alerts: sound and notification "Friendly lost: ..."; kills by friendlies only do not {al}')
     pr = pg.evaluate("() => { const st = it.near.get(it.names.byLower.get('8wa-z6')); return Object.fromEntries([...st.pairs].map(([id, s]) => [st.pilots.find(x => x.id === id).name, s.name])); }")
     check(pr == {'Marrek Ketter': 'Vedmak', 'Seren Ketter': 'Sabre'}, f'each attacker paired with their ship {pr}')
+    # ---- v2026.10.29.3: the Feed's kill range (the owner: "feed range as the ring of awareness, alert range is my ring of being alert") ----
+    pg.click('[data-it-act="gear"]'); pg.wait_for_timeout(200)
+    has_kr = pg.locator('.it-pop [data-it-set="killRange"]').count() == 1
+    check(has_kr, 'the gear has the Feed\'s kill range')
+    if has_kr: pg.select_option('.it-pop [data-it-set="killRange"]', '10'); pg.wait_for_timeout(200)
+    pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
+    S9 = next(i for i, d in sorted(D0.items()) if d == 9 and i in SYSNAME); S12 = next(i for i, d in sorted(D0.items()) if d == 12 and i in SYSNAME)
+    for _ in range(60):
+        st = pg.evaluate("() => [it.kf.head && !it.kf.busy, it.kf.waitUntil - Date.now()]")
+        if st[0]: break
+        pg.wait_for_timeout(250)
+    b0 = pg.evaluate("() => __fs.beeps")
+    REC[L0 + 4] = km(9200020, None, 30, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 2e6, sysid=S9)
+    REC[L0 + 5] = km(9200021, None, 30, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 2e6, sysid=S12)
+    SEQ['last'] += 2
+    pg.wait_for_timeout(9000)
+    R = pg.evaluate(ROWS)
+    k9 = [r['sys'] for r in R if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S9] + ' ')]
+    k12 = [r['sys'] for r in R if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S12] + ' ')]
+    near9 = pg.evaluate("(n) => [...document.querySelectorAll('#itNearList .it-nb')].filter(r => r.querySelector('.sys').textContent === n).map(r => r.classList.contains('alert'))", SYSNAME[S9])
+    check(k9 == [f'{SYSNAME[S9]} 9 Jumps'] and not k12 and near9 == [False] and pg.evaluate("() => __fs.beeps") == b0 and pg.evaluate("() => itKillRange()") == 10,
+          f'the kill range set to 10 under the gear: a kill 9 jumps away shows in the Feed and Near You, beyond the alert range (no alert); one 12 jumps away does not ({k9}, {k12}, {near9})')
     pg.evaluate("() => [...[...document.querySelectorAll('#itFeedList .it-fd.kill')].find(x => x.querySelector('.it-chip.sys').textContent.startsWith('8WA-Z6')).querySelectorAll('.it-chip.p')].find(x => x.querySelector('.nm').textContent === 'Marrek Ketter').click()")
     pg.wait_for_function("() => !document.querySelector('#fitBtn').disabled && document.querySelector('#pilotBusy').hidden", timeout=120000); pg.wait_for_timeout(300)
     got = pg.evaluate("() => [document.querySelector('#pilotName').value, document.querySelector('#manualShip').value]")
@@ -206,7 +231,7 @@ with sync_playwright() as p:
     # ---- the filters ----
     def rows(): return pg.evaluate(ROWS)
     pg.select_option('[data-it-f="types"]', 'kills'); pg.wait_for_timeout(200)
-    check(all(r['ty'] in LABELS for r in rows()) and len(rows()) == 4, f'Types: kills only {[r["ty"] for r in rows()]}')
+    check(all(r['ty'] in LABELS for r in rows()) and len(rows()) == 5, f'Types: kills only {[r["ty"] for r in rows()]}')
     pg.select_option('[data-it-f="types"]', 'reports'); pg.wait_for_timeout(200)
     check(rows() and all(r['ty'] not in LABELS for r in rows()), 'Types: reports only')
     pg.select_option('[data-it-f="types"]', 'all'); pg.select_option('[data-it-f="dist"]', '1'); pg.wait_for_timeout(200)
@@ -220,7 +245,7 @@ with sync_playwright() as p:
     check(rows() and all('Ketter' in json.dumps(r) for r in rows()), f'Search by name: "ketter" {len(rows())} rows')
     pg.fill('[data-it-q]', 'crts'); pg.wait_for_timeout(200)
     kk = sorted(r['sys'] for r in rows() if r['ty'] in LABELS)
-    check(kk == ['8WA-Z6 1 Jump', 'Y-OMTZ 3 Jumps'], f'Search by ticker: "crts" finds the kills with Crimson Tide pilots in them {kk}')
+    check(kk == sorted(['8WA-Z6 1 Jump', 'Y-OMTZ 3 Jumps', f'{SYSNAME[S9]} 9 Jumps']), f'Search by ticker: "crts" finds the kills with Crimson Tide pilots in them {kk}')
     pg.focus('[data-it-q]'); pg.keyboard.type('x'); pg.wait_for_timeout(4500)
     foc = pg.evaluate("() => [document.activeElement.matches('[data-it-q]'), document.activeElement.value, document.activeElement.selectionStart]")
     check(foc == [True, 'crtsx', 5], f'the search box keeps its focus and text while the lists redraw {foc}')
