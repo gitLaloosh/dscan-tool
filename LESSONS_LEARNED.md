@@ -878,6 +878,21 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 91. Before handing over a history rewrite, run its replacement list on the cleaned tree first
+
+- **What happened (v2026.10.14.101, after the owner rewrote the git history):** the replacement list for
+  `git-filter-repo --replace-text` held every original D-Scan ship name from the two real pastes, mapped to its
+  scrambled form. Some were short and generic: a cut-off name `Prophecy N` became `Prophecy W`. Literal rules match
+  anywhere, with no word boundary, so the rewrite also turned `Prophecy Navy Issue` into `Prophecy Wavy Issue` in
+  `index.html` (the Intel ship-name table and a comment) and in `regression_suite/dscan_parse_tests.mjs`, in every commit
+  including the newest, and GitHub Pages served it. Found by comparing the owner's fresh clone with the delivered
+  files after he finished; fixed by restoring the two files and dropping the rule.
+- **Do this instead:** before giving anyone a replacement list, apply it the way git-filter-repo does (literals in
+  order, then regexes, no word boundaries) to the already-cleaned files. The cleaned tree holds no personal data, so
+  every match there is damage: drop or lengthen that rule until the run changes nothing. List only strings that are
+  personal (names, paths, handles), not every string that once sat next to them. After the rewrite, compare a fresh
+  clone with the delivered files (ignoring line endings) before calling it done.
+
 ## 90. A public repository keeps everything you save in it: check every saved file for personal data, pictures included
 
 - **What happened (v2026.10.14.100, the owner: "that comment with my personal file location makes it pretty clear that
