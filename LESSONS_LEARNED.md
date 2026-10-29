@@ -878,6 +878,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 96. A scroll area inside the page must not trap the wheel; test scrolling with the mouse over it
+
+- **What happened (v2026.10.29.2, users: "you can't scroll the page if your mouse is over any part of that card"):**
+  v2026.10.14.15 made the Fit column sticky and, so a tall card could still be read, gave it `max-height: 100vh`,
+  `overflow-y: auto` and `overscroll-behavior: contain`. A Fit card taller than the window then had its own scroll area:
+  the wheel over it scrolled the card to its end and stopped (contain: no hand-off to the page). `layout_check.py`
+  tested the column staying put through a state change, at a window tall enough for the test fit, and never turned the
+  wheel over the card.
+- **Do this instead:** avoid a scroll area inside the page unless it is a list meant to scroll on its own (a popup list).
+  Pin a column only while it fits the window (here `.fl-pin`, set from its height by a ResizeObserver and on resize),
+  and let a taller one scroll with the page. Test with the mouse wheel over the element at a short window and a tall
+  one, and check that the page moved.
+
 ## 95. Put a control where people look for it, and don't let a number say something it doesn't
 
 - **What happened (v2026.10.29.1, the owner, from other users):** v.97 moved Intel's on/off switch from the Intel card to the

@@ -3,6 +3,9 @@ tablet (1100) and phone (375, mobile emulation) widths and checks the .fit-layou
 control still works after the move: mode buttons, the ASB out-of-charges toggle, module states, reset, and
 the Pilot Analyzer's per-loss tabs (built with renderFitTabs from a pasted fit). Also checks there is no
 sideways scrolling and that, from 900px up, the Fit column stays pinned while a state change recalculates.
+v2026.10.29.2 (users: "you can't scroll the page if your mouse is over any part of that card"): the Fit column is
+pinned only while the card fits the window and never has a scroll area of its own; the mouse wheel over it scrolls
+the page, at a tall window and a short one, and the pin comes back when the window grows.
 v2026.10.14.16 (Phase 2): the Ring / List fit view -- default per width, one tile per module copy (same count
 as the list's state rows), no two tiles overlapping and all inside the ring (a full 8/8/8 rack fit with rigs
 and subsystems), a tile click recalculates like a list button, and the choice is remembered after a reload.
@@ -126,6 +129,25 @@ with sync_playwright() as p:
             check(pg.inner_text(R + ' .fl-stats') != t0, f'{W}: ASB charges toggle re-renders')
         pg.locator(R + ' button.ms-reset').click(); pg.wait_for_function("() => !document.querySelector('#fitAnalyzerResults button.ms-reset.is-custom')", timeout=30000); pg.wait_for_timeout(300)
         check(dps() == d0, f'{W}: reset to best case restores DPS')
+        if W >= 900:   # v2026.10.29.2 (users: "you can't scroll the page if your mouse is over any part of that card")
+            FL = "document.querySelector('#fitAnalyzerResults .fl-fit')"
+            def wheel_over_fit(h):   # the page scrolled so the card's top is on screen, the mouse over the card, 900 px of wheel
+                pg.set_viewport_size({'width': W, 'height': h}); pg.wait_for_timeout(400)
+                pg.evaluate(f"window.scrollTo(0, ({FL}.offsetHeight > innerHeight - 24 ? {FL}.getBoundingClientRect().top - 20 : {FL}.closest('.fit-layout').getBoundingClientRect().top) + scrollY)"); pg.wait_for_timeout(300)
+                x, y = pg.evaluate(f"(() => {{ const r = {FL}.getBoundingClientRect(); return [r.x + r.width / 2, Math.min(Math.max(r.top, 0) + 80, innerHeight - 20)]; }})()")
+                inside = pg.evaluate(f"([x, y]) => !!(document.elementFromPoint(x, y) || document.body).closest('.fl-fit')", [x, y])
+                y0 = pg.evaluate('scrollY'); room = pg.evaluate('document.documentElement.scrollHeight - innerHeight - scrollY'); pg.mouse.move(x, y)
+                for _ in range(3): pg.mouse.wheel(0, 300); pg.wait_for_timeout(150)
+                pg.wait_for_timeout(300)
+                st = pg.evaluate(f"(() => {{ const e = {FL}, c = getComputedStyle(e); return [e.classList.contains('fl-pin'), c.position, c.overflowY, e.scrollTop, e.offsetHeight]; }})()")
+                moved = pg.evaluate('scrollY') - y0
+                return st + [inside, round(moved), moved >= min(600, room) - 2 and room > 200]
+            s1 = wheel_over_fit(900)
+            check(s1[:4] == [True, 'sticky', 'visible', 0] and s1[5] and s1[7], f'{W}: a Fit card that fits the window is pinned, with no scroll area of its own; the wheel over it scrolls the page {s1}')
+            s2 = wheel_over_fit(min(480, s1[4] - 60))
+            check(s2[:4] == [False, 'static', 'visible', 0] and s2[5] and s2[7], f'{W}: a Fit card taller than the window is not pinned and has no scroll area; the wheel over it scrolls the page (v2026.10.29.1: the card scrolled to its end, then nothing) {s2}')
+            s3 = wheel_over_fit(900)
+            check(s3[:2] == [True, 'sticky'], f'{W}: the window made tall again: pinned again {s3}')
         # Pilot Analyzer path: renderFitTabs with two "losses" built from the same paste
         pg.click('#tabBtnPilot')
         res = run_async(pg, """async (text) => {

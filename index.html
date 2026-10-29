@@ -1101,7 +1101,11 @@
   .fit-layout .fit-summary{margin:0 0 14px;}
   .fit-layout > div > .fit-summary:first-child{margin-top:0;}
   @media (min-width: 900px){
-    .fl-fit{position:sticky; top:12px; max-height:calc(100vh - 24px); overflow-y:auto; overscroll-behavior:contain;}
+    /* v2026.10.29.2 (users: "you can't scroll the page if your mouse is over any part of that card"): the Fit column had
+       its own scroll area (max-height + overflow + overscroll-behavior:contain), so the wheel over a Fit card taller than
+       the window scrolled the card to its end and then stopped. Now it is sticky only while it fits the window
+       (.fl-pin, set by flPinUpdate); a taller one has no scroll area of its own and moves with the page. */
+    .fl-fit.fl-pin{position:sticky; top:12px;}
     .fl-fit .fit-summary{margin-bottom:0;}
   }
   /* v.37 (card-layout-plan.md step 2): every column and band is a size container, so each card lays out by
@@ -2386,7 +2390,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.1</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.2</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -16467,6 +16471,21 @@ function fitLayoutHtml(f, idToName, cardOpts = {}){
       <div class="fl-stats">${parts.stats}</div>
     </div>`;
 }
+// v2026.10.29.2: the Fit column is pinned (.fl-pin, sticky in the stylesheet from 900 px up) only while the card fits the
+// window with its 12 px margins; a taller card scrolls with the page. Checked whenever a Fit column appears or changes
+// size (module states, drones, the Charges list) and when the window is resized.
+const FL_PIN_MARGIN = 24;
+let flPinRo = null;
+function flPinUpdate(el){ if(el && el.classList) el.classList.toggle('fl-pin', el.offsetHeight > 0 && el.offsetHeight <= window.innerHeight - FL_PIN_MARGIN); }
+function flPinAll(){ if(typeof document !== 'undefined' && document.querySelectorAll) for(const el of document.querySelectorAll('.fl-fit')) flPinUpdate(el); }
+(function flPinInit(){
+  if(typeof window === 'undefined' || typeof document === 'undefined' || !document.addEventListener || typeof ResizeObserver !== 'function' || typeof MutationObserver !== 'function') return;   // LESSON #36: stub DOM
+  flPinRo = new ResizeObserver((es) => { for(const e of es) flPinUpdate(e.target); });
+  const watch = (root) => { if(root.matches && root.matches('.fl-fit')) flPinRo.observe(root); if(root.querySelectorAll) for(const el of root.querySelectorAll('.fl-fit')) flPinRo.observe(el); };
+  new MutationObserver((ms) => { for(const m of ms) for(const n of m.addedNodes) if(n.nodeType === 1) watch(n); }).observe(document.documentElement, {childList: true, subtree: true});
+  window.addEventListener('resize', flPinAll);
+  watch(document.documentElement);
+})();
 
 // ==== FIT LAYOUT TABLE (v2026.10.14.37) ====
 // The owner 2026-10-23: "place the new card for applied damage at the top above the other cards", option B (two
@@ -19348,8 +19367,10 @@ function wireCharges(container, f, rerender, run){
   // (checked again once its rows are in: "Working out..." is short, the full list may not fit)
   if(f.chgJustOpened){
     if(f.chgData) f.chgJustOpened = false;
-    const r = pop.getBoundingClientRect(), card = pop.closest('.fit-summary');
-    if(card && (r.top < 0 || r.bottom > window.innerHeight)) card.scrollIntoView({block: 'start'});
+    // v2026.10.29.2: the page scrolls just enough to show the whole list (was: the card's top brought to the top, which worked
+    // while the Fit column was its own scroll area; a pinned card isn't, and scrolling a sticky card into view can stop short)
+    const r = pop.getBoundingClientRect();
+    if(r.top < 0 || r.bottom > window.innerHeight) window.scrollBy(0, r.top < 0 ? r.top - 12 : Math.min(r.bottom - window.innerHeight + 12, r.top - 12));
   }
   const body = pop.querySelector('.chg-body');
   if(f.chgFocus && f.chgData){ const sec = body.querySelector(`.chg-w[data-weapon="${f.chgFocus}"]`); if(sec) body.scrollTop = sec.offsetTop - body.offsetTop; f.chgFocus = null; f.chgScroll = body.scrollTop; }

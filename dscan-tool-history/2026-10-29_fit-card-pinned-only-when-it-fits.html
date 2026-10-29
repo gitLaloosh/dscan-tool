@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — The Fit card pinned only when it fits</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Fit card pinned only when it fits</h1>
+<p><span class="tag">Fix</span><span class="tag">Layout</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.29.1</code> &rarr; <code>v2026.10.29.2</code></p>
+<p>The owner, from users: "you can't scroll the page if your mouse is over any part of that card." He chose option B of three: keep the Fit card pinned only while it fits the window.</p>
+
+<h2>What I found</h2>
+<ul>
+<li>Since v2026.10.14.15 the Fit column has been sticky from 900 px up. That came from bug #1: a module state change made the page jump. To keep a tall card readable, the column also had <code>max-height: 100vh</code>, <code>overflow-y: auto</code> and <code>overscroll-behavior: contain</code>.</li>
+<li>Reproduced in Chromium at 1440 px with the mouse over the card:
+  <ul>
+  <li>In a 900 px tall window, the card fit and the wheel scrolled the page.</li>
+  <li>In a 600 px window, the card was taller than the window, so it had its own scroll area. The wheel scrolled the card to its end (13 px or 180 px) and then stopped; the page didn't move. <code>contain</code> stops the hand-off to the page.</li>
+  <li>With <code>contain</code> removed, the card scrolled first and then the page.</li>
+  </ul></li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li>The Fit column is pinned (sticky, 12 px from the top) only while the card fits the window. When it is taller, it scrolls with the page like the other cards.</li>
+<li>The card never has a scroll area of its own, so the wheel always scrolls the page.</li>
+<li>The page checks the card's height whenever a Fit card appears, whenever it changes size (module states, drones, the Charges list) and whenever the window is resized (<code>flPinUpdate</code>, a ResizeObserver).</li>
+<li>The Charges list now scrolls the page just enough to show itself when it opens. Before, it brought the card's top into view, which only worked while the Fit column was its own scroll area. <code>charges_check.py</code> caught this: with the card pinned lower on the page, the list ran past the bottom of the window and the drag source was off screen.</li>
+<li>Bug #1 stays fixed: the fit has its own column, so a state change still doesn't move it, pinned or not.</li>
+<li>Phones are unchanged (one column, nothing pinned). No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>layout_check.py</code> at 1440 and 1100 px, with the mouse over the Fit card and 900 px of wheel:
+  <ul>
+  <li>a tall window: pinned, no scroll area, the page scrolls;</li>
+  <li>a short window: not pinned, no scroll area, the page scrolls;</li>
+  <li>the window made tall again: pinned again.</li>
+  </ul>
+  v2026.10.29.1 fails: the card scrolled 133 px and the page stayed put.</li>
+<li>The existing check, that the fit column stays pinned through a state change, still passes.</li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 45 steps, all OK. All 45 page checks pass, on the final build.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #96: a scroll area inside the page must not trap the wheel. Pin a column only while it fits the window, and let a taller one scroll with the page. Test by turning the mouse wheel over the element in both a short and a tall window, and check that the page moved.</p>
+</body></html>
