@@ -878,6 +878,22 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 93. A hidden tab's timers fire late and together: pace a rate-limited service by the clock, in a worker
+
+- **What happened (v2026.10.14.103, the owner: "the intel feed is still not showing any kills"):** v.100 read back
+  zKillboard's live feed in batches, starting 28 requests with timers 80 ms apart. In a hidden tab (the owner plays with
+  the page behind the game) the browser runs timers late and together, so the 28 went out at once. zKillboard blocks an
+  address that asks more than 15 times a second, for an hour, and then every file fails. Its feed also has numbers
+  missing between kills: v.100 waited on a missing one for ever, and finding the newest could stop at one (an hour
+  behind). The test double had neither: no holes, and timers that ran on time. Probing the live feed from the owner's
+  browser to find this got his address blocked too, by the same burst.
+- **Do this instead:** send requests to a rate-limited service through one gate that starts them one at a time, spaced
+  by the clock (`Date.now()`), and time the waits in a worker, whose timers a hidden tab doesn't slow or bunch. Test with
+  the page's timers made to fire every 2 s together, and count the requests in every second. Model the service's
+  irregular data in the double (here, missing numbers) and never let one missing item stop a reader for good: look
+  ahead, skip it, and ask again later. When probing a live service from the owner's machine, pace the probes too; they
+  count against his address.
+
 ## 92. Before fixing what a screenshot shows, read the line that produced it
 
 - **What happened (v2026.10.14.102, the owner's bug report: a screenshot of the Feed):** two rows had no system, and a

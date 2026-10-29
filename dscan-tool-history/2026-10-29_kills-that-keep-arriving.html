@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — Kills that keep arriving</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Kills that keep arriving</h1>
+<p><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.14.102</code> &rarr; <code>v2026.10.14.103</code></p>
+<p>The owner: "the intel feed is still not showing any kills". I ran the live page's own kill-feed functions in the owner's browser (the built-in browser pane, which runs on his computer) against zKillboard's real live feed, R2Z2.</p>
+
+<h2>What I found</h2>
+<ul>
+<li><b>A number that fails while later ones answer.</b> Finding the newest kill stopped at one an hour old. The next two numbers failed from his browser, while the 500 after them answered. Fetched from elsewhere a little later, those two were there, so they may have been answers cached at his end or the start of a block. Either way, v.100 waits on a number like that for ever, and finding the newest can stop at one.</li>
+<li><b>Bursts from a hidden tab.</b> v.100 read back the last 240 kills in batches, starting 28 requests with timers 80 ms apart. A hidden tab runs its timers late and together, so the 28 go out at once. zKillboard's R2Z2 docs: "The R2 has a rate limit of 15 requests per second per IP. Violators will be banned for 1 hour." The page is usually hidden while the owner plays.</li>
+<li><b>My check caused a block too.</b> My second probe ran in the hidden browser pane in batches of 30 and went out the same way. After it, every file and <code>sequence.json</code> failed from his address. That should clear within an hour.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>One gate for every request to zKillboard's feed</b> (<code>itKillTurn</code>):
+  <ul>
+  <li>requests start one at a time, at least 100 ms apart by the clock, so at most 10 a second;</li>
+  <li>the wait is timed by a worker (<code>itSleep</code>), whose timers a hidden tab doesn't slow or bunch;</li>
+  <li>reading back the last 240 still takes about 25 s, in a hidden tab too.</li>
+  </ul></li>
+<li><b>Holes don't stop the feed.</b>
+  <ul>
+  <li>A missing number with a kill in the next 3 is skipped.</li>
+  <li>It is asked for again after 6 s, 30 s, 2 min and 5 min, then dropped.</li>
+  <li>Finding the newest looks past where halving stops.</li>
+  <li>The read-back keeps the kills after a missing one.</li>
+  </ul></li>
+<li><b>INTEL-05</b> now adds: "If this lasts, zKillboard may have blocked this address for up to an hour after too many requests." ERRORS.md is updated.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_kills_check.py</code>:
+  <ul>
+  <li>Its double now has holes: two early in the read-back, one where halving would stop (the newest is found past it), and a live kill missing for its first 3 s that is asked for again and shown.</li>
+  <li>It counts requests in every second: at most 12.</li>
+  <li>A second run makes the page's timers fire only every 2 s, together. The read-back still finishes in under 45 s, with at most 12 requests in any second.</li>
+  </ul>
+  v2026.10.14.102 fails: it stalls at the first hole, shows no kills, and sends up to 14 requests in a second.</li>
+<li>Mutants: see the delivery note.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #93: a hidden tab's timers fire late and together. Send requests to a rate-limited service through one gate that starts them one at a time, spaced by the clock, and time the waits in a worker. Test with the page's timers bunched, and count requests in every second. Model the service's irregular data in the test double (missing numbers here), and never let one missing item stop a reader for good. Probes from the owner's machine count against his address, so pace them too.</p>
+</body></html>

@@ -170,6 +170,26 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
 
+## Kills that keep arriving (v2026.10.14.103)
+
+The owner, 2026-10-29: "the intel feed is still not showing any kills". Read live from his browser (the GitHub Pages
+page, the built-in browser pane, 2026-10-29 about 03:20 UTC):
+
+- `sequence.json` at his edge still said 100263992, the same as 2026-10-28 17:56 UTC, while fetched from elsewhere it
+  said 100271220. Finding the newest from it worked.
+- Finding the newest stopped at 100270556, an hour old: 100270557 and 100270558 failed from his browser while
+  100270559 through +500 answered. Fetched from elsewhere, 557 and 558 were there. Either way, a reader can meet a number
+  that fails while later ones answer, and v.100 then waited on it for ever.
+- A read-back started as 28 timers in a hidden tab (the browser pane was hidden) went out together. After it, every
+  file and `sequence.json` failed from his address: zKillboard blocks an address over 15 requests a second for an hour
+  (its R2Z2 docs, FAQ). The page did the same in any hidden tab, the usual case while playing.
+
+- **v2026.10.14.103: done.** itKillTurn: every R2Z2 request through one gate, one at a time, 100 ms apart by the clock,
+  the wait timed by a worker (itSleep), so at most 10 a second in a hidden tab too, and no slower there. Holes: a missing
+  number with a kill in the next 3 is skipped and asked for again at 6 s, 30 s, 2 min and 5 min (kf.holes); finding the
+  newest looks past where halving stops; the read-back keeps the kills after a missing one. INTEL-05 now says the address
+  may be blocked for up to an hour.
+
 ## No system, no report (v2026.10.14.102)
 
 The owner's bug report (a screenshot of the Feed, 2026-10-29): two rows with no system, one "CLEAR" and one "STATUS?", and

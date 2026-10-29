@@ -31,6 +31,14 @@ request is aborted, since Playwright's route.fulfill() skips the CORS check). Ch
     Near You's badges in the same words; the notification "Friendly lost: ...";
   * the standing icons (your corporation's star, hostile -), the system's security tenth and its title.
 v2026.10.14.98 and v2026.10.14.99 fail.
+v2026.10.14.103 (the owner: "the intel feed is still not showing any kills"; read live from his browser 2026-10-29): numbers
+missing between kills, and a hidden tab's timers firing late and together. Checks:
+  * holes: two missing numbers early in the read-back and one where finding the newest would stop (4992); the page finds
+    the real newest (5000), reads past every hole, and a number missing when first read (the live neutral kill) is
+    skipped, asked for again and shown;
+  * never over 12 requests in any second, here and in a tab whose timers fire only every 2 s (as a hidden tab's do),
+    where the read-back still finishes (v.100 started 28 at once there; zKillboard blocks an address over 15 a second).
+v2026.10.14.102 fails.
 """
 import sys, os, time, re, json
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -57,6 +65,8 @@ def km(kid, sysname, ago, victim, vship, atts, value, npc=False, sysid=None):
             'zkb': {'totalValue': value, 'npc': npc, 'solo': len(A) == 1, 'attackerCount': len(A), 'href': f'https://esi.evetech.net/killmails/{kid}/x/'}}
 SEQ = {'stale': 2000, 'last': 5000, 'fail': False}   # v.100: sequence.json says 2000 while kills exist to 5000 (R2Z2 on 2026-10-28)
 START = SEQ['last'] + 1 - 240                          # where the page should start reading (240 before the newest)
+HOLES = {START + 10, START + 11, SEQ['last'] - 8}      # v.103: missing for good; 4992 is where halving the gap would stop
+LATE = {}                                              # v.103: number -> the time it appears (missing before)
 REC = {}
 REQS = []   # (time, path, status)
 ACAO = {'access-control-allow-origin': '*'}
@@ -70,6 +80,8 @@ def r2z2(route):
         REQS.append((time.time(), path, 200)); return route.fulfill(status=200, content_type='application/json', headers=ACAO, body=json.dumps({'sequence': SEQ['stale']}))
     m = re.search(r'/ephemeral/(\d+)\.json$', path)
     n = int(m.group(1)) if m else -1
+    if n in HOLES or time.time() < LATE.get(n, 0):
+        REQS.append((time.time(), path, 404)); return route.abort('failed')
     if n in REC or 0 < n <= SEQ['last']:
         REQS.append((time.time(), path, 200)); return route.fulfill(status=200, content_type='application/json', headers=ACAO, body=json.dumps(dict(REC.get(n) or filler(n), sequence_id=n)))
     # The real one answers 404 without the CORS header, so the browser reports a network error and the page never sees the
@@ -118,8 +130,10 @@ with sync_playwright() as p:
         ctx.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))
         ctx.route(re.compile(r'https://r2z2\.zkillboard\.com/.*'), r2z2)
         return ctx
-    def start(w):
-        ctx = new_ctx(w); pg = ctx.new_page(); pg.goto('file://' + HTML)
+    def start(w, init=None):
+        ctx = new_ctx(w)
+        if init: ctx.add_init_script(init)
+        pg = ctx.new_page(); pg.goto('file://' + HTML)
         pg.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); localStorage.setItem('dscanIntel', JSON.stringify({channels: ['region.intel'], me: 95000001, range: 3, sound: true, notify: true, forget: 15, hideFriendly: true})); }", SIDE)
         pg.reload(); pg.wait_for_timeout(400)
         setup_logs(pg); pg.click('#tabBtnIntel'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300); pg.click('#intelHdrLabel')
@@ -133,8 +147,8 @@ with sync_playwright() as p:
     took = time.time() - t0
     seq = [p_ for _, p_, _ in REQS]
     i0 = seq.index(f'/ephemeral/{START}.json') if f'/ephemeral/{START}.json' in seq else -1
-    check(seq[:1] == ['/ephemeral/sequence.json'] and 0 < i0 <= 30 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and took < 30,
-          f'R2Z2: sequence.json (stale: {SEQ["stale"]}), the newest kill found in {i0 - 1} requests, then read one by one from 240 before it ({START}); the kill in range shown after {took:.0f} s')
+    check(seq[:1] == ['/ephemeral/sequence.json'] and 0 < i0 <= 40 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and took < 40,
+          f'R2Z2: sequence.json (stale: {SEQ["stale"]}), the newest kill found in {i0 - 1} requests past a hole where halving stops ({SEQ["last"] - 8}), then read from 240 before it ({START}) past two more holes; the kill in range shown after {took:.0f} s')
     pg.wait_for_timeout(3000)
     R = pg.evaluate(ROWS)
     kills = [r for r in R if r['ty'] in LABELS]
@@ -144,13 +158,18 @@ with sync_playwright() as p:
     al0 = pg.evaluate("() => [__fs.beeps, __fs.notes.length]")
     check(al0 == [0, 0], f'kills read at the start: shown, no alert {al0}')
     # ---- live ----
+    for _ in range(60):   # v.103: the page idle at the live end, its next read more than 2 s away
+        st = pg.evaluate("() => [it.kf.head && !it.kf.busy, it.kf.waitUntil - Date.now(), it.kf.waitUntil]")
+        if st[0] and st[1] > 2000: break
+        pg.wait_for_timeout(250)
     SEQ['last'] += 4; L0 = B0 + 5
+    LATE[L0 + 1] = st[2] / 1000 + 3   # v.103: missing when next read while the ones after it are there: a hole, asked for again
     REC[L0] = LIVE; REC[L0 + 1] = FRIENDLY; REC[L0 + 2] = LIVE; REC[L0 + 3] = HKILL   # the third: a reprocessed copy
-    pg.wait_for_timeout(9000)
+    pg.wait_for_timeout(15000)
     note = pg.evaluate(NOTE)
     check(note == '', f'the feed up and nothing new: no INTEL-05 note (v.99: a missing kill read as the feed being down) {note!r}')
     again, per_s = gaps_ok()
-    check(again and min(again) >= 5.9 and per_s <= 15, f'a missing kill not asked for again within 6 s ({sorted(round(x, 1) for x in again)[:4]}); at most {per_s} requests in any second')
+    check(again and min(again) >= 5.9 and per_s <= 12, f'a missing kill not asked for again within 6 s ({sorted(round(x, 1) for x in again)[:4]}); at most {per_s} requests in any second')
     R = pg.evaluate(ROWS)
     k8 = [r for r in R if r['ty'] in LABELS and r['sys'] == '8WA-Z6 1 Jump']
     check(len(k8) == 1 and k8[0]['ty'] == 'Friendly lost' and ' kf' in k8[0]['cls'] and k8[0]['lines'] == [[FRIEND, 'lost a', 'Sabre', '62.4M ISK'], ['by', 'Marrek Ketter', 'Vedmak', '+2 more', 'zKillboard ↗']],
@@ -226,6 +245,15 @@ with sync_playwright() as p:
     pg.click('#intelHdrLabel'); pg.wait_for_timeout(500); n0 = len(REQS); pg.wait_for_timeout(8000)
     check(len(REQS) == n0, f'off: no requests to R2Z2 ({len(REQS) - n0})')
     pg.screenshot(path='/tmp/intel100_1440.png', full_page=True)
+    ctx.close()
+    # ---- v.103: a hidden tab: its timers fire only every 2 s, together ----
+    COALESCE = """(() => { const st = window.setTimeout; window.setTimeout = (fn, ms, ...a) => { const at = Math.ceil((Date.now() + (+ms || 0)) / 2000) * 2000; return st(fn, Math.max(0, at - Date.now()), ...a); }; })();"""
+    REQS.clear(); ctx, pg = start(1440, COALESCE); t0 = time.time()
+    for _ in range(90):
+        if any(r['sys'] and r['sys'].startswith('D-W7F0') and r['ty'] in LABELS for r in pg.evaluate(ROWS)): break
+        pg.wait_for_timeout(500)
+    took = time.time() - t0; _, per_s = gaps_ok()
+    check(per_s <= 12 and took < 45, f'a hidden tab (timers every 2 s, together): at most {per_s} requests in any second (v.100: 28 at once), and the read-back still done in {took:.0f} s')
     ctx.close()
     # ---- phone ----
     REQS.clear(); ctx, pg = start(390); pg.wait_for_timeout(20000)

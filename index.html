@@ -2384,7 +2384,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.102</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.103</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -3034,7 +3034,7 @@ const ERROR_CODES = {
   "title": "zKillboard's live kill feed isn't answering",
   "where": "{card:intel} tab, kills in the {card:itfeed}",
   "trigger": "R2Z2 (r2z2.zkillboard.com, zKillboard's live feed) gave an error or no answer. The page tries again after 30 seconds, then longer (up to 5 minutes); reports from your channels carry on.",
-  "check": "zKillboard's status; the connection. A 403 or 429 means zKillboard is limiting this address.",
+  "check": "zKillboard's status; the connection. zKillboard blocks an address that asks more than 15 times a second for an hour; the page then can't read any file, so this note stays for up to an hour. Since v2026.10.14.103 the page asks at most 10 times a second, hidden tab or not.",
   "why": "",
   "since": "2026-10-28 (v2026.10.14.99)",
   "doc": "2026-10-28_intel-feed-kills.html"
@@ -22611,7 +22611,7 @@ const IT_KILL_PER_TICK_BACK = 28;            // v.100: reading back, 28 at a tim
 const IT_KILL_BATCHES = 10;                  //   answer; up to 10 such batches in one go: the 240 read back in ~20 s, where one at a time took a minute or more
 const IT_KILL_WAIT_MS = 6000;                // after a 404, at least 6 s (zKillboard's rule)
 const IT_KILL_STEP = 64;                     // v.100: finding the newest kill: steps of 64, 128, 256 ... past sequence.json's number
-const IT_KILL_PROBE_MS = 80;                 // v.100: requests at least 80 ms apart while finding it and reading back (12.5 a second; the limit is 15)
+const IT_KILL_PROBE_MS = 100;                // v.103: every R2Z2 request starts at least 100 ms after the one before, by the clock (10 a second; the limit is 15)
 const IT_KILL_FAR_MS = 60 * 60000;           // v.100: a kill uploaded over an hour ago means the page has fallen far behind (a sleeping tab):
 const IT_KILL_REFIND_MS = 5 * 60000;         //   find the newest again, at most once per 5 minutes
 const IT_FEED_TYPES = [['all', 'All'], ['reports', 'Reports'], ['kills', 'Kills']];
@@ -22627,7 +22627,7 @@ const it = {
   kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: '',   // v.99: kills, names on kills, security, the Feed's search
   rawOpen: new Set()   // v.100: Feed rows showing the line as typed
 };
-function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0}; }
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0, asked: new Map(), holes: new Map()}; }   // v.103: asked = when each number was last asked for; holes = missing numbers with kills after them
 function itDefaults(){ return {channels: [], me: null, range: 3, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
 function itReadSet(){
   const d = itDefaults();
@@ -23144,8 +23144,40 @@ function itKillRange(){ return Math.max(it.set.range, it.set.feed.dist || 0); } 
 //    error, never the 404. v.99 took that for the feed being down (INTEL-05, then waits of 30 s up to 5 minutes). Now a
 //    failed read is "not there yet" when sequence.json still answers (wait 6 s, no note); only when sequence.json fails too
 //    is the feed down. LESSON #89
-async function itKillGet(n){   // kill number n, or null when it isn't there yet (404, or the browser blocked the answer)
-  it.kf.reqs++;
+// v2026.10.14.103 (the owner: "the intel feed is still not showing any kills"). Read live from his browser on 2026-10-29:
+//  * a hidden tab runs its timers late and together. v.100 started each read-back batch with 28 timers 80 ms apart; in a
+//    hidden tab they fired in one go, 28 requests at once, and zKillboard blocks an address that asks more than 15 a
+//    second (for an hour). Every file, sequence.json too, then fails the way a missing file does. Now every request waits
+//    its turn at one gate (itKillTurn): one at a time, each at least 100 ms after the last by the clock, and the wait is
+//    timed by a worker, whose timers a hidden tab doesn't slow or bunch.
+//  * a number can be missing while later ones are there (seen: two missing, the next 500 there). v.100 waited on it for
+//    ever, and finding the newest could stop at it (an hour behind). Now a missing number with a kill right after it is
+//    a hole: it is skipped, tried again at 6 s, 30 s, 2 min and 5 min, then dropped. LESSON #93
+let itSleepW = null, itSleepN = 0;
+const itSleepCb = new Map();
+function itSleep(ms){   // a worker's timer: on time in a hidden tab (an ordinary timer there waits a second or a minute)
+  if(itSleepW === undefined) return new Promise(res => setTimeout(res, ms));
+  if(!itSleepW){
+    try{
+      itSleepW = new Worker(URL.createObjectURL(new Blob(['onmessage=(e)=>setTimeout(()=>postMessage(e.data[0]),e.data[1]);'], {type: 'text/javascript'})));
+      itSleepW.onmessage = (e) => { const f = itSleepCb.get(e.data); itSleepCb.delete(e.data); if(f) f(); };
+    }catch(e){ itSleepW = undefined; return new Promise(res => setTimeout(res, ms)); }
+  }
+  return new Promise(res => { const id = ++itSleepN; itSleepCb.set(id, res); itSleepW.postMessage([id, ms]); });
+}
+let itKillGate = Promise.resolve(), itKillLast = 0;
+function itKillTurn(){   // one request at a time through here: each starts at least IT_KILL_PROBE_MS after the one before
+  const turn = itKillGate.then(async () => {
+    for(let w = itKillLast + IT_KILL_PROBE_MS - Date.now(); w > 0; w = itKillLast + IT_KILL_PROBE_MS - Date.now()) await itSleep(w);
+    itKillLast = Date.now();
+  });
+  itKillGate = turn.catch(() => {});
+  return turn;
+}
+async function itKillGet(n){   // kill number n, or null when it isn't there (404, or the browser blocked the answer)
+  await itKillTurn();
+  it.kf.reqs++; it.kf.asked.set(n, Date.now());
+  if(it.kf.asked.size > 2000) for(const [k, t] of it.kf.asked) if(Date.now() - t > IT_KILL_WAIT_MS) it.kf.asked.delete(k);
   let r;
   try{ r = await fetch(`${IT_R2Z2}/ephemeral/${n}.json`); }catch(e){ return null; }
   if(r.status === 404) return null;
@@ -23153,26 +23185,53 @@ async function itKillGet(n){   // kill number n, or null when it isn't there yet
   return await r.json();
 }
 async function itKillSeq(){
+  await itKillTurn();
   it.kf.reqs++;
   const r = await fetch(`${IT_R2Z2}/ephemeral/sequence.json`);
   if(!r.ok) throw new Error(`status ${r.status}`);
   return Number((await r.json()).sequence) || 0;
 }
-const itKillPause = () => new Promise(res => setTimeout(res, IT_KILL_PROBE_MS));
-async function itKillFindHead(seq, gen){   // the newest kill at or past seq: steps doubling until one is missing, then halving the gap
-  if(!(await itKillGet(seq))) return seq - 1;
-  let lo = seq, step = IT_KILL_STEP, hi;
-  for(;;){
-    if(gen !== it.gen) return lo;
-    await itKillPause();
-    if(await itKillGet(lo + step)){ lo += step; step *= 2; } else { hi = lo + step; break; }
+const IT_KILL_LOOK = 3;                        // v.103: a missing number: the next 3 are looked at; one there makes it a hole
+const IT_KILL_RETRY_MS = [6000, 30000, 120000, 300000];   // v.103: a hole is asked for again after these, then dropped
+function itKillMissedLately(n){ const t = it.kf.asked.get(n); return t !== undefined && Date.now() - t < IT_KILL_WAIT_MS; }
+async function itKillAfter(n){   // the first kill in n+1 .. n+IT_KILL_LOOK, skipping numbers found missing in the last 6 s
+  for(let k = 1; k <= IT_KILL_LOOK; k++){
+    if(itKillMissedLately(n + k)) continue;
+    const rec = await itKillGet(n + k);
+    if(rec) return {n: n + k, rec};
   }
-  while(hi - lo > 1 && gen === it.gen){ const m = Math.floor((lo + hi) / 2); await itKillPause(); if(await itKillGet(m)) lo = m; else hi = m; }
+  return null;
+}
+async function itKillFindHead(seq, gen){   // the newest kill at or past seq: steps doubling until one is missing, then halving the gap
+  let lo = seq;
+  if(!(await itKillGet(seq))){ const a = await itKillAfter(seq); if(!a) return seq - 1; lo = a.n; }
+  for(let round = 0; round < 6 && gen === it.gen; round++){
+    let step = IT_KILL_STEP, hi;
+    for(;;){
+      if(gen !== it.gen) return lo;
+      if(await itKillGet(lo + step)){ lo += step; step *= 2; } else { hi = lo + step; break; }
+    }
+    while(hi - lo > 1 && gen === it.gen){ const m = Math.floor((lo + hi) / 2); if(await itKillGet(m)) lo = m; else hi = m; }
+    const a = await itKillAfter(lo);   // v.103: stopped at a hole? a kill just past it means the newest is further on
+    if(!a) return lo;
+    lo = a.n;
+  }
   return lo;
+}
+function itKillHole(n){ if(!it.kf.holes.has(n)) it.kf.holes.set(n, {tries: 0, at: Date.now() + IT_KILL_RETRY_MS[0]}); }
+async function itKillHoles(gen, got){   // the holes due: asked for again; found ones join the kills read this time
+  for(const [n, h] of [...it.kf.holes]){
+    if(gen !== it.gen || Date.now() < h.at) continue;
+    const rec = await itKillGet(n);
+    if(rec){ it.kf.holes.delete(n); got.push({rec, history: false}); continue; }
+    h.tries++;
+    if(h.tries >= IT_KILL_RETRY_MS.length) it.kf.holes.delete(n); else h.at = Date.now() + IT_KILL_RETRY_MS[h.tries];
+  }
 }
 async function itKillPump(){
   const kf = it.kf;
-  if(!it.on || !kf || kf.busy || Date.now() < kf.waitUntil || !it.names) return;
+  if(!it.on || !kf || kf.busy || !it.names) return;
+  if(Date.now() < kf.waitUntil && !(kf.head && !kf.fails && [...kf.holes.values()].some(h => Date.now() >= h.at))) return;   // waiting, unless a hole is due
   kf.busy = true;
   const gen = it.gen, got = [];
   try{
@@ -23181,34 +23240,39 @@ async function itKillPump(){
       if(gen !== it.gen) return;
       kf.seq = Math.max(0, head + 1 - IT_KILL_BACK); kf.found = Date.now(); kf.head = false;
     }
-    if(!kf.head){   // reading back: requests started 80 ms apart, each batch drawn as it comes; stops at the first kill not there yet
+    if(!kf.head){   // reading back: up to 28 asked at a time (each in its turn at the gate), each batch drawn as it comes
       for(let b = 0; b < IT_KILL_BATCHES && !kf.head && gen === it.gen; b++){
-        await itKillPause();
         const from = kf.seq, part = [];
-        const recs = await Promise.all(Array.from({length: IT_KILL_PER_TICK_BACK}, (_, i) => new Promise(res => setTimeout(res, i * IT_KILL_PROBE_MS)).then(() => gen === it.gen ? itKillGet(from + i) : null)));
+        const recs = await Promise.all(Array.from({length: IT_KILL_PER_TICK_BACK}, (_, i) => gen === it.gen ? itKillGet(from + i) : null));
         if(gen !== it.gen) return;
-        for(const rec of recs){ if(!rec) break; part.push({rec, history: true}); kf.seq++; }
-        if(part.length < recs.length){ await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; kf.head = true; }   // not there yet: the feed is up, nothing new
+        let last = recs.length - 1;
+        while(last >= 0 && !recs[last]) last--;
+        for(let i = 0; i <= last; i++){ if(recs[i]) part.push({rec: recs[i], history: true}); else itKillHole(from + i); }   // v.103: a missing one before a kill: a hole
+        kf.seq = from + last + 1;
+        if(last < recs.length - 1){
+          await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; kf.head = true;   // not there yet: the feed is up, nothing new (a hole there is found from the live end)
+        }
         kf.fails = 0; it.kfNote = '';   // answering again: the note goes with this batch, not after all of them
         if(part.length){ await itKills(part, gen); if(gen !== it.gen) return; }
         itRender();
       }
     } else {
-      for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen; n++){
-        if(n) await itKillPause();
+      await itKillHoles(gen, got);
+      for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen && Date.now() >= kf.waitUntil; n++){
         const rec = await itKillGet(kf.seq);
-        if(!rec){ await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; kf.head = true; break; }   // not there yet: the feed is up, nothing new
-        got.push({rec, history: false});
-        kf.seq++;
+        if(rec){ got.push({rec, history: false}); kf.seq++; continue; }
+        const a = await itKillAfter(kf.seq);   // v.103: a kill just past it: this one is a hole, not the end
+        if(a){ for(let m = kf.seq; m < a.n; m++) itKillHole(m); got.push({rec: a.rec, history: false}); kf.seq = a.n + 1; continue; }
+        await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; break;   // not there yet: the feed is up, nothing new
       }
     }
     kf.fails = 0; it.kfNote = '';
     const last = got.length ? got[got.length - 1].rec : null;
-    if(last && last.uploaded_at && Date.now() - last.uploaded_at * 1000 > IT_KILL_FAR_MS && Date.now() - kf.found > IT_KILL_REFIND_MS){ kf.seq = null; kf.head = false; }   // far behind: find the newest again
+    if(last && last.uploaded_at && Date.now() - last.uploaded_at * 1000 > IT_KILL_FAR_MS && Date.now() - kf.found > IT_KILL_REFIND_MS){ kf.seq = null; kf.head = false; kf.holes.clear(); }   // far behind: find the newest again
   }catch(e){
     kf.fails++;
     kf.waitUntil = Date.now() + Math.min(300000, 30000 * 2 ** (kf.fails - 1));   // 30 s, then longer, at most 5 minutes
-    it.kfNote = withCode(`zKillboard's live kill feed isn't answering (${e.message || 'network error'}); kills nearby will show again when it does.`, 'INTEL-05');
+    it.kfNote = withCode(`zKillboard's live kill feed isn't answering (${e.message || 'network error'}); kills nearby will show again when it does. If this lasts, zKillboard may have blocked this address for up to an hour after too many requests.`, 'INTEL-05');
   }finally{ kf.busy = false; }
   if(gen !== it.gen) return;
   if(got.length) await itKills(got, gen);

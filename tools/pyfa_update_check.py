@@ -105,7 +105,7 @@ if '--run' in sys.argv:
         ('subtext rule (info panels, one-line context)', 'python3 -I tools/check_subtext.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.48
         ('fighter ability icons cover every fighter', env + 'python3 -I tools/gen_fighter_ability_icons.py --check index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.66
         ('Intel tables: ship names vs pyfa, gates vs the client (EVE_RES)', env + 'python3 -I tools/gen_intel_tables.py index.html', lambda o: o.strip().splitlines()[-1].startswith('intel tables match')),  # v2026.10.14.96
-        ('personal data in the repository (LESSON #90)', 'python3 -I tools/check_pii.py .', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems') or ' 0 problems (' in o.strip().splitlines()[-1]),  # v2026.10.14.101
+        ('personal data in the repository (LESSON #90)', 'python3 -I tools/check_pii.py .', lambda o: bool(re.search(r' 0 problems($|[;( ])', o.strip().splitlines()[-1]))),  # v2026.10.14.101; v.103: a note after it ("; N reviewed images no longer in any file") is not a failure
         ('pasted names, either apostrophe', env + 'python3 -I tools/independent_checks/check_apostrophe_names.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 misses')),
     ]
     bad = 0
