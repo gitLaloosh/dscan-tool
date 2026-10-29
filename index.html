@@ -2384,7 +2384,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.103</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.104</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -22767,7 +22767,13 @@ const IT_KW = {clr: 'clear', clear: 'clear', nv: 'no visual', novis: 'no visual'
   mtu: 'MTU', dscan: 'd-scan', probes: 'probes', probing: 'probes', hunter: 'hunter', hunters: 'hunter', roam: 'roam', roaming: 'roam'};
 const IT_FILLER = new Set(['in', 'on', 'at', 'to', 'from', 'and', '&', '+', '-', 'the', 'a', 'x', 'is', 'still', 'now', 'local', 'pilot', 'pilots', 'gang', 'fleet', 'ship', 'ships', 'with', 'of', 'near', 'heading', 'towards', 'toward', 'into', 'out', 'warped', 'warp', 'landed', 'jump', 'jumping', 'no', 'visual', 'vis', 'afk', 'or',
   'inside', 'outside', 'under', 'sitting', 'holding', 'by', 'for', 'just', 'here', 'there', 'up', 'down', 'back', 'around', 'over', 'off', 'onto',
-  'through', 'via', 'entering', 'entered', 'leaving', 'moving', 'going', 'coming', 'spotted', 'seen', 'sighted', 'lots', 'many', 'some', 'few']);   // v.99
+  'through', 'via', 'entering', 'entered', 'leaving', 'moving', 'going', 'coming', 'spotted', 'seen', 'sighted', 'lots', 'many', 'some', 'few',   // v.99
+  // v2026.10.14.104 (the owner's report: "(recently seen as stabber)" put a real character named "Recently" in the Feed):
+  // words around a sighting are never pilots, whatever characters exist
+  'recently', 'lately', 'as', 'was', 'were', 'been', 'last', 'saw', 'also', 'again', 'same', 'probably', 'prob', 'maybe', 'possibly', 'think']);
+// v.104 (the owner's report: "1red" put a real character named "1red" in the Feed): a number with red / neut / hostile, as one
+// word ("1red", "3neuts") or two ("2 reds"), is a head count, not a pilot
+const IT_COUNT_WORD = {red: 'red', reds: 'red', hostile: 'red', hostiles: 'red', neut: 'neut', neuts: 'neut', neutral: 'neut', neutrals: 'neut'};
 // Splits a message into words: '*' after a linked name ends it, '(' ')' split ("Pilot (Ship) jumped ..."); the
 // punctuation around a word is dropped but remembered for the raw text.
 function itWords(msg){
@@ -22843,11 +22849,16 @@ function itParse(msg, mySys){
       break;
     }
   }
+  let count = null;
+  const addCount = (n, word) => { const k = IT_COUNT_WORD[word]; count = {n: (count ? count.n : 0) + n, kind: count && count.kind !== k ? 'red' : k}; };
   for(let i = 0; i < W.length; i++){
     if(used[i]) continue;
     const x = W[i];
     let m = x.w.match(/^\+(\d{1,3})$/);
     if(m){ extra += Number(m[1]); used[i] = 'c'; continue; }
+    m = x.lw.match(/^(\d{1,3})([a-z]+)$/);   // v.104: "1red", "3neuts"
+    if(m && IT_COUNT_WORD[m[2]]){ addCount(Number(m[1]), m[2]); used[i] = 'c'; continue; }
+    if(/^\d{1,3}$/.test(x.w) && W[i + 1] && !used[i + 1] && IT_COUNT_WORD[W[i + 1].lw]){ addCount(Number(x.w), W[i + 1].lw); used[i] = used[i + 1] = 'c'; i++; continue; }   // v.104: "2 reds"
     if(x.lw === 'no' && W[i + 1] && /^vis(ual)?$/.test(W[i + 1].lw) && !used[i + 1]){ kw.add('no visual'); used[i] = used[i + 1] = 'kw'; i++; continue; }
     if(IT_KW[x.lw]){ kw.add(IT_KW[x.lw]); used[i] = 'kw'; continue; }
     if(IT_FILLER.has(x.lw) || /^\d+$/.test(x.w)){ used[i] = 'f'; continue; }
@@ -22861,7 +22872,7 @@ function itParse(msg, mySys){
     if(W[i].linked){ runs.push(run); run = []; }
   }
   if(run.length) runs.push(run);
-  return {W, used, sys, ships, kw, extra, mentions, runs: runs.filter(r => r.length)};
+  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length)};
 }
 // Candidate pilot names in a run: every 1-3 word stretch within EVE's 37 characters.
 function itCandidates(p){
@@ -22899,10 +22910,11 @@ function itPairs(p, pilots){
   const pairs = new Map();
   for(const sh of p.mentions || []){   // v.99: each mention (a type can be named on its own and in brackets)
     if(sh.n !== 1 || !sh.paren) continue;
-    const pl = pilots.find(x => x.to === sh.at - 1 && !p.W[x.to].paren);
+    // v.104: "Pilot (recently seen as Stabber)": the words between the name and the ship, inside the brackets, are filler
+    const pl = pilots.find(x => x.to < sh.at && !p.W[x.to].paren && p.W.slice(x.to + 1, sh.at).every((w, k) => w.paren && (p.used[x.to + 1 + k] === 'f' || p.used[x.to + 1 + k] === 'kw')));
     if(pl) pairs.set(pl.id, {typeId: sh.id, name: sh.name});
   }
-  if(!pairs.size && pilots.length === 1 && p.ships.length === 1 && p.ships[0].n === 1 && !p.extra) pairs.set(pilots[0].id, {typeId: p.ships[0].id, name: p.ships[0].name});
+  if(!pairs.size && pilots.length === 1 && p.ships.length === 1 && p.ships[0].n === 1 && !p.extra && !p.count) pairs.set(pilots[0].id, {typeId: p.ships[0].id, name: p.ships[0].name});
   return pairs;
 }
 
@@ -23083,7 +23095,7 @@ async function itReports(lines, gen){
 function itKind(p, pilots){
   if(p.kw.has('clear')) return 'clear';
   if(p.kw.has('no visual')) return 'nv';
-  if(pilots.length || p.ships.length || p.extra) return 'seen';
+  if(pilots.length || p.ships.length || p.extra || p.count) return 'seen';
   if(p.kw.has('status?')) return 'status';
   return 'info';
 }
@@ -23091,7 +23103,7 @@ let itEntryId = 0;
 function itAddReport(l, p, pilots){
   const sides = pilots.map(x => ({...x, side: itSide(x.id)}));
   const e = {id: ++itEntryId, t: l.t, who: l.who, chan: l.chan, raw: l.msg, p, pilots: sides, kind: itKind(p, sides), history: l.history, pairs: itPairs(p, sides)};
-  e.friendlyOnly = e.kind === 'seen' && sides.length && sides.every(x => x.side === 'f') && !p.ships.length && !p.extra;
+  e.friendlyOnly = e.kind === 'seen' && sides.length && sides.every(x => x.side === 'f') && !p.ships.length && !p.extra && !p.count;
   it.lastLine = Math.max(it.lastLine, l.t);
   it.feed.unshift(e);
   const old = Date.now() - it.set.forget * 60000;   // v.98: lines older than the time set go (kept to IT_FEED_MAX meanwhile)
@@ -23106,10 +23118,10 @@ function itAddReport(l, p, pilots){
 function itNearAdd(e, sys){
   const prev = it.near.get(sys), keep = e.t - it.set.forget * 60000, kind = e.kind === 'kill' ? 'seen' : e.kind;
   if(prev && prev.t > e.t && e.kind === 'kill' && prev.kind === 'clear') return;   // a kill from before the system was reported clear
-  const st = {sys, t: Math.max(e.t, prev ? prev.t : 0), who: e.who, kind, pilots: [], ships: [], extra: [], pairs: new Map(), kills: []};
+  const st = {sys, t: Math.max(e.t, prev ? prev.t : 0), who: e.who, kind, pilots: [], ships: [], extra: [], count: [], pairs: new Map(), kills: []};
   if(e.kind !== 'clear' && prev && prev.kind !== 'clear'){
     st.pilots = prev.pilots.filter(x => x.t >= keep); st.ships = prev.ships.filter(x => x.t >= keep);
-    st.extra = prev.extra.filter(x => x.t >= keep); for(const [k, v] of prev.pairs) if(v.t >= keep) st.pairs.set(k, v);
+    st.extra = prev.extra.filter(x => x.t >= keep); st.count = (prev.count || []).filter(x => x.t >= keep); for(const [k, v] of prev.pairs) if(v.t >= keep) st.pairs.set(k, v);
     st.kills = (prev.kills || []).filter(x => x.t >= keep);
     if(prev.t > e.t){ st.kind = prev.kind; st.who = prev.who; }   // an older kill read late doesn't change the latest word
   }
@@ -23117,6 +23129,7 @@ function itNearAdd(e, sys){
     for(const x of e.pilots){ const i = st.pilots.findIndex(y => y.id === x.id), v = {...x, t: e.t}; if(i < 0) st.pilots.push(v); else st.pilots[i] = v; }   // first-reported order kept
     for(const sh of e.p.ships){ const i = st.ships.findIndex(y => y.id === sh.id); if(i < 0) st.ships.push({...sh, t: e.t}); else st.ships[i] = {...sh, n: Math.max(sh.n, st.ships[i].n), t: e.t}; }
     if(e.p.extra) st.extra.push({n: e.p.extra, t: e.t});
+    if(e.p.count) st.count.push({...e.p.count, t: e.t});   // v.104: "1red": a head count
     for(const [id, sh] of e.pairs) st.pairs.set(id, {...sh, t: e.t, who: e.who});
     if(e.kind === 'kill') st.kills.push({t: e.t, id: e.kill.id, v: e.kill.victim.side || 'n'});   // v.100: the victim's standing, for the badges
   }
@@ -23128,10 +23141,12 @@ function itLive(st, now = Date.now()){
   const keep = now - it.set.forget * 60000;
   const pilots = st.pilots.filter(x => x.t >= keep), ships = st.ships.filter(x => x.t >= keep);
   const extra = Math.max(0, ...st.extra.filter(x => x.t >= keep).map(x => x.n));
-  return {pilots, ships, extra, friendlyOnly: !!pilots.length && pilots.every(x => x.side === 'f') && !ships.length && !extra};
+  const cs = (st.count || []).filter(x => x.t >= keep), count = Math.max(0, ...cs.map(x => x.n));   // v.104: the largest head count reported
+  const countKind = cs.length && cs.every(x => x.kind === 'neut') ? 'neut' : 'red';
+  return {pilots, ships, extra, count, countKind, friendlyOnly: !!pilots.length && pilots.every(x => x.side === 'f') && !ships.length && !extra && !count};
 }
 function itThreat(st){ const L = itLive(st); return st.kind === 'seen' ? !L.friendlyOnly : st.kind === 'nv' ? L.pilots.some(x => x.side !== 'f') || !L.pilots.length : false; }
-function itCount(st){ const L = itLive(st), n = L.pilots.filter(x => x.side !== 'f').length + L.extra; return n || L.ships.reduce((s, x) => s + x.n, 0); }
+function itCount(st){ const L = itLive(st), n = Math.max(L.pilots.filter(x => x.side !== 'f').length + L.extra, L.count); return n || L.ships.reduce((s, x) => s + x.n, 0); }   // v.104: a head count ("3 red") counts when larger
 
 // ---- v.99: kills nearby, from zKillboard's live feed (R2Z2), read only while Intel is on ----
 function itKillRange(){ return Math.max(it.set.range, it.set.feed.dist || 0); }   // kept: within your alert range, or the Feed's Distance if wider
@@ -23492,7 +23507,7 @@ function itShipChip(s){ return `<span class="it-chip ship"><img src="https://ima
 function itShipText(s){ return `${s.name}${s.n > 1 ? ` ×${s.n}` : ''}`; }
 function itNearRowHtml({st, j}){
   const L = itLive(st), alert = itThreat(st) && j !== null && j <= it.set.range;
-  const n = itCount(st), hostile = L.pilots.some(x => x.side === 'h') || !L.pilots.length;
+  const n = itCount(st), hostile = L.pilots.some(x => x.side === 'h') || (!L.pilots.length && !(L.count && L.countKind === 'neut'));
   const word = st.kind === 'clear' ? 'clear' : st.kind === 'nv' ? 'no visual' : L.friendlyOnly ? 'friendly' : `${n} ${hostile ? 'hostile' : 'neutral'}`;
   const ks = st.kind === 'clear' ? [] : (st.kills || []).filter(x => x.t >= Date.now() - it.set.forget * 60000);   // v.99
   const shipsTxt = L.ships.map(itShipText).join(', ');
@@ -23535,6 +23550,7 @@ function itFeedRowHtml(e){
   }
   for(const x of e.pilots) chips.push(itPilotChip(x, e));
   if(e.p.extra) chips.push(`<span class="it-chip kw">+${e.p.extra}</span>`);
+  if(e.p.count) chips.push(`<span class="it-chip kw">${e.p.count.n} ${e.p.count.kind}</span>`);   // v.104: "1red" shown as "1 red"
   for(const s of e.p.ships) chips.push(itShipChip(s));
   for(const k of e.p.kw) if(!(k === 'clear' && e.kind === 'clear')) chips.push(`<span class="it-chip ${k === 'clear' ? 'clr' : 'kw'}">${escapeHtml(k)}</span>`);   // v.100: "Clear" once, in the title line
   const left = e.p.W.filter((x, i) => !e.p.used[i]).map(x => x.w);
@@ -23609,7 +23625,7 @@ function itShape(e){
     return t;
   }).filter(t => t !== null);
   const nShips = e.p.ships.reduce((a, b) => a + b.n, 0), left = W.filter((x, i) => !U[i] || (U[i] === 'f' && !(IT_FILLER.has(x.lw) || /^\d+$/.test(x.w)))).length;
-  const read = [`${e.p.sys.length} system${e.p.sys.length === 1 ? '' : 's'}`, `${e.pilots.length} pilot${e.pilots.length === 1 ? '' : 's'}`, e.p.extra ? `+${e.p.extra}` : '',
+  const read = [`${e.p.sys.length} system${e.p.sys.length === 1 ? '' : 's'}`, `${e.pilots.length} pilot${e.pilots.length === 1 ? '' : 's'}`, e.p.extra ? `+${e.p.extra}` : '', e.p.count ? `${e.p.count.n} ${e.p.count.kind}` : '',
     `${nShips} ship${nShips === 1 ? '' : 's'}`, ...[...e.p.kw], e.pairs.size ? `${e.pairs.size} paired` : '', left ? `${left} not placed` : ''].filter(Boolean).join(', ');
   return `${words.join(' ')}  [read: ${read}]`;
 }

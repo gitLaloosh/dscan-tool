@@ -10,6 +10,14 @@ the real page with made-up data, and every picture embedded in a page is looked 
 and a git pre-commit hook: `git config core.hooksPath tools/git-hooks`); personal names it looks for
 are in the git-ignored `tools/pii_terms.local.txt` on the owner's computer.
 
+**Never get the user's address blocked (LESSON #93).** zKillboard blocks an address that asks too fast
+(its live feed: over 15 requests a second, for an hour). Every request to zKillboard goes through one
+of two gates: `zkbFetch` (the API: one at a time, 1 s apart) or `itKillTurn` (the live feed: one at a
+time, 100 ms apart by the clock, waits timed in a worker). Never pace requests with a batch of timers:
+a hidden tab fires them together. Every `fetch()` is listed in `tools/check_request_gates.py` (a chain
+step); `tools/page_checks/request_gates_check.py` tests both gates with the timers bunched. Probing a
+live service from the owner's machine counts against his address too.
+
 EVE Threat Assessment (ETA; called D-Scan Analyzer until v2026.10.14.60, and the repo, file and
 saved-data names still say dscan) is a single-file tool (`index.html`) that estimates EVE Online
 ship stats from killmails and EFT fits. Its calculations must match **pyfa**

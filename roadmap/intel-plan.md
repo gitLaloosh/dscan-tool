@@ -170,6 +170,19 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
 
+## Head counts and sighting words (v2026.10.14.104)
+
+The owner's bug report (a screenshot of the Feed, 2026-10-29): `<system>* 1red` showed a pilot "1red", and `<system>
+<pilot> (recently seen as stabber)` showed a pilot "Recently" (both are real characters' names) with "as" left plain.
+
+- **v2026.10.14.104: done.** A number with red / reds / hostile(s) / neut(s) / neutral(s), as one word ("1red") or two
+  ("2 reds"), is a head count (p.count; chip "1 red"; Near You counts the larger of the named pilots + "+N" and the head
+  count, "neutral" when every count was neut). recently, lately, as, was, were, been, last, saw, also, again, same,
+  probably, prob, maybe, possibly, think are filler. A pilot pairs with the ship inside their brackets when the words
+  between are filler or keywords ("A (recently seen as sabre)").
+- Every zKillboard request is checked to go through its gate (`tools/check_request_gates.py`, chain step;
+  `request_gates_check.py`, page check). CLAUDE.md states the rule.
+
 ## Kills that keep arriving (v2026.10.14.103)
 
 The owner, 2026-10-29: "the intel feed is still not showing any kills". Read live from his browser (the GitHub Pages

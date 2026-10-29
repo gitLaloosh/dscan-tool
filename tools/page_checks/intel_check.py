@@ -22,6 +22,9 @@ names: the real names of the 17 systems within 4 jumps of 1DQ1-A, Jita and New C
   * v2026.10.14.102 (the owner: no "report" without a valid system name): "78 status?", a bare "clr" and "<pilot> loc?"
     make no Feed row and change nothing in Near You, their words are never looked up, and they still count as the last
     line; every report row in the Feed names a system;
+  * v2026.10.14.104 (the owner's report: "1red" and "Recently" shown as pilots, both real character names): "1red" and
+    "2 neuts" are head counts (chips "1 red", "2 neut"; Near You "1 hostile", "2 neutral"), "A (recently seen as sabre) B (loki)"
+    pairs each pilot with the ship in their brackets, and none of those words is looked up as a pilot;
   * Near You: nearest first, a red row and an alert (sound + notification) for hostile/neutral within 3 jumps only, once per
     system; friendly-only hidden; the header's "N near";
   * your system follows a jump in Local (jumps redrawn); a relog's new file is read; settings kept;
@@ -74,7 +77,7 @@ REAL = {30004025: "8-YNBE", 30004028: "E-VKJV", 30004714: "QX-LIJ", 30004716: "4
 SYSNAME = {i: REAL.get(i, f'N{i}') for i in ids}
 SYSID = {v: k for k, v in SYSNAME.items()}
 D0 = bfs(SYSID['1DQ1-A'])
-ONE_WORD = {'Marrek': 96000001, 'Ketter': 96000002, 'Inside': 96000003, 'ESS': 96000004}   # v.99: real characters have such names; a place word must never reach them
+ONE_WORD = {'Marrek': 96000001, 'Ketter': 96000002, 'Inside': 96000003, 'ESS': 96000004, '1red': 96000005, 'Recently': 96000006, 'As': 96000007}   # v.104: so are "1red" and "Recently"   # v.99: real characters have such names; a place word must never reach them
 NAMES_CALLS, STATUS = [], {'v': str(J['build']), 'names_fail': False}
 IDS_ASKED = set()   # v.102: every name sent to /universe/ids/
 def esi(route):
@@ -274,6 +277,19 @@ with sync_playwright() as p:
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', '8WA-Z6 Marrek Ketter still'))
     tick(pg)
     check(pg.evaluate("() => __fs.beeps") == 3, 'one alert per system per 30 s')
+    # ---- v.104: head counts, and the words around a sighting (the owner's report) ----
+    T2 = time.time()
+    W(pg, F_INTEL, line(T2, 'Gate Watcher', 'JP4-AA* 1red') + line(T2 + 1, 'Kai Rhenn', 'FM-JK5 Kirra Longtail (recently seen as sabre) Seren Ketter (loki)') + line(T2 + 2, 'Scout Alt', '3-DMQT 2 neuts'))
+    tick(pg, 3200)
+    got = {f['raw']: f for f in pg.evaluate(FEED)}
+    c1, c2, c3 = got.get('Gate Watcher > JP4-AA* 1red'), got.get('Kai Rhenn > FM-JK5 Kirra Longtail (recently seen as sabre) Seren Ketter (loki)'), got.get('Scout Alt > 3-DMQT 2 neuts')
+    nr = {r[0]: r for r in pg.evaluate(NEAR)}
+    pr = pg.evaluate("() => { const st = it.near.get(it.names.byLower.get('fm-jk5')); return st ? Object.fromEntries([...st.pairs].map(([id, s]) => [st.pilots.find(x => x.id === id).name, s.name])) : null; }")
+    asked = sorted({'1red', 'recently', 'as', 'recently seen', 'seen as'} & IDS_ASKED)
+    check(c1 and c1['chips'] == [['sys', f'JP4-AA {D0[SYSID["JP4-AA"]]}j'], ['kw', '1 red']] and c3 and c3['chips'] == [['sys', f'3-DMQT {D0[SYSID["3-DMQT"]]}j'], ['kw', '2 neut']]
+          and c2 and c2['chips'] == [['sys', f'FM-JK5 {D0[SYSID["FM-JK5"]]}j'], ['n', 'Kirra Longtail'], ['h', 'Seren Ketter'], ['ship', 'Sabre'], ['ship', 'Loki']] and c2['left'] == '' and not asked and pr == {'Kirra Longtail': 'Sabre', 'Seren Ketter': 'Loki'}
+          and nr.get('JP4-AA', [0, 0, 0])[2] == '1 hostile' and nr.get('3-DMQT', [0, 0, 0])[2] == '2 neutral',
+          f'"1red" and "2 neuts": head counts, not pilots; "Kirra Longtail (recently seen as sabre) Seren Ketter (loki)": each pilot paired with the ship in their brackets; none looked up ({c1 and c1["chips"]}, {c3 and c3["chips"]}, {c2 and c2["chips"]}, {c2 and c2["left"]!r}, {asked}, {pr}, {nr.get("JP4-AA")}, {nr.get("3-DMQT")})')
     # ---- you jump; a relog ----
     W(pg, F_LOCAL_MAIN, line(time.time(), 'EVE System', 'Channel changed to Local : T5ZI-S*'))
     tick(pg)

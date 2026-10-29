@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — Head counts, sighting words, and request gates</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Head counts, sighting words, and request gates</h1>
+<p><span class="tag">Fix</span><span class="tag">Tools</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.14.103</code> &rarr; <code>v2026.10.14.104</code></p>
+<p>Two requests from the owner.</p>
+<ul>
+<li>A bug report through the inbox, with a screenshot of the Feed. <code>&lt;system&gt;* 1red</code> showed a pilot called "1red". <code>&lt;system&gt; &lt;pilot&gt; (recently seen as stabber)</code> showed a pilot called "Recently" and left "as" unplaced. Both are real characters' names.</li>
+<li>After v.103, on whether the same thing could happen on the other tabs: "if the tool were widely used and we deployed code that got the user's IP banned for any period of time, this would be bad."</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>Head counts.</b>
+  <ul>
+  <li>A number with red, reds, hostile(s), neut(s) or neutral(s) is a count of pilots, not a pilot. It can be one word ("1red", "3neuts") or two ("2 reds").</li>
+  <li>The Feed shows a chip such as "1 red" or "2 neut".</li>
+  <li>Near You counts whichever is larger: the named pilots plus any "+N", or the head count. It says "neutral" when every count was neut.</li>
+  </ul></li>
+<li><b>Sighting words.</b> These words are never looked up as pilots: recently, lately, as, was, were, been, last, saw, also, again, same, probably, prob, maybe, possibly, think. Characters with those names exist, so this follows LESSON #88.</li>
+<li><b>Ships in brackets.</b> A pilot is paired with the ship in their brackets even when filler words come between: "A (recently seen as sabre) B (loki)".</li>
+<li><b>Every request to zKillboard goes through a gate, and a check makes sure of it.</b>
+  <ul>
+  <li><code>tools/check_request_gates.py</code> is a new step in the update-check chain, which now has 45 steps. It lists every <code>fetch()</code> in the page with the host it reaches.</li>
+  <li>It fails on any request not on that list.</li>
+  <li>It fails on a zKillboard API request outside <code>zkbFetch</code>. That queue sends one at a time, at least 1 s apart, within the 100-per-10-minutes budget.</li>
+  <li>It fails on a live-feed request that doesn't wait for <code>itKillTurn()</code>. That gate sends at most 10 a second by the clock and times its waits in a worker.</li>
+  <li>It fails on XMLHttpRequest, sendBeacon, EventSource or WebSocket, on timers staggered by index next to a zKillboard request, and on any request in the browser extension.</li>
+  </ul></li>
+<li><b>A page check, <code>request_gates_check.py</code></b>, runs the real page twice: as it is, and with its timers firing every 2 s together, as a hidden tab's do.
+  <ul>
+  <li>6 zKillboard lookups asked for at once go out at least 0.9 s apart (1 s, less timing noise).</li>
+  <li>40 live-feed requests asked for at once never exceed 12 in any second, and all are answered within 8 s.</li>
+  </ul></li>
+<li><b>CLAUDE.md</b> now states the rule: never get the user's address blocked.</li>
+<li><b>ESI</b> (the game's own API) is on the list but has no gate. Its calls are capped by how many run at once, not paced by timers. A new ESI call still has to be added to the list.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_check.py</code> sends <code>JP4-AA* 1red</code>, <code>3-DMQT 2 neuts</code> and <code>FM-JK5 Kirra Longtail (recently seen as sabre) Seren Ketter (loki)</code>, with made-up one-word pilots "1red", "Recently" and "As" in its mock. Each line must give the right chips, the Near You count and the pairs, and none of those words may be looked up. v2026.10.14.103 fails with the exact bug: pilots "1red" and "Recently", "as" left unplaced, and only one pair.</li>
+<li><code>check_request_gates.py</code> catches each of five broken versions: a new fetch, a bypass of the queue, a missing turn, 200 ms spacing, and an XHR. <code>request_gates_check.py</code>: v2026.10.14.102 fails, with 40 requests in one second.</li>
+<li>Two more broken versions are caught by <code>intel_check.py</code>: one without the two-word count ("2 neuts"), and one with the old bracket rule.</li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 45 steps, all OK, including the new gate check. All 45 page checks pass. <code>busy_check.py</code> failed once in the full run: a fade was still under way when the check looked, under load, and the check passes on its own, like the known flaky <code>extension_check.py</code>. The card-name, subtext and error-code lints report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #94: when a mistake would hurt the user beyond the page (an address blocked, data sent where it shouldn't go), don't stop at a test of today's case. Add a check over the whole code that turns every new instance into a decision. Here, every request must be listed with its gate. Then break the gates on purpose and watch the check fail.</p>
+</body></html>

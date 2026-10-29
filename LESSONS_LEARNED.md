@@ -878,6 +878,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 94. Guard a whole class of failure with a check on the code, not only a test of today's case
+
+- **What happened (v2026.10.14.104, the owner: "if the tool were widely used and we deployed code that got the user's IP
+  banned for any period of time, this would be bad"):** v.103 fixed the burst in the live kill feed, and its test
+  covers that feed. A new request added anywhere else (another tab, a new lookup) could still bypass the pacing, and no
+  test would notice, because each test only drives the code paths that exist when it is written.
+- **Do this instead:** when a mistake would hurt the user beyond the page (an address blocked, data sent where it
+  shouldn't go), add a check over the whole code that makes every new instance a decision. Here
+  `tools/check_request_gates.py` lists every `fetch()` with the host it reaches and fails on an unlisted one, on a
+  zKillboard request outside its two gates, and on timers staggered next to one; `request_gates_check.py` tests both
+  gates with a hidden tab's bunched timers. Then break the gates on purpose (a new fetch, a bypass, a shorter spacing)
+  and see the check fail.
+
 ## 93. A hidden tab's timers fire late and together: pace a rate-limited service by the clock, in a worker
 
 - **What happened (v2026.10.14.103, the owner: "the intel feed is still not showing any kills"):** v.100 read back
