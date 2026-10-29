@@ -136,7 +136,7 @@ with sync_playwright() as p:
         pg = ctx.new_page(); pg.goto('file://' + HTML)
         pg.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); localStorage.setItem('dscanIntel', JSON.stringify({channels: ['region.intel'], me: 95000001, range: 3, sound: true, notify: true, forget: 15, hideFriendly: true})); }", SIDE)
         pg.reload(); pg.wait_for_timeout(400)
-        setup_logs(pg); pg.click('#tabBtnIntel'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300); pg.click('#intelHdrLabel')
+        setup_logs(pg); pg.click('#tabBtnIntel'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300); pg.click('#intelSwLabel')
         return ctx, pg
     REQS.clear()
     ctx, pg = start(1440)
@@ -242,7 +242,7 @@ with sync_playwright() as p:
         if pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"): break
         pg.wait_for_timeout(500)
     check(pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"), f'R2Z2 back: the note goes {pg.evaluate("() => [it.kf.busy, it.kf.head, it.kf.fails, it.kf.waitUntil - Date.now()]")}')
-    pg.click('#intelHdrLabel'); pg.wait_for_timeout(500); n0 = len(REQS); pg.wait_for_timeout(8000)
+    pg.click('#intelSwLabel'); pg.wait_for_timeout(500); n0 = len(REQS); pg.wait_for_timeout(8000)
     check(len(REQS) == n0, f'off: no requests to R2Z2 ({len(REQS) - n0})')
     pg.screenshot(path='/tmp/intel100_1440.png', full_page=True)
     ctx.close()

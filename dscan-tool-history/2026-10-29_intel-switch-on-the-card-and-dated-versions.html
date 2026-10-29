@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — The Intel switch back on the card, and dated versions</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Intel switch back on the card, and dated versions</h1>
+<p><span class="tag">Change</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.14.104</code> &rarr; <code>v2026.10.29.1</code></p>
+<p>Two requests from the owner:</p>
+<ul>
+<li>Through the inbox: "high prio - move the intel toggle back inside the intel tab next to the settings button. leave the pill that shows up to alert the user to enemies inside of their alert range. feedback from other users, they didn't see how to turn intel on while on the intel tab."</li>
+<li>Then, with "just build it": "let's change the versioning so it either uses the current date every time in some manner, or no date. having 2026.10.14 in every build number is confusing to users as they assume they're looking at an old build from that date."</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>The Intel switch</b> is on the Intel card again, beside the gear, and shows "Off" or "On". It is still the only on/off switch.</li>
+<li><b>The header</b> keeps only the "N near" pill. It appears on any tab while a hostile is within your alert range, and pressing it opens the Intel tab.</li>
+<li><b>The card's texts</b> (the setup line, the "Stopped" line, the info panel) say where the switch is.</li>
+<li><b>Versions</b> now carry the delivery's own date (UTC) and its number that day, starting from 1. This build is <code>v2026.10.29.1</code>; the next one today is <code>.2</code>, and tomorrow's first is <code>.1</code>. The date always moves forward, so versions still sort in order after <code>v2026.10.14.104</code>. CLAUDE.md states the rule.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_check.py</code> checks:
+  <ul>
+  <li>the header has no Intel switch, only the pill beside Standings;</li>
+  <li>the card has the one switch, next to the gear, off;</li>
+  <li>the switch turns Intel on ("On") and off, and the pill disappears when it's off;</li>
+  <li>the setup and "Stopped" lines say where the switch is.</li>
+  </ul>
+  <code>intel_kills_check.py</code> and <code>intel_assess_check.py</code> use the card's switch. v2026.10.14.104 fails.</li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 45 steps, all OK. All 45 page checks pass. <code>extension_check.py</code> failed once in the full run, under load, and passes on its own; it is on the backlog as flaky. The lints, the personal-data check and the request-gate check report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #95: a control belongs where people look when they want it, usually next to the thing it controls. A status can show from everywhere (here, the pill), but the control shouldn't move there. And anything shaped like a date is read as a date: a version number carries the delivery's real date or none.</p>
+</body></html>

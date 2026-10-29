@@ -878,6 +878,16 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 95. Put a control where people look for it, and don't let a number say something it doesn't
+
+- **What happened (v2026.10.29.1, the owner, from other users):** v.97 moved Intel's on/off switch from the Intel card to the
+  page header, so one switch worked from every tab. Other users opened the Intel tab and "didn't see how to turn intel
+  on". Separately, every version from 2026-10-14 on was `v2026.10.14.N`: users took the date for the build's date and
+  thought they had an old build.
+- **Do this instead:** a control belongs where someone looks when they want it, which is usually where the thing it
+  controls is shown. Show a status from anywhere if that helps (here, the "N near" pill), but don't move the control
+  there. Anything shaped like a date is read as a date, so a version number carries the delivery's real date or none.
+
 ## 94. Guard a whole class of failure with a check on the code, not only a test of today's case
 
 - **What happened (v2026.10.14.104, the owner: "if the tool were widely used and we deployed code that got the user's IP

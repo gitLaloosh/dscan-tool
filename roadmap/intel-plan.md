@@ -170,6 +170,17 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
 
+## The switch back on the card (v2026.10.29.1)
+
+The owner, via the inbox, 2026-10-29: "high prio - move the intel toggle back inside the intel tab next to the settings
+button. leave the pill that shows up to alert the user to enemies inside of their alert range. feedback from other users,
+they didn't see how to turn intel on while on the intel tab."
+
+- **v2026.10.29.1: done.** The one on/off switch is on the Intel card, beside the gear (#intelSwLabel / #intelSw, "On" or
+  "Off"); the header keeps only the "N near" pill (#intelNear), which opens the tab. The setup text and the card's info
+  panel say where the switch is.
+- Versions now carry the delivery's date (UTC) and its number that day: v2026.10.29.1 follows v2026.10.14.104.
+
 ## Head counts and sighting words (v2026.10.14.104)
 
 The owner's bug report (a screenshot of the Feed, 2026-10-29): `<system>* 1red` showed a pilot "1red", and `<system>

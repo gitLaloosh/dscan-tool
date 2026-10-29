@@ -9,10 +9,10 @@ from EVE. The real page with a made-up Chatlogs folder (the File System Access A
 UTF-16 LE files written the way EVE writes them: BOM on every line, CRLF, EVE time), ESI from sa_mocks.py, and the system
 names: the real names of the 17 systems within 4 jumps of 1DQ1-A, Jita and New Caldari, a made-up "QX-LOO" far away, and
 "N<id>" for the rest. Every pilot and character name is made up. Checks:
-  * the Intel tab after the System Analyzer; the Intel slider beside Standings, off, the only on/off switch (v.97: none on
-    the card); the card's four setup boxes;
+  * the Intel tab after the System Analyzer; the one on/off switch on the Intel card beside the gear, off (v.97 to v.104: in
+    the header; v2026.10.29.1: back on the card, the header keeps the "N near" pill); the card's four setup boxes;
   * Choose folder: the channels of the last 2 days (a 3-day-old Corp log left out), both characters with their systems;
-  * the Intel slider turns it on; a worker ticks; the system names asked once (6 requests);
+  * the switch on the card turns it on; a worker ticks; the system names asked once (6 requests);
   * history: a line older than 15 minutes dropped, a recent one shown with no alert;
   * the stargate table: the page's jumps for 17 systems equal a breadth-first search over the table decoded here (and the
     client's jumps.static when EVE_RES is set), 1DQ1-A to Jita 42;
@@ -28,7 +28,7 @@ names: the real names of the 17 systems within 4 jumps of 1DQ1-A, Jita and New C
   * Near You: nearest first, a red row and an alert (sound + notification) for hostile/neutral within 3 jumps only, once per
     system; friendly-only hidden; the header's "N near";
   * your system follows a jump in Local (jumps redrawn); a relog's new file is read; settings kept;
-  * off (the Intel slider): no more reading; INTEL-01 (no API), INTEL-03 (names fail), INTEL-04 (no logs), the build warning;
+  * off (the switch on the card): no more reading; INTEL-01 (no API), INTEL-03 (names fail), INTEL-04 (no logs), the build warning;
   * 390 px: nothing off the page; no page errors.
 v2026.10.14.95 fails (no Intel tab).
 """
@@ -173,13 +173,13 @@ with sync_playwright() as p:
     pg.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); localStorage.removeItem('dscanIntel'); }", SIDE); pg.reload(); pg.wait_for_timeout(400)
     tabs = pg.evaluate("() => [...document.querySelectorAll('.tabs .tab-btn')].filter(b => b.checkVisibility()).map(b => b.textContent)")
     check(tabs == ['Pilot Analyzer', 'Fit Analyzer', 'System Analyzer', 'Intel'], f'the Intel tab after the System Analyzer {tabs}')
-    hdr = pg.evaluate("() => { const l = document.querySelector('#intelHdrLabel'); return [l.nextElementSibling.id, l.nextElementSibling.nextElementSibling.id, l.querySelector('input.mys-sw').checked, document.querySelector('#intelNear').hidden, !!l.querySelector('#intelNear'), l.textContent.trim()]; }")
-    check(hdr == ['intelNear', 'sideChip', False, True, False, 'Intel'], f'the Intel slider beside Standings, off; its pill outside the slider\'s label, hidden {hdr}')
+    hdr = pg.evaluate("() => { const b = document.querySelector('#intelNear'); return [b.nextElementSibling.id, b.hidden, document.querySelectorAll('#myShipBar input[aria-label=\"Watch the intel channels\"]').length]; }")
+    check(hdr == ['sideChip', True, 0], f'v2026.10.29.1: no Intel switch in the header, only the "N near" pill beside Standings, hidden {hdr}')
     pg.click('#tabBtnIntel'); pg.wait_for_timeout(200)
     box = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-setup .it-box .k')].map(k => k.textContent)")
     check(box == ['1 · Chat logs folder', '2 · Intel channels', '3 · You', '4 · Alerts'], f'the card: four setup boxes {box}')
-    sws = pg.evaluate("() => [document.querySelectorAll('input.mys-sw[aria-label=\"Watch the intel channels\"]').length, document.querySelectorAll('#intelPanel input.mys-sw').length, (document.querySelector('#intelPanel .it-sub') || {}).textContent || '']")
-    check(sws[0] == 1 and sws[1] == 0 and 'The Intel slider at the top, beside Standings, starts and stops it from any tab' in sws[2], f'one on/off switch: the Intel slider at the top, none on the card, and the card says so {sws[:2]}')
+    sws = pg.evaluate("() => { const l = document.querySelector('#intelSwLabel'); return [document.querySelectorAll('input.mys-sw[aria-label=\"Watch the intel channels\"]').length, !!l && !!l.closest('#intelPanel .it-head'), l && l.nextElementSibling && l.nextElementSibling.dataset.itAct, l && l.querySelector('input').checked, l && l.textContent.trim(), (document.querySelector('#intelPanel .it-sub') || {}).textContent || '']; }")
+    check(sws[:5] == [1, True, 'gear', False, 'Off'] and 'The switch beside the gear starts and stops it' in sws[5], f'v2026.10.29.1 (the owner: users "didn\'t see how to turn intel on while on the intel tab"): one on/off switch, on the Intel card beside the gear, off; the card says so {sws[:5]}')
     setup_logs(pg)
     pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(500)
     chans = pg.evaluate("() => [...document.querySelectorAll('[data-it-chan]')].map(c => [c.dataset.itChan, c.checked])")
@@ -189,10 +189,10 @@ with sync_playwright() as p:
     pg.check('[data-it-chan="region.intel"]'); pg.wait_for_timeout(100); pg.check(f'[data-it-me="{MAIN}"]'); pg.wait_for_timeout(100)
     st = pg.evaluate("() => JSON.parse(localStorage.getItem('dscanIntel'))")
     check(st['channels'] == ['region.intel'] and st['me'] == MAIN and st['range'] == 3 and st['notify'] and st['sound'], f'settings kept {st}')
-    # ---- on, from the header slider ----
-    pg.click('#intelHdrLabel'); tick(pg)
-    on = pg.evaluate("() => [document.querySelector('#intelHdrSw').checked, document.querySelectorAll('#intelPanel input.mys-sw').length, it.ticker && it.ticker.kind]")
-    check(on == [True, 0, 'worker'], f'the Intel slider turns it on (still no slider on the card), a worker ticks {on}')
+    # ---- on, from the card's switch ----
+    pg.click('#intelSwLabel'); tick(pg)
+    on = pg.evaluate("() => [document.querySelector('#intelSw').checked, document.querySelectorAll('input.mys-sw[aria-label=\"Watch the intel channels\"]').length, document.querySelector('#intelSwLabel').textContent.trim(), it.ticker && it.ticker.kind]")
+    check(on == [True, 1, 'On', 'worker'], f'the switch on the card turns it on ("On"), still one switch, a worker ticks {on}')
     check(NAMES_CALLS == [1000] * (len(ids) // 1000) + [len(ids) % 1000], f'the system names asked once: {len(NAMES_CALLS)} requests {NAMES_CALLS}')
     status = pg.inner_text('#intelPanel [data-it-status]')
     check(status.startswith('Your Main in 1DQ1-A · region.intel · last line '), f'the status line ({status!r})')
@@ -271,7 +271,7 @@ with sync_playwright() as p:
     badge = pg.evaluate("() => [document.querySelector('#intelNear').hidden, document.querySelector('#intelNear').textContent]")
     check(badge == [False, '4 near'], f'the header: "4 near" {badge}')
     pg.click('#tabBtnPilot'); pg.click('#intelNear'); pg.wait_for_timeout(300)   # v.97: the pill opens Intel and doesn't switch it off
-    pill = pg.evaluate("() => [it.on, document.querySelector('#intelHdrSw').checked, getComputedStyle(document.querySelector('#tabIntel')).display, document.querySelector('#intelNear').title]")
+    pill = pg.evaluate("() => [it.on, document.querySelector('#intelSw').checked, getComputedStyle(document.querySelector('#tabIntel')).display, document.querySelector('#intelNear').title]")
     check(pill[:3] == [True, True, 'block'] and pill[3] == '4 systems with a hostile or neutral report within 3 jumps: open Intel',
           f'pressing "4 near" opens the Intel tab and leaves Intel on (v.96: it turned Intel off) {pill}')
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', '8WA-Z6 Marrek Ketter still'))
@@ -317,21 +317,20 @@ with sync_playwright() as p:
     pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
     check(pg.evaluate("() => !document.querySelector('.it-pop')"), 'Escape closes the settings')
     # ---- off ----
-    pg.click('#tabBtnPilot'); pg.click('#intelHdrLabel'); pg.wait_for_timeout(300)   # off from another tab
-    off = pg.evaluate("() => [document.querySelector('#intelHdrSw').checked, it.on, it.ticker, document.querySelector('#intelNear').hidden]")
-    pg.click('#tabBtnIntel'); pg.wait_for_timeout(200)
+    pg.click('#intelSwLabel'); pg.wait_for_timeout(300)
+    off = pg.evaluate("() => [document.querySelector('#intelSw').checked, it.on, it.ticker, document.querySelector('#intelNear').hidden]")
     stopped = pg.inner_text('#intelPanel .it-sub')
-    check(off == [False, False, None, True] and stopped == 'Stopped. The Intel slider at the top starts it again.', f'the Intel slider turns it off from another tab {off} ({stopped!r})')
+    check(off == [False, False, None, True] and stopped == 'Stopped. The switch beside the gear starts it again.', f'the switch on the card turns it off; the pill goes {off} ({stopped!r})')
     n0 = len(pg.evaluate(FEED))
     W(pg, F2, line(time.time(), 'Scout Alt', '4X0-8B Marrek Ketter')); tick(pg)
     check(len(pg.evaluate(FEED)) == n0, 'off: no more reading')
-    NAMES_CALLS.clear(); pg.click('#intelHdrLabel'); tick(pg)
+    NAMES_CALLS.clear(); pg.click('#intelSwLabel'); tick(pg)
     check(NAMES_CALLS == [] and pg.evaluate("() => it.on"), 'on again: the system names not asked again')
-    pg.click('#intelHdrLabel'); pg.wait_for_timeout(200)
+    pg.click('#intelSwLabel'); pg.wait_for_timeout(200)
     # ---- the build warning ----
     STATUS['v'] = str(J['build'] + 1); pg.reload(); pg.wait_for_timeout(300); pg.click('#tabBtnIntel')
     setup_logs(pg); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300)   # the made-up folder can't be kept in IndexedDB: chosen again
-    pg.click('#intelHdrLabel'); tick(pg)
+    pg.click('#intelSwLabel'); tick(pg)
     warn = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-warn')].map(e => e.textContent)")
     check(any(w.startswith(f"EVE is on build {J['build'] + 1}; the jump table was checked on {J['build']}") for w in warn), f'EVE patched since the table was checked: said {warn}')
     STATUS['v'] = str(J['build'])
@@ -340,9 +339,9 @@ with sync_playwright() as p:
     ctx.close()
     # ---- errors ----
     ctx = new_ctx(1440, 'window.__noFsApi = true;'); pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(300)
-    pg.click('#tabBtnIntel'); pg.click('#intelHdrLabel'); pg.wait_for_timeout(300)
+    pg.click('#tabBtnIntel'); pg.click('#intelSwLabel'); pg.wait_for_timeout(300)
     e = pg.inner_text('#intelPanel .pr-msg.err')
-    check(e.endswith('(INTEL-01)') and not pg.evaluate("() => document.querySelector('#intelHdrSw').checked"), f'no File System Access API: INTEL-01, the slider back off ({e!r})')
+    check(e.endswith('(INTEL-01)') and not pg.evaluate("() => document.querySelector('#intelSw').checked"), f'no File System Access API: INTEL-01, the slider back off ({e!r})')
     ctx.close()
     ctx = new_ctx(1440); pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(300); pg.click('#tabBtnIntel')
     W(pg, 'notes.txt', 'x'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300)
@@ -352,11 +351,11 @@ with sync_playwright() as p:
     ctx = new_ctx(390); pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(300)
     pg.evaluate("(s) => localStorage.setItem('dscanSide', JSON.stringify(s))", SIDE); pg.reload(); pg.wait_for_timeout(300)
     setup_logs(pg); pg.click('#tabBtnIntel'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300)
-    pg.check('[data-it-chan="region.intel"]'); pg.check(f'[data-it-me="{MAIN}"]'); pg.click('#intelHdrLabel'); tick(pg)
+    pg.check('[data-it-chan="region.intel"]'); pg.check(f'[data-it-me="{MAIN}"]'); pg.click('#intelSwLabel'); tick(pg)
     e = pg.inner_text('#intelPanel .pr-msg.err')
     check(e.endswith('(INTEL-03)') and not pg.evaluate("() => it.on"), f'the system names fail: INTEL-03, off ({e!r})')
     STATUS['names_fail'] = False
-    pg.click('#intelHdrLabel'); tick(pg)
+    pg.click('#intelSwLabel'); tick(pg)
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', '8WA-Z6 Marrek Ketter sabre')); tick(pg)
     over = pg.evaluate("() => [document.documentElement.scrollWidth, [...document.querySelectorAll('#intelPanel *, .tabs *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.right > innerWidth + 1 || r.left < -1); }).map(e => e.className || e.tagName).slice(0, 5)]")
     check(over[0] <= 390 and not over[1], f'390 px: nothing off the page {over}')

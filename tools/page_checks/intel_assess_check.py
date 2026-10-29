@@ -51,7 +51,7 @@ with sync_playwright() as p:
         ctx = new_ctx(w); pg = ctx.new_page(); pg.goto('file://' + HTML)
         pg.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); localStorage.setItem('dscanIntel', JSON.stringify({channels: ['region.intel'], me: 95000001, range: 3, sound: false, notify: false, forget: 15, hideFriendly: true})); localStorage.removeItem('dscanSaSize'); }", SIDE)
         pg.reload(); pg.wait_for_timeout(400)
-        setup_logs(pg); pg.click('#tabBtnIntel'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300); pg.click('#intelHdrLabel'); tick(pg)
+        setup_logs(pg); pg.click('#tabBtnIntel'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300); pg.click('#intelSwLabel'); tick(pg)
         return ctx, pg
     ctx, pg = start(1440)
     T = time.time()

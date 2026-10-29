@@ -49,8 +49,10 @@ Before changing any calculation:
      resistances; reuse it for any stat it covers.
 3. Run `node regression_suite/run_regression.mjs index.html`. It must print
    ALL PASS. Add a constructed golden fit for every new mechanism.
-4. Bump the version tag in `header.hero` (`vYYYY.MM.DD.N`). Add a dated note
-   to `dscan-tool-history/`.
+4. Bump the version tag in `header.hero`: `vYYYY.MM.DD.N` is the delivery's own date (UTC)
+   and its number that day, from 1 (`v2026.10.29.1`, then `.2`; the next day `.1`). Up to
+   `v2026.10.14.104` the date never changed and N counted every delivery; users read that as an
+   old build. Add a dated note to `dscan-tool-history/`.
 
 **Error messages carry codes** (`ERRORS.md`). Every error the page writes ends
 with a code such as `(ZKB-01)`, defined once in `ERROR_CODES` in `index.html`

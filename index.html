@@ -2257,7 +2257,9 @@
   :root{--it-clear:#3fb950;}
   /* v.97 (the owner: "i accidently turned intel off thinking the pill was clickable"): the "N near" pill is its own button beside
      the slider, outside its label, and opens the Intel tab */
-  button.it-near-btn{display:inline-flex; align-items:center; min-height:28px; margin-left:-4px; padding:0 2px; border:none; background:transparent; cursor:pointer; letter-spacing:0;}
+  /* v2026.10.29.1: the switch moved to the card (beside the gear); the pill stays in the header on its own */
+  label.it-onoff{min-height:32px;} label.it-onoff span{min-width:22px; color:var(--text-dim);} label.it-onoff input:checked + span{color:var(--heading);}
+  button.it-near-btn{display:inline-flex; align-items:center; min-height:28px; margin-left:0; padding:0 2px; border:none; background:transparent; cursor:pointer; letter-spacing:0;}
   button.it-near-btn[hidden]{display:none;}
   button.it-near-btn .it-near{display:inline-block; white-space:nowrap; padding:0 7px; border-radius:9px; background:var(--danger); color:#fff; font:700 11px/18px var(--sans);}
   button.it-near-btn:hover .it-near, button.it-near-btn:focus-visible .it-near{box-shadow:0 0 0 2px color-mix(in srgb, var(--danger) 45%, transparent);}
@@ -2384,7 +2386,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.14.104</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.1</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2411,8 +2413,9 @@
     <span class="tab-fleet" id="fleetTabWrap" hidden><button type="button" class="tab-btn" id="tabBtnFleet" data-card="fleet"></button><button type="button" class="tab-x" id="fleetCloseBtn" aria-label="Close the Fleet tab" title="Close the Fleet tab">×</button></span>
     <div class="mys-bar" id="myShipBar">
       <!-- v2026.10.14.81 Standings (Your Side until v.95; System Analyzer step 1, D7 "A: chip by My Ship"): labels set by renderSideChip -->
-      <!-- v2026.10.14.96: Intel on / off on every tab (the owner: "a slider for off/on similar just like 'use in assessments'"); the same switch as the card's -->
-      <label class="mys-use it-hsw" id="intelHdrLabel" title="Intel: off"><input type="checkbox" class="mys-sw" id="intelHdrSw" aria-label="Watch the intel channels"><span id="intelHdrName"></span></label><button type="button" class="it-near-btn" id="intelNear" hidden><span class="it-near" id="intelNearN"></span></button>
+      <!-- v2026.10.29.1 (the owner, from other users: "they didn't see how to turn intel on while on the intel tab"): the Intel
+           on / off switch is back on the Intel card, beside the gear; the "N near" pill stays here and opens the tab -->
+      <button type="button" class="it-near-btn" id="intelNear" hidden><span class="it-near" id="intelNearN"></span></button>
       <button type="button" class="side-chip is-empty" id="sideChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="sidePanel"></button>
       <div class="side-backdrop" id="sideBackdrop" hidden></div>
       <div class="side-panel" id="sidePanel" role="dialog" hidden></div>
@@ -2718,7 +2721,7 @@ const CARD_INFO = {
  ],
  "intel": [
   "Reads your intel channels' chat logs as EVE writes them (in EVE: Settings, Chat, Log Chat to File). Chrome or Edge read the folder once you choose it; after a browser restart, turning the slider on asks once more.",
-  "The Intel slider at the top, beside {card:side}, turns it on and off from any tab: on, the page reads the new end of each chosen log every 2 seconds, from a background worker so it keeps going in a hidden tab; off, or closing the page, stops it.",
+  "The switch beside the gear on this card turns it on and off: on, the page reads the new end of each chosen log every 2 seconds, from a background worker so it keeps going in a hidden tab; off, or closing the page, stops it.",
   "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from the stargate list in the EVE client's own data (no jump bridges, no wormholes); the page says when EVE has been patched since that list was checked.",
   "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
   "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
@@ -23714,16 +23717,18 @@ function itRender(force){   // force: a press that changes what is open (the gea
   const act = document.activeElement;
   if(!force && act && el.contains(act) && act.closest('.it-fbar')){ itRenderLists(); return; }   // v.99: the filter bar in use
   if(!force && (el.querySelector('details.info-pop[open]') || (act && el.contains(act) && (act.tagName === 'SELECT' || act.closest('.it-pop'))))) return;   // don't redraw under an open info panel, an open list or the settings in use
-  // v2026.10.14.97 (the owner: "shouldn't one slider control it?" -> "keep the intel slider"): the on/off switch is only the Intel
-  // slider at the top (#intelHdrSw); the card keeps the gear
-  const sw = `<span class="it-sw"><button type="button" class="it-gear" data-it-act="gear" aria-label="Intel settings" title="Intel settings" aria-expanded="${it.pop ? 'true' : 'false'}">${IT_GEAR}</button></span>`;
+  // v2026.10.14.97 (the owner: "shouldn't one slider control it?" -> "keep the intel slider"): one on/off switch. v2026.10.29.1 (the
+  // owner, from other users: "they didn't see how to turn intel on while on the intel tab"): that switch is here, beside the
+  // gear (#intelSw); the header keeps only the "N near" pill
+  const onoff = `<label class="mys-use it-onoff" id="intelSwLabel" title="${it.on ? `Watching ${escapeHtml(it.set.channels.join(', ') || 'no channel yet')}` : 'Intel is off'}"><input type="checkbox" class="mys-sw" id="intelSw" aria-label="Watch the intel channels"${it.on ? ' checked' : ''}><span>${it.on ? 'On' : 'Off'}</span></label>`;
+  const sw = `<span class="it-sw">${onoff}<button type="button" class="it-gear" data-it-act="gear" aria-label="Intel settings" title="Intel settings" aria-expanded="${it.pop ? 'true' : 'false'}">${IT_GEAR}</button></span>`;
   const setup = !itReady() || (!it.on && !it.feed.length);
   let body = '';
   if(setup){
-    body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The ${escapeHtml(cardName('intel'))} slider at the top, beside ${escapeHtml(cardName('side'))}, starts and stops it from any tab; closing the page stops it too.</div>${itSettingsHtml(true)}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
+    body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The switch beside the gear starts and stops it; closing the page stops it too. While it runs, a “N near” pill at the top shows from any tab when a hostile is within your alert range.</div>${itSettingsHtml(true)}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
   } else {
     // v.98 (the owner: "the feed keeps growing ... drop entries older than 15 minutes"): the Feed keeps the same time as Near You
-    body = `${it.on ? `<div class="it-sub" data-it-status>${itStatusLine()}</div>` : `<div class="it-sub">Stopped. The ${escapeHtml(cardName('intel'))} slider at the top starts it again.</div>`}
+    body = `${it.on ? `<div class="it-sub" data-it-status>${itStatusLine()}</div>` : `<div class="it-sub">Stopped. The switch beside the gear starts it again.</div>`}
       ${it.patched ? `<div class="it-sub it-warn">${escapeHtml(it.patched)}: a gate EVE added since may be missing.</div>` : ''}
       ${it.on && it.me && !itMySys() ? `<div class="it-sub it-warn">Your system isn’t known yet (it’s read from your Local log when you jump), so no jumps and no alerts until then.</div>` : ''}
       <div class="it-cols">
@@ -23739,16 +23744,13 @@ function itRender(force){   // force: a press that changes what is open (the gea
 }
 function itHeaderSync(){
   if(typeof document === 'undefined' || !document.getElementById) return;
-  const sw = document.getElementById('intelHdrSw'), b = document.getElementById('intelNear');
-  if(!sw || !b) return;
-  sw.checked = it.on;
+  const b = document.getElementById('intelNear');
+  if(!b) return;
   const n = itNearCount();
   const t = document.getElementById('intelNearN');
   if(t) t.textContent = n ? `${n} near` : '';
   b.hidden = !n;
   b.title = n ? `${n} system${n === 1 ? '' : 's'} with a hostile or neutral report within ${it.set.range} jump${it.set.range === 1 ? '' : 's'}: open ${cardName('intel')}` : '';
-  const lab = document.getElementById('intelHdrLabel');
-  if(lab) lab.title = it.on ? `Intel: watching ${it.set.channels.join(', ') || 'no channel yet'}` : 'Intel: off';
 }
 function itToggle(on){ if(on) itStart(); else itStop(); }
 (function itInit(){
@@ -23756,10 +23758,10 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
   const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('intelPanel');
   if(!el || !el.addEventListener || typeof window === 'undefined' || !document.addEventListener) return;   // LESSON #36: stub DOM (and no timer there)
   it.supported = typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
-  document.getElementById('tabBtnIntel').textContent = document.getElementById('intelHdrName').textContent = cardName('intel');
+  document.getElementById('tabBtnIntel').textContent = cardName('intel');
   document.getElementById('tabBtnIntel').addEventListener('click', () => switchTab('intel'));
-  document.getElementById('intelHdrSw').addEventListener('change', (e) => itToggle(e.target.checked));
-  document.getElementById('intelNear').addEventListener('click', () => switchTab('intel'));   // the pill opens the tab; only the slider switches
+  el.addEventListener('change', (e) => { if(e.target && e.target.id === 'intelSw') itToggle(e.target.checked); });   // v2026.10.29.1: the switch on the card
+  document.getElementById('intelNear').addEventListener('click', () => switchTab('intel'));   // the pill opens the tab; only the card's switch turns Intel on or off
   // v.98: the "From Intel" lines
   document.getElementById('pilotFromIntel').addEventListener('click', (e) => { const b = e.target.closest('[data-fi-act]'); if(b) switchTab('intel'); });
   document.getElementById('saFromIntel').addEventListener('click', (e) => {
