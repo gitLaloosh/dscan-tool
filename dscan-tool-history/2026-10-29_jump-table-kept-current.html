@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — The jump table kept current, no warning</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The jump table kept current, no warning</h1>
+<p><span class="tag">Change</span><span class="tag">Tools</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.29.4</code> &rarr; <code>v2026.10.29.5</code></p>
+<p>The owner asked what the amber line "EVE is on build 3660036; the jump table was checked on 3654997: a gate EVE added since may be missing" meant, then: "Eve deploys patches very often. is there a way to automate the update so the user never has to see it?" He chose a pull request for each real change.</p>
+
+<h2>How it was checked</h2>
+<ul>
+<li>CCP publishes the game's static data with each build. <code>tranquility/latest.jsonl</code> named build 3660036, released 11:10 UTC, ten minutes after downtime; the server was on the same build.</li>
+<li>Read in the owner's browser pane (only the 0.5 MB stargate file out of the 99 MB download): 13,978 gates, making 6,989 connections, exactly the page's table from the client's file (build 3654997). None missing either way. The warning was a false alarm, as it would be after nearly every patch.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>No amber warning</b>, and no request to ESI's <code>/status/</code> when Intel starts. The info panel says the table comes from EVE's published stargate data and is checked against each new build every day.</li>
+<li><b><code>.github/workflows/jump-table.yml</code></b> runs at 11:47 and 23:17 UTC (and from the Actions tab). It runs <code>tools/jump_table_update.py</code>: when the gate connections differ from the page's table, it opens a pull request with the new table, naming each connection added or removed. Otherwise nothing happens. It never commits to the main branch.</li>
+<li><b><code>tools/gen_intel_tables.py</code></b> (the client's own file) compares connections only, so a newer client with the same gates matches.</li>
+<li>The owner turned on, once, Settings &gt; Actions &gt; General: read and write permissions, and Actions may create pull requests. After merging one: <code>git pull</code> before the next commit.</li>
+<li>No number the engine works out changed. Jump counts are unchanged.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>independent_checks/check_jump_table_update.py</code> (a new chain step): the updater on made-up copies of CCP's file layout built from the page's table. The same gates on a newer build change nothing. One connection removed and one added (to a new system): changed, the build, a pull request naming both, the table rewritten with exactly the new connections, nothing else in the page changed; <code>--check</code> exits 1, then 0. A broken updater (no "changed" output) is caught.</li>
+<li>A second new chain step runs the real comparison; from the cloud workspace CCP's site can't be reached, so it says "skipped" there and the Action does it.</li>
+<li><code>intel_check.py</code>: EVE on a newer build than the table: no warning, no <code>/status/</code> request, the info panel's new line. v2026.10.29.4 fails.</li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 47 steps, all OK. All 45 page checks pass (<code>extension_check.py</code> failed once in the parallel run, under load, and passes on its own, as before). The lints, the personal-data check and the request-gate check (now 12 fetch calls) report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #100: a warning that fires on a routine event teaches people to ignore it. Compare what matters (the gates), not a proxy that changes for other reasons (the build). When the check needs data the page can't cheaply get, run it on a schedule where the data is, and hand the owner a pull request only when something really changed.</p>
+</body></html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — Intel: kills past patchy numbers</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel: kills past patchy numbers</h1>
+<p><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.29.4</code> &rarr; <code>v2026.10.29.5</code></p>
+<p>The owner, the same afternoon as v.29.4: "it looks like that last kill feed fix didn't work." The status line said "no kill read for 15 min" while RIFT showed kills.</p>
+
+<h2>How it was found</h2>
+<ul>
+<li>The page's own state, read in the owner's browser console with a one-line snippet, twice 20 s apart: waiting at number 100275281, not busy, no error, still making requests, and the minute-check had just run.</li>
+<li>Probed by hand from the browser pane: 100275281 to 100275299 missing, 100275300 there, then missing numbers between kills (305, 313, 320, 329, 345, 409 ...). His console showed the same numbers answering 404.</li>
+<li>v.29.4's minute-check looked at fixed numbers ahead: 4 to 8, 12, 16, 24, 32, 48, 64, 128 and so on. Every one of those was a missing number, so it found nothing and tried again a minute later, with the same result.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>After 30 s with no kill</b> (was a minute), the page reads forward one number after another until 32 in a row are missing past the last kill it found. Any gap under 32 is crossed, whatever its pattern. At most 400 numbers per look; if it is still finding kills at 400, it carries on at once.</li>
+<li><b>Only then does it look further:</b> 8 numbers in a row at 32, 64, 128 ... 2048 past, instead of single numbers.</li>
+<li><b>Starting (or restarting) Intel no longer stops at a gap.</b> Finding the newest kill used to look only 3 past where it stopped; the owner's restart landed on the same 100275281 (his console: the two kills never read). It now looks up to 32 on, skipping numbers found missing in the last 6 s.</li>
+<li><b>A quiet feed isn't hammered.</b> Finding nothing anywhere, it waits twice as long before the next look (30 s, then 1, 2, 4 and 5 minutes); a kill found resets it to 30 s. One look costs at most 88 requests, all through the one gate (at most 10 a second).</li>
+<li>The status line and the info panel say the page keeps reading ahead past missing numbers.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_kills_check.py</code>, a new part with the pattern from the owner's feed: 19 missing after where the page is, and missing numbers at every spot v.29.4 looked at, with kills between them. After 30 s with no kill (set, not waited) the kill shows and the page reaches the newest. Then nothing new anywhere: one look costs at most 32 + 56 requests, and the next look comes a minute later. v2026.10.29.4 fails.</li>
+<li>A start with 19 missing in a row near the newest: the newest is found past them (v.29.4's look of 3 stops before them).</li>
+<li>R2Z2 requests per second are now timed in the page itself (the test's own timing could bunch under load): at most 10 to 12 in any second throughout.</li>
+<li>Three broken versions, each caught: no reading forward, no longer waits after finding nothing, finding the newest looking only 3 on.</li>
+<li>Regression suite, update-check chain, page checks, lints: see the jump-table history doc for this delivery.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #99: a look-ahead at fixed spots can miss every time. To cross a gap of unknown size and pattern, read through it until a run of misses long enough to mean "the end", then probe further with windows, and back off when nothing is found. When a user says a fix didn't work, ask for the program's own state first; a one-line console snippet was enough here.</p>
+</body></html>

@@ -170,6 +170,33 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
 
+## Patchy numbers, and the jump table kept current without a warning (v2026.10.29.5)
+
+**Kills.** The owner, the same afternoon: "it looks like that last kill feed fix didn't work" ("no kill read for 15 min" on
+v.29.4). His page's state, read in his console: stuck at 100275281, not busy, 1,499 requests, the minute-check running. Probed
+by hand from the browser pane: 100275281-299 missing, 300 there, then missing ones between kills (305, 313, 320, 329, 345,
+409 ...). v.29.4's minute-check looked at fixed numbers (4-8, 12, 16, 24, 32, 48, 64, 128 ...) and each was a missing one.
+
+- **v2026.10.29.5: done.** After 30 s with no kill the page reads forward one number at a time until 32 in a row are missing
+  past the last kill it found (at most 400; still finding kills at 400, it carries on at once). Only then does it look further:
+  8 numbers in a row at 32, 64, 128 ... 2048 past. Finding nothing anywhere, it waits twice as long before the next look (30 s,
+  1, 2, 4, then 5 minutes); a kill found resets it to 30 s. Every request still goes through itKillTurn.
+  Finding the newest (at the start, and after a look further ahead) now looks up to 32 past where halving stops (was 3): his
+  restart had landed on the same 100275281.
+
+**Jump table.** The owner: "Eve deploys patches very often. is there a way to automate the update so the user never has to
+see it?" CCP publishes the static data with each build (developers.eveonline.com/docs/services/static-data/; build 3660036
+went out 11:10 UTC, ten minutes after downtime). Read in his browser pane: its mapStargates.jsonl (13,978 gates) makes
+exactly the page's 6,989 connections, none missing either way.
+
+- **v2026.10.29.5: done.** The page no longer asks ESI for EVE's build or shows the amber warning. The info panel says the
+  table is checked against each new EVE build every day. `.github/workflows/jump-table.yml` runs
+  `tools/jump_table_update.py` at 11:47 and 23:17 UTC: when the gate connections differ from the page's, it opens a pull
+  request with the new table (branch `jump-table/build-<N>`; never a commit to the main branch); otherwise nothing happens.
+  `tools/gen_intel_tables.py` (the client's file) now compares connections only, so a newer client with the same gates
+  matches. The owner turned on, once, Settings > Actions > General: read and write permissions, and Actions may create pull
+  requests. After merging one: `git pull` before the next commit.
+
 ## Kills after a long gap (v2026.10.29.4)
 
 The owner: "I should note that i still have not seen a single killmail show up in the feed" (v2026.10.29.3, kill range 10;

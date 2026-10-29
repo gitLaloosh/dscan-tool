@@ -30,7 +30,7 @@ src = open(HTML, encoding='utf-8').read()
 SITES = {
     'zkbFetchNow': 'zkb', 'itKillGet': 'r2z2', 'itKillSeq': 'r2z2',
     'resolveNamesToIds': 'esi', 'getType': 'esi', 'getGroup': 'esi', 'resolveIdsToNames': 'esi', 'fetchKillmail': 'esi',
-    'getOrg': 'esi', 'saAffiliation': 'esi', 'paAffEsi': 'esi', 'itSecFetch': 'esi', 'itCheckBuild': 'esi',
+    'getOrg': 'esi', 'saAffiliation': 'esi', 'paAffEsi': 'esi', 'itSecFetch': 'esi',   # v2026.10.29.5: itCheckBuild (ESI /status/) removed
 }
 HOST_RX = {'zkb': r'\$\{ZKB\}|zkillboard\.com/api', 'r2z2': r'\$\{IT_R2Z2\}|r2z2\.zkillboard\.com', 'esi': r'\$\{ESI\}|esi\.evetech\.net'}
 problems = []

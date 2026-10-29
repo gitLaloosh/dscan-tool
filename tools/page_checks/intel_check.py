@@ -28,7 +28,7 @@ names: the real names of the 17 systems within 4 jumps of 1DQ1-A, Jita and New C
   * Near You: nearest first, a red row and an alert (sound + notification) for hostile/neutral within 3 jumps only, once per
     system; friendly-only hidden; the header's "N near";
   * your system follows a jump in Local (jumps redrawn); a relog's new file is read; settings kept;
-  * off (the switch on the card): no more reading; INTEL-01 (no API), INTEL-03 (names fail), INTEL-04 (no logs), the build warning;
+  * off (the switch on the card): no more reading; INTEL-01 (no API), INTEL-03 (names fail), INTEL-04 (no logs), no build warning (v2026.10.29.5);
   * 390 px: nothing off the page; no page errors.
 v2026.10.14.95 fails (no Intel tab).
 """
@@ -104,6 +104,7 @@ def esi(route):
         if any(i in ONE_WORD.values() for i in q):
             return route.fulfill(status=200, content_type='application/json', body=json.dumps([{'character_id': i, 'corporation_id': 98000013} if i in ONE_WORD.values() else M.aff(i) for i in q]))
     if re.search(r'/status/\?', url):
+        STATUS['asked'] = STATUS.get('asked', 0) + 1
         return route.fulfill(status=200, content_type='application/json', body=json.dumps({'players': 1, 'server_version': STATUS['v'], 'start_time': '2026-10-27T11:00:00Z'}))
     return M.esi(route)
 def route(ctx):
@@ -331,12 +332,16 @@ with sync_playwright() as p:
     NAMES_CALLS.clear(); pg.click('#intelSwLabel'); tick(pg)
     check(NAMES_CALLS == [] and pg.evaluate("() => it.on"), 'on again: the system names not asked again')
     pg.click('#intelSwLabel'); pg.wait_for_timeout(200)
-    # ---- the build warning ----
+    # ---- v2026.10.29.5: no build warning ----
     STATUS['v'] = str(J['build'] + 1); pg.reload(); pg.wait_for_timeout(300); pg.click('#tabBtnIntel')
     setup_logs(pg); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300)   # the made-up folder can't be kept in IndexedDB: chosen again
     pg.click('#intelSwLabel'); tick(pg)
     warn = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-warn')].map(e => e.textContent)")
-    check(any(w.startswith(f"EVE is on build {J['build'] + 1}; the jump table was checked on {J['build']}") for w in warn), f'EVE patched since the table was checked: said {warn}')
+    info = pg.evaluate("() => CARD_INFO.intel.join(' ')")
+    # v2026.10.29.5 (the owner: "is there a way to automate the update so the user never has to see it?"): EVE on a newer build
+    # than the table's says nothing and asks ESI nothing; the GitHub Action keeps the table current (tools/jump_table_update.py)
+    check(not any('jump table' in w for w in warn) and not STATUS.get('asked') and 'checked against each new EVE build every day' in info,
+          f'EVE on a newer build than the jump table: no warning, no /status/ request ({STATUS.get("asked", 0)}), the info panel says the table is checked daily {warn}')
     STATUS['v'] = str(J['build'])
     shot_w = pg.evaluate("() => document.documentElement.scrollWidth")
     pg.screenshot(path='/tmp/intel_1440.png', full_page=True)

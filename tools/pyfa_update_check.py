@@ -106,6 +106,8 @@ if '--run' in sys.argv:
         ('fighter ability icons cover every fighter', env + 'python3 -I tools/gen_fighter_ability_icons.py --check index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.66
         ('Intel tables: ship names vs pyfa, gates vs the client (EVE_RES)', env + 'python3 -I tools/gen_intel_tables.py index.html', lambda o: o.strip().splitlines()[-1].startswith('intel tables match')),  # v2026.10.14.96
         ('personal data in the repository (LESSON #90)', 'python3 -I tools/check_pii.py .', lambda o: bool(re.search(r' 0 problems($|[;( ])', o.strip().splitlines()[-1]))),  # v2026.10.14.101; v.103: a note after it ("; N reviewed images no longer in any file") is not a failure
+        ("the jump-table updater on made-up copies of CCP's data", 'python3 -I tools/independent_checks/check_jump_table_update.py index.html', lambda o: o.strip().splitlines()[-1] == 'JUMP TABLE UPDATE: 0 problems'),  # v2026.10.29.5
+        ("stargates vs CCP's published static data (the GitHub Action's check; skipped where CCP's site can't be reached)", 'python3 -I tools/jump_table_update.py index.html --check', lambda o: o.strip().splitlines()[-1].startswith(('jump table matches', 'jump table: skipped'))),  # v2026.10.29.5
         ('requests to zKillboard go through its gates (LESSON #93)', 'python3 -I tools/check_request_gates.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.104
         ('pasted names, either apostrophe', env + 'python3 -I tools/independent_checks/check_apostrophe_names.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 misses')),
     ]

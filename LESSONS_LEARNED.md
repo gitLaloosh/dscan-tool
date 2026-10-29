@@ -878,6 +878,30 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 100. A warning that fires on a routine event teaches people to ignore it: check the thing itself, out of their sight
+
+- **What happened (v2026.10.29.5, the owner: "Eve deploys patches very often. is there a way to automate the update so the
+  user never has to see it?"):** since v.96 the Intel card showed an amber "EVE is on build N; the jump table was checked on
+  M: a gate EVE added since may be missing" after every EVE patch, because it compared build numbers. Patches seldom touch
+  stargates; checked that day, the new build's 13,978 gates made exactly the page's 6,989 connections.
+- **Do this instead:** compare what matters (here the gate connections), not a proxy that changes for other reasons (the
+  build). When the check needs data the page can't cheaply get, run it on a schedule where the data is (a GitHub Action
+  reading CCP's published static data twice a day) and hand the owner a pull request only when something really changed.
+  Test the automation on made-up copies of the real file layout when the real source can't be reached from where you work.
+
+## 99. A look-ahead at fixed spots can miss every time: to cross a gap of unknown shape, read through it
+
+- **What happened (v2026.10.29.5, the owner, the same afternoon: "it looks like that last kill feed fix didn't work"):**
+  v.29.4, after a minute with no kill, looked at fixed numbers ahead (4-8, 12, 16, 24, 32, 48, 64, 128 ...). From 12:30 UTC
+  zKillboard's numbers were patchy: 19 missing after where the page was, then missing ones between kills, and every fixed
+  spot happened to be a missing one. The page sat 24 minutes with "no kill read". The cause came from the page's own state,
+  which the owner read in his browser's console with a one-line snippet (seq, head, busy, reqs, holes, waits), plus the
+  numbers probed by hand: no guessing.
+- **Do this instead:** past a gap of unknown size and pattern, read every number in turn until a run of misses long enough
+  to mean "the end" (here 32), then probe further with windows (8 in a row), not single spots. Back off when nothing is
+  found anywhere, so a quiet source isn't hammered. Test with the pattern that broke it, including a check that the old
+  build fails. When a user says a fix didn't work, ask for the program's own state first (a console line is enough).
+
 ## 98. A reader that waits for data must notice when it has waited too long; and a hard bug may need a recording, not a probe
 
 - **What happened (v2026.10.29.4, the owner: "i still have not seen a single killmail show up in the feed"):** v.103 read

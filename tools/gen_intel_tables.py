@@ -16,7 +16,8 @@ jumps.static (its jumps.schema): a uint32 count, then 65-byte items: jumpID, sta
 stored once. The page gets:
   sys    base64 of uint16 LE deltas of the sorted system IDs (the first from 30000000)
   edges  base64 of uint16 LE index pairs into sys (each connection once)
-  build  the client build (start.ini) the table came from; ESI /status/ server_version is compared with it
+  build  the client build (start.ini) the table came from (until v2026.10.29.5 compared with ESI /status/; now only
+         a change of gates counts, here and in tools/jump_table_update.py)
   md5    the jumps.static fingerprint (resfileindex's md5 of the file)
 System names are not in the client file in a readable form; the page reads them from ESI /universe/names/ the
 first time Intel starts and keeps them (INTEL-03 if that fails).
@@ -90,12 +91,17 @@ if RES:
 else:
     jumps = cur_json('INTEL_JUMPS')
     if not jumps: sys.exit('no INTEL_JUMPS in the page and EVE_RES is not set')
+# v2026.10.29.5: only the connections count. A client on a newer build with the same gates matches (the page keeps the
+# build and fingerprint its table was last rebuilt from; tools/jump_table_update.py and the GitHub Action do the same).
+CLIENT_BUILD = jumps['build']
+_oj = cur_json('INTEL_JUMPS') or {}
+if RES and all(_oj.get(k) == jumps[k] for k in ('sys', 'edges', 'n', 'systems')): jumps = _oj
 
 new = ('const INTEL_JUMPS = ' + json.dumps(jumps, separators=(',', ':')) + ';\n'
        + 'const INTEL_SHIPS = ' + json.dumps(shipRows, ensure_ascii=False, separators=(',', ':')) + ';')
 if new == cur:
     print(f"intel tables match: {len(shipRows)} ships (pyfa), {jumps['n']} gate connections between {jumps['systems']} systems "
-          f"(client build {jumps['build']}){'' if RES else ' -- jumps: skipped (no EVE_RES, the table in the page kept)'}")
+          f"(client build {CLIENT_BUILD}, the page's table from build {jumps['build']}){'' if RES else ' -- jumps: skipped (no EVE_RES, the table in the page kept)'}")
     sys.exit(0)
 if WRITE:
     out = src[:m.start(1)] + new + src[m.end(1):]

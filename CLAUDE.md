@@ -53,6 +53,9 @@ Before changing any calculation:
    and its number that day, from 1 (`v2026.10.29.1`, then `.2`; the next day `.1`). Up to
    `v2026.10.14.104` the date never changed and N counted every delivery; users read that as an
    old build. Add a dated note to `dscan-tool-history/`.
+   Exception: the pull requests `.github/workflows/jump-table.yml` opens (the stargate table, `INTEL_JUMPS`,
+   when an EVE build changed a gate; `tools/jump_table_update.py`) change only that table and no version.
+   After the owner merges one, work from the merged copy (he runs `git pull`).
 
 **Error messages carry codes** (`ERRORS.md`). Every error the page writes ends
 with a code such as `(ZKB-01)`, defined once in `ERROR_CODES` in `index.html`

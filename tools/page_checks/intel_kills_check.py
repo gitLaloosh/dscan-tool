@@ -48,6 +48,12 @@ missing for good, 100274284-287, with kills after them): four missing in a row, 
 second; then 40 missing (wider than a read-back batch of 28), read past too, at most 40 of them kept to ask again; the
 status line says "last kill read N s ago", and after 5 minutes without one "no kill read for N min" in amber.
 v2026.10.29.3 fails (it waits at the gap for ever).
+v2026.10.29.5 (the owner: "it looks like that last kill feed fix didn't work"; his page's state, read in his console, and the
+feed's numbers from 12:30 UTC that day): 19 missing after where the page is, and missing ones between kills at every number
+v.29.4 looked at; after 30 s with no kill the page reads on number by number and shows the kill. Then nothing new anywhere:
+one look costs at most 32 + 56 requests and the next comes a minute later (the wait doubles to 5 minutes). A start with 19
+missing in a row near the newest (his restart stopped there): the newest found past them. Requests per second are timed in the
+page (window.__r2t), not by the route handler, whose times bunch under load. v2026.10.29.4 fails.
 """
 import sys, os, time, re, json
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -122,6 +128,8 @@ ROWS = """() => [...document.querySelectorAll('#intelPanel #itFeedList .it-fd')]
 NOTE = "() => (document.querySelector('[data-it-kfnote]') || {}).textContent || ''"
 def jof(t):
     m = re.search(r'(\d+) Jumps?$', t or ''); return int(m.group(1)) if m else 0 if (t or '').endswith('In system') else None
+def per_s_page(pg):   # v2026.10.29.5: the most R2Z2 requests the page started in any one second
+    return pg.evaluate("() => { const t = window.__r2t || []; let m = 0; for(let i = 0, j = 0; i < t.length; i++){ while(t[i] - t[j] >= 1000) j++; m = Math.max(m, i - j + 1); } return m; }")
 def gaps_ok():
     miss = [(t, p_) for t, p_, s_ in REQS if s_ == 404]
     again = [min((u - t for u, q, _ in REQS if q == p_ and u > t), default=99) for t, p_ in miss]   # each missing file: how long until it was asked for again
@@ -134,6 +142,8 @@ with sync_playwright() as p:
     def new_ctx(w):
         ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
         ctx.add_init_script(FS)
+        # v2026.10.29.5: each R2Z2 request's start, timed in the page (the route handler's own times can bunch under load)
+        ctx.add_init_script("(() => { const f = window.fetch; window.__r2t = []; window.fetch = function(u, o){ if(String(u).includes('r2z2.zkillboard.com')) window.__r2t.push(Date.now()); return f.apply(this, arguments); }; })();")
         ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), esi2)
         ctx.route(re.compile(r'https://zkillboard\.com/.*'), M.zkb)
         ctx.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))
@@ -156,7 +166,7 @@ with sync_playwright() as p:
     took = time.time() - t0
     seq = [p_ for _, p_, _ in REQS]
     i0 = seq.index(f'/ephemeral/{START}.json') if f'/ephemeral/{START}.json' in seq else -1
-    check(seq[:1] == ['/ephemeral/sequence.json'] and 0 < i0 <= 40 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and took < 40,
+    check(seq[:1] == ['/ephemeral/sequence.json'] and 0 < i0 <= 80 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and took < 40,
           f'R2Z2: sequence.json (stale: {SEQ["stale"]}), the newest kill found in {i0 - 1} requests past a hole where halving stops ({SEQ["last"] - 8}), then read from 240 before it ({START}) past two more holes; the kill in range shown after {took:.0f} s')
     pg.wait_for_timeout(3000)
     R = pg.evaluate(ROWS)
@@ -177,7 +187,7 @@ with sync_playwright() as p:
     pg.wait_for_timeout(15000)
     note = pg.evaluate(NOTE)
     check(note == '', f'the feed up and nothing new: no INTEL-05 note (v.99: a missing kill read as the feed being down) {note!r}')
-    again, per_s = gaps_ok()
+    again, per_s = gaps_ok(); per_s = per_s_page(pg)
     check(again and min(again) >= 5.9 and per_s <= 12, f'a missing kill not asked for again within 6 s ({sorted(round(x, 1) for x in again)[:4]}); at most {per_s} requests in any second')
     R = pg.evaluate(ROWS)
     k8 = [r for r in R if r['ty'] in LABELS and r['sys'] == '8WA-Z6 1 Jump']
@@ -242,7 +252,7 @@ with sync_playwright() as p:
         k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
         if k7: break
         pg.wait_for_timeout(500)
-    took = time.time() - t0; _, per_s = gaps_ok()
+    took = time.time() - t0; _, per_s = gaps_ok(); per_s = per_s_page(pg)
     st = pg.evaluate("() => [it.kf.seq, it.kf.head, it.kf.holes.size, it.kf.target]")
     check(k7 == [f'{SYSNAME[S7]} 7 Jumps'] and st[0] == SEQ['last'] + 1 and per_s <= 12,
           f'4 missing in a row, then kills: after a minute with no kill the page looks further ahead, finds them and reads on; the kill 7 jumps away shown {took:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), holes {st[2]}, {len(REQS) - r0} requests, at most {per_s} in any second ({k7})')
@@ -250,7 +260,7 @@ with sync_playwright() as p:
     G1 = SEQ['last'] + 1
     HOLES.update(range(G1, G1 + 40))
     REC[G1 + 40] = km(9200031, None, 20, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 5e6, sysid=S7)
-    SEQ['last'] = G1 + 60
+    SEQ['last'] = G1 + 100            # kills keep coming after the gap
     pg.wait_for_timeout(8000)
     pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; it.kf.stallAt = 0; }")   # (and the last look ahead a minute ago: at most once a minute)
     t0 = time.time(); k7 = []
@@ -258,10 +268,39 @@ with sync_playwright() as p:
         k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
         if len(k7) == 2 and pg.evaluate("() => it.kf.head && !it.kf.busy"): break
         pg.wait_for_timeout(500)
-    took = time.time() - t0; _, per_s = gaps_ok()
+    took = time.time() - t0; _, per_s = gaps_ok(); per_s = per_s_page(pg)
     st = pg.evaluate("() => [it.kf.seq, it.kf.head, it.kf.holes.size]")
     check(len(k7) == 2 and st[0] == SEQ['last'] + 1 and st[2] <= 40 and per_s <= 12,
           f'40 missing in a row (wider than a read-back batch), then kills: read past them, the kill shown {took:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), {st[2]} numbers kept to ask again (at most 40), at most {per_s} requests in any second')
+    # ---- v2026.10.29.5: patchy numbers (the owner's feed, 2026-10-29 from 12:30 UTC: 100275281-299 missing, 300 there, then
+    # 305, 313, 320, 329, 345, 409 ... missing between kills). Missing here: the 19 after where the page is, and every number
+    # v.29.4 looked at (4-8, 12, 16, 24, 32, 48, 64, 128 past it), with kills between them ----
+    for _ in range(60):
+        if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
+        pg.wait_for_timeout(250)
+    P0 = SEQ['last'] + 1
+    HOLES.update(range(P0, P0 + 19))
+    HOLES.update(P0 + d for d in (24, 32, 48, 64, 128))
+    REC[P0 + 19] = km(9200032, None, 15, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 4e6, sysid=S7)
+    SEQ['last'] = P0 + 140
+    pg.wait_for_timeout(8000)
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; }")   # 30 s with no kill read (set, not waited)
+    t0 = time.time(); k7 = []
+    for _ in range(80):
+        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
+        if len(k7) == 3 and pg.evaluate("() => it.kf.head && !it.kf.busy && it.kf.seq > " + str(SEQ['last'])): break
+        pg.wait_for_timeout(500)
+    took = time.time() - t0; _, per_s = gaps_ok(); per_s = per_s_page(pg)
+    st = pg.evaluate("() => [it.kf.seq, it.kf.stallGap]")
+    check(len(k7) == 3 and st[0] == SEQ['last'] + 1 and per_s <= 12,
+          f'patchy numbers (19 missing, then missing between kills at every number v.29.4 looked at): after 30 s with no kill the page reads on number by number past the gap; the kill shown {took:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), at most {per_s} requests in any second')
+    # nothing new anywhere: it looks less often (30 s, then 1, 2, 4, 5 min), so a quiet feed isn't asked hundreds of times a minute
+    r0 = len(REQS); s0 = pg.evaluate("() => it.kf.seq")
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; it.kf.waitUntil = 0; }")
+    pg.wait_for_timeout(16000)
+    gap1 = pg.evaluate("() => it.kf.stallGap")
+    n1 = sum(1 for _, p_, _ in REQS[r0:] if re.search(r'/(\d+)\.json$', p_) and int(re.search(r'/(\d+)\.json$', p_).group(1)) >= s0 + 3)   # past the live end's own 3 (the numbers kept to ask again are older)
+    check(gap1 == 60000 and n1 <= 32 + 7 * 8, f'nothing new anywhere: {n1} requests for one look (32 read on, 8 at each of 7 places further), then the next look a minute later, not 30 s (stallGap {gap1})')
     pg.evaluate("() => { it.kf.lastGot = Date.now() - 6 * 60000; }")
     pg.wait_for_timeout(1200)
     s2 = pg.evaluate("() => { const e = document.querySelector('[data-it-status] .it-kslow'); return e ? [e.textContent, getComputedStyle(e).color] : null; }")
@@ -273,14 +312,20 @@ with sync_playwright() as p:
     check(got == ['Marrek Ketter', 'Vedmak'], f'a pilot on a kill opens in the ship they flew {got}')
     pg.click('#tabBtnIntel'); pg.wait_for_timeout(300)
     # ---- far behind (a sleeping tab): the page finds the newest again ----
-    pg.evaluate(f"() => {{ it.kf.seq = {START - 1500}; it.kf.found = 0; it.kf.head = true; it.kf.waitUntil = 0; }}")
-    pg.wait_for_timeout(9000)
+    for _ in range(60):   # v2026.10.29.5: set while the reader is idle (a read under way would overwrite it), then up to 20 s
+        if pg.evaluate("() => !it.kf.busy"): break
+        pg.wait_for_timeout(100)
+    pg.evaluate(f"() => {{ it.kf.seq = {START - 1500}; it.kf.found = 0; it.kf.head = true; it.kf.waitUntil = 0; it.kf.lastGot = Date.now(); }}")
+    for _ in range(40):
+        if pg.evaluate("() => it.kf.found > 0 && it.kf.seq !== null"): break
+        pg.wait_for_timeout(500)
+    pg.wait_for_timeout(1500)
     kf = pg.evaluate("() => [it.kf.seq, it.kf.found > 0, it.kf.head]")
     check(kf[0] >= SEQ['last'] - 240 and kf[1], f'far behind (kills uploaded 2 h ago): it finds the newest again and reads from there {kf} (newest {SEQ["last"]})')
     # ---- the filters ----
     def rows(): return pg.evaluate(ROWS)
     pg.select_option('[data-it-f="types"]', 'kills'); pg.wait_for_timeout(200)
-    check(all(r['ty'] in LABELS for r in rows()) and len(rows()) == 7, f'Types: kills only {[r["ty"] for r in rows()]}')
+    check(all(r['ty'] in LABELS for r in rows()) and len(rows()) == 8, f'Types: kills only {[r["ty"] for r in rows()]}')
     pg.select_option('[data-it-f="types"]', 'reports'); pg.wait_for_timeout(200)
     check(rows() and all(r['ty'] not in LABELS for r in rows()), 'Types: reports only')
     pg.select_option('[data-it-f="types"]', 'all'); pg.select_option('[data-it-f="dist"]', '1'); pg.wait_for_timeout(200)
@@ -294,7 +339,7 @@ with sync_playwright() as p:
     check(rows() and all('Ketter' in json.dumps(r) for r in rows()), f'Search by name: "ketter" {len(rows())} rows')
     pg.fill('[data-it-q]', 'crts'); pg.wait_for_timeout(200)
     kk = sorted(r['sys'] for r in rows() if r['ty'] in LABELS)
-    check(kk == sorted(['8WA-Z6 1 Jump', 'Y-OMTZ 3 Jumps', f'{SYSNAME[S9]} 9 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps']), f'Search by ticker: "crts" finds the kills with Crimson Tide pilots in them {kk}')
+    check(kk == sorted(['8WA-Z6 1 Jump', 'Y-OMTZ 3 Jumps', f'{SYSNAME[S9]} 9 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps', f'{SYSNAME[S7]} 7 Jumps']), f'Search by ticker: "crts" finds the kills with Crimson Tide pilots in them {kk}')
     pg.focus('[data-it-q]'); pg.keyboard.type('x'); pg.wait_for_timeout(4500)
     foc = pg.evaluate("() => [document.activeElement.matches('[data-it-q]'), document.activeElement.value, document.activeElement.selectionStart]")
     check(foc == [True, 'crtsx', 5], f'the search box keeps its focus and text while the lists redraw {foc}')
@@ -325,12 +370,16 @@ with sync_playwright() as p:
     ctx.close()
     # ---- v.103: a hidden tab: its timers fire only every 2 s, together ----
     COALESCE = """(() => { const st = window.setTimeout; window.setTimeout = (fn, ms, ...a) => { const at = Math.ceil((Date.now() + (+ms || 0)) / 2000) * 2000; return st(fn, Math.max(0, at - Date.now()), ...a); }; })();"""
+    HOLES.clear(); HOLES.update({START + 10, START + 11, SEQ['last'] - 8})   # v2026.10.29.5: only v.103's holes here (the gaps made since are other parts' tests)
+    HOLES.update(range(SEQ['last'] - 40, SEQ['last'] - 21))   # v2026.10.29.5: and 19 missing in a row near the newest, as on the owner's feed (a restart stopped there)
     REQS.clear(); ctx, pg = start(1440, COALESCE); t0 = time.time()
     for _ in range(90):
-        if any(r['sys'] and r['sys'].startswith('D-W7F0') and r['ty'] in LABELS for r in pg.evaluate(ROWS)): break
+        if pg.evaluate("() => !!(it.kf && it.kf.head)"): break   # v2026.10.29.5: the read-back done (the D-W7F0 kill is no longer in the last 240 once the other parts have added theirs)
         pg.wait_for_timeout(500)
-    took = time.time() - t0; _, per_s = gaps_ok()
-    check(per_s <= 12 and took < 45, f'a hidden tab (timers every 2 s, together): at most {per_s} requests in any second (v.100: 28 at once), and the read-back still done in {took:.0f} s')
+    took = time.time() - t0; _, per_s = gaps_ok(); per_s = per_s_page(pg)
+    tg = pg.evaluate("() => it.kf && it.kf.target")
+    check(tg == SEQ['last'], f'starting with 19 missing in a row near the newest: the newest found past them ({tg}, newest {SEQ["last"]}; v.29.4 stopped before them)')
+    check(per_s <= 12 and took < 45 and pg.evaluate("() => !!(it.kf && it.kf.head)"), f'a hidden tab (timers every 2 s, together): at most {per_s} requests in any second (v.100: 28 at once), and the read-back still done in {took:.0f} s')
     ctx.close()
     # ---- phone ----
     REQS.clear(); ctx, pg = start(390); pg.wait_for_timeout(20000)

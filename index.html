@@ -2391,7 +2391,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.4</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.5</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2727,10 +2727,10 @@ const CARD_INFO = {
  "intel": [
   "Reads your intel channels' chat logs as EVE writes them (in EVE: Settings, Chat, Log Chat to File). Chrome or Edge read the folder once you choose it; after a browser restart, turning the slider on asks once more.",
   "The switch beside the gear on this card turns it on and off: on, the page reads the new end of each chosen log every 2 seconds, from a background worker so it keeps going in a hidden tab; off, or closing the page, stops it.",
-  "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from the stargate list in the EVE client's own data (no jump bridges, no wormholes); the page says when EVE has been patched since that list was checked.",
+  "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from EVE's published stargate data (no jump bridges, no wormholes). The table is checked against each new EVE build every day and updated when a gate changes.",
   "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
   "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
-  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 10-15 small requests a minute) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser. The line under the title says when a kill was last read; after 5 minutes without one it says so in amber (the page keeps looking further ahead every minute).",
+  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 10-15 small requests a minute) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser. The line under the title says when a kill was last read; after 5 minutes without one it says so in amber (the page keeps reading ahead past missing numbers).",
   "{card:itnear}: each system reported in the time you set, nearest first: everyone and every ship reported there in that time until someone reports it clear (the same ship type twice counts once, at its larger number); clear or no visual when that is the latest word. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
   "A pilot's name (in {card:itfeed} and {card:itnear}) opens them in the Pilot Analyzer; when the line puts them in a ship (\"Pilot (Ship)\", or one pilot and one ship), in that ship. Assess sends a system's reported pilots and ships to the {card:sysan}, where Intel's pairing is their possible ship; Restore my paste puts back what you had there. The copy button on a line copies its shape with system and pilot names replaced, to report a line read wrong.",
   "Nothing from your logs leaves the browser except the words looked up on ESI, and none of it is kept after you close the page."
@@ -22614,10 +22614,12 @@ const INTEL_SHIPS = {"582":["Bantam","矮脚鸡级"],"583":["Condor","秃鹫级"
 // ('eta-intel'), so after a restart one press of the slider resumes. While on, a worker posts a tick every IT_TICK_MS
 // (a hidden tab slows ordinary timers to once a minute; a worker's are not), and each tick reads only the new end of
 // the watched files. Your system: your Local log's "Channel changed to Local : <system>". Jumps: INTEL_JUMPS, the
-// client's own stargate list (tools/gen_intel_tables.py); system names from ESI /universe/names/ once, kept.
+// client's own stargate list (tools/gen_intel_tables.py), checked against CCP's published stargates twice a day by
+// .github/workflows/jump-table.yml (v2026.10.29.5); system names from ESI /universe/names/ once, kept.
 // Requests: ESI only. /universe/ids/ for the words a report leaves (one request per tick at most), /characters/
-// affiliation/ for new pilots (their Standings colour), /universe/names/ for the system names (once), /status/ (once
-// per start, the EVE build). Nothing from the logs is sent anywhere else or kept beyond this visit.
+// affiliation/ for new pilots (their Standings colour), /universe/names/ for the system names (once). (Until
+// v2026.10.29.5 also /status/ once per start, for the EVE build.) Nothing from the logs is sent anywhere else or kept
+// beyond this visit.
 const IT_KEY = 'dscanIntel';                 // localStorage: the settings (never the on state: a reload starts off)
 const IT_TICK_MS = 2000;                     // how often the watched files are read
 const IT_RESCAN_MS = 15000;                  // how often the folder is looked at for a new file (a relog)
@@ -22645,8 +22647,19 @@ const IT_KILL_REFIND_MS = 5 * 60000;         //   find the newest again, at most
 // kill read). Gaps of 2 and 4 have both been seen, so no fixed look-ahead is enough: when no kill has been read for a minute,
 // the page looks further ahead (4 to 8, then 12, 16 ... 2048 past where it is) and, finding a kill there, reads forward to the
 // newest, the gap's numbers kept to ask again (at most 40). LESSON #98
-const IT_KILL_STALL_MS = 60000;              // no kill read for this long while live: look further ahead (at most once per this long)
-const IT_KILL_JUMPS = [4, 5, 6, 7, 8, 12, 16, 24, 32, 48, 64, 128, 256, 512, 1024, 2048];   //   how far ahead it looks, in turn, stopping at the first kill (1-3 were just found missing)
+// v2026.10.29.5 (the owner, same day: "it looks like that last kill feed fix didn't work"; his page's own state, read in his
+// console): stuck at 100275281 for 24 minutes. From 12:30 UTC the numbers were patchy: 100275281-299 missing, 300 there, then
+// many more missing between kills (305, 313, 320, 329, 345, 409 ...). v.29.4 looked ahead at fixed numbers only, and every one
+// of them was a missing one. Now, after 30 s with no kill, it reads forward one number after another until 32 in a row are
+// missing past the last kill it found (at most 400), so any gap under 32 is crossed whatever its pattern; only then does it
+// look further, 8 numbers in a row at each of 32, 64, 128 ... 2048 past. Finding nothing at all, it waits longer before the next
+// look (30 s, 1, 2, 4, then 5 min), so a quiet feed isn't asked hundreds of times a minute.
+const IT_KILL_STALL_MS = 30000;              // no kill read for this long while live: read forward past the gap (v.29.4: a minute)
+const IT_KILL_STALL_MAX_MS = 5 * 60000;      //   and when that finds nothing at all, twice as long before the next look, at most 5 minutes
+const IT_KILL_SCAN_GAP = 32;                 // reading forward stops after 32 missing in a row past the last kill found
+const IT_KILL_SCAN_MAX = 400;                //   or after 400 numbers (the next look carries on from there at once)
+const IT_KILL_JUMPS = [32, 64, 128, 256, 512, 1024, 2048];   // then further on: 8 numbers in a row at each, stopping at the first kill
+const IT_KILL_WINDOW = 8;
 const IT_KILL_HOLES_MAX = 40;                // missing numbers kept to ask again; past that they're skipped (a long gap isn't asked for 4 times over)
 const IT_KILL_SLOW_MS = 5 * 60000;           // no kill read for 5 minutes: the status line says so, in amber
 const IT_FEED_TYPES = [['all', 'All'], ['reports', 'Reports'], ['kills', 'Kills']];
@@ -22662,11 +22675,11 @@ const it = {
   set: null, on: false, dir: null, dirName: '', perm: '', files: new Map(), local: null, me: null,
   feed: [], near: new Map(), chans: [], chars: new Map(), lastLine: 0, err: '', note: '', pop: false,
   ticker: null, busy: false, lastScan: 0, gen: 0, alerted: new Map(), names: null, namesBusy: null,
-  pilots: new Map(), aff: new Map(), patched: '', supported: false, loaded: false,
+  pilots: new Map(), aff: new Map(), supported: false, loaded: false,
   kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: '',   // v.99: kills, names on kills, security, the Feed's search
   rawOpen: new Set()   // v.100: Feed rows showing the line as typed
 };
-function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0, asked: new Map(), holes: new Map(), lastGot: 0, stallAt: 0, target: 0}; }   // v2026.10.29.4: lastGot = when a kill was last read; stallAt = when the page last looked further ahead; target = a kill known to be there, read up to   // v.103: asked = when each number was last asked for; holes = missing numbers with kills after them
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0, asked: new Map(), holes: new Map(), lastGot: 0, stallAt: 0, stallGap: IT_KILL_STALL_MS, target: 0}; }   // v2026.10.29.4: lastGot = when a kill was last read; stallAt = when the page last looked further ahead; target = a kill known to be there, read up to   // v.103: asked = when each number was last asked for; holes = missing numbers with kills after them
 function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
 function itReadSet(){
   const d = itDefaults();
@@ -23257,6 +23270,10 @@ async function itKillAfter(n){   // the first kill in n+1 .. n+IT_KILL_LOOK, ski
   }
   return null;
 }
+async function itKillAfterN(n, k){   // v2026.10.29.5: the first kill in n+1 .. n+k, in turn (the owner's feed, 2026-10-29: 100275281-299 missing, 300 there)
+  for(let i = 1; i <= k; i++){ if(itKillMissedLately(n + i)) continue; const rec = await itKillGet(n + i); if(rec) return {n: n + i, rec}; }   // not one found missing in the last 6 s (zKillboard's rule)
+  return null;
+}
 async function itKillFindHead(seq, gen){   // the newest kill at or past seq: steps doubling until one is missing, then halving the gap
   let lo = seq;
   if(!(await itKillGet(seq))){ const a = await itKillAfter(seq); if(!a) return seq - 1; lo = a.n; }
@@ -23267,17 +23284,33 @@ async function itKillFindHead(seq, gen){   // the newest kill at or past seq: st
       if(await itKillGet(lo + step)){ lo += step; step *= 2; } else { hi = lo + step; break; }
     }
     while(hi - lo > 1 && gen === it.gen){ const m = Math.floor((lo + hi) / 2); if(await itKillGet(m)) lo = m; else hi = m; }
-    const a = await itKillAfter(lo);   // v.103: stopped at a hole? a kill just past it means the newest is further on
+    const a = await itKillAfterN(lo, IT_KILL_SCAN_GAP);   // v.103: stopped at a hole? a kill just past it means the newest is further on (v2026.10.29.5: up to 32 on, was 3)
     if(!a) return lo;
     lo = a.n;
   }
   return lo;
 }
 function itKillHole(n){ if(!it.kf.holes.has(n) && it.kf.holes.size < IT_KILL_HOLES_MAX) it.kf.holes.set(n, {tries: 0, at: Date.now() + IT_KILL_RETRY_MS[0]}); }
-async function itKillAhead(from, gen){   // v2026.10.29.4: the first kill found 4 ... 2048 past from (IT_KILL_JUMPS), or null (nothing new anywhere ahead)
+async function itKillScan(gen, got){   // v2026.10.29.5: read forward from kf.seq until 32 missing in a row past the last kill found; true when one was
+  const kf = it.kf, from = kf.seq;
+  let last = -1, miss = 0, n = from;
+  for(; n < from + IT_KILL_SCAN_MAX && miss < IT_KILL_SCAN_GAP && gen === it.gen; n++){
+    const rec = await itKillGet(n);
+    if(!rec){ miss++; continue; }
+    for(let m = last < 0 ? from : last + 1; m < n; m++) itKillHole(m);   // the missing ones before it: asked again later (at most 40 kept)
+    got.push({rec, history: false}); last = n; miss = 0; kf.lastGot = Date.now();
+  }
+  if(last < 0) return false;
+  kf.seq = last + 1;
+  if(miss < IT_KILL_SCAN_GAP) kf.stallAt = 0;   // stopped at 400 while still finding kills: carry on at once
+  return true;
+}
+async function itKillAhead(from, gen){   // v2026.10.29.5: the first kill in 8 numbers in a row at 32, 64 ... 2048 past from, or null
   for(const d of IT_KILL_JUMPS){
-    if(gen !== it.gen) return null;
-    if(await itKillGet(from + d)) return from + d;
+    for(let w = 0; w < IT_KILL_WINDOW; w++){
+      if(gen !== it.gen) return null;
+      if(await itKillGet(from + d + w)) return from + d + w;
+    }
   }
   return null;
 }
@@ -23322,11 +23355,15 @@ async function itKillPump(){
       }
     } else {
       await itKillHoles(gen, got);
-      if(Date.now() - kf.lastGot >= IT_KILL_STALL_MS && Date.now() - kf.stallAt >= IT_KILL_STALL_MS){   // v2026.10.29.4: a minute with no kill: a long gap?
+      if(Date.now() - kf.lastGot >= IT_KILL_STALL_MS && Date.now() - kf.stallAt >= kf.stallGap){   // v2026.10.29.4: no kill for a while: a gap?
         kf.stallAt = Date.now();
-        const ahead = await itKillAhead(kf.seq, gen);
+        const found = await itKillScan(gen, got);   // v2026.10.29.5: read forward past it, number by number
+        if(found) kf.stallGap = IT_KILL_STALL_MS;
+        const ahead = found ? null : await itKillAhead(kf.seq, gen);
         if(gen !== it.gen) return;
+        if(!found && ahead === null) kf.stallGap = Math.min(IT_KILL_STALL_MAX_MS, kf.stallGap * 2);   // nothing anywhere: look less often
         if(ahead !== null){
+          kf.stallGap = IT_KILL_STALL_MS;
           const head = await itKillFindHead(ahead, gen);
           if(gen !== it.gen) return;
           kf.target = head; kf.head = false;   // read forward from here to it (reading back), the gap's numbers as holes
@@ -23483,7 +23520,6 @@ async function itStart(){
   it.kf = itKfNew(); it.kfNote = '';   // v.99
   itRender();
   try{ await itLoadNames(); }catch(e){ it.err = withCode(e.message, e.code || 'INTEL-03'); itStop(); return; }
-  itCheckBuild();
   try{ it.lastScan = Date.now(); await itScan(); }catch(e){ it.err = withCode(`The page can't read “${it.dirName}” (${e.message}). Choose the folder again under the gear.`, 'INTEL-02'); itStop(); return; }
   if(!it.set.channels.length){ it.pop = true; }
   itTickerStart();
@@ -23495,15 +23531,10 @@ function itStop(){
   itTickerStop();
   itRender();
 }
-async function itCheckBuild(){
-  try{
-    const r = await fetch(`${ESI}/status/?datasource=tranquility`);
-    if(!r.ok) return;
-    const v = Number((await r.json()).server_version);
-    it.patched = v && v !== INTEL_JUMPS.build ? `EVE is on build ${v}; the jump table was checked on ${INTEL_JUMPS.build}` : '';
-    itRender();
-  }catch(e){ /* the check is a courtesy: jumps still shown */ }
-}
+// v2026.10.29.5 (the owner: "Eve deploys patches very often. is there a way to automate the update so the user never has to see
+// it?"): the page no longer compares EVE's build with the table's and warns after every patch (patches seldom touch gates).
+// .github/workflows/jump-table.yml compares the table with CCP's published stargates twice a day and opens a pull request
+// when a gate changed (tools/jump_table_update.py). LESSON #99
 async function itChooseFolder(){
   if(!it.supported){ it.err = withCode('Intel reads EVE\'s chat log files, which needs Chrome or Edge (the File System Access API). This browser can\'t.', 'INTEL-01'); itRender(); return; }
   let h;
@@ -23768,7 +23799,7 @@ function itKillStatus(){
   if(kf.seq === null || !kf.head) return ' · kills: catching up';
   const ago = Date.now() - kf.lastGot;
   if(ago < IT_KILL_SLOW_MS) return ` · last kill read ${itAgo(kf.lastGot)} ago`;
-  return ` · <span class="it-kslow" title="No kill has come from zKillboard's live feed for ${escapeHtml(itAgo(kf.lastGot))}. The page keeps looking further ahead every minute; zKillboard may be slow or down.">no kill read for ${itAgo(kf.lastGot)}</span>`;
+  return ` · <span class="it-kslow" title="No kill has come from zKillboard's live feed for ${escapeHtml(itAgo(kf.lastGot))}. The page keeps reading ahead past missing numbers, less often while it finds nothing; zKillboard may be slow or down.">no kill read for ${itAgo(kf.lastGot)}</span>`;
 }
 function itStatusLine(){
   if(!it.on) return '';
@@ -23796,7 +23827,6 @@ function itRender(force){   // force: a press that changes what is open (the gea
   } else {
     // v.98 (the owner: "the feed keeps growing ... drop entries older than 15 minutes"): the Feed keeps the same time as Near You
     body = `${it.on ? `<div class="it-sub" data-it-status>${itStatusLine()}</div>` : `<div class="it-sub">Stopped. The switch beside the gear starts it again.</div>`}
-      ${it.patched ? `<div class="it-sub it-warn">${escapeHtml(it.patched)}: a gate EVE added since may be missing.</div>` : ''}
       ${it.on && it.me && !itMySys() ? `<div class="it-sub it-warn">Your system isn’t known yet (it’s read from your Local log when you jump), so no jumps and no alerts until then.</div>` : ''}
       <div class="it-cols">
         <div><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3>${ctxHtml(`last ${it.set.forget} min, nearest first`)}</div><div id="itNearList">${itNearListHtml()}</div></div>
