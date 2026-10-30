@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-30 — An index for the lessons</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>An index for the lessons</h1>
+<p><span class="tag">Process</span><span class="tag">Docs</span> 2026-10-30 &middot; page unchanged (<code>v2026.10.30.1</code>)</p>
+<p>The owner asked: "given the size of our lessons learned at this point, how much work is that for an agent? ... is it all still relevant?" <code>LESSONS_LEARNED.md</code> had grown to about 131 KB (roughly 33,000 tokens) and 104 entries.</p>
+<p>It was organized by calculation phase, but the newer page, Intel and process lessons had been slotted in among them, mostly under "Phase 2". Two entries (#98, #99) recommended a fix that #102 later overturned.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>An Index at the top:</b> one line per entry, grouped by task. The groups are calculation sources; expected values and fixtures; implementing; the page; checks and test machinery; Intel and live data; and delivery, privacy and the repository. It is about 9 KB, so an agent reads the Index (about 2,500 tokens) and opens only the entries that apply. A page or Intel change no longer needs the calculation lessons.</li>
+<li><b>Superseded entries marked</b> at their top and in the Index: #98 and #99 (read-ahead past "missing" kill numbers) are superseded by #102. #89 and #93 are noted as partly outdated. Entries keep their permanent numbers and places (<code>// LESSON #n</code> comments point at them).</li>
+<li><b>LESSON #101 restored.</b> It was lost when v2026.10.29.8 was delivered from a work tree that didn't have it. The new check would have caught that.</li>
+<li><b>New <code>tools/check_lessons_index.py</code></b> (a chain step, 49 now). It fails when:
+  <ul>
+  <li>an entry is missing from the Index or listed twice;</li>
+  <li>the Index names a number with no entry;</li>
+  <li>a number is shared or skipped;</li>
+  <li>an Index line no longer matches its entry's title.</li>
+  </ul>
+  Four mutations each fail.</li>
+<li><b>CLAUDE.md:</b> read the Index first; a new lesson gets an Index line; a lesson a later one overturns stays, marked superseded.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>None new. The restored #101 is the evidence for this change: a file every delivery appends to can lose an entry without anyone noticing, unless something checks it.</p>
+</body></html>

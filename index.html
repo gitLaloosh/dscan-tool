@@ -1600,6 +1600,13 @@
     background:var(--panel-2); border:1px solid #2c3842; border-radius:8px; box-shadow:0 10px 28px rgba(0,0,0,0.55); padding:14px 16px; text-align:left; cursor:auto;}
   .info-head{display:flex; align-items:center; gap:8px; font:600 13px var(--sans); color:var(--heading);}
   .info-body p{margin:8px 0 0; font:400 12.5px/1.55 var(--sans); color:var(--text);}
+  .info-body details.info-more{border-top:1px solid var(--border); margin-top:8px; padding-top:2px;}   /* v2026.10.30.2: folded sections */
+  .info-body details.info-more + details.info-more{margin-top:0;}
+  .info-body .info-more summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:6px; min-height:30px; font:600 12.5px var(--sans); color:var(--heading);}
+  .info-body .info-more summary::-webkit-details-marker{display:none;}
+  .info-body .info-more summary::before{content:'▸'; color:var(--text-dim); width:10px;}
+  .info-body .info-more[open] summary::before{content:'▾';}
+  .info-body .info-more p{margin:0 0 8px 16px;}
   button.info-close{display:none; margin-left:auto; width:44px; height:44px; min-height:44px; padding:0; border:none; background:transparent; color:var(--text-dim); font-size:20px;}
   @media (max-width: 599px){
     .info-body{position:fixed; left:0; right:0; bottom:0; top:auto; margin-top:0; width:auto; max-width:none; max-height:82vh; border-radius:14px 14px 0 0;
@@ -2265,6 +2272,14 @@
      the slider, outside its label, and opens the Intel tab */
   /* v2026.10.29.1: the switch moved to the card (beside the gear); the pill stays in the header on its own */
   label.it-onoff{min-height:32px;} label.it-onoff span{min-width:22px; color:var(--text-dim);} label.it-onoff input:checked + span{color:var(--heading);}
+  /* v2026.10.30.2 (users: "the intel on/off blends in too much. First time in took me a minute to figure out how to start it"; the
+     owner chose option 2 of the mockup): the one switch whose off state asks for attention (CLAUDE.md "UI rules", its named
+     exception): an amber edge, knob and "Off", breathing slowly; none of the motion when the system asks for reduced motion */
+  #intelSw:not(:checked):not(:disabled){border-color:var(--amber); animation:itSwBreathe 2.4s ease-in-out infinite;}
+  #intelSw:not(:checked):not(:disabled)::after{background:var(--amber);}
+  #intelSw:not(:checked):not(:disabled) + span{color:var(--amber); font-weight:600;}
+  @keyframes itSwBreathe{0%,100%{box-shadow:0 0 0 0 rgba(217,154,60,0);} 50%{box-shadow:0 0 0 4px rgba(217,154,60,0.28);}}
+  @media (prefers-reduced-motion: reduce){ #intelSw{animation:none !important;} }
   button.it-near-btn{display:inline-flex; align-items:center; min-height:28px; margin-left:0; padding:0 2px; border:none; background:transparent; cursor:pointer; letter-spacing:0;}
   button.it-near-btn[hidden]{display:none;}
   button.it-near-btn .it-near{display:inline-block; white-space:nowrap; padding:0 7px; border-radius:3px; background:var(--danger); color:#fff; font:700 11px/18px var(--sans);}
@@ -2304,6 +2319,7 @@
   .it-chips{display:flex; flex-wrap:wrap; gap:4px 6px; align-items:center;}
   .it-chip{display:inline-flex; align-items:center; gap:5px; padding:0; border:none; border-radius:3px; font:500 13px var(--sans); color:var(--text);}
   .it-chip.sys{font:700 14px var(--sans); color:var(--heading); margin-right:2px;}
+  .it-snote{font-size:13px; color:var(--text-dim); align-self:center;} .it-snote .it-sn{font-weight:600;}   /* v2026.10.30.2 */
   .it-chip.ship{padding:2px 7px; background:rgba(79,195,217,.08); color:var(--heading); font-weight:600;}
   .it-chip.kw{padding:2px; color:var(--text-dim); font:600 11px var(--sans); text-transform:uppercase; letter-spacing:.4px;}
   .it-chip.clr{padding:2px; color:var(--it-clear); font:700 11px var(--sans); text-transform:uppercase; letter-spacing:.4px;}
@@ -2461,7 +2477,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.30.1</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.30.2</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2798,15 +2814,15 @@ const CARD_INFO = {
   "Tackle and EWAR: the modules on those fits, counted by kind. Logistics: the logistics cruisers and force auxiliaries on the kill. Combined EHP: their fits' EHP added up, against uniform damage."
  ],
  "intel": [
-  "Reads your intel channels' chat logs as EVE writes them (in EVE: Settings, Chat, Log Chat to File). Chrome or Edge read the folder once you choose it; after a browser restart, turning the slider on asks once more.",
-  "The switch beside the gear on this card turns it on and off: on, the page reads the new end of each chosen log every 2 seconds, from a background worker so it keeps going in a hidden tab; off, or closing the page, stops it.",
-  "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from EVE's published stargate data (no jump bridges, no wormholes). The table is checked against each new EVE build every day and updated when a gate changes.",
-  "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
-  "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
-  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 20 small requests a minute: one per kill, and one every 6 seconds while waiting for the next) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. A kill made only by friendlies shows there too when the one who died wasn't friendly, marked friendly and without an alert. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser. The line under the title says when a kill was last read; after 5 minutes without one it says so in amber (the page asks for the next kill every 6 seconds and checks zKillboard's newest number every minute).",
-  "{card:itnear}: each system reported in the time you set, nearest first: everyone and every ship reported there in that time until someone reports it clear (the same ship type twice counts once, at its larger number); clear or no visual when that is the latest word. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
-  "A pilot's name (in {card:itfeed} and {card:itnear}) opens them in the Pilot Analyzer; when the line puts them in a ship (\"Pilot (Ship)\", or one pilot and one ship), in that ship. Assess sends a system's reported pilots and ships to the {card:sysan}, where Intel's pairing is their possible ship; Restore my paste puts back what you had there. The copy button on a line copies its shape with system and pilot names replaced, to report a line read wrong.",
-  "Nothing from your logs leaves the browser except the words looked up on ESI, and none of it is kept after you close the page."
+  "**Start:** in EVE, Settings → Chat → Log Chat to File. Here: choose the Chatlogs folder, tick your intel channels, then turn on the switch beside the gear (amber while Intel is off).",
+  "**{card:itnear}:** systems with reports or kills, nearest first. An amber edge means within your alert range: the sound, the notification and the amber “N near” at the top, from any tab.",
+  "**{card:itfeed}:** every report and kill as it comes in.",
+  "[How a line is read] Systems, ship names (English or Chinese), counts (+5, x2) and words like clr and nv; the rest is looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place stays plain text, never guessed. When a line names two systems, they're placed where the line says they are (“on Y gate”, “→ Y”), else in the one within range, else the nearer; the other shows as a note. The copy button on a line copies its shape, names replaced, to report a line read wrong.",
+  "[Kills] While Intel is on, zKillboard's live feed of every kill (about 20 small requests a minute), kept within the Feed's kill range under the gear (10 jumps unless you change it), no NPC kills. A kill near you shows in {card:itnear} with who was there and alerts like a report within your alert range. The line under the title says when a kill was last read.",
+  "[{card:itnear} and alerts] Everyone and every ship reported in a system in the time set under the gear (15 minutes unless you change it), until someone reports it clear. A hostile or neutral within your alert range plays the sound and notifies, once per system every 30 seconds; friendlies never alert. With the Feed's Distance set, a report beyond both it and your alert range stays out of {card:itnear}.",
+  "[Jumps and your system] Your system comes from your character's Local log. Jumps are gate jumps from EVE's published stargate data (no jump bridges or wormholes); the table is checked against each new EVE build every day.",
+  "[Buttons] A pilot's name opens them in the Pilot Analyzer, in their ship when the line says it. Assess sends a system's pilots and ships to the {card:sysan}; Restore my paste puts yours back.",
+  "[Privacy and the folder] Nothing from your logs leaves the browser except the words looked up on ESI, and nothing is kept after you close the page. Chrome or Edge read the folder once you choose it (after a browser restart, turning Intel on asks once more); the logs are read every 2 seconds, also in a hidden tab."
  ],
  "fkpilots": [
   "Every player on the kill in a ship (NPCs, capsules and pilots with no ship left out), with the ship and the weapon the killmail credits them with.",
@@ -2840,13 +2856,23 @@ const INFO_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" st
 // v2026.10.14.49: a key may name a variant of a card's text, "<card key>#<variant>" (the Anhinga's Mode text is
 // "tdmode#primary"), and the text names other cards as {card:key} (filled from CARD_NAMES, like ERROR_CODES).
 const INFO_TITLE = {'fit#charges': 'How the Charges list works'};   // v2026.10.14.77: a panel about part of a card
+// v2026.10.30.2 (a user: "Bro you gotta find a way to condense this"): a paragraph "**Lead:** text" starts with its lead in bold; a
+// paragraph "[Heading] text" is folded under its heading (Intel's few lines on top, the rest a click away). Plain text otherwise.
+function infoParaHtml(s){
+  const t = s.replace(/\{card:([\w.]+)\}/g, (_, k) => cardName(k));
+  let m = /^\[([^\]]+)\]\s+([\s\S]+)$/.exec(t);
+  if(m) return `<details class="info-more"><summary>${escapeHtml(m[1])}</summary><p>${escapeHtml(m[2])}</p></details>`;
+  m = /^\*\*([^*]+)\*\*\s*([\s\S]*)$/.exec(t);
+  if(m) return `<p><b>${escapeHtml(m[1])}</b> ${escapeHtml(m[2])}</p>`;
+  return `<p>${escapeHtml(t)}</p>`;
+}
 function infoBtnHtml(key){
   const paras = CARD_INFO[key];
   if(!paras) throw new Error(`infoBtnHtml: no CARD_INFO for "${key}"`);
   const title = INFO_TITLE[key] || `How ${cardName(key.split('#')[0])} works`;
   return `<details class="info-pop" data-info="${key}"><summary class="info-btn" aria-label="${escapeHtml(title)}" title="${escapeHtml(title)}">${INFO_SVG}</summary>
     <div class="info-body" role="dialog" aria-label="${escapeHtml(title)}"><div class="info-head"><span>${escapeHtml(title)}</span><button type="button" class="info-close" aria-label="Close">×</button></div>
-    ${paras.map(t => `<p>${escapeHtml(t.replace(/\{card:([\w.]+)\}/g, (_, k) => cardName(k)))}</p>`).join('')}</div></details>`;
+    ${paras.map(infoParaHtml).join('')}</div></details>`;
 }
 
 // v2026.10.14.32 (the owner: "should we have identifiers for custom error codes that point back to why we implemented
@@ -22942,14 +22968,14 @@ function itWords(msg){
 // The systems in a report: a whole name (any case for null-sec style names with a digit or '-'; Title Case for
 // names like "Jita", up to 3 words like "New Caldari"); else the start of a null-sec name ("QX-L", "1DQ"): the nearest
 // system so named to you, or the only one.
-function itFindSystems(W, used, mySys){
+function itFindSystems(W, used, mySys, force){
   const N = it.names; if(!N) return [];
-  const found = [];
+  const found = [], forced = (i) => !!force && force.has(i);   // v2026.10.30.2: words read as a pilot on a second look (itForce)
   for(let i = 0; i < W.length; i++){
-    if(used[i]) continue;
+    if(used[i] || forced(i)) continue;
     let hit = null;
     for(let k = 3; k >= 1 && !hit; k--){
-      if(i + k > W.length || W.slice(i, i + k).some((x, j) => used[i + j])) continue;
+      if(i + k > W.length || W.slice(i, i + k).some((x, j) => used[i + j] || forced(i + j))) continue;
       const words = W.slice(i, i + k), s = words.map(x => x.w).join(' '), id = N.byLower.get(s.toLowerCase());
       if(!id) continue;
       const nullish = /[0-9-]/.test(s);
@@ -22972,9 +22998,9 @@ function itFindSystems(W, used, mySys){
   }
   return found;
 }
-function itParse(msg, mySys){
+function itParse(msg, mySys, force){
   const W = itWords(msg), used = new Array(W.length).fill(null);
-  const sys = itFindSystems(W, used, mySys);
+  const sys = itFindSystems(W, used, mySys, force);
   const S = itShips(), ships = [], kw = new Set(), mentions = [];
   let extra = 0;
   for(let i = 0; i < W.length; i++){
@@ -23002,13 +23028,13 @@ function itParse(msg, mySys){
   let count = null;
   const addCount = (n, word) => { const k = IT_COUNT_WORD[word]; count = {n: (count ? count.n : 0) + n, kind: count && count.kind !== k ? 'red' : k}; };
   for(let i = 0; i < W.length; i++){
-    if(used[i]) continue;
+    if(used[i] || (force && force.has(i))) continue;   // v2026.10.30.2: a forced word is left for the pilot runs
     const x = W[i];
     let m = x.w.match(/^\+(\d{1,3})$/);
     if(m){ extra += Number(m[1]); used[i] = 'c'; continue; }
     m = x.lw.match(/^(\d{1,3})([a-z]+)$/);   // v.104: "1red", "3neuts"
     if(m && IT_COUNT_WORD[m[2]]){ addCount(Number(m[1]), m[2]); used[i] = 'c'; continue; }
-    if(/^\d{1,3}$/.test(x.w) && W[i + 1] && !used[i + 1] && IT_COUNT_WORD[W[i + 1].lw]){ addCount(Number(x.w), W[i + 1].lw); used[i] = used[i + 1] = 'c'; i++; continue; }   // v.104: "2 reds"
+    if(/^\d{1,3}$/.test(x.w) && W[i + 1] && !used[i + 1] && !(force && force.has(i + 1)) && IT_COUNT_WORD[W[i + 1].lw]){ addCount(Number(x.w), W[i + 1].lw); used[i] = used[i + 1] = 'c'; i++; continue; }   // v.104: "2 reds"
     if(x.lw === 'no' && W[i + 1] && /^vis(ual)?$/.test(W[i + 1].lw) && !used[i + 1]){ kw.add('no visual'); used[i] = used[i + 1] = 'kw'; i++; continue; }
     if(IT_KW[x.lw]){ kw.add(IT_KW[x.lw]); used[i] = 'kw'; continue; }
     if(IT_FILLER.has(x.lw) || /^\d+$/.test(x.w)){ used[i] = 'f'; continue; }
@@ -23022,7 +23048,13 @@ function itParse(msg, mySys){
     if(W[i].linked){ runs.push(run); run = []; }
   }
   if(run.length) runs.push(run);
-  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length)};
+  // v2026.10.30.2 (the owner: "some players actually name their pilots in a way that it will screw up the intel channel entries"):
+  // names to look up beyond the runs, so a second look (itForce) can tell: with two or more systems named, each whole system
+  // name; and a linked word ('*': dragged in from Local) the page read as an intel word, a filler word or a head count
+  const alt = [];
+  if(sys.length >= 2) for(const s of sys) if(!s.short) alt.push(W.slice(s.at, s.at + s.k).map(x => x.w).join(' '));
+  W.forEach((x, i) => { if(x.linked && (used[i] === 'kw' || used[i] === 'f' || used[i] === 'c') && !/^\d+$/.test(x.w)) alt.push(x.w); });
+  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt};
 }
 // Candidate pilot names in a run: every 1-3 word stretch within EVE's 37 characters.
 function itCandidates(p){
@@ -23031,6 +23063,7 @@ function itCandidates(p){
     const s = r.slice(a, a + k).map(i => p.W[i].w).join(' ');
     if(s.length <= IT_NAME_MAX && s.length >= 3) out.add(s.toLowerCase());
   }
+  for(const s of p.alt || []) if(s.length <= IT_NAME_MAX && s.length >= 3) out.add(s.toLowerCase());   // v2026.10.30.2
   return out;
 }
 // The pilots in a run: the split that names the most words, then the fewest pilots (longest names).
@@ -23237,10 +23270,69 @@ async function itReports(lines, gen){
   const cands = new Set();
   for(const x of parsed) for(const c of itCandidates(x.p)) cands.add(c);
   try{ await itResolve(cands); }catch(e){ it.note = withCode(`Pilot names: ${e.message}`, e.code || 'ESI-01'); }
+  for(const x of parsed){   // v2026.10.30.2: a second look now that the names are known, then where they are
+    const f = itForce(x.p, mySys);
+    if(f.size) x.p = itParse(x.l.msg, mySys, f);
+    itPlace(x.p, mySys);
+  }
   for(const x of parsed) x.pilots = itPilotsOf(x.p);
   try{ await itAffiliate(parsed.flatMap(x => x.pilots.map(p => p.id))); }catch(e){ it.note = withCode(`Standings: ${e.message}`, e.code || 'SYS-01'); }
   if(gen !== it.gen) return;
   for(const x of parsed) itAddReport(x.l, x.p, x.pilots);
+}
+// v2026.10.30.2 (the owner: "the tool recorded a pilot as the system name even though a valid system name was in the entry"; his
+// rules: "evaluate what they're saying", the system "inside the ring", a linked word): when a line names two or more systems,
+// which one they are in. In order: what the words around a name say ("Y gate", "-> Y", "heading Y", "from Y" are not where they
+// are; "jumped to Y" is); the ring (the Feed's Distance, or the alert range if larger; none when Distance is "any"); a name
+// that is also a pilot's, while another system is left; then the nearer one (equal or unknown: the one first or last in the
+// line). Another system left over is a pilot when it is one, else a note on the row ("or Y?"; "on Y gate?" when the two are
+// next to each other).
+const IT_TO_WORDS = new Set(['->', '→', '>', '>>', '=>', 'heading', 'headed', 'towards', 'toward', 'going', 'to']);
+const IT_JUMPED = new Set(['jumped', 'jump', 'jumps', 'jumping', 'jumpd']);
+function itRing(){ const d = it.set.feed && it.set.feed.dist; return d ? Math.max(d, it.set.range) : 0; }
+function itSysText(p, s){ return p.W.slice(s.at, s.at + s.k).map(x => x.w).join(' '); }
+function itChoose(p, mySys){
+  const S = p.sys, W = p.W;
+  if(S.length < 2) return {loc: 0, role: S.map(() => null), pil: []};
+  const role = S.map(s => {
+    const nx = W[s.at + s.k], pv = W[s.at - 1], pv2 = W[s.at - 2];
+    if(nx && /^(gate|gt|gat)$/.test(nx.lw)) return 'gate';
+    if(pv && pv.lw === 'from') return 'from';
+    if(pv && IT_TO_WORDS.has(pv.lw) && !(pv.lw === 'to' && pv2 && IT_JUMPED.has(pv2.lw))) return 'dest';
+    return null;
+  });
+  const J = (i) => mySys ? itJumps(mySys, S[i].id) : null, isP = (i) => !S[i].short && !!it.pilots.get(itSysText(p, S[i]).toLowerCase());
+  let cand = S.map((s, i) => i).filter(i => !role[i]);
+  if(!cand.length) cand = S.map((s, i) => i);
+  const ring = itRing();
+  if(cand.length > 1 && ring){ const inR = cand.filter(i => { const j = J(i); return j !== null && j <= ring; }); if(inR.length) cand = inR; }
+  if(cand.length > 1){ const np = cand.filter(i => !isP(i)); if(np.length) cand = np; }
+  let loc = cand[0], pair = false;
+  if(cand.length > 1){
+    const known = cand.filter(i => J(i) !== null), best = known.length ? Math.min(...known.map(J)) : null;
+    const near = best === null ? cand : known.filter(i => J(i) === best);
+    const edge = near.filter(i => S[i].at === 0 || S[i].at + S[i].k === W.length);
+    loc = near.length === 1 ? near[0] : edge.length ? edge[0] : near[0];
+    pair = cand.length === 2 && itJumps(S[cand[0]].id, S[cand[1]].id) === 1;
+  }
+  const pil = [];
+  S.forEach((s, i) => { if(i === loc || role[i]) return; if(isP(i)) pil.push(i); else role[i] = pair ? 'pair' : 'or'; });
+  role[loc] = null;
+  return {loc, role, pil};
+}
+// The words to read again as pilot names: the systems itChoose turned into pilots, and a linked intel, filler or count word that is a
+// pilot's name (a pilot named "Clear" dragged in from Local must not mark the system clear).
+function itForce(p, mySys){
+  const f = new Set(), c = itChoose(p, mySys);
+  for(const i of c.pil) for(let j = 0; j < p.sys[i].k; j++) f.add(p.sys[i].at + j);
+  p.W.forEach((x, i) => { if(x.linked && (p.used[i] === 'kw' || p.used[i] === 'f' || p.used[i] === 'c') && it.pilots.get(x.lw)) f.add(i); });
+  return f;
+}
+// Where they are first; the other systems keep their place in the line's words and say what they are (role).
+function itPlace(p, mySys){
+  if(p.sys.length < 2) return;
+  const c = itChoose(p, mySys);
+  p.sys = [p.sys[c.loc], ...p.sys.map((s, i) => ({...s, role: c.role[i] || 'or'})).filter((s, i) => i !== c.loc)];
 }
 function itKind(p, pilots){
   if(p.kw.has('clear')) return 'clear';
@@ -23260,6 +23352,10 @@ function itAddReport(l, p, pilots){
   if(it.feed.length > IT_FEED_MAX || it.feed.some(x => x.t < old)) it.feed = it.feed.filter(x => x.t >= old).slice(0, IT_FEED_MAX);
   const sys = p.sys[0] && p.sys[0].id;
   if(!sys || e.kind === 'status' || e.kind === 'info') return;
+  // v2026.10.30.2 (the owner: "if it's not inside the ring, dont consider it a valid report" -> "fair"): a report outside the ring stays
+  // in the Feed and is left out of Near You (so it never alerts); with Distance "any" there is no ring
+  const ring = itRing(), my = itMySys(), j = ring && my ? itJumps(my, sys) : null;
+  if(j !== null && j > ring) return;
   itNearAdd(e, sys);
 }
 // v.98: a system keeps everyone and every ship reported there within the time set, until someone reports it clear;
@@ -23697,7 +23793,7 @@ function itNearCap(el){
 // What a Near You row is built from (the owner: open a row): its reports and kills since the system was last reported clear, within the
 // time set, newest first; each report: when, who sent it and the line as typed (no channel name, the owner: "security reasons")
 function itNearItemsHtml(st){
-  const keep = Date.now() - it.set.forget * 60000, on = (e) => e.p.sys.some(x => x.id === st.sys);
+  const keep = Date.now() - it.set.forget * 60000, on = (e) => !!e.p.sys[0] && e.p.sys[0].id === st.sys;   // v2026.10.30.2: where they are, not a system named as a note
   const clr = st.kind === 'clear' ? 0 : Math.max(0, ...it.feed.filter(e => e.kind === 'clear' && on(e)).map(e => e.t));
   const L = it.feed.filter(e => e.t >= keep && e.t >= clr && on(e)).slice(0, 20);
   if(!L.length) return '<div class="nbx-i"><span class="t"></span><span class="nbx-r">Nothing left within the time set.</span></div>';
@@ -23739,14 +23835,20 @@ function itKillBadges(ks){
 // the victim was friendly too; v.99 hid every kill made by friendlies only, so an enemy killed by allies never showed
 function itFriendlyOnlyRow(e){ return !!e.friendlyOnly && !(e.kind === 'kill' && e.kill.victim.side !== 'f'); }
 const IT_CHEV = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// v2026.10.30.2: another system the line names, as a note after where they are (itChoose)
+const IT_SYS_NOTE = {gate: ['on ', ' gate'], dest: ['→ ', ''], from: ['from ', ''], or: ['or ', '?'], pair: ['on ', ' gate?']};
+function itSysNoteHtml(s, my){
+  const r = IT_SYS_NOTE[s.role] || IT_SYS_NOTE.or, j = itJumps(my, s.id);
+  return `<span class="it-snote" title="${escapeHtml(itSysTitle(s.id))}${j === null ? '' : ` · ${j} jump${j === 1 ? '' : 's'}`}">${r[0]}<span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${r[1]}</span>`;
+}
 function itFeedRowHtml(e){
   // v2026.10.30.1 (the owner, from the mockup): the jump count first; the system in a column as wide as the widest system name; the
   // time, then the label at the right edge (its slot as wide as NEUTRAL KILLED, so the times line up), then the toggle on reports
   // (an empty slot on kills); the lines below start under the system name; the amber edge when within the alert range; no
-  // background highlighting on kills. A second system named in a report follows the first with its own jump count.
+  // background highlighting on kills. v2026.10.30.2: another system named in a report follows as a note (itSysNoteHtml).
   const my = itMySys(), head = [], chips = [];
   const j0 = e.p.sys[0] ? itJumps(my, e.p.sys[0].id) : null;
-  e.p.sys.forEach((s, i) => { const j = i ? itJumps(my, s.id) : null; head.push(`<span class="it-chip sys" title="${escapeHtml(itSysTitle(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}"><span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${j === null ? '' : ` <span class="j">${itJumpsHtml(j)}</span>`}</span>`); });
+  e.p.sys.forEach((s, i) => { if(i && s.role){ head.push(itSysNoteHtml(s, my)); return; } const j = i ? itJumps(my, s.id) : null; head.push(`<span class="it-chip sys" title="${escapeHtml(itSysTitle(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}"><span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${j === null ? '' : ` <span class="j">${itJumpsHtml(j)}</span>`}</span>`); });
   const inr = j0 !== null && j0 <= it.set.range && e.kind !== 'clear' && !(e.friendlyOnly && !e.sighting);
   const kw = e.kind === 'kill' ? itKillWord(e) : null;
   const ty = kw ? [`kill ${kw[0]}`, kw[1]] : e.kind === 'clear' ? ['clr', 'Clear'] : ['rep', 'Report'];

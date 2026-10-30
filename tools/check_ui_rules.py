@@ -7,7 +7,8 @@ text-field mockup): one tag, one switch, one slider, one text field across the s
 far as a static read can (the look itself: tools/page_checks/ui_rules_check.py):
   1. tags, not pills: a rule whose selector names a chip, pill or tag has corners of at most 4px (never round) and no
      dashed border (empty states are a faint fill with dim text);
-  2. one switch: the switch classes (dmg-sw, mys-sw) are 36x20 with 3px corners, on = #1f6f80;
+  2. one switch: the switch classes (dmg-sw, mys-sw) are 36x20 with 3px corners, on = #1f6f80; an off state styled on its own
+     only for #intelSw (v2026.10.30.2, the owner's one named exception), whose motion stops under prefers-reduced-motion;
   3. one slider: the one global input[type=range] style (a 4px track filled to --p) and rangeFillSet in the script;
      no other rule restyles a slider's track or handle;
   4. one text field: a :focus rule on a text field, select or textarea sets the cyan border and the ring, never amber;
@@ -61,6 +62,16 @@ for sel, body, ln in rules:
             if (prop(body, 'background') or '').lower() != '#1f6f80': problems.append(f'line {ln}: {p}: on is #1f6f80')
 for p in ('.dmg-sw', 'input.mys-sw'):
     if p not in seen_sw: problems.append(f'{p}: no base rule found')
+# v2026.10.30.2: the Intel switch's off state is the one exception; no other switch gets an off state, glow or motion of its own
+SW = re.compile(r'(mys-sw|dmg-sw|#intelSw|#myShipUse)')
+for sel, body, ln in rules:
+    for part in (x.strip() for x in sel.split(',')):
+        if not SW.search(part): continue
+        if (':not(:checked)' in part or re.search(r'(?:^|;)\s*animation\s*:', body)) and not part.startswith('#intelSw'):
+            problems.append(f'line {ln}: {part}: an off state or motion of its own (only #intelSw has one, CLAUDE.md "UI rules")')
+moving = [ln for s, b, ln in rules if s.startswith('#intelSw') and re.search(r'animation\s*:\s*(?!none)', b)]
+if moving and not re.search(r'@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*#intelSw\{animation:none', clean):
+    problems.append(f'line {moving[0]}: #intelSw moves, with no prefers-reduced-motion rule that stops it')
 
 # 3. sliders
 glob = [b for s, b, _ in rules if s == 'input[type=range]::-webkit-slider-runnable-track']

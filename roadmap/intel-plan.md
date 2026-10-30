@@ -170,6 +170,28 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## Where a report is; the switch that asks to be turned on; How Intel works condensed (v2026.10.30.2)
+
+- **Where a report is** (the owner: "the tool recorded a pilot as the system name even though a valid system name was in the entry";
+  "some players actually name their pilots in a way that it will screw up the intel channel entries"). A line naming two or more
+  systems is decided after the name lookups (`itForce`, `itPlace`, `itChoose`), in his order: what the words around a name say
+  ("Y gate" → "on Y gate", "-> Y" / "heading Y" → "→ Y", "from Y"; "jumped to Y" is where they are); the ring (the Feed's
+  Distance, or the alert range if larger; none with Distance "any"); a name that is also a pilot's becomes the pilot while another
+  system is left; then the nearer (equal or unknown: the first or last word, the owner: "dont blindly do it"). Another system left
+  over shows as a note after the system ("or Y?", "on Y gate?" when the two are next to each other); never two rows, never dropped.
+  A line with one system keeps it, whatever else the word is.
+- **A linked word** ('*', dragged in from Local) read as an intel word, a filler word or a head count is looked up, and is the pilot
+  when it is one (a pilot named "Clear" can't mark a system clear). Ship names are left as ships: a pilot named like a ship still
+  shows the system as seen.
+- **The ring and Near You** (the owner: "if it's not inside the ring, dont consider it a valid report" → "fair"): a report outside
+  the ring stays in the Feed and is left out of Near You, so it never alerts. Decided when the line arrives.
+- **The switch** (users: "the intel on/off blends in too much"; mockups `intel_first_visit_mockup.html` then `intel_switch_mockup.html`
+  beside the repo; the owner: option 2, the switch kept beside the gear): off, an amber edge, knob and "Off", breathing slowly
+  (none with reduced motion); on, the usual teal. Only `#intelSw`: CLAUDE.md "UI rules" names it as the one exception.
+- **How Intel works** (a user: "Bro you gotta find a way to condense this"): 3 short paragraphs with bold leads, the rest under 6
+  folded headings (`[Heading] text` and `**Lead:** text` in `CARD_INFO`, drawn by `infoParaHtml`); 597 words became 96 shown.
+- Checked by `tools/page_checks/intel_place_check.py`.
+
 ## Near You and the Feed laid out; tabs in the order of use (v2026.10.30.1)
 
 From the owner's bug ("killmails within specified kill range show in feed but not in 'Near You' list") and a step-by-step design

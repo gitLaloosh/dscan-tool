@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-30 — Where a report is, and the Intel switch</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+table{border-collapse:collapse; margin:10px 0;} td,th{border:1px solid #ddd; padding:4px 10px; text-align:left; font-size:14px;}
+</style></head>
+<body>
+<h1>Where a report is, and the Intel switch</h1>
+<p><span class="tag">Intel</span><span class="tag">UI</span> 2026-10-30 &middot; <code>v2026.10.30.2</code></p>
+
+<h2>Why</h2>
+<ul>
+<li><b>A pilot read as the system.</b> The owner's screenshot showed a line of three pilots and a system, where the first pilot's name is also a real system's. The row was headed by that "system", 26 jumps away; the real system, 13 jumps away, became a second chip. The owner: "the tool recorded a pilot as the system name even though a valid system name was in the entry", and "some players actually name their pilots in a way that it will screw up the intel channel entries. let's them navigate enemy space w/out actually being detected".</li>
+<li><b>The switch.</b> From users: "the intel on/off blends in too much. First time in took me a minute to figure out how to start it".</li>
+<li><b>The info panel.</b> From a user, about "How Intel works": "Bro you gotta find a way to condense this". It was 597 words, the longest of the page's 25 panels.</li>
+</ul>
+
+<h2>Where a report is</h2>
+<p>The cause: the reader took any Title Case word matching a system name as a system before any name was looked up, and a word taken as a system was never checked as a pilot. Now, when a line names two or more systems, the choice is made after the lookups, in the order the owner set out:</p>
+<ol>
+<li><b>What the words around a name say</b> ("evaluate what they're saying"). "Y gate" is a gate in another system, "-&gt; Y" or "heading Y" is where they're going, "from Y" is where they came from. "jumped to Y" is where they are.</li>
+<li><b>The ring</b> ("if it's not inside the ring, dont consider it a valid report"). The ring is the Feed's Distance, or the alert range if that's larger. With Distance "any" there's no ring.</li>
+<li><b>A name that is also a pilot's</b> becomes the pilot, as long as another system is left.</li>
+<li><b>The nearer one.</b> When the distances are equal or unknown, the system name that is the first or last word of the line wins. Position only breaks a tie (the owner: "dont blindly do it").</li>
+</ol>
+<p>A system left over shows as a note after the one they're in: "or Y?", "on Y gate?" when the two are next to each other, "on Y gate", "→ Y" or "from Y". There is never a second row, and nothing is dropped. A line with only one system keeps it, whatever else the word could be.</p>
+<p><b>Linked words.</b> The chat log marks a link with a <code>*</code> after it, with no type: the three logs checked held 119 links, mostly system names. A linked word that the reader took as an intel word, a filler word or a head count is now looked up too, and is the pilot when it is one. So a pilot named "Clear", dragged in from Local, can't mark a system clear.</p>
+<p>Ship names stay ships. A pilot named like a ship still marks the system as seen, and dragged-in ship links would otherwise turn into pilots.</p>
+<p><b>The ring and Near You</b> (agreed as "fair"). A report outside the ring stays in the Feed and is left out of Near You, so it never alerts.</p>
+
+<h2>The switch</h2>
+<p>Two mockups came first. The first tried a "Start Intel" step, which the owner rejected: "that's a lot of words just to get around the actual switch not being obvious". The second moved the switch and the ⓘ around, and the owner settled on today's layout: "with the new button treatment it should pop enough".</p>
+<p>The result, the owner's option 2: while off, the Intel switch has an amber edge, knob and "Off", and breathes slowly. It is still with reduced motion. On is the usual teal.</p>
+<p>Only <code>#intelSw</code> gets this. CLAUDE.md's UI rules name it as the one exception, and <code>check_ui_rules.py</code> fails if any other switch gets an off state or animation of its own, or if this one moves without a reduced-motion rule.</p>
+
+<h2>How Intel works, condensed</h2>
+<p>The panel now has three short paragraphs with bold leads (start, Near You, Feed), and everything else under six folded headings. 96 words show instead of 597. <code>CARD_INFO</code> gained two forms, drawn by <code>infoParaHtml</code>: <code>[Heading] text</code> and <code>**Lead:** text</code>. <code>check_subtext.py</code> checks both forms.</p>
+<p>It also drops what was out of date in the old text: "the slider" (it's a switch), "a red row" (the amber edge since v2026.10.30.1), and a friendly-only kill "without an alert" (an enemy killed near you alerts since v2026.10.30.1).</p>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>tools/page_checks/intel_place_check.py</code></b>, using made-up pilots named "Jita" and "Clear". It covers every placement rule, the ring, the Feed's note, the switch's states and the panel.</li>
+<li>v2026.10.30.1 fails it 14 times.</li>
+<li>Each of 10 page mutants fails it: no second look, no context words, no ring, no alert range in the ring, no next-door gate, always the first, no linked-word rule, no note, no folding. The tenth, the off state on every switch, is caught by the lint.</li>
+<li><code>intel_check.py</code> was updated for the intended changes:
+  <ul>
+  <li>"jumped QX-L from 4K-TRB" is now in QX-LIJ with "from 4K-TRB" as a note;</li>
+  <li>"New Caldari Jita" is in New Caldari with "or Jita?".</li>
+  </ul></li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #105: a reader that decides a word's kind before its lookups can't use what they say. Keep both readings until the lookups are back, and break ties toward the reading that warns. In a check, make the mock answer for the ambiguous word.</p>
+</body></html>

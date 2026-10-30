@@ -228,12 +228,16 @@ with sync_playwright() as p:
     c = chips('Gate Watcher > Y-OMTZ Seren Ketter nv'); check(c == [['sys', 'Y-OMTZ 3j'], ['h', 'Seren Ketter'], ['kw', 'no visual']], f'nv {c}')
     c = chips('Kai Rhenn > status N-8YET?'); check(c == [['sys', 'N-8YET 1j'], ['kw', 'status?']], f'status? {c}')
     c = chips('Gate Watcher > Anouk Morrow (Scimitar) jumped QX-L from 4K-TRB')
-    check(c == [['sys', 'QX-LIJ 4j'], ['sys', '4K-TRB 3j'], ['n', 'Anouk Morrow'], ['ship', 'Scimitar'], ['kw', 'jumped']], f'"QX-L": the nearest QX- system; "Pilot (Ship) jumped A from B" {c}')
+    NOTE = "(raw) => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(x => x.querySelector('.raw').textContent === raw); return r ? [...r.querySelectorAll('.it-snote')].map(n => n.textContent) : null; }"
+    nt = pg.evaluate(NOTE, 'Anouk Morrow (Scimitar) jumped QX-L from 4K-TRB')
+    # v2026.10.30.2: "from 4K-TRB" says where they came from, so the report is in QX-LIJ (4 jumps) though 4K-TRB (3) is nearer; 4K-TRB a note
+    check(c == [['sys', 'QX-LIJ 4j'], ['n', 'Anouk Morrow'], ['ship', 'Scimitar'], ['kw', 'jumped']] and nt == ['from 4K-TRB'], f'"QX-L": the nearest QX- system; "Pilot (Ship) jumped A from B": in A, "from B" a note {c} {nt}')
     c = chips('Someone > D-W7F0 秃鹫级 x2'); check(c == [['sys', 'D-W7F0 2j'], ['ship', 'Condor ×2']], f'a Chinese ship name {c}')
     c = chips(f'Someone > MO-GZ5 {FRIEND}'); check(c is None, f'a friendly-only line hidden (hide friendlies on) {c}')
     r = got.get('Someone > New Caldari Jita jita blorp zzt')
-    check(r and r['chips'] == [['sys', f'New Caldari {D0[30000145]}j'], ['sys', f'Jita {D0[30000142]}j']] and r['left'] == 'jita blorp zzt',
-          f'"New Caldari" and "Jita" but not "jita"; words left plain {r}')
+    nt = pg.evaluate(NOTE, 'New Caldari Jita jita blorp zzt')   # v2026.10.30.2: two systems next to each other, the same distance away: the first, "on Jita gate?"
+    check(r and r['chips'] == [['sys', f'New Caldari {D0[30000145]}j']] and nt == ['on Jita gate?'] and r['left'] == 'jita blorp zzt',
+          f'"New Caldari" and "Jita" but not "jita" ("on Jita gate?": next door); words left plain {r} {nt}')
     nosys = ['Kai Rhenn > 78 status?', 'Scout Alt > clr', 'Gate Watcher > Zorvan Quill loc?']
     last = pg.evaluate("() => it.lastLine")
     check(not [r for r in nosys if r in got] and all(any(c[0] == 'sys' for c in f['chips']) for f in F if f['chips'] is not None)

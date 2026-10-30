@@ -38,6 +38,10 @@ for k, paras in INFO.items():
     if not isinstance(paras, list) or not paras or not all(isinstance(p, str) and p.strip() for p in paras):
         problems.append(f'CARD_INFO["{k}"]: must be a list of non-empty paragraphs')
         continue
+    # v2026.10.30.2: "[Heading] text" folds under its heading, "**Lead:** text" starts in bold (infoParaHtml): neither empty
+    for p in paras:
+        if p.startswith('[') and not re.match(r'^\[[^\]]+\]\s+\S', p): problems.append(f'CARD_INFO["{k}"]: a folded section is "[Heading] text": {p[:40]!r}')
+        if p.startswith('**') and not re.match(r'^\*\*[^*]+\*\*\s*\S', p): problems.append(f'CARD_INFO["{k}"]: a bold lead is "**Lead:** text": {p[:40]!r}')
     # other cards are named as {card:key} (infoBtnHtml fills the name in), so a rename stays one edit
     for p in paras:
         for ck in re.findall(r'\{card:([^}]*)\}', p):

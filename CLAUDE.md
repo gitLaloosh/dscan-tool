@@ -37,9 +37,11 @@ is listed in `DEVIATIONS.md`; an unlisted difference is a bug.
 
 Before changing any calculation:
 
-1. Read `LESSONS_LEARNED.md`, the catalog of mistakes already made here.
-   Follow its checklist **in order**: it's the definition of done, and the
-   expected values are derived before any code is written.
+1. Read `LESSONS_LEARNED.md`, the catalog of mistakes already made here:
+   its Index first (one line per entry, grouped by task), then the entries
+   that apply. Follow its checklist **in order**: it's the definition of
+   done, and the expected values are derived before any code is written.
+   For page, Intel or process work, the matching Index groups are enough.
 2. Use `tools/` (see `tools/README.md`):
    - `tools/pyfa_effects.py` runs pyfa's real effect handlers so you find all
      of them. Don't grep or regex `effects.py`.
@@ -75,7 +77,8 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
 - **Tag** (chips, pills, labels): 3-4px corners, never round; a faint fill (`--tag-fill`), no visible border at rest;
   hover/open `--tag-fill-hover` with `--accent-edge`; pressed `--tag-on`. Empty states: the same fill, dim text, no dashes.
   Cyan is the one accent.
-- **Switch** (`.dmg-sw`, `input.mys-sw`): 36x20 track, 3px corners, square 14px knob; off faint, on `#1f6f80`.
+- **Switch** (`.dmg-sw`, `input.mys-sw`): 36x20 track, 3px corners, square 14px knob; off faint, on `#1f6f80`. One named exception
+  (v2026.10.30.2, the owner): the Intel switch (`#intelSw`) off is amber and breathes (none with reduced motion), so new users find it.
 - **Slider**: the global `input[type=range]` style, a 4px track filled cyan to an upright 10x18 handle. The fill is
   `--p`, set by `rangeFillSet` (input events, new sliders, and code that sets `.value`/`.max` calls it). No local slider CSS.
 - **Text field** (text, search, select, textarea): `--bg` fill, `--field-border`, 4px corners; hover
@@ -85,11 +88,15 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   (measured in the drawn font, `itSysWidths`); the left edge only means "within your alert range", in the "N near" colour
   (amber); no background highlighting; standing colours on words and names (neutral a bright grey). Intel channel names are
   shown only under the gear, never elsewhere (the owner: "security reasons"). `tools/page_checks/intel_layout_check.py`.
+  A line naming several systems is placed after the name lookups, never before (LESSON #105; `intel_place_check.py`).
 Checked by `tools/check_ui_rules.py` (chain) and `tools/page_checks/ui_rules_check.py`. Status colours (error, IN SYSTEM)
 wait for the colour inventory (backlog).
 
-When you find a new kind of mistake, add it to `LESSONS_LEARNED.md` and give
-the history doc a "Lesson for future models" section. In code, mark the site
+When you find a new kind of mistake, add it to `LESSONS_LEARNED.md` (the next
+unused number, and one line in its Index under the matching group:
+`tools/check_lessons_index.py` checks it) and give the history doc a "Lesson
+for future models" section. A lesson a later one overturns stays, marked
+"Superseded by #n" at its top and in the Index. In code, mark the site
 with a `// LESSON #n` comment that points at the entry.
 
 **How the numbers are worked out, for people:** `METHODOLOGY.md` (was the "How effective HP and DPS are

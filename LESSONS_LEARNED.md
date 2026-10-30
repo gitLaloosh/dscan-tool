@@ -1,4 +1,4 @@
-# Lessons learned: calculation mistakes and how to avoid them
+# Lessons learned: mistakes made here and how to avoid them
 
 This file is for any model or person changing a calculation in `index.html`.
 Every entry is a mistake that actually happened in this project. Each entry
@@ -11,7 +11,9 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 
 **How to use this file**
 
-1. Follow the checklist below **in order**. The order matters:
+0. Start with the **Index** below: one line per entry, grouped by task. Open only the entries that apply; you don't need to
+   read the whole file for a page or Intel change.
+1. For a calculation change, follow the checklist below **in order**. The order matters:
    - Expected values are derived **before** any code is written. Otherwise you
      tend to derive what your code already does (#3).
    - A new test fit must fail on the current build before you start
@@ -25,6 +27,139 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 
 ---
 
+## Index (read this first)
+
+One line per entry, grouped by what you are about to do. Read the group that matches your task, open the entries that apply, and
+follow the checklist below for any calculation change. Entries keep their numbers wherever they sit in the file (`// LESSON #n`
+comments point at them); `tools/check_lessons_index.py` (a chain step) checks every entry is listed here once.
+
+**Calculations: finding every source (read before changing how anything is calculated)**
+
+- #1 Finding pyfa handlers with text matching misses some of them.
+- #16 Python closures in pyfa handlers (a trap for the recorder itself).
+- #19 Skill handlers that filter on the skill itself (another recorder trap).
+- #28 A recorder error is a handler you didn't record.
+- #2 Gating on group names instead of effects.
+- #4 Hand-maintained per-hull tables are incomplete.
+- #11 Assuming a hull bonus from memory or trait text.
+- #5 "Exhaustively checked, nothing found" was wrong.
+- #8 Excluding an attribute as a "collision".
+- #18 Reading part of a list, or a stand-in for the real rule.
+- #20 The stat isn't only its modifiers: caps, alternate attributes, and the code that consumes it.
+- #24 "The default ability" vs everything pyfa switches on.
+- #26 Every carrier pyfa runs, not only hulls and modules.
+- #76 Before modelling an effect, find pyfa's handler for it: it may already say how.
+- #62 A generated table covers only the attributes you listed: grep pyfa for every attribute your formula reads.
+- #59 A handler's source value is the source's MODIFIED attribute: a script changes it.
+- #64 A state gated on one variant's attribute silently drops the other variants.
+- #68 A new list of inputs exposes the engine to inputs no fit had: check every one against pyfa.
+- #35 "Matches no published item" can mean your test set is missing that item.
+- #31 Find where the input really comes from, and size the job by running it.
+- #32 pyfa's database is not the SDE.
+- #29 pyfa's gaps are not the game's rules, and a control must change something.
+- #22 Auditing pyfa: missing attributes, split bonuses, unpublished hulls.
+- #27 A reference that swallows errors like pyfa hides its own gaps.
+
+**Calculations: expected values, fixtures and golden fits**
+
+- #3 Checking the tool against itself.
+- #6 Trimmed golden-fit records hid effects.
+- #37 A fixture built from the code's assumption agrees with the code.
+- #9 Comparing different quantities with pyfa.
+- #10 Different game data versions.
+- #61 A golden fit that tests an input must set it to something the default wouldn't give.
+- #40 A ranking metric that leaves out what the pick is for.
+- #78 A number can be exactly right and still mislead: check the assumption, not only the arithmetic.
+- #81 Mock data must keep the real data's rules, or a check tests a case that can't happen.
+- #83 A test double must replace the real thing, not fill in when it is missing.
+- #71 A mock that accepts anything can't check what the feature adds.
+- #65 New rows in an existing output reach every check that reads it.
+- #66 A fetch every fit makes needs a shared fixture, served by every harness.
+- #69 Per-copy inputs: keep each copy's place and each copy's state, on both sides.
+- #70 A "skip" that a shared helper doesn't know about, and a cycle that isn't only the module's speed.
+- #75 A weapon and its charge share a killmail flag: pick items by type, not by flag.
+- #67 An input that is a Map reads as empty through Object.keys and JSON.
+- #63 When a number is 0, show the cause the tool knows, not a guess about the fit.
+- #53 An independent check's exclusions are where bugs hide.
+
+**Calculations: implementing (pyfa's math, stacking, rounding, states)**
+
+- #23 pyfa math and tool choices mixed together.
+- #25 A locked "port" that wasn't, and pooling that lost three rules.
+- #7 Wrong stacking penalties.
+- #14 Counting the same bonus twice.
+- #15 pyfa rules that are easy to get wrong.
+- #17 One module, two kinds of effect (module states).
+- #30 A name that resolves is an item, not necessarily the right kind of item.
+- #34 JavaScript rounds a tie up; pyfa rounds it to even.
+
+**The page: layout, controls and what people see**
+
+- #33 Check a layout at a real phone width, with mobile emulation. See also #103.
+- #103 A mockup shows the look, not the room: measure the real container before building to its numbers. See also #33, #46.
+- #38 A new grid row under a sticky column gets covered when you scroll.
+- #39 An override inside `:has()` lost to the general rule it was overriding.
+- #44 A control that appears when a value changes moves the page.
+- #45 Measuring a hidden element gives 0.
+- #46 A pop-up checked in one place can open off the screen in another. See also #103.
+- #55 Flex items are centred, not set on a baseline.
+- #73 What's inside a closed <details> still has a box.
+- #96 A scroll area inside the page must not trap the wheel; test scrolling with the mouse over it.
+- #41 A mockup on a page the canvas doesn't open on.
+- #87 Read a mockup's numbers, not only its layout.
+- #42 A card's name typed in many places drifts apart.
+- #43 A collapsed card that only updates while it's open.
+- #48 Moving text into a hover hides it from checks that read the page.
+- #49 Two controls for one setting: one owner, both redraw from it.
+- #50 A choice that can become impossible: keep it, mark it, say why.
+- #52 An input's value attribute is where it started, not where it is.
+- #56 A rename changes what people see, not where their data lives.
+- #60 A marker the checks wait on is a contract: new text in that element must not contain it.
+- #79 Removing an element removes everything it did, not only what it showed.
+- #84 One state, one control: a switch shown on every tab needs no twin on the page it controls.
+- #86 A partial redraw must cover everything that can change while it is the only redraw.
+- #95 Put a control where people look for it, and don't let a number say something it doesn't.
+- #97 A limit the user can't see reads as a bug: name it where they set things.
+- #101 A component's border shorthand quietly cancels the site's focus rule: measure each state, then write the rule down and check it.
+- #104 escapeHtml() doesn't escape quotes: a value in an attribute needs `&quot;`.
+
+**Checks and test machinery**
+
+- #12 `node --check` passes, the page still breaks.
+- #21 A renamed result field silently turned its pins into no-ops.
+- #36 Code that runs at page load also runs inside the regression suites.
+- #47 One wrong anchor stops a whole patch.
+- #51 A collision rule passes trivially when nothing collides.
+- #54 "Never" is a time too: give Infinity its own branch.
+- #57 "Execution context was destroyed" wasn't a navigation: read the protocol log.
+- #58 A pipe write is asynchronous: don't exit right after it.
+- #72 A tab a browser extension opens isn't routed on its first load.
+- #74 A request log shared by several pages counts the other pages' work too.
+- #77 A failure case leaves state behind: the next case in the same page inherits it.
+- #80 A check that still passes after a change may never reach the change.
+- #82 A lint's pattern can run for minutes on a long data string.
+- #94 Guard a whole class of failure with a check on the code, not only a test of today's case.
+
+**Intel and live data (chat logs, zKillboard's feed)**
+
+- #85 A list kept in arrival order isn't in time order.
+- #88 In free text, a word that is also a character's name is not a pilot until the domain says so.
+- #92 Before fixing what a screenshot shows, read the line that produced it.
+- #89 Check a live service's edges from where the page runs before writing its test double. (Its 404-without-header case is gone since 2026-10-29; the advice stands.)
+- #93 A hidden tab's timers fire late and together: pace a rate-limited service by the clock, in a worker. (The "holes" part was removed in v2026.10.29.8; the pacing advice stands.)
+- #98 A reader that waits for data must notice when it has waited too long; and a hard bug may need a recording, not a probe. **Superseded by #102** (the gaps were a cache, not missing numbers; read ahead no more).
+- #99 A look-ahead at fixed spots can miss every time: to cross a gap of unknown shape, read through it. **Superseded by #102** (same).
+- #102 When a client that works reads the same source, find what differs before tuning your workaround again.
+- #100 A warning that fires on a routine event teaches people to ignore it: check the thing itself, out of their sight.
+- #105 A reader that decides a word's kind before its lookups can't use what they say: decide after. See also #88.
+
+**Delivery, privacy and the repository**
+
+- #13 "Delivered" wasn't delivered.
+- #90 A public repository keeps everything you save in it: check every saved file for personal data, pictures included.
+- #91 Before handing over a history rewrite, run its replacement list on the cleaned tree first.
+
+---
 ## Checklist (in this order)
 
 **Phase 1 — Find every source (before writing any code)**
@@ -878,6 +1013,19 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 105. A reader that decides a word's kind before its lookups can't use what they say: decide after
+
+- **What happened (v2026.10.30.2, the owner's screenshot):** an intel line was three pilots and a system, and the first pilot's
+  name is also a real system's. The reader found systems first and took any Title Case word that matched one; a word taken as a
+  system was never looked up as a pilot, so the row was headed by a system 26 jumps away and the real one (13) became a second
+  chip. The owner added that some players name their pilots this way on purpose, to slip past intel tools; the same trick works
+  on every word list the reader keeps (a pilot named "Clear" would mark a system clear). The lookup that would have told the
+  two apart ran after the decision.
+- **Do this instead:** when a word could be two things, keep both readings until the lookups are back, then decide with
+  everything known (here `itForce` then `itPlace`, after `itResolve`: what the words around it say, the ring, whether it's a
+  pilot's name, then distance). Bias the tie-break toward the reading that warns; never toward the one that hides. In a check,
+  make the mock answer for the ambiguous word (here made-up pilots named "Jita" and "Clear"), so a reader that decides early fails.
+
 ## 104. escapeHtml() doesn't escape quotes: a value in an attribute needs `&quot;`
 
 - **What happened (v2026.10.30.1):** Near You's 3-line cap keeps each row's pilots and ships in a `data-it-cap` attribute as JSON,
@@ -931,6 +1079,22 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   code sets (a slider's fill, `--p`) needs a hook wherever the value changes: input events, new elements (a
   MutationObserver), and code that sets `.value` itself.
 
+## 101. A component's border shorthand quietly cancels the site's focus rule: measure each state, then write the rule down and check it
+
+- **What happened (v2026.10.29.7, the owner: "would you mind taking a look at how text input boxes are being treated
+  differently as well (differing border colors)"):** reading the CSS suggested one text-field style. Measuring the computed
+  style of every field at rest and focused, in the page, found three: the main fields turned amber-dim on focus, the Intel
+  search showed the browser's own ring, and Intel's selects showed no focus at all. Their rules (`.it-fbar select`,
+  `.it-box select`) set `border:` as a shorthand, and being as specific as the global `select:focus` and later in the
+  file, they reset its border colour. The tags, switches and sliders had drifted the same way (two copies of one switch,
+  four corner radii, the browser's own slider).
+- **Do this instead:** inventory a control by its computed style in every state (rest, hover, focus, disabled), not by
+  reading the CSS. Write the state rules once, after the component rules, and name the components' own selectors in
+  them. Once the owner settles a look, write it down (CLAUDE.md "UI rules") and check it both ways: statically
+  (`tools/check_ui_rules.py`, in the chain) and in the real page (`tools/page_checks/ui_rules_check.py`). A value only
+  code sets (a slider's fill, `--p`) needs a hook wherever the value changes: input events, new elements (a
+  MutationObserver), and code that sets `.value` itself.
+
 ## 100. A warning that fires on a routine event teaches people to ignore it: check the thing itself, out of their sight
 
 - **What happened (v2026.10.29.5, the owner: "Eve deploys patches very often. is there a way to automate the update so the
@@ -943,6 +1107,8 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   Test the automation on made-up copies of the real file layout when the real source can't be reached from where you work.
 
 ## 99. A look-ahead at fixed spots can miss every time: to cross a gap of unknown shape, read through it
+
+> **Superseded by #102.** Reading through gaps was a workaround for a cache problem at zKillboard's CDN, fixed there on 2026-10-29.
 
 - **What happened (v2026.10.29.5, the owner, the same afternoon: "it looks like that last kill feed fix didn't work"):**
   v.29.4, after a minute with no kill, looked at fixed numbers ahead (4-8, 12, 16, 24, 32, 48, 64, 128 ...). From 12:30 UTC
@@ -961,6 +1127,8 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   is still news (1 minute).
 
 ## 98. A reader that waits for data must notice when it has waited too long; and a hard bug may need a recording, not a probe
+
+> **Superseded by #102.** The "missing" numbers were Cloudflare remembering early 404s; reading further ahead made it worse. Keep the first point (notice when you have waited too long), not the fix.
 
 - **What happened (v2026.10.29.4, the owner: "i still have not seen a single killmail show up in the feed"):** v.103 read
   zKillboard's live kills by number and treated a missing number as a hole only when one of the next 3 answered. On
@@ -1059,7 +1227,7 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
 
 - **What happened (v2026.10.14.101, after the owner rewrote the git history):** the replacement list for
   `git-filter-repo --replace-text` held every original D-Scan ship name from the two real pastes, mapped to its
-  scrambled form. Some were short and generic: a cut-off name `Prophecy N` became `Prophecy W`. Literal rules match
+  scrambled form. Some were short and generic: a cut-off hull name (its last word cut to one letter) got a new last letter. Literal rules match
   anywhere, with no word boundary, so the rewrite also turned `Prophecy Navy Issue` into `Prophecy Wavy Issue` in
   `index.html` (the Intel ship-name table and a comment) and in `regression_suite/dscan_parse_tests.mjs`, in every commit
   including the newest, and GitHub Pages served it. Found by comparing the owner's fresh clone with the delivered
