@@ -52,7 +52,7 @@ _tail = r'''
     g = got('4K-TRB Clear*')
     check(g['kind'] == 'seen' and g['pilots'] == ['Clear'] and where('4K-TRB Clear*') == '4K-TRB', f'"4K-TRB Clear*": Clear, linked from Local, is a pilot: a sighting, not "clear" {g}')
     notes = pg.evaluate("""() => Object.fromEntries([...document.querySelectorAll('#itFeedList .it-fd')].map(r => [r.querySelector('.raw') ? r.querySelector('.raw').textContent : '',
-      [r.querySelector('.fsys').innerText.replace(/\s+/g, ' ').trim(), r.querySelectorAll('.fsys .j').length]]))""")
+      [r.querySelector('.fsys').innerText.replace(/\\s+/g, ' ').trim(), r.querySelectorAll('.fsys .j').length]]))""")
     want = {'8WA-Z6 Marrek on D-W7F0 gate': '8WA-Z6 on D-W7F0 gate', 'Y-OMTZ Ketter -> MO-GZ5': 'Y-OMTZ → MO-GZ5', 'Ketter jumped to 5BTK-M from N-8YET': '5BTK-M from N-8YET',
             'QX-LIJ Marrek E-VKJV': 'E-VKJV or QX-LIJ?', 'FM-JK5 Ketter JP4-AA': 'JP4-AA on FM-JK5 gate?'}
     check(all(notes.get(l, ['', 9])[0] == w and notes[l][1] == 0 for l, w in want.items()), f'the Feed: the note after the system, no second jump count {[(w, notes.get(l)) for l, w in want.items()]}')
@@ -87,7 +87,7 @@ _tail = r'''
     # ---- How Intel works ----
     pg.click('#intelPanel .it-head .info-btn'); pg.wait_for_timeout(200)
     inf = pg.evaluate("""() => { const b = document.querySelector('#intelPanel .it-head .info-body'), ds = [...b.querySelectorAll('details.info-more')];
-      return [[...b.children].filter(x => x.tagName === 'P').length, b.querySelectorAll(':scope > p b').length, ds.length, ds.filter(d => d.open).length, b.innerText.split(/\s+/).length, b.textContent]; }""")
+      return [[...b.children].filter(x => x.tagName === 'P').length, b.querySelectorAll(':scope > p b').length, ds.length, ds.filter(d => d.open).length, b.innerText.split(/\\s+/).length, b.textContent]; }""")
     pg.evaluate("() => { const s = document.querySelector('#intelPanel .it-head .info-body details.info-more summary'); if(s) s.click(); }"); pg.wait_for_timeout(100)
     op = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-head .info-body details.info-more')].map(d => d.open)")
     check(inf[:4] == [3, 3, 6, 0] and inf[4] < 110 and op[0] and not any(op[1:]),

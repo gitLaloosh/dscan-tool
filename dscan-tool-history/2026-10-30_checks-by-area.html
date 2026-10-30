@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-30 — Checks by area, and a ledger</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Checks by area, and a ledger</h1>
+<p><span class="tag">Process</span><span class="tag">Checks</span> 2026-10-30 &middot; page unchanged (<code>v2026.10.30.2</code>)</p>
+
+<h2>Why</h2>
+<p>The owner asked how often the delivery routine catches problems, then "yep, do it" to running only the checks a change needs. The evidence came from v2026.10.30.2, an Intel and UI change:</p>
+<ul>
+<li>The pyfa chain took about 40 minutes. No calculation code had changed, so it could not have found anything.</li>
+<li>The full page-check run took about 25 minutes. It caught nothing outside the changed area. Its failures were two intended expectation updates and three timing flakes that passed alone.</li>
+<li>The real catches came from three places: the change's own new check and its mutants, the fast lints, and screenshots.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>New <code>tools/run_checks.py</code>.</b>
+  <ul>
+  <li>The fast lints always run, in about 30 seconds: personal data, UI rules, subtext, card names, request gates, error codes, the LESSONS index, and page-check areas.</li>
+  <li>Then a tier: <code>area</code> (the page checks tagged with the areas you name), <code>calc</code> (adds the pyfa chain and the calculation page checks) or <code>all</code>.</li>
+  <li>There are 8 areas: intel, system, pilot, fit, myship, calc, layout and extension.</li>
+  <li>Page checks run in parallel. A failure is run again on its own once. If it passes then, it is reported as <i>flaky</i>, not as a pass.</li>
+  <li><code>--check-tags</code> fails when a page check has no area. It is a chain step, now 50 steps.</li>
+  </ul></li>
+<li><b>New <code>tools/check_ledger.md</code>.</b>
+  <ul>
+  <li>Each delivery adds one row: version, tier, time, failed, flaky, and "Caught". "Caught" holds the real bugs a check stopped, filled in by hand.</li>
+  <li>Every 10 rows, the ledger is reviewed with the owner. A slow check that never catches anything moves to <code>all</code> only, and repeat flakes get fixed.</li>
+  </ul></li>
+<li><b>CLAUDE.md "Checks"</b> says which tier to run when, and runs a full tier before a release, after a pyfa update, or every 5th delivery.</li>
+<li><b><code>tools/README.md</code> trimmed</b> from 107 KB to 41 KB. Each row now says what the check does today and how to run it. The history stays in these dated docs. A duplicated <code>intel_assess_check.py</code> row was removed.</li>
+<li><b>The runner's first area run caught something:</b> <code>intel_place_check.py</code> printed a Python <code>SyntaxWarning</code> (an unescaped <code>\s</code> in a script string). The warning hid the result line, so it was fixed. The runner now reads the result from standard output, after any warnings.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>None new. When a check's result is read from its last line, read it from standard output, not from standard output and standard error merged: a warning can land after the result.</p>
+</body></html>

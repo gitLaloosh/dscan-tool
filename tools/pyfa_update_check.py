@@ -109,6 +109,7 @@ if '--run' in sys.argv:
         ("the jump-table updater on made-up copies of CCP's data", 'python3 -I tools/independent_checks/check_jump_table_update.py index.html', lambda o: o.strip().splitlines()[-1] == 'JUMP TABLE UPDATE: 0 problems'),  # v2026.10.29.5
         ("stargates vs CCP's published static data (the GitHub Action's check; skipped where CCP's site can't be reached)", 'python3 -I tools/jump_table_update.py index.html --check', lambda o: o.strip().splitlines()[-1].startswith(('jump table matches', 'jump table: skipped'))),  # v2026.10.29.5
         ('LESSONS_LEARNED.md index lists every entry once', 'python3 -I tools/check_lessons_index.py', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.30.2
+        ('every page check has an area (run_checks.py)', 'python3 -I tools/run_checks.py --check-tags', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.30.2
         ('UI rules (one tag, one switch, one slider, one text field)', 'python3 -I tools/check_ui_rules.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.29.7
         ('requests to zKillboard go through its gates (LESSON #93)', 'python3 -I tools/check_request_gates.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.104
         ('pasted names, either apostrophe', env + 'python3 -I tools/independent_checks/check_apostrophe_names.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 misses')),

@@ -99,6 +99,13 @@ for future models" section. A lesson a later one overturns stays, marked
 "Superseded by #n" at its top and in the Index. In code, mark the site
 with a `// LESSON #n` comment that points at the entry.
 
+**Checks: run what the change needs** (v2026.10.30.2, the owner: "yep, do it"). `tools/run_checks.py` runs the fast lints
+always, then by tier: a calculation change `--tier calc` (+ `--area` for where it shows); page or Intel work `--tier area
+--area <areas touched>` (add `layout` when shared CSS changed); `--tier all` before a release, after a pyfa update, or every
+5th delivery. A new page check gets its areas in `AREAS` (`--check-tags`, a chain step). Run with `--ledger` and fill in
+"Caught" in `tools/check_ledger.md` before delivering; every 10 rows, review it with the owner (slow checks that never catch
+anything go to `all` only; repeat flakes get fixed). A new feature still gets its own targeted check and mutants.
+
 **How the numbers are worked out, for people:** `METHODOLOGY.md` (was the "How effective HP and DPS are
 calculated" note on the page, removed in v2026.10.14.51); each card's short version is its ⓘ panel (`CARD_INFO`).
 Change both when a calculation's assumptions change.
