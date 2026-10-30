@@ -878,6 +878,27 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 104. escapeHtml() doesn't escape quotes: a value in an attribute needs `&quot;`
+
+- **What happened (v2026.10.30.1):** Near You's 3-line cap keeps each row's pilots and ships in a `data-it-cap` attribute as JSON,
+  written with `escapeHtml(JSON.stringify(...))`. `escapeHtml` (a text node's innerHTML) escapes `&`, `<` and `>`, not `"`, so the
+  first quote in the JSON ended the attribute: the page read `{` and the cap silently did nothing. The screenshots looked right
+  because no test row had enough names to need the cap; the new layout check's 300-pilot gang caught it.
+- **Do this instead:** for an attribute, escape the quotes too (`.replace(/"/g, '&quot;')`), or set it from script
+  (`el.dataset.x = ...`). Test the case a feature exists for (here: more names than fit), not only the everyday one.
+
+## 103. A mockup shows the look, not the room: measure the real container before building to its numbers
+
+- **What happened (v2026.10.30.1):** the Near You and Feed layout was settled in a mockup 760 px wide. On the page at 1440 px,
+  Near You's column is about 580 px, so the pilot and ship list (the column left after the jump count, the system name, the time,
+  the badges, the toggle and Assess) was barely 100 px and wrapped into a tower. On a phone the Feed's header (jumps, system,
+  time, label, toggle on one line) left the system name about 40 px and cut it to "Y…". Both were found by screenshots of the
+  real page with made-up data, then fixed: the names run under the time and badges, and on a phone the time and label move to a
+  second line and the lines below run the full width.
+- **Do this instead:** before building a mockup's layout, read the real container's width at each breakpoint (the page's own
+  columns, not the viewport) and check the mockup's fixed columns against it. Mock up at that width, and screenshot the built page
+  at desktop and phone widths before handing it over.
+
 ## 102. When a client that works reads the same source, find what differs before tuning your workaround again
 
 - **What happened (v2026.10.29.4-29.8):** Intel's kills went missing for a day. Three deliveries tuned a read-ahead past

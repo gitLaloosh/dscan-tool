@@ -5,7 +5,7 @@
 The owner 2026-10-25: "EVE Threat Assessment", tagline A, tab title with "(ETA)", only what users see renamed. Checks, at
 1440, 375 and 320 px (v.63):
   * the browser tab title, the header's name and its one-line tagline; the ESI caching sentence is the Refresh item
-    data button's hover; the three tabs keep their names; v2026.10.14.62: in the order Pilot, Fit, D-Scan, the page
+    data button's hover; the three tabs keep their names; v2026.10.14.62: in the order Pilot, Fit, D-Scan (v2026.10.30.1: Intel, System, Pilot, Fit, opening on Intel), the page
     opening on the Pilot Analyzer;
   * the name doesn't run into the version tag, and nothing scrolls sideways;
   * v2026.10.14.63: the Refresh item data icon sits at the right of the name's row (30 px, 44 px on a phone); a press
@@ -37,10 +37,10 @@ def run(b, W):
     check(h['title'] == 'EVE Threat Assessment (ETA)' and h['h1'] == 'EVE Threat Assessment', f'{W}: tab title "{h["title"]}", header "{h["h1"]}"')
     check(h['p'] == ["Who's in system, what they fly, and how to beat them."], f'{W}: one tagline {h["p"]}')
     check('ESI' in h['btn'] and 'week' in h['btn'], f'{W}: the caching sentence is the Refresh button\'s hover ("{h["btn"]}")')
-    check(h['tabs'] == ['Pilot Analyzer', 'Fit Analyzer', 'System Analyzer', 'Intel'], f'{W}: the tabs keep their names, the System Analyzer (was D-Scan, v.81) after the Fit Analyzer (v.62), Intel last (v.96) {h["tabs"]}')
-    # v2026.10.14.62: the page opens on the Pilot Analyzer
+    check(h['tabs'] == ['Intel', 'System Analyzer', 'Pilot Analyzer', 'Fit Analyzer'], f'{W}: the tabs keep their names, in the order of use: Intel, System Analyzer (was D-Scan, v.81), Pilot, Fit (v2026.10.30.1) {h["tabs"]}')
+    # v2026.10.30.1 (the owner: "Intel, System, Pilot, Fit; open on Intel"): the page opens on Intel (v.62 to v2026.10.29.8: the Pilot Analyzer)
     shown = pg.evaluate("() => [...document.querySelectorAll('.tab-panel')].filter(p => getComputedStyle(p).display !== 'none').map(p => p.id).concat([document.querySelector('.tab-btn.active').id])")
-    check(shown == ['tabPilot', 'tabBtnPilot'], f'{W}: opens on the Pilot Analyzer {shown}')
+    check(shown == ['tabIntel', 'tabBtnIntel'], f'{W}: opens on Intel {shown}')
     gap = pg.evaluate("""() => { const r = document.createRange(); r.selectNodeContents(document.querySelector('header.hero h1')); const t = document.querySelector('header.hero .build-tag').getBoundingClientRect();
         return [...r.getClientRects()].every(a => a.right <= t.left || t.right <= a.left || a.bottom <= t.top || t.bottom <= a.top) ? 1 : -1; }""")   # 1 = every line of the name's text clear of the tag
     sw = pg.evaluate('document.documentElement.scrollWidth')

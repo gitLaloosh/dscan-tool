@@ -159,7 +159,7 @@ SIDE = {'pilot': {'id': 90000001, 'name': 'Test Pilot'}, 'corp': {'id': M.CORP, 
 # the line as typed is "who > line" (v.100: who, the line and the channel in the strip that opens under a row)
 JN = "const jn = (t) => t.replace(/ ?(\\d+) Jumps?$/, (m, n) => (m.startsWith(' ') ? ' ' : '') + n + 'j').replace(/ ?In system$/, (m) => (m.startsWith(' ') ? ' ' : '') + '0j');"
 NEAR = """() => { """ + JN + """ return [...document.querySelectorAll('#intelPanel .it-nb')].map(r => [r.querySelector('.sys').textContent, jn(r.querySelector('.j').textContent), r.querySelector('.st b').textContent, r.querySelector('.who').textContent, r.classList.contains('alert')]); }"""
-FEED = """() => { """ + JN + """ return [...document.querySelectorAll('#intelPanel .it-fd')].map(r => ({chips: [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), c.classList.contains('sys') ? jn(c.textContent) : (c.querySelector('.nm') || c).textContent]), left: (r.querySelector('.it-left') || {}).textContent || '', raw: ((r.querySelector('.it-raw .who') || {}).textContent || '') + ' > ' + r.querySelector('.raw').textContent})); }"""
+FEED = """() => { """ + JN + """ return [...document.querySelectorAll('#intelPanel .it-fd')].map(r => { const fj = ((r.querySelector('.fj') || {}).textContent || '').trim(); const cs = [...r.querySelectorAll('.it-chip')]; const s0 = cs.find(c => c.classList.contains('sys')); return ({chips: cs.map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), c.classList.contains('sys') ? jn(c.textContent.trim() + (c === s0 && fj ? ' ' + fj : '')) : (c.querySelector('.nm') || c).textContent]), left: (r.querySelector('.it-left') || {}).textContent || '', raw: ((r.querySelector('.it-raw .who') || {}).textContent || '') + ' > ' + r.querySelector('.raw').textContent}); }); }"""   # v2026.10.30.1: the first system's jump count is in its own column (.fj)
 def tick(pg, ms=2600): pg.wait_for_timeout(ms)
 
 with sync_playwright() as p:
@@ -173,7 +173,7 @@ with sync_playwright() as p:
     pg = ctx.new_page(); pg.goto('file://' + HTML)
     pg.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); localStorage.removeItem('dscanIntel'); }", SIDE); pg.reload(); pg.wait_for_timeout(400)
     tabs = pg.evaluate("() => [...document.querySelectorAll('.tabs .tab-btn')].filter(b => b.checkVisibility()).map(b => b.textContent)")
-    check(tabs == ['Pilot Analyzer', 'Fit Analyzer', 'System Analyzer', 'Intel'], f'the Intel tab after the System Analyzer {tabs}')
+    check(tabs == ['Intel', 'System Analyzer', 'Pilot Analyzer', 'Fit Analyzer'], f'the tabs in the order of use, Intel first (v2026.10.30.1, the owner: "intel > system > pilot > fit") {tabs}')
     hdr = pg.evaluate("() => { const b = document.querySelector('#intelNear'); return [b.nextElementSibling.id, b.hidden, document.querySelectorAll('#myShipBar input[aria-label=\"Watch the intel channels\"]').length]; }")
     check(hdr == ['sideChip', True, 0], f'v2026.10.29.1: no Intel switch in the header, only the "N near" pill beside Standings, hidden {hdr}')
     pg.click('#tabBtnIntel'); pg.wait_for_timeout(200)
@@ -196,7 +196,7 @@ with sync_playwright() as p:
     check(on == [True, 1, 'On', 'worker'], f'the switch on the card turns it on ("On"), still one switch, a worker ticks {on}')
     check(NAMES_CALLS == [1000] * (len(ids) // 1000) + [len(ids) % 1000], f'the system names asked once: {len(NAMES_CALLS)} requests {NAMES_CALLS}')
     status = pg.inner_text('#intelPanel [data-it-status]')
-    check(status.startswith('Your Main in 1DQ1-A · region.intel · last line '), f'the status line ({status!r})')
+    check(status.startswith('Your Main in 1DQ1-A · 1 channel · last line '), f'the status line, the channel counted, not named (v2026.10.30.1) ({status!r})')
     jumps = pg.evaluate("(names) => Object.fromEntries(names.map(n => [n, itJumps(it.names.byLower.get('1dq1-a'), it.names.byLower.get(n.toLowerCase()))]))", list(REAL.values()))
     want = {v: D0.get(k) for k, v in REAL.items()}
     check(jumps == want, f"the page's jumps from 1DQ1-A = a search over the table decoded here (Jita {jumps.get('Jita')}) {jumps}")
@@ -248,7 +248,7 @@ with sync_playwright() as p:
           ['QX-LIJ', '4j', '1 neutral', 'Anouk Morrow · Scimitar', False]]
     check(near == wn, f'Near You: nearest first, red within 3 jumps, nv keeps who was seen, clr, friendly-only hidden, status no row {near}')
     # v.100 (the owner: "x Jumps", "a callout like 'IN SYSTEM'", the standing icons, the line as typed behind a toggle)
-    jw = pg.evaluate("() => [[...document.querySelectorAll('#intelPanel .it-nb .j')].map(j => j.textContent), !!document.querySelector('#intelPanel .it-nb .j .it-here'), [...document.querySelectorAll('#itFeedList .it-chip.sys')].map(c => c.textContent).filter(t => /^(8WA-Z6|1DQ1-A|Y-OMTZ) /.test(t))]")
+    jw = pg.evaluate("() => [[...document.querySelectorAll('#intelPanel .it-nb .j')].map(j => j.textContent), !!document.querySelector('#intelPanel .it-nb .j .it-here'), [...document.querySelectorAll('#itFeedList .it-fd')].map(r => r.querySelector('.it-chip.sys .it-sn').textContent + ' ' + r.querySelector('.fj').textContent).filter(t => /^(8WA-Z6|1DQ1-A|Y-OMTZ) /.test(t))]")
     jw.append(pg.evaluate("() => [document.querySelectorAll('#itFeedList .it-fd.clr').length, document.querySelectorAll('#itFeedList .it-fd.clr .it-chip.clr').length]"))
     check(jw[0] == ['In system', '1 Jump', '1 Jump', '2 Jumps', '3 Jumps', '4 Jumps'] and jw[1] and jw[2][:3] == ['1DQ1-A In system', 'Y-OMTZ 3 Jumps', '8WA-Z6 1 Jump'] and jw[3] == [1, 0],
           f'the words: "1 Jump", "3 Jumps", and "In system" (a tag) for your own system, in Near You and the Feed; "Clear" once on a clear row {jw}')
@@ -265,8 +265,12 @@ with sync_playwright() as p:
     pg.evaluate("() => itRender(true)"); r2 = pg.evaluate(RAWQ, L8)
     pg.evaluate(f"(raw) => [...document.querySelectorAll('#itFeedList .it-fd')].find(f => f.querySelector('.raw').textContent === raw).querySelector('[data-it-raw]').click()", L8); pg.wait_for_timeout(150)
     r3 = pg.evaluate(RAWQ, L8)
-    check(shut and r0[:3] == ['false', True, False] and r1 == ['true', False, True, 'Scout Alt', 'region.intel', True, True] and r2 == r1 and r3[:3] == ['false', True, False],
-          f'the line as typed: hidden behind a toggle on every report; opened it shows who sent it, the line, the channel and the copy button; stays open through a redraw; closes {r0} {r1} {r3}')
+    check(shut and r0[:3] == ['false', True, False] and r1 == ['true', False, True, 'Scout Alt', None, True, True] and r2 == r1 and r3[:3] == ['false', True, False],
+          f'the line as typed: hidden behind a toggle on every report; opened it shows who sent it, the line and the copy button, no channel (v2026.10.30.1); stays open through a redraw; closes {r0} {r1} {r3}')
+    # v2026.10.30.1 (the owner: "do not include the intel channel name in any of the output for now. security reasons. I am aware that
+    # the channel names are in the settings"): with the gear closed, no channel name anywhere on the page, text or hover
+    leak = pg.evaluate("() => { const h = document.documentElement; const txt = h.innerText; const attrs = [...document.querySelectorAll('[title],[aria-label]')].map(e => (e.getAttribute('title') || '') + ' ' + (e.getAttribute('aria-label') || '')).join(' '); return ['region.intel', 'other.intel'].filter(c => txt.includes(c) || attrs.includes(c)); }")
+    check(not pg.evaluate("() => !!document.querySelector('.it-pop:not([hidden])')") and leak == [], f'no intel channel name shown outside the gear (text or hover) {leak}')
     al = pg.evaluate("() => [__fs.beeps, __fs.notes.map(n => n[0])]")
     check(al == [3, ['8WA-Z6 · 1 jump', 'Y-OMTZ · 3 jumps', 'D-W7F0 · 2 jumps']], f'alerts: sound and notification for hostile/neutral within 3 jumps, not 4, not friendlies {al}')
     badge = pg.evaluate("() => [document.querySelector('#intelNear').hidden, document.querySelector('#intelNear').textContent]")

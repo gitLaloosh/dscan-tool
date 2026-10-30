@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-30 — Near You, the Feed, and the tab order</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Near You, the Feed, and the tab order</h1>
+<p><span class="tag">Fix</span><span class="tag">UI</span><span class="tag">Tests</span> 2026-10-30 &middot; <code>v2026.10.29.8</code> &rarr; <code>v2026.10.30.1</code></p>
+<p>It started with a bug report from the owner: "killmails within specified kill range show in feed but not in 'Near You' list". It grew into a step-by-step design talk about how the two Intel lists look, with the mockup <code>Claude outputs/near_you_kills_mockup.html</code> revised at each step. He then asked for the top-level tabs in the order of use.</p>
+
+<h2>What you get</h2>
+<ul>
+<li><b>An enemy killed by your side shows in Near You.</b> v.100 showed such kills in the Feed, but Near You hid any system with only friendlies in it. The owner: "even if a hostile is killed by a friendly, it means there are potentially MORE hostiles there and maybe they head my way". So the kill counts as a sighting of the victim's side. It is counted ("1 hostile"), coloured, and alerts within your alert range like a report, reading "Marrek Ketter lost a Vedmak · by Mira Varos" (made-up names). A friendly killed by friendlies stays hidden.</li>
+<li><b>Colours.</b>
+  <ul>
+  <li>Words are in their standing's colour, and neutrals are a bright grey (the dim grey "read as harmless").</li>
+  <li>The left edge now means one thing only: within your alert range. It is amber, and so is the "N near" alert.</li>
+  <li>No background highlighting on any row; the kill labels and badges say what happened.</li>
+  </ul></li>
+<li><b>Layout, both lists.</b>
+  <ul>
+  <li>The jump count comes first.</li>
+  <li>System names get a column as wide as the widest name in the table, measured in the font your browser really draws. (Tash-Murkon Prime is the widest of ESI's 8,490 systems. The page asks for Space Grotesk, which is never loaded: backlog.)</li>
+  </ul></li>
+<li><b>Near You.</b>
+  <ul>
+  <li>The time and kill badges are on the right, then a toggle, then Assess last.</li>
+  <li>Pilots and ships wrap but stop at 3 lines ("+309 more", "+20 more types"), and the word keeps the full count. The owner: "some of these fights can have hundreds or thousands of pilots involved".</li>
+  <li>The toggle opens what the row is built from: each report with who sent it and the line as typed, and its kills. Several rows can be open at once.</li>
+  </ul></li>
+<li><b>The Feed.</b> The time, then the label at the right edge, then the toggle on reports. The lines below start under the system name.</li>
+<li><b>No intel channel names outside the gear</b> (the owner: "security reasons"). This covers the status line (it now says "1 channel"), the Feed's opened line and the switch's hover.</li>
+<li><b>Phone.</b> The same pieces stacked, with 40 px targets. The Feed's time and label sit on a second line, and its lines run the full width.</li>
+<li><b>Tabs: Intel, System Analyzer, Pilot Analyzer, Fit Analyzer,</b> and the page opens on Intel. Links to a pilot or a kill (#pilot=, #kill=, the browser extension) still open the Pilot Analyzer.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/intel_layout_check.py</code>: the tabs; Near You's columns, the measured system column, lined-up times, the amber edge, one background and the amber alert; a 300-pilot report capped at 3 lines; two rows open with no channel name; the Feed's columns, no kill backgrounds and its edge; 390 px.
+  <ul>
+  <li>Mutations: no cap fails 1; the old red edge and wash fails 1; the page not opening on Intel fails 3 in <code>header_check.py</code>.</li>
+  <li>It found a real bug on its first run (LESSON #104).</li>
+  </ul></li>
+<li>Updated:
+  <ul>
+  <li><code>intel_kills_check.py</code>: sightings, alerts, colours;</li>
+  <li><code>intel_check.py</code>: status line, no channel names (text or hover), tabs;</li>
+  <li><code>intel_assess_check.py</code>, <code>header_check.py</code> and <code>system_analyzer_check.py</code>: tabs, opening on Intel.</li>
+  </ul></li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 48 steps, all OK. All 47 page checks pass (46 before, plus the new one). The lints, the personal-data check and the request-gate check report 0 problems.</li>
+</ul>
+
+<h2>Lessons for future models</h2>
+<p>LESSON #103: a mockup shows the look, not the room. The mockup was 760 px wide, but the page's Near You column is about 580 px, and the Feed's phone header couldn't fit. Measure the real container at each breakpoint, and screenshot the built page at desktop and phone widths.</p>
+<p>LESSON #104: <code>escapeHtml()</code> doesn't escape quotes. JSON in an attribute ended at its first quote and the 3-line cap silently did nothing. Escape <code>"</code> as <code>&amp;quot;</code>, or set the value from script. Test the case the feature exists for.</p>
+</body></html>

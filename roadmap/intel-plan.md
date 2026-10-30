@@ -170,6 +170,27 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## Near You and the Feed laid out; tabs in the order of use (v2026.10.30.1)
+
+From the owner's bug ("killmails within specified kill range show in feed but not in 'Near You' list") and a step-by-step design
+talk on 2026-10-30 (mockup `Claude outputs/near_you_kills_mockup.html`):
+
+- **A kill by friendlies only of an enemy is a sighting** of the victim's side in Near You ("even if a hostile is killed by a
+  friendly, it means there are potentially MORE hostiles there"): counted, coloured and alerting like a report; "X lost a Ship · by
+  your pilots".
+- **Colours:** words in their standing's colour, neutral a bright grey; the left edge only means within the alert range, amber,
+  as is the "N near" alert now; no background highlighting on any row.
+- **Layout:** jump count first; system columns as wide as the widest system name (8,490 systems in ESI; Tash-Murkon Prime);
+  Near You: time and kill badges on the right, the toggle, Assess last; pilots and ships wrap, at most 3 lines ("+N more", the
+  word keeps the count); the Feed: the time then the label at the right edge, the lines below under the system name.
+- **Near You rows open** (several at once): the reports behind a row (who sent it and the line as typed) and its kills. No intel
+  channel names anywhere outside the gear (the status line counts them).
+- **Phone:** the same pieces stacked; 40 px targets.
+- **Tabs:** Intel, System Analyzer, Pilot Analyzer, Fit Analyzer; the page opens on Intel (links to a pilot or a kill still open
+  the Pilot Analyzer).
+- Still open from the Near You expand item: system, alliance, corp and ship names as filter buttons; kill badges opening the
+  Fleet tab (A: one kill opens its fleet, several open the row's list; later D: kills grouped by shared attackers).
+
 ## Kills read as documented (v2026.10.29.8)
 
 The cause behind v2026.10.29.4-29.6, found that evening (`roadmap/r2z2-relay-plan.md` has the evidence): Cloudflare, in front

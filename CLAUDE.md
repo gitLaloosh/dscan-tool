@@ -81,6 +81,10 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
 - **Text field** (text, search, select, textarea): `--bg` fill, `--field-border`, 4px corners; hover
   `--field-border-hover`; focus a cyan border and the `--accent-ring` ring (never amber, never the browser's own);
   disabled 45%. 36px tall, 32px in filter bars; paste boxes stay monospace.
+- **Intel lists** (v2026.10.30.1, the owner): the jump count first; system names in a column as wide as the widest system name
+  (measured in the drawn font, `itSysWidths`); the left edge only means "within your alert range", in the "N near" colour
+  (amber); no background highlighting; standing colours on words and names (neutral a bright grey). Intel channel names are
+  shown only under the gear, never elsewhere (the owner: "security reasons"). `tools/page_checks/intel_layout_check.py`.
 Checked by `tools/check_ui_rules.py` (chain) and `tools/page_checks/ui_rules_check.py`. Status colours (error, IN SYSTEM)
 wait for the colour inventory (backlog).
 

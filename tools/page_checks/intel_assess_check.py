@@ -38,7 +38,8 @@ def pa_done(pg):
 def sa_done(pg, n):
     pg.wait_for_function(f"() => {{ const c = document.querySelector('#tabDscan .pr-head .ctx'); return c && c.textContent.startsWith('{n} of {n} looked up'); }}", timeout=120000); pg.wait_for_timeout(500)
 FEED_ONE = """(raw) => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(f => (f.querySelector('.raw') || {}).textContent === raw && (f.querySelector('.it-raw .who') || {}).textContent === 'Gate Watcher');
-  return r ? [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), (c.querySelector('.nm') || c).textContent]) : null; }"""
+  const fj = r ? ((r.querySelector('.fj') || {}).textContent || '').trim() : '', s0 = r && r.querySelector('.it-chip.sys');   // v2026.10.30.1: the first system's jumps in their own column
+  return r ? [...r.querySelectorAll('.it-chip')].map(c => [c.className.replace('it-chip ', '').replace(/^p /, ''), c === s0 && fj ? c.textContent.trim() + ' ' + fj : (c.querySelector('.nm') || c).textContent]) : null; }"""
 SA_ROWS = """() => [...document.querySelectorAll('#tabDscan button.pr-row')].map(b => [b.querySelector('.pr-pilot .nm').firstChild.textContent.trim(), b.querySelector('.pr-hull .nm').firstChild.textContent.trim(), (b.querySelector('.pr-basis') || b.querySelector('.pr-hull .ctx') || {}).textContent || ''])"""
 
 with sync_playwright() as p:

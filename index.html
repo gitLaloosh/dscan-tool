@@ -2294,7 +2294,7 @@
   .it-nb{display:grid; grid-template-columns:92px 44px minmax(0,1fr) 54px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line-soft); font:400 12.5px var(--sans); color:var(--text);}
   .it-nb .sys{font:700 13px var(--sans); color:var(--heading); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .it-nb .j{font:500 12px var(--sans); color:var(--text-dim); white-space:nowrap;}   /* v.100: "x Jumps" in grey, no pill (the owner) */
-  .it-what{min-width:0;} .it-nb .st{display:block;} .it-nb .st b{color:var(--danger);} .it-nb .st.clr b{color:var(--it-clear);} .it-nb .st.fr b{color:var(--side-friendly);}
+  .it-what{min-width:0;} .it-nb .st{display:block;} .it-nb .st b{color:var(--side-hostile);} .it-nb .st.clr b{color:var(--it-clear);} .it-nb .st.fr b{color:var(--side-friendly);} .it-nb .st.ne b{color:var(--text-dim);}   /* v2026.10.30.1: the word in its standing's colour (the owner): friendly blue, neutral grey (--text-dim, as the "Neutral killed" badge: --side-neutral is too faint for text), hostile as hostile names */
   .it-nb .who{display:block; color:var(--text-dim); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .it-nb .age{text-align:right; font:400 11.5px var(--mono); color:var(--text-dim);}
   .it-nb.alert{box-shadow:inset 3px 0 0 var(--danger); background:color-mix(in srgb, var(--danger) 8%, transparent); padding-left:8px;}
@@ -2387,6 +2387,53 @@
   }
   @media (max-width: 599px){ .it-setup, .it-pop .it-setup{grid-template-columns:1fr;} }
 
+
+  /* ---- v2026.10.30.1: Near You and the Feed (mockup Claude outputs/near_you_kills_mockup.html; the owner, 2026-10-30) ----
+     The left edge only means "within your alert range", amber like the "N near" alert; no background highlighting; the jump count
+     first; the system columns as wide as the widest system name (--it-sys-w / --it-fsys-w, set by itSysWidths). */
+  button.it-near-btn .it-near{background:var(--amber); color:#1a1206;}
+  button.it-near-btn:hover .it-near, button.it-near-btn:focus-visible .it-near{box-shadow:0 0 0 2px color-mix(in srgb, var(--amber) 45%, transparent);}
+  .it-nb{grid-template-columns:62px var(--it-sys-w, 121px) minmax(0,1fr) auto 24px 78px; grid-template-areas:"j sys st rk tg as" ". . who who who as";
+    column-gap:10px; row-gap:1px; align-items:start; padding:8px 10px; background:rgba(255,255,255,.025);}
+  .it-nb.alert{box-shadow:inset 3px 0 0 var(--amber); background:rgba(255,255,255,.025); padding-left:10px;}
+  .it-nb > .j{grid-area:j; line-height:18px;} .it-nb > .sys{grid-area:sys; line-height:18px;} .it-nb > .st{grid-area:st; line-height:18px; display:block;}
+  .it-nb > .who{grid-area:who; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.45;}
+  .it-nb > .rk{grid-area:rk; display:flex; align-items:flex-start; justify-content:flex-end; gap:10px; line-height:18px;}
+  .it-nb .rk .age{display:inline; white-space:nowrap;} .it-nb .rk .kb{min-width:118px; display:flex; flex-direction:column; align-items:flex-end; gap:3px; padding-top:1px;}
+  .it-nb .rk .kb .it-kl{margin-left:0;}   /* an empty badge slot keeps its width, so the times line up */
+  .it-nb > .it-rawt{grid-area:tg; margin-left:0;} .it-nb > .it-assess, .it-nb > .it-assess-none{grid-area:as; margin-top:-5px;}
+  .it-nb .st.ne b, button.it-pl.n{color:var(--text);}   /* neutral: a bright grey (the owner: the dim grey read as harmless) */
+  .it-nb .who .more{color:var(--text-dim); font-weight:600; white-space:nowrap;}
+  .it-nb.open{border-radius:4px 4px 0 0; margin-bottom:0;}
+  .it-nbx{margin:0 0 6px; padding:6px 10px 10px 82px; background:rgba(255,255,255,.025); border-radius:0 0 4px 4px; border-top:1px solid var(--line);}
+  .it-nbx.alert{box-shadow:inset 3px 0 0 var(--amber);}
+  .nbx-i{display:grid; grid-template-columns:48px minmax(0,1fr); gap:8px; padding:4px 0; font:400 12.5px var(--sans); color:var(--text);}
+  .nbx-i .t{font:400 11.5px var(--mono); color:var(--text-dim); padding-top:1px;}
+  .nbx-r{display:flex; flex-wrap:wrap; gap:2px 8px; align-items:baseline; min-width:0;} .nbx-r .who{color:var(--heading); font-weight:600;} .nbx-r .gt{color:var(--text-dim);}
+  .nbx-r .raw{font:400 12px var(--mono); color:var(--text); overflow-wrap:anywhere;} .nbx-k b{color:var(--heading);} .nbx-k .isk{font:400 11.5px var(--mono); color:var(--text-dim);}
+  .it-fd.kill.kf, .it-fd.kill.kh, .it-fd.kill.kn{background:rgba(255,255,255,.035);}
+  .it-fd.inr{box-shadow:inset 3px 0 0 var(--amber);}
+  .it-fh{display:grid; grid-template-columns:62px var(--it-fsys-w, 132px) minmax(0,1fr) 104px 24px; column-gap:10px; align-items:center;}
+  .it-fh .fj{font:500 12px var(--sans); color:var(--text-dim); white-space:nowrap;} .it-fh .fj .it-here{margin-left:-6px;}
+  .it-fh .fsys{min-width:0; display:flex; flex-wrap:wrap; gap:2px 10px;} .it-fh .fsys .it-chip.sys{min-width:0;}
+  .it-fh .fsys .it-sn{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .it-fh .it-age{grid-column:3; justify-self:end; white-space:nowrap;} .it-fh .it-ty{grid-column:4; justify-self:end; white-space:nowrap;}
+  .it-fh > .it-rawt, .it-fh > .tg-none{grid-column:5; margin-left:0;}
+  .it-fd > .it-chips{margin-left:72px;} .it-fd .it-raw{margin-left:62px;} .it-fd .it-toast{margin-left:72px;}
+  @media (max-width: 599px){
+    /* a phone: the same pieces stacked; the jump count keeps the left column and everything else starts under the system name */
+    .it-nb{grid-template-columns:54px minmax(0,1fr) auto 40px auto; grid-template-areas:"j sys sys tg as" ". st rk rk rk" ". who who who who"; column-gap:8px; padding:6px 8px 8px 10px;}
+    .it-nb > .j, .it-nb > .sys{align-self:center;} .it-nb > .it-rawt{width:40px; height:40px; align-self:center;}
+    .it-nb > .it-assess{min-height:40px; margin-top:0; align-self:center;}
+    .it-nb .rk .kb{min-width:0; flex-direction:row; flex-wrap:wrap; justify-content:flex-end;} .it-nb .rk .kb:empty{display:none;}
+    .it-nbx{padding-left:72px;} .nbx-i{grid-template-columns:40px minmax(0,1fr);}
+    /* the Feed on a phone: jumps, system and toggle on the first line; the time, then the label at the right, on the second; the lines
+       below run the full width (a pilot with logos and tickers is wider than what's left beside the jump column) */
+    .it-fh{grid-template-columns:54px minmax(0,1fr) auto 40px; grid-template-areas:"fj fs fs tg" ". ag ty ty"; column-gap:8px; row-gap:0;}
+    .it-fh > .fj{grid-area:fj;} .it-fh > .fsys{grid-area:fs;} .it-fh > .it-age{grid-area:ag; justify-self:end;} .it-fh > .it-ty{grid-area:ty; justify-self:end;}
+    .it-fh > .it-rawt, .it-fh > .tg-none{grid-area:tg; width:40px; height:36px;}
+    .it-fd > .it-chips, .it-fd .it-toast{margin-left:0;} .it-fd .it-raw{margin-left:-10px;}
+  }
   /* ---- v2026.10.29.7: the UI rules (CLAUDE.md "UI rules"; tools/check_ui_rules.py) ----
      One text field: --bg fill, quiet border, 4px corners, brighter on hover, focus = cyan border and a soft cyan ring
      (before, focus was amber-dim on the main fields, the browser's own ring on the Intel search, and none on Intel's
@@ -2414,7 +2461,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.8</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.30.1</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2431,13 +2478,16 @@
   <div class="tabs">
     <!-- v2026.10.14.62 (the owner 2026-10-25: "let's move the d-scan analyzer tab to last of the three", then "Pilot Analyzer" as the
          tab the page opens on): Pilot, Fit, D-Scan. -->
-    <button type="button" class="tab-btn active" id="tabBtnPilot">Pilot Analyzer</button>
-    <button type="button" class="tab-btn" id="tabBtnFit">Fit Analyzer</button>
+    <!-- v2026.10.30.1 (the owner: "navigation of tabs ... needs to be inline with expected flow of activity. maybe intel > system > pilot >
+         fit?", then "Intel, System, Pilot, Fit; open on Intel"): the order of use; the page opens on Intel. Links that open a pilot or a
+         kill (#pilot=, #kill=, the browser extension) still go straight to the Pilot Analyzer. -->
+    <!-- v2026.10.14.96: the Intel tab (roadmap/intel-plan.md) -->
+    <button type="button" class="tab-btn active" id="tabBtnIntel" data-card="intel"></button>
     <!-- v2026.10.14.81: the D-Scan tab is the System Analyzer now (its name from CARD_NAMES 'sysan', filled by systemAnalyzerInit) -->
     <button type="button" class="tab-btn" id="tabBtnDscan" data-card="sysan"></button>
+    <button type="button" class="tab-btn" id="tabBtnPilot">Pilot Analyzer</button>
+    <button type="button" class="tab-btn" id="tabBtnFit">Fit Analyzer</button>
     <!-- v2026.10.14.94: the Fleet tab, shown only while a fleet from a kill is open (roadmap/fleet-from-kill-plan.md) -->
-    <!-- v2026.10.14.96: the Intel tab (roadmap/intel-plan.md) -->
-    <button type="button" class="tab-btn" id="tabBtnIntel" data-card="intel"></button>
     <span class="tab-fleet" id="fleetTabWrap" hidden><button type="button" class="tab-btn" id="tabBtnFleet" data-card="fleet"></button><button type="button" class="tab-x" id="fleetCloseBtn" aria-label="Close the Fleet tab" title="Close the Fleet tab">×</button></span>
     <div class="mys-bar" id="myShipBar">
       <!-- v2026.10.14.81 Standings (Your Side until v.95; System Analyzer step 1, D7 "A: chip by My Ship"): labels set by renderSideChip -->
@@ -2498,8 +2548,8 @@
   </div>
 
   <div id="tabFleet" class="tab-panel" style="display:none;"><section class="panel fk-panel" id="fleetPanel"></section></div>
-  <div id="tabIntel" class="tab-panel" style="display:none;"><section class="panel it-panel" id="intelPanel"></section></div>
-  <div id="tabPilot" class="tab-panel">
+  <div id="tabIntel" class="tab-panel"><section class="panel it-panel" id="intelPanel"></section></div>
+  <div id="tabPilot" class="tab-panel" style="display:none;">
   <section class="panel">
     <!-- v2026.10.14.98: Intel delivery 2 (roadmap/intel-plan.md): where a pilot opened from Intel came from -->
     <div class="from-intel" id="pilotFromIntel" hidden></div>
@@ -2753,7 +2803,7 @@ const CARD_INFO = {
   "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from EVE's published stargate data (no jump bridges, no wormholes). The table is checked against each new EVE build every day and updated when a gate changes.",
   "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
   "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
-  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 20 small requests a minute: one per kill, and one every 6 seconds while waiting for the next) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser. The line under the title says when a kill was last read; after 5 minutes without one it says so in amber (the page asks for the next kill every 6 seconds and checks zKillboard's newest number every minute).",
+  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 20 small requests a minute: one per kill, and one every 6 seconds while waiting for the next) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. A kill made only by friendlies shows there too when the one who died wasn't friendly, marked friendly and without an alert. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser. The line under the title says when a kill was last read; after 5 minutes without one it says so in amber (the page asks for the next kill every 6 seconds and checks zKillboard's newest number every minute).",
   "{card:itnear}: each system reported in the time you set, nearest first: everyone and every ship reported there in that time until someone reports it clear (the same ship type twice counts once, at its larger number); clear or no visual when that is the latest word. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
   "A pilot's name (in {card:itfeed} and {card:itnear}) opens them in the Pilot Analyzer; when the line puts them in a ship (\"Pilot (Ship)\", or one pilot and one ship), in that ship. Assess sends a system's reported pilots and ships to the {card:sysan}, where Intel's pairing is their possible ship; Restore my paste puts back what you had there. The copy button on a line copies its shape with system and pilot names replaced, to report a line read wrong.",
   "Nothing from your logs leaves the browser except the words looked up on ESI, and none of it is kept after you close the page."
@@ -9009,7 +9059,7 @@ document.getElementById('debugToggle').addEventListener('click', () => {
 // Generalized to 3 tabs (2026-10-10, Fit Analyzer added) -- was a 2-way
 // dscan/not-dscan toggle before. Keyed by panel id suffix so a 4th tab later
 // is just one more entry in TAB_PANELS, not another rewrite of this function.
-const TAB_PANELS = ['pilot', 'fit', 'dscan', 'intel', 'fleet'];   // v.62: the order of the tabs (v.94: Fleet, shown only while a fleet is open; v.96: Intel)
+const TAB_PANELS = ['intel', 'dscan', 'pilot', 'fit', 'fleet'];   // the order of the tabs (v2026.10.30.1: Intel, System, Pilot, Fit; the page opens on Intel; v.94: Fleet, shown only while a fleet is open)
 function switchTab(tab){
   for(const key of TAB_PANELS){
     const active = key === tab;
@@ -22723,7 +22773,8 @@ const it = {
   ticker: null, busy: false, lastScan: 0, gen: 0, alerted: new Map(), names: null, namesBusy: null,
   pilots: new Map(), aff: new Map(), supported: false, loaded: false,
   kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: '',   // v.99: kills, names on kills, security, the Feed's search
-  rawOpen: new Set()   // v.100: Feed rows showing the line as typed
+  rawOpen: new Set(),   // v.100: Feed rows showing the line as typed
+  nearOpen: new Set()   // v2026.10.30.1: Near You rows opened (system ids; several at once, the owner)
 };
 function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0}; }   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
 function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
@@ -23225,7 +23276,8 @@ function itNearAdd(e, sys){
     if(prev.t > e.t){ st.kind = prev.kind; st.who = prev.who; }   // an older kill read late doesn't change the latest word
   }
   if(kind === 'seen' || kind === 'nv'){
-    for(const x of e.pilots){ const i = st.pilots.findIndex(y => y.id === x.id), v = {...x, t: e.t}; if(i < 0) st.pilots.push(v); else st.pilots[i] = v; }   // first-reported order kept
+    const ps = e.sighting ? [{...e.kill.victim, lost: e.kill.victim.ship ? e.kill.victim.ship.name : 'a ship'}, ...e.pilots.map(x => ({...x, by: true}))] : e.pilots;   // v2026.10.30.1
+    for(const x of ps){ const i = st.pilots.findIndex(y => y.id === x.id), v = {...x, t: e.t}; if(i < 0) st.pilots.push(v); else st.pilots[i] = v; }   // first-reported order kept
     for(const sh of e.p.ships){ const i = st.ships.findIndex(y => y.id === sh.id); if(i < 0) st.ships.push({...sh, t: e.t}); else st.ships[i] = {...sh, n: Math.max(sh.n, st.ships[i].n), t: e.t}; }
     if(e.p.extra) st.extra.push({n: e.p.extra, t: e.t});
     if(e.p.count) st.count.push({...e.p.count, t: e.t});   // v.104: "1red": a head count
@@ -23414,6 +23466,10 @@ function itAddKill({km, z, t, history}){
     p: {sys: [{id: km.solar_system_id, at: 0, k: 1}], ships, kw: new Set(), extra: 0, W: [], used: []},
     kill: {id: km.killmail_id, victim, value: Number(z.totalValue) || 0, solo: !!z.solo, n: Number(z.attackerCount) || (km.attackers || []).length, href: `https://zkillboard.com/kill/${km.killmail_id}/`}};
   e.friendlyOnly = !!att.length && att.every(x => x.side === 'f');
+  // v2026.10.30.1 (the owner: "even if a hostile is killed by a friendly, it means there are potentially MORE hostiles there and maybe
+  // they head my way"): a kill by friendlies only of a victim who wasn't friendly is a sighting of the victim's side in Near You
+  // (counted, coloured and alerting like a report), the victim named with what they lost and your pilots after "by".
+  e.sighting = e.friendlyOnly && victim.side !== 'f' && !!victim.id;
   it.feed.unshift(e);
   if(att.length) itNearAdd(e, km.solar_system_id);
 }
@@ -23543,6 +23599,9 @@ function itNearList(){
   out.sort((a, b) => (a.j === null ? 999 : a.j) - (b.j === null ? 999 : b.j) || b.st.t - a.st.t);
   return out.slice(0, IT_NEAR_MAX);
 }
+// v2026.10.30.1 (the owner: "killmails within specified kill range show in feed but not in 'Near You' list"; his example: a neutral
+// killed by a pilot of his own corporation). v.100 showed such kills in the Feed ("Definitely show enemy kills as well") but Near
+// You hid every system with friendlies only. Now such a kill is a sighting of the victim's side (itAddKill: e.sighting, itNearAdd).
 function itNearCount(){ return it.on ? itNearList().filter(x => x.j !== null && x.j <= it.set.range && itThreat(x.st)).length : 0; }
 // v.98: a pilot's name opens them in the Pilot Analyzer (in the ship the line pairs them with, the owner: "Paired ship")
 function itPilotTitle(x, pair){ return `${SIDE_WORD[x.side]} (${cardName('side')}). Open ${x.name} in the Pilot Analyzer${pair ? `, in the ${pair.name} reported with them` : ''}`; }
@@ -23580,17 +23639,91 @@ function itPilotChip(x, e){
 function itShipChip(s){ return `<span class="it-chip ship"><img src="https://images.evetech.net/types/${s.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(itShipText(s))}</span>`; }
 function itShipText(s){ return `${s.name}${s.n > 1 ? ` ×${s.n}` : ''}`; }
 function itNearRowHtml({st, j}){
+  // v2026.10.30.1 (the owner, from the mockup Claude outputs/near_you_kills_mockup.html): the jump count first; the system in a
+  // column as wide as the widest system name (itSysWidths); the word in its standing's colour (neutral a bright grey); the pilots
+  // and ships wrap, at most 3 lines (itNearCap: "+N more"); the time and the kill badges at the right, then the toggle that opens
+  // what the row is built from, Assess last; the left edge (amber, as the "N near" alert) only when within the alert range; no
+  // background highlighting. Everything sits on the first line. On a phone (under 600 px) the same pieces stack.
   const L = itLive(st), alert = itThreat(st) && j !== null && j <= it.set.range;
   const n = itCount(st), hostile = L.pilots.some(x => x.side === 'h') || (!L.pilots.length && !(L.count && L.countKind === 'neut'));
   const word = st.kind === 'clear' ? 'clear' : st.kind === 'nv' ? 'no visual' : L.friendlyOnly ? 'friendly' : `${n} ${hostile ? 'hostile' : 'neutral'}`;
+  const wcls = st.kind === 'clear' ? 'clr' : L.friendlyOnly ? 'fr' : hostile ? 'ho' : 'ne';
   const ks = st.kind === 'clear' ? [] : (st.kills || []).filter(x => x.t >= Date.now() - it.set.forget * 60000);   // v.99
-  const shipsTxt = L.ships.map(itShipText).join(', ');
-  const whoTxt = st.kind === 'clear' ? `reported clear by ${st.who}`
-    : [L.pilots.map(x => x.name).join(', ') + (L.extra ? ` +${L.extra}` : ''), shipsTxt].filter(Boolean).join(' · ') || `reported by ${st.who}`;
-  const whoHtml = st.kind === 'clear' || !L.pilots.length ? escapeHtml(whoTxt)
-    : [L.pilots.map(x => `<button type="button" class="it-pl ${x.side}" data-it-pilot="${x.id}" data-it-sys="${st.sys}" title="${escapeHtml(itPilotTitle(x, st.pairs.get(x.id)))}">${escapeHtml(x.name)}</button>`).join(', ') + (L.extra ? ` +${L.extra}` : ''), escapeHtml(shipsTxt)].filter(Boolean).join(' · ');
+  const pl = (x) => `<button type="button" class="it-pl ${x.side}" data-it-pilot="${x.id}" data-it-sys="${st.sys}" title="${escapeHtml(itPilotTitle(x, st.pairs.get(x.id)))}">${escapeHtml(x.name)}</button>${x.lost ? ` lost ${escapeHtml(/^[aeiou]/i.test(x.lost) ? 'an' : 'a')} ${escapeHtml(x.lost)}` : ''}`;
+  let who, cap = '';
+  if(st.kind === 'clear') who = escapeHtml(`reported clear by ${st.who}`);
+  else {
+    const P = L.pilots.filter(x => !x.by).map(pl), B = L.pilots.filter(x => x.by).map(pl), S = L.ships.map(itShipText);
+    const E = L.extra || 0;   // "+N" as reported
+    who = itNearWho(P, B, S, P.length, S.length, E) || escapeHtml(`reported by ${st.who}`);
+    if(P.length + B.length + S.length > 2) cap = ` data-it-cap="${escapeHtml(JSON.stringify({P, B, S, E})).replace(/"/g, '&quot;')}"`;   // escapeHtml leaves quotes: an attribute needs them escaped
+  }
   const can = st.kind !== 'clear' && (L.pilots.length || L.ships.length);
-  return `<div class="it-nb${alert ? ' alert' : ''}" data-it-sys="${st.sys}"><span class="sys it-sn ${itSecClass(st.sys)}" title="${escapeHtml(itSysTitle(st.sys))}">${escapeHtml(itSysName(st.sys))}</span><span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : j === 0 ? 'your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${itJumpsHtml(j)}</span><span class="it-what"><span class="st ${st.kind === 'clear' ? 'clr' : L.friendlyOnly ? 'fr' : ''}"><b>${escapeHtml(word)}</b>${itKillBadges(ks)}</span><span class="who" title="${escapeHtml(whoTxt)}">${whoHtml}</span></span><span class="age">${itAgo(st.t)}</span>${can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span></span>'}</div>`;
+  const open = it.nearOpen.has(st.sys);
+  const jt = `<span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : j === 0 ? 'your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${itJumpsHtml(j)}</span>`;
+  const row = `<div class="it-nb${alert ? ' alert' : ''}${open ? ' open' : ''}" data-it-sys="${st.sys}">${jt}<span class="sys it-sn ${itSecClass(st.sys)}" title="${escapeHtml(itSysTitle(st.sys))}">${escapeHtml(itSysName(st.sys))}</span>`
+    + `<span class="st ${wcls}"><b>${escapeHtml(word)}</b></span><span class="who"${cap}>${who}</span>`
+    + `<span class="rk"><span class="age">${itAgo(st.t)}</span><span class="kb">${itKillBadges(ks)}</span></span>`
+    + `<button type="button" class="it-rawt" data-it-nbo="${st.sys}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} what this row is built from" title="${open ? 'Hide' : 'Show'} the reports and kills behind this row">${IT_CHEV}</button>`
+    + (can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span class="it-assess-none"></span>') + '</div>';
+  return open ? row + `<div class="it-nbx${alert ? ' alert' : ''}">${itNearItemsHtml(st)}</div>` : row;
+}
+// The who line: pilots (and "+N"), then "by" your pilots (a kill by friendlies), then the ships; np / ns: how many of P / S shown
+function itNearWho(P, B, S, np, ns, E = 0){
+  const p = P.slice(0, np).join(', ') + (np < P.length ? ` <span class="more">+${P.length - np} more</span>` : '') + (E ? `${np ? ' ' : ''}+${E}` : '');
+  const b = B.length ? `by ${B.slice(0, 3).join(', ')}${B.length > 3 ? ` <span class="more">+${B.length - 3} more</span>` : ''}` : '';
+  const sh = escapeHtml(S.slice(0, ns).join(', ')) + (ns < S.length ? ` <span class="more">+${S.length - ns} more types</span>` : '');
+  return [[p, b].filter(Boolean).join(' · '), sh].filter(Boolean).join(' · ');
+}
+// v2026.10.30.1 (the owner: "cap it at three rows for the pilot and ship list in near you. some of these fights can have hundreds or
+// thousands of pilots involved"): at most 3 lines; pilots cut first ("+N more"), then ship types ("+N more types"). Measured after
+// drawing (the width depends on the window); the word above keeps the full count.
+const IT_WHO_LINES = 3;
+function itNearCap(el){
+  if(!el || !el.querySelectorAll) return;
+  for(const w of el.querySelectorAll('#itNearList .who[data-it-cap]')){
+    if(typeof w.getBoundingClientRect !== 'function') return;   // LESSON #36: the suites' stub DOM
+    const lh = parseFloat(getComputedStyle(w).lineHeight) || 17, fits = () => w.getBoundingClientRect().height <= lh * IT_WHO_LINES + 1;
+    if(fits()) continue;
+    let d; try{ d = JSON.parse(w.dataset.itCap); }catch(e){ continue; }
+    const draw = (np, ns) => { w.innerHTML = itNearWho(d.P, d.B, d.S, np, ns, d.E); return fits(); };
+    let lo = 0, hi = d.P.length, ns = d.S.length;
+    while(lo < hi){ const m = Math.ceil((lo + hi) / 2); if(draw(m, ns)) lo = m; else hi = m - 1; }
+    let np = Math.max(lo, Math.min(1, d.P.length));
+    if(!draw(np, ns)) while(ns > 0 && !draw(np, ns)) ns--;
+    if(!draw(np, ns)) draw(Math.min(1, d.P.length), 0);
+  }
+}
+// What a Near You row is built from (the owner: open a row): its reports and kills since the system was last reported clear, within the
+// time set, newest first; each report: when, who sent it and the line as typed (no channel name, the owner: "security reasons")
+function itNearItemsHtml(st){
+  const keep = Date.now() - it.set.forget * 60000, on = (e) => e.p.sys.some(x => x.id === st.sys);
+  const clr = st.kind === 'clear' ? 0 : Math.max(0, ...it.feed.filter(e => e.kind === 'clear' && on(e)).map(e => e.t));
+  const L = it.feed.filter(e => e.t >= keep && e.t >= clr && on(e)).slice(0, 20);
+  if(!L.length) return '<div class="nbx-i"><span class="t"></span><span class="nbx-r">Nothing left within the time set.</span></div>';
+  return L.map(e => {
+    if(e.kind === 'kill'){
+      const k = e.kill, a = e.pilots[0], v = k.victim;
+      return `<div class="nbx-i"><span class="t">${itAgo(e.t)}</span><span class="nbx-r nbx-k"><b>${escapeHtml(v.name || 'no pilot')}</b> lost a ${escapeHtml(v.ship ? v.ship.name : 'ship')}${k.value ? ` <span class="isk">${itIsk(k.value)} ISK</span>` : ''} · ${a ? `by <b>${escapeHtml(a.name)}</b>${a.ship ? ` (${escapeHtml(a.ship.name)})` : ''}${k.n > 1 ? `, +${k.n - 1} more` : ', solo'}` : 'by NPCs or a structure'} <a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a></span></div>`;
+    }
+    return `<div class="nbx-i"><span class="t">${itAgo(e.t)}</span><span class="nbx-r"><span class="who">${escapeHtml(e.who)}</span><span class="gt">&gt;</span><span class="raw">${escapeHtml(e.raw)}</span></span></div>`;
+  }).join('');
+}
+// v2026.10.30.1 (the owner: "determine the length of the system in the ESI data with the longest name ... leave space for that name"):
+// the system columns are as wide as the widest system name in the table, measured in the font the browser really draws (the page asks
+// for Space Grotesk, which isn't loaded: Segoe UI on Windows, Arial elsewhere; Tash-Murkon Prime, 120 px in Segoe UI at 13 px bold).
+let itSysW = null;
+function itSysWidths(el){
+  if(!el || !el.style || typeof document === 'undefined' || !document.createElement || !it.names) return;
+  const a = el.querySelector('#itNearList .it-nb .sys'), f = el.querySelector('#itFeedList .it-fh .it-sn');
+  const key = `${a ? getComputedStyle(a).font : ''}|${f ? getComputedStyle(f).font : ''}|${it.names.list.length}`;
+  if(itSysW && itSysW.key === key){ itSysW.apply(el); return; }
+  let c; try{ c = document.createElement('canvas').getContext('2d'); }catch(e){ return; }
+  if(!c) return;
+  const widest = (font) => { if(!font) return 0; c.font = font; let m = 0; for(const n of it.names.byId.values()) m = Math.max(m, c.measureText(n).width); return Math.ceil(m + 2); };
+  const wa = widest(a && getComputedStyle(a).font), wf = widest(f && getComputedStyle(f).font);
+  itSysW = {key, apply: (x) => { if(wa) x.style.setProperty('--it-sys-w', `${wa}px`); if(wf) x.style.setProperty('--it-fsys-w', `${wf}px`); }};
+  itSysW.apply(el);
 }
 // v.100 (the owner: "let's go ahead and use the format of 'x Jumps'", and "a callout like 'IN SYSTEM'" for your own system)
 function itJumpsHtml(j){ return j === null ? '–' : j === 0 ? '<span class="it-here">In system</span>' : `${j} Jump${j === 1 ? '' : 's'}`; }
@@ -23607,20 +23740,26 @@ function itKillBadges(ks){
 function itFriendlyOnlyRow(e){ return !!e.friendlyOnly && !(e.kind === 'kill' && e.kill.victim.side !== 'f'); }
 const IT_CHEV = '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function itFeedRowHtml(e){
+  // v2026.10.30.1 (the owner, from the mockup): the jump count first; the system in a column as wide as the widest system name; the
+  // time, then the label at the right edge (its slot as wide as NEUTRAL KILLED, so the times line up), then the toggle on reports
+  // (an empty slot on kills); the lines below start under the system name; the amber edge when within the alert range; no
+  // background highlighting on kills. A second system named in a report follows the first with its own jump count.
   const my = itMySys(), head = [], chips = [];
-  for(const s of e.p.sys){ const j = itJumps(my, s.id); head.push(`<span class="it-chip sys" title="${escapeHtml(itSysTitle(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}"><span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${j === null ? '' : ` <span class="j">${itJumpsHtml(j)}</span>`}</span>`); }
+  const j0 = e.p.sys[0] ? itJumps(my, e.p.sys[0].id) : null;
+  e.p.sys.forEach((s, i) => { const j = i ? itJumps(my, s.id) : null; head.push(`<span class="it-chip sys" title="${escapeHtml(itSysTitle(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}"><span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${j === null ? '' : ` <span class="j">${itJumpsHtml(j)}</span>`}</span>`); });
+  const inr = j0 !== null && j0 <= it.set.range && e.kind !== 'clear' && !(e.friendlyOnly && !e.sighting);
   const kw = e.kind === 'kill' ? itKillWord(e) : null;
   const ty = kw ? [`kill ${kw[0]}`, kw[1]] : e.kind === 'clear' ? ['clr', 'Clear'] : ['rep', 'Report'];
   const open = e.kind !== 'kill' && it.rawOpen.has(e.id);
   const tog = e.kind === 'kill' ? '' : `<button type="button" class="it-rawt" data-it-raw="${e.id}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} the line as typed" title="${open ? 'Hide' : 'Show'} the line as it was typed, and who sent it">${IT_CHEV}</button>`;
-  const hd = `<div class="it-fh">${head.join('')}<span class="it-age" title="your time ${itClock(e.t)}">${itAgo(e.t)}</span><span class="it-ty ${ty[0]}">${ty[1]}</span>${tog}</div>`;
+  const hd = `<div class="it-fh"><span class="fj">${j0 === null ? '' : itJumpsHtml(j0)}</span><span class="fsys">${head.join('')}</span><span class="it-age" title="your time ${itClock(e.t)}">${itAgo(e.t)}</span><span class="it-ty ${ty[0]}">${ty[1]}</span>${tog || '<span class="tg-none"></span>'}</div>`;
   if(e.kind === 'kill'){   // v.99: who lost what, and who killed them
     const k = e.kill, a = e.pilots[0];
     const l1 = `${itPilotChip(k.victim, e)}<span class="it-by">lost a</span>${k.victim.ship ? itShipChip({id: k.victim.ship.typeId, name: k.victim.ship.name, n: 1}) : '<span class="it-by">ship</span>'}${k.value ? `<span class="it-isk">${itIsk(k.value)} ISK</span>` : ''}`;
     const more = k.n > 1 ? `<span class="it-by">+${k.n - 1} more</span>` : '<span class="it-by">solo</span>';
     const l2 = a ? `<span class="it-by">by</span>${itPilotChip(a, e)}${a.ship ? itShipChip({id: a.ship.typeId, name: a.ship.name, n: 1}) : ''}${more}<a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a>`
       : `<span class="it-by">by NPCs or a structure</span><a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a>`;
-    return `<div class="it-fd kill ${kw[0]}">${hd}<div class="it-chips">${l1}</div><div class="it-chips">${l2}</div></div>`;
+    return `<div class="it-fd kill ${kw[0]}${inr ? ' inr' : ''}">${hd}<div class="it-chips">${l1}</div><div class="it-chips">${l2}</div></div>`;
   }
   for(const x of e.pilots) chips.push(itPilotChip(x, e));
   if(e.p.extra) chips.push(`<span class="it-chip kw">+${e.p.extra}</span>`);
@@ -23630,8 +23769,8 @@ function itFeedRowHtml(e){
   const left = e.p.W.filter((x, i) => !e.p.used[i]).map(x => x.w);
   if(left.length) chips.push(`<span class="it-left" title="Words the page couldn't place">${escapeHtml(left.join(' '))}</span>`);
   const toast = it.shape && it.shape.id === e.id ? `<div class="it-toast">${it.shape.ok ? 'Copied the shape' : 'The shape (copy it from here)'}: <code>${escapeHtml(it.shape.text)}</code><br>System and pilot names are replaced, so it's safe to share when a line is read wrong.</div>` : '';
-  const raw = `<div class="it-raw"${open ? '' : ' hidden'}><span class="who">${escapeHtml(e.who)}</span><span class="gt">&gt;</span><span class="raw">${escapeHtml(e.raw)}</span><span class="ch">${escapeHtml(e.chan || '')}</span><button type="button" class="it-shape" data-it-shape="${e.id}" aria-label="Copy this line's shape" title="Copy this line's shape: system and pilot names replaced, to report a line read wrong">${IT_COPY}</button></div>`;
-  return `<div class="it-fd ${ty[0]}${open ? ' open' : ''}">${hd}${chips.length ? `<div class="it-chips">${chips.join('')}</div>` : ''}${toast}${raw}</div>`;
+  const raw = `<div class="it-raw"${open ? '' : ' hidden'}><span class="who">${escapeHtml(e.who)}</span><span class="gt">&gt;</span><span class="raw">${escapeHtml(e.raw)}</span><button type="button" class="it-shape" data-it-shape="${e.id}" aria-label="Copy this line's shape" title="Copy this line's shape: system and pilot names replaced, to report a line read wrong">${IT_COPY}</button></div>`;
+  return `<div class="it-fd ${ty[0]}${open ? ' open' : ''}${inr ? ' inr' : ''}">${hd}${chips.length ? `<div class="it-chips">${chips.join('')}</div>` : ''}${toast}${raw}</div>`;
 }
 // v.99 (the owner: "Add it"): the Feed's filters: Types, Distance, Sort and Search
 function itFeedShown(){
@@ -23676,6 +23815,7 @@ function itRenderLists(){
   itAfterDraw(el);
 }
 function itAfterDraw(el){
+  itSysWidths(el); itNearCap(el);   // v2026.10.30.1
   fillOrgTickers(el);
   itSecFetch([...el.querySelectorAll('[data-it-sys]')].map(x => Number(x.dataset.itSys)).concat(it.feed.slice(0, IT_FEED_SHOWN).map(e => e.p.sys[0] && e.p.sys[0].id)));
 }
@@ -23786,9 +23926,11 @@ function itKillStatus(){
 function itStatusLine(){
   if(!it.on) return '';
   const me = it.me ? `${it.me.name} in ${it.me.sys || 'an unknown system'}` : 'choose which character is you';
-  const ch = it.set.channels.join(', ');
+  // v2026.10.30.1 (the owner: "do not include the intel channel name in any of the output for now. security reasons"): the channels
+  // are named only under the gear, where they are chosen; elsewhere their count
+  const n = it.set.channels.length, ch = `${n} channel${n === 1 ? '' : 's'}`;
   const last = it.lastLine ? `last line ${itAgo(it.lastLine)} ago` : 'no lines yet';
-  return `${escapeHtml(me)} · ${escapeHtml(ch)} · ${last}${itKillStatus()}`;
+  return `${escapeHtml(me)} · ${ch} · ${last}${itKillStatus()}`;
 }
 function itRender(force){   // force: a press that changes what is open (the gear, Escape) redraws even with focus inside
   itHeaderSync();
@@ -23800,7 +23942,7 @@ function itRender(force){   // force: a press that changes what is open (the gea
   // v2026.10.14.97 (the owner: "shouldn't one slider control it?" -> "keep the intel slider"): one on/off switch. v2026.10.29.1 (the
   // owner, from other users: "they didn't see how to turn intel on while on the intel tab"): that switch is here, beside the
   // gear (#intelSw); the header keeps only the "N near" pill
-  const onoff = `<label class="mys-use it-onoff" id="intelSwLabel" title="${it.on ? `Watching ${escapeHtml(it.set.channels.join(', ') || 'no channel yet')}` : 'Intel is off'}"><input type="checkbox" class="mys-sw" id="intelSw" aria-label="Watch the intel channels"${it.on ? ' checked' : ''}><span>${it.on ? 'On' : 'Off'}</span></label>`;
+  const onoff = `<label class="mys-use it-onoff" id="intelSwLabel" title="${it.on ? (it.set.channels.length ? `Watching ${it.set.channels.length} intel channel${it.set.channels.length === 1 ? '' : 's'} (named under the gear)` : 'Watching no channel yet') : 'Intel is off'}"><input type="checkbox" class="mys-sw" id="intelSw" aria-label="Watch the intel channels"${it.on ? ' checked' : ''}><span>${it.on ? 'On' : 'Off'}</span></label>`;
   const sw = `<span class="it-sw">${onoff}<button type="button" class="it-gear" data-it-act="gear" aria-label="Intel settings" title="Intel settings" aria-expanded="${it.pop ? 'true' : 'false'}">${IT_GEAR}</button></span>`;
   const setup = !itReady() || (!it.on && !it.feed.length);
   let body = '';
@@ -23882,6 +24024,8 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
     if(as){ itAssess(Number(as.dataset.itAssess)); return; }
     const sh = e.target.closest('[data-it-shape]');
     if(sh){ itCopyShape(Number(sh.dataset.itShape)); return; }
+    const nbo = e.target.closest('[data-it-nbo]');   // v2026.10.30.1: open / close what a Near You row is built from (several at once)
+    if(nbo){ const id = Number(nbo.dataset.itNbo); if(it.nearOpen.has(id)) it.nearOpen.delete(id); else it.nearOpen.add(id); itRenderLists(); const b = el.querySelector(`[data-it-nbo="${id}"]`); if(b) b.focus(); return; }
     const rw = e.target.closest('[data-it-raw]');   // v.100: show or hide the line as typed
     if(rw){ const id = Number(rw.dataset.itRaw); if(it.rawOpen.has(id)) it.rawOpen.delete(id); else it.rawOpen.add(id); itRenderLists(); const b = el.querySelector(`[data-it-raw="${id}"]`); if(b) b.focus(); return; }
     const a = e.target.closest('[data-it-act]');
@@ -23891,6 +24035,7 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && it.pop){ it.pop = false; itRender(true); } });
   setInterval(() => { if(it.on){ const s = el.querySelector('[data-it-status]'); if(s) s.innerHTML = itStatusLine(); } }, 1000);
+  if(typeof window !== 'undefined' && window.addEventListener){ let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if(it.on || it.near.size) itRenderLists(); }, 200); }); }   // v2026.10.30.1: the 3-line cap follows the width
   itKvGet('dir').then(async (h) => {   // the folder chosen before; read it now if the browser still allows it (else the slider asks)
     if(h && !it.dir){
       it.dir = h; it.dirName = h.name;

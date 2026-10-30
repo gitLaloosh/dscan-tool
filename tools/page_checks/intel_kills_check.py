@@ -139,7 +139,8 @@ LIVE['zkb']['attackerCount'] = 3
 FRIENDLY = km(9200011, 'MO-GZ5', 30, who('Seren Morrow'), 'Rifter', [(who(FRIEND2), 'Loki')], 3e6)                     # a neutral killed by friendlies
 HKILL = km(9200012, 'Y-OMTZ', 25, who('Marrek Ketter'), 'Vedmak', [(who(FRIEND2), 'Loki'), (who('Jask Varos'), 'Sabre')], 188.6e6)   # v.100: a hostile killed by friendlies
 LABELS = ('Friendly lost', 'Hostile killed', 'Neutral killed')
-ROWS = """() => [...document.querySelectorAll('#intelPanel #itFeedList .it-fd')].map(r => ({ty: (r.querySelector('.it-ty') || {}).textContent, sys: (r.querySelector('.it-chip.sys') || {}).textContent, cls: r.className,
+# v2026.10.30.1: the jump count has its own column (.fj) before the system; 'sys' keeps the old "8WA-Z6 1 Jump" form for the checks
+ROWS = """() => [...document.querySelectorAll('#intelPanel #itFeedList .it-fd')].map(r => ({ty: (r.querySelector('.it-ty') || {}).textContent, sys: [((r.querySelector('.it-chip.sys') || {}).textContent || '').trim(), ((r.querySelector('.fj') || {}).textContent || '').trim()].filter(Boolean).join(' ') || null, cls: r.className,
   lines: [...r.querySelectorAll(':scope > .it-chips')].map(c => [...c.children].map(x => x.classList.contains('it-chip') ? (x.querySelector('.nm') || x).textContent.trim() : x.textContent.trim()))}))"""
 NOTE = "() => (document.querySelector('[data-it-kfnote]') || {}).textContent || ''"
 def jof(t):
@@ -210,7 +211,7 @@ with sync_playwright() as p:
     k8 = [r for r in R if r['ty'] in LABELS and r['sys'] == '8WA-Z6 1 Jump']
     check(len(k8) == 1 and k8[0]['ty'] == 'Friendly lost' and ' kf' in k8[0]['cls'] and k8[0]['lines'] == [[FRIEND, 'lost a', 'Sabre', '62.4M ISK'], ['by', 'Marrek Ketter', 'Vedmak', '+2 more', 'zKillboard ↗']],
           f'the live kill: "Friendly lost"; victim lost a Sabre and its ISK; by the final blow in a Vedmak, +2 more; the reprocessed copy not again {k8}')
-    kn = [(r['ty'], r['cls'].split()[-1]) for r in R if r['sys'] and r['sys'].startswith(('MO-GZ5', 'Y-OMTZ')) and r['ty'] in LABELS]
+    kn = [(r['ty'], next((c for c in r['cls'].split() if c in ('kf', 'kh', 'kn')), '')) for r in R if r['sys'] and r['sys'].startswith(('MO-GZ5', 'Y-OMTZ')) and r['ty'] in LABELS]
     check(sorted(kn) == [('Hostile killed', 'kh'), ('Neutral killed', 'kn')], f'kills by friendlies only of a hostile and of a neutral: shown with "hide friendly" on (the owner: "Definitely show enemy kills as well") {kn}')
     look = pg.evaluate("""() => { const r = [...document.querySelectorAll('#itFeedList .it-fd.kill')].find(x => x.querySelector('.it-chip.sys').textContent.startsWith('8WA-Z6'));
       const c = [...r.querySelectorAll('.it-chip.p')].find(x => x.querySelector('.nm').textContent === 'Marrek Ketter'), v = r.querySelector('.it-chip.p');
@@ -222,11 +223,21 @@ with sync_playwright() as p:
           f"security as EVE shows it: the nearest tenth, and above 0.0 but under 0.05 shows 0.1 (low-sec) {tenths}")
     near = pg.evaluate("() => [...document.querySelectorAll('#itNearList .it-nb')].map(r => [r.querySelector('.sys').textContent, r.querySelector('.st').textContent, r.querySelector('.who').textContent, r.classList.contains('alert'), [...r.querySelectorAll('.it-kl')].map(k => k.className)])")
     n8 = next((r for r in near if r[0] == '8WA-Z6'), None); nd = next((r for r in near if r[0] == 'D-W7F0'), None)
-    check(n8 == ['8WA-Z6', '2 hostile 1 friendly lost', 'Marrek Ketter, Seren Ketter · Vedmak, Sabre', True, ['it-kl kf']] and nd == ['D-W7F0', '1 neutral 1 neutral killed', 'Kirra Longtail · Sabre', True, ['it-kl kn']]
-          and not any(r[0] in ('MO-GZ5', 'Y-OMTZ') for r in near),
-          f"Near You: a kill marks its system with the attackers and their ships; the badge in the Feed's words and colour; kills by friendlies only no row {near}")
+    check(n8 == ['8WA-Z6', '2 hostile', 'Marrek Ketter, Seren Ketter · Vedmak, Sabre', True, ['it-kl kf']] and nd == ['D-W7F0', '1 neutral', 'Kirra Longtail · Sabre', True, ['it-kl kn']],
+          f"Near You: a kill marks its system with the attackers and their ships; the badge (at the right, v2026.10.30.1) in the Feed's words and colour {near}")
+    # v2026.10.30.1 (the owner: "killmails within specified kill range show in feed but not in 'Near You' list", then "even if a hostile
+    # is killed by a friendly, it means there are potentially MORE hostiles there"): a kill by friendlies only of a neutral or a hostile
+    # is a sighting of the victim's side: counted and coloured as such, "X lost a Ship · by <your pilots>", the kill's badge, and it
+    # alerts within the alert range like a report
+    fr = sorted([r[0], r[1], r[2], r[3], r[4]] for r in near if r[0] in ('MO-GZ5', 'Y-OMTZ'))
+    check(fr == [['MO-GZ5', '1 neutral', f'Seren Morrow lost a Rifter · by {FRIEND2}', True, ['it-kl kn']], ['Y-OMTZ', '1 hostile', f'Marrek Ketter lost a Vedmak · by {FRIEND2}, Jask Varos', True, ['it-kl kh']]],
+          f"kills by friendlies only of a neutral and of a hostile: a sighting of the victim's side, 'X lost a ship · by' your pilots, the badge, in the alert range (v2026.10.29.8: no row; the draft: 'friendly', no alert) {fr}")
+    wc = pg.evaluate("() => Object.fromEntries([...document.querySelectorAll('#itNearList .it-nb')].map(r => [r.querySelector('.sys').textContent, [r.querySelector('.st b').textContent, getComputedStyle(r.querySelector('.st b')).color]]))")
+    check(wc.get('8WA-Z6') == ['2 hostile', 'rgb(198, 91, 78)'] and wc.get('T5ZI-S') == ['1 neutral', 'rgb(215, 222, 227)'] and wc.get('Y-OMTZ') == ['1 hostile', 'rgb(198, 91, 78)'],
+          f"Near You's word in its standing's colour (the owner, 2026-10-30): hostile as hostile names, neutral a bright grey {wc}")
     al = pg.evaluate("() => [__fs.beeps, __fs.notes]")
-    check(al[0] == 1 and al[1] == [['8WA-Z6 · 1 jump', f'Friendly lost: {FRIEND} lost a Sabre (62.4M ISK)']], f'the live kill alerts: sound and notification "Friendly lost: ..."; kills by friendlies only do not {al}')
+    check(al[0] == 3 and al[1] == [['8WA-Z6 · 1 jump', f'Friendly lost: {FRIEND} lost a Sabre (62.4M ISK)'], ['MO-GZ5 · 1 jump', 'Neutral killed: Seren Morrow lost a Rifter (3.0M ISK)'], ['Y-OMTZ · 3 jumps', 'Hostile killed: Marrek Ketter lost a Vedmak (188.6M ISK)']],
+          f'the live kills alert: sound and notification "Friendly lost: ..."; enemies killed by friendlies alert too (a sighting, v2026.10.30.1) {al}')
     pr = pg.evaluate("() => { const st = it.near.get(it.names.byLower.get('8wa-z6')); return Object.fromEntries([...st.pairs].map(([id, s]) => [st.pilots.find(x => x.id === id).name, s.name])); }")
     check(pr == {'Marrek Ketter': 'Vedmak', 'Seren Ketter': 'Sabre'}, f'each attacker paired with their ship {pr}')
     # ---- v2026.10.29.3: the Feed's kill range (the owner: "feed range as the ring of awareness, alert range is my ring of being alert") ----
@@ -243,7 +254,10 @@ with sync_playwright() as p:
     b0 = pg.evaluate("() => __fs.beeps")
     REC[L0 + 4] = km(9200020, None, 30, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 2e6, sysid=S9)
     REC[L0 + 5] = km(9200021, None, 30, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 2e6, sysid=S12)
-    SEQ['last'] += 2
+    used = {SYSID[n] for n in ('8WA-Z6', 'MO-GZ5', 'Y-OMTZ', 'D-W7F0', 'T5ZI-S', 'QX-LIJ', '1DQ1-A') if n in SYSID}
+    SFF = next(i for i, d in sorted(D0.items()) if d == 2 and i in SYSNAME and i not in used)
+    REC[L0 + 6] = km(9200022, None, 30, who(FRIEND), 'Rifter', [(who(FRIEND2), 'Loki')], 1e6, sysid=SFF)   # a friendly killed by friendlies only
+    SEQ['last'] += 3
     pg.wait_for_timeout(9000)
     R = pg.evaluate(ROWS)
     k9 = [r['sys'] for r in R if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S9] + ' ')]
@@ -251,6 +265,9 @@ with sync_playwright() as p:
     near9 = pg.evaluate("(n) => [...document.querySelectorAll('#itNearList .it-nb')].filter(r => r.querySelector('.sys').textContent === n).map(r => r.classList.contains('alert'))", SYSNAME[S9])
     check(k9 == [f'{SYSNAME[S9]} 9 Jumps'] and not k12 and near9 == [False] and pg.evaluate("() => __fs.beeps") == b0 and pg.evaluate("() => itKillRange()") == 10,
           f'the kill range set to 10 under the gear: a kill 9 jumps away shows in the Feed and Near You, beyond the alert range (no alert); one 12 jumps away does not ({k9}, {k12}, {near9})')
+    ff = [[r['sys'] for r in R if (r['sys'] or '').startswith(SYSNAME[SFF] + ' ')], pg.evaluate("(n) => [...document.querySelectorAll('#itNearList .it-nb .sys')].filter(x => x.textContent === n).length", SYSNAME[SFF])]
+    check(ff == [[], 0] and pg.evaluate("(id) => it.feed.some(e => e.kind === 'kill' && e.p.sys[0].id === id)", SFF),
+          f'a friendly killed by friendlies only: read, but hidden in the Feed and in Near You with "hide friendlies" on {ff}')
     # ---- v2026.10.29.8: the reader as documented (and as RIFT reads) ----
     def idle():
         for _ in range(80):
@@ -391,7 +408,7 @@ with sync_playwright() as p:
     check(pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"), 'readable again: INTEL-06 goes')
     pg.click('#intelSwLabel'); pg.wait_for_timeout(500); n0 = len(REQS); pg.wait_for_timeout(8000)
     check(len(REQS) == n0, f'off: no requests to R2Z2 ({len(REQS) - n0})')
-    pg.screenshot(path='/tmp/intel100_1440.png', full_page=True)
+    pg.screenshot(path=os.environ.get('INTEL_SHOT', '/tmp/intel100_1440.png'), full_page=True)
     ctx.close()
     # ---- v.103: a hidden tab: its timers fire only every 2 s, together ----
     COALESCE = """(() => { const st = window.setTimeout; window.setTimeout = (fn, ms, ...a) => { const at = Math.ceil((Date.now() + (+ms || 0)) / 2000) * 2000; return st(fn, Math.max(0, at - Date.now()), ...a); }; })();"""
