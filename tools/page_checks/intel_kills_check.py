@@ -177,14 +177,14 @@ with sync_playwright() as p:
     REQS.clear()
     ctx, pg = start(1440)
     t0 = time.time()
-    for _ in range(80):
+    for _ in range(160):   # v2026.10.30.3: 5 a second, so the 240 read back take about twice as long
         if any(r['sys'] and r['sys'].startswith('D-W7F0') and r['ty'] in LABELS for r in pg.evaluate(ROWS)): break
         pg.wait_for_timeout(500)
     took = time.time() - t0
     seq = [p_ for _, p_, _ in REQS]
     i0 = seq.index(f'/ephemeral/{START}.json') if f'/ephemeral/{START}.json' in seq else -1
     once = [sum(1 for q in seq if q == f'/ephemeral/{h}.json') for h in sorted(HOLES)]
-    check(seq[:1] == ['/ephemeral/sequence.json'] and i0 == 1 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and once == [1, 1] and took < 40,
+    check(seq[:1] == ['/ephemeral/sequence.json'] and i0 == 1 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and once == [1, 1] and took < 80,
           f'R2Z2: sequence.json ({SEQ["seq"]}), then read from 240 before it ({START}) with nothing asked to find the newest; two gaps before its number read past, each asked for once {once}; the kill in range shown after {took:.0f} s')
     pg.wait_for_timeout(3000)
     R = pg.evaluate(ROWS)
@@ -336,7 +336,7 @@ with sync_playwright() as p:
     SEQ['last'] = F0 + 999; SEQ['seq'] = F0 + 999; OLD.update({'from': F0, 'to': SEQ['last'] - 240})
     REC[SEQ['last'] - 20] = km(9200035, None, 10, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 8e6, sysid=S7)
     pg.evaluate("() => { it.kf.seqAt = 0; }")   # (sequence.json last read over a minute ago)
-    r0 = len(REQS); took = wait_s7(5, f"it.kf.seq > {SEQ['last']}", n=120)   # 240 at the gate's 10 a second: ~25 s
+    r0 = len(REQS); took = wait_s7(5, f"it.kf.seq > {SEQ['last']}", n=240)   # 240 at the gate's 5 a second (v2026.10.30.3): ~50 s
     asked, sq = nums(r0); st = pg.evaluate("() => it.kf.seq")
     skipped = [n for n in asked if F0 + 12 <= n < SEQ['seq'] + 1 - 240]
     check(len(s7()) == 5 and st == SEQ['last'] + 1 and not skipped and len(asked) <= 12 + 240 + 28 + 2,
@@ -415,14 +415,14 @@ with sync_playwright() as p:
     S2 = SEQ['seq'] + 1 - 240
     HOLES.clear(); HOLES.update({S2 + 10, S2 + 11}); HOLES.update(range(SEQ['seq'] - 40, SEQ['seq'] - 21))   # two gaps, and 19 in a row before sequence.json's number
     REQS.clear(); ctx, pg = start(1440, COALESCE); t0 = time.time()
-    for _ in range(90):
+    for _ in range(180):
         if pg.evaluate("() => !!(it.kf && it.kf.head)"): break
         pg.wait_for_timeout(500)
     took = time.time() - t0; per_s = per_s_page(pg)
     st = pg.evaluate("() => it.kf && [it.kf.seq, it.kf.head]")
     once = max(sum(1 for _, q, _ in REQS if q == f'/ephemeral/{h}.json') for h in HOLES)
     check(st == [SEQ['last'] + 1, True] and once == 1, f'starting with 19 missing in a row before sequence.json\'s number: read past them, each asked for once, now at {st} (newest {SEQ["last"]})')
-    check(per_s <= 12 and took < 45, f'a hidden tab (timers every 2 s, together): at most {per_s} requests in any second (v.100: 28 at once), and the read-back still done in {took:.0f} s')
+    check(per_s <= 6 and took < 90, f'a hidden tab (timers every 2 s, together): at most {per_s} requests in any second (v.100: 28 at once), and the read-back still done in {took:.0f} s')
     ctx.close()
     # ---- phone ----
     REQS.clear(); ctx, pg = start(390); pg.wait_for_timeout(20000)

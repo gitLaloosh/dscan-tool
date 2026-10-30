@@ -14,6 +14,7 @@ system names; you in 1DQ1-A) up to Intel turned on, then, with made-up lines and
     though MO-GZ5 (1) is nearer, "→ MO-GZ5"; "Ketter jumped to 5BTK-M from N-8YET": in 5BTK-M, "from N-8YET";
   * no words around them: "QX-LIJ Marrek E-VKJV" in the nearer E-VKJV, "or QX-LIJ?"; "FM-JK5 Ketter JP4-AA" (next to each other)
     in JP4-AA, "on FM-JK5 gate?"; "23G-XC Marrek 8-YNBE" (4 jumps each) in the first, 23G-XC;
+  * "MO-GZ5 10+": a head count of ten hostiles (v2026.10.30.3); "+3" still three more;
   * "3-DMQT clear": clear, and "clear" never looked up; "4K-TRB Clear*": Clear, linked, is a pilot: a sighting, not clear;
   * the ring: Feed Distance 3: "QX-LIJ Marrek" (4 jumps) in the Feed, not in Near You, no alert; Distance 2 with the alert range
     3: "Y-OMTZ" (3 jumps) still in Near You (the ring is the larger of the two); Distance "any": no ring;
@@ -32,7 +33,7 @@ _ns = {'__file__': os.path.join(HERE, 'intel_check.py'), '__name__': 'intel_chec
 _tail = r'''
     ONE_WORD.update({'Jita': 96000011, 'Clear': 96000012})   # made-up pilots named like a system and like an intel word
     lines = ['Jita Marrek T5ZI-S', 'Jita Ketter', '8WA-Z6 Marrek on D-W7F0 gate', 'Y-OMTZ Ketter -> MO-GZ5', 'Ketter jumped to 5BTK-M from N-8YET',
-             'QX-LIJ Marrek E-VKJV', 'FM-JK5 Ketter JP4-AA', '23G-XC Marrek 8-YNBE', '3-DMQT clear']
+             'QX-LIJ Marrek E-VKJV', 'FM-JK5 Ketter JP4-AA', '23G-XC Marrek 8-YNBE', '3-DMQT clear', 'MO-GZ5 10+', 'N-8YET Marrek +3']
     t0 = time.time() - 30
     W(pg, F_INTEL, ''.join(line(t0 + i, 'Scout Alt', m) for i, m in enumerate(lines))); tick(pg, 3000)
     asked_clear = 'clear' in IDS_ASKED
@@ -49,6 +50,13 @@ _tail = r'''
            'FM-JK5 Ketter JP4-AA': [['JP4-AA', ''], ['FM-JK5', 'pair']], '23G-XC Marrek 8-YNBE': [['23G-XC', ''], ['8-YNBE', 'or']]}
     for l, s in exp.items(): check(got(l)['sys'] == s, f'"{l}": {s[0][0]} with {s[1][0]} as "{s[1][1]}" {got(l)["sys"]}')
     check(got('3-DMQT clear')['kind'] == 'clear' and not asked_clear, f'"3-DMQT clear": clear, and "clear" never looked up as a pilot {got("3-DMQT clear")} {asked_clear}')
+    # v2026.10.30.3 (the owner: '"10+" ... should be translated to "10 Hostiles"'): a head count; "+3" still three more
+    pc = pg.evaluate("""() => { const e = it.feed.find(x => x.raw === 'MO-GZ5 10+'), f = it.feed.find(x => x.raw === 'N-8YET Marrek +3');
+      const r = [...document.querySelectorAll('#itNearList .it-nb')].find(x => x.querySelector('.sys').textContent === 'MO-GZ5');
+      const row = [...document.querySelectorAll('#itFeedList .it-fd')].find(x => (x.querySelector('.raw') || {}).textContent === 'MO-GZ5 10+');
+      return [e && e.p.count, e && e.kind, r && r.querySelector('.st b').textContent, row && [...row.querySelectorAll('.it-chip.kw')].map(c => c.textContent), f && [f.p.extra, f.p.count]]; }""")
+    check(pc[0] == {'n': 10, 'kind': 'red'} and pc[1] == 'seen' and pc[2] == '10 hostile' and pc[3] == ['10 red'] and pc[4] == [3, None] and '10+' not in IDS_ASKED,
+          f'"MO-GZ5 10+": ten hostiles (chip "10 red", Near You "10 hostile"), never looked up; "+3" still three more {pc}')
     g = got('4K-TRB Clear*')
     check(g['kind'] == 'seen' and g['pilots'] == ['Clear'] and where('4K-TRB Clear*') == '4K-TRB', f'"4K-TRB Clear*": Clear, linked from Local, is a pilot: a sighting, not "clear" {g}')
     notes = pg.evaluate("""() => Object.fromEntries([...document.querySelectorAll('#itFeedList .it-fd')].map(r => [r.querySelector('.raw') ? r.querySelector('.raw').textContent : '',

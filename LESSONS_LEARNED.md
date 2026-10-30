@@ -152,6 +152,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #102 When a client that works reads the same source, find what differs before tuning your workaround again.
 - #100 A warning that fires on a routine event teaches people to ignore it: check the thing itself, out of their sight.
 - #105 A reader that decides a word's kind before its lookups can't use what they say: decide after. See also #88.
+- #106 A rate guard must stop at the first refusal, stay stopped, and count what it granted. See also #93, #94.
 
 **Delivery, privacy and the repository**
 
@@ -1012,6 +1013,21 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 106. A rate guard must stop at the first refusal, stay stopped, and count what it granted
+
+- **What happened (v2026.10.30.3, the owner: "what happens if someone opens multiple browser tabs ... and turn intel on"; then a
+  screenshot of zKillboard's developer: R2Z2's limit cut to 15 a second, an automatic 1-hour ban, and the limit cut further if
+  abuse continues):** the live-feed reader paced itself (10 a second) but had no idea what to do once refused. A read-back queued
+  28 requests at once; when one failed, the other 27 still went out. After an error it tried again in 30 s, 1, 2, 4 and 5 minutes,
+  all inside an hour-long ban. Nothing coordinated two copies of the page. The first tripwire written for the fix counted when the
+  code after the gate ran, not when the gate let a request through: on a busy page two turns ran close together, it counted 6 in
+  a second and stopped a healthy reader within seconds. `intel_kills_check.py`, run unchanged, caught it.
+- **Do this instead:** send every request to a rate-limited service through one function that (1) waits its turn, (2) checks a stop
+  that is kept where every copy of the page sees it (here localStorage), (3) counts the start the gate granted and stops itself
+  before the service has to, and (4) on the first "too many" answer stops for the service's full ban and drops what is queued.
+  Treat an answer you can't read in the middle of a burst as a reason to stop the burst. Keep the pace well under the published
+  limit (here a third), from one constant. Test all of it against a stand-in that answers 429 on cue; never provoke the real one.
 
 ## 105. A reader that decides a word's kind before its lookups can't use what they say: decide after
 

@@ -2477,7 +2477,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.30.2</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.30.3</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -3141,10 +3141,28 @@ const ERROR_CODES = {
   "title": "zKillboard's live kill feed isn't answering",
   "where": "{card:intel} tab, kills in the {card:itfeed}",
   "trigger": "R2Z2 (r2z2.zkillboard.com, zKillboard's live feed) gave an error or no answer. The page tries again after 30 seconds, then longer (up to 5 minutes); reports from your channels carry on.",
-  "check": "zKillboard's status; the connection. zKillboard blocks an address that asks more than 15 times a second for an hour; the page then can't read any file, so this note stays for up to an hour. Since v2026.10.14.103 the page asks at most 10 times a second, hidden tab or not.",
+  "check": "zKillboard's status; the connection. zKillboard blocks an address that asks more than 15 times a second for an hour; the page then can't read any file, so this note stays for up to an hour. Since v2026.10.30.3 the page asks at most 5 times a second, hidden tab or not, and stops for an hour at a 429 (INTEL-07).",
   "why": "",
   "since": "2026-10-28 (v2026.10.14.99)",
   "doc": "2026-10-28_intel-feed-kills.html"
+ },
+ "INTEL-07": {
+  "title": "zKillboard asked the page to slow down",
+  "where": "{card:intel} tab, kills in the {card:itfeed}",
+  "trigger": "R2Z2 (r2z2.zkillboard.com) answered 429, 420 or 403: too many requests from this address, or not allowed. zKillboard bans an address that asks more than 15 times a second for an hour. The page stops at the first such answer, drops every request still queued, and sends nothing to R2Z2 for an hour (kept in this browser, so a reload or another tab waits too); the note says until when. Reports from your channels carry on.",
+  "check": "Another copy of the page with Intel on (another tab, browser or a local copy) or another tool reading R2Z2 from the same address. The page itself asks at most 5 times a second.",
+  "why": "zKillboard's developer, 2026-06-04: the limit cut from 20 to 15 a second, the ban raised from 10 minutes to an hour, and the limit cut further if abuse continues. Asking again during a ban helps nobody.",
+  "since": "2026-10-30 (v2026.10.30.3)",
+  "doc": "2026-10-30_live-feed-guard-and-plus-counts.html"
+ },
+ "INTEL-08": {
+  "title": "The page stopped itself asking zKillboard's live feed",
+  "where": "{card:intel} tab, kills in the {card:itfeed}",
+  "trigger": "The page counted more requests to R2Z2 in one second than it allows itself (5). Its gate should make that impossible, so this is a fault in the page: it stops for an hour before zKillboard has to ban the address.",
+  "check": "A bug: report it with the version. tools/page_checks/intel_guard_check.py tests this tripwire.",
+  "why": "A second, independent guard behind the gate (the owner: testing the fix itself must not get us blocked).",
+  "since": "2026-10-30 (v2026.10.30.3)",
+  "doc": "2026-10-30_live-feed-guard-and-plus-counts.html"
  },
  "INTEL-06": {
   "title": "This browser can't read zKillboard's live kill feed",
@@ -22768,7 +22786,15 @@ const IT_KILL_PER_TICK = 12;                 // at most 12 requests per 2 s tick
 const IT_KILL_PER_TICK_BACK = 28;            // v.100: reading back, 28 at a time, started one per 80 ms, not waiting for each
 const IT_KILL_BATCHES = 10;                  //   answer; up to 10 such batches in one go: the 240 read back in ~20 s, where one at a time took a minute or more
 const IT_KILL_WAIT_MS = 6000;                // after a 404, at least 6 s (zKillboard's rule)
-const IT_KILL_PROBE_MS = 100;                // v.103: every R2Z2 request starts at least 100 ms after the one before, by the clock (10 a second; the limit is 15)
+const IT_KILL_NET_WAIT_MS = 30000;           // v2026.10.30.3: a read that failed while reading back: the pass ends, the same number again in 30 s
+// v2026.10.30.3 (zKillboard's developer, 2026-06-04: R2Z2's limit cut from 20 to 15 a second, an automatic 1-hour ban for going over,
+// "if abuse continues I will likely reduce the rate limit some more"; the owner: "let's build it right now"): at most 5 a second, a third
+// of the limit, so a further cut or a second copy of the page (another tab, a local copy) still stays under it. LESSON #106
+const IT_R2_PER_S = 5;
+const IT_KILL_PROBE_MS = 1000 / IT_R2_PER_S;    // v.103: every R2Z2 request starts at least this long after the one before, by the clock
+const IT_R2_STOP_MS = 60 * 60000;              // v2026.10.30.3: zKillboard said "too many" (or the page caught itself going over): nothing sent for an hour
+const IT_R2_STOP_KEY = 'dscanR2Stop';          //   kept in this browser, so a reload or another tab doesn't start again early
+const IT_R2_STOP_STATUS = [429, 420, 403];      //   answers that mean "slow down" or "not you": stop, never try again sooner
 const IT_KILL_BEHIND_MS = 2 * 60000;         // v2026.10.29.8: a kill read live that was uploaded over 2 minutes ago: the page is behind (a sleeping tab):
                                              //   sequence.json read (at most once a minute) and the rest caught up at the read-back's pace, only the last 240
                                              //   (v.100 until v2026.10.29.7: over an hour behind, the newest found again)
@@ -22802,7 +22828,7 @@ const it = {
   rawOpen: new Set(),   // v.100: Feed rows showing the line as typed
   nearOpen: new Set()   // v2026.10.30.1: Near You rows opened (system ids; several at once, the owner)
 };
-function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0}; }   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0, halt: false}; }   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
 function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
 function itReadSet(){
   const d = itDefaults();
@@ -23032,6 +23058,8 @@ function itParse(msg, mySys, force){
     const x = W[i];
     let m = x.w.match(/^\+(\d{1,3})$/);
     if(m){ extra += Number(m[1]); used[i] = 'c'; continue; }
+    m = x.w.match(/^(\d{1,3})\+$/);   // v2026.10.30.3 (the owner: ""10+" ... should be translated to "10 Hostiles". this is common across intel tools"): a head count
+    if(m){ addCount(Number(m[1]), 'red'); used[i] = 'c'; continue; }
     m = x.lw.match(/^(\d{1,3})([a-z]+)$/);   // v.104: "1red", "3neuts"
     if(m && IT_COUNT_WORD[m[2]]){ addCount(Number(m[1]), m[2]); used[i] = 'c'; continue; }
     if(/^\d{1,3}$/.test(x.w) && W[i + 1] && !used[i + 1] && !(force && force.has(i + 1)) && IT_COUNT_WORD[W[i + 1].lw]){ addCount(Number(x.w), W[i + 1].lw); used[i] = used[i + 1] = 'c'; i++; continue; }   // v.104: "2 reds"
@@ -23435,36 +23463,76 @@ function itKillTurn(){   // one request at a time through here: each starts at l
   const turn = itKillGate.then(async () => {
     for(let w = itKillLast + IT_KILL_PROBE_MS - Date.now(); w > 0; w = itKillLast + IT_KILL_PROBE_MS - Date.now()) await itSleep(w);
     itKillLast = Date.now();
+    return itKillLast;   // v2026.10.30.3: the start this turn was given (the tripwire counts these, not when the code after it got to run)
   });
   itKillGate = turn.catch(() => {});
   return turn;
 }
-async function itKillGet(n){   // kill number n, or null when it isn't there (404, or the browser blocked the answer)
-  await itKillTurn();
-  it.kf.reqs++;
+// v2026.10.30.3: the one door to zKillboard's live feed (tools/check_request_gates.py checks nothing else fetches it). Each request
+// waits its turn at the gate, then: nothing at all while a stop is on (zKillboard said "too many", or the page counted more than
+// IT_R2_PER_S in a second: a fault, so it stops itself before zKillboard has to); nothing more in a read-back pass once a read
+// failed in it (a ban can look like a failed read when its answer can't be read; v30.2 sent the rest of a 28-request batch).
+const IT_R2_NET = {net: true}, IT_R2_HALT = {halt: true};   // a read that failed (no answer the page may read); one not sent
+let itR2Times = [];
+function itR2Stopped(){   // until when nothing is sent (0 = not stopped); a stop set in another tab counts too
+  let s = it.r2stop || null;
+  try{ const v = JSON.parse(localStorage.getItem(IT_R2_STOP_KEY) || 'null'); if(v && (!s || v.until > s.until)) s = v; }catch(e){ /* no storage: this tab's own */ }
+  if(s && s.until > Date.now()){ it.r2stop = s; return s.until; }
+  return 0;
+}
+function itR2Stop(why){
+  const s = {until: Date.now() + IT_R2_STOP_MS, why};
+  it.r2stop = s;
+  try{ localStorage.setItem(IT_R2_STOP_KEY, JSON.stringify(s)); }catch(e){ /* this tab still stops */ }
+}
+function itR2StopErr(){ const x = new Error('stopped'); x.r2stop = true; return x; }
+async function itR2Fetch(path){
+  const at = await itKillTurn();
+  const kf = it.kf;
+  if(itR2Stopped()) throw itR2StopErr();
+  if(kf && kf.halt) return IT_R2_HALT;
+  // the tripwire counts the starts the gate gave out (a busy page can run the code after two turns close together, though the
+  // gate spaced them); a request that didn't come through the gate counts as now
+  const now = typeof at === 'number' ? at : Date.now();
+  itR2Times = itR2Times.filter(x => now - x < 1000);
+  if(itR2Times.length >= IT_R2_PER_S){ itR2Stop('self'); throw itR2StopErr(); }   // the tripwire: the gate above should make this impossible
+  itR2Times.push(now);
+  if(kf) kf.reqs++;
   let r;
-  try{ r = await fetch(`${IT_R2Z2}/ephemeral/${n}.json`); }catch(e){ return null; }
+  try{ r = await fetch(`${IT_R2Z2}${path}`); }
+  catch(e){ if(kf && !kf.head) kf.halt = true; return IT_R2_NET; }
+  if(IT_R2_STOP_STATUS.includes(r.status)){ itR2Stop(`status ${r.status}`); throw itR2StopErr(); }
+  return r;
+}
+async function itKillGet(n){   // kill number n; null when it isn't there (404); IT_R2_NET when the read failed; IT_R2_HALT when not sent
+  const r = await itR2Fetch(`/ephemeral/${n}.json`);
+  if(r === IT_R2_NET || r === IT_R2_HALT) return r;
   if(r.status === 404) return null;
   if(!r.ok) throw new Error(`status ${r.status}`);
   return await r.json();
 }
 async function itKillSeq(){   // zKillboard's newest number (sequence.json); kept as kf.target, with when it was read
-  await itKillTurn();
-  it.kf.reqs++;
-  let r;
-  try{ r = await fetch(`${IT_R2Z2}/ephemeral/sequence.json`); }
-  catch(e){ const x = new Error('no answer the browser may read'); x.blocked = true; throw x; }   // v2026.10.29.8: CORS or no connection: INTEL-06
+  const r = await itR2Fetch('/ephemeral/sequence.json');
+  if(r === IT_R2_NET || r === IT_R2_HALT){ const x = new Error('no answer the browser may read'); x.blocked = true; throw x; }   // v2026.10.29.8: CORS or no connection: INTEL-06
   if(!r.ok) throw new Error(`status ${r.status}`);
   const s = Number((await r.json()).sequence) || 0;
   it.kf.seqAt = Date.now();
   if(s > it.kf.target) it.kf.target = s;
   return s;
 }
+function itR2StopNote(){
+  const s = it.r2stop || {}, at = itClock(s.until || Date.now());
+  return s.why === 'self'
+    ? withCode(`The page stopped asking zKillboard's live kill feed until ${at} (your time): it counted more requests in a second than it allows itself, a fault in the page (please report it). Reports from your channels carry on.`, 'INTEL-08')
+    : withCode(`zKillboard asked this page to slow down (${s.why || 'too many requests'}), so the page sends it nothing until ${at} (your time), when its pause ends. Kills nearby show again then; reports from your channels carry on.`, 'INTEL-07');
+}
 async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as RIFT reads it); LESSON #102
   const kf = it.kf;
   if(!it.on || !kf || kf.busy || !it.names) return;
   if(Date.now() < kf.waitUntil) return;
-  kf.busy = true;
+  const stop = itR2Stopped();
+  if(stop){ kf.waitUntil = stop; it.kfNote = itR2StopNote(); itRender(); return; }   // v2026.10.30.3: stopped: nothing sent until then
+  kf.busy = true; kf.halt = false;
   const gen = it.gen, got = [];
   try{
     if(kf.seq === null){   // the start: about the last 15 minutes, read back from sequence.json's number
@@ -23475,14 +23543,20 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
     if(!kf.head){   // reading back (or catching up): up to 28 asked at a time (each in its turn at the gate), each batch drawn as it comes
       for(let b = 0; b < IT_KILL_BATCHES && !kf.head && gen === it.gen; b++){
         const from = kf.seq, part = [];
-        const recs = await Promise.all(Array.from({length: IT_KILL_PER_TICK_BACK}, (_, i) => gen === it.gen ? itKillGet(from + i) : null));
+        let recs = await Promise.all(Array.from({length: IT_KILL_PER_TICK_BACK}, (_, i) => gen === it.gen ? itKillGet(from + i) : null));
         if(gen !== it.gen) return;
+        const bad = recs.findIndex(x => x === IT_R2_NET || x === IT_R2_HALT);   // v2026.10.30.3: a read failed: keep what came before it, send nothing more this pass
+        if(bad >= 0){
+          recs = recs.slice(0, bad);
+          if(!recs.length){ kf.waitUntil = Date.now() + IT_KILL_NET_WAIT_MS; break; }
+        }
         let last = recs.length - 1;
         while(last >= 0 && !recs[last]) last--;
         if(last >= 0) kf.lastGot = Date.now();
         last = Math.max(last, Math.min(recs.length - 1, kf.target - from));   // up to sequence.json's number every one is published: a miss there is a gap, read past
         for(let i = 0; i <= last; i++) if(recs[i]) part.push({rec: recs[i], history: true});
         kf.seq = from + last + 1;
+        if(bad >= 0 && last === recs.length - 1){ kf.waitUntil = Date.now() + IT_KILL_NET_WAIT_MS; if(part.length) await itKills(part, gen); itRender(); break; }   // v2026.10.30.3: the failed read again later
         if(last < recs.length - 1){ kf.head = true; kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; }   // past the newest: live from here, the next one asked for in 6 s
         kf.fails = 0; it.kfNote = '';   // answering again: the note goes with this batch, not after all of them
         if(part.length){ await itKills(part, gen); if(gen !== it.gen) return; }
@@ -23490,7 +23564,8 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
       }
     } else {
       for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen; n++){
-        const rec = await itKillGet(kf.seq);
+        let rec = await itKillGet(kf.seq);
+        if(rec === IT_R2_NET) rec = null;   // live, one at a time: a read that failed is "not there yet" (LESSON #89), asked again in 6 s at the earliest
         if(rec){ got.push({rec, history: false}); kf.seq++; kf.lastGot = Date.now(); continue; }
         if(kf.seq <= kf.target){ kf.seq++; continue; }   // sequence.json is past it, yet it isn't there: a gap (or gone), read past it
         if(Date.now() - kf.lastGot >= IT_KILL_RESEQ_MS && Date.now() - kf.seqAt >= IT_KILL_RESEQ_MS){   // a minute without a kill: where is the feed?
@@ -23511,11 +23586,14 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
       if(gen === it.gen && s - kf.seq >= IT_KILL_PER_TICK){ if(s + 1 - IT_KILL_BACK > kf.seq) kf.seq = s + 1 - IT_KILL_BACK; kf.head = false; }
     }
   }catch(e){
+    if(e.r2stop){ kf.waitUntil = itR2Stopped() || Date.now() + IT_R2_STOP_MS; it.kfNote = itR2StopNote(); }   // v2026.10.30.3: an hour, said once, nothing sent
+    else {
     kf.fails++;
     kf.waitUntil = Date.now() + Math.min(300000, 30000 * 2 ** (kf.fails - 1));   // 30 s, then longer, at most 5 minutes
     it.kfNote = e.blocked
       ? withCode(`This browser can't read zKillboard's live kill feed: it answers nothing the page is allowed to read (a cross-site setting at zKillboard, a blocker, or no connection). Kills nearby will show again when it does; reports from your channels carry on.`, 'INTEL-06')
       : withCode(`zKillboard's live kill feed isn't answering (${e.message || 'network error'}); kills nearby will show again when it does. If this lasts, zKillboard may have blocked this address for up to an hour after too many requests.`, 'INTEL-05');
+    }
   }finally{ kf.busy = false; }
   if(gen !== it.gen) return;
   if(got.length) await itKills(got, gen);

@@ -170,6 +170,17 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## The live feed guarded; "10+" (v2026.10.30.3)
+
+- zKillboard's developer (2026-06-04): R2Z2's limit 15 a second, an automatic 1-hour ban, the limit cut further "if abuse continues"
+  (and, the owner heard, a careless user may be blocked entirely). The page now reads R2Z2 through one door (`itR2Fetch`): at most
+  5 a second; at the first 429 / 420 / 403 nothing more for an hour, the queue dropped, the stop kept in localStorage for every copy of
+  the page (INTEL-07 says until when); a failed read ends a read-back pass; a tripwire stops the page itself if it ever counts more than
+  5 starts in a second (INTEL-08). `tools/page_checks/intel_guard_check.py`; LESSON #106.
+- Several tabs or browsers with Intel on (the owner: "a real edge-case ... low likelihood") is left for later: one reader per browser
+  (Web Locks) with "Intel is on in another tab". The stop already reaches every tab of the same site.
+- "10+" is a head count of hostiles ("10 red"), as other intel tools read it.
+
 ## Where a report is; the switch that asks to be turned on; How Intel works condensed (v2026.10.30.2)
 
 - **Where a report is** (the owner: "the tool recorded a pilot as the system name even though a valid system name was in the entry";

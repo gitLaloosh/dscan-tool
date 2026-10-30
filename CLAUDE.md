@@ -12,8 +12,10 @@ are in the git-ignored `tools/pii_terms.local.txt` on the owner's computer.
 
 **Never get the user's address blocked (LESSON #93).** zKillboard blocks an address that asks too fast
 (its live feed: over 15 requests a second, for an hour). Every request to zKillboard goes through one
-of two gates: `zkbFetch` (the API: one at a time, 1 s apart) or `itKillTurn` (the live feed: one at a
-time, 100 ms apart by the clock, waits timed in a worker). Never pace requests with a batch of timers:
+of two gates: `zkbFetch` (the API: one at a time, 1 s apart) or `itR2Fetch` (the live feed, v2026.10.30.3: its
+`itKillTurn` gate, at most 5 a second by the clock, waits timed in a worker; a stop for an hour at the first 429, kept in
+localStorage for every copy of the page; a tripwire; LESSON #106). zKillboard's developer has said the limit will be cut
+further if abuse continues, so stay at a third of it. Test against a stand-in, never by provoking the real service. Never pace requests with a batch of timers:
 a hidden tab fires them together. Every `fetch()` is listed in `tools/check_request_gates.py` (a chain
 step); `tools/page_checks/request_gates_check.py` tests both gates with the timers bunched. Probing a
 live service from the owner's machine counts against his address too.
@@ -58,6 +60,9 @@ Before changing any calculation:
    Exception: the pull requests `.github/workflows/jump-table.yml` opens (the stargate table, `INTEL_JUMPS`,
    when an EVE build changed a gate; `tools/jump_table_update.py`) change only that table and no version.
    After the owner merges one, work from the merged copy (he runs `git pull`).
+5. End every delivery's reply with a commit message for the owner (he commits himself; the owner, 2026-10-30): a
+   Summary line under 72 characters that starts with the version (or says "page unchanged" for tools and docs only)
+   and a Description of short bullets. No names, paths or intel channel names.
 
 **Error messages carry codes** (`ERRORS.md`). Every error the page writes ends
 with a code such as `(ZKB-01)`, defined once in `ERROR_CODES` in `index.html`

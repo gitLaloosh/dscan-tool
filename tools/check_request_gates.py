@@ -12,8 +12,10 @@ Rules checked in index.html and browser-extension/*.js:
     listed here: decide which gate it goes through before it ships;
   * zkillboard.com/api is reached only by zkbFetchNow, and zkbFetchNow only from zkbFetch, the page's one queue: one
     at a time, ZKB_SPACING_MS (1 s) after the last start by Date.now(), ZKB_BUDGET per 10 minutes;
-  * r2z2.zkillboard.com is reached only by itKillGet and itKillSeq, and each waits for itKillTurn() before its fetch;
-    itKillTurn spaces starts by Date.now() and waits through itSleep, a worker's timer;
+  * r2z2.zkillboard.com is reached only by itR2Fetch (v2026.10.30.3: the one door), which waits for itKillTurn(), then
+    checks the stop (itR2Stopped) and the tripwire before its fetch, and stops for an hour on 429; itKillTurn spaces
+    starts by Date.now() and waits through itSleep, a worker's timer; at most IT_R2_PER_S (5) a second, a third of the
+    limit (zKillboard's developer, 2026-06-04: the limit may be cut further if abuse continues);
   * nothing else on the page names the zKillboard hosts in a request (XMLHttpRequest, sendBeacon, EventSource, a
     WebSocket, or a fetch whose address isn't in the list);
   * no batch of timers staggers zKillboard requests (setTimeout(..., i * ...) next to itKillGet / zkbFetch).
@@ -28,7 +30,7 @@ src = open(HTML, encoding='utf-8').read()
 
 # function -> host it fetches. 'zkb' and 'r2z2' must go through their gates; 'esi' is capped by concurrency.
 SITES = {
-    'zkbFetchNow': 'zkb', 'itKillGet': 'r2z2', 'itKillSeq': 'r2z2',
+    'zkbFetchNow': 'zkb', 'itR2Fetch': 'r2z2',
     'resolveNamesToIds': 'esi', 'getType': 'esi', 'getGroup': 'esi', 'resolveIdsToNames': 'esi', 'fetchKillmail': 'esi',
     'getOrg': 'esi', 'saAffiliation': 'esi', 'paAffEsi': 'esi', 'itSecFetch': 'esi',   # v2026.10.29.5: itCheckBuild (ESI /status/) removed
 }
@@ -80,15 +82,20 @@ if not mm or int(mm.group(1)) < 1000: problems.append(f'ZKB_SPACING_MS is {mm an
 if not re.search(r'if\(!zkbBudgetSpend\(\)\)', body(src, 'zkbFetchNow') or ''): problems.append('zkbFetchNow no longer spends the ZKB_BUDGET')
 
 # R2Z2: every request waits its turn at the gate
-for fn in ('itKillGet', 'itKillSeq'):
-    b = body(src, fn) or ''
-    t, f = b.find('await itKillTurn()'), b.find('fetch(')
-    if t < 0 or f < 0 or t > f: problems.append(f'{fn} does not wait for itKillTurn() before its fetch()')
+b = body(src, 'itR2Fetch') or ''
+t_, s_, w_, f_ = b.find('await itKillTurn()'), b.find('if(itR2Stopped())'), b.find('itR2Times.length >= IT_R2_PER_S'), b.find('fetch(')
+if min(t_, s_, w_, f_) < 0 or not (t_ < s_ < w_ < f_): problems.append('itR2Fetch no longer waits for itKillTurn(), then checks the stop and the tripwire, before its fetch()')
+if not re.search(r'IT_R2_STOP_STATUS\.includes\(r\.status\)\)\{\s*itR2Stop\(', b): problems.append('itR2Fetch no longer stops at a "too many" answer (IT_R2_STOP_STATUS)')
+mm = re.search(r'const IT_R2_STOP_STATUS = \[([^\]]*)\]', src)
+if not mm or '429' not in mm.group(1): problems.append('IT_R2_STOP_STATUS must include 429')
+mm = re.search(r'const IT_R2_STOP_MS = (\d+) \* 60000;', src)
+if not mm or int(mm.group(1)) < 60: problems.append('IT_R2_STOP_MS must be at least an hour (zKillboard bans for an hour)')
+mm = re.search(r'const IT_R2_PER_S = (\d+);', src)
+if not mm or int(mm.group(1)) > 5: problems.append(f'IT_R2_PER_S is {mm and mm.group(1)} (at most 5 a second: a third of the limit)')
 g = body(src, 'itKillTurn') or ''
 if not (re.search(r'itKillLast\s*\+\s*IT_KILL_PROBE_MS\s*-\s*Date\.now\(\)', g) and 'await itSleep(' in g and re.search(r'itKillLast\s*=\s*Date\.now\(\)', g) and re.search(r'itKillGate\s*=', g)):
     problems.append('itKillTurn no longer starts requests one at a time, IT_KILL_PROBE_MS apart by Date.now(), waiting through itSleep')
-mm = re.search(r'const IT_KILL_PROBE_MS = (\d+);', src)
-if not mm or int(mm.group(1)) < 80: problems.append(f'IT_KILL_PROBE_MS is {mm and mm.group(1)} (at least 80 ms; 15 a second is the limit)')
+if not re.search(r'const IT_KILL_PROBE_MS = 1000 / IT_R2_PER_S;', src): problems.append('IT_KILL_PROBE_MS is no longer 1000 / IT_R2_PER_S')
 if 'new Worker(' not in (body(src, 'itSleep') or ''): problems.append('itSleep no longer times its waits in a worker (a hidden tab bunches page timers)')
 
 # other ways to send a request
@@ -97,7 +104,7 @@ for rx, what in ((r'new\s+XMLHttpRequest', 'XMLHttpRequest'), (r'sendBeacon\(', 
 # a batch of timers staggering zKillboard requests (v.100's burst)
 for m in re.finditer(r'setTimeout\([^;\n]*\bi\s*\*[^;\n]*', src):
     ctx = src[m.start() - 200:m.end() + 200]
-    if re.search(r'itKillGet|itKillSeq|zkbFetch', ctx): problems.append(f'index.html:{line(src, m.start())}: timers staggered by index next to a zKillboard request: in a hidden tab they fire together')
+    if re.search(r'itKillGet|itKillSeq|itR2Fetch|zkbFetch', ctx): problems.append(f'index.html:{line(src, m.start())}: timers staggered by index next to a zKillboard request: in a hidden tab they fire together')
 
 for f in glob.glob(os.path.join(ROOT, 'browser-extension', '*.js')):
     t = open(f, encoding='utf-8').read()

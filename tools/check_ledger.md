@@ -8,3 +8,4 @@ never catches anything moves to the `all` tier only; a check that keeps showing 
 | Date (UTC) | Version | Run | Page checks | Minutes | Failed | Flaky (passed alone) | Caught |
 |---|---|---|---|---|---|---|---|
 | 2026-10-30 | v2026.10.30.2 | all, by hand before the runner existed | 48 | ~65 (chain ~40) | none (intel_check: 2 expectations updated for intended changes) | busy_check, request_gates_check, extension_check | intel_place_check + its 10 mutants (the new placement rules); check_pii (a ship-name term in an old lesson); screenshots (none this time). The chain and the other 47 page checks: nothing. |
+| 2026-10-30 | v2026.10.30.3 | area (intel) | 8 | 7 | none | none | intel_kills_check (unchanged): the first tripwire, counting when code ran instead of the gate's starts, stopped a healthy reader; intel_guard_check + 6 mutants (the new guard); intel_kills_check and intel_guard_check also exposed timing tied to the old pace (waits doubled). |

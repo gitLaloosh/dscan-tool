@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-30 — The live feed guarded, and "10+"</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The live feed guarded, and "10+"</h1>
+<p><span class="tag">Intel</span><span class="tag">Safety</span> 2026-10-30 &middot; <code>v2026.10.30.3</code></p>
+
+<h2>Why</h2>
+<p>The owner asked: "what happens if someone opens multiple browser tabs of the tool and turn intel on for all of them? seems like that would get the user blocked". He then shared an announcement from zKillboard's developer, dated 2026-06-04:</p>
+<ul>
+<li>R2Z2's limit was cut from 20 to 15 requests a second;</li>
+<li>the automatic ban for going over was raised from 10 minutes to an hour;</li>
+<li>"if abuse continues I will likely reduce the rate limit some more".</li>
+</ul>
+<p>He had also seen a message saying that anyone careless about it might be blocked entirely. He agreed that several tabs or browsers is an edge case and asked for it to be handled later. Reading the reader again turned up three problems that affect every user with a single tab:</p>
+<ul>
+<li><b>Requests kept going out after a refusal.</b> A read-back queued 28 requests at once. When one failed, the other 27 still went out.</li>
+<li><b>It retried during the ban.</b> After an error it tried again in 30 s, then 1, 2, 4 and 5 minutes, all inside an hour-long ban.</li>
+<li><b>The pace left too little margin.</b> At 10 a second, a further cut to the limit would have put a single tab over it.</li>
+</ul>
+<p>The owner: "let's build it right now. the 10+ fix can go with it". He also asked that testing it must not get us blocked.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>One door to the live feed: <code>itR2Fetch</code>.</b> Every request:
+  <ul>
+  <li>waits its turn at the gate, now at most 5 a second, a third of the limit (<code>IT_R2_PER_S</code>);</li>
+  <li>sends nothing while a stop is on;</li>
+  <li>sends nothing more in a read-back pass once a read in that pass has failed. A ban can look like a failed read when its answer can't be read. The same number is tried again 30 s later.</li>
+  </ul></li>
+<li><b>The stop.</b> At the first 429, 420 or 403, the page drops everything queued and sends nothing to R2Z2 for an hour. The stop is kept in localStorage, so a reload or another tab waits too. The note, INTEL-07, says until when, in your time. Reports from your channels carry on.</li>
+<li><b>The tripwire.</b> If the page counts more starts in a second than it allows itself, it stops itself for an hour, before zKillboard has to step in (INTEL-08). That should be impossible, so it means a fault in the page.
+  <p>The first version counted when the code after the gate ran, and it stopped a healthy reader within seconds. The unchanged <code>intel_kills_check.py</code> caught it. It now counts the start the gate granted.</p></li>
+<li><b>"10+"</b> is a head count of hostiles, like "10 red": the chip reads "10 red" and Near You says "10 hostile". "+3" still means three more.</li>
+<li><code>check_request_gates.py</code> now checks:
+  <ul>
+  <li>R2Z2 is reached only by <code>itR2Fetch</code>;</li>
+  <li>inside it, the order is gate, then stop, then tripwire, then fetch;</li>
+  <li><code>IT_R2_PER_S</code> is 5 or less;</li>
+  <li>a 429 means a stop of at least an hour.</li>
+  </ul></li>
+<li>CLAUDE.md has the new rule. ERRORS.md has INTEL-07 and INTEL-08.</li>
+</ul>
+
+<h2>Checks (no request reached zKillboard)</h2>
+<ul>
+<li><b>New <code>tools/page_checks/intel_guard_check.py</code></b>, run against a stand-in for R2Z2:
+  <ul>
+  <li>a read-back paced at 5 a second;</li>
+  <li>a 429 mid read-back: nothing more sent, a one-hour stop with its note, and a second page of the site that sees the stop and sends nothing;</li>
+  <li>reading resumes when the hour is over;</li>
+  <li>an unreadable failure mid read-back: the pass ends there;</li>
+  <li>the tripwire, with the gate broken on purpose: 5 sent, then the stop.</li>
+  </ul></li>
+<li><code>intel_kills_check.py</code>: its waits were doubled for the slower read-back, and it now allows at most 6 requests in any second instead of 12.</li>
+<li><code>intel_place_check.py</code>: "10+" and "+3".</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #106: a rate guard must stop at the first refusal, stay stopped, and count what it granted. Use one door, a stop that every copy of the page sees, a tripwire on the gate's own stamps, and a pace well under the published limit. Test it against a stand-in, never against the real service.</p>
+</body></html>
