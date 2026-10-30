@@ -878,7 +878,23 @@ SDE / live ESI. Tooling for both is in `tools/` (see `tools/README.md`).
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
-## 101. A component's border shorthand quietly cancels the site's focus rule: measure each state, then write the rule down and check it
+## 102. When a client that works reads the same source, find what differs before tuning your workaround again
+
+- **What happened (v2026.10.29.4-29.8):** Intel's kills went missing for a day. Three deliveries tuned a read-ahead past
+  "missing" numbers (LESSON #98, #99), and each failed live, while RIFT read the same feed without trouble. The numbers were
+  never missing: Cloudflare, in front of R2Z2, kept a separate copy per website (per `Origin`). Our site got a day-old
+  `sequence.json` and, for about an hour, a remembered 404 for any number it asked for before it was published. Reading ahead
+  of a live feed created exactly those 404s, so each fix made it worse. A controlled test settled it: one number asked for
+  early from our site stayed unreadable there after publication, while the next one, not asked early, read fine. zKillboard's
+  developer then fixed it at Cloudflare. The first attempt removed the `Origin`, which also dropped the permission header (CORS)
+  every browser needs, so every web page went blind while curl and desktop apps still read fine.
+- **Do this instead:** when another client reads the same source correctly, list what differs between its requests and
+  yours (headers such as `Origin`, cookies, timing, path) and test the source with only that one thing changed, before
+  adding more logic. A "missing" answer can be a cache's memory, and asking too early can create it. Read a feed the way its
+  docs and a working client do. Test a header change at the source from a browser on your own site: curl skips CORS. Give
+  "the browser may read nothing" its own error code (INTEL-06), so it can't pass for a quiet night.
+
+'s border shorthand quietly cancels the site's focus rule: measure each state, then write the rule down and check it
 
 - **What happened (v2026.10.29.7, the owner: "would you mind taking a look at how text input boxes are being treated
   differently as well (differing border colors)"):** reading the CSS suggested one text-field style. Measuring the computed

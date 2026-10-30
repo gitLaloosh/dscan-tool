@@ -2414,7 +2414,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.7</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.29.8</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2753,7 +2753,7 @@ const CARD_INFO = {
   "Your system comes from your character's Local log ('Channel changed to Local'). Jumps are gate jumps, from EVE's published stargate data (no jump bridges, no wormholes). The table is checked against each new EVE build every day and updated when a gate changes.",
   "A report is read word by word: systems (whole names, or the start of one like QX-L: the nearest such system to you), ship names (English or Chinese), +N, x2, clr, nv and the like; the words left are looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place is left as plain text, never guessed.",
   "{card:itfeed} and {card:itnear} keep the time you set under the gear (15 minutes unless you change it); older lines go.",
-  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 10-15 small requests a minute) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser. The line under the title says when a kill was last read; after 5 minutes without one it says so in amber (the page keeps reading ahead past missing numbers).",
+  "Kills: while Intel is on, the page follows zKillboard's live feed of every kill (about 20 small requests a minute: one per kill, and one every 6 seconds while waiting for the next) and keeps the kills within the Feed's kill range under the gear (10 jumps unless you change it, never less than your alert range), NPC kills left out. Three rings: the Feed's kill range to be aware, the alert range to be alert (sound and notification), and ‘In system’ when they're here. A kill marks its system in {card:itnear} with its attackers and their ships, and alerts like a report when it is within the alert range. Each pilot shows a standing mark, their corporation and alliance logos and [CORP] <ALLIANCE> tickers. The Feed's Types, Distance, Sort and Search are kept in this browser. The line under the title says when a kill was last read; after 5 minutes without one it says so in amber (the page asks for the next kill every 6 seconds and checks zKillboard's newest number every minute).",
   "{card:itnear}: each system reported in the time you set, nearest first: everyone and every ship reported there in that time until someone reports it clear (the same ship type twice counts once, at its larger number); clear or no visual when that is the latest word. A red row is a hostile or neutral report within your alert range; that is when the sound plays and the desktop notification shows (one per system every 30 seconds). Friendlies never alert.",
   "A pilot's name (in {card:itfeed} and {card:itnear}) opens them in the Pilot Analyzer; when the line puts them in a ship (\"Pilot (Ship)\", or one pilot and one ship), in that ship. Assess sends a system's reported pilots and ships to the {card:sysan}, where Intel's pairing is their possible ship; Restore my paste puts back what you had there. The copy button on a line copies its shape with system and pilot names replaced, to report a line read wrong.",
   "Nothing from your logs leaves the browser except the words looked up on ESI, and none of it is kept after you close the page."
@@ -3069,6 +3069,15 @@ const ERROR_CODES = {
   "why": "",
   "since": "2026-10-28 (v2026.10.14.99)",
   "doc": "2026-10-28_intel-feed-kills.html"
+ },
+ "INTEL-06": {
+  "title": "This browser can't read zKillboard's live kill feed",
+  "where": "{card:intel} tab, kills in the {card:itfeed}",
+  "trigger": "sequence.json from R2Z2 (r2z2.zkillboard.com) came back with nothing the page may read: the browser blocked the answer (zKillboard's answer lacked the header that lets other websites read it, CORS), a blocker stopped it, or there is no connection. Read at the start and after a minute with no kill. The page tries again after 30 seconds, then longer (up to 5 minutes); reports from your channels carry on.",
+  "check": "The browser's console (F12): 'blocked by CORS policy' means zKillboard's setting changed (it happened briefly on 2026-10-29); tell zKillboard. Otherwise an ad or privacy blocker, or the connection.",
+  "why": "On 2026-10-29 zKillboard removed the Origin from requests to fix stale copies at Cloudflare, and for a while answers came without the permission header: every browser threw them away while curl and desktop apps still read them.",
+  "since": "2026-10-29 (v2026.10.29.8)",
+  "doc": "2026-10-29_kills-read-as-documented.html"
  },
 
  "FLEET-01": {
@@ -22683,40 +22692,21 @@ const IT_KILL_PER_TICK = 12;                 // at most 12 requests per 2 s tick
 const IT_KILL_PER_TICK_BACK = 28;            // v.100: reading back, 28 at a time, started one per 80 ms, not waiting for each
 const IT_KILL_BATCHES = 10;                  //   answer; up to 10 such batches in one go: the 240 read back in ~20 s, where one at a time took a minute or more
 const IT_KILL_WAIT_MS = 6000;                // after a 404, at least 6 s (zKillboard's rule)
-const IT_KILL_STEP = 64;                     // v.100: finding the newest kill: steps of 64, 128, 256 ... past sequence.json's number
 const IT_KILL_PROBE_MS = 100;                // v.103: every R2Z2 request starts at least 100 ms after the one before, by the clock (10 a second; the limit is 15)
-const IT_KILL_FAR_MS = 60 * 60000;           // v.100: a kill uploaded over an hour ago means the page has fallen far behind (a sleeping tab):
-const IT_KILL_REFIND_MS = 5 * 60000;         //   find the newest again, at most once per 5 minutes
-// v2026.10.29.4 (the owner: "i still have not seen a single killmail show up in the feed"). Recorded live from his machine,
-// 2026-10-29 10:04-10:47 UTC: numbers 100274284-100274287 were missing for good while 100274288 on were there. v.103 looked
-// only 3 past a missing number, so 4 missing in a row read as "nothing new yet" and the page waited there for ever (40 min, no
-// kill read). Gaps of 2 and 4 have both been seen, so no fixed look-ahead is enough: when no kill has been read for a minute,
-// the page looks further ahead (4 to 8, then 12, 16 ... 2048 past where it is) and, finding a kill there, reads forward to the
-// newest, the gap's numbers kept to ask again (at most 40). LESSON #98
-// v2026.10.29.5 (the owner, same day: "it looks like that last kill feed fix didn't work"; his page's own state, read in his
-// console): stuck at 100275281 for 24 minutes. From 12:30 UTC the numbers were patchy: 100275281-299 missing, 300 there, then
-// many more missing between kills (305, 313, 320, 329, 345, 409 ...). v.29.4 looked ahead at fixed numbers only, and every one
-// of them was a missing one. Now, after 30 s with no kill, it reads forward one number after another until 32 in a row are
-// missing past the last kill it found, so any gap under that is crossed whatever its pattern; only then does it look
-// further, several numbers in a row at each spot (the numbers: v2026.10.29.6 below). Finding nothing at all, it waits longer before the next
-// look (30 s, 1, 2, 4, then 5 min), so a quiet feed isn't asked hundreds of times a minute.
-const IT_KILL_STALL_MS = 30000;              // no kill read for this long while live: read forward past the gap (v.29.4: a minute)
-// v2026.10.29.6 (the owner, the same afternoon, with his console line: stuck at 100277236 for 6 minutes while RIFT showed two
-// kills 8 jumps away). Probed from the browser pane: 100277236-275 missing (40 in a row), 276-295 there (all published at
-// 14:53, his two kills among them), then more gaps. v.29.5 read through 32 and its first window (268-275) stopped one short of
-// 276; finding nothing, it had backed off to a look every 4 minutes. About 4 in 10 numbers were missing that day, in runs of up
-// to 40, and sequence.json (Last-Modified 2026-10-28 17:56) gives no newest to aim at. Now: 8 looked at past a missing number
-// while live (was 3), reading through up to 128 missing (was 32), 16 in a row at each spot further on (was 8), and at most 1
-// minute between looks (was 5). The wait only grows when a look finds nothing anywhere, so a quiet feed costs at most one
-// look (about 200 requests, nearly all misses) a minute, about 3.5 a second; the owner: "what is the reason for waiting as long
-// as 2 minutes between looks?" LESSON #99
-const IT_KILL_STALL_MAX_MS = 60000;          //   and when that finds nothing at all, twice as long before the next look, at most 1 minute (v.29.5: 5)
-const IT_KILL_SCAN_GAP = 128;                // reading forward stops after 128 missing in a row past the last kill found (v.29.5: 32)
-const IT_KILL_SCAN_MAX = 600;                //   or after 600 numbers (the next look carries on from there at once)
-const IT_KILL_JUMPS = [160, 256, 512, 1024, 2048];   // then further on: 16 numbers in a row at each, stopping at the first kill
-const IT_KILL_WINDOW = 16;
-const IT_KILL_HEAD_LOOK = 64;                // finding the newest: past where halving stops, up to 64 on (v.29.5: 32; v.103: 3)
-const IT_KILL_HOLES_MAX = 40;                // missing numbers kept to ask again; past that they're skipped (a long gap isn't asked for 4 times over)
+const IT_KILL_BEHIND_MS = 2 * 60000;         // v2026.10.29.8: a kill read live that was uploaded over 2 minutes ago: the page is behind (a sleeping tab):
+                                             //   sequence.json read (at most once a minute) and the rest caught up at the read-back's pace, only the last 240
+                                             //   (v.100 until v2026.10.29.7: over an hour behind, the newest found again)
+// v2026.10.29.4-29.6 read ahead past missing numbers (look-ahead after a minute, reading through gaps, windows further on,
+// finding the newest by steps and halving; LESSON #98, #99). None of it found the kills: the numbers weren't missing. Cloudflare,
+// in front of R2Z2, kept a copy per website (per Origin): our site's sequence.json was a day old, and a number asked for before it
+// was published stayed "not found" for our site for about an hour, so the read-ahead hid the very kills it waited for.
+// v2026.10.29.8: zKillboard's developer changed Cloudflare that day (Origin removed from requests; the permission header added
+// to answers). Checked from the owner's browser on this site, 19:19-19:26 UTC: sequence.json updated every ~51 kills, and a
+// number asked for 150 too early read 200 once published. So the page now reads the feed as zKillboard documents it and as
+// RIFT does (its source, ZkillboardR2Z2Observer): start at sequence.json; on a 404 wait 6 s and ask for the same number; after
+// a minute with no kill re-read sequence.json: past the number being waited on, that number is a gap (read past it); not past
+// it, the 404 was "too soon" (keep waiting). LESSON #102
+const IT_KILL_RESEQ_MS = 60000;              // a minute with no kill read while live: sequence.json read again (RIFT: 60 s; zKillboard's developer: 5 min)
 const IT_KILL_SLOW_MS = 5 * 60000;           // no kill read for 5 minutes: the status line says so, in amber
 const IT_FEED_TYPES = [['all', 'All'], ['reports', 'Reports'], ['kills', 'Kills']];
 const IT_FEED_DIST = [0, 1, 2, 3, 5, 10, 15, 20, 30];   // 0: any distance (v2026.10.29.3: up to 30, as far as kills can reach)
@@ -22735,7 +22725,7 @@ const it = {
   kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: '',   // v.99: kills, names on kills, security, the Feed's search
   rawOpen: new Set()   // v.100: Feed rows showing the line as typed
 };
-function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, found: 0, asked: new Map(), holes: new Map(), lastGot: 0, stallAt: 0, stallGap: IT_KILL_STALL_MS, target: 0}; }   // v2026.10.29.4: lastGot = when a kill was last read; stallAt = when the page last looked further ahead; target = a kill known to be there, read up to   // v.103: asked = when each number was last asked for; holes = missing numbers with kills after them
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0}; }   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
 function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
 function itReadSet(){
   const d = itDefaults();
@@ -23263,11 +23253,13 @@ function itKillRange(){ return Math.max(it.set.range, it.set.killRange || IT_KIL
 // actually capturing kills right now?"):
 //  * sequence.json can lag far behind: it read 100263992 (last changed 17:56 UTC) while kills to 21:06 UTC were already
 //    numbered 3,000+ past it. Starting 240 before it put the page three hours back and ~10 minutes from live. So the page
-//    finds the newest kill itself (itKillFindHead) and starts 240 before that.
+//    found the newest kill itself (itKillFindHead, until v2026.10.29.8: the lag was Cloudflare's copy for our site, fixed
+//    at zKillboard's end on 2026-10-29) and started 240 before that.
 //  * a kill not there yet answers 404 WITHOUT the header that lets a page read the answer, so the browser reports a network
 //    error, never the 404. v.99 took that for the feed being down (INTEL-05, then waits of 30 s up to 5 minutes). Now a
 //    failed read is "not there yet" when sequence.json still answers (wait 6 s, no note); only when sequence.json fails too
-//    is the feed down. LESSON #89
+//    is the feed down. LESSON #89 (Since 2026-10-29 a 404 carries the header and reads as a 404; a failed read is still
+//    taken as "not there", and sequence.json failing is still the feed down: INTEL-06 when nothing it sends can be read.)
 // v2026.10.14.103 (the owner: "the intel feed is still not showing any kills"). Read live from his browser on 2026-10-29:
 //  * a hidden tab runs its timers late and together. v.100 started each read-back batch with 28 timers 80 ms apart; in a
 //    hidden tab they fired in one go, 28 requests at once, and zKillboard blocks an address that asks more than 15 a
@@ -23276,7 +23268,8 @@ function itKillRange(){ return Math.max(it.set.range, it.set.killRange || IT_KIL
 //    timed by a worker, whose timers a hidden tab doesn't slow or bunch.
 //  * a number can be missing while later ones are there (seen: two missing, the next 500 there). v.100 waited on it for
 //    ever, and finding the newest could stop at it (an hour behind). Now a missing number with a kill right after it is
-//    a hole: it is skipped, tried again at 6 s, 30 s, 2 min and 5 min, then dropped. LESSON #93
+//    a hole: it is skipped, tried again at 6 s, 30 s, 2 min and 5 min, then dropped. LESSON #93 (v2026.10.29.8: holes gone;
+//    a number sequence.json is past is a gap, read past at once, and one it isn't past is waited on, 6 s at a time.)
 let itSleepW = null, itSleepN = 0;
 const itSleepCb = new Map();
 function itSleep(ms){   // a worker's timer: on time in a hidden tab (an ordinary timer there waits a second or a minute)
@@ -23300,98 +23293,38 @@ function itKillTurn(){   // one request at a time through here: each starts at l
 }
 async function itKillGet(n){   // kill number n, or null when it isn't there (404, or the browser blocked the answer)
   await itKillTurn();
-  it.kf.reqs++; it.kf.asked.set(n, Date.now());
-  if(it.kf.asked.size > 2000) for(const [k, t] of it.kf.asked) if(Date.now() - t > IT_KILL_WAIT_MS) it.kf.asked.delete(k);
+  it.kf.reqs++;
   let r;
   try{ r = await fetch(`${IT_R2Z2}/ephemeral/${n}.json`); }catch(e){ return null; }
   if(r.status === 404) return null;
   if(!r.ok) throw new Error(`status ${r.status}`);
   return await r.json();
 }
-async function itKillSeq(){
+async function itKillSeq(){   // zKillboard's newest number (sequence.json); kept as kf.target, with when it was read
   await itKillTurn();
   it.kf.reqs++;
-  const r = await fetch(`${IT_R2Z2}/ephemeral/sequence.json`);
+  let r;
+  try{ r = await fetch(`${IT_R2Z2}/ephemeral/sequence.json`); }
+  catch(e){ const x = new Error('no answer the browser may read'); x.blocked = true; throw x; }   // v2026.10.29.8: CORS or no connection: INTEL-06
   if(!r.ok) throw new Error(`status ${r.status}`);
-  return Number((await r.json()).sequence) || 0;
+  const s = Number((await r.json()).sequence) || 0;
+  it.kf.seqAt = Date.now();
+  if(s > it.kf.target) it.kf.target = s;
+  return s;
 }
-const IT_KILL_LOOK = 8;                        // v.103: a missing number: the next ones are looked at; one there makes it a hole (v2026.10.29.6: 8, was 3)
-const IT_KILL_RETRY_MS = [6000, 30000, 120000, 300000];   // v.103: a hole is asked for again after these, then dropped
-function itKillMissedLately(n){ const t = it.kf.asked.get(n); return t !== undefined && Date.now() - t < IT_KILL_WAIT_MS; }
-async function itKillAfter(n){   // the first kill in n+1 .. n+IT_KILL_LOOK, skipping numbers found missing in the last 6 s
-  for(let k = 1; k <= IT_KILL_LOOK; k++){
-    if(itKillMissedLately(n + k)) continue;
-    const rec = await itKillGet(n + k);
-    if(rec) return {n: n + k, rec};
-  }
-  return null;
-}
-async function itKillAfterN(n, k){   // v2026.10.29.5: the first kill in n+1 .. n+k, in turn (the owner's feed, 2026-10-29: 100275281-299 missing, 300 there)
-  for(let i = 1; i <= k; i++){ if(itKillMissedLately(n + i)) continue; const rec = await itKillGet(n + i); if(rec) return {n: n + i, rec}; }   // not one found missing in the last 6 s (zKillboard's rule)
-  return null;
-}
-async function itKillFindHead(seq, gen){   // the newest kill at or past seq: steps doubling until one is missing, then halving the gap
-  let lo = seq;
-  if(!(await itKillGet(seq))){ const a = await itKillAfter(seq); if(!a) return seq - 1; lo = a.n; }
-  for(let round = 0; round < 6 && gen === it.gen; round++){
-    let step = IT_KILL_STEP, hi;
-    for(;;){
-      if(gen !== it.gen) return lo;
-      if(await itKillGet(lo + step)){ lo += step; step *= 2; } else { hi = lo + step; break; }
-    }
-    while(hi - lo > 1 && gen === it.gen){ const m = Math.floor((lo + hi) / 2); if(await itKillGet(m)) lo = m; else hi = m; }
-    const a = await itKillAfterN(lo, IT_KILL_HEAD_LOOK);   // v.103: stopped at a hole? a kill just past it means the newest is further on (v2026.10.29.5: up to 32 on, was 3)
-    if(!a) return lo;
-    lo = a.n;
-  }
-  return lo;
-}
-function itKillHole(n){ if(!it.kf.holes.has(n) && it.kf.holes.size < IT_KILL_HOLES_MAX) it.kf.holes.set(n, {tries: 0, at: Date.now() + IT_KILL_RETRY_MS[0]}); }
-async function itKillScan(gen, got){   // v2026.10.29.5: read forward from kf.seq until IT_KILL_SCAN_GAP missing in a row past the last kill found; true when one was
-  const kf = it.kf, from = kf.seq;
-  let last = -1, miss = 0, n = from;
-  for(; n < from + IT_KILL_SCAN_MAX && miss < IT_KILL_SCAN_GAP && gen === it.gen; n++){
-    const rec = await itKillGet(n);
-    if(!rec){ miss++; continue; }
-    for(let m = last < 0 ? from : last + 1; m < n; m++) itKillHole(m);   // the missing ones before it: asked again later (at most 40 kept)
-    got.push({rec, history: false}); last = n; miss = 0; kf.lastGot = Date.now();
-  }
-  if(last < 0) return false;
-  kf.seq = last + 1;
-  if(miss < IT_KILL_SCAN_GAP) kf.stallAt = 0;   // stopped at 400 while still finding kills: carry on at once
-  return true;
-}
-async function itKillAhead(from, gen){   // v2026.10.29.5: the first kill in IT_KILL_WINDOW numbers in a row at each of IT_KILL_JUMPS past from, or null
-  for(const d of IT_KILL_JUMPS){
-    for(let w = 0; w < IT_KILL_WINDOW; w++){
-      if(gen !== it.gen) return null;
-      if(await itKillGet(from + d + w)) return from + d + w;
-    }
-  }
-  return null;
-}
-async function itKillHoles(gen, got){   // the holes due: asked for again; found ones join the kills read this time
-  for(const [n, h] of [...it.kf.holes]){
-    if(gen !== it.gen || Date.now() < h.at) continue;
-    const rec = await itKillGet(n);
-    if(rec){ it.kf.holes.delete(n); it.kf.lastGot = Date.now(); got.push({rec, history: false}); continue; }
-    h.tries++;
-    if(h.tries >= IT_KILL_RETRY_MS.length) it.kf.holes.delete(n); else h.at = Date.now() + IT_KILL_RETRY_MS[h.tries];
-  }
-}
-async function itKillPump(){
+async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as RIFT reads it); LESSON #102
   const kf = it.kf;
   if(!it.on || !kf || kf.busy || !it.names) return;
-  if(Date.now() < kf.waitUntil && !(kf.head && !kf.fails && [...kf.holes.values()].some(h => Date.now() >= h.at))) return;   // waiting, unless a hole is due
+  if(Date.now() < kf.waitUntil) return;
   kf.busy = true;
   const gen = it.gen, got = [];
   try{
-    if(kf.seq === null){
-      const head = await itKillFindHead(await itKillSeq(), gen);
+    if(kf.seq === null){   // the start: about the last 15 minutes, read back from sequence.json's number
+      const s = await itKillSeq();
       if(gen !== it.gen) return;
-      kf.seq = Math.max(0, head + 1 - IT_KILL_BACK); kf.found = Date.now(); kf.head = false; kf.target = head; kf.lastGot = Date.now();
+      kf.seq = Math.max(0, s + 1 - IT_KILL_BACK); kf.head = false; kf.lastGot = Date.now();
     }
-    if(!kf.head){   // reading back: up to 28 asked at a time (each in its turn at the gate), each batch drawn as it comes
+    if(!kf.head){   // reading back (or catching up): up to 28 asked at a time (each in its turn at the gate), each batch drawn as it comes
       for(let b = 0; b < IT_KILL_BATCHES && !kf.head && gen === it.gen; b++){
         const from = kf.seq, part = [];
         const recs = await Promise.all(Array.from({length: IT_KILL_PER_TICK_BACK}, (_, i) => gen === it.gen ? itKillGet(from + i) : null));
@@ -23399,49 +23332,42 @@ async function itKillPump(){
         let last = recs.length - 1;
         while(last >= 0 && !recs[last]) last--;
         if(last >= 0) kf.lastGot = Date.now();
-        if(kf.target >= from + recs.length) last = recs.length - 1;   // v2026.10.29.4: a kill is known further on: misses here are a gap, not the end
-        for(let i = 0; i <= last; i++){ if(recs[i]) part.push({rec: recs[i], history: true}); else itKillHole(from + i); }   // v.103: a missing one before a kill: a hole
+        last = Math.max(last, Math.min(recs.length - 1, kf.target - from));   // up to sequence.json's number every one is published: a miss there is a gap, read past
+        for(let i = 0; i <= last; i++) if(recs[i]) part.push({rec: recs[i], history: true});
         kf.seq = from + last + 1;
-        if(last < recs.length - 1){
-          await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; kf.head = true;   // not there yet: the feed is up, nothing new (a hole there is found from the live end)
-        }
+        if(last < recs.length - 1){ kf.head = true; kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; }   // past the newest: live from here, the next one asked for in 6 s
         kf.fails = 0; it.kfNote = '';   // answering again: the note goes with this batch, not after all of them
         if(part.length){ await itKills(part, gen); if(gen !== it.gen) return; }
         itRender();
       }
     } else {
-      await itKillHoles(gen, got);
-      if(Date.now() - kf.lastGot >= IT_KILL_STALL_MS && Date.now() - kf.stallAt >= kf.stallGap){   // v2026.10.29.4: no kill for a while: a gap?
-        kf.stallAt = Date.now();
-        const found = await itKillScan(gen, got);   // v2026.10.29.5: read forward past it, number by number
-        if(found) kf.stallGap = IT_KILL_STALL_MS;
-        const ahead = found ? null : await itKillAhead(kf.seq, gen);
-        if(gen !== it.gen) return;
-        if(!found && ahead === null) kf.stallGap = Math.min(IT_KILL_STALL_MAX_MS, kf.stallGap * 2);   // nothing anywhere: look less often
-        if(ahead !== null){
-          kf.stallGap = IT_KILL_STALL_MS;
-          const head = await itKillFindHead(ahead, gen);
-          if(gen !== it.gen) return;
-          kf.target = head; kf.head = false;   // read forward from here to it (reading back), the gap's numbers as holes
-          if(head + 1 - IT_KILL_BACK > kf.seq) kf.seq = head + 1 - IT_KILL_BACK;   // far behind: only the last 240 (older ones are past the forget window)
-          return;
-        }
-      }
-      for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen && Date.now() >= kf.waitUntil; n++){
+      for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen; n++){
         const rec = await itKillGet(kf.seq);
         if(rec){ got.push({rec, history: false}); kf.seq++; kf.lastGot = Date.now(); continue; }
-        const a = await itKillAfter(kf.seq);   // v.103: a kill just past it: this one is a hole, not the end
-        if(a){ for(let m = kf.seq; m < a.n; m++) itKillHole(m); got.push({rec: a.rec, history: false}); kf.seq = a.n + 1; kf.lastGot = Date.now(); continue; }
-        await itKillSeq(); kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; break;   // not there yet: the feed is up, nothing new
+        if(kf.seq <= kf.target){ kf.seq++; continue; }   // sequence.json is past it, yet it isn't there: a gap (or gone), read past it
+        if(Date.now() - kf.lastGot >= IT_KILL_RESEQ_MS && Date.now() - kf.seqAt >= IT_KILL_RESEQ_MS){   // a minute without a kill: where is the feed?
+          const s = await itKillSeq();
+          if(gen !== it.gen) return;
+          if(s >= kf.seq){   // past the one waited on: it was a gap; far behind (a sleeping tab): only the last 240
+            if(s + 1 - IT_KILL_BACK > kf.seq) kf.seq = s + 1 - IT_KILL_BACK;
+            kf.head = false; break;   // read on to it at the read-back's pace
+          }
+        }
+        kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; break;   // not there yet ("too soon"): the same number again in 6 s
       }
     }
     kf.fails = 0; it.kfNote = '';
     const last = got.length ? got[got.length - 1].rec : null;
-    if(last && last.uploaded_at && Date.now() - last.uploaded_at * 1000 > IT_KILL_FAR_MS && Date.now() - kf.found > IT_KILL_REFIND_MS){ kf.seq = null; kf.head = false; kf.holes.clear(); }   // far behind: find the newest again
+    if(kf.head && last && last.uploaded_at && Date.now() - last.uploaded_at * 1000 > IT_KILL_BEHIND_MS && Date.now() - kf.seqAt >= IT_KILL_RESEQ_MS && gen === it.gen){   // behind: how far?
+      const s = await itKillSeq();
+      if(gen === it.gen && s - kf.seq >= IT_KILL_PER_TICK){ if(s + 1 - IT_KILL_BACK > kf.seq) kf.seq = s + 1 - IT_KILL_BACK; kf.head = false; }
+    }
   }catch(e){
     kf.fails++;
     kf.waitUntil = Date.now() + Math.min(300000, 30000 * 2 ** (kf.fails - 1));   // 30 s, then longer, at most 5 minutes
-    it.kfNote = withCode(`zKillboard's live kill feed isn't answering (${e.message || 'network error'}); kills nearby will show again when it does. If this lasts, zKillboard may have blocked this address for up to an hour after too many requests.`, 'INTEL-05');
+    it.kfNote = e.blocked
+      ? withCode(`This browser can't read zKillboard's live kill feed: it answers nothing the page is allowed to read (a cross-site setting at zKillboard, a blocker, or no connection). Kills nearby will show again when it does; reports from your channels carry on.`, 'INTEL-06')
+      : withCode(`zKillboard's live kill feed isn't answering (${e.message || 'network error'}); kills nearby will show again when it does. If this lasts, zKillboard may have blocked this address for up to an hour after too many requests.`, 'INTEL-05');
   }finally{ kf.busy = false; }
   if(gen !== it.gen) return;
   if(got.length) await itKills(got, gen);
@@ -23855,7 +23781,7 @@ function itKillStatus(){
   if(kf.seq === null || !kf.head) return ' · kills: catching up';
   const ago = Date.now() - kf.lastGot;
   if(ago < IT_KILL_SLOW_MS) return ` · last kill read ${itAgo(kf.lastGot)} ago`;
-  return ` · <span class="it-kslow" title="No kill has come from zKillboard's live feed for ${escapeHtml(itAgo(kf.lastGot))}. The page keeps reading ahead past missing numbers, less often while it finds nothing; zKillboard may be slow or down.">no kill read for ${itAgo(kf.lastGot)}</span>`;
+  return ` · <span class="it-kslow" title="No kill has come from zKillboard's live feed for ${escapeHtml(itAgo(kf.lastGot))}. The page asks for the next kill every 6 seconds and checks zKillboard's newest number every minute; zKillboard may be slow or down.">no kill read for ${itAgo(kf.lastGot)}</span>`;
 }
 function itStatusLine(){
   if(!it.on) return '';

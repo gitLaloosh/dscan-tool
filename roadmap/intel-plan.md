@@ -168,7 +168,26 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   when the kills read were uploaded over an hour ago (at most once per 5 minutes). The H2 Feed and Near You;
   itStandIcon / itStandKind, itSecKey / itSecText / itSysTitle, itJumpsHtml, itKillWord / itKillBadges,
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
-- Open: whether `sequence.json` stays stale (a zKillboard issue or by design); the page no longer depends on it.
+- ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
+
+## Kills read as documented (v2026.10.29.8)
+
+The cause behind v2026.10.29.4-29.6, found that evening (`roadmap/r2z2-relay-plan.md` has the evidence): Cloudflare, in front
+of R2Z2, kept a copy per website (per `Origin`). Our site's `sequence.json` was a day old, and a number asked for before it was
+published stayed "not found" for our site for about an hour; the numbers weren't missing at all, and the read-ahead made it
+worse. zKillboard's developer, in its Discord (#zkillboard-com), confirmed it was Cloudflare and on 2026-10-29 removed the
+`Origin` from requests to R2Z2 (a request header rule), then added the permission header (CORS) to its answers after the
+owner reported every browser blocked. Checked from the owner's browser on this site, 19:19-19:26 UTC: CORS passes,
+`sequence.json` updated every ~51 kills, a number asked for 150 too early read 200 once published. The relay isn't needed.
+
+- **v2026.10.29.8: done.** The reader as zKillboard documents it and as RIFT reads it: start at `sequence.json`, read back
+  240 (gaps before its number read past at once); live, a 404 waits 6 s and asks for the same number; after a minute with no
+  kill, `sequence.json` again: past the number waited on, it was a gap (read on at the read-back's pace); not past it, "too
+  soon" (keep waiting). A kill read live uploaded over 2 minutes ago (a sleeping tab): `sequence.json`, then only the last 240.
+  Removed: finding the newest by steps and halving, the read-through, windows further on, holes asked again, the back-off.
+  New INTEL-06 when `sequence.json` comes back with nothing the page may read (CORS, a blocker, no connection).
+- Open: zKillboard's setting is outside this repo; INTEL-06 is how a change there would show. The relay plan stays as the
+  fallback.
 
 ## Wider gaps (v2026.10.29.6)
 

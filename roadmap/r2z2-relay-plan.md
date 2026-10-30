@@ -1,6 +1,9 @@
 # R2Z2 relay plan (Intel kills through a small proxy)
 
-Status: **proposed, 2026-10-29.** Nothing built yet. The owner reads this, then decides.
+Status: **not needed (2026-10-29 evening).** zKillboard's developer changed Cloudflare the same day: the `Origin` removed from
+requests to R2Z2 and the permission header (CORS) added to its answers. From the owner's browser on this site: `sequence.json`
+current and no stuck 404s. The page reads R2Z2 directly, as documented (v2026.10.29.8, `roadmap/intel-plan.md`). Kept as the
+fallback if that changes (INTEL-06 would show it).
 
 ## Why
 

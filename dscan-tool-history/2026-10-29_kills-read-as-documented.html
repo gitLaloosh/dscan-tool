@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-29 — Intel: kills read as documented</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel: kills read as documented</h1>
+<p><span class="tag">Fix</span><span class="tag">Tests</span> 2026-10-29 &middot; <code>v2026.10.29.7</code> &rarr; <code>v2026.10.29.8</code></p>
+<p>The end of a day of missing Intel kills. Three deliveries (v2026.10.29.4 to .6) read further and further ahead past "missing" numbers, and each failed live while RIFT showed the kills. This one removes all of that: the cause was never on the page's side.</p>
+
+<h2>How it was found</h2>
+<ul>
+<li><b>The numbers weren't missing.</b> Every "gap" seen that day existed when read from another website. Cloudflare, which sits in front of zKillboard's live feed (R2Z2), kept a separate copy for each website asking (each <code>Origin</code>):
+  <ul>
+  <li>our site's <code>sequence.json</code> was a day old;</li>
+  <li>a number asked for before it was published stayed "not found" for our site for about an hour.</li>
+  </ul>
+  Following a live feed means asking for the next number before it exists, so the page lost exactly the newest kills. The read-ahead created more of those stuck "not found"s.</li>
+<li><b>A controlled test settled it.</b> One number asked for early from our site stayed unreadable there after it was published. The next number, not asked for early, read fine. Desktop apps such as RIFT send no <code>Origin</code>, so they never saw this.</li>
+<li><b>zKillboard's developer confirmed it was Cloudflare, in zKillboard's Discord, and changed it the same day.</b>
+  <ul>
+  <li>The first step removed the <code>Origin</code> from requests. That also removed the permission header every browser needs to read another site's answer (CORS). The owner's browser showed "No 'Access-Control-Allow-Origin' header", and our page's own reads failed the same way, while curl looked fine.</li>
+  <li>The owner reported it, and the permission header was added.</li>
+  </ul></li>
+<li><b>Checked from the owner's browser on this site, 19:19&ndash;19:26 UTC:</b>
+  <ul>
+  <li>the permission check passes;</li>
+  <li><code>sequence.json</code> updated every ~51 kills (the documented rate);</li>
+  <li>a number asked for 150 too early read 200 once it was published.</li>
+  </ul>
+  The planned relay (<code>roadmap/r2z2-relay-plan.md</code>) isn't needed.</li>
+</ul>
+
+<h2>What you get</h2>
+<ul>
+<li><b>The feed is read the way zKillboard documents it, and the way RIFT reads it:</b>
+  <ul>
+  <li>start at <code>sequence.json</code> and read back about 15 minutes;</li>
+  <li>live, ask for the next kill; if it isn't there, ask for the same number again in 6 seconds;</li>
+  <li>after a minute with no kill, check <code>sequence.json</code>. If it's past the number being waited on, that number was a real gap and the page reads past it. If not, the kill just isn't out yet.</li>
+  </ul></li>
+<li><b>A tab that slept catches up quickly.</b> If a kill read live was uploaded over 2 minutes ago, the page checks <code>sequence.json</code> and reads only the last ~15 minutes, at the read-back's pace.</li>
+<li><b>Fewer requests:</b> about 20 a minute (one per kill, one every 6 seconds while waiting). The console no longer fills with "404" lines from numbers far ahead.</li>
+<li><b>A new note, INTEL-06,</b> appears when the browser can read nothing from the feed (the permission header missing again, a blocker, or no connection). Before, it could pass for a quiet night. INTEL-05 stays for a feed answering with an error.</li>
+<li>No number the engine works out changed.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_kills_check.py</code> rewritten for the feed as it now answers (<code>sequence.json</code> 30 behind the newest, missing files as readable 404s):
+  <ul>
+  <li>the start asks nothing to find the newest, and gaps before <code>sequence.json</code>'s number are asked for once;</li>
+  <li>while live, only the waited-on number is asked, every 6 s;</li>
+  <li>after a minute, a gap is read past, while "too soon" keeps waiting without re-reading <code>sequence.json</code> within the minute;</li>
+  <li>40 missing then 20 kills are read through at once;</li>
+  <li>an unreadable 404 is still "not there yet" (LESSON #89);</li>
+  <li>a tab woken 1000 behind reads only the last 240;</li>
+  <li>a 503 gives INTEL-05, and nothing readable gives INTEL-06;</li>
+  <li>a hidden tab makes at most 12 requests a second.</li>
+  </ul>
+  The other parts are unchanged. Four broken versions, each caught: no re-check of <code>sequence.json</code> after a minute (fails 9), always reading past the waited-on number (fails 1), INTEL-05 in place of INTEL-06 (fails 1), no catching up for a sleeping tab (fails 4). v2026.10.29.7 fails 11.</li>
+<li>Regression suite ALL PASS (269 fits). Update-check chain: 48 steps, all OK. All 46 page checks pass (<code>extension_check.py</code> flaked once under load and passed on its own, as before). The lints, the personal-data check and the request-gate check report 0 problems.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #102: when a client that works reads the same source, find what differs before tuning your workaround again.</p>
+<ul>
+<li>List what differs between its requests and yours (headers such as <code>Origin</code>, timing) and test the source with only that one thing changed.</li>
+<li>A "missing" answer can be a cache's memory, and asking too early can create it.</li>
+<li>Read a feed the way its docs and a working client do.</li>
+<li>Test a fix at the source from a browser on your own site: curl skips CORS.</li>
+<li>Give "the browser may read nothing" its own error code.</li>
+</ul>
+</body></html>

@@ -54,10 +54,20 @@ v.29.4 looked at; after 30 s with no kill the page reads on number by number and
 one look costs at most 32 + 56 requests and the next comes a minute later (the wait doubles to 5 minutes). A start with 19
 missing in a row near the newest (his restart stopped there): the newest found past them. Requests per second are timed in the
 page (window.__r2t), not by the route handler, whose times bunch under load. v2026.10.29.4 fails.
-v2026.10.29.6 (the owner's console line and a probe of his feed at 14:47-14:53 UTC: 40 missing in a row, then 20 kills published
-together, then nothing more yet): read through the gap and the kill shown; one look costs at most 128 + 80 requests; the wait
-between looks finding nothing grows to 1 minute at most; 6 missing in a row while live are crossed at once (8 looked at past a
-missing number, was 3). Finding the newest at the start may take up to 120 requests. v2026.10.29.5 fails.
+v2026.10.29.6 (the owner's console line and a probe of his feed at 14:47-14:53 UTC): wide gaps read through (replaced below).
+v2026.10.29.8 (zKillboard's developer changed Cloudflare on 2026-10-29: sequence.json current for every website, no stuck 404s;
+checked from the owner's browser): the RIFT-style reader. R2Z2 is answered here as it now answers: sequence.json 30 behind
+the newest, a missing file a readable 404. Checks:
+  * the start: sequence.json, then from 240 before its number, nothing asked to find the newest; two gaps before
+    sequence.json's number read past and asked for once only;
+  * live: a missing number asked for again only after 6 s and nothing past it asked meanwhile ("too soon");
+  * a gap while live: after a minute with no kill, sequence.json once; past the gap, so read past it, the kill after it shown;
+    not past it: the same number waited on, sequence.json not read again within the minute; then the kill shows;
+  * 40 missing then 20 kills, sequence.json past them: read through at once; a 404 without the permission header (LESSON
+    #89) still "not there yet"; a sleeping tab far behind sequence.json: only the last 240 read;
+  * R2Z2 answering 503: INTEL-05; answering nothing the page may read (CORS, sequence.json too): INTEL-06; both go when it answers;
+  * a hidden tab (timers bunched): at most 12 a second, 19 in a row missing before sequence.json's number read past.
+v2026.10.29.7 fails (it reads ahead past sequence.json and looks for the newest by steps).
 """
 import sys, os, time, re, json
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -82,31 +92,33 @@ def km(kid, sysname, ago, victim, vship, atts, value, npc=False, sysid=None):
     return {'killmail_id': kid, 'hash': f'{kid:040x}', 'esi': {'killmail_id': kid, 'killmail_time': iso(time.time() - ago), 'solar_system_id': sid,
             'victim': dict(victim, ship_type_id=M.byname[vship]), 'attackers': A},
             'zkb': {'totalValue': value, 'npc': npc, 'solo': len(A) == 1, 'attackerCount': len(A), 'href': f'https://esi.evetech.net/killmails/{kid}/x/'}}
-SEQ = {'stale': 2000, 'last': 5000, 'fail': False}   # v.100: sequence.json says 2000 while kills exist to 5000 (R2Z2 on 2026-10-28)
-START = SEQ['last'] + 1 - 240                          # where the page should start reading (240 before the newest)
-HOLES = {START + 10, START + 11, SEQ['last'] - 8}      # v.103: missing for good; 4992 is where halving the gap would stop
-LATE = {}                                              # v.103: number -> the time it appears (missing before)
+SEQ = {'seq': 4970, 'last': 5000, 'fail': None}  # v2026.10.29.8: sequence.json 30 behind the newest (uploaded every ~51); fail: None, 503, or 'abort'
+START = SEQ['seq'] + 1 - 240                          # where the page should start reading (240 before sequence.json's number)
+HOLES = {START + 10, START + 11}                      # gaps before sequence.json's number: published numbers that aren't there
+LATE = {}                                             # number -> the time it appears (not there before)
+NOCORS = {'on': False}
+OLD = {'from': 0, 'to': -1}                           # numbers uploaded 5 minutes ago (a sleeping tab's backlog)                                # LESSON #89: a 404 without the permission header (the browser sees a network error)
 REC = {}
 REQS = []   # (time, path, status)
 ACAO = {'access-control-allow-origin': '*'}
 def filler(n):   # every number up to the newest is a kill: here an NPC kill in Jita (left out); before START, uploaded 2 h ago
     r = km(9300000 + n, 'Jita', 7300 if n < START else 120, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 1e6, npc=True)
-    r['uploaded_at'] = int(time.time() - (7200 if n < START else 60)); return r
+    r['uploaded_at'] = int(time.time() - (7200 if n < START else 300 if OLD['from'] <= n <= OLD['to'] else 60)); return r
 def r2z2(route):
     url = route.request.url; path = url.split('r2z2.zkillboard.com')[1]
-    if SEQ['fail']: REQS.append((time.time(), path, 503)); return route.abort('failed')   # down: the page sees a network error
+    if SEQ['fail'] == 'abort': REQS.append((time.time(), path, 0)); return route.abort('failed')   # nothing the page may read (CORS, no connection)
+    if SEQ['fail']: REQS.append((time.time(), path, SEQ['fail'])); return route.fulfill(status=SEQ['fail'], headers=ACAO, body='')
     if path.endswith('/sequence.json'):
-        REQS.append((time.time(), path, 200)); return route.fulfill(status=200, content_type='application/json', headers=ACAO, body=json.dumps({'sequence': SEQ['stale']}))
+        REQS.append((time.time(), path, 200)); return route.fulfill(status=200, content_type='application/json', headers=ACAO, body=json.dumps({'sequence': SEQ['seq']}))
     m = re.search(r'/ephemeral/(\d+)\.json$', path)
     n = int(m.group(1)) if m else -1
-    if n in HOLES or time.time() < LATE.get(n, 0):
-        REQS.append((time.time(), path, 404)); return route.abort('failed')
-    if n in REC or 0 < n <= SEQ['last']:
+    if not (n in HOLES or time.time() < LATE.get(n, 0)) and (n in REC or 0 < n <= SEQ['last']):
         REQS.append((time.time(), path, 200)); return route.fulfill(status=200, content_type='application/json', headers=ACAO, body=json.dumps(dict(REC.get(n) or filler(n), sequence_id=n)))
-    # The real one answers 404 without the CORS header, so the browser reports a network error and the page never sees the
-    # 404. Playwright's route.fulfill() skips the CORS check (a header-less 404 reaches the page as a 404), so the double
-    # aborts the request instead: what the page sees is then what it sees on the real feed (LESSON #89).
-    REQS.append((time.time(), path, 404)); return route.abort('failed')
+    REQS.append((time.time(), path, 404))
+    # Since 2026-10-29 a 404 carries the permission header and the page reads it. Before, it didn't: the browser reported a network
+    # error. Playwright's route.fulfill() skips the CORS check, so that case is an aborted request here (LESSON #89).
+    if NOCORS['on']: return route.abort('failed')
+    return route.fulfill(status=404, headers=ACAO, body='')
 SEC = {'Jita': 0.946, 'New Caldari': 0.95}
 def esi2(route):
     m = re.search(r'/universe/systems/(\d+)/', route.request.url)
@@ -170,8 +182,9 @@ with sync_playwright() as p:
     took = time.time() - t0
     seq = [p_ for _, p_, _ in REQS]
     i0 = seq.index(f'/ephemeral/{START}.json') if f'/ephemeral/{START}.json' in seq else -1
-    check(seq[:1] == ['/ephemeral/sequence.json'] and 0 < i0 <= 120 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and took < 40,
-          f'R2Z2: sequence.json (stale: {SEQ["stale"]}), the newest kill found in {i0 - 1} requests past a hole where halving stops ({SEQ["last"] - 8}), then read from 240 before it ({START}) past two more holes; the kill in range shown after {took:.0f} s')
+    once = [sum(1 for q in seq if q == f'/ephemeral/{h}.json') for h in sorted(HOLES)]
+    check(seq[:1] == ['/ephemeral/sequence.json'] and i0 == 1 and seq[i0:i0 + 6] == [f'/ephemeral/{START + i}.json' for i in range(6)] and once == [1, 1] and took < 40,
+          f'R2Z2: sequence.json ({SEQ["seq"]}), then read from 240 before it ({START}) with nothing asked to find the newest; two gaps before its number read past, each asked for once {once}; the kill in range shown after {took:.0f} s')
     pg.wait_for_timeout(3000)
     R = pg.evaluate(ROWS)
     kills = [r for r in R if r['ty'] in LABELS]
@@ -238,117 +251,79 @@ with sync_playwright() as p:
     near9 = pg.evaluate("(n) => [...document.querySelectorAll('#itNearList .it-nb')].filter(r => r.querySelector('.sys').textContent === n).map(r => r.classList.contains('alert'))", SYSNAME[S9])
     check(k9 == [f'{SYSNAME[S9]} 9 Jumps'] and not k12 and near9 == [False] and pg.evaluate("() => __fs.beeps") == b0 and pg.evaluate("() => itKillRange()") == 10,
           f'the kill range set to 10 under the gear: a kill 9 jumps away shows in the Feed and Near You, beyond the alert range (no alert); one 12 jumps away does not ({k9}, {k12}, {near9})')
-    # ---- v2026.10.29.4: a gap of 4 missing numbers, then kills (the owner's feed, 2026-10-29 10:05 UTC: 100274284-287 missing for good) ----
-    for _ in range(60):
-        if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
-        pg.wait_for_timeout(250)
+    # ---- v2026.10.29.8: the reader as documented (and as RIFT reads) ----
+    def idle():
+        for _ in range(80):
+            if pg.evaluate("() => it.kf.head && !it.kf.busy"): return True
+            pg.wait_for_timeout(250)
+        return False
+    def nums(r0):   # the numbered files asked for since REQS[r0], and how often sequence.json was
+        out = [int(re.search(r'/(\d+)\.json$', q).group(1)) for _, q, _ in REQS[r0:] if re.search(r'/(\d+)\.json$', q)]
+        return out, sum(1 for _, q, _ in REQS[r0:] if q.endswith('/sequence.json'))
+    def s7():
+        return [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
+    def wait_s7(k, extra='true', n=60):
+        t0 = time.time()
+        for _ in range(n):
+            if len(s7()) == k and pg.evaluate(f"() => it.kf.head && !it.kf.busy && ({extra})"): break
+            pg.wait_for_timeout(500)
+        return time.time() - t0
+    idle()
     s1 = pg.evaluate("() => (document.querySelector('[data-it-status]') || {}).textContent || ''")
     check(re.search(r' · last kill read \d+ s ago$', s1) is not None, f'the status line says when a kill was last read {s1!r}')
     S7 = next(i for i, d in sorted(D0.items()) if d == 7 and i in SYSNAME)
+    # a gap while live (4 never published), then kills; sequence.json past them once they're uploaded
     G0 = SEQ['last'] + 1
-    HOLES.update(range(G0, G0 + 4))   # four missing for good
+    HOLES.update(range(G0, G0 + 4))
     REC[G0 + 4] = km(9200030, None, 30, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 3e6, sysid=S7)
-    SEQ['last'] = G0 + 9              # and kills after them
-    pg.wait_for_timeout(8000)         # v2026.10.29.3 waits here for ever: 1-3 past the gap missing reads as "nothing new yet"
-    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; }")   # a minute with no kill read (instead of waiting the minute)
-    r0 = len(REQS); t0 = time.time(); k7 = []
-    for _ in range(40):
-        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
-        if k7: break
-        pg.wait_for_timeout(500)
-    took = time.time() - t0; _, per_s = gaps_ok(); per_s = per_s_page(pg)
-    st = pg.evaluate("() => [it.kf.seq, it.kf.head, it.kf.holes.size, it.kf.target]")
-    check(k7 == [f'{SYSNAME[S7]} 7 Jumps'] and st[0] == SEQ['last'] + 1 and per_s <= 12,
-          f'4 missing in a row, then kills: after a minute with no kill the page looks further ahead, finds them and reads on; the kill 7 jumps away shown {took:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), holes {st[2]}, {len(REQS) - r0} requests, at most {per_s} in any second ({k7})')
-    # a gap wider than one read-back batch (28): 40 missing, then kills; the gap's numbers kept to ask again, at most 40
-    G1 = SEQ['last'] + 1
-    HOLES.update(range(G1, G1 + 40))
-    REC[G1 + 40] = km(9200031, None, 20, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 5e6, sysid=S7)
-    SEQ['last'] = G1 + 100            # kills keep coming after the gap
-    pg.wait_for_timeout(8000)
-    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; it.kf.stallAt = 0; }")   # (and the last look ahead a minute ago: at most once a minute)
-    t0 = time.time(); k7 = []
-    for _ in range(80):
-        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
-        if len(k7) == 2 and pg.evaluate("() => it.kf.head && !it.kf.busy"): break
-        pg.wait_for_timeout(500)
-    took = time.time() - t0; _, per_s = gaps_ok(); per_s = per_s_page(pg)
-    st = pg.evaluate("() => [it.kf.seq, it.kf.head, it.kf.holes.size]")
-    check(len(k7) == 2 and st[0] == SEQ['last'] + 1 and st[2] <= 40 and per_s <= 12,
-          f'40 missing in a row (wider than a read-back batch), then kills: read past them, the kill shown {took:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), {st[2]} numbers kept to ask again (at most 40), at most {per_s} requests in any second')
-    # ---- v2026.10.29.5: patchy numbers (the owner's feed, 2026-10-29 from 12:30 UTC: 100275281-299 missing, 300 there, then
-    # 305, 313, 320, 329, 345, 409 ... missing between kills). Missing here: the 19 after where the page is, and every number
-    # v.29.4 looked at (4-8, 12, 16, 24, 32, 48, 64, 128 past it), with kills between them ----
-    for _ in range(60):
-        if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
-        pg.wait_for_timeout(250)
-    P0 = SEQ['last'] + 1
-    HOLES.update(range(P0, P0 + 19))
-    HOLES.update(P0 + d for d in (24, 32, 48, 64, 128))
-    REC[P0 + 19] = km(9200032, None, 15, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 4e6, sysid=S7)
-    SEQ['last'] = P0 + 140
-    pg.wait_for_timeout(8000)
-    pg.evaluate("() => { it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; }")   # 30 s with no kill read (set, not waited)
-    t0 = time.time(); k7 = []
-    for _ in range(80):
-        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
-        if len(k7) == 3 and pg.evaluate("() => it.kf.head && !it.kf.busy && it.kf.seq > " + str(SEQ['last'])): break
-        pg.wait_for_timeout(500)
-    took = time.time() - t0; _, per_s = gaps_ok(); per_s = per_s_page(pg)
-    st = pg.evaluate("() => [it.kf.seq, it.kf.stallGap]")
-    check(len(k7) == 3 and st[0] == SEQ['last'] + 1 and per_s <= 12,
-          f'patchy numbers (19 missing, then missing between kills at every number v.29.4 looked at): after 30 s with no kill the page reads on number by number past the gap; the kill shown {took:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), at most {per_s} requests in any second')
-    # nothing new anywhere: it looks less often (30 s, then 1, 2, 4, 5 min), so a quiet feed isn't asked hundreds of times a minute
-    r0 = len(REQS); s0 = pg.evaluate("() => it.kf.seq")
-    pg.evaluate("() => { it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; it.kf.waitUntil = 0; }")
-    for _ in range(80):   # one look: up to 208 requests at 10 a second
-        pg.wait_for_timeout(500)
-        if pg.evaluate("() => it.kf.stallAt > 0 && !it.kf.busy"): break
-    gap1 = pg.evaluate("() => it.kf.stallGap")
-    n1 = sum(1 for _, p_, _ in REQS[r0:] if re.search(r'/(\d+)\.json$', p_) and int(re.search(r'/(\d+)\.json$', p_).group(1)) >= s0 + 9)   # past the live end's own 8 (v2026.10.29.6; the numbers kept to ask again are older)
-    check(gap1 == 60000 and n1 <= 128 + 5 * 16, f'nothing new anywhere: {n1} requests for one look (v2026.10.29.6: 128 read on, 16 at each of 5 places further), then the next look a minute later, not 30 s (stallGap {gap1})')
-    # v2026.10.29.6: the wait grows to 2 minutes at most (v.29.5: 5; the owner's page was looking every 4 minutes when his kills came)
-    CAP = pg.evaluate("() => typeof IT_KILL_STALL_MAX_MS === 'number' ? IT_KILL_STALL_MAX_MS : 0")
-    pg.evaluate("(c) => { it.kf.stallGap = c; it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; it.kf.waitUntil = 0; }", CAP)
-    for _ in range(80):
-        pg.wait_for_timeout(500)
-        if pg.evaluate("() => it.kf.stallAt > 0 && !it.kf.busy"): break
-    gap2 = pg.evaluate("() => it.kf.stallGap")
-    check(CAP == 60000 and gap2 == CAP, f'nothing found again with the wait at its longest: it stays there, 1 minute (v.29.5: 5; {gap2})')
-    # ---- v2026.10.29.6: 6 missing in a row while live: crossed at once (8 looked at past a missing number, was 3), no 30 s wait ----
-    for _ in range(60):
-        if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
-        pg.wait_for_timeout(250)
-    pg.evaluate("() => { it.kf.lastGot = Date.now(); it.kf.stallGap = 30000; }")
-    R0 = SEQ['last'] + 1
-    HOLES.update(range(R0, R0 + 6))
-    REC[R0 + 6] = km(9200034, None, 10, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 7e6, sysid=S7)
-    SEQ['last'] = R0 + 8
-    t0 = time.time(); k7 = []
-    for _ in range(30):
-        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
-        if len(k7) == 4: break
-        pg.wait_for_timeout(500)
-    check(len(k7) == 4 and time.time() - t0 < 15, f'6 missing in a row while live: the kill after them shown in {time.time() - t0:.0f} s, without the 30 s look (v.29.5 looked 3 past a missing number)')
-    # ---- v2026.10.29.6: the owner's feed at 14:47-14:53 UTC: 40 missing in a row, then 20 kills published together, then nothing
-    # more yet. v.29.5 read through 32 and its first window further on (32-39 past) fell inside the gap ----
-    for _ in range(60):
-        if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
-        pg.wait_for_timeout(250)
-    Q0 = SEQ['last'] + 1
+    SEQ['last'] = G0 + 9; SEQ['seq'] = G0 + 9
+    r0 = len(REQS); pg.wait_for_timeout(13000)
+    asked, sq = nums(r0)
+    check(asked and set(asked) == {G0} and 2 <= len(asked) <= 3 and sq == 0,
+          f'a missing number while live: only it asked for, every 6 s, nothing past it and no sequence.json within the minute ({asked}, sequence.json {sq} times)')
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; it.kf.seqAt = 0; }")   # a minute with no kill read (set, not waited)
+    r0 = len(REQS); took = wait_s7(1, f"it.kf.seq > {SEQ['last']}")
+    asked, sq = nums(r0); st = pg.evaluate("() => [it.kf.seq, it.kf.target]"); per_s = per_s_page(pg)
+    check(s7() == [f'{SYSNAME[S7]} 7 Jumps'] and st[0] == SEQ['last'] + 1 and sq == 1 and len(asked) <= 10 + 28 + 2 and per_s <= 12,
+          f'a minute without a kill: sequence.json read once ({sq}), past the gap, so the gap read past and the kill 7 jumps away shown {took:.0f} s later; now at {st[0]} (newest {SEQ["last"]}), {len(asked)} files asked, at most {per_s} in any second')
+    # too soon: sequence.json not past the number waited on: keep waiting, sequence.json not read again within the minute
+    idle(); N0 = SEQ['last'] + 1
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; it.kf.seqAt = 0; }")
+    r0 = len(REQS); pg.wait_for_timeout(13000)
+    asked, sq = nums(r0); st = pg.evaluate("() => it.kf.seq")
+    check(sq == 1 and set(asked) == {N0} and st == N0, f'"too soon" (sequence.json not past it): sequence.json read once ({sq}), the same number waited on ({sorted(set(asked))}, at {st})')
+    REC[N0] = km(9200031, None, 20, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 5e6, sysid=S7)
+    SEQ['last'] = N0
+    took = wait_s7(2, n=30)
+    check(len(s7()) == 2 and took < 9, f'published: shown at the next ask, {took:.0f} s later')
+    # 40 missing in a row, then 20 kills published together; sequence.json past them (the shape of the owner's feed at 14:53)
+    idle(); Q0 = SEQ['last'] + 1
     HOLES.update(range(Q0, Q0 + 40))
     REC[Q0 + 50] = km(9200033, None, 10, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 6e6, sysid=S7)
-    SEQ['last'] = Q0 + 59
-    pg.wait_for_timeout(8000)
-    pg.evaluate("() => { it.kf.lastGot = Date.now() - 31000; it.kf.stallAt = 0; it.kf.stallGap = 30000; }")
-    t0 = time.time(); k7 = []
-    for _ in range(80):
-        k7 = [r['sys'] for r in pg.evaluate(ROWS) if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S7] + ' ')]
-        if len(k7) == 5 and pg.evaluate("() => it.kf.head && !it.kf.busy && it.kf.seq > " + str(SEQ['last'])): break
-        pg.wait_for_timeout(500)
-    st = pg.evaluate("() => [it.kf.seq, it.kf.stallGap]"); per_s = per_s_page(pg)
-    check(len(k7) == 5 and st[0] == SEQ['last'] + 1 and per_s <= 12,
-          f'40 missing in a row, then 20 kills and nothing more yet (the owner\'s feed at 14:53): read through the gap, the kill shown {time.time() - t0:.0f} s later, now at {st[0]} (newest {SEQ["last"]}), at most {per_s} requests in any second')
+    SEQ['last'] = Q0 + 59; SEQ['seq'] = Q0 + 59
+    pg.wait_for_timeout(7000)
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; it.kf.seqAt = 0; }")
+    r0 = len(REQS); took = wait_s7(3, f"it.kf.seq > {SEQ['last']}")
+    asked, sq = nums(r0); st = pg.evaluate("() => it.kf.seq"); per_s = per_s_page(pg)
+    check(len(s7()) == 3 and st == SEQ['last'] + 1 and len(asked) <= 60 + 28 + 2 and per_s <= 12,
+          f'40 missing, then 20 kills, sequence.json past them: read through at once, the kill shown {took:.0f} s later, now at {st} (newest {SEQ["last"]}), {len(asked)} files asked, at most {per_s} in any second')
+    # LESSON #89: a 404 without the permission header (a network error to the page) is still "not there yet": no note
+    idle(); NOCORS['on'] = True; N1 = SEQ['last'] + 1
+    REC[N1] = km(9200034, None, 10, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 7e6, sysid=S7)
+    LATE[N1] = time.time() + 4; SEQ['last'] = N1
+    took = wait_s7(4, n=40); note = pg.evaluate(NOTE)
+    check(len(s7()) == 4 and note == '', f'a 404 the browser may not read (LESSON #89): "not there yet", the kill shown when published ({took:.0f} s), no note {note!r}')
+    NOCORS['on'] = False
+    # a sleeping tab far behind: sequence.json 1000 past it: only the last 240 read
+    idle(); F0 = SEQ['last'] + 1
+    SEQ['last'] = F0 + 999; SEQ['seq'] = F0 + 999; OLD.update({'from': F0, 'to': SEQ['last'] - 240})
+    REC[SEQ['last'] - 20] = km(9200035, None, 10, who('Corvin Morrow'), 'Rifter', [(who('Marrek Ketter'), 'Vedmak')], 8e6, sysid=S7)
+    pg.evaluate("() => { it.kf.seqAt = 0; }")   # (sequence.json last read over a minute ago)
+    r0 = len(REQS); took = wait_s7(5, f"it.kf.seq > {SEQ['last']}", n=120)   # 240 at the gate's 10 a second: ~25 s
+    asked, sq = nums(r0); st = pg.evaluate("() => it.kf.seq")
+    skipped = [n for n in asked if F0 + 12 <= n < SEQ['seq'] + 1 - 240]
+    check(len(s7()) == 5 and st == SEQ['last'] + 1 and not skipped and len(asked) <= 12 + 240 + 28 + 2,
+          f'a sleeping tab woken 1000 behind: the first kill read was uploaded 5 min ago, so sequence.json read and only the last 240 read ({len(asked)} files, {len(skipped)} in the backlog past the first tick), the kill shown {took:.0f} s later')
     pg.evaluate("() => { it.kf.lastGot = Date.now() - 6 * 60000; }")
     pg.wait_for_timeout(1200)
     s2 = pg.evaluate("() => { const e = document.querySelector('[data-it-status] .it-kslow'); return e ? [e.textContent, getComputedStyle(e).color] : null; }")
@@ -359,17 +334,6 @@ with sync_playwright() as p:
     got = pg.evaluate("() => [document.querySelector('#pilotName').value, document.querySelector('#manualShip').value]")
     check(got == ['Marrek Ketter', 'Vedmak'], f'a pilot on a kill opens in the ship they flew {got}')
     pg.click('#tabBtnIntel'); pg.wait_for_timeout(300)
-    # ---- far behind (a sleeping tab): the page finds the newest again ----
-    for _ in range(60):   # v2026.10.29.5: set while the reader is idle (a read under way would overwrite it), then up to 20 s
-        if pg.evaluate("() => !it.kf.busy"): break
-        pg.wait_for_timeout(100)
-    pg.evaluate(f"() => {{ it.kf.seq = {START - 1500}; it.kf.found = 0; it.kf.head = true; it.kf.waitUntil = 0; it.kf.lastGot = Date.now(); }}")
-    for _ in range(40):
-        if pg.evaluate("() => it.kf.found > 0 && it.kf.seq !== null"): break
-        pg.wait_for_timeout(500)
-    pg.wait_for_timeout(1500)
-    kf = pg.evaluate("() => [it.kf.seq, it.kf.found > 0, it.kf.head]")
-    check(kf[0] >= SEQ['last'] - 240 and kf[1], f'far behind (kills uploaded 2 h ago): it finds the newest again and reads from there {kf} (newest {SEQ["last"]})')
     # ---- the filters ----
     def rows(): return pg.evaluate(ROWS)
     pg.select_option('[data-it-f="types"]', 'kills'); pg.wait_for_timeout(200)
@@ -399,35 +363,49 @@ with sync_playwright() as p:
     for _ in range(60):   # caught up first (reading back has its own check of sequence.json), so this tests the live path
         if pg.evaluate("() => it.kf.head && !it.kf.busy"): break
         pg.wait_for_timeout(500)
-    SEQ['fail'] = True; pg.evaluate("() => { it.kf.waitUntil = 0; }")
-    for _ in range(30):   # v2026.10.29.4: numbers kept to ask again go first (up to 40 here, 100 ms apart), then the note
+    SEQ['fail'] = 503; pg.evaluate("() => { it.kf.waitUntil = 0; }")
+    for _ in range(30):
         note = pg.evaluate(NOTE)
         if note: break
         pg.wait_for_timeout(500)
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', 'T5ZI-S Kirra Longtail loki')); pg.wait_for_timeout(2600)
     still = pg.evaluate("() => [...document.querySelectorAll('#itFeedList .raw')].some(r => r.textContent.endsWith('T5ZI-S Kirra Longtail loki'))")
-    check(note.endswith('(INTEL-05)') and still, f'R2Z2 failing (sequence.json too): INTEL-05, reports carry on ({note!r})')
-    SEQ['fail'] = False; pg.evaluate("() => { it.kf.waitUntil = 0; }")
+    check(note.endswith('(INTEL-05)') and 'status 503' in note and still, f'R2Z2 answering 503: INTEL-05, reports carry on ({note!r})')
+    SEQ['fail'] = None; pg.evaluate("() => { it.kf.waitUntil = 0; }")
     for _ in range(20):
         if pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"): break
         pg.wait_for_timeout(500)
     check(pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"), f'R2Z2 back: the note goes {pg.evaluate("() => [it.kf.busy, it.kf.head, it.kf.fails, it.kf.waitUntil - Date.now()]")}')
+    # v2026.10.29.8: nothing the page may read, sequence.json too (2026-10-29: answers without the permission header): INTEL-06
+    idle(); SEQ['fail'] = 'abort'
+    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; it.kf.seqAt = 0; it.kf.waitUntil = 0; }")
+    for _ in range(30):
+        note = pg.evaluate(NOTE)
+        if note: break
+        pg.wait_for_timeout(500)
+    check(note.endswith('(INTEL-06)') and "can't read zKillboard's live kill feed" in note, f'nothing readable from R2Z2, sequence.json too (CORS): INTEL-06 within the minute\'s check ({note!r})')
+    SEQ['fail'] = None; pg.evaluate("() => { it.kf.waitUntil = 0; }")
+    for _ in range(20):
+        if pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"): break
+        pg.wait_for_timeout(500)
+    check(pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"), 'readable again: INTEL-06 goes')
     pg.click('#intelSwLabel'); pg.wait_for_timeout(500); n0 = len(REQS); pg.wait_for_timeout(8000)
     check(len(REQS) == n0, f'off: no requests to R2Z2 ({len(REQS) - n0})')
     pg.screenshot(path='/tmp/intel100_1440.png', full_page=True)
     ctx.close()
     # ---- v.103: a hidden tab: its timers fire only every 2 s, together ----
     COALESCE = """(() => { const st = window.setTimeout; window.setTimeout = (fn, ms, ...a) => { const at = Math.ceil((Date.now() + (+ms || 0)) / 2000) * 2000; return st(fn, Math.max(0, at - Date.now()), ...a); }; })();"""
-    HOLES.clear(); HOLES.update({START + 10, START + 11, SEQ['last'] - 8})   # v2026.10.29.5: only v.103's holes here (the gaps made since are other parts' tests)
-    HOLES.update(range(SEQ['last'] - 40, SEQ['last'] - 21))   # v2026.10.29.5: and 19 missing in a row near the newest, as on the owner's feed (a restart stopped there)
+    S2 = SEQ['seq'] + 1 - 240
+    HOLES.clear(); HOLES.update({S2 + 10, S2 + 11}); HOLES.update(range(SEQ['seq'] - 40, SEQ['seq'] - 21))   # two gaps, and 19 in a row before sequence.json's number
     REQS.clear(); ctx, pg = start(1440, COALESCE); t0 = time.time()
     for _ in range(90):
-        if pg.evaluate("() => !!(it.kf && it.kf.head)"): break   # v2026.10.29.5: the read-back done (the D-W7F0 kill is no longer in the last 240 once the other parts have added theirs)
+        if pg.evaluate("() => !!(it.kf && it.kf.head)"): break
         pg.wait_for_timeout(500)
-    took = time.time() - t0; _, per_s = gaps_ok(); per_s = per_s_page(pg)
-    tg = pg.evaluate("() => it.kf && it.kf.target")
-    check(tg == SEQ['last'], f'starting with 19 missing in a row near the newest: the newest found past them ({tg}, newest {SEQ["last"]}; v.29.4 stopped before them)')
-    check(per_s <= 12 and took < 45 and pg.evaluate("() => !!(it.kf && it.kf.head)"), f'a hidden tab (timers every 2 s, together): at most {per_s} requests in any second (v.100: 28 at once), and the read-back still done in {took:.0f} s')
+    took = time.time() - t0; per_s = per_s_page(pg)
+    st = pg.evaluate("() => it.kf && [it.kf.seq, it.kf.head]")
+    once = max(sum(1 for _, q, _ in REQS if q == f'/ephemeral/{h}.json') for h in HOLES)
+    check(st == [SEQ['last'] + 1, True] and once == 1, f'starting with 19 missing in a row before sequence.json\'s number: read past them, each asked for once, now at {st} (newest {SEQ["last"]})')
+    check(per_s <= 12 and took < 45, f'a hidden tab (timers every 2 s, together): at most {per_s} requests in any second (v.100: 28 at once), and the read-back still done in {took:.0f} s')
     ctx.close()
     # ---- phone ----
     REQS.clear(); ctx, pg = start(390); pg.wait_for_timeout(20000)
