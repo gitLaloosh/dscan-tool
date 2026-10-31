@@ -129,6 +129,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #111 A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters.
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
+- #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
 
 **Checks and test machinery**
 
@@ -1020,6 +1021,18 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 114. Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps
+
+- **What happened (v2026.10.31.6 → .7):** layout D put Near You's analyze icon in a column right after the system column. In the
+  mockup that column was as wide as the widest name on screen, so the icon sat beside the name. The page makes it as wide as the
+  longest system name in EVE (Tash-Murkon Prime, the owner's 10-30 rule), so on the real page the icon floated far from short nullsec
+  names. The owner caught it from a screenshot. No check did: the page checks load about 20 short made-up system names, so the column
+  was only as wide as those, and the icon sat beside them.
+- **Do this instead:** build a mockup's sizes with the page's own rules (measure the real longest name, use the page's widths), not a
+  shortcut that only looks the same with the sample data. In the layout check, sweep a column as wide as the real longest names
+  (`intel_layout_check.py` draws the busy row with a 160 px system column too) and check what should sit together actually does
+  (the icon one column gap from its system, the badges and names starting under it).
 
 ## 113. Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window
 

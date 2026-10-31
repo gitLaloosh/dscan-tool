@@ -170,6 +170,24 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## The analyze icon in its own column, in both lists (v2026.10.31.7)
+
+- The owner, from a screenshot of v2026.10.31.6: "I dont think the placement of the "send to system analyzer" button was intended to look
+  like that." The icon came after a system column as wide as the longest name in EVE, so it floated far from short names (the mockup had
+  sized that column to the names on screen; LESSON #114).
+- His idea, mockup `analyze_icon_column_mockup.html` (made-up data): "utilize this space to place the button. that way if it doesn't
+  show up, it's not leaving the rest of the content looking misaligned. just looks like a column that either has the button or does
+  not. just have to account for double digit jumps." Both lists: the jumps, the icon's column (the icon or an empty cell), then the
+  system, the tags and the time; the kill badges, what was reported and the kill lines start under the system. The jump column is as
+  wide as "88 Jumps" or the In system callout (`--it-jw`, measured by itSysWidths, one width for both lists).
+- The Feed: report rows get the icon too (the owner: "should we add the button to the feed as well?" ... "ok do it"); it analyzes the
+  whole system, as Near You's does (its hover: "everything reported there in the last N min (not only this line)"); none on kill and
+  clear rows. It reaches systems Near You doesn't list (past the alert range + 5).
+- Phone (the owner picked "put the icon under the jump count next to the expand arrow, so the content keeps today's width"): the icon
+  under the jumps, at the right of the toggle (32 px each).
+- `intel_layout_check.py` (the icon one column gap from its system at every split width with both system columns, the jump column,
+  the names and icons at the same place in both lists, the phone placement); `intel_rows_check.py` (the Feed's icon).
+
 ## Layout D for Near You, the Feed to match (v2026.10.31.6)
 
 - The owner: "i feel like the "Assess" button is taking up a lot of valuable space"; he laid out option D line by line on the mockup

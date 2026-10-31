@@ -165,7 +165,7 @@ with sync_playwright() as p:
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', LONG)); tick(pg, 3200)
     pg.click('#itFeedList [data-it-raw]'); pg.wait_for_timeout(200)   # v.100: the copy button is in the strip a toggle opens
     sz = pg.evaluate("() => { const a = document.querySelector('[data-it-assess]').getBoundingClientRect(), t = document.querySelector('#itFeedList [data-it-raw]').getBoundingClientRect(), b = document.querySelector('#itFeedList .it-fd.open [data-it-shape]'), s = b.getBoundingClientRect(); return [Math.round(a.height), Math.round(t.width), Math.round(t.height), Math.round(s.width), Math.round(s.height), +getComputedStyle(b).opacity >= 0.6]; }")
-    check(sz[0] >= 32 and sz[1] >= 36 and sz[2] >= 32 and sz[3] >= 36 and sz[4] >= 36 and sz[5], f'390 px: the analyze icon 32 px (v2026.10.31.6, was Assess 40 px; the owner: "a 32 px touch target"), the toggle 36 x 32 px, the copy button 36 px and shown {sz}')
+    check(sz[0] >= 32 and sz[1] >= 32 and sz[2] >= 32 and sz[3] >= 36 and sz[4] >= 36 and sz[5], f'390 px: the analyze icon 32 px (v2026.10.31.6, was Assess 40 px; the owner: "a 32 px touch target"), the toggle 32 x 32 px (v2026.10.31.7, was 36: it shares the jump column with the icon), the copy button 36 px and shown {sz}')
     over = pg.evaluate("() => [document.documentElement.scrollWidth, [...document.querySelectorAll('#intelPanel *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.right > innerWidth + 1 || r.left < -1); }).map(e => e.className || e.tagName).slice(0, 5)]")
     check(over[0] <= 390 and not over[1], f'390 px: nothing off the page {over}')
     pg.screenshot(path='/tmp/intel98_390.png', full_page=True)

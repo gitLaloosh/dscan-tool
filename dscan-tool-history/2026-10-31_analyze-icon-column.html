@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-31 — The analyze icon in its own column</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The analyze icon in its own column</h1>
+<p><span class="tag">Intel</span><span class="tag">UI</span> 2026-10-31 &middot; <code>v2026.10.31.7</code></p>
+
+<h2>Why</h2>
+<p>The owner sent a screenshot of v2026.10.31.6's Near You: "I dont think the placement of the "send to system analyzer" button was intended to look like that." The icon sat far to the right of short system names, in empty space.</p>
+<p>The cause: layout D put the icon after the system column, and the page makes that column as wide as the longest system name in EVE (Tash-Murkon Prime, the owner's rule from 10-30, so the columns never shift). The mockup had sized the column to the names on screen, so there the icon sat beside the name. No check caught it, because the page checks load only short made-up system names.</p>
+<p>Two mockups followed. First the icon moved to just before the name (option E), which the owner liked, and he asked whether the Feed should get the icon too; with it only in Near You, the two lists' names would no longer line up. Then he had a different idea: "utilize this space to place the button. that way if it doesn't show up, it's not leaving the rest of the content looking misaligned. just looks like a column that either has the button or does not. just have to account for double digit jumps." That mockup (option F, both lists side by side) is what was built. For phones he picked the icon under the jump count, next to the expand arrow, so what was reported keeps its width.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Both lists, line 1:</b> the jump count, a column with the analyze icon or nothing, then the system, the tags and the time. The kill badges, what was reported and the kill lines start under the system name, so a row without the icon has an empty cell and nothing else moves.</li>
+<li><b>The jump column</b> is as wide as "88 Jumps" or the In System label, whichever is wider, measured in the font the browser draws (<code>--it-jw</code>, set by <code>itSysWidths</code>, one width for both lists so their names line up across the card).</li>
+<li><b>The Feed</b> gets the icon on report rows. It analyzes the whole system, as Near You's does: everything reported there in the time set, not only that line, and its hover says so. Kill rows and clear rows have none. It reaches systems Near You doesn't list.</li>
+<li><b>On a phone</b> the icon sits under the jump count, to the right of the expand arrow (32 px each).</li>
+<li><code>itAnalyzeHtml</code> draws the icon for both lists; <code>itCanAnalyze</code> answers once per system per draw.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_layout_check.py</code>: the icon one column gap from its system on every row and, for the busy row, at every split width (905&ndash;1700 px) with the table's system column and with a 160 px one; the kill badges and names under the system; the jump column fits "88 Jumps" and In System and no count runs into the icon; the system names and icons the same distance from each list's left edge in Near You and the Feed; on a phone, the icon under the jumps beside the toggle in both lists.</li>
+<li><code>intel_rows_check.py</code>: the Feed's icon on reports, its hover; none on kill and clear rows; pressing it sends both of a system's reported pilots, not only that line's.</li>
+<li>Mutants (each made the checks fail): the icon after the system again; a 62 px jump column; the kill badges under the icon; on a phone the icon back on line 1; no Feed icon; the Feed icon on kill rows too; the Feed without its icon column (7 of 7 caught).</li>
+<li><code>run_checks.py --tier area --area intel,layout</code>: 8 lints and 17 page checks. <code>intel_assess_check</code> expected the phone toggle at 36 px; it is now 32 px so it fits beside the icon (an intended change, expectation updated). <code>intel_guard_check</code> was flaky under load and passed alone.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #114: size a mockup the way the page sizes it, and test with names as long as the real ones. A mockup that sized the column from its sample rows looked right; the page sized it for the longest name in EVE, and the icon floated in empty space. Short made-up names in the checks hid the same gap. Use the page's own sizing rules in mockups, and sweep layout checks with columns as wide as the real data makes them.</p>
+</body></html>

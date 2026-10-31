@@ -100,6 +100,10 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   You's kill badges on their own line, only when there are kills; then the toggle under the jumps and what was reported. No Assess
   column, no REPORT label; Clear, ESS (white at it, red linked), Bubble and camp are tags. A killmail's fleet size is drawn once
   (`fleetSizeHtml`, the dossier's). Check a layout with a busy row at every width (LESSON #113; `intel_layout_check.py`).
+  v2026.10.31.7 (the owner's idea): the analyze icon has its own column right after the jumps, in Near You and on the Feed's reports
+  (the whole system, not only that line; none on kill and clear rows); everything else starts after it, so a row without it has an
+  empty cell. The jump column fits "88 Jumps" and In system (`--it-jw`). On a phone the icon sits under the jumps beside the toggle.
+  Mockups size things the way the page does (LESSON #114).
   A word is a pilot only in its name's own capitals (one word typed by hand) or dragged in; report words (`IT_NOT_PILOT`) never
   otherwise (LESSON #111; `intel_words_check.py`).
   A word before "gate" is read among the gates of the system the line is in (LESSON #112); one tag per Near You row for a gate:

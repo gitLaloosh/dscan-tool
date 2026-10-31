@@ -14,6 +14,8 @@ Chatlogs folder, ESI and system names; you in 1DQ1-A), then made-up lines and ma
     everything; Near You never filtered (the owner: "we dont filter the Near You list though");
   * the analyze icon (radar rings, always the System Analyzer: the owner, "always system for now") sends the row to the System
     Analyzer; none on a row with nothing to analyze;
+  * v2026.10.31.7 (the owner: "should we add the button to the feed as well?"): the Feed's reports have it too, and it sends the
+    whole system (everything reported there, not only that line: its hover says so); none on kill and clear rows;
   * the Feed's kills (an NPC on most of them): the dossier's fleet size (the players on the killmail, NPCs left out: solo 1, small gang 2-10, fleet 11+, in
     the dossier's colours), none on a kill by NPCs only;
   * no page errors.
@@ -25,9 +27,9 @@ _src = _src[:_src.index('    jumps = pg.evaluate("(names) => Object.fromEntries'
 _src = _src.replace("os.path.dirname(os.path.abspath(__file__))", repr(HERE), 1)
 _ns = {'__file__': os.path.join(HERE, 'intel_check.py'), '__name__': 'intel_check_prefix'}
 _tail = r'''
-    H1, H2 = M.PILOTS[M.pick(98000003)][0], M.PILOTS[M.pick(98000004)][0]
+    H1, H2, H3 = M.PILOTS[M.pick(98000003)][0], M.PILOTS[M.pick(98000004)][0], M.PILOTS[M.pick(98000003, 2)][0]
     L1 = ['T5ZI-S 2 neuts at the ess', f'MO-GZ5 {H1}* linked to ess loki', '8WA-Z6 3 neuts at the ess', '8WA-Z6 2 reds linked to ess',
-          'Y-OMTZ 2 reds bubbled at the sun', '4K-TRB clr', f'N-8YET {H2}* sabre']
+          'Y-OMTZ 2 reds bubbled at the sun', '4K-TRB clr', f'N-8YET {H3}* loki', f'N-8YET {H2}* sabre']
     t0 = time.time() - 200
     W(pg, F_INTEL, ''.join(line(t0 + 10 * i, 'Scout Alt', m) for i, m in enumerate(L1))); tick(pg, 3500)
     # made-up kills: 1, 4 and 14 players on them, and one by NPCs only
@@ -41,7 +43,7 @@ _tail = r'''
       an: !!r.querySelector('.it-an'), assess: !!r.querySelector('.it-assess')}]))"""
     FD = """() => [...document.querySelectorAll('#itFeedList .it-fd')].map(r => ({sys: (r.querySelector('.it-chip.sys') || {}).textContent, raw: ((r.querySelector('.it-raw .raw') || {}).textContent || ''), kill: r.classList.contains('kill'),
       tags: [...r.querySelectorAll('.ftg > *')].map(t => [t.className, t.textContent]), chips: [...r.querySelectorAll('.it-chip.kw')].map(c => c.textContent), report: [...r.querySelectorAll('.it-ty')].some(x => /report/i.test(x.textContent)),
-      fsz: r.querySelector('.fsz') ? [r.querySelector('.fsz').title, r.querySelector('.fsz').textContent, getComputedStyle(r.querySelector('.fsz i')).backgroundColor] : null}))"""
+      an: (r.querySelector('.it-an') || {}).title || '', fsz: r.querySelector('.fsz') ? [r.querySelector('.fsz').title, r.querySelector('.fsz').textContent, getComputedStyle(r.querySelector('.fsz i')).backgroundColor] : null}))"""
     nb = pg.evaluate(NB); fd = pg.evaluate(FD)
     def row(raw): return next((x for x in fd if x['raw'] == raw), None)
     t, m, e = nb.get('T5ZI-S', {}).get('tags', []), nb.get('MO-GZ5', {}).get('tags', []), nb.get('8WA-Z6', {}).get('tags', [])
@@ -75,6 +77,14 @@ _tail = r'''
     pg.evaluate("() => [...document.querySelectorAll('#itNearList .it-nb')].find(r => r.querySelector('.sys').textContent === 'N-8YET').querySelector('.it-an').click()"); tick(pg, 600)
     A = pg.evaluate("() => [document.getElementById('tabDscan').style.display !== 'none' && document.getElementById('tabIntel').style.display === 'none', !!sa.intel, (document.querySelector('#localInput') || {}).value || '']")
     check(A[0] and A[1] and A[2].strip(), f'the analyze icon sends the row to the System Analyzer {A[:2]} {A[2][:40]!r}')
+    # v2026.10.31.7: the Feed's icon: on reports with someone to analyze, the whole system; none on kill and clear rows
+    fan = [(x['raw'], x['kill'], x['an']) for x in fd]
+    check(all(not a for r_, k_, a in fan if k_ or r_ == L1[5]) and all(a.startswith('Analyze ') and 'everything reported there in the last 15 min (not only this line)' in a for r_, k_, a in fan if r_ in (L1[1], L1[6], L1[7])),
+          f"the Feed's analyze icon on reports, its hover: the whole system; none on kill and clear rows {[(r_[:22], k_, a[:70]) for r_, k_, a in fan]}")
+    pg.evaluate("() => switchTab('intel')"); tick(pg, 300)
+    pg.evaluate("(raw) => [...document.querySelectorAll('#itFeedList .it-fd')].find(r => (r.querySelector('.it-raw .raw') || {}).textContent === raw).querySelector('.it-an').click()", L1[7]); tick(pg, 600)
+    A = pg.evaluate("() => [document.getElementById('tabDscan').style.display !== 'none', sa.intel && itSysName(sa.intel.sys), (document.querySelector('#localInput') || {}).value || '']")
+    check(A[0] and A[1] == 'N-8YET' and H2 in A[2] and H3 in A[2], f"the Feed's icon sends the whole system, not only its line: both of N-8YET's pilots {A[:2]} {A[2]!r}")
     check(not errs, f'no page errors {errs[:3]}')
     b.close()
 '''

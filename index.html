@@ -2472,15 +2472,19 @@
   /* ---- v2026.10.31.6: the owner's layout D for Near You, and the Feed to match (Project doc roadmap/near-you-layout-d.md) ----
      Line 1: the jumps, the system (a button: the Feed shows only it), Near You's analyze icon, the tags (and the Feed's notes), the time
      at the right. Near You line 2: the kill badges, only when there are kills. Then the toggle under the jumps and what was reported. On a
-     phone the tags get their own line under the system. One system column per list, as wide as the widest system name (itSysWidths). */
+     phone the tags get their own line under the system. One system column per list, as wide as the widest system name (itSysWidths).
+     v2026.10.31.7 (the owner's idea, mockup analyze_icon_column_mockup.html): the analyze icon in its own column right after the
+     jumps (Near You and the Feed's reports), then the system; everything from the system on starts at one place on every row, so a row
+     without the icon just has an empty cell. The jump column is as wide as "88 Jumps" or the In system callout (--it-jw, itSysWidths:
+     the owner, "just have to account for double digit jumps"). On a phone the icon sits under the jumps, beside the toggle. */
   button.it-sysb{background:none; border:none; padding:0; margin:0; min-height:0; text-align:left; font:700 13px var(--sans); color:var(--heading); letter-spacing:0; cursor:pointer; justify-self:start; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   button.it-sysb:hover, button.it-sysb:focus-visible, button.it-sysb[aria-pressed="true"]{text-decoration:underline; text-underline-offset:3px;}
   button.it-an{display:inline-flex; align-items:center; justify-content:center; width:26px; height:24px; min-height:0; padding:0; border:1px solid transparent; border-radius:4px; background:transparent; color:var(--text-dim); cursor:pointer;}
   button.it-an:hover, button.it-an:focus-visible{border-color:var(--accent-edge); background:var(--tag-fill-hover); color:var(--heading);} button.it-an svg{width:14px; height:14px;}
   .it-gtag.clr{color:var(--it-clear); background:color-mix(in srgb, var(--it-clear) 18%, transparent);}
-  .it-nb.dd{display:grid; grid-template-columns:62px var(--it-sys-w, 121px) 26px minmax(0,1fr) auto; grid-template-areas:"j sys an tg age" ". kb kb kb kb" "rt wl wl wl wl";
+  .it-nb.dd{display:grid; grid-template-columns:var(--it-jw, 66px) 26px var(--it-sys-w, 121px) minmax(0,1fr) auto; grid-template-areas:"j an sys tg age" ". . kb kb kb" "rt . wl wl wl";
     column-gap:10px; row-gap:4px; align-items:center;}
-  .it-nb.dd.nokb{grid-template-areas:"j sys an tg age" "rt wl wl wl wl";}
+  .it-nb.dd.nokb{grid-template-areas:"j an sys tg age" "rt . wl wl wl";}
   .it-nb.dd > .j{grid-area:j; line-height:18px;} .it-nb.dd > .sys{grid-area:sys; line-height:18px;} .it-nb.dd > .it-an, .it-nb.dd > .it-an-none{grid-area:an;}
   .it-nb.dd > .tg{grid-area:tg; min-width:0; display:flex; flex-wrap:wrap; gap:4px 6px; align-items:center;} .it-nb.dd > .tg > *{margin-left:0;}
   .it-nb.dd > .age{grid-area:age; display:block; justify-self:end; white-space:nowrap; line-height:18px;}
@@ -2489,27 +2493,30 @@
   .it-nb.dd > .wl{grid-area:wl; min-width:0; line-height:18px; font-size:11.5px; color:var(--text-dim);}
   .it-nb.dd .wl .st{display:inline; font-size:12.5px;} .it-nb.dd .wl .sep{color:var(--text-dim);}
   .it-nb.dd .wl .who{display:inline; white-space:normal; overflow:visible; text-overflow:clip;}
-  .it-fd.fe{display:grid; grid-template-columns:62px var(--it-fsys-w, 132px) minmax(0,1fr) auto; grid-template-areas:"fj sys tg ag" "rt c1 c1 c1";
+  .it-fd.fe{display:grid; grid-template-columns:var(--it-jw, 66px) 26px var(--it-fsys-w, 132px) minmax(0,1fr) auto; grid-template-areas:"fj an sys tg ag" "rt . c1 c1 c1";
     column-gap:10px; row-gap:5px; align-items:center;}
-  .it-fd.fe.two{grid-template-areas:"fj sys tg ag" "rt c1 c1 c1" ". c2 c2 c2";} .it-fd.fe.noc{grid-template-areas:"fj sys tg ag" "rt . . .";}
+  .it-fd.fe.two{grid-template-areas:"fj an sys tg ag" "rt . c1 c1 c1" ". . c2 c2 c2";} .it-fd.fe.noc{grid-template-areas:"fj an sys tg ag" "rt . . . .";}
+  .it-fd.fe .it-an{grid-area:an;}
   .it-fd.fe > .it-fh{display:contents;}
   .it-fd.fe .fj{grid-area:fj;} .it-fd.fe .fsys{grid-area:sys; min-width:0; display:block;} .it-fd.fe .it-age{grid-area:ag; justify-self:end; white-space:nowrap;}
   .it-fd.fe .ftg{grid-area:tg; min-width:0; display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center;} .it-fd.fe .ftg > *{margin-left:0;}
   .it-fd.fe .it-rawt, .it-fd.fe .tg-none{grid-area:rt; justify-self:start; align-self:start; margin:0; width:24px; height:20px;}
   .it-fd.fe > .it-chips{grid-area:c1; margin:0; min-width:0;} .it-fd.fe > .it-chips.c2{grid-area:c2;}
-  .it-fd.fe > .it-raw, .it-fd.fe > .it-toast{grid-column:1 / -1; margin-left:72px;}
+  .it-fd.fe > .it-raw, .it-fd.fe > .it-toast{grid-column:1 / -1; margin-left:calc(var(--it-jw, 66px) + 46px);}
   .it-fd.fe .it-chip.sys{padding:0;}
   /* the dossier's fleet size, drawn once (fleetSizeHtml): the size's colour, then the players on the killmail */
   .fsz{display:inline-flex; align-items:center; font:600 12px var(--sans); color:var(--text); white-space:nowrap; cursor:default;}
   .fsz i{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px;} .fsz-m{display:none; margin-left:4px; color:var(--text-dim); font-weight:400;}
   @media (max-width: 599px){
-    .it-nb.dd{grid-template-columns:54px var(--it-sys-w, 121px) 32px minmax(0,1fr) auto; grid-template-areas:"j sys an . age" ". tg tg tg tg" ". kb kb kb kb" "rt wl wl wl wl"; column-gap:8px;}
-    .it-nb.dd.nokb{grid-template-areas:"j sys an . age" ". tg tg tg tg" "rt wl wl wl wl";}
-    .it-nb.dd.notg{grid-template-areas:"j sys an . age" ". kb kb kb kb" "rt wl wl wl wl";} .it-nb.dd.nokb.notg{grid-template-areas:"j sys an . age" "rt wl wl wl wl";}
-    .it-nb.dd > .tg:empty{display:none;} button.it-an{width:32px; height:32px;} .it-nb.dd > .it-rawt{width:36px; height:32px; align-self:center;}
-    .it-fd.fe{grid-template-columns:54px auto minmax(0,1fr) auto; grid-template-areas:"fj sys sys ag" ". tg tg tg" "rt c1 c1 c1"; column-gap:8px;}
+    /* v2026.10.31.7: the icon under the jumps beside the toggle (32 px each), so what was reported keeps its width */
+    .it-nb.dd{grid-template-columns:max(var(--it-jw, 66px), 64px) var(--it-sys-w, 121px) minmax(0,1fr) auto; grid-template-areas:"j sys . age" ". tg tg tg" ". kb kb kb" "rt wl wl wl"; column-gap:8px;}
+    .it-nb.dd.nokb{grid-template-areas:"j sys . age" ". tg tg tg" "rt wl wl wl";}
+    .it-nb.dd.notg{grid-template-areas:"j sys . age" ". kb kb kb" "rt wl wl wl";} .it-nb.dd.nokb.notg{grid-template-areas:"j sys . age" "rt wl wl wl";}
+    .it-nb.dd > .it-an, .it-nb.dd > .it-an-none, .it-fd.fe .it-an{grid-area:rt; justify-self:end; align-self:center;}
+    .it-nb.dd > .tg:empty{display:none;} button.it-an{width:32px; height:32px;} .it-nb.dd > .it-rawt{width:32px; height:32px; align-self:center;}
+    .it-fd.fe{grid-template-columns:max(var(--it-jw, 66px), 64px) auto minmax(0,1fr) auto; grid-template-areas:"fj sys sys ag" ". tg tg tg" "rt c1 c1 c1"; column-gap:8px;}
     .it-fd.fe.two{grid-template-areas:"fj sys sys ag" ". tg tg tg" "rt c1 c1 c1" ". c2 c2 c2";} .it-fd.fe.noc{grid-template-areas:"fj sys sys ag" ". tg tg tg" "rt . . .";}
-    .it-fd.fe .ftg:empty{display:none;} .it-fd.fe .it-rawt{width:36px; height:32px; align-self:center;}
+    .it-fd.fe .ftg:empty{display:none;} .it-fd.fe .it-rawt{width:32px; height:32px; align-self:center;}
     .it-fd.fe > .it-raw, .it-fd.fe > .it-toast{margin-left:0;}
     .fsz-m{display:inline;}
   }
@@ -2540,7 +2547,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.6</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.7</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -24261,6 +24268,20 @@ function itPilotChip(x, e){
 }
 function itShipChip(s){ return `<span class="it-chip ship"><img src="https://images.evetech.net/types/${s.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(itShipText(s))}</span>`; }
 function itShipText(s){ return `${s.name}${s.n > 1 ? ` ×${s.n}` : ''}`; }
+// v2026.10.31.7: the analyze icon (radar rings; always the System Analyzer: the owner, "always system for now"), in Near You and the Feed
+function itAnalyzeHtml(sys, what){
+  const name = escapeHtml(itSysName(sys)), card = escapeHtml(cardName('sysan'));
+  return `<button type="button" class="it-an" data-it-assess="${sys}" title="Analyze ${name}: ${escapeHtml(what)} in the ${card}" aria-label="Analyze ${name} in the ${card}">${IT_ANALYZE}</button>`;
+}
+// v2026.10.31.7 (the owner: "should we add the button to the feed as well?" ... "ok do it"): a report row's icon analyzes its whole
+// system, as Near You's does (everything reported there in the time set, not only that line); kill and clear rows have none. One answer
+// per system per draw (itFeedListHtml clears it): a busy Feed asks itLive once per system, not once per row.
+let itAnCan = new Map();
+function itCanAnalyze(sys){
+  if(itAnCan.has(sys)) return itAnCan.get(sys);
+  const st = it.near.get(sys), L = st && st.kind !== 'clear' && itLive(st), ok = !!(L && (L.pilots.length || L.ships.length));
+  itAnCan.set(sys, ok); return ok;
+}
 function itNearRowHtml({st, j}){
   // v2026.10.30.1 (the owner, from the mockup Claude outputs/near_you_kills_mockup.html): the jump count first; the system in a
   // column as wide as the widest system name (itSysWidths); the word in its standing's colour (neutral a bright grey); the pilots
@@ -24282,14 +24303,17 @@ function itNearRowHtml({st, j}){
     if(P.length + B.length + S.length > 2) cap = ` data-it-cap="${escapeHtml(JSON.stringify({P, B, S, E})).replace(/"/g, '&quot;')}"`;   // escapeHtml leaves quotes: an attribute needs them escaped
   }
   const can = st.kind !== 'clear' && (L.pilots.length || L.ships.length);
-  const open = it.nearOpen.has(st.sys), name = itSysName(st.sys);
+  const open = it.nearOpen.has(st.sys);
   const kb = itKillBadges(ks, st.sys), tags = itNearTagsHtml(st);
   const jt = `<span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : j === 0 ? 'your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${itJumpsHtml(j)}</span>`;
   // v2026.10.31.6 (the owner's layout D, roadmap/near-you-layout-d.md): line 1 the jumps, the system (a button: the Feed shows only it),
   // the analyze icon (always the System Analyzer), the tags and the time; line 2 the kill badges, only when there are kills; line 3 the
   // toggle under the jumps, then the word in its standing's colour and who was reported. No Assess column.
-  const row = `<div class="it-nb dd${kb ? '' : ' nokb'}${tags ? '' : ' notg'}${alert ? ' alert' : ''}${open ? ' open' : ''}" data-it-sys="${st.sys}">${jt}${itSysBtnHtml(st.sys, 'sys it-sn')}`
-    + (can ? `<button type="button" class="it-an" data-it-assess="${st.sys}" title="Analyze ${escapeHtml(name)}: its reported pilots and ships in the ${escapeHtml(cardName('sysan'))}" aria-label="Analyze ${escapeHtml(name)} in the ${escapeHtml(cardName('sysan'))}">${IT_ANALYZE}</button>` : '<span class="it-an-none"></span>')
+  // v2026.10.31.7 (the owner: "utilize this space to place the button. that way if it doesn't show up, it's not leaving the rest of
+  // the content looking misaligned"): the analyze icon in its own column right after the jumps, then the system; a row with nothing to
+  // analyze leaves that cell empty, and nothing else moves. On a phone it sits under the jumps, beside the toggle.
+  const row = `<div class="it-nb dd${kb ? '' : ' nokb'}${tags ? '' : ' notg'}${alert ? ' alert' : ''}${open ? ' open' : ''}" data-it-sys="${st.sys}">${jt}`
+    + (can ? itAnalyzeHtml(st.sys, `its reported pilots and ships`) : '<span class="it-an-none"></span>') + itSysBtnHtml(st.sys, 'sys it-sn')
     + `<span class="tg">${tags}</span><span class="age">${itAgo(st.t)}</span>${kb ? `<span class="kb">${kb}</span>` : ''}`
     + `<button type="button" class="it-rawt" data-it-nbo="${st.sys}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} what this row is built from" title="${open ? 'Hide' : 'Show'} the reports and kills behind this row">${IT_CHEV}</button>`
     + `<span class="wl">${st.kind === 'clear' ? '' : `<span class="st ${wcls}"><b>${escapeHtml(word)}</b></span><span class="sep"> · </span>`}<span class="who"${cap}>${who}</span></span></div>`;
@@ -24404,13 +24428,22 @@ let itSysW = null;
 function itSysWidths(el){
   if(!el || !el.style || typeof document === 'undefined' || !document.createElement || !it.names) return;
   const a = el.querySelector('#itNearList .it-nb .sys'), f = el.querySelector('#itFeedList .it-fh .it-sn');
-  const key = `${a ? getComputedStyle(a).font : ''}|${f ? getComputedStyle(f).font : ''}|${it.names.list.length}`;
+  const jn = el.querySelector('#itNearList .it-nb .j'), jf = el.querySelector('#itFeedList .it-fh .fj');
+  const key = `${a ? getComputedStyle(a).font : ''}|${f ? getComputedStyle(f).font : ''}|${jn ? getComputedStyle(jn).font : ''}|${jf ? getComputedStyle(jf).font : ''}|${it.names.list.length}`;
   if(itSysW && itSysW.key === key){ itSysW.apply(el); return; }
   let c; try{ c = document.createElement('canvas').getContext('2d'); }catch(e){ return; }
   if(!c) return;
   const widest = (font) => { if(!font) return 0; c.font = font; let m = 0; for(const n of it.names.byId.values()) m = Math.max(m, c.measureText(n).width); return Math.ceil(m + 2); };
   const wa = widest(a && getComputedStyle(a).font), wf = widest(f && getComputedStyle(f).font);
-  itSysW = {key, apply: (x) => { if(wa) x.style.setProperty('--it-sys-w', `${wa}px`); if(wf) x.style.setProperty('--it-fsys-w', `${wf}px`); }};
+  // v2026.10.31.7 (the owner: "just have to account for double digit jumps"): the jump column, one width for both lists so their system
+  // names line up across the card: "88 Jumps" or the In system callout, whichever is wider, measured as the cells draw them
+  let wj = 0;
+  for(const j of [jn, jf]) if(j) for(const t of ['88 Jumps', '<span class="it-here">In system</span>']){
+    const x = j.cloneNode(false); x.innerHTML = t; x.style.cssText = 'position:absolute; visibility:hidden; display:inline-block; width:auto';
+    j.parentNode.appendChild(x); wj = Math.max(wj, x.getBoundingClientRect().width); x.remove();
+  }
+  wj = Math.ceil(wj);
+  itSysW = {key, apply: (x) => { if(wa) x.style.setProperty('--it-sys-w', `${wa}px`); if(wf) x.style.setProperty('--it-fsys-w', `${wf}px`); if(wj) x.style.setProperty('--it-jw', `${wj}px`); }};
   itSysW.apply(el);
 }
 // v.100 (the owner: "let's go ahead and use the format of 'x Jumps'", and "a callout like 'IN SYSTEM'" for your own system)
@@ -24485,7 +24518,8 @@ function itFeedRowHtml(e){
   const kind = kw ? `kill ${kw[0]}` : e.kind === 'clear' ? 'clr' : 'rep';
   const open = e.kind !== 'kill' && it.rawOpen.has(e.id);
   const tog = e.kind === 'kill' ? '' : `<button type="button" class="it-rawt" data-it-raw="${e.id}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} the line as typed" title="${open ? 'Hide' : 'Show'} the line as it was typed, and who sent it">${IT_CHEV}</button>`;
-  const hd = `<div class="it-fh"><span class="fj">${j0 === null ? '' : itJumpsHtml(j0)}</span><span class="fsys">${sysB}</span><span class="ftg">${tags.join('')}</span><span class="it-age" title="your time ${itClock(e.t)}">${itAgo(e.t)}</span>${tog || '<span class="tg-none"></span>'}</div>`;
+  const an = e.kind !== 'kill' && e.kind !== 'clear' && s0 && itCanAnalyze(s0.id) ? itAnalyzeHtml(s0.id, `everything reported there in the last ${it.set.forget} min (not only this line)`) : '';   // v2026.10.31.7
+  const hd = `<div class="it-fh"><span class="fj">${j0 === null ? '' : itJumpsHtml(j0)}</span>${an}<span class="fsys">${sysB}</span><span class="ftg">${tags.join('')}</span><span class="it-age" title="your time ${itClock(e.t)}">${itAgo(e.t)}</span>${tog || '<span class="tg-none"></span>'}</div>`;
   if(e.kind === 'kill'){   // v.99: who lost what, and who killed them
     const k = e.kill, a = e.pilots[0];
     const l1 = `${itPilotChip(k.victim, e)}<span class="it-by">lost a</span>${k.victim.ship ? itShipChip({id: k.victim.ship.typeId, name: k.victim.ship.name, n: 1}) : '<span class="it-by">ship</span>'}${k.value ? `<span class="it-isk">${itIsk(k.value)} ISK</span>` : ''}`;
@@ -24533,7 +24567,7 @@ function itFeedBarHtml(){
   const f = it.set.feed, sel = (k, opts) => `<select data-it-f="${k}">${opts.map(([v, l]) => `<option value="${v}"${String(f[k]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
   return `<div class="it-fbar"><label>Types ${sel('types', IT_FEED_TYPES)}</label><label>Distance ${sel('dist', IT_FEED_DIST.map(d => [d, d ? `≤ ${d} jump${d === 1 ? '' : 's'}` : 'any']))}</label><label>Sort ${sel('sort', IT_FEED_SORT)}</label><input type="search" data-it-q placeholder="Search pilot, corp, ship, system" aria-label="Search the ${escapeHtml(cardName('itfeed'))}" value="${escapeHtml(it.q)}"></div>`;
 }
-function itFeedListHtml(){ const feed = itFeedShown(); return feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`; }
+function itFeedListHtml(){ itAnCan = new Map(); const feed = itFeedShown(); return feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`; }
 function itNearListHtml(){ const near = itNearList(); return near.length ? near.map(itNearRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing reported in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`; }
 // Redraw only the two lists (the filter bar in use keeps its focus and caret)
 function itNotesHtml(){ return `${it.err ? `<div class="pr-msg err">${escapeHtml(it.err)}</div>` : ''}${it.note ? `<div class="pr-msg">${escapeHtml(it.note)}</div>` : ''}${it.on && it.kfNote ? `<div class="pr-msg" data-it-kfnote>${escapeHtml(it.kfNote)}</div>` : ''}`; }
