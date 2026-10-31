@@ -126,6 +126,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #107 One meaning drawn twice drifts: draw it once and use it everywhere. See also #42.
 - #109 A `1fr` column beside fixed and `auto` ones can shrink to nothing: sweep every width the layout spans. See also #103.
 - #110 Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still.
+- #111 A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters.
 
 **Checks and test machinery**
 
@@ -1017,6 +1018,19 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 111. A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters
+
+- **What happened (v2026.10.31.4):** Intel looked up every word left over in a report as a pilot's name, and ESI's name lookup
+  ignores capitals. EVE has characters named after almost any word, often alts in starter corporations. The owner's reports showed
+  the result: "Kill: <pilot> ..." made "Kill" a pilot; "Gate Drag Bubbled Cormorrant Navy Fleet +9 Gate is hot" and "proc tackled in
+  the medium ark by the <group> rats" sent "DRAG", "Navy", "HOT", "Proc", "MediuM" and "Rats" to the System Analyzer; "linked to ess
+  223m" made "Linked" a pilot ("linked" should not have been resolved as a pilot name"). Each wrong pilot also raised the row's count.
+- **Do this instead:** a single word typed by hand is a pilot only in the name's own capitals; words a report is made of (kill,
+  linked, drag, hot, tackled, rats, navy ...) are never a pilot unless dragged in from chat ('*'); an amount ("223m") is not a name;
+  a ship name one letter off is still that ship, so its words aren't left over to become people. Test with made-up characters named
+  like those words (`intel_words_check.py`). Players also shorten a corporation or alliance to a word everyone knows; when a character
+  has that name in the same capitals it is still read as that pilot, until Intel learns those shorthands (backlog).
 
 ## 110. Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still
 

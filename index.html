@@ -2414,6 +2414,7 @@
   /* v.100 (the owner: "a callout like 'IN SYSTEM'"): your own system, a small amber tag; in Near You its text lines up with the jumps below */
   .it-here{display:inline-block; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.5px; color:var(--amber); background:color-mix(in srgb, var(--amber) 15%, transparent); padding:0 6px; border-radius:3px; white-space:nowrap;}
   .it-nb .j .it-here{margin-left:-6px;}
+  .it-ess{display:inline-block; margin-left:8px; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.5px; color:#f08b7e; background:color-mix(in srgb, var(--danger) 22%, transparent); padding:0 6px; border-radius:3px; white-space:nowrap; vertical-align:1px;}   /* v2026.10.31.4: the ESS being robbed */
   /* v.100 (the owner: "a subtle button to expand the text to be at the bottom"): the line as typed, who sent it and the channel */
   button.it-rawt{margin-left:auto; flex:none; width:24px; height:20px; min-height:0; padding:0; border:none; border-radius:3px; background:transparent; color:var(--text-dim); opacity:.6; display:inline-flex; align-items:center; justify-content:center; letter-spacing:0; cursor:pointer;}
   button.it-rawt:hover, button.it-rawt:focus-visible{opacity:1; background:rgba(255,255,255,.07);} button.it-rawt[aria-expanded="true"]{opacity:.9;} button.it-rawt[aria-expanded="true"] svg{transform:rotate(180deg);}
@@ -2518,7 +2519,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.3</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.4</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2860,7 +2861,7 @@ const CARD_INFO = {
   "**Start:** in EVE, Settings → Chat → Log Chat to File. Here: choose the Chatlogs folder, tick your intel channels, then turn on the switch beside the gear (amber while Intel is off).",
   "**{card:itnear}:** systems with reports or kills within your alert range + 5 jumps, nearest first. An amber edge means within your alert range: the sound, the notification and the amber “N near” at the top, from any tab.",
   "**{card:itfeed}:** every report and kill as it comes in.",
-  "[How a line is read] Systems, ship names (English or Chinese), counts (+5, x2) and words like clr and nv; the rest is looked up on ESI as pilot names and coloured by your {card:side}. A word it can't place stays plain text, never guessed. When a line names two systems, they're placed where the line says they are (“on Y gate”, “→ Y”), else in the one within range, else the nearer; the other shows as a note. The copy button on a line copies its shape, names replaced, to report a line read wrong.",
+  "[How a line is read] Systems, ship names (English or Chinese), counts (+5, x2) and words like clr and nv; the rest is looked up on ESI as pilot names and coloured by your {card:side}. One word typed by hand is a pilot only in the name's own capitals, and report words like linked, drag, hot or kill only when dragged in from chat. A word it can't place stays plain text, never guessed. “Linked to ESS” tags the system in {card:itnear}. When a line names two systems, they're placed where the line says they are (“on Y gate”, “→ Y”), else in the one within range, else the nearer; the other shows as a note. The copy button on a line copies its shape, names replaced, to report a line read wrong.",
   "[Kills] While Intel is on, zKillboard's live feed of every kill (about 20 small requests a minute), kept within the Feed's kill range under the gear (10 jumps unless you change it), no NPC kills. A kill near you shows in {card:itnear} with who was there and alerts like a report within your alert range. A kill's label (or a badge in {card:itnear}) opens it in the {card:fleet} tab: the victim and who killed them; a badge for several kills lists them there to pick from. The line under the title says when a kill was last read.",
   "[{card:itnear} and alerts] Everyone and every ship reported in a system in the time set under the gear (15 minutes unless you change it), until someone reports it clear. A hostile or neutral within your alert range plays the sound and notifies, once per system every 30 seconds; friendlies never alert. With the Feed's Distance set, a report beyond both it and your alert range stays out of {card:itnear}.",
   "[Jumps and your system] Your system comes from your character's Local log. Jumps are gate jumps from EVE's published stargate data (no jump bridges or wormholes); the table is checked against each new EVE build every day.",
@@ -23200,8 +23201,34 @@ function itShips(){
     }
   }
   for(const [s, v] of zhShort) if(v && !m.has(s)) m.set(s, v);   // "秃鹫" as well as "秃鹫级", when only one ship has it
+  // v2026.10.31.4 (the owner's report: "8-WYQZ Gate Drag Bubbled Cormorrant Navy Fleet" put a character named "Navy" in Near You):
+  // a Navy Issue hull by its short names, "Cormorant Navy" and "Navy Cormorant" (when no other ship has that name)
+  const navy = new Map();
+  for(const [k, v] of m){ const b = /^([a-z][a-z -]*) navy issue$/.exec(k); if(b) for(const n of [`${b[1]} navy`, `navy ${b[1]}`]) navy.set(n, navy.has(n) ? null : v); }
+  for(const [n, v] of navy) if(v && !m.has(n)) m.set(n, v);
   itShipMap = m;
+  itShipKeys = [...m.keys()].filter(k => /^[a-z][a-z -]+$/.test(k) && k.length >= 7);   // the Latin names a misspelling can be matched against
   return m;
+}
+// v2026.10.31.4: one letter off from exactly one ship name ("Cormorrant Navy"): that ship. Only names of 7 or more letters, and not
+// when every word is an intel or filler word; optimal string alignment distance 1 (a letter added, dropped, changed or swapped)
+let itShipKeys = [];
+function itEdit1(a, b){
+  if(a === b || Math.abs(a.length - b.length) > 1) return false;
+  let i = 0; while(i < a.length && i < b.length && a[i] === b[i]) i++;
+  if(a.length === b.length){
+    if(a.slice(i + 1) === b.slice(i + 1)) return true;   // one changed
+    return a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2);   // two swapped
+  }
+  return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);   // one added or dropped
+}
+function itShipNear(s){
+  if(s.length < 7 || !/^[a-z][a-z -]+$/.test(s)) return null;
+  const words = s.split(' ');
+  if(words.every(w => IT_KW[w] || IT_FILLER.has(w) || IT_NOT_PILOT.has(w))) return null;
+  let hit = null;
+  for(const k of itShipKeys){ if(k.split(' ').length !== words.length || !itEdit1(s, k)) continue; const v = itShipMap.get(k); if(hit && hit.id !== v.id) return null; hit = v; }
+  return hit;
 }
 
 // ---- reading one report ----
@@ -23223,6 +23250,12 @@ const IT_FILLER = new Set(['in', 'on', 'at', 'to', 'from', 'and', '&', '+', '-',
   // v2026.10.14.104 (the owner's report: "(recently seen as stabber)" put a real character named "Recently" in the Feed):
   // words around a sighting are never pilots, whatever characters exist
   'recently', 'lately', 'as', 'was', 'were', 'been', 'last', 'saw', 'also', 'again', 'same', 'probably', 'prob', 'maybe', 'possibly', 'think']);
+// v2026.10.31.4 (the owner's reports: "Kill: <pilot> ...", "Drag Bubbled ... Gate is hot", "proc tackled in the medium ark by the <group>
+// rats", ""linked" should not have been resolved as a pilot name"): words of a report that real characters are also named; never a
+// pilot unless dragged in as a link ('*'). Single words otherwise match a pilot only in the name's own capitals (itPilotsOf).
+const IT_NOT_PILOT = new Set(['kill', 'kills', 'killed', 'linked', 'link', 'links', 'linking', 'hack', 'hacked', 'hacking', 'rob', 'robbed', 'robbing',
+  'drag', 'hot', 'tackled', 'tackle', 'tackling', 'pointed', 'point', 'scram', 'scrammed', 'webbed', 'rats', 'rat', 'ratting', 'medium', 'small',
+  'large', 'navy', 'ark', 'proc', 'warning', 'careful', 'watch', 'caution', 'alert', 'incoming', 'inbound', 'outbound', 'enemy', 'enemies']);
 // v.104 (the owner's report: "1red" put a real character named "1red" in the Feed): a number with red / neut / hostile, as one
 // word ("1red", "3neuts") or two ("2 reds"), is a head count, not a pilot
 const IT_COUNT_WORD = {red: 'red', reds: 'red', hostile: 'red', hostiles: 'red', neut: 'neut', neuts: 'neut', neutral: 'neut', neutrals: 'neut'};
@@ -23283,8 +23316,9 @@ function itParse(msg, mySys, force){
     if(used[i]) continue;
     for(let k = 5; k >= 1; k--){
       if(i + k > W.length || W.slice(i, i + k).some((x, j) => used[i + j])) continue;
-      const s = W.slice(i, i + k).map(x => x.lw).join(' '), hit = S.get(s) || (k === 1 ? S.get(W[i].w) : null);
+      const s = W.slice(i, i + k).map(x => x.lw).join(' '), hit = S.get(s) || (k === 1 ? S.get(W[i].w) : null) || itShipNear(s);
       if(!hit) continue;
+      if(k === 1 && s === 'ark' && W[i - 1] && /^(small|medium|large|enormous|colossal)$/.test(W[i - 1].lw)) continue;   // v2026.10.31.4: "the medium ark", an ore site
       let n = 1;
       const nx = W[i + k], pv = W[i - 1];
       if(nx && !used[i + k] && /^[x×]\d{1,3}$/i.test(nx.w)){ n = Number(nx.w.slice(1)); used[i + k] = 'c'; }
@@ -23316,6 +23350,7 @@ function itParse(msg, mySys, force){
     if(x.lw === 'no' && W[i + 1] && /^vis(ual)?$/.test(W[i + 1].lw) && !used[i + 1]){ kw.add('no visual'); used[i] = used[i + 1] = 'kw'; i++; continue; }
     if(IT_KW[x.lw]){ kw.add(IT_KW[x.lw]); used[i] = 'kw'; continue; }
     if(IT_FILLER.has(x.lw) || /^\d+$/.test(x.w)){ used[i] = 'f'; continue; }
+    if((IT_NOT_PILOT.has(x.lw) && !x.linked) || /^\d+(\.\d+)?[kmb]$/i.test(x.w)){ used[i] = 'f'; continue; }   // v2026.10.31.4; "223m": an amount of ISK; dragged in ('*'), the word may end a longer name ("Marrek Kill*")
   }   // v.102: a question with no system ("loc?") no longer becomes "status?": a line with no system makes no report (itReports)
   // what is left: runs of words that may be pilot names (a '*' ends a linked name)
   const runs = [];
@@ -23332,7 +23367,11 @@ function itParse(msg, mySys, force){
   const alt = [];
   if(sys.length >= 2) for(const s of sys) if(!s.short) alt.push(W.slice(s.at, s.at + s.k).map(x => x.w).join(' '));
   W.forEach((x, i) => { if(x.linked && (used[i] === 'kw' || used[i] === 'f' || used[i] === 'c') && !/^\d+$/.test(x.w)) alt.push(x.w); });
-  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt};
+  // v2026.10.31.4 (the owner: ""linked to ESS" is a warning to let people know that the hostile is linked to the system's ESS and about
+  // to rob it"): the ESS with linked / hacking / robbing in the same line
+  const ess = kw.has('ESS') && W.some(x => /^(link|linked|linking|hack|hacked|hacking|rob|robbed|robbing|stealing)$/.test(x.lw));
+  if(ess){ kw.delete('ESS'); kw.add('ESS linked'); }
+  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt, ess};
 }
 // Candidate pilot names in a run: every 1-3 word stretch within EVE's 37 characters.
 function itCandidates(p){
@@ -23355,6 +23394,7 @@ function itPilotsOf(p){
       for(let k = 1; k <= IT_NAME_WORDS && k <= i; k++){
         const s = r.slice(i - k, i).map(j => p.W[j].w).join(' ').toLowerCase(), hit = it.pilots.get(s);
         if(!hit) continue;
+        if(k === 1 && !p.W[r[i - 1]].linked && hit.name !== p.W[r[i - 1]].w) continue;   // v2026.10.31.4: one word typed by hand: the name's own capitals (LESSON #111)
         const sc = best[i - k].score + k * 10 - 1;
         if(sc > b.score) b = {score: sc, picks: [...best[i - k].picks, {from: i - k, k, hit}]};
       }
@@ -23615,7 +23655,7 @@ function itPlace(p, mySys){
 function itKind(p, pilots){
   if(p.kw.has('clear')) return 'clear';
   if(p.kw.has('no visual')) return 'nv';
-  if(pilots.length || p.ships.length || p.extra || p.count) return 'seen';
+  if(pilots.length || p.ships.length || p.extra || p.count || p.ess) return 'seen';   // v2026.10.31.4: someone on the ESS is there
   if(p.kw.has('status?')) return 'status';
   return 'info';
 }
@@ -23642,11 +23682,11 @@ function itAddReport(l, p, pilots){
 function itNearAdd(e, sys){
   const prev = it.near.get(sys), keep = e.t - it.set.forget * 60000, kind = e.kind === 'kill' ? 'seen' : e.kind;
   if(prev && prev.t > e.t && e.kind === 'kill' && prev.kind === 'clear') return;   // a kill from before the system was reported clear
-  const st = {sys, t: Math.max(e.t, prev ? prev.t : 0), who: e.who, kind, pilots: [], ships: [], extra: [], count: [], pairs: new Map(), kills: []};
+  const st = {sys, t: Math.max(e.t, prev ? prev.t : 0), who: e.who, kind, pilots: [], ships: [], extra: [], count: [], pairs: new Map(), kills: [], ess: []};
   if(e.kind !== 'clear' && prev && prev.kind !== 'clear'){
     st.pilots = prev.pilots.filter(x => x.t >= keep); st.ships = prev.ships.filter(x => x.t >= keep);
     st.extra = prev.extra.filter(x => x.t >= keep); st.count = (prev.count || []).filter(x => x.t >= keep); for(const [k, v] of prev.pairs) if(v.t >= keep) st.pairs.set(k, v);
-    st.kills = (prev.kills || []).filter(x => x.t >= keep);
+    st.kills = (prev.kills || []).filter(x => x.t >= keep); st.ess = (prev.ess || []).filter(x => x.t >= keep);
     if(prev.t > e.t){ st.kind = prev.kind; st.who = prev.who; }   // an older kill read late doesn't change the latest word
   }
   if(kind === 'seen' || kind === 'nv'){
@@ -23655,6 +23695,7 @@ function itNearAdd(e, sys){
     for(const sh of e.p.ships){ const i = st.ships.findIndex(y => y.id === sh.id); if(i < 0) st.ships.push({...sh, t: e.t}); else st.ships[i] = {...sh, n: Math.max(sh.n, st.ships[i].n), t: e.t}; }
     if(e.p.extra) st.extra.push({n: e.p.extra, t: e.t});
     if(e.p.count) st.count.push({...e.p.count, t: e.t});   // v.104: "1red": a head count
+    if(e.p.ess) st.ess.push({t: e.t, who: e.who});   // v2026.10.31.4
     for(const [id, sh] of e.pairs) st.pairs.set(id, {...sh, t: e.t, who: e.who});
     if(e.kind === 'kill') st.kills.push({t: e.t, id: e.kill.id, v: e.kill.victim.side || 'n'});   // v.100: the victim's standing, for the badges
   }
@@ -24079,7 +24120,7 @@ function itNearRowHtml({st, j}){
   // background highlighting. Everything sits on the first line. On a phone (under 600 px) the same pieces stack.
   const L = itLive(st), alert = itThreat(st) && j !== null && j <= it.set.range;
   const n = itCount(st), hostile = L.pilots.some(x => x.side === 'h') || (!L.pilots.length && !(L.count && L.countKind === 'neut'));
-  const word = st.kind === 'clear' ? 'clear' : st.kind === 'nv' ? 'no visual' : L.friendlyOnly ? 'friendly' : `${n} ${hostile ? 'hostile' : 'neutral'}`;
+  const word = st.kind === 'clear' ? 'clear' : st.kind === 'nv' ? 'no visual' : L.friendlyOnly ? 'friendly' : `${n ? `${n} ` : ''}${hostile ? 'hostile' : 'neutral'}`;   // v2026.10.31.4: no count reported ("linked to ess"): the word alone
   const wcls = st.kind === 'clear' ? 'clr' : L.friendlyOnly ? 'fr' : hostile ? 'ho' : 'ne';
   const ks = st.kind === 'clear' ? [] : (st.kills || []).filter(x => x.t >= Date.now() - it.set.forget * 60000);   // v.99
   const pl = (x) => `<button type="button" class="it-pl ${x.side}" data-it-pilot="${x.id}" data-it-sys="${st.sys}" title="${escapeHtml(itPilotTitle(x, st.pairs.get(x.id)))}">${escapeHtml(x.name)}</button>${x.lost ? ` lost ${escapeHtml(/^[aeiou]/i.test(x.lost) ? 'an' : 'a')} ${escapeHtml(x.lost)}` : ''}`;
@@ -24092,10 +24133,13 @@ function itNearRowHtml({st, j}){
     if(P.length + B.length + S.length > 2) cap = ` data-it-cap="${escapeHtml(JSON.stringify({P, B, S, E})).replace(/"/g, '&quot;')}"`;   // escapeHtml leaves quotes: an attribute needs them escaped
   }
   const can = st.kind !== 'clear' && (L.pilots.length || L.ships.length);
+  // v2026.10.31.4 (the owner: ""linked to ESS" is a warning ... the hostile is linked to the system's ESS and about to rob it"): a tag
+  const ess = st.kind === 'clear' ? null : (st.ess || []).filter(x => x.t >= Date.now() - it.set.forget * 60000).pop();
+  const essH = ess ? ` <span class="it-ess" title="${escapeHtml(`Reported linked to the system's ESS (about to rob it) by ${ess.who}, ${itAgo(ess.t)} ago`)}">ESS linked</span>` : '';
   const open = it.nearOpen.has(st.sys);
   const jt = `<span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : j === 0 ? 'your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${itJumpsHtml(j)}</span>`;
   const row = `<div class="it-nb${alert ? ' alert' : ''}${open ? ' open' : ''}" data-it-sys="${st.sys}">${jt}<span class="sys it-sn ${itSecClass(st.sys)}" title="${escapeHtml(itSysTitle(st.sys))}">${escapeHtml(itSysName(st.sys))}</span>`
-    + `<span class="st ${wcls}"><b>${escapeHtml(word)}</b></span><span class="who"${cap}>${who}</span>`
+    + `<span class="st ${wcls}"><b>${escapeHtml(word)}</b>${essH}</span><span class="who"${cap}>${who}</span>`
     + `<span class="rk"><span class="age">${itAgo(st.t)}</span><span class="kb">${itKillBadges(ks, st.sys)}</span></span>`
     + `<button type="button" class="it-rawt" data-it-nbo="${st.sys}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} what this row is built from" title="${open ? 'Hide' : 'Show'} the reports and kills behind this row">${IT_CHEV}</button>`
     + (can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span class="it-assess-none"></span>') + '</div>';

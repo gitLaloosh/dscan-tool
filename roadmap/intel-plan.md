@@ -170,6 +170,20 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## Report words aren't pilots; the ESS linked (v2026.10.31.4)
+
+- The owner's reports turned words into pilots ("Kill", "Linked", "DRAG", "Navy", "HOT", "Proc", "MediuM", "Rats"), because characters
+  have those names and the lookup ignored capitals. Now: one word typed by hand is a pilot only in the name's own capitals; report
+  words (`IT_NOT_PILOT`: kill, linked, drag, hot, tackled, rats, navy, medium, proc ...) only when dragged in ('*'); "223m" (ISK) is
+  never looked up; "Cormorrant Navy" (one letter off) and "Navy Cormorant" / "Cormorant Navy" are the Cormorant Navy Issue; "the
+  medium ark" is an ore site, not the Ark. LESSON #111.
+- "Linked to ESS" (the owner: "a warning to let people know that the hostile is linked to the system's ESS and about to rob it"): the
+  Feed's chip says "ESS linked", the line is a sighting even with no name, and Near You's row is tagged ESS linked (red), the word
+  "hostile" when no count was given.
+- Open: gate camps (a tag like this one, "on X gate" shorthand among the system's own gates).
+- Open: corporation / alliance shorthand (the owner: players shorten a group "very active in pvp" to a word others "will likely
+  understand"); while a character has that name in the same capitals, it is read as that pilot. Needs a list of shorthands.
+
 ## Kills open on the Fleet tab; Near You within the alert range + 5 (v2026.10.31.2)
 
 - Every kill opens on the Fleet tab: the Feed's label, a Near You badge (several kills: the newest, all listed there to pick from,

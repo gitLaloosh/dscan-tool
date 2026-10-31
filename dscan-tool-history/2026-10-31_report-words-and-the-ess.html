@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-31 — Report words aren't pilots; the ESS linked</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Report words aren't pilots; the ESS linked</h1>
+<p><span class="tag">Intel</span> 2026-10-31 &middot; <code>v2026.10.31.4</code></p>
+
+<h2>Why</h2>
+<p>The owner sent three screenshots of reports read wrong (their exact lines aren't kept here):</p>
+<ul>
+<li>"Kill: &lt;pilot&gt; (&lt;ship&gt;) on &lt;gate&gt;" made "Kill" a pilot.</li>
+<li>Two lines, "&lt;sys&gt; Gate Drag Bubbled Cormorrant Navy Fleet +9 Gate is hot" and "&lt;sys&gt; proc tackled in the medium ark by the &lt;group&gt; rats", sent seven wrong "pilots" to the System Analyzer: DRAG, Navy, HOT, Proc, MediuM, the group's shorthand and Rats. They are real characters named after those words, all in starter corporations with no kills or losses. "Navy" was left over only because "Cormorrant" has one letter too many, so no ship name took it; the owner noted that "Navy" isn't an intel word at all.</li>
+<li>"&lt;sys&gt; linked to ess 223m" made "Linked" a pilot. In his words: "linked to ESS" is a warning to let people know that the hostile is linked to the system's ESS and about to rob it; "linked" should not have been resolved as a pilot name.</li>
+</ul>
+<p>Characters exist with almost any name, and ESI's name lookup ignores capitals, so any word left over became a person. He agreed to all three fixes, with the ESS tag, ahead of gate camps.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>One word typed by hand</b> is a pilot only in the name's own capitals. "proc", "medium" and "rats" no longer match Proc, MediuM or Rats. Names dragged in from chat (with the '*') still count, in any capitals.</li>
+<li><b>Report words</b> such as kill, linked, drag, hot, tackled, rats, navy, medium and proc are never a pilot unless dragged in (<code>IT_NOT_PILOT</code>). An amount like "223m" is never looked up.</li>
+<li><b>Ship names:</b>
+  <ul>
+  <li>a name one letter off ("Cormorrant Navy") is still the ship (<code>itShipNear</code>, names of 7 or more letters only);</li>
+  <li>a Navy Issue hull can be named short ("Cormorant Navy", "Navy Cormorant");</li>
+  <li>"the medium ark" is an ore site, not the Ark.</li>
+  </ul></li>
+<li><b>ESS linked:</b> the ESS with linked, hacking or robbing in the same line.
+  <ul>
+  <li>The Feed's chip says "ESS linked".</li>
+  <li>The line is a sighting even with no name.</li>
+  <li>Near You's row says "hostile" when no count was given, and carries a red ESS linked tag.</li>
+  </ul></li>
+<li>How Intel works says so, and so does CLAUDE.md.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>intel_words_check.py</code></b>, on Intel's made-up folder with made-up characters named Kill, Linked, Navy, DRAG, HOT, Proc, MediuM and Rats, and made-up lines modelled on the owner's.</li>
+<li>10 mutants, all caught. A first mutant, which dropped the exception for words dragged in from chat, passed: an older rule already looks up a dragged-in word the page set aside. Looking closer showed what the exception is really for. A dragged-in name ending in a report word ("Marrek Kill*") would be cut to Marrek without it. The exception stays, and the check now covers that name.</li>
+<li>The Intel area run: 0 failed. <code>intel_kills_check</code> failed under load while the mutants ran beside it, and passed alone.</li>
+</ul>
+<p>What's left: the owner explained that players shorten a corporation or alliance that's active in PvP to a word everyone in the channel knows. When a character has that name in the same capitals, it is still read as that pilot. Recognising those shorthands is on the backlog; dragging names in from chat avoids it meanwhile.</p>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #111: a lookup that ignores capitals turns ordinary words into people. Match what the person typed, keep the words a report is made of out of the lookup, and test with characters named like those words.</p>
+</body></html>

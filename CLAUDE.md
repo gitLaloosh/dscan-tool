@@ -96,6 +96,8 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   shown only under the gear, never elsewhere (the owner: "security reasons"). `tools/page_checks/intel_layout_check.py`.
   A line naming several systems is placed after the name lookups, never before (LESSON #105; `intel_place_check.py`).
   Near You's word never wraps: too narrow for one line, the row stacks (`itNearFit`, LESSON #109).
+  A word is a pilot only in its name's own capitals (one word typed by hand) or dragged in; report words (`IT_NOT_PILOT`) never
+  otherwise (LESSON #111; `intel_words_check.py`). "Linked to ESS" tags the row.
 - **Standing icon** (v2026.10.30.4, the owner): one drawing site-wide, `standIcon` / `standMark` (EVE-style: a star for your
   corporation and alliance, + friendly, = neutral, − hostile); never drawn again elsewhere. Beside its own word it is decoration:
   `standIcon(k, true)` / `SIDE_MARK_BY_WORD` (LESSON #107).
