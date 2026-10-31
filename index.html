@@ -1585,6 +1585,16 @@
      over the page, so the header and the loss box never move; a sheet from the bottom on a phone. */
   #lastKillInfo{position:relative;}
   /* SUBTEXT RULE (v2026.10.14.48, roadmap/subtext-plan.md): one line of context under a value, the info panel. */
+  /* v2026.10.31.3: zKillboard as a small "zK" icon in the leaving-the-site blue; the confirm before any link leaves the page */
+  a.zk-ic[href]{display:inline-flex; align-items:center; justify-content:center; flex:none; height:20px; min-width:24px; padding:0 3px; border:1.5px solid var(--cyan); border-radius:4px; font:800 10.5px/1 var(--sans); letter-spacing:-.2px; color:var(--cyan); text-decoration:none; vertical-align:middle;}
+  a.zk-ic[href]:hover, a.zk-ic[href]:focus-visible{background:color-mix(in srgb, var(--cyan) 22%, transparent); text-decoration:none;}
+  @media (max-width:599px){ a.zk-ic[href]{height:32px; min-width:36px;} }
+  .leave-box{position:absolute; z-index:1000; width:300px; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:var(--panel); box-shadow:0 8px 24px rgba(0,0,0,.5); font:400 12.5px var(--sans); color:var(--text);}
+  .leave-box b{color:var(--heading);} .leave-url{margin-top:4px; font:400 11.5px var(--mono); color:var(--text-dim); overflow-wrap:anywhere;}
+  .leave-row{display:flex; gap:8px; margin-top:10px;} .leave-row button{min-height:32px; padding:0 12px; border:1px solid var(--line); border-radius:4px; background:transparent; color:var(--text); font:600 12px var(--sans); letter-spacing:0;}
+  .leave-row button:hover{background:var(--panel-2);}
+  .leave-row button.leave-go{border-color:var(--cyan); color:var(--cyan);}
+  .leave-skip{display:flex; gap:6px; align-items:center; margin-top:8px; color:var(--text-dim); font-size:12px;}
   .ctx{display:block; font-size:11.5px; line-height:16px; height:16px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .num-box{display:inline-block; text-align:right; font-variant-numeric:tabular-nums;}
   /* v2026.10.14.49: the panel is placed against its CARD (right edge, as wide as 380 px or the card's column allows),
@@ -2185,15 +2195,21 @@
   button.pd-exp{position:absolute; left:9px; top:50%; margin-top:-13px; z-index:1; width:26px; height:26px; min-height:0; padding:0; border:1px solid var(--line); border-radius:5px; background:transparent; color:var(--text-dim); font:600 10px var(--sans); letter-spacing:0; display:inline-flex; align-items:center; justify-content:center;}
   button.pd-exp:hover, .pd-rw.open button.pd-exp{color:var(--heading); background:var(--panel-2);}
   .pd-kills{border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--panel-2) 55%, transparent); padding:2px 10px 10px 44px;}
-  .pdk{display:grid; grid-template-columns:96px minmax(170px,1.2fr) 86px 74px minmax(150px,1.1fr) minmax(120px,1fr) 58px 176px; gap:12px; align-items:center; font:400 12.5px var(--sans); color:var(--text); padding:6px 0; border-bottom:1px solid var(--line-soft); min-height:40px;}
+  .pdk{position:relative; display:grid; grid-template-columns:96px minmax(170px,1.2fr) 86px 74px minmax(150px,1.1fr) minmax(120px,1fr) 58px 34px; gap:12px; align-items:center; font:400 12.5px var(--sans); color:var(--text); padding:6px 0; border-bottom:1px solid var(--line-soft); min-height:40px;}
   .pdk > span{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .pdk b{font-weight:600; color:var(--heading);} .pdk .pd-dim{font-size:11.5px;}
   .pdk-t, .pdk-v{display:flex; flex-direction:column;}
   .pdk-g i{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px;}
   .pdk-val, .pdk-l{text-align:right;} .pdk-val{font-family:var(--mono);}
   .pdk-l a{color:var(--cyan); text-decoration:none; font-weight:600;} .pdk-l a:hover{text-decoration:underline;}
-  .pdk-fl{min-height:26px; padding:2px 9px; margin-right:10px; font:600 11.5px var(--sans); letter-spacing:0; border:1px solid var(--line); border-radius:5px; background:transparent; color:var(--heading);}
-  .pdk-fl:hover{background:var(--panel-2);}
+  /* v2026.10.31.3: names in their standing's colour, as in Intel (neutral a bright grey) */
+  .std-nm{display:inline-flex; align-items:center; gap:5px; vertical-align:bottom;} .std-n{font-weight:600;}
+  .std-n.h{color:var(--side-hostile) !important;} .std-n.f{color:var(--side-friendly) !important;} .std-n.n{color:var(--text) !important;}
+  /* v2026.10.31.3: the kill's fleet, from the gutter under the expand button (option D) */
+  button.pdk-fb{position:absolute; left:-37px; top:50%; transform:translateY(-50%); display:inline-flex; align-items:center; justify-content:center; width:26px; height:24px; min-height:0; padding:0;
+    border:1px solid var(--line); border-radius:4px; background:var(--tag-fill); color:var(--heading); cursor:pointer;}
+  .pdk.recent .pdk-t b, .pdk.recent .pdk-t .pd-dim, .pdk.recent .pdk-when{color:var(--amber);}   /* v2026.10.31.3: a kill in the past 4 hours */
+  button.pdk-fb:hover, button.pdk-fb:focus-visible{background:var(--tag-fill-hover); border-color:var(--accent-edge);} button.pdk-fb svg{width:15px; height:15px;}
   /* v2026.10.31.2: the kills a badge covered, to pick from (tags; the one shown pressed) */
   .fk-pk-h{margin:12px 0 4px; font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
   .fk-picks{display:flex; flex-direction:column; gap:4px;}
@@ -2217,8 +2233,8 @@
   .fk-panel > .card{margin-top:14px;} .fk-panel > .card:first-child{margin-top:0;}
   .fk-head{padding:14px 16px;} .fk-top{display:flex; gap:10px 16px; align-items:center; flex-wrap:wrap;}
   .fk-top h2{margin:0; font:600 18px var(--sans); color:var(--heading);}
-  .fk-acts{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;}
-  .fk-acts button, .fk-acts a{min-height:32px; padding:4px 12px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0; text-decoration:none; display:inline-flex; align-items:center;}
+  .fk-acts{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .fk-acts button, .fk-acts a:not(.zk-ic){min-height:32px; padding:4px 12px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0; text-decoration:none; display:inline-flex; align-items:center;}
   .fk-sub{margin-top:6px; color:var(--text-dim); font:400 12.5px var(--sans);} .fk-sub b{color:var(--text); font-weight:600;}
   .fk-cov{font:400 12px var(--sans); color:var(--text-dim); margin-top:2px;}
   .fk-sum .fl-stat, .fk-vic .fl-stat{min-width:0; max-width:100%;}
@@ -2264,17 +2280,17 @@
     button.pd-exp{top:4px; margin-top:0; left:2px; width:40px; height:40px; font-size:11px;}
     .pd-kills{padding:2px 4px 10px;}
     .pdk-h{display:none;}
-    .pdk{grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"v l" "g g" "w w"; row-gap:3px; padding:8px 0;}
+    .pdk{grid-template-columns:auto minmax(0,1fr) auto; grid-template-areas:"f v l" ". g g" ". w w"; row-gap:3px; column-gap:10px; padding:8px 0;}
+    .pdk > button.pdk-fb{grid-area:f; position:static; transform:none; width:40px; height:40px; align-self:start;}
     .pdk > .pdk-v{grid-area:v;} .pdk > .pdk-l{grid-area:l; align-self:start;} .pdk > .pdk-g{grid-area:g;} .pdk > .pdk-w{grid-area:w; color:var(--text-dim); font-size:11.5px;}
     .pdk > .pdk-t, .pdk > .pdk-s, .pdk > .pdk-x, .pdk > .pdk-val{display:none;}
     .pdk-m{display:inline;}
-    .pdk-l a{display:inline-flex; align-items:center; min-height:40px;}
+    .pdk-l a:not(.zk-ic){display:inline-flex; align-items:center; min-height:40px;}
     .pdk-more button{min-height:40px;}
-    .pdk-fl{min-height:40px; margin-right:6px;}
     .fk-card .pr-cols{display:none;}
     .fk-card button.pr-row{grid-template-columns:minmax(0,1fr) auto;}
     .fk-w, .fk-src, .fk-mis{white-space:normal;}
-    .fk-acts{margin-left:0;} .fk-acts button, .fk-acts a{min-height:40px;}
+    .fk-acts{margin-left:0;} .fk-acts button, .fk-acts a:not(.zk-ic){min-height:40px;}
     .tab-x{width:40px; height:40px;}
     button.pd-row{grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"h n" "g g" "w w" "f f"; row-gap:5px;}
     .pd-row > .pd-hull{grid-area:h;} .pd-row > .pd-n.k{grid-area:n;} .pd-row > .pd-gang{grid-area:g; flex-direction:row; align-items:center; gap:8px;}
@@ -2367,7 +2383,7 @@
   .it-tks .tk{font:600 10.5px var(--mono); color:var(--text-dim); margin-left:3px;}
   .it-chip.ship img{width:18px; height:18px; border-radius:3px; margin-left:-3px;}
   .it-by{font:400 12px var(--sans); color:var(--text-dim); align-self:center;} .it-isk{font:600 11.5px var(--mono); color:var(--amber); align-self:center;}
-  a.it-zk{font:600 11.5px var(--sans); color:var(--cyan); align-self:center; margin-left:4px;}
+  .it-chips a.zk-ic, .nbx-r a.zk-ic{align-self:center; margin-left:4px;}
   .it-kl{display:inline-block; margin-left:6px; padding:0 6px; border-radius:3px; background:color-mix(in srgb, var(--danger) 22%, transparent); color:#f08b7e; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.4px; vertical-align:1px; white-space:nowrap;}
   .it-fbar{display:flex; gap:6px 10px; flex-wrap:wrap; align-items:center; margin:2px 0 8px;}
   .it-fbar label{display:inline-flex; gap:5px; align-items:center; font:600 11.5px var(--sans); color:var(--text-dim);}
@@ -2502,7 +2518,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.2</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.3</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2878,6 +2894,61 @@ function ctxHtml(text, extraCls = '', full = ''){
   const t = String(text == null ? '' : text), h = full ? String(full) : t;
   return `<span class="ctx${extraCls ? ' ' + extraCls : ''}"${h ? ` title="${escapeHtml(h)}"` : ''}>${escapeHtml(t)}</span>`;
 }
+// v2026.10.31.3 (the owner: "a little icon with "zK" inside of it that can be used to link out to zkillboard instead of having to type it
+// all out ... maintain the color scheme of the light blue leaving the site"; "any links that leave the site, we should probably get the
+// user to confirm"; "Don't ask again" per site, as recommended): every zKillboard link is this icon, and every link that leaves the page
+// asks first (leaveAsk), unless the person said not to for that site (localStorage LEAVE_KEY; "Ask again" under Intel's gear).
+const FLEET_ICON = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5l2.2 4H5.8z"/><path d="M3.2 7.5l2.2 4H1z"/><path d="M12.8 7.5l2.2 4h-4.4z"/><rect x="3" y="13" width="10" height="1.2" rx=".6"/></svg>';   // three ships: a fleet
+const LEAVE_KEY = 'dscanLeaveOk', LEAVE_NAMES = {'zkillboard.com': 'zKillboard'};
+function zkLinkHtml(url, what){
+  const t = `${what} on zKillboard (outside this site)`;
+  return `<a class="zk-ic" href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(t)}" aria-label="${escapeHtml(t)}">zK</a>`;
+}
+function leaveHosts(){ try{ const a = JSON.parse(localStorage.getItem(LEAVE_KEY) || '[]'); return Array.isArray(a) ? a.filter(h => typeof h === 'string') : []; }catch(e){ return []; } }
+function leaveSave(a){ try{ localStorage.setItem(LEAVE_KEY, JSON.stringify(a)); }catch(e){ /* private window: asked again next time */ } }
+function leaveName(host){ return LEAVE_NAMES[String(host).replace(/^www\./, '')] || host; }
+function leaveClose(back){
+  const b = typeof document !== 'undefined' && document.getElementById && document.getElementById('leaveBox');
+  if(!b) return;
+  const from = b._from; b.remove();
+  if(back !== false && from && from.focus) from.focus({preventScroll: true});
+}
+function leaveAsk(a, u){
+  leaveClose(false);
+  const name = leaveName(u.hostname), r = a.getBoundingClientRect(), W = 300;
+  const box = document.createElement('div');
+  box.id = 'leaveBox'; box.className = 'leave-box'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', `Open ${name}?`);
+  box.innerHTML = `<div><b>Open ${escapeHtml(name)}?</b> It opens in a new tab, outside this site.</div><div class="leave-url">${escapeHtml(u.host + u.pathname)}</div>
+    <div class="leave-row"><button type="button" class="leave-go" data-leave="go">Open ↗</button><button type="button" data-leave="no">Cancel</button></div>
+    <label class="leave-skip"><input type="checkbox" data-leave="skip"> Don't ask again for ${escapeHtml(name)}</label>`;
+  box._from = a; box._url = u.href; box._host = u.hostname;
+  document.body.appendChild(box);
+  const h = box.offsetHeight, left = Math.max(8, Math.min(r.right - W, innerWidth - W - 8)), below = r.bottom + 6 + h <= innerHeight;
+  box.style.left = `${left + scrollX}px`; box.style.top = `${(below ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + scrollY}px`;
+  box.querySelector('[data-leave="go"]').focus({preventScroll: true});
+}
+(function leaveInit(){
+  if(typeof document === 'undefined' || !document.addEventListener || typeof URL !== 'function') return;   // LESSON #36: the suites' stub DOM
+  document.addEventListener('click', (e) => {
+    const box = document.getElementById('leaveBox');
+    if(box && box.contains(e.target)){
+      const act = e.target.closest('[data-leave]');
+      if(act && act.dataset.leave === 'go'){
+        if(box.querySelector('[data-leave="skip"]').checked){ const H = leaveHosts(); if(!H.includes(box._host)) leaveSave([...H, box._host]); }
+        window.open(box._url, '_blank', 'noopener'); leaveClose(false);
+      }else if(act && act.dataset.leave === 'no') leaveClose();
+      return;
+    }
+    if(box) leaveClose(false);
+    const a = e.target.closest && e.target.closest('a[href]');
+    if(!a || e.defaultPrevented) return;
+    let u; try{ u = new URL(a.getAttribute('href'), location.href); }catch(err){ return; }
+    if(!/^https?:$/.test(u.protocol) || u.origin === location.origin || leaveHosts().includes(u.hostname)) return;
+    e.preventDefault(); e.stopPropagation();
+    leaveAsk(a, u);
+  }, true);
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && document.getElementById('leaveBox')) leaveClose(); });
+})();
 // A live number's box: as wide as the widest value it can take (mono digits are all one width), so the words after
 // it never slide as the value changes. `widest` is a sample string of that width.
 function numBoxStyle(widest){ return `min-width:${String(widest).length}ch;`; }
@@ -10704,7 +10775,7 @@ async function renderLastKill(character, pilotName, statusEl){
           ${realWeapon ? `<div class="lk-weapon">using <b>${escapeHtml(weaponName)}</b> ${lkDamageTagHtml(weaponInfo)}</div>` : ''}
           <div class="lk-actions">
             ${attacker.ship_type_id ? `<button type="button" class="lk-toggle" id="lkPivotBtn">See ${escapeHtml(pilotName)}'s ${escapeHtml(flownName)} losses</button>` : ''}
-            <a href="https://zkillboard.com/kill/${stub.killmail_id}/" target="_blank" rel="noopener">view on zKillboard ↗</a>
+            ${zkLinkHtml(`https://zkillboard.com/kill/${stub.killmail_id}/`, 'This kill')}
           </div>
           ${otherCount > 0 ? `<div class="lk-att-head"><span class="lk-label">${otherCount} other attacker${otherCount > 1 ? 's' : ''}</span><span class="lk-att-order">final blow first</span></div>
           <div id="attackerList" class="lk-att-list" role="table" aria-label="Other attackers"><div class="lk-att-msg">Loading…</div></div>` : '<div class="lk-att-msg">No other attackers: a solo kill.</div>'}
@@ -10923,8 +10994,8 @@ async function sharedKillmailRun(id, hash, statusEl){
   const day = t ? t.toLocaleDateString() : '', time = t ? t.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}) : '';
   const sys = km.solar_system_id ? nameOf.get(km.solar_system_id) : null;
   document.getElementById('fitCandidates').innerHTML = `<span class="km-shared"><span class="hull-static">${escapeHtml(shipName)}</span>${hullClassHtml(shipTypeId)}<span class="km-shared-tag">shared killmail</span></span>`;
-  document.getElementById('lastKillInfo').innerHTML = `<div class="km-shared-acts"><span class="km-when">${escapeHtml([day, time, sys].filter(Boolean).join(' · '))}</span>`
-    + `<a href="https://zkillboard.com/kill/${id}/" target="_blank" rel="noopener">view on zKillboard ↗</a>`
+  document.getElementById('lastKillInfo').innerHTML = `<div class="km-shared-acts"><span class="km-when">${escapeHtml([day, time].filter(Boolean).join(' · '))}${sys ? ` · ${sysNameHtml(km.solar_system_id, sys)}` : ''}</span>`
+    + zkLinkHtml(`https://zkillboard.com/kill/${id}/`, 'This killmail')
     + (charId ? `<button type="button" class="lk-toggle" id="kmSeeLosses">See ${escapeHtml(pilot)}'s ${escapeHtml(shipName)} losses</button>` : '') + '</div>';
   const see = document.getElementById('kmSeeLosses');
   if(see) see.addEventListener('click', () => {
@@ -11049,7 +11120,7 @@ function pdKill(km, charId){
   return {hull: me.ship_type_id, size: pdSize(n), n, t: Date.parse(km.killmail_time),
     weapon: me.weapon_type_id && me.weapon_type_id !== me.ship_type_id ? me.weapon_type_id : null,
     mates: players.filter(a => a !== me && a.ship_type_id).map(a => a.ship_type_id), victim: v.ship_type_id,
-    id: km.killmail_id, sys: km.solar_system_id, vchar: v.character_id, vcorp: v.corporation_id};
+    id: km.killmail_id, sys: km.solar_system_id, vchar: v.character_id, vcorp: v.corporation_id, valliance: v.alliance_id || null};
 }
 // The dossier's numbers, from the killmails. kms: {kills: [km], losses: [km]} (newest first).
 async function pdBuild(charId, kms){
@@ -11135,7 +11206,7 @@ function pdHtml(d){
   const hmax = Math.max(1, ...hrs);
   const hours = hrs.map((n, i) => `<i style="height:${n ? Math.max(3, Math.round(n / hmax * 30)) : 1}px" title="${String(i).padStart(2, '0')}:00–${String((i + 1) % 24).padStart(2, '0')}:00, your time: ${n} kill${n === 1 ? '' : 's'}" data-pd-h="${n}"></i>`).join('');
   const sys = [...d.systems].sort((a, b) => b[1] - a[1]);
-  const sysTop = sys.slice(0, 3).map(([id, n]) => `<b>${escapeHtml(d.sysNames.get(id) || `system ${id}`)}</b> ${n}`).join(' · ');
+  const sysTop = sys.slice(0, 3).map(([id, n]) => `<b>${sysNameHtml(id, d.sysNames.get(id) || `system ${id}`)}</b> ${n}`).join(' · ');
   const sysRest = sys.slice(3).reduce((s, x) => s + x[1], 0);
   const span = d.from ? `, ${day(d.from)} – ${day(d.to)}` : '';
   const rowsBody = rows.length ? rows.map(rowHtml).join('') : `<div class="pr-msg pd-msg">${pd.mode === 'all' ? 'No ships among their recent kills and losses (capsules, shuttles and rookie ships aren’t counted).' : `No ${PD_SIZES.find(x => x[0] === pd.mode)[1].toLowerCase()} kills among their newest ${d.nKills}.`}</div>`;
@@ -11158,6 +11229,7 @@ const PD_SHOW_STEP = 10, PD_OLDER_BATCH = 25;
 function pdKillList(h){
   return [...h.kills, ...pd.older.filter(k => k.hull === h.id)].filter(k => pd.mode === 'all' || k.size === pd.mode).sort((a, b) => b.t - a.t);
 }
+const PD_RECENT_MS = 4 * 3600 * 1000;   // v2026.10.31.3 (the owner: "timestamps in the WHEN column within the past 4 hours should be in amber")
 function pdKillsHtml(h){
   const d = pd.d, list = pdKillList(h), shown = list.slice(0, pd.shown);
   const nm = (id) => (d.info.get(id) || {}).name || '', cls = (id) => (d.info.get(id) || {}).cls || '';
@@ -11172,14 +11244,18 @@ function pdKillsHtml(h){
     const sys = d.sysNames.get(k.sys) || (k.sys ? `system ${k.sys}` : '');
     const val = pd.value.get(k.id);
     const isk = val ? paIsk(val) : '—';
-    return `<div class="pdk" data-pdk="${k.id}"><span class="pdk-t"><b>${day}</b><span class="pd-dim">${hm} your time</span></span>
-      <span class="pdk-v"><span><b>${escapeHtml(nm(k.victim) || `type ${k.victim}`)}</b> <span class="pd-dim">${escapeHtml(cls(k.victim))}</span></span><span class="pd-dim">${escapeHtml(who)} ${orgTickerHtml('corporation', k.vcorp)}<span class="pdk-m"> · ${day} ${hm}</span></span></span>
-      <span class="pdk-g"><i style="background:${PD_COLOR[k.size]}"></i>${k.n} pilot${k.n === 1 ? '' : 's'}<span class="pdk-m pd-dim"> ${{solo: 'solo', small: 'small gang', fleet: 'fleet'}[k.size]} · ${escapeHtml(sys)} · ${isk}</span></span>
-      <span class="pdk-s">${escapeHtml(sys)}</span>
+    const fleetT = `${k.n.toLocaleString()} pilot${k.n === 1 ? '' : 's'} on this kill: open it in the ${cardName('fleet')} tab`;
+    // v2026.10.31.3 (the owner's option D: "use the empty space under the expand/collaps button to do your little fleet icon/button"):
+    // every kill, solo too, opens in the Fleet tab from an icon in the gutter; the count alone under "Fleet size"; zKillboard an icon
+    const recent = Date.now() - k.t < PD_RECENT_MS ? ' recent' : '';
+    return `<div class="pdk${recent}" data-pdk="${k.id}"><button type="button" class="pdk-fb" data-pd-fleet="${k.id}" title="${escapeHtml(fleetT)}" aria-label="${escapeHtml(fleetT)}">${FLEET_ICON}</button><span class="pdk-t"><b>${day}</b><span class="pd-dim">${hm} your time</span></span>
+      <span class="pdk-v"><span><b>${escapeHtml(nm(k.victim) || `type ${k.victim}`)}</b> <span class="pd-dim">${escapeHtml(cls(k.victim))}</span></span><span class="pd-dim">${k.vchar ? standNameHtml(who, sideOf(k.vcorp, k.valliance, sideSets(), sa.evidence).side, k.vcorp, k.valliance) : escapeHtml(who)} ${orgTickerHtml('corporation', k.vcorp)}<span class="pdk-m"> · <span class="pdk-when">${day} ${hm}</span></span></span></span>
+      <span class="pdk-g"><i style="background:${PD_COLOR[k.size]}"></i>${k.n.toLocaleString()}<span class="pdk-m pd-dim"> ${k.n === 1 ? 'pilot' : 'pilots'}, ${{solo: 'solo', small: 'small gang', fleet: 'fleet'}[k.size]} · ${k.sys ? sysNameHtml(k.sys, sys) : ''} · ${isk}</span></span>
+      <span class="pdk-s">${k.sys ? sysNameHtml(k.sys, sys) : ''}</span>
       <span class="pdk-w">${escapeHtml(nm(k.weapon) || '—')}<span class="pdk-m">${mates ? ` · with ${escapeHtml(mates)}` : ''}</span></span>
       <span class="pdk-x">${escapeHtml(mates) || '<span class="pd-dim">alone</span>'}</span>
       <span class="pdk-val">${isk}</span>
-      <span class="pdk-l">${k.n >= 2 ? `<button type="button" class="pdk-fl" data-pd-fleet="${k.id}" title="Assess the ${k.n} pilots on this kill">Fleet ▸</button>` : ''}<a href="https://zkillboard.com/kill/${k.id}/" target="_blank" rel="noopener">zKillboard ↗</a></span></div>`;   // v.94: Fleet ▸
+      <span class="pdk-l">${zkLinkHtml(`https://zkillboard.com/kill/${k.id}/`, 'This kill')}</span></div>`;   // v.94: Fleet ▸
   }).join('');
   const unread = pd.read < pd.kStubs.length, nf = pd.failed.length;
   const what = `${word}${h.name} kill${list.length === 1 ? '' : 's'}`;
@@ -11190,7 +11266,7 @@ function pdKillsHtml(h){
   const more = list.length > shown.length || unread || nf
     ? `<button type="button" data-pd-more="${h.id}"${pd.busy ? ' disabled' : ''}>${pd.busy ? '<span class="busy-spin" aria-hidden="true"></span>Reading older kills…' : label}</button>` : '';
   return `<div class="pd-kills" id="pdk-${h.id}" role="region" aria-label="Their ${escapeHtml(h.name)} kills">
-    <div class="pdk pdk-h" aria-hidden="true"><span>When</span><span>Victim</span><span>Gang</span><span>System</span><span>Their weapon</span><span>With them</span><span class="pdk-val">Value</span><span></span></div>
+    <div class="pdk pdk-h" aria-hidden="true"><span>When</span><span>Victim</span><span title="How many pilots were on the kill">Fleet size</span><span>System</span><span>Their weapon</span><span>With them</span><span class="pdk-val">Value</span><span></span></div>
     ${lines || `<div class="pd-msg pd-dim">No ${what} among those read.</div>`}
     <div class="pdk-more">${more}<span>${escapeHtml(note)}${escapeHtml(fail)}</span></div></div>`;
 }
@@ -17620,7 +17696,7 @@ function renderFitTabs(pilotName, shipName, fits, idToName){
       ${mysSwitchHostHtml(`${shipName} · ${pilotName}`, f.input && f.input.shipTypeId, shipName)}
       <div class="mys-threat-view">
       <div class="fit-layout-wrap" id="fit-layout-wrap-${i}">${fitLayoutHtml(f, idToName, {collapsible: true, dmg: true})}</div>
-      ${f.killmailId ? `<div class="lossrow"><span>killmail ${f.killmailId}${f.lossOf ? ` · ${escapeHtml(f.lossOf)}` : ''}</span><a href="https://zkillboard.com/kill/${f.killmailId}/" target="_blank" rel="noopener">view on zKillboard</a></div>` : ''}
+      ${f.killmailId ? `<div class="lossrow"><span>killmail ${f.killmailId}${f.lossOf ? ` · ${escapeHtml(f.lossOf)}` : ''}</span>${zkLinkHtml(`https://zkillboard.com/kill/${f.killmailId}/`, 'The loss this fit came from')}</div>` : ''}
       </div>
       <div class="mys-mine-view" hidden></div>
     </div>
@@ -21200,6 +21276,9 @@ function standKind(s, corp, alliance){   // the icon for a side ('f' / 'n' / 'h'
   return s === 'f' ? 'good' : s === 'h' ? 'bad' : 'neu';
 }
 function standMark(s, corp, alliance){ return standIcon(standKind(s, corp, alliance)); }
+// v2026.10.31.3 (the owner: "victims should also be assessed for standing ... and names should be colored. we're going to be drawn to
+// names of people in our alliance that they kill"): a name in its standing's colour (as in Intel), its icon before it
+function standNameHtml(name, s, corp, alliance){ return `<span class="std-nm">${standMark(s, corp, alliance)}<span class="std-n ${s}">${escapeHtml(name)}</span></span>`; }
 const SIDE_MARK = {h: standIcon('bad'), n: standIcon('neu'), f: standIcon('good')};
 const SIDE_MARK_BY_WORD = {h: standIcon('bad', true), n: standIcon('neu', true), f: standIcon('good', true)};   // beside the side's own word
 const SIDE_WORD = {h: 'Hostile', n: 'Neutral', f: 'Friendly'};
@@ -22461,7 +22540,7 @@ function paAffHtml(d){
   }
   return `${paAffOrgHtml('corporation', d.corpId, d.corp)}${d.allianceId ? paAffOrgHtml('alliance', d.allianceId, d.alli) : ''}
     ${facts ? `<div class="pa-facts">${facts}</div>` : ''}
-    <div class="pa-zk-h"><span class="k">zKillboard, all time</span>${infoBtnHtml('aff')}<a href="https://zkillboard.com/character/${Number(paAff.id)}/" target="_blank" rel="noopener">Open on zKillboard ↗</a></div>${zk}`;
+    <div class="pa-zk-h"><span class="k">zKillboard, all time</span>${infoBtnHtml('aff')}${zkLinkHtml(`https://zkillboard.com/character/${Number(paAff.id)}/`, 'This pilot')}</div>${zk}`;
 }
 function paAffRender(){
   const box = document.getElementById('pilotAff'), body = document.getElementById('pilotAffBody');
@@ -22749,7 +22828,7 @@ function fkRowHtml(m){
   const nm = fk.info.get(m.id) || `character ${m.id}`, hull = fk.info.get(m.hull) || `type ${m.hull}`;
   const s = sideOf(m.corp, m.alliance, sideSets(), sa.evidence).side;
   const ally = m.alliance ? orgTickerHtml('alliance', m.alliance) : '';
-  const pilot = `<span class="pr-pilot">${standMark(s, m.corp, m.alliance)}<span class="pr-pn"><span class="nm" title="${escapeHtml(nm)}">${escapeHtml(nm)}${m.id === fk.origin ? '<span class="fk-you">dossier</span>' : ''}</span><span class="ctx">${ally} ${escapeHtml(fk.info.get(m.corp) || '')}</span></span></span>`;
+  const pilot = `<span class="pr-pilot">${standMark(s, m.corp, m.alliance)}<span class="pr-pn"><span class="nm std-n ${s}" title="${escapeHtml(nm)}">${escapeHtml(nm)}${m.id === fk.origin ? '<span class="fk-you">dossier</span>' : ''}</span><span class="ctx">${ally} ${escapeHtml(fk.info.get(m.corp) || '')}</span></span></span>`;
   const open = `data-fk-pilot="${escapeHtml(nm)}" data-fk-type="${m.hull}" title="${escapeHtml(`${nm}: open in the Pilot Analyzer, on the ${hull}`)}"`;
   const weapon = m.weapon ? (fk.info.get(m.weapon) || `type ${m.weapon}`) : '';
   const hullCell = (src) => `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${m.hull}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(hull)}<span class="cls">${escapeHtml(m.cls || '')}</span></span>${weapon ? `<span class="fk-w" title="${escapeHtml(`The weapon the killmail credits them with: ${weapon}`)}">on the kill: ${escapeHtml(weapon)}</span>` : ''}${src}</span></span>`;
@@ -22783,15 +22862,16 @@ function fkRender(){
   if(!el) return;
   if(el.querySelector('details.info-pop[open]')) return setTimeout(fkRender, 400);
   const killUrl = fk.killId ? `https://zkillboard.com/kill/${fk.killId}/` : '#';
-  const acts = `<span class="fk-acts"><button type="button" data-fk-share="1"${fk.km ? '' : ' disabled'}>Copy share link</button><a href="${killUrl}" target="_blank" rel="noopener">zKillboard ↗</a><button type="button" data-fk-close="1">Close</button></span>`;
+  const acts = `<span class="fk-acts"><button type="button" data-fk-share="1"${fk.km ? '' : ' disabled'}>Copy share link</button>${zkLinkHtml(killUrl, 'This kill')}<button type="button" data-fk-close="1">Close</button></span>`;
   let sub = '';
   if(fk.km){
     const x = new Date(Date.parse(fk.km.killmail_time)), when = `${x.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}, ${x.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'})} your time`;
     const from = fk.from === 'intel' ? `From <b>${escapeHtml(cardName('intel'))}</b>` : fk.shared ? 'A shared fleet' : `Chosen from <b>${escapeHtml(fk.info.get(fk.origin) || currentPilotName || '')}</b>'s ${escapeHtml(cardName('dossier'))}`;
     const v = fk.victim || {}, vName = v.id ? (fk.info.get(v.id) || `character ${v.id}`) : '';
     // v2026.10.31.1: the victim, a tag that opens them in the Pilot Analyzer on the ship they lost (the owner: "include victims")
-    const vBtn = vName ? `<button type="button" class="fk-vbtn" data-fk-pilot="${escapeHtml(vName)}" data-fk-type="${v.type}" title="${escapeHtml(`${vName}: open in the Pilot Analyzer, on the ${v.name}`)}">${standMark(sideOf(v.corp, v.alliance, sideSets(), sa.evidence).side, v.corp, v.alliance)}<span class="nm">${escapeHtml(vName)}</span><span class="pr-chev" aria-hidden="true">›</span></button>` : '';
-    sub = `<div class="fk-sub">${from} · killed ${vBtn ? `${vBtn} in a` : 'a'} <b>${escapeHtml(v.name || '')}</b>${v.cls ? ` (${escapeHtml(v.cls)})` : ''} · ${when}${fk.sys ? ` · <b>${escapeHtml(fk.sys)}</b>` : ''} · <b>${fk.players}</b> pilot${fk.players === 1 ? '' : 's'} on the kill, <b>${fk.members.length}</b> in ships</div>`;
+    const vs = v.id ? sideOf(v.corp, v.alliance, sideSets(), sa.evidence).side : 'n';
+    const vBtn = vName ? `<button type="button" class="fk-vbtn" data-fk-pilot="${escapeHtml(vName)}" data-fk-type="${v.type}" title="${escapeHtml(`${vName}: open in the Pilot Analyzer, on the ${v.name}`)}">${standMark(vs, v.corp, v.alliance)}<span class="nm std-n ${vs}">${escapeHtml(vName)}</span><span class="pr-chev" aria-hidden="true">›</span></button>` : '';
+    sub = `<div class="fk-sub">${from} · killed ${vBtn ? `${vBtn} in a` : 'a'} <b>${escapeHtml(v.name || '')}</b>${v.cls ? ` (${escapeHtml(v.cls)})` : ''} · ${when}${fk.sys ? ` · <b>${sysNameHtml(fk.km.solar_system_id, fk.sys)}</b>` : ''} · <b>${fk.players}</b> pilot${fk.players === 1 ? '' : 's'} on the kill, <b>${fk.members.length}</b> in ships</div>`;
   }
   const head = `<div class="card fk-head"><div class="fk-top"><h2>${escapeHtml(cardName('fleet'))} on a kill</h2>${acts}</div>${sub}${fkPicksHtml()}${fk.err ? `<div class="pr-msg err">${escapeHtml(fk.err)}</div>` : ''}${!fk.km && !fk.err ? `<div class="pr-msg"><span class="busy-spin" aria-hidden="true"></span>Reading killmail ${fk.killId || ''} from ESI…</div>` : ''}</div>`;
   if(!fk.km){ el.innerHTML = head; return; }
@@ -22840,8 +22920,8 @@ function fkPicksHtml(){
   const P = fk.picks;
   if(!P || P.length < 2) return '';
   const where = [...new Set(P.map(p => p.sys))], kind = {f: 'good', h: 'bad'};
-  return `<div class="fk-pk-h">${P.length} kills${where.length === 1 && where[0] ? ` in ${escapeHtml(where[0])}` : ''} from ${escapeHtml(cardName('intel'))} · as they were when you opened this</div>
-    <div class="fk-picks" role="group" aria-label="Kill to analyze">${P.map((p, i) => `<button type="button" class="fk-pk" data-fk-pick="${i}" aria-pressed="${p.id === fk.killId}" title="${escapeHtml(`Analyze the kill of ${p.name || 'no pilot'}'s ${p.ship || 'ship'}`)}">${standIcon(kind[p.v] || 'neu')}<span class="fk-pk-n"><span class="nm">${escapeHtml(p.name || 'no pilot')}</span><span class="cls">${escapeHtml(p.ship || '')}</span></span><span class="fk-pk-s">${escapeHtml(p.sys || '')}</span><span class="fk-pk-a">${p.ships === 1 ? 'solo' : p.ships ? `${p.ships} pilots` : 'NPCs'}</span><span class="fk-pk-t">${escapeHtml(itAgo(p.t))} ago</span><span class="fk-pk-l"><span class="it-kl ${p.word[0]}">${escapeHtml(p.word[1])}</span></span></button>`).join('')}</div>`;
+  return `<div class="fk-pk-h">${P.length} kills${where.length === 1 && where[0] ? ` in ${P[0].sysId ? sysNameHtml(P[0].sysId, where[0]) : escapeHtml(where[0])}` : ''} from ${escapeHtml(cardName('intel'))} · as they were when you opened this</div>
+    <div class="fk-picks" role="group" aria-label="Kill to analyze">${P.map((p, i) => `<button type="button" class="fk-pk" data-fk-pick="${i}" aria-pressed="${p.id === fk.killId}" title="${escapeHtml(`Analyze the kill of ${p.name || 'no pilot'}'s ${p.ship || 'ship'}`)}">${standIcon(kind[p.v] || 'neu')}<span class="fk-pk-n"><span class="nm std-n ${p.v === 'f' || p.v === 'h' ? p.v : 'n'}">${escapeHtml(p.name || 'no pilot')}</span><span class="cls">${escapeHtml(p.ship || '')}</span></span><span class="fk-pk-s">${p.sysId ? sysNameHtml(p.sysId, p.sys) : escapeHtml(p.sys || '')}</span><span class="fk-pk-a">${p.ships === 1 ? 'solo' : p.ships ? `${p.ships} pilots` : 'NPCs'}</span><span class="fk-pk-t">${escapeHtml(itAgo(p.t))} ago</span><span class="fk-pk-l"><span class="it-kl ${p.word[0]}">${escapeHtml(p.word[1])}</span></span></button>`).join('')}</div>`;
 }
 // The victim, from the killmail's own fit: the same facts as the fleet's summary (no time to kill, LESSON #108)
 function fkVictimHtml(){
@@ -23832,13 +23912,26 @@ async function itSecFetch(ids){
     }
     if(typeof v === 'number' && Number.isFinite(v)){ it.sec.set(id, v); any = true; }
   }));
-  if(any) itRenderLists();
+  if(any){ itRenderLists(); secPaint(); }
 }
 // v.100: the tenth EVE shows (0.0 < sec < 0.05 shows as 0.1, low-sec), for the colour of each tenth (the owner: "should match the
 // security level of the actual system"); hs / ls / ns as before
 function itSecKey(id){ const v = it.sec.get(id); if(v === undefined) return null; return v > 0 && v < 0.05 ? 1 : Math.max(0, Math.round(v * 10)); }
 function itSecText(id){ const v = it.sec.get(id); return v === undefined ? '' : (v > 0 && v < 0.05 ? 0.1 : Math.round(v * 10) / 10).toFixed(1); }
 function itSecClass(id){ const k = itSecKey(id); return k === null ? '' : `${k >= 5 ? 'hs' : k > 0 ? 'ls' : 'ns'} s${k}`; }
+// v2026.10.31.3 (the owner: "system names should use the coloring rules we came up with"): a system's name anywhere on the page in its
+// security colour (Intel's v.100 rule: itSecClass), asked for once (itSecFetch) and painted when known (secPaint)
+function sysNameHtml(id, name){
+  id = Number(id) || 0; const n = name || (id ? itSysName(id) : '');
+  if(!id) return escapeHtml(n);
+  if(!it.sec.has(id)){ try{ const q = itSecFetch([id]); if(q && q.catch) q.catch(() => {}); }catch(e){ /* the suites' stub page */ } }
+  const t = itSecText(id);
+  return `<span class="it-sn sec-sys ${itSecClass(id)}" data-sec-sys="${id}" title="${escapeHtml(`${n}${t ? ` (security ${t})` : ''}`)}">${escapeHtml(n)}</span>`;
+}
+function secPaint(){
+  if(typeof document === 'undefined' || !document.querySelectorAll) return;
+  for(const e of document.querySelectorAll('[data-sec-sys]')){ const id = Number(e.dataset.secSys), t = itSecText(id); e.className = `it-sn sec-sys ${itSecClass(id)}`; if(t) e.title = `${e.textContent} (security ${t})`; }
+}
 function itSysTitle(id){ const t = itSecText(id); return `${itSysName(id)}${t ? ` (security ${t})` : ''}`; }
 
 // ---- alerts: a sound and a desktop notification ----
@@ -24056,7 +24149,7 @@ function itNearItemsHtml(st){
   return L.map(e => {
     if(e.kind === 'kill'){
       const k = e.kill, a = e.pilots[0], v = k.victim;
-      return `<div class="nbx-i"><span class="t">${itAgo(e.t)}</span><span class="nbx-r nbx-k"><b>${escapeHtml(v.name || 'no pilot')}</b> lost a ${escapeHtml(v.ship ? v.ship.name : 'ship')}${k.value ? ` <span class="isk">${itIsk(k.value)} ISK</span>` : ''} · ${a ? `by <b>${escapeHtml(a.name)}</b>${a.ship ? ` (${escapeHtml(a.ship.name)})` : ''}${k.n > 1 ? `, +${k.n - 1} more` : ', solo'}` : 'by NPCs or a structure'} ${itKillBtn(e, 'it-kl')}<a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a></span></div>`;
+      return `<div class="nbx-i"><span class="t">${itAgo(e.t)}</span><span class="nbx-r nbx-k"><b class="std-n ${v.side === 'f' || v.side === 'h' ? v.side : 'n'}">${escapeHtml(v.name || 'no pilot')}</b> lost a ${escapeHtml(v.ship ? v.ship.name : 'ship')}${k.value ? ` <span class="isk">${itIsk(k.value)} ISK</span>` : ''} · ${a ? `by <b>${escapeHtml(a.name)}</b>${a.ship ? ` (${escapeHtml(a.ship.name)})` : ''}${k.n > 1 ? `, +${k.n - 1} more` : ', solo'}` : 'by NPCs or a structure'} ${itKillBtn(e, 'it-kl')}${zkLinkHtml(k.href, 'This kill')}</span></div>`;
     }
     return `<div class="nbx-i"><span class="t">${itAgo(e.t)}</span><span class="nbx-r"><span class="who">${escapeHtml(e.who)}</span><span class="gt">&gt;</span><span class="raw">${escapeHtml(e.raw)}</span></span></div>`;
   }).join('');
@@ -24099,7 +24192,7 @@ function itKillBadges(ks, sys){
 // with a killmail opens in the Fleet tab, from its label in the Feed, its badge in Near You or its line in a Near You row opened.
 function itKillPick(e){
   const k = e.kill, v = k.victim, s = e.p.sys[0];
-  return {id: k.id, hash: k.hash, km: k.km, name: v.name || '', ship: v.ship ? v.ship.name : '', sys: s ? itSysName(s.id) : '', ships: k.ships || 0, t: e.t, v: v.side || 'n', word: [itKillWord(e)[0], itKillWord(e)[1]]};
+  return {id: k.id, hash: k.hash, km: k.km, name: v.name || '', ship: v.ship ? v.ship.name : '', sys: s ? itSysName(s.id) : '', sysId: s ? s.id : 0, ships: k.ships || 0, t: e.t, v: v.side || 'n', word: [itKillWord(e)[0], itKillWord(e)[1]]};
 }
 function itOpenKills(list){   // the newest first; the others to pick from on the Fleet tab
   const P = list.filter(e => e && e.kind === 'kill' && e.kill && e.kill.km).sort((a, b) => b.t - a.t).map(itKillPick);
@@ -24138,8 +24231,8 @@ function itFeedRowHtml(e){
     const k = e.kill, a = e.pilots[0];
     const l1 = `${itPilotChip(k.victim, e)}<span class="it-by">lost a</span>${k.victim.ship ? itShipChip({id: k.victim.ship.typeId, name: k.victim.ship.name, n: 1}) : '<span class="it-by">ship</span>'}${k.value ? `<span class="it-isk">${itIsk(k.value)} ISK</span>` : ''}`;
     const more = k.n > 1 ? `<span class="it-by">+${k.n - 1} more</span>` : '<span class="it-by">solo</span>';
-    const l2 = a ? `<span class="it-by">by</span>${itPilotChip(a, e)}${a.ship ? itShipChip({id: a.ship.typeId, name: a.ship.name, n: 1}) : ''}${more}<a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a>`
-      : `<span class="it-by">by NPCs or a structure</span><a class="it-zk" href="${k.href}" target="_blank" rel="noopener">zKillboard ↗</a>`;
+    const l2 = a ? `<span class="it-by">by</span>${itPilotChip(a, e)}${a.ship ? itShipChip({id: a.ship.typeId, name: a.ship.name, n: 1}) : ''}${more}${zkLinkHtml(k.href, 'This kill')}`
+      : `<span class="it-by">by NPCs or a structure</span>${zkLinkHtml(k.href, 'This kill')}`;
     return `<div class="it-fd kill ${kw[0]}${inr ? ' inr' : ''}">${hd}<div class="it-chips">${l1}</div><div class="it-chips">${l2}</div></div>`;
   }
   for(const x of e.pilots) chips.push(itPilotChip(x, e));
@@ -24293,6 +24386,7 @@ function itSettingsHtml(numbered){
     <div class="it-box">${n(2, 'Intel channels')}${chans.length ? chans.map(c => `<label><input type="checkbox" data-it-chan="${escapeHtml(c)}"${it.set.channels.includes(c) ? ' checked' : ''}> ${escapeHtml(c)}</label>`).join('') : `<div class="c">${it.dir ? 'No channel logs from the last 2 days.' : 'Found in the folder.'}</div>`}</div>
     <div class="it-box">${n(3, 'You')}${chars.length ? chars.map(c => `<label><input type="radio" name="itMe" data-it-me="${c.id}"${c.id === it.set.me ? ' checked' : ''}> ${escapeHtml(c.name)} <span class="it-dim">${escapeHtml(c.sys || '')}</span></label>`).join('') : `<div class="c">${it.dir ? 'No Local log from the last 2 days: log in once with Log Chat to File on.' : 'From your Local log; follows you as you jump.'}</div>`}</div>
     <div class="it-box">${n(4, 'Range and alerts')}<label title="The ring of awareness: kills this close show in ${escapeHtml(cardName('itfeed'))} and ${escapeHtml(cardName('itnear'))} (chat reports show at any distance)">Feed: kills within <select data-it-set="killRange">${opts(IT_KILL_RANGES, it.set.killRange, '')}</select> jumps</label><label title="The ring of being alert: a hostile or neutral this close sounds and notifies">Alert: within <select data-it-set="range">${opts(IT_RANGES, it.set.range, '')}</select> jumps</label><label><input type="checkbox" data-it-set="sound"${it.set.sound ? ' checked' : ''}> sound</label><label><input type="checkbox" data-it-set="notify"${it.set.notify ? ' checked' : ''}> desktop notification${notifyNote}</label><label>forget reports after <select data-it-set="forget">${opts(IT_FORGET, it.set.forget, ' min')}</select></label><label><input type="checkbox" data-it-set="hideFriendly"${it.set.hideFriendly ? ' checked' : ''}> hide friendlies</label></div>
+    ${leaveHosts().length ? `<div class="it-box">${n(5, 'Links outside this site')}<div class="c">${escapeHtml(leaveHosts().map(leaveName).join(', '))} open${leaveHosts().length === 1 ? 's' : ''} without asking (you chose “Don't ask again”).</div><button type="button" data-it-act="leaveask">Ask again</button></div>` : ''}
   </div>`;
 }
 // v2026.10.29.4: whether kills are still coming in, beside "last line": a reader stuck without saying so looked like a quiet night
@@ -24421,6 +24515,7 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
     const a = e.target.closest('[data-it-act]');
     if(!a) return;
     if(a.dataset.itAct === 'gear'){ it.pop = !it.pop; itRender(true); return; }
+    if(a.dataset.itAct === 'leaveask'){ leaveSave([]); itRender(true); return; }   // v2026.10.31.3: links outside the site ask again
     if(a.dataset.itAct === 'folder') itChooseFolder();
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && it.pop){ it.pop = false; itRender(true); } });

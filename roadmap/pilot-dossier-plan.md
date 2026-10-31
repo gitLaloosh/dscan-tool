@@ -53,3 +53,10 @@ number a count, so thin data shows as thin. zKillboard's own size labels, if its
   `tools/page_checks/dossier_kills_check.py`.
 - Still to check against a real pilot: whether zKillboard's lists carry their own size labels (the dossier counts the
   player attackers itself).
+- **v2026.10.31.3: done.** The kill rows (the owner: the Fleet ▸ at the far right may go unfound; then his option D, "use the
+  empty space under the expand/collaps button to do your little fleet icon/button"): a fleet icon under the expand button on every
+  kill, solo ones too, opens it in the Fleet tab; the column is **Fleet size** with the count alone ("some killmails could have
+  hundreds of pilots on the kill"); zKillboard is a **zK** icon in the last column, which asks before leaving the site; system
+  names in their security colour; the victim's name in its standing's colour with its icon (the owner: "we're going to be drawn to
+  names of people in our alliance that they kill"); a kill from the past 4 hours has its time in amber ("timestamps in the WHEN
+  column within the past 4 hours should be in amber"). `tools/page_checks/outside_links_check.py`.

@@ -97,7 +97,8 @@ with sync_playwright() as p:
     got = pg.evaluate(LINES, sab)
     CLS = {'Rifter': 'Frigate', 'Caracal': 'Cruiser', 'Megathron': 'Battleship', 'Stabber': 'Cruiser'}
     exp = [{'id': w['id'], 't': f"{w['day']} {w['hm']} your time", 'ship': w['ship'], 'cls': CLS[w['ship']],
-            'who': f"{w['pilot']} [{w['tk']}]", 'g': f"{w['n']} pilot{'s' if w['n'] != 1 else ''}", 'sys': w['sys'], 'w': w['w'], 'x': w['with'], 'val': w['val'],
+            'who': f"{w['pilot']} [{w['tk']}]", 'g': f"{w['n']:,}",   # v2026.10.31.3: the count alone, under "Fleet size"
+             'sys': w['sys'], 'w': w['w'], 'x': w['with'], 'val': w['val'],
             'href': f"https://zkillboard.com/kill/{w['id']}/"} for w in W[:10]]
     one = pg.evaluate("() => document.querySelectorAll('.pd-kills').length")
     after = pg.evaluate(f"() => document.querySelector('#pdk-{sab}').previousElementSibling.querySelector('button.pd-row').dataset.pdHull")
@@ -157,7 +158,7 @@ with sync_playwright() as p:
       return [tops.size, document.querySelector('[data-pd-exp="{sab}"]').getBoundingClientRect().height, r('.pdk-l a').height, document.documentElement.scrollWidth,
         [...document.querySelectorAll('#pdk-{sab} *')].filter(e => {{ const b = e.getBoundingClientRect(); return e.checkVisibility() && b.width && (b.right > innerWidth + 1 || b.left < -1); }}).length,
         k.querySelector('.pdk-v > span:last-child').innerText]; }}""")
-    check(L[0] == 3 and L[1] >= 40 and L[2] >= 40 and L[3] <= 390 and L[4] == 0 and W[0]['hm'] in L[5], f'390 px: three lines per kill (time with the pilot), ▶ and the link 40 px tall, nothing off the page {L}')
+    check(L[0] == 3 and L[1] >= 40 and L[2] >= 32 and L[3] <= 390 and L[4] == 0 and W[0]['hm'] in L[5], f'390 px: three lines per kill (time with the pilot), ▶ 40 px and the zK icon 32 px tall, nothing off the page {L}')
     ctx.close()
     check(not errs, f'no page errors {errs[:3]}')
     b.close()

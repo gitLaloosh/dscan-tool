@@ -1042,6 +1042,10 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   wider than its column, the row stacks). Check every width the layout spans, with content as wide as the real data can be (here
   905-1700 px with a 160 px system column), not two widths and a short test table.
 
+- **The same for a column's content (v2026.10.31.3):** a mockup of the Pilot Dossier's kills widened the gang column until "21
+  pilots ›" fitted; the owner: "some killmails could have hundreds of pilots on the kill" ("1,248 pilots ›" is 119 px). Size a
+  column for the largest value the data can hold, not the sample's; here the count alone under "Fleet size".
+
 ## 108. Don't compute a precise answer from guesses stacked on guesses: show the facts it would be built from
 
 - **What happened (v2026.10.30.4 → v2026.10.31.1):** the Fleet tab's Against This Fleet worked out how long the victim, then your

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-31 — The fleet icon, the zK icon, asking before leaving the site, names in colour</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The fleet icon, the zK icon, asking before leaving the site, names in colour</h1>
+<p><span class="tag">Pilot Dossier</span><span class="tag">Site-wide</span> 2026-10-31 &middot; <code>v2026.10.31.3</code></p>
+
+<h2>Why</h2>
+<p>The owner, looking at the Pilot Dossier's kills, thought the Fleet ▸ at the far right might go unfound: "show me some options". Along the way he added:</p>
+<ul>
+<li>"some killmails could have hundreds of pilots on the kill";</li>
+<li>his own option D, "use the empty space under the expand/collaps button to do your little fleet icon/button";</li>
+<li>"a little icon with "zK" inside of it ... to link out to zkillboard instead of having to type it all out ... maintain the color scheme of the light blue leaving the site";</li>
+<li>"any links that leave the site, we should probably get the user to confirm";</li>
+<li>"fleet size" as the column's name;</li>
+<li>"system names should use the coloring rules we came up with";</li>
+<li>"victims should also be assessed for standing ... and names should be colored. we're going to be drawn to names of people in our alliance that they kill";</li>
+<li>"timestamps in the WHEN column within the past 4 hours should be in amber as well".</li>
+</ul>
+<p>He chose D, the outlined zK icon, and "Don't ask again" per site.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>The Pilot Dossier's kills:</b>
+  <ul>
+  <li>A fleet icon under the expand button opens every kill in the Fleet tab, solo kills too. The Fleet ▸ button is gone.</li>
+  <li>The column is <b>Fleet size</b> and shows the count alone, so even "1,248" fits.</li>
+  <li>The last column is a <b>zK</b> icon.</li>
+  <li>On a phone, the fleet icon sits at the start of the kill's first line.</li>
+  </ul></li>
+<li><b>zK icon, site-wide:</b> every zKillboard link is <code>zkLinkHtml</code>. That covers the dossier, the Feed, Near You's opened rows, the Fleet tab, the last-kill box, a shared killmail, a fit's loss and the pilot's zKillboard summary. About 80 px freed per row.</li>
+<li><b>Leaving the site:</b>
+  <ul>
+  <li>Any link out of the page opens a small box first: "Open zKillboard? It opens in a new tab, outside this site", with the address, Open ↗ and Cancel. Escape closes it.</li>
+  <li>"Don't ask again for zKillboard" is remembered in this browser (<code>dscanLeaveOk</code>).</li>
+  <li>"Ask again" is under Intel's gear.</li>
+  </ul></li>
+<li><b>System names</b> are in their security colour wherever they show: the dossier's kills and usual systems, the Fleet tab's line and kill list, and a shared killmail (<code>sysNameHtml</code>, Intel's rule, painted when ESI gives the security).</li>
+<li><b>Names</b> are in their standing's colour with the standing icon: the dossier's victims, the Fleet tab's victim, pilots and kill list, and Near You's opened rows (<code>standNameHtml</code>, <code>std-n</code>).</li>
+<li><b>Recent kills:</b> in the dossier, a kill from the past 4 hours has its time in amber (<code>PD_RECENT_MS</code>).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>outside_links_check.py</code></b>. zKillboard's own pages are answered by the check, so nothing reaches zkillboard.com. It checks:
+  <ul>
+  <li>the source: no "zKillboard ↗" text and one <code>target="_blank"</code>;</li>
+  <li>"Fleet size";</li>
+  <li>the fleet icon on every kill, lined up under the expand button;</li>
+  <li>the zK icon;</li>
+  <li>the system colours (null and high);</li>
+  <li>the box: Cancel, Escape, Open (one new tab at that address), "Don't ask again", and "Ask again";</li>
+  <li>a victim shown hostile when its corporation is set hostile;</li>
+  <li>a kill from the past 4 hours with its time in amber, and the older ones not;</li>
+  <li>390 px.</li>
+  </ul>
+  <code>sa_mocks.py</code> now answers a system's security with made-up values.</li>
+<li><code>fleet_kill_check.py</code>, <code>dossier_kills_check.py</code> and <code>intel_kills_check.py</code>: the fleet icon on the solo kill, the count alone, and "zK".</li>
+<li><code>check_card_names.py</code> caught "Pilots on the kill" typed into the column's hover text.</li>
+<li>This was the full run of every check, due every 5th delivery.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>Added under LESSON #109: size a column for the largest value the data can hold, not the sample's. A mockup was widened until "21 pilots ›" fitted, but a fight can have more than a thousand.</p>
+</body></html>

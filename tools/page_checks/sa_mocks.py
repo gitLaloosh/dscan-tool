@@ -179,6 +179,7 @@ import datetime as _dt
 DOSSIER_PILOT = 92000002; PILOTS[DOSSIER_PILOT] = ('Vesna Dossier', 98000041); NAME_ID['vesna dossier'] = DOSSIER_PILOT
 ANNEX_PILOT = 92000003; PILOTS[ANNEX_PILOT] = ('Tessa Annex', 98000042); NAME_ID['tessa annex'] = ANNEX_PILOT   # v.92: her alliance, another corporation
 SYSTEMS = {30000142: 'Jita', 30004759: '1DQ1-A', 30002187: 'Amarr'}
+SYSTEM_SEC = {30000142: 0.946, 30004759: -0.38, 30002187: 1.0}   # v2026.10.31.3: made-up security, for the system colours
 # (hull, weapon, players on the kill (them included), wingmates' hulls (cycled), victims (cycled), how many, system)
 DOSSIER_SPEC = [
     ('Sabre', '125mm Gatling AutoCannon II', 3, ['Curse', 'Hound'], ['Rifter', 'Caracal'], 12, 30004759),
@@ -357,6 +358,9 @@ def char_history(cid):
 def esi(route):
     url, body = route.request.url, route.request.post_data or ''
     j = lambda o, st=200: route.fulfill(status=st, content_type='application/json', body=json.dumps(o))
+    m = re.search(r'/universe/systems/(\d+)/', url)
+    if m and int(m.group(1)) in SYSTEM_SEC:   # v2026.10.31.3
+        i = int(m.group(1)); return j({'system_id': i, 'name': SYSTEMS[i], 'security_status': SYSTEM_SEC[i]})
     if '/universe/ids/' in url:
         names = json.loads(body)
         out = {}

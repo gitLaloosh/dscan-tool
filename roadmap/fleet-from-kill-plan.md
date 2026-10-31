@@ -55,6 +55,8 @@ the composition is known; only each pilot's fit is an estimate, and the page say
   should be links as well. same mechanic"), a badge, or a Near You row opened; the Fleet ▸ / Pilot ▸ button is gone. **The victim**
   card above the fleet: the killmail's own fit (raw DPS and mix, weakest to, weapon reach, tackle and EWAR with reach, EHP), no time
   to kill. zKillboard not answering: one Retry in the pilots' head, counting down while the page's pause is on (`zkbRetryHtml`).
+- **v2026.10.31.3:** the dossier's fleet icon (option D) opens any kill, solo ones too; the tab's zKillboard link is the zK icon;
+  names in their standing's colour, the system in its security colour.
 - Later (the owner, 2026-10-31): "a range graph ... that reflects where certain things kick in like points, disruptors, webs, dps
   ranges", and how it works for fleets of dozens or hundreds of ships; a lazy-load rule for everything that evaluates fleet ships.
 - Later: group kills by shared attackers ("2 fleets", option D).

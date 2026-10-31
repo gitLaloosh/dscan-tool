@@ -60,7 +60,8 @@ with sync_playwright() as p:
     pg.wait_for_function("() => { const b = document.querySelector('#pilotAff'); return b.hidden || !b.querySelector('.busy-spin'); }", timeout=60000)
     pg.click(f'#pilotDossier [data-pd-exp="{M.byname["Curse"]}"]'); pg.wait_for_timeout(500)
     btn = pg.evaluate("() => Object.fromEntries([...document.querySelectorAll('.pdk[data-pdk]')].map(k => [k.dataset.pdk, !!k.querySelector('[data-pd-fleet]')]))")
-    check(btn == {str(M.FLEET_KILL): True, str(M.BIG_KILL): True, str(M.SOLO_KILL): False}, f'Fleet ▸ on her kills with 2+ pilots, none on the solo kill {btn}')
+    # v2026.10.31.3 (the owner's option D): every kill, the solo one too, opens in the Fleet tab, from the icon under the expand button
+    check(btn == {str(M.FLEET_KILL): True, str(M.BIG_KILL): True, str(M.SOLO_KILL): True}, f'the fleet icon on every kill, the solo one too {btn}')
     M.ZKB_CALLS.clear()
     pg.click(f'[data-pd-fleet="{M.FLEET_KILL}"]'); pg.wait_for_timeout(300); fleet_done(pg, 6)
     tab = pg.evaluate("() => [!document.querySelector('#fleetTabWrap').hidden, document.querySelector('#tabBtnFleet').textContent, document.querySelector('#tabBtnFleet').classList.contains('active'), getComputedStyle(document.querySelector('#tabFleet')).display, getComputedStyle(document.querySelector('#tabPilot')).display]")
@@ -141,7 +142,7 @@ with sync_playwright() as p:
     pg.click(f'[data-pd-fleet="{M.FLEET_KILL}"]'); pg.wait_for_timeout(300); fleet_done(pg, 6)
     L = pg.evaluate("""() => [document.documentElement.scrollWidth, document.querySelector('#fleetCloseBtn').getBoundingClientRect().height, document.querySelector('[data-fk-close]').getBoundingClientRect().height,
       [...document.querySelectorAll('#fleetPanel *')].filter(e => { const b = e.getBoundingClientRect(); return e.checkVisibility() && b.width && (b.right > innerWidth + 1 || b.left < -1); }).map(e => e.className || e.tagName).slice(0, 4)]""")
-    check(L[0] <= 390 and L[1] >= 40 and L[2] >= 40 and fb >= 40 and not L[3], f'390 px: nothing off the page, ×, Close and Fleet ▸ 40 px tall {L} {fb}')
+    check(L[0] <= 390 and L[1] >= 40 and L[2] >= 40 and fb >= 40 and not L[3], f'390 px: nothing off the page, ×, Close and the fleet icon 40 px tall {L} {fb}')
     ctx.close()
     check(not errs, f'no page errors {errs[:3]}')
     b.close()
