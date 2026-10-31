@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-31 — Near You's layout D and the Feed to match</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Near You's layout D and the Feed to match</h1>
+<p><span class="tag">Intel</span><span class="tag">UI</span><span class="tag">Pilot Analyzer</span> 2026-10-31 &middot; <code>v2026.10.31.6</code></p>
+
+<h2>Why</h2>
+<p>Looking at the gate camps mockup, the owner said: "i feel like the "Assess" button is taking up a lot of valuable space that could be used for extending the width of the middle column with all of the real info". He also found the kill badges' column and the expand / collapse column "just wasted space".</p>
+<p>He laid out his own option D one line at a time on a mockup with made-up data, settling each piece:</p>
+<ul>
+<li>the analyze icon to the right of the system name, always opening the System Analyzer;</li>
+<li>a system's name filters the Feed, never Near You;</li>
+<li>no kills line on rows without kills;</li>
+<li>"ESS" shortened, white when someone is at it and red when linked, with no robbing explanation in the hover ("players likely wont" need it);</li>
+<li>camp tags keep "gate", so nobody reads the camp as being in that system;</li>
+<li>the tags on their own line on a phone;</li>
+<li>"Clear" as a green tag;</li>
+<li>radar rings for the icon ("3 ... still looks like a target at smaller sizes");</li>
+<li>a quieter icon.</li>
+</ul>
+<p>He asked for one system with everything at once (camp, bubble, ESS, all three kill badges, pilots of all three standings) to see the worst case. That row also showed today's layout overlapping the kill badges on the word on a phone.</p>
+<p>The Feed proposal to match got "yes on all points". He asked for my opinion on using the dossier's fleet size treatment on the Feed's kills, and agreed with it. The dossier's expand button was to match the rest of the site too ("make it fit the rest of the site"); he asked to include it.</p>
+<p>The full spec is in the Project doc <code>roadmap/near-you-layout-d.md</code>.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Near You.</b>
+  <ul>
+  <li>Line 1: the jump count, the system, the analyze icon, the tags (Clear, ESS, camp / gate, Bubble) and the time.</li>
+  <li>Line 2: the kill badges, only when there are kills.</li>
+  <li>Then the toggle under the jump count, and the count word in its standing's colour with who was reported.</li>
+  <li>The Assess column is gone.</li>
+  <li>The icon is quiet until hovered, and 32 px on a phone.</li>
+  <li>One system column per list, so icons and tags line up.</li>
+  </ul></li>
+<li><b>The Feed.</b>
+  <ul>
+  <li>Line 1: the jump count, the system, then the notes ("on 5BTK-M gate", which no longer wraps in the system column) and tags, then the time.</li>
+  <li>The REPORT label is gone; every row that isn't a kill is a report, and its cyan read as a link out.</li>
+  <li>A kill's label is a tag there and still opens the Fleet tab.</li>
+  <li>Clear, ESS and Bubble are tags, not chips.</li>
+  <li>A kill's "by" line ends in the dossier's fleet size: a coloured square and the players on the killmail, NPCs left out. It is drawn once for both places (<code>fleetSizeHtml</code>), in place of "solo" / "+N more".</li>
+  </ul></li>
+<li><b>A system's name</b> in either list is a button. The Feed shows only that system, and the search box says so; pressed again, it shows everything. On a phone the page goes to the Feed.</li>
+<li><b>The dossier's expand button</b> is Intel's chevron, not ▶ / ▼ in a bordered box.</li>
+<li>The v2026.10.31.1 stacking for narrow lists is gone: the word now has its own line.</li>
+<li>How Intel works, the ESS line and the buttons line were updated. CLAUDE.md's Intel rules were updated too.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>intel_rows_check.py</code></b>:
+  <ul>
+  <li>the ESS white and red tags (only the red when a system has both), Bubble and Clear in both lists;</li>
+  <li>no ESS or bubble chips, no REPORT label;</li>
+  <li>the system filter, with Near You never filtered;</li>
+  <li>the analyze icon opening the System Analyzer;</li>
+  <li>the fleet size and its colours.</li>
+  </ul></li>
+<li><b><code>intel_layout_check.py</code> rewritten for layout D</b>, with a busy row (camp, ESS, bubble, all three kill badges, pilots of all three standings) swept across 905&ndash;1700 px with two system-column widths, and at 390 px. It checks that nothing overlaps or leaves its row.</li>
+<li><code>dossier_kills_check.py</code>: the chevron.</li>
+<li>Seven Intel checks updated for intended changes:
+  <ul>
+  <li>the clear word is now a tag;</li>
+  <li>the ESS is a tag;</li>
+  <li>the notes are among the tags;</li>
+  <li>the fleet size shows the players on the killmail, so a kill that zKillboard counted as 3 attackers with 1 NPC is now 2;</li>
+  <li>the system's hover.</li>
+  </ul></li>
+<li>16 mutants, all caught. Two were missed at first and fixed: the made-up kills had no NPC on them, so counting every attacker instead of players went unseen; and the "no empty line" test allowed 12 px, which hid a 4 px empty kills line. Now each has an NPC, and the test allows one row gap.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #113: judge a layout at its worst, at the real width. Check every tag, badge and name at once, in a frame as wide as the window it stands for. A mockup frame under 900 px applied the page's small-window rules, and the busy row exposed an overlap no check had seen.</p>
+</body></html>

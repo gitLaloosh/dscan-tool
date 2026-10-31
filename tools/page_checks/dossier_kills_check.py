@@ -17,7 +17,8 @@ answered from sa_mocks.py; expected lines worked out here from the mock's killma
     request) and lists the older Sabre kills; the dossier's own numbers don't change;
   * ESI failing on some older kills: what was read is listed, "N older kills couldn't be read (PILOT-09)" and Try again,
     which reads those once ESI answers;
-  * 390 px: three lines per kill, ▶ and the links 40 px tall, nothing off the page; no page errors.
+  * v2026.10.31.6: the expand button is Intel's chevron (was ▶ / ▼ in a bordered box), turned up when open;
+  * 390 px: three lines per kill, the expand button and the links 40 px tall, nothing off the page; no page errors.
 v2026.10.14.92 fails (no ▶).
 """
 import sys, os, re, json
@@ -90,6 +91,11 @@ with sync_playwright() as p:
     pg.click(f'#pilotDossier [data-pd-exp="{ved}"]'); pg.wait_for_timeout(300)
     vsel = pg.evaluate(f"() => [document.querySelector('[data-pd-hull=\"{ved}\"]').getAttribute('aria-pressed'), document.querySelector('[data-pd-exp=\"{ved}\"]').getAttribute('aria-expanded'), document.querySelectorAll('.pd-kills').length, document.querySelector('#fitResults').innerHTML.length]")
     check(vsel[0] == 'false' and vsel[1] == 'true' and vsel[2] == 1 and vsel[3] == tabs0, f'▶ opens the list without picking the hull (the loss tabs stay) {vsel}')
+    # v2026.10.31.6 (the owner: the dossier's "dropdown link ... make it fit the rest of the site"): Intel's chevron, no border, turned up when open
+    chev = pg.evaluate(f"""() => {{ const o = document.querySelector('[data-pd-exp="{ved}"]'), c = document.querySelector('#pilotDossier [data-pd-exp][aria-expanded="false"]');
+      const sv = (b) => b.querySelector('svg path') ? b.querySelector('svg path').getAttribute('d') : null, cs = (b) => getComputedStyle(b);
+      return [sv(o), sv(c), o.textContent.trim(), cs(o).borderTopStyle === 'none' || cs(o).borderTopWidth === '0px', !!o.querySelector('svg') && cs(o.querySelector('svg')).transform !== 'none', !!c.querySelector('svg') && cs(c.querySelector('svg')).transform === 'none']; }}""")
+    check(chev[0] == chev[1] == 'M3 4.5l3 3 3-3' and chev[2] == '' and chev[3] and chev[4] and chev[5], f'the expand button is Intel\'s chevron (no ▶ / ▼, no border), turned up when open {chev}')
     # the Sabre's kills (All)
     settled(pg); M.ZKB_CALLS.clear(); km_req.clear()
     pg.click(f'#pilotDossier [data-pd-exp="{sab}"]'); pg.wait_for_timeout(300); names_in(pg, sab)

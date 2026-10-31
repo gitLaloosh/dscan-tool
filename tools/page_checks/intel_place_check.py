@@ -19,7 +19,7 @@ system names; you in 1DQ1-A) up to Intel turned on, then, with made-up lines and
   * "3-DMQT clear": clear, and "clear" never looked up; "4K-TRB Clear*": Clear, linked, is a pilot: a sighting, not clear;
   * the ring: Feed Distance 3: "QX-LIJ Marrek" (4 jumps) in the Feed, not in Near You, no alert; Distance 2 with the alert range
     3: "Y-OMTZ" (3 jumps) still in Near You (the ring is the larger of the two); Distance "any": no ring;
-  * the Feed row shows the note after the system, no second jump count;
+  * the Feed row shows the note after the system (v2026.10.31.6: among the line's tags), no second jump count;
   * the switch: on, the usual teal, still; off, an amber edge, knob and "Off", breathing (itSwBreathe); with reduced motion, still;
     "Use in assessments" (off) unchanged;
   * How Intel works: 3 short paragraphs, each with a bold lead, and 7 folded headings (v2026.10.31.5: Gates and camps), closed; one opens on a click; no
@@ -61,7 +61,7 @@ _tail = r'''
     g = got('4K-TRB Clear*')
     check(g['kind'] == 'seen' and g['pilots'] == ['Clear'] and where('4K-TRB Clear*') == '4K-TRB', f'"4K-TRB Clear*": Clear, linked from Local, is a pilot: a sighting, not "clear" {g}')
     notes = pg.evaluate("""() => Object.fromEntries([...document.querySelectorAll('#itFeedList .it-fd')].map(r => [r.querySelector('.raw') ? r.querySelector('.raw').textContent : '',
-      [r.querySelector('.fsys').innerText.replace(/\\s+/g, ' ').trim(), r.querySelectorAll('.fsys .j').length]]))""")
+      [(r.querySelector('.fsys').innerText + ' ' + [...r.querySelectorAll('.ftg .it-snote')].map(n => n.innerText).join(' ')).replace(/\\s+/g, ' ').trim(), r.querySelectorAll('.fsys .j, .ftg .j').length]]))""")   # v2026.10.31.6: the notes among the tags
     want = {'8WA-Z6 Marrek on 5BTK-M gate': '8WA-Z6 on 5BTK-M gate', 'Y-OMTZ Ketter -> MO-GZ5': 'Y-OMTZ → MO-GZ5', 'Ketter jumped to 5BTK-M from N-8YET': '5BTK-M from N-8YET',
             'QX-LIJ Marrek E-VKJV': 'E-VKJV or QX-LIJ?', 'FM-JK5 Ketter JP4-AA': 'JP4-AA on FM-JK5 gate?'}
     check(all(notes.get(l, ['', 9])[0] == w and notes[l][1] == 0 for l, w in want.items()), f'the Feed: the note after the system, no second jump count {[(w, notes.get(l)) for l, w in want.items()]}')

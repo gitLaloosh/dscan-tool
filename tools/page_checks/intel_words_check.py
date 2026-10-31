@@ -8,8 +8,8 @@ Analyzer as pilots; ""linked to ESS" is a warning to let people know that the ho
 it. "linked" should not have been resolved as a pilot name." Runs intel_check.py's start (its made-up Chatlogs folder, ESI and system
 names; you in 1DQ1-A) up to Intel turned on, with made-up characters named Kill, Linked, Navy, DRAG, HOT, Proc, MediuM and Rats (as real
 ones are), then made-up lines:
-  * "MO-GZ5 linked to ess 223m": no pilot, "223m" never looked up; a sighting: the Feed's chip "ESS linked"; Near You's row says
-    "hostile" (no count was given) and is tagged "ESS linked";
+  * "MO-GZ5 linked to ess 223m": no pilot, "223m" never looked up; a sighting: Near You's row says "hostile" (no count was given);
+    both lists tag it with the red "ESS" (v2026.10.31.6, layout D; was "ESS linked");
   * "Y-OMTZ Gate Drag Bubbled Cormorrant Navy Fleet +9 Gate is hot": no pilot; the ship read as the Cormorant Navy Issue; +9;
   * "D-W7F0 proc tackled in the medium ark by the rats": no pilot, and "the medium ark" is an ore site, not the jump freighter; "T5ZI-S Kill: Marrek (Caracal Navy Issue)": Marrek only, in his
     Caracal Navy Issue;
@@ -37,9 +37,9 @@ _tail = r'''
     g = got('MO-GZ5 linked to ess 223m')
     near = pg.evaluate("""() => { const r = [...document.querySelectorAll('#itNearList .it-nb')].find(x => x.querySelector('.sys').textContent === 'MO-GZ5');
       const f = [...document.querySelectorAll('#itFeedList .it-fd')].find(x => (x.querySelector('.raw') || {}).textContent === 'MO-GZ5 linked to ess 223m');
-      return [r ? [(r.querySelector('.it-ess') || {}).textContent || '', r.querySelector('.st b').textContent] : null, f ? [...f.querySelectorAll('.it-chip.kw')].map(c => c.textContent) : null]; }""")
-    check(g['pilots'] == [] and 'ESS linked' in g['kw'] and not {'223m', 'ess', 'linked to', 'to ess'} & IDS_ASKED and near[0] == ['ESS linked', 'hostile'] and 'ESS linked' in (near[1] or []),
-          f"'linked to ess 223m': no pilot, '223m' never looked up; a sighting; the Feed says 'ESS linked', Near You's row is tagged {g} {near} {sorted({'linked', '223m'} & IDS_ASKED)}")
+      return [r ? [(r.querySelector('.it-ess') || {}).textContent || '', r.querySelector('.st b').textContent] : null, f ? [...f.querySelectorAll('.ftg .it-ess')].map(c => c.textContent) : null]; }""")   # v2026.10.31.6: a tag, "ESS"
+    check(g['pilots'] == [] and 'ESS linked' in g['kw'] and not {'223m', 'ess', 'linked to', 'to ess'} & IDS_ASKED and near[0] == ['ESS', 'hostile'] and near[1] == ['ESS'],
+          f"'linked to ess 223m': no pilot, '223m' never looked up; a sighting; the Feed and Near You's row are tagged (v2026.10.31.6: red 'ESS') {g} {near} {sorted({'linked', '223m'} & IDS_ASKED)}")
     g = got('Y-OMTZ Gate Drag Bubbled Cormorrant Navy Fleet +9 Gate is hot')
     check(g['pilots'] == [] and g['ships'] == [['Cormorant Navy Issue', 1]] and g['extra'] == 9 and not {'drag', 'hot', 'drag bubbled', 'is hot'} & IDS_ASKED,
           f'"Gate Drag Bubbled Cormorrant Navy Fleet +9 Gate is hot": no pilot, the Cormorant Navy Issue one letter off, +9 {g}')

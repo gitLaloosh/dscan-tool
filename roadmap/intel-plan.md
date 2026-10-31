@@ -170,6 +170,21 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## Layout D for Near You, the Feed to match (v2026.10.31.6)
+
+- The owner: "i feel like the "Assess" button is taking up a lot of valuable space"; he laid out option D line by line on the mockup
+  (`assess_icon_mockup.html`, made-up data) and settled each piece; the Feed proposal (`feed_layout_mockup.html`): "yes on all points".
+  Full spec: Project doc roadmap/near-you-layout-d.md.
+- Near You: line 1 jumps · system · analyze icon · tags · time; line 2 the kill badges, only with kills; line 3 the toggle under the
+  jumps, then the count word and names. Tags: Clear (green), ESS (white at it, red linked; hover without robbing), camp / gate, Bubble.
+  The icon: radar rings, quiet until hovered, always the System Analyzer. Phone: the tags on their own line.
+- The Feed: line 1 jumps · system · notes and tags (a kill's label among them) · time; no REPORT label; then the toggle and what was
+  reported; a kill's "by" line ends in the dossier's fleet size (`fleetSizeHtml`, players on the killmail, NPCs left out).
+- A system's name, in either list, filters the Feed only (the search box gets its name); pressed again, everything. On a phone the page
+  scrolls to the Feed.
+- The dossier's hull-row expand button is Intel's chevron (the owner: the "dropdown link ... make it fit the rest of the site").
+- `intel_rows_check.py`; `intel_layout_check.py` rewritten for D with a busy row (LESSON #113).
+
 ## Gates and camps; short names for systems (v2026.10.31.5)
 
 - The owner: "we need to come up with a clean way to communicate gate camps"; gate shorthand is "usually ... three characters, one of

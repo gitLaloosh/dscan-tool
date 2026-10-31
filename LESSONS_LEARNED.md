@@ -128,6 +128,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #110 Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still.
 - #111 A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters.
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
+- #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 
 **Checks and test machinery**
 
@@ -1019,6 +1020,17 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 113. Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window
+
+- **What happened (v2026.10.31.6):** while the owner reworked Near You into layout D, he asked for "one system with all badges for
+  gate camp, bubbles and ESS as well as kill badges for all three standings and pilots for all three standings". That one row showed
+  the old layout overlapping the kill badges on the word on a phone, which no check had caught: the checks drew rows with one or two
+  of those at a time. Separately, the mockup drew each list inside a 640 px frame, so the page's own rules for windows under 900 px
+  applied there and every option looked a little different from how it looks in a 1180 or 1440 px window.
+- **Do this instead:** add a busy row (every tag, every badge, long names of every standing) to the layout check and sweep it across
+  the real widths, checking that no two pieces overlap and nothing leaves its row (`intel_layout_check.py`). Draw mockups of a page
+  in a frame at least as wide as the window they stand for (media queries follow the frame), and narrow only the list inside it.
 
 ## 112. Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates
 

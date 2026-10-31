@@ -28,7 +28,7 @@ AREAS = {
     'fighter_bombs_check': ['fit', 'calc'], 'fighter_picks_check': ['myship', 'calc'], 'fighter_tile_check': ['myship', 'calc'],
     'fleet_kill_check': ['pilot', 'system'], 'fleet_view_check': ['system'], 'header_check': ['layout', 'intel'],
     'intel_assess_check': ['intel', 'system'], 'intel_check': ['intel'], 'intel_kills_check': ['intel'], 'intel_layout_check': ['intel'],
-    'intel_place_check': ['intel'], 'intel_words_check': ['intel'], 'intel_gates_check': ['intel'], 'intel_guard_check': ['intel'], 'intel_fleet_check': ['intel', 'pilot'], 'outside_links_check': ['pilot', 'intel', 'layout'], 'fleet_vs_check': ['pilot', 'system', 'myship'], 'last_kill_check': ['pilot'], 'layout_check': ['layout'], 'matchup_strip_check': ['myship', 'calc'],
+    'intel_place_check': ['intel'], 'intel_words_check': ['intel'], 'intel_gates_check': ['intel'], 'intel_rows_check': ['intel'], 'intel_guard_check': ['intel'], 'intel_fleet_check': ['intel', 'pilot'], 'outside_links_check': ['pilot', 'intel', 'layout'], 'fleet_vs_check': ['pilot', 'system', 'myship'], 'last_kill_check': ['pilot'], 'layout_check': ['layout'], 'matchup_strip_check': ['myship', 'calc'],
     'mine_damage_check': ['myship', 'calc'], 'missile_picks_check': ['myship', 'calc'], 'missing_charges_check': ['fit', 'calc'],
     'module_charges_check': ['fit', 'calc'], 'my_ship_check': ['myship'], 'my_ships_check': ['myship'], 'no_shift_check': ['layout'],
     'pilot_rows_check': ['system'], 'request_gates_check': ['intel', 'pilot'], 'ring_track_check': ['fit'], 'sa_size_check': ['system'],

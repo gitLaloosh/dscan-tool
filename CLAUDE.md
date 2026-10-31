@@ -95,9 +95,13 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   (amber); no background highlighting; standing colours on words and names (neutral a bright grey). Intel channel names are
   shown only under the gear, never elsewhere (the owner: "security reasons"). `tools/page_checks/intel_layout_check.py`.
   A line naming several systems is placed after the name lookups, never before (LESSON #105; `intel_place_check.py`).
-  Near You's word never wraps: too narrow for one line, the row stacks (`itNearFit`, LESSON #109).
+  Layout D (v2026.10.31.6, the owner; Project doc roadmap/near-you-layout-d.md), both lists: line 1 jumps, the system (a button that
+  filters the Feed only, never Near You), Near You's analyze icon (radar rings, always the System Analyzer), the tags, the time; Near
+  You's kill badges on their own line, only when there are kills; then the toggle under the jumps and what was reported. No Assess
+  column, no REPORT label; Clear, ESS (white at it, red linked), Bubble and camp are tags. A killmail's fleet size is drawn once
+  (`fleetSizeHtml`, the dossier's). Check a layout with a busy row at every width (LESSON #113; `intel_layout_check.py`).
   A word is a pilot only in its name's own capitals (one word typed by hand) or dragged in; report words (`IT_NOT_PILOT`) never
-  otherwise (LESSON #111; `intel_words_check.py`). "Linked to ESS" tags the row.
+  otherwise (LESSON #111; `intel_words_check.py`).
   A word before "gate" is read among the gates of the system the line is in (LESSON #112); one tag per Near You row for a gate:
   red "Camp · X gate" from a report, orange from 2+ kills at that gate, grey a gate with no camp words (`intel_gates_check.py`).
 - **Standing icon** (v2026.10.30.4, the owner): one drawing site-wide, `standIcon` / `standMark` (EVE-style: a star for your
