@@ -257,7 +257,7 @@ with sync_playwright() as p:
     check(jw[0] == ['In system', '1 Jump', '1 Jump', '2 Jumps', '3 Jumps', '4 Jumps'] and jw[1] and jw[2][:3] == ['1DQ1-A In system', 'Y-OMTZ 3 Jumps', '8WA-Z6 1 Jump'] and jw[3] == [1, 0],
           f'the words: "1 Jump", "3 Jumps", and "In system" (a tag) for your own system, in Near You and the Feed; "Clear" once on a clear row {jw}')
     ic = pg.evaluate("() => Object.fromEntries([...document.querySelectorAll('#itFeedList .it-chip.p')].map(c => [c.querySelector('.nm').textContent, [c.querySelector('svg.it-st').getAttribute('class'), c.querySelector('svg.it-st title').textContent]]))")
-    check(ic.get('Marrek Ketter') == ['it-st bad', 'Hostile'] and ic.get('Vesna Dossier') == ['it-st neu', 'Neutral'] and not pg.evaluate("() => !!document.querySelector('#intelPanel .it-mk')"),
+    check(ic.get('Marrek Ketter') == ['it-st bad sa-mark h', 'Hostile'] and ic.get('Vesna Dossier') == ['it-st neu sa-mark n', 'Neutral'] and not pg.evaluate("() => !!document.querySelector('#intelPanel .it-mk')"),
           f'standing icons: hostile "-", neutral "=" (v.99: an empty ring) {ic}')
     RAWQ = """(raw) => { const r = [...document.querySelectorAll('#itFeedList .it-fd')].find(f => (f.querySelector('.raw') || {}).textContent === raw); const t = r.querySelector('[data-it-raw]'), s = r.querySelector('.it-raw');
       return [t.getAttribute('aria-expanded'), s.hidden, s.checkVisibility(), (s.querySelector('.who') || {}).textContent, (s.querySelector('.ch') || {}).textContent, !!s.querySelector('[data-it-shape]'), r.classList.contains('open')]; }"""

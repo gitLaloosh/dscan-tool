@@ -70,6 +70,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #61 A golden fit that tests an input must set it to something the default wouldn't give.
 - #40 A ranking metric that leaves out what the pick is for.
 - #78 A number can be exactly right and still mislead: check the assumption, not only the arithmetic.
+- #108 Don't compute a precise answer from guesses stacked on guesses: show the facts it would be built from. See also #78.
 - #81 Mock data must keep the real data's rules, or a check tests a case that can't happen.
 - #83 A test double must replace the real thing, not fill in when it is missing.
 - #71 A mock that accepts anything can't check what the feature adds.
@@ -122,6 +123,8 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #97 A limit the user can't see reads as a bug: name it where they set things.
 - #101 A component's border shorthand quietly cancels the site's focus rule: measure each state, then write the rule down and check it.
 - #104 escapeHtml() doesn't escape quotes: a value in an attribute needs `&quot;`.
+- #107 One meaning drawn twice drifts: draw it once and use it everywhere. See also #42.
+- #109 A `1fr` column beside fixed and `auto` ones can shrink to nothing: sweep every width the layout spans. See also #103.
 
 **Checks and test machinery**
 
@@ -1013,6 +1016,46 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 109. A `1fr` column beside fixed and `auto` ones can shrink to nothing: sweep every width the layout spans
+
+- **What happened (v2026.10.31.1, the owner: "text wrapping issue ... it's pretty annoying", a window about 1290 px wide):** Near
+  You's row is one grid line: the jump count (62 px), the system (as wide as the widest system name), the word (`minmax(0,1fr)`), the
+  time and the kill badges (`auto`, the badges with a 118 px slot so times line up), the toggle and Assess. The word got what was
+  left. With the page's real system names and the Intel card split in two (about 900-1400 px) that was nothing, and "2 neutral" stood
+  one letter a line. `intel_layout_check.py` measured the layout at 1440 px and 390 px only, with a made-up table whose widest name is
+  far shorter than the real one's.
+- **Do this instead:** a column that takes what's left needs a floor, or the layout needs a second shape for when there's no room.
+  Decide by measuring the real content in the real container, not by a window width (here `itNearFit`: the word kept on one line;
+  wider than its column, the row stacks). Check every width the layout spans, with content as wide as the real data can be (here
+  905-1700 px with a 160 px system column), not two widths and a short test table.
+
+## 108. Don't compute a precise answer from guesses stacked on guesses: show the facts it would be built from
+
+- **What happened (v2026.10.30.4 → v2026.10.31.1):** the Fleet tab's Against This Fleet worked out how long the victim, then your
+  ship, would last against the fleet on a kill, and how long you'd need for each of them. Every pilot's fit was a guess (their latest
+  loss in that hull, or their alliance's common fit), and the whole fleet was put at one range. The owner, testing it: "it's not as
+  intuitive as i'd like"; "each ship in that fleet is going to be trying to be at their optimal range so i just dont know how
+  realistic this is"; "given the fluidity of ranges in fleet battles, we probably should not be giving a time to kill numbers." The
+  numbers were exactly what the engine gives for those inputs (#78), and the inputs were the problem.
+- **Do this instead:** before building a number, count the guesses under it (here: the fit, the range, each ship's movement, all
+  times every ship). When the answer depends on choices the players make in the fight, show what each guess rests on instead (here
+  each fit's DPS, damage mix, weapon range and what its tackle reaches) and leave the conclusion to the reader. A one-on-one with a
+  fit read from its own killmail is different: there the Matchup keeps its numbers.
+
+## 107. One meaning drawn twice drifts: draw it once and use it everywhere
+
+- **What happened (v2026.10.30.4, the owner: "i really want to see the standings icons ... implemented with this delivery. right now,
+  hostile and friendly look ok but neutral is just wrong"):** standing had two drawings. The System Analyzer's `SIDE_MARK` (v.81: a red
+  square with −, a blue one with +, an empty circle for neutral) and Intel's EVE-style icons (v.100: a star for your corporation and
+  alliance, +, =, −). Each was right where it was made; side by side on the new Fleet tab they disagreed, and neutral read as "nothing".
+- **Do this instead:** when a second place needs a meaning the page already draws, call the first drawing (here `standIcon` /
+  `standMark`), don't draw it again. When two drawings exist, merge them into one before adding a third use, and keep the classes the
+  checks read (`sa-mark h / n / f`). Same family as #42 (a card's name typed in many places).
+- **And check what the shared drawing carries:** Intel's icon carried a `<title>` (its only label, beside a pilot's name). Put beside
+  the word "Hostile" in the System Analyzer, that title became text: the key read "HostileHostile 54" (`system_analyzer_check.py`,
+  unchanged, caught it). A drawing reused where its meaning is already written goes in as decoration (`standIcon(k, true)`,
+  `SIDE_MARK_BY_WORD`: no title, `aria-hidden`).
 
 ## 106. A rate guard must stop at the first refusal, stay stopped, and count what it granted
 

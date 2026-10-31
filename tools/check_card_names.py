@@ -52,6 +52,7 @@ RETIRED = {
 # Retired names matched as written (capitals and all): their lower-case words stay ordinary prose.
 RETIRED_EXACT = {
     'Your Side': "cardName('side') (Standings, v2026.10.14.95)",
+    'Against This Fleet': "removed in v2026.10.31.1: no time-to-kill for a whole fleet (LESSON #108); its ranges are in cardName('fksum') and cardName('fkpilots')",
 }
 
 def line_of(pos): return src.count('\n', 0, pos) + 1

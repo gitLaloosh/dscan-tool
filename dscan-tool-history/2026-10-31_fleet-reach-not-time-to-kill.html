@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-31 — The Fleet tab shows reach, not time to kill; Near You's word never squeezed</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Fleet tab shows reach, not time to kill; Near You's word never squeezed</h1>
+<p><span class="tag">Fleet</span><span class="tag">Intel</span><span class="tag">UI</span> 2026-10-31 &middot; <code>v2026.10.31.1</code></p>
+
+<h2>Why</h2>
+<p>The owner tested v2026.10.30.4's Against This Fleet card: "i'm not loving this feature. in particular, it's the against my ship part. it's not as intuitive as i'd like". He asked for a mockup without the victim / my ship split and without the range and MWD buttons. Two versions were made: A showed only what the fleet brings, and B gave one answer against your ship.</p>
+<p>His concern with B was that it used one range for everyone: "each ship in that fleet is going to be trying to be at their optimal range so i just dont know how realistic this is". Then the decision: given guessed fits and "the fluidity of ranges in fleet battles, we probably should not be giving a time to kill numbers". He agreed to A, with the list ordered logistics first, then raw DPS.</p>
+<p>Building A showed that the Fleet tab already had nearly all of it. "Their fleet on this kill" has the DPS, the damage mix, the tackle and EWAR counts and the logistics, and "Pilots on the kill" has each pilot's DPS, damage bar and EWAR. The only new thing in A was range, so the card was taken out and range went into the two cards that were already there.</p>
+<p>He also asked for a Near You bug in this delivery ("it's pretty annoying"). At a window about 1290 px wide, the word ("clear", "2 neutral", "no visual") stood one letter a line.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Against This Fleet is gone.</b> The card, the victim / my ship switch, the range and MWD buttons, and the code behind them are removed, and the System Analyzer's Against Your Ship code is back as it was before v2026.10.30.4. Its name is retired in <code>check_card_names.py</code>. The Fleet tab shows no time to kill anywhere, even with a ship saved. The Pilot Analyzer's one-on-one Matchup is unchanged.</li>
+<li><b>Weapon reach</b> is a new tile in the summary: the nearest and farthest main weapon over the pilots with a fit. A pilot's main weapon is the one doing the most DPS. Turrets show optimal + falloff and missiles their flight, as pyfa gives them. Drone-only ships are counted under the tile.</li>
+<li><b>Tackle and EWAR</b> now gives each kind's farthest optimal ("points 3 to 26.0 km").</li>
+<li><b>Each pilot row</b> shows its main weapon's range under the DPS, written as the Pilot Analyzer writes it. A drone boat shows "drones". Hovering the EWAR badges lists each module with its optimal + falloff. The Pilot Analyzer's own wording is now one function, <code>weaponRangeText</code> (LESSON #107).</li>
+<li><b>The victim</b> is a tag in the line under the title ("killed [victim] in a Thanatos") and opens them in the Pilot Analyzer on the ship they lost.</li>
+<li><b>Near You's word never wraps.</b> <code>itNearFit</code> first lays the rows out on one line. If any word is wider than its column, the list stacks: the word, the time and the badges go under the system, and the names under that, as on a phone. It runs on every draw, so it follows the window.</li>
+<li>CLAUDE.md UI rules: no time to kill for a whole fleet, and Near You's stacking. The System Analyzer's hidden Against Your Ship card carries a note to stay off.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>fleet_vs_check.py</code>, rewritten</b> for what the tab is now:
+  <ul>
+  <li>only the head, summary and pilots, with no time to kill and nothing to set, even with a ship saved;</li>
+  <li>the victim tag;</li>
+  <li>Weapon reach, each EWAR kind's reach, each row's range and the EWAR hover, all worked out in the check from each fit's own numbers;</li>
+  <li>the standing icons;</li>
+  <li>390 px.</li>
+  </ul></li>
+<li>10 mutants, all caught once two gaps were closed. The made-up fits each carry one weapon, so which weapon sets the reach went untested; a two-weapon case now covers it. Stacked rows could also let the times drift out of line; that is now checked too.</li>
+<li><code>fleet_kill_check.py</code>: the line under the title now has the victim's name in it.</li>
+<li><b><code>intel_layout_check.py</code></b> now covers every width where the Intel card is split in two (905 to 1700 px), with this table's system column and with a 160 px one. At each width the word must stay on one line inside its column, on the system's line when there's room and under it when there isn't. The old check measured only 1440 and 390 px, with a test table whose widest system name is far shorter than the real one's. Run on the v2026.10.30.4 page, the new sweep fails.</li>
+</ul>
+
+<h2>Later (backlog)</h2>
+<ul>
+<li>A range graph showing where points, disruptors, webs and DPS ranges start, and how it works for fleets of dozens or hundreds of ships.</li>
+<li>One lazy-loading rule for everything that evaluates fleet ships.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #108: don't compute a precise answer from guesses stacked on guesses. Count the guesses under a number before building it. When the answer depends on choices players make in the fight, show the facts it would rest on instead.</p>
+<p>LESSON #109: a <code>1fr</code> column beside fixed and <code>auto</code> ones can shrink to nothing. Measure the real content in the real container, and check every width the layout spans with content as wide as the real data.</p>
+</body></html>

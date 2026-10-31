@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-30 — From a kill to its fleet; one set of standing icons</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>From a kill to its fleet; one set of standing icons</h1>
+<p><span class="tag">Intel</span><span class="tag">Fleet</span><span class="tag">UI</span> 2026-10-30 &middot; <code>v2026.10.30.4</code></p>
+
+<h2>Why</h2>
+<p>This delivers two high-priority backlog items together. The first, from the owner: "killmails on the intel feed and near you should link to a fleet tab that assesses the fleet that got the kill. include victims". The second: "Against Your Ship" on that Fleet tab, "assess what the fleet that got the kill, would do to my ship".</p>
+<p>The preview, run on the real page with made-up data, settled three decisions:</p>
+<ul>
+<li><b>Solo kills.</b> "No, send them to the pilot dossier". For one ship, the ship-against-ship Matchup is the right tool.</li>
+<li><b>Layout.</b> "Toggle between the victim and your ship like you would in the pilot dossier ... try to stay consistent".</li>
+<li><b>Default side.</b> "Default to the victim in this case. we're assessing the kill first".</li>
+</ul>
+<p>He also asked for the standing icons in this delivery: "hostile and friendly look ok but neutral is just wrong".</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Intel.</b>
+  <ul>
+  <li>Feed kills with 2 or more pilots in ships get <b>Fleet ▸</b>. A solo kill gets <b>Pilot ▸</b>, which opens that pilot in the Pilot Analyzer in the ship they flew.</li>
+  <li>Near You's kill badges are buttons. A badge for one kill opens its fleet, or its pilot for a solo kill. A badge for several kills opens the row on them, each with its own button.</li>
+  <li>The Fleet tab says "From Intel" and uses the killmail the live feed already gave, so no ESI request is made for it. Close goes back to Intel.</li>
+  </ul></li>
+<li><b>Against This Fleet</b>, a new card on the Fleet tab under the summary.
+  <ul>
+  <li>The Matchup board's two halves sit on top: the victim (amber, pressed first) and My ship (cyan). Each half shows how long that ship lasts. The victim's name in the middle opens them in the Pilot Analyzer on the ship they lost.</li>
+  <li>Below are the System Analyzer's Against Your Ship numbers for the side chosen (<code>saVsCompute</code>): verdict, how long it lasts, DPS applied, what holds it, capacitor, logistics and kill order.</li>
+  <li>The card has its own range and prop setting. Pilots with no fit to read are left out, and the card says how many.</li>
+  <li>The victim's fit is the killmail's own, and the victim did die, so this side is a check on the numbers. The "Against Your Ship" card stays hidden on the System Analyzer, where its hulls were guessed from Local (LESSON #78). On a killmail the hulls are facts.</li>
+  </ul></li>
+<li><b>One set of standing icons.</b> The EVE-style icons drawn for Intel in v.100 replace the System Analyzer's squares and circles everywhere: a star for your corporation and alliance, + friendly, = neutral, − hostile. This covers the System Analyzer's columns, key, pilot rows and fleet view, the Standings tag, and the Fleet tab. One function draws them (<code>standIcon</code> / <code>standMark</code>), and they keep the classes the checks read (<code>sa-mark h / n / f</code>). Beside its own word (the System Analyzer's columns and key, the Standings tag) the icon is decoration, with no title, so the word is read once.</li>
+<li>CLAUDE.md UI rules: the standing icon. The card is named <code>fkvs</code> and has its own ⓘ panel.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>intel_fleet_check.py</code></b>, on Intel's made-up start: the buttons, the badges, from Intel with no ESI request for the killmail, Close back to Intel, a solo kill to the Pilot Analyzer, and a badge for 2 kills.</li>
+<li><b>New <code>fleet_vs_check.py</code></b>, on the System Analyzer mocks' 6-ship kill: victim first; the victim's fit equals the killmail's; the numbers and kill order recomputed; My ship; the card's own range; no ship saved; the victim opening in the Pilot Analyzer; the icons; 390 px.</li>
+<li><code>intel_kills_check.py</code> and <code>intel_check.py</code>: the icons' classes, and kill-row text read without the new buttons.</li>
+<li><code>system_analyzer_check.py</code>, unchanged, caught the shared icon's title doubling each side's word in the key ("HostileHostile 54").</li>
+<li>9 mutants, all caught. One exposed a state of the card (no ship saved, My ship pressed) that didn't say which side it showed; every state now does.</li>
+<li>The preview itself caught a missing card name: <code>cardName</code> refused <code>fkvs</code> and the tab stopped at "Reading killmail".</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #107: one meaning drawn twice drifts. Draw it once and call that drawing everywhere; merge two drawings before adding a third use. Where the meaning is already written beside it, use the drawing as decoration, or its label is read twice.</p>
+</body></html>

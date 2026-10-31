@@ -12,6 +12,9 @@ Runs intel_kills_check.py's start (made-up logs and kills, R2Z2 and ESI mocked) 
   * a row opened: the reports behind it with who sent them and the line as typed, no channel name; several open at once;
   * the Feed: the jump count first, the time then the label at the right edge (the labels' right edges lined up), the lines below
     starting under the system name, no background on kill rows, the amber edge within the alert range;
+  * v2026.10.31.1: at every width where the Intel card is split in two (905-1700 px), with this table's system column and with
+    one 160 px wide: Near You's word on one line within its column, on the system's line when there's room, else under it;
+    the times lined up either way;
   * 390 px: nothing off the page; Near You's toggle and Assess at least 40 px; the Feed's label under the system line;
   * no page errors.
 """
@@ -69,6 +72,25 @@ _tail = r'''
     chk(all(f['chx'] is None or abs(f['chx'] - f['syx']) < 2 for f in F), f'the lines below start under the system name {[(round(f["syx"]), f["chx"] and round(f["chx"])) for f in F][:3]}')
     chk(len({f['bg'] for f in F}) == 1 and all((amber in f['edge']) == f['inr'] for f in F) and any(f['inr'] for f in F) and any(f['kill'] for f in F),
         f'no background on kill rows; the amber edge only within the alert range {set(f["bg"] for f in F)} {[(f["kill"], f["inr"]) for f in F]}')
+    # ---- v2026.10.31.1: the word never squeezed (the owner: "text wrapping issue ... it's pretty annoying") ----
+    # Every width where the Intel card is split in two, with this table's system column and with one as wide as a long real name:
+    # the word on one line, never wider than its column; on the system's line when there is room, else under it (itNearFit).
+    pg.evaluate("() => { const o = itSysWidths; window.__sysw = ''; itSysWidths = (el) => { o(el); if(window.__sysw) el.style.setProperty('--it-sys-w', window.__sysw); }; }")
+    NW = []
+    for sysw in ['', '160px']:
+        pg.evaluate("(v) => { window.__sysw = v; }", sysw)
+        for w in [905, 1000, 1100, 1200, 1290, 1340, 1440, 1700]:
+            pg.set_viewport_size({'width': w, 'height': 1000}); pg.wait_for_timeout(450); pg.evaluate("() => itRenderLists()"); pg.wait_for_timeout(150)
+            NW.append([sysw or 'table', w] + pg.evaluate("""() => { const l = document.querySelector('#itNearList');
+              const R = [...l.querySelectorAll('.it-nb')].map(r => { const s = r.querySelector('.st'), b = s.firstElementChild.getBoundingClientRect(), y = r.querySelector('.sys').getBoundingClientRect();
+                return {fits: b.width <= s.clientWidth + 0.5 && b.height <= 20, first: Math.abs(b.top - y.top) <= 3, ar: Math.round(r.querySelector('.age').getBoundingClientRect().right)}; });
+              return [l.classList.contains('it-narrow'), R.every(x => x.fits), R.every(x => x.first), new Set(R.map(x => x.ar)).size === 1]; }"""))
+    pg.evaluate("() => { window.__sysw = ''; }")
+    chk(all(n[3] for n in NW), f'Near You at every split width: the word on one line, within its column {[n for n in NW if not n[3]]}')
+    chk(all(n[5] for n in NW), f'... and the times lined up, stacked or not {[n for n in NW if not n[5]]}')
+    chk(all(n[2] or n[4] for n in NW) and any(not n[2] for n in NW) and any(n[2] for n in NW) and not [n for n in NW if n[0] == 'table' and n[1] == 1700][0][2],
+        f'... on the system\'s line when there is room, under it when not {[(n[0], n[1], "under" if n[2] else "line") for n in NW]}')
+    pg.set_viewport_size({'width': 1440, 'height': 1000}); pg.wait_for_timeout(450)
     # ---- 390 px ----
     pg.set_viewport_size({'width': 390, 'height': 900}); pg.wait_for_timeout(600)
     ph = pg.evaluate("""() => { const r = document.querySelector('#itNearList .it-nb'), tg = r.querySelector('[data-it-nbo]').getBoundingClientRect(), as = r.querySelector('.it-assess'), f = document.querySelector('#itFeedList .it-fd');

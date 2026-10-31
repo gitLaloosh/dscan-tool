@@ -30,6 +30,26 @@ the composition is known; only each pilot's fit is an estimate, and the page say
 
 - **v2026.10.14.94: done.** The Fleet tab (`fk*` in index.html), Fleet ▸ in the dossier's kills list, the `#fleet=` share
   link (FLEET-01 for one cut short). `tools/page_checks/fleet_kill_check.py`.
-- Later, after use: an "against your ship" view of a known fleet; the victim's side.
+- **v2026.10.30.4: done.** From Intel (the owner: "killmails on the intel feed and near you should link to a fleet tab that assesses
+  the fleet that got the kill. include victims"): Fleet ▸ on Feed kills with 2+ pilots in ships and in Near You's opened rows; Near
+  You's kill badges are buttons (one kill: its fleet; several: the row opened on them, option A); a solo kill: Pilot ▸, its pilot in
+  the Pilot Analyzer ("send them to the pilot dossier": the ship-against-ship Matchup is the right tool for one ship). The Fleet tab
+  says "From Intel", uses the killmail the live feed gave (no ESI request for it) and Close goes back to Intel.
+- **Against This Fleet** (`fkvs`): the Matchup board's two halves on top, **the victim first** (the owner: "default to the victim
+  in this case. we're assessing the kill first. then have the option to assess against our ship"), its fit the killmail's own (it did
+  die, so this side checks the numbers), then **My ship**; below, the System Analyzer's Against Your Ship numbers for the side chosen
+  (saVsCompute), pilots with no fit left out and said, the card's own range and prop. The victim's name opens them in the Pilot
+  Analyzer on the lost ship. `tools/page_checks/fleet_vs_check.py`, `intel_fleet_check.py`.
+- **v2026.10.31.1: Against This Fleet taken out.** The owner, after testing it: "i'm not loving this feature. in particular, it's the
+  against my ship part"; one shared range for the whole fleet is unrealistic ("each ship in that fleet is going to be trying to be
+  at their optimal range"); then "given the fluidity of ranges in fleet battles" and fits that are only a guess, "we probably should
+  not be giving a time to kill numbers" for a whole fleet. No time to kill on the Fleet tab (LESSON #108); the one-on-one Matchup
+  in the Pilot Analyzer keeps its numbers. What it would have added that the tab lacked, range, went into the cards already there:
+  **Weapon reach** in the summary (nearest to farthest main weapon, turrets optimal + falloff, missiles flight, as pyfa gives them),
+  each EWAR kind's farthest optimal, each pilot's main weapon range under the DPS and each module's range on the EWAR badges' hover.
+  The victim is a tag in the line under the title (opens them in the Pilot Analyzer). `fleet_vs_check.py` checks all of it.
+- Later (the owner, 2026-10-31): "a range graph ... that reflects where certain things kick in like points, disruptors, webs, dps
+  ranges", and how it works for fleets of dozens or hundreds of ships; a lazy-load rule for everything that evaluates fleet ships.
+- Later: group kills by shared attackers ("2 fleets", option D).
 - Known simplification: a shared link's alliance fits are built from that variant's newest loss with its own charges (the
   tab itself uses the variant's most common charge per weapon, as the dossier does).

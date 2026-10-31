@@ -65,8 +65,9 @@ with sync_playwright() as p:
     pg.click(f'[data-pd-fleet="{M.FLEET_KILL}"]'); pg.wait_for_timeout(300); fleet_done(pg, 6)
     tab = pg.evaluate("() => [!document.querySelector('#fleetTabWrap').hidden, document.querySelector('#tabBtnFleet').textContent, document.querySelector('#tabBtnFleet').classList.contains('active'), getComputedStyle(document.querySelector('#tabFleet')).display, getComputedStyle(document.querySelector('#tabPilot')).display]")
     check(tab == [True, 'Fleet', True, 'block', 'none'], f'Fleet ▸: the Fleet tab shown and open {tab}')
-    sub = pg.inner_text('#fleetPanel .fk-sub')
-    check(sub.startswith(f"Chosen from {ORLA}'s Pilot Dossier · killed a Thanatos (Carrier) · ") and sub.endswith('· 1DQ1-A · 8 pilots on the kill, 6 in ships'),
+    sub = ' '.join(pg.inner_text('#fleetPanel .fk-sub').split())   # v2026.10.31.1: the victim is a tag (its name, then ›)
+    VIC = pg.evaluate("() => fk.info.get(fk.victim.id)")
+    check(VIC and sub.startswith(f"Chosen from {ORLA}'s Pilot Dossier · killed {VIC} › in a Thanatos (Carrier) · ") and sub.endswith('· 1DQ1-A · 8 pilots on the kill, 6 in ships'),
           f'the kill, with the NPC, the capsule and the pilot with no ship left out ({sub!r})')
     R = pg.evaluate(ROWS)
     want = [  # the dossier's pilot first, then DPS (ties in the killmail's order), fit unknown last
@@ -113,7 +114,7 @@ with sync_playwright() as p:
     got2 = [(r['pilot'], r['hull'], r['src'], r['dps']) for r in R2]
     w2 = [(a, b_, d, f) for a, b_, c, d, e, f in want]
     w2[0] = (PN(M.THIRD_PILOT),) + w2[1][1:]; w2[1] = (ORLA,) + want[0][1:2] + want[0][3:4] + want[0][5:]   # no dossier pilot: by DPS
-    check(sorted(got2) == sorted(w2) and got2[0][0] == PN(M.THIRD_PILOT) and not M.ZKB_CALLS and pg.inner_text('#fleetPanel .fk-sub').startswith('A shared fleet · killed a Thanatos'),
+    check(sorted(got2) == sorted(w2) and got2[0][0] == PN(M.THIRD_PILOT) and not M.ZKB_CALLS and ' '.join(pg.inner_text('#fleetPanel .fk-sub').split()).startswith(f'A shared fleet · killed {VIC} › in a Thanatos'),
           f'the share link in a fresh page: the same fleet, by DPS, no zKillboard request ({got2}, {len(M.ZKB_CALLS)} calls)')
     pg.click('#fleetPanel [data-fk-close]'); pg.wait_for_timeout(300)
     c = pg.evaluate("() => [document.querySelector('#fleetTabWrap').hidden, document.querySelector('#tabBtnPilot').classList.contains('active'), location.hash]")

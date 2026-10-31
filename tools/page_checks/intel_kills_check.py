@@ -141,7 +141,7 @@ HKILL = km(9200012, 'Y-OMTZ', 25, who('Marrek Ketter'), 'Vedmak', [(who(FRIEND2)
 LABELS = ('Friendly lost', 'Hostile killed', 'Neutral killed')
 # v2026.10.30.1: the jump count has its own column (.fj) before the system; 'sys' keeps the old "8WA-Z6 1 Jump" form for the checks
 ROWS = """() => [...document.querySelectorAll('#intelPanel #itFeedList .it-fd')].map(r => ({ty: (r.querySelector('.it-ty') || {}).textContent, sys: [((r.querySelector('.it-chip.sys') || {}).textContent || '').trim(), ((r.querySelector('.fj') || {}).textContent || '').trim()].filter(Boolean).join(' ') || null, cls: r.className,
-  lines: [...r.querySelectorAll(':scope > .it-chips')].map(c => [...c.children].map(x => x.classList.contains('it-chip') ? (x.querySelector('.nm') || x).textContent.trim() : x.textContent.trim()))}))"""
+  lines: [...r.querySelectorAll(':scope > .it-chips')].map(c => [...c.children].filter(x => !x.classList.contains('it-fl')).map(x => x.classList.contains('it-chip') ? (x.querySelector('.nm') || x).textContent.trim() : x.textContent.trim()))}))"""
 NOTE = "() => (document.querySelector('[data-it-kfnote]') || {}).textContent || ''"
 def jof(t):
     m = re.search(r'(\d+) Jumps?$', t or ''); return int(m.group(1)) if m else 0 if (t or '').endswith('In system') else None
@@ -216,7 +216,8 @@ with sync_playwright() as p:
     look = pg.evaluate("""() => { const r = [...document.querySelectorAll('#itFeedList .it-fd.kill')].find(x => x.querySelector('.it-chip.sys').textContent.startsWith('8WA-Z6'));
       const c = [...r.querySelectorAll('.it-chip.p')].find(x => x.querySelector('.nm').textContent === 'Marrek Ketter'), v = r.querySelector('.it-chip.p');
       return [c.className, c.querySelector('svg.it-st').getAttribute('class'), c.querySelectorAll('.it-lg').length, c.querySelector('.it-tks').textContent, v.className.includes(' f'), v.querySelector('svg.it-st').getAttribute('class'), r.querySelector('.it-sn').className, r.querySelector('.it-chip.sys').title, r.querySelector('a.it-zk').href]; }""")
-    check(look == ['it-chip p h', 'it-st bad', 2, '[RLH]<CRTS>', True, 'it-st corp', 'it-sn ns s0', '8WA-Z6 (security -0.3)', 'https://zkillboard.com/kill/9200010/'],
+    # v2026.10.30.4: one set of standing icons site-wide (standIcon); they also carry sa-mark h / n / f
+    check(look == ['it-chip p h', 'it-st bad sa-mark h', 2, '[RLH]<CRTS>', True, 'it-st corp sa-mark f', 'it-sn ns s0', '8WA-Z6 (security -0.3)', 'https://zkillboard.com/kill/9200010/'],
           f"who's who: standing icons (hostile -, your corporation's star), logos, name coloured, tickers; the system's security tenth and title; the zKillboard link {look}")
     tenths = pg.evaluate("() => [1.0, 0.96, 0.946, 0.5, 0.45, 0.449, 0.15, 0.04, 0.0, -0.31].map((v, i) => { it.sec.set(-1 - i, v); const r = [itSecClass(-1 - i), itSecText(-1 - i)]; it.sec.delete(-1 - i); return r; })")
     check(tenths == [['hs s10', '1.0'], ['hs s10', '1.0'], ['hs s9', '0.9'], ['hs s5', '0.5'], ['hs s5', '0.5'], ['ls s4', '0.4'], ['ls s2', '0.2'], ['ls s1', '0.1'], ['ns s0', '0.0'], ['ns s0', '-0.3']],

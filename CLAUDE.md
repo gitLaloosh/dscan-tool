@@ -94,6 +94,14 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   (amber); no background highlighting; standing colours on words and names (neutral a bright grey). Intel channel names are
   shown only under the gear, never elsewhere (the owner: "security reasons"). `tools/page_checks/intel_layout_check.py`.
   A line naming several systems is placed after the name lookups, never before (LESSON #105; `intel_place_check.py`).
+  Near You's word never wraps: too narrow for one line, the row stacks (`itNearFit`, LESSON #109).
+- **Standing icon** (v2026.10.30.4, the owner): one drawing site-wide, `standIcon` / `standMark` (EVE-style: a star for your
+  corporation and alliance, + friendly, = neutral, − hostile); never drawn again elsewhere. Beside its own word it is decoration:
+  `standIcon(k, true)` / `SIDE_MARK_BY_WORD` (LESSON #107).
+- **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
+  should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
+  the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship
+  against one ship (the Matchup) keeps its numbers.
 Checked by `tools/check_ui_rules.py` (chain) and `tools/page_checks/ui_rules_check.py`. Status colours (error, IN SYSTEM)
 wait for the colour inventory (backlog).
 

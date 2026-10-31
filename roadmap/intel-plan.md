@@ -170,6 +170,23 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## Near You's word never squeezed (v2026.10.31.1)
+
+- The owner: "text wrapping issue ... it's pretty annoying" (a window about 1290 px wide). Near You's one-line row gave the word
+  ("2 neutral", "no visual") whatever the system column (as wide as the widest system name), the time, the badge slot, the toggle
+  and Assess left over; between about 900 and 1400 px that was nothing, and the word stood one letter a line. Now the word never
+  wraps, and `itNearFit` lays the rows out on one line first and, if any word is wider than its column, stacks them: the word, the
+  time and the badges under the system, the names under that (as on a phone). Measured on every draw (and so on every resize).
+  `intel_layout_check.py` sweeps 905-1700 px with this table's system column and a 160 px one. LESSON #109.
+
+## From a kill to the fleet that got it; one set of standing icons (v2026.10.30.4)
+
+- Fleet ▸ on Feed kills (2+ pilots in ships), Pilot ▸ on a solo kill; Near You's kill badges open the kill's fleet (one kill) or the
+  row's list (several). The Fleet tab: Against This Fleet, the victim first, then My ship (roadmap/fleet-from-kill-plan.md); taken
+  out in v2026.10.31.1 (no time to kill for a whole fleet; ranges instead).
+- The standing icons drawn for Intel in v.100 are now the only ones on the page (standIcon), replacing the System Analyzer's circles
+  (the owner: "neutral is just wrong"). LESSON #107.
+
 ## The live feed guarded; "10+" (v2026.10.30.3)
 
 - zKillboard's developer (2026-06-04): R2Z2's limit 15 a second, an automatic 1-hour ban, the limit cut further "if abuse continues"
