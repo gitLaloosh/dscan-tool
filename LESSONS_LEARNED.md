@@ -147,6 +147,8 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #80 A check that still passes after a change may never reach the change.
 - #82 A lint's pattern can run for minutes on a long data string.
 - #94 Guard a whole class of failure with a check on the code, not only a test of today's case.
+- #115 Time what the code promises where it makes the promise: a later step's clock flakes on a busy machine.
+- #116 Check the checks' data is the verified version: an older pyfa checkout passed nearly every check.
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1021,6 +1023,28 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 116. Check the checks' data is the verified version: an older pyfa checkout passed nearly every check
+
+- **What happened (page unchanged, after v2026.10.31.7):** the work machine had two pyfa checkouts. A file search found the older
+  one first (v2.69.2), and every check run in that session used it as PYFA_SRC, while the numbers are verified against v2.69.3
+  (tools/pyfa_core_manifest.json). The area runs passed. The first full run failed one chain step, the Intel ship-name table: one
+  ship's Chinese name exists only in the newer data. The chain's own "local PYFA_SRC is not the verified commit" line was there
+  but the runner showed only the failed step.
+- **Do this instead:** a fast lint now compares PYFA_SRC's git HEAD with the manifest's commit (`run_checks.py
+  --check-pyfa-src`), and the runner prints the chain's ATTENTION lines. Take PYFA_SRC from the manifest's commit, never from
+  the first checkout a search finds.
+
+## 115. Time what the code promises where it makes the promise: a later step's clock flakes on a busy machine
+
+- **What happened (v2026.10.31.1, .7; fixed page-unchanged after .7):** `intel_guard_check` checked that the live-feed reader
+  starts at most 5 requests a second on average. It took the times from the page's fetch() calls. The page's gate spaces the
+  *starts* 200 ms apart; fetch() runs a moment after each start, and on a busy machine (6 browser checks on 2 cores) the first
+  call ran late, so the span shrank and the average came out 5.09-5.10. It failed under load and passed alone, twice.
+- **Do this instead:** measure at the point that makes the promise (here the gate's own start times, by wrapping `itKillTurn`),
+  and keep a looser check on what the outside sees (fetch() calls at most 6 in any one second). When a check flakes only under
+  load, look for a clock read one step later than the thing it checks before raising a tolerance. Don't run more browsers than
+  twice the cores (`run_checks.py --jobs` now defaults to that).
 
 ## 114. Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps
 

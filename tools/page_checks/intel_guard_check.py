@@ -6,7 +6,11 @@ zKillboard's developer (2026-06-04): R2Z2's limit cut from 20 to 15 requests a s
 "if abuse continues I will likely reduce the rate limit some more". The owner: testing the fix must not get us blocked, so
 nothing here reaches zKillboard: intel_kills_check.py's start (made-up logs and kills, R2Z2 answered by a stand-in) up to the
 live end, then:
-  * a fresh read-back paced at most 5 requests in any second (timed in the page), sequence.json first;
+  * a fresh read-back paced at most 5 requests in any second, sequence.json first: the gate's own start times (the turn each
+    request is given) at least 200 ms apart and 5 a second on average, and the fetch() calls at most 6 in any one second.
+    v2026.10.31.7: the average used to be taken from the fetch() calls, which run a moment after their turn; under a busy
+    machine the first one ran late and the average came out 5.09-5.10 (flaky at v2026.10.31.1 and .7, passing alone). The
+    gate's starts are what the page promises; LESSON #115;
   * a 429 in the middle of a read-back: nothing more sent (the requests already queued dropped), the note INTEL-07 says until
     when (an hour), the stop kept in this browser (a second page of the site sees it and sends nothing either);
   * the hour over (the stop's time moved back): reading resumes;
@@ -32,7 +36,9 @@ _tail = r'''
     PER_S = "() => { const t = window.__r2t || []; let m = 0; for(let i = 0, j = 0; i < t.length; i++){ while(t[i] - t[j] >= 1000) j++; m = Math.max(m, i - j + 1); } return m; }"
     calm()
     # ---- a fresh read-back, at most 5 a second ----
-    pg.evaluate("() => { window.__r2t = []; it.kf.seq = null; it.kf.head = false; it.kf.waitUntil = 0; }")
+    # the gate's starts, as the page gives them out (itKillTurn resolves to the start it gave this request)
+    pg.evaluate("() => { window.__r2g = []; if(!window.__r2wrap){ const o = itKillTurn; window.__r2wrap = true; itKillTurn = function(){ const p = o.apply(this, arguments); p.then(t => window.__r2g.push(t), () => {}); return p; }; } }")
+    pg.evaluate("() => { window.__r2t = []; window.__r2g = []; it.kf.seq = null; it.kf.head = false; it.kf.waitUntil = 0; }")
     t0 = time.time()
     for _ in range(40):
         if len(sent_since(t0)) >= 40: break
@@ -40,9 +46,11 @@ _tail = r'''
     ps = pg.evaluate(PER_S); q0 = sent_since(t0)
     span = pg.evaluate("() => { const t = window.__r2t || []; return t.length > 1 ? (t[t.length - 1] - t[0]) / 1000 : 0; }"); n0 = pg.evaluate("() => (window.__r2t || []).length")
     rate = (n0 - 1) / span if span else 99
-    # the gate spaces starts 200 ms apart; fetch() itself is called a moment later, so in any one second up to 6 calls can show
-    check(q0[:1] == ['/ephemeral/sequence.json'] and len(q0) >= 30 and ps <= 6 and rate <= 5.05,
-          f'a read-back: sequence.json first, then {rate:.2f} requests a second on average, at most {ps} in any one second ({len(q0)} sent in {time.time() - t0:.0f} s)')
+    G = pg.evaluate("() => { const g = window.__r2g || []; let m = 1e9; for(let i = 1; i < g.length; i++) m = Math.min(m, g[i] - g[i - 1]); return [g.length, g.length > 1 ? (g.length - 1) / ((g[g.length - 1] - g[0]) / 1000) : 99, m, IT_KILL_PROBE_MS]; }")
+    # the gate spaces starts IT_KILL_PROBE_MS (200 ms) apart; fetch() itself is called a moment later, so in any one second up to
+    # 6 calls can show, and their average can run a little over 5 when the first call waits on a busy machine
+    check(q0[:1] == ['/ephemeral/sequence.json'] and len(q0) >= 30 and ps <= 6 and G[0] >= 30 and G[2] >= G[3] - 1 and G[1] <= 1000 / G[3] + 0.01,
+          f'a read-back: sequence.json first; the gate\'s starts {G[2]:.0f} ms apart at the least, {G[1]:.2f} a second on average ({G[0]} starts); the fetch() calls at most {ps} in any one second ({rate:.2f} a second on average; {len(q0)} sent in {time.time() - t0:.0f} s)')
     # ---- a 429 in the middle of it ----
     SEQ['fail'] = 429; t1 = time.time()
     for _ in range(40):

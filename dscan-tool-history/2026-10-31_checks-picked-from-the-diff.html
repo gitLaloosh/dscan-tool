@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-31 — Checks picked from what changed</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Checks picked from what changed</h1>
+<p><span class="tag">Process</span><span class="tag">Checks</span> 2026-10-31 &middot; page unchanged (<code>v2026.10.31.7</code>)</p>
+
+<h2>Why</h2>
+<p>A review of the tiered check routine recommended choosing the level from the changed files instead of by hand, counting the calculation chain's inputs as calculation changes, short timeouts per check, and a time-limited quarantine for flaky checks. Our response agreed and named the next steps: a picker that reads the changed lines and includes the calculation inputs, per-check timeouts, and quarantine with an expiry. The owner asked whether they were built; they weren't, apart from the timeouts (15 minutes each). He said "yes please" to building them.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>New <code>tools/check_picker.py</code>, used by <code>run_checks.py --auto</code>.</b>
+  <ul>
+  <li>Nearly every change lands in <code>index.html</code>, so it maps the file's changed <i>lines</i>, not the file. A line inside a PYFA CORE section or the engine goes to the calculation tier. A line in one area's function (its name's prefix: <code>it</code> Intel, <code>sa</code> System Analyzer, <code>pd</code> the dossier, and so on) goes to that area. Otherwise the line takes the area of the section it sits in. Shared code means everything.</li>
+  <li>CSS goes by class name, and an unowned class means every page check, but not the 40-minute chain (CSS can't change a number). Changes to the card and info text and the error codes go by their key. Comments, blank lines and the version tag count for nothing.</li>
+  <li>Other files: the calculation's inputs (the golden fits and fixtures, the table generators, the independent checks, the pyfa tools and manifest) mean the calculation tier. A page check means its areas and those of the checks built on it. Docs and lints mean the fast lints only. Anything not listed means everything. Every 5th delivery means everything.</li>
+  <li>The changes come from git when there's a <code>.git</code> folder, or from <code>--since</code> a copy of the repo as last delivered. <code>--plan</code> only says what it would run.</li>
+  <li>Tried on the last 14 deliveries (the saved copies of each). Where the ledger has a hand pick, the picker named every area the hand pick did, except "layout" three times, where the CSS that changed was one area's own. It often named more: the full set four times (shared code or the tab bar changed) and the calculation tier twice (a calculation input or a slider helper inside the weakness picks' section).</li>
+  </ul></li>
+<li><b>The fast lints gained the regression suite and the D-Scan parse tests.</b> They take about 8 seconds and load the page script the way the chain does, so a start-up error is caught on every delivery, not only on calculation runs. The picker's own <code>--self-test</code> is a lint too: 11 made-up one-line edits of the real page, each with the areas it must map to, and every section start found once. 5 mutants of the picker were all caught.</li>
+<li><b>Timeouts:</b> 5 minutes per page check (was 15). <code>intel_kills_check</code> gets 10, as its longest run under load was 333 s.</li>
+<li><b>Quarantine:</b> a table in <code>tools/check_ledger.md</code> (check, why, since, until). A quarantined check still runs, but its failure doesn't fail the run until the date. After the date it fails the run again. A row needs a reason and lasts 14 days at most (<code>--check-tags</code> fails otherwise). The table is empty: the flaky check was fixed instead.</li>
+<li><b><code>intel_guard_check</code> fixed.</b> It took the read-back's pace from the page's fetch() calls, which run a moment after the gate gives each request its start. On a busy machine the first call ran late, and the average came out 5.09&ndash;5.10 a second against a limit of 5.05. It flaked at v2026.10.31.1 and .7 and passed alone both times. It now times the gate's own starts (at least 200 ms apart, 5 a second on average) and still checks that the fetch() calls are at most 6 in any one second. It passed with 8 busy processes on the 2-core machine.</li>
+<li><b>A lint that PYFA_SRC is the verified pyfa.</b> The first full run of this delivery failed one chain step, the Intel ship-name table, because the machine had two pyfa checkouts and the checks had been pointed at the older one (v2.69.2) found first by a file search, not the verified v2.69.3. Everything else passed on the old data. <code>run_checks.py --check-pyfa-src</code> now compares the checkout's commit with <code>tools/pyfa_core_manifest.json</code> on every run, and the runner shows the chain's "what moved" lines (LESSON #116). The full run was repeated on the verified pyfa.</li>
+<li><b><code>--jobs</code></b> defaults to twice the cores, at most 6: the check machine has 2 cores, and 6 browsers at once is what made the timing flakes.</li>
+</ul>
+
+<h2>The ledger review (10 rows, v2026.10.30.2 to v2026.10.31.7)</h2>
+<ul>
+<li><b>What caught real problems:</b> each feature's new check and its mutants, every time; the fast lints (personal data once, card names twice, request gates once, the Intel info text's word limit once); two unchanged page checks outside the change's own (<code>intel_kills_check</code> at v2026.10.30.3, <code>system_analyzer_check</code> at v2026.10.30.4); and looking at the page: the previews, the mockups and the owner's screenshot (v2026.10.31.7, LESSON #114).</li>
+<li><b>The pyfa chain</b> ran twice (the two full runs) and caught nothing, because no calculation code changed in these ten deliveries. It stays: it's the only guard for calculation changes, and the picker now runs it only when they happen.</li>
+<li><b>No slow check moves to the full tier only:</b> the area tier already keeps unrelated checks out.</li>
+<li><b>Flakes:</b> six in ten runs, all timing under load on 2 cores (<code>busy_check</code>, <code>request_gates_check</code>, <code>extension_check</code> once each; <code>intel_guard_check</code> twice; <code>intel_kills_check</code> once, with mutants running beside it). The fixes are the two above.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>run_checks.py --auto --since</code> the delivered v2026.10.31.7 picked the full tier (every 5th delivery). On the verified pyfa: 12 lints, the pyfa chain (20 minutes, every step passed) and all 55 page checks passed in 32 minutes, with no flaky check (4 at a time). The longest page check was <code>intel_kills_check</code> at 345 s; the rest finished within 133 s.</li>
+<li><code>check_picker.py --self-test</code>: 5 mutants (the Intel prefix sent to the System Analyzer, the Intel CSS unowned, the chain dropped, a section renamed, comments counted), all caught.</li>
+<li><code>intel_guard_check</code>: passes alone and under 8 busy processes on 2 cores. A gate 5% too fast is caught by the page's own tripwire in the start the Intel checks share.</li>
+<li>The quarantine: a quarantined failure is reported and not counted, an expired one fails the run, and a row over 14 days, without a reason or naming no page check fails <code>--check-tags</code> (simulated).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #115: time what the code promises where it makes the promise. The guard check read the clock one step later than the gate it tested, and a busy machine moved that step. When a check flakes only under load, look for that before raising a tolerance.</p>
+</body></html>

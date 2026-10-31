@@ -131,12 +131,20 @@ for future models" section. A lesson a later one overturns stays, marked
 "Superseded by #n" at its top and in the Index. In code, mark the site
 with a `// LESSON #n` comment that points at the entry.
 
-**Checks: run what the change needs** (v2026.10.30.2, the owner: "yep, do it"). `tools/run_checks.py` runs the fast lints
-always, then by tier: a calculation change `--tier calc` (+ `--area` for where it shows); page or Intel work `--tier area
---area <areas touched>` (add `layout` when shared CSS changed); `--tier all` before a release, after a pyfa update, or every
-5th delivery. A new page check gets its areas in `AREAS` (`--check-tags`, a chain step). Run with `--ledger` and fill in
-"Caught" in `tools/check_ledger.md` before delivering; every 10 rows, review it with the owner (slow checks that never catch
-anything go to `all` only; repeat flakes get fixed). A new feature still gets its own targeted check and mutants.
+**Checks: run what the change needs** (v2026.10.30.2, the owner: "yep, do it"; picked automatically since page-unchanged
+v2026.10.31.7, the owner: "yes please" to the review's "choose the level from the changed files, not by hand").
+`python3 -I tools/run_checks.py --auto --since <the repo as last delivered>` (or with a .git folder, `--auto` alone: changes
+since the last commit) runs the fast lints, then the tier `tools/check_picker.py` picks from the changed lines and files:
+the engine, a PYFA CORE section or a calculation input (regression_suite/, the generators, the pyfa tools) -> `calc`; one
+area's functions, CSS or info text -> `area` with those areas; shared code or anything unmapped -> `all`; every 5th delivery
+-> `all`. `--plan` only says what it would run. Pick a tier by hand only to run more than it picks. When a section moves or a
+new area gets its own prefix, update REGIONS / PREFIX / CSS in check_picker.py (its `--self-test`, a fast lint, says so).
+The fast lints include the regression suite, the D-Scan parse tests (seconds) and a check that PYFA_SRC is the verified pyfa commit (LESSON #116). A page check gets 5 minutes (`SLOW` for
+more). A new page check gets its areas in `AREAS` (`--check-tags`, a chain step). A check that keeps failing under load gets
+its cause fixed (LESSON #115); while that's under way it may go in the ledger's Quarantine table (a reason, at most 14 days;
+an expired one fails the run). Run with `--ledger` and fill in "Caught" in `tools/check_ledger.md` before delivering; every 10
+rows, review it with the owner (slow checks that never catch anything go to `all` only; repeat flakes get fixed). A new feature
+still gets its own targeted check and mutants.
 
 **How the numbers are worked out, for people:** `METHODOLOGY.md` (was the "How effective HP and DPS are
 calculated" note on the page, removed in v2026.10.14.51); each card's short version is its ⓘ panel (`CARD_INFO`).

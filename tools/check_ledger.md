@@ -5,6 +5,17 @@ One row per delivery (`python3 -I tools/run_checks.py ... --ledger` appends it; 
 updates for intended changes and flaky runs are not catches. Reviewed every 10 rows (CLAUDE.md "Checks"): a slow check that
 never catches anything moves to the `all` tier only; a check that keeps showing up as flaky gets fixed.
 
+## Quarantine
+
+A page check listed here still runs, but its failure doesn't fail the run until the date in Until; after that it fails the run
+again (`run_checks.py`). At most 14 days, with the reason; the goal is finding why it fails, not hiding it. Remove the row when
+the check is fixed.
+
+| Check | Why | Since | Until |
+|---|---|---|---|
+
+## Runs
+
 | Date (UTC) | Version | Run | Page checks | Minutes | Failed | Flaky (passed alone) | Caught |
 |---|---|---|---|---|---|---|---|
 | 2026-10-30 | v2026.10.30.2 | all, by hand before the runner existed | 48 | ~65 (chain ~40) | none (intel_check: 2 expectations updated for intended changes) | busy_check, request_gates_check, extension_check | intel_place_check + its 10 mutants (the new placement rules); check_pii (a ship-name term in an old lesson); screenshots (none this time). The chain and the other 47 page checks: nothing. |
@@ -17,3 +28,4 @@ never catches anything moves to the `all` tier only; a check that keeps showing 
 | 2026-10-31 | v2026.10.31.5 | area (intel) | 12 | 8 | zKillboard request gates, intel_check, intel_place_check | none | check_request_gates: the new ESI fetch (itGateDest, a stargate's destination) not yet listed (listed as ESI). intel_place_check: its made-up "on D-W7F0 gate" in 8WA-Z6 isn't one of 8WA-Z6's gates, now a note by design (line moved to 5BTK-M), and How Intel works has a 7th heading; intel_check: the Shorthands box under the gear (both intended). intel_gates_check + 13 mutants, all caught; it also caught a page error (the shorthand box redrew the card from its blur-time change). Trying the mockup lines on the page found v2026.10.31.4 placing "D-W7F0 gate camp on T5Z gate" in T5ZI-S. Both fixed checks pass alone. The other 9 page checks: nothing. |
 | 2026-10-31 | v2026.10.31.6 | area (intel,pilot,layout,system) | 34 | 11 | none | none | The first area run (before the checks were updated) failed 8 Intel checks, all on intended changes: the clear word now a tag, the ESS a tag, the notes among the tags, the fleet size by players (a kill zKillboard counted as 3 attackers with an NPC is now 2), the system's hover, the old layout's geometry; each updated. intel_layout_check rewritten for layout D with a busy row (it found nothing wrong in D; the owner's busy-row mockup had shown the old phone layout overlapping). New intel_rows_check + dossier_kills_check chevron: 16 mutants, all caught after two were made sharper (an NPC on the made-up kills; the empty-line tolerance). The other page checks: nothing. |
 | 2026-10-31 | v2026.10.31.7 | area (intel,layout) | 17 | 10 | intel_assess_check | intel_guard_check | None caught by the checks: the owner caught v2026.10.31.6's icon floating past a system column sized for the longest name in EVE, from a screenshot (the checks load only short made-up names; LESSON #114). intel_assess_check: the phone toggle 36 → 32 px, an intended change (it shares the jump column with the icon), expectation updated. intel_layout_check (the icon column, the jump column, both lists aligned, the busy row swept with a 160 px system column, the phone placement) + intel_rows_check (the Feed's icon): 7 mutants, all caught. |
+| 2026-10-31 | v2026.10.31.7 | auto: all | 55 | 32 | none | none | Page unchanged (tools only). The first full run failed one chain step (the Intel ship-name table): the checks had been pointed at an older pyfa checkout (v2.69.2) instead of the verified v2.69.3; caught by that chain step, now a fast lint (`--check-pyfa-src`, LESSON #116); this run is on the verified pyfa. check_picker --self-test: 5 mutants of the picker, all caught. intel_guard_check: its fix passes under 8 busy processes on 2 cores; a 5%-fast gate is caught (by the shared start's tripwire). Every 5th delivery. First --auto run; 0 flaky with --jobs 4 (2 cores). Rows 1-10 reviewed (history 2026-10-31_checks-picked-from-the-diff.html): no check moves to all-only; the flakes were 6 browsers on 2 cores. |
