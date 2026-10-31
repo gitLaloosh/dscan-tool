@@ -98,6 +98,8 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   Near You's word never wraps: too narrow for one line, the row stacks (`itNearFit`, LESSON #109).
   A word is a pilot only in its name's own capitals (one word typed by hand) or dragged in; report words (`IT_NOT_PILOT`) never
   otherwise (LESSON #111; `intel_words_check.py`). "Linked to ESS" tags the row.
+  A word before "gate" is read among the gates of the system the line is in (LESSON #112); one tag per Near You row for a gate:
+  red "Camp · X gate" from a report, orange from 2+ kills at that gate, grey a gate with no camp words (`intel_gates_check.py`).
 - **Standing icon** (v2026.10.30.4, the owner): one drawing site-wide, `standIcon` / `standMark` (EVE-style: a star for your
   corporation and alliance, + friendly, = neutral, − hostile); never drawn again elsewhere. Beside its own word it is decoration:
   `standIcon(k, true)` / `SIDE_MARK_BY_WORD` (LESSON #107).
@@ -137,3 +139,11 @@ owner wrote down while you were working: `new-bugs.txt` and
 `new-backlog-items.txt`. If either file has entries, add each one to the bug
 list or the backlog, then remove those entries from the text file and tell the
 owner what you added. If both are empty, say nothing about it.
+
+**Adding a backlog item or bug (when the owner asks).** The backlog is not in this repo. It lives in Claude's project memory for
+this Project; new items go in the newest backlog file (`areas/dscan-backlog-2.md` today), written with the memory tools in the
+format `**Severity | Scope — Name** — [stated] "<the owner's words>"`, plus what's known and "Not started". Bugs go in the same
+file, starting with `**BUG | …`. Never put the backlog in a repo file: the repo is public and the backlog quotes the owner.
+**If you don't have the memory tools, say so and stop.** Tell the owner you can't add it to the backlog from here; don't write it
+anywhere else.
+**`todo-inbox/` is the owner's drop box.** Agents read it and empty it; agents never write new items into it.

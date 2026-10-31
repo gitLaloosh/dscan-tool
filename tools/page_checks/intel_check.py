@@ -316,7 +316,7 @@ with sync_playwright() as p:
     # ---- the gear ----
     pg.click('[data-it-act="gear"]'); pg.wait_for_timeout(200)
     pop = pg.evaluate("() => { const p = document.querySelector('.it-pop'); return p && [...p.querySelectorAll('.it-box .k')].map(k => k.textContent); }")
-    check(pop == ['Chat logs folder', 'Intel channels', 'You', 'Range and alerts'], f'the gear opens the settings while watching {pop}')
+    check(pop == ['Chat logs folder', 'Intel channels', 'You', 'Range and alerts', 'Shorthands'], f'the gear opens the settings while watching, Shorthands last (v2026.10.31.5) {pop}')
     opt = pg.evaluate("""() => [...document.querySelectorAll('.it-pop select option')].map(o => { const c = getComputedStyle(o); return [c.backgroundColor, c.color]; })""")
     lum = lambda c: (lambda v: 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2])([int(x) for x in re.findall(r'\d+', c)[:3]])
     check(opt and all(re.match(r'rgb\(', bg) and lum(bg) < 60 and lum(fg) > 180 for bg, fg in opt),

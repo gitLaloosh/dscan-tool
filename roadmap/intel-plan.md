@@ -170,6 +170,31 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## Gates and camps; short names for systems (v2026.10.31.5)
+
+- The owner: "we need to come up with a clean way to communicate gate camps"; gate shorthand is "usually ... three characters, one of
+  which may be a "-" ... used in conjunction with "gate""; one report is enough ("i'd take timeliness over complete accuracy").
+  Mockup `gate_camps_mockup.html` (made-up lines); his picks: A (one tag), a camp = a report placing them on a gate with camp words,
+  "toward you" yes, and kills: "can we visually differentiate between camp language from a report being the source or zkill
+  proximity being the source? maybe a slight color variation for now?".
+- Which gate: a word before gate / gt / gat (2-7 letters, digits or '-', not an intel, filler or ship word) is read once the line's
+  system is known, among that system's own gates (`itGateOf`: the start of a neighbour's name, dashes ignored, one match). Not one
+  of them: the nearest system so named, as a note ("or 23G-XC?"); nothing: left as typed. With no other system in the line, it is
+  where they are, as before. Two whole names before "gate", one jump apart: the first named is where they are. LESSON #112.
+- Camps (`itGateTagHtml`, one tag after Near You's word): red "Camp · X gate" from a report with camp, camped, bubble(d), drag,
+  smartbomb or "gate ... hot" (just "Camp" when no gate was read); orange "Camp · X gate" from 2+ kills at that gate in the time
+  window with no such report (`IT_CAMP_KILLS`); grey "X gate" for a report on a gate with no camp words; "toward you" (amber)
+  on camps when that gate leads closer to you. The hover says what backs it. The Feed: the report's note "on X gate" and a Camp
+  tag; a kill "at the X gate".
+- Kills at a gate: zKillboard's `zkb.locationID` (the nearest celestial; seen in R2Z2's records, 2026-10-28) in 50,000,000-59,999,999
+  is a stargate; which system it leads to comes from ESI `/universe/stargates/{id}/` once per gate, kept (`itGateDest`).
+- From the intel-tool research (Project doc intel-parsing-research.md; Telescope's resolve.rs, MIT, read 2026-10-31): 4+ letters
+  that are exactly the part of one system's name before its dash ("ymjg": YMJG-4; several systems: none), and your own shorthands
+  under the gear, `word = system` per line, each line checked, kept with the Intel settings, before every automatic rule
+  (`itAliases`). Corporation / alliance shorthand could use the same box later (backlog).
+- `tools/page_checks/intel_gates_check.py`.
+- Later: a camp at a gate on your autopilot route (needs the route: EVE SSO); a "clear" for one gate only.
+
 ## Report words aren't pilots; the ESS linked (v2026.10.31.4)
 
 - The owner's reports turned words into pilots ("Kill", "Linked", "DRAG", "Navy", "HOT", "Proc", "MediuM", "Rats"), because characters

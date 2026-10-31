@@ -10,7 +10,8 @@ linked word ('*'), "dont blindly" take the first or last. Runs intel_check.py's 
 system names; you in 1DQ1-A) up to Intel turned on, then, with made-up lines and made-up one-word pilots "Jita" and "Clear":
   * "Jita Marrek T5ZI-S": Jita is a pilot (a pilot's name, and another system is named), the report is in T5ZI-S;
   * "Jita Ketter": one system named: Jita stays the system;
-  * "8WA-Z6 Marrek on D-W7F0 gate": in 8WA-Z6, "on D-W7F0 gate" as a note; "Y-OMTZ Ketter -> MO-GZ5": in Y-OMTZ (3 jumps)
+  * "8WA-Z6 Marrek on 5BTK-M gate": in 8WA-Z6, "on 5BTK-M gate" as a note (v2026.10.31.5: was D-W7F0, which isn't one of
+    8WA-Z6's gates and is now a note "or D-W7F0?", intel_gates_check.py); "Y-OMTZ Ketter -> MO-GZ5": in Y-OMTZ (3 jumps)
     though MO-GZ5 (1) is nearer, "→ MO-GZ5"; "Ketter jumped to 5BTK-M from N-8YET": in 5BTK-M, "from N-8YET";
   * no words around them: "QX-LIJ Marrek E-VKJV" in the nearer E-VKJV, "or QX-LIJ?"; "FM-JK5 Ketter JP4-AA" (next to each other)
     in JP4-AA, "on FM-JK5 gate?"; "23G-XC Marrek 8-YNBE" (4 jumps each) in the first, 23G-XC;
@@ -21,7 +22,7 @@ system names; you in 1DQ1-A) up to Intel turned on, then, with made-up lines and
   * the Feed row shows the note after the system, no second jump count;
   * the switch: on, the usual teal, still; off, an amber edge, knob and "Off", breathing (itSwBreathe); with reduced motion, still;
     "Use in assessments" (off) unchanged;
-  * How Intel works: 3 short paragraphs, each with a bold lead, and 6 folded headings, closed; one opens on a click; no
+  * How Intel works: 3 short paragraphs, each with a bold lead, and 7 folded headings (v2026.10.31.5: Gates and camps), closed; one opens on a click; no
     "slider" or "red row" left; no page errors.
 """
 import sys, os
@@ -32,7 +33,7 @@ _src = _src.replace("os.path.dirname(os.path.abspath(__file__))", repr(HERE), 1)
 _ns = {'__file__': os.path.join(HERE, 'intel_check.py'), '__name__': 'intel_check_prefix'}
 _tail = r'''
     ONE_WORD.update({'Jita': 96000011, 'Clear': 96000012})   # made-up pilots named like a system and like an intel word
-    lines = ['Jita Marrek T5ZI-S', 'Jita Ketter', '8WA-Z6 Marrek on D-W7F0 gate', 'Y-OMTZ Ketter -> MO-GZ5', 'Ketter jumped to 5BTK-M from N-8YET',
+    lines = ['Jita Marrek T5ZI-S', 'Jita Ketter', '8WA-Z6 Marrek on 5BTK-M gate', 'Y-OMTZ Ketter -> MO-GZ5', 'Ketter jumped to 5BTK-M from N-8YET',
              'QX-LIJ Marrek E-VKJV', 'FM-JK5 Ketter JP4-AA', '23G-XC Marrek 8-YNBE', '3-DMQT clear', 'MO-GZ5 10+', 'N-8YET Marrek +3']
     t0 = time.time() - 30
     W(pg, F_INTEL, ''.join(line(t0 + i, 'Scout Alt', m) for i, m in enumerate(lines))); tick(pg, 3000)
@@ -45,7 +46,7 @@ _tail = r'''
     g = got('Jita Marrek T5ZI-S')
     check(where('Jita Marrek T5ZI-S') == 'T5ZI-S' and 'Jita' in g['pilots'] and len(g['sys']) == 1, f'"Jita Marrek T5ZI-S": Jita, a pilot, isn\'t the system; the report is in T5ZI-S {g}')
     check(where('Jita Ketter') == 'Jita' and got('Jita Ketter')['pilots'] == ['Ketter'], f'"Jita Ketter": one system named, Jita stays the system {got("Jita Ketter")}')
-    exp = {'8WA-Z6 Marrek on D-W7F0 gate': [['8WA-Z6', ''], ['D-W7F0', 'gate']], 'Y-OMTZ Ketter -> MO-GZ5': [['Y-OMTZ', ''], ['MO-GZ5', 'dest']],
+    exp = {'8WA-Z6 Marrek on 5BTK-M gate': [['8WA-Z6', ''], ['5BTK-M', 'gate']], 'Y-OMTZ Ketter -> MO-GZ5': [['Y-OMTZ', ''], ['MO-GZ5', 'dest']],
            'Ketter jumped to 5BTK-M from N-8YET': [['5BTK-M', ''], ['N-8YET', 'from']], 'QX-LIJ Marrek E-VKJV': [['E-VKJV', ''], ['QX-LIJ', 'or']],
            'FM-JK5 Ketter JP4-AA': [['JP4-AA', ''], ['FM-JK5', 'pair']], '23G-XC Marrek 8-YNBE': [['23G-XC', ''], ['8-YNBE', 'or']]}
     for l, s in exp.items(): check(got(l)['sys'] == s, f'"{l}": {s[0][0]} with {s[1][0]} as "{s[1][1]}" {got(l)["sys"]}')
@@ -61,7 +62,7 @@ _tail = r'''
     check(g['kind'] == 'seen' and g['pilots'] == ['Clear'] and where('4K-TRB Clear*') == '4K-TRB', f'"4K-TRB Clear*": Clear, linked from Local, is a pilot: a sighting, not "clear" {g}')
     notes = pg.evaluate("""() => Object.fromEntries([...document.querySelectorAll('#itFeedList .it-fd')].map(r => [r.querySelector('.raw') ? r.querySelector('.raw').textContent : '',
       [r.querySelector('.fsys').innerText.replace(/\\s+/g, ' ').trim(), r.querySelectorAll('.fsys .j').length]]))""")
-    want = {'8WA-Z6 Marrek on D-W7F0 gate': '8WA-Z6 on D-W7F0 gate', 'Y-OMTZ Ketter -> MO-GZ5': 'Y-OMTZ → MO-GZ5', 'Ketter jumped to 5BTK-M from N-8YET': '5BTK-M from N-8YET',
+    want = {'8WA-Z6 Marrek on 5BTK-M gate': '8WA-Z6 on 5BTK-M gate', 'Y-OMTZ Ketter -> MO-GZ5': 'Y-OMTZ → MO-GZ5', 'Ketter jumped to 5BTK-M from N-8YET': '5BTK-M from N-8YET',
             'QX-LIJ Marrek E-VKJV': 'E-VKJV or QX-LIJ?', 'FM-JK5 Ketter JP4-AA': 'JP4-AA on FM-JK5 gate?'}
     check(all(notes.get(l, ['', 9])[0] == w and notes[l][1] == 0 for l, w in want.items()), f'the Feed: the note after the system, no second jump count {[(w, notes.get(l)) for l, w in want.items()]}')
     # ---- the ring ----
@@ -98,8 +99,8 @@ _tail = r'''
       return [[...b.children].filter(x => x.tagName === 'P').length, b.querySelectorAll(':scope > p b').length, ds.length, ds.filter(d => d.open).length, b.innerText.split(/\\s+/).length, b.textContent]; }""")
     pg.evaluate("() => { const s = document.querySelector('#intelPanel .it-head .info-body details.info-more summary'); if(s) s.click(); }"); pg.wait_for_timeout(100)
     op = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-head .info-body details.info-more')].map(d => d.open)")
-    check(inf[:4] == [3, 3, 6, 0] and inf[4] < 110 and op[0] and not any(op[1:]),
-          f'How Intel works: 3 short paragraphs (each with a bold lead) and 6 folded headings, closed ({inf[4]} words shown); one opens on a click {inf[:5]} {op}')
+    check(inf[:4] == [3, 3, 7, 0] and inf[4] < 110 and op[0] and not any(op[1:]),
+          f'How Intel works: 3 short paragraphs (each with a bold lead) and 7 folded headings, closed ({inf[4]} words shown); one opens on a click {inf[:5]} {op}')
     check('slider' not in inf[5] and 'red row' not in inf[5], 'no "slider" or "red row" left in it')
     check(not errs, f'no page errors {errs[:3]}')
     b.close()

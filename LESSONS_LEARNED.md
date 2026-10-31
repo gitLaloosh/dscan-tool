@@ -127,6 +127,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #109 A `1fr` column beside fixed and `auto` ones can shrink to nothing: sweep every width the layout spans. See also #103.
 - #110 Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still.
 - #111 A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters.
+- #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 
 **Checks and test machinery**
 
@@ -1018,6 +1019,19 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 112. Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates
+
+- **What happened (v2026.10.31.5):** a short system name ("T5Z", "5BT") was matched against every system, the nearest to the
+  reader winning. In "D-W7F0 gate camp on T5Z gate" both names sat before "gate", so the line was placed in T5ZI-S (nearer to
+  the reader) "on the D-W7F0 gate": the camp moved one system and its gate turned round. "5BT gate" came out right only because
+  5BTK-M happened to be the nearest 5BT system. A gate word in letters only ("MOG") wasn't read at all.
+- **Do this instead:** settle where the line is first, then read the gate word among that system's own gates (its neighbours
+  in the jump table), dashes ignored, one match or none. A word that matches none is left as typed, never guessed and never a
+  pilot. When two whole names both stand before "gate" and are one jump apart, the first named is where they are. Test with
+  lines where the nearest-to-you reading is the wrong one (`intel_gates_check.py`).
+- **Also (same delivery):** a text box's `change` fires on blur, which can come from the page itself replacing the box; redrawing
+  the whole card from that handler threw ("node to be removed is no longer a child"). Redraw only what the change affects.
 
 ## 111. A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters
 

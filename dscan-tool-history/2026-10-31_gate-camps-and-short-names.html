@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-31 — Gate camps; short names for systems</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Gate camps; short names for systems</h1>
+<p><span class="tag">Intel</span> 2026-10-31 &middot; <code>v2026.10.31.5</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>From a screenshot of a Near You row and its reports, the owner said: "we need to come up with a clean way to communicate gate camps".</li>
+<li>On how gates are named: "people will often use shorthand to communicate which gate enemies are on. if that shorthand (usually consists of three characters, one of which may be a "-") is used in conjunction with "gate". worth analyzing."</li>
+<li>One report is enough: "i'd take timeliness over complete accuracy in this case."</li>
+<li>Another agent researched how other intel tools read lines (Project doc <code>intel-parsing-research.md</code>). The owner chose two of its ideas to fold in: 4 or more letters before a system's dash, and your own shorthands.</li>
+</ul>
+<p>The mockup (made-up lines) showed the tags, the camp rules, kills at a gate and the shorthand box. The owner's choices:</p>
+<ul>
+<li>One tag that carries the gate (A).</li>
+<li>A camp is a report that places them on a gate and uses camp words.</li>
+<li>Show "toward you".</li>
+<li>For kills: "can we visually differentiate between camp language from a report being the source or zkill proximity being the source? maybe a slight color variation for now?"</li>
+</ul>
+<p>Trying it showed a real bug in v2026.10.31.4. "D-W7F0 gate camp on T5Z gate" was placed in T5ZI-S "on the D-W7F0 gate". Both names stood before "gate", so the system nearer to you won, and the camp moved one system with its gate turned round.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Which gate.</b> A word before gate, gt or gat ("T5Z", "5BT", "MOG", "MO-") is read once the line's system is known, and only among that system's own gates. Dashes are ignored, and exactly one gate must match.
+  <ul>
+  <li>No match: the nearest system with that name becomes a note ("or 23G-XC?").</li>
+  <li>Not even that: the word stays as typed. It is never looked up as a pilot.</li>
+  <li>When two whole names both stand before "gate" and are one jump apart, the first named is where they are.</li>
+  </ul></li>
+<li><b>Camps.</b> Near You shows one tag after the row's word:
+  <ul>
+  <li>Red "Camp · T5ZI-S gate": a report placed them on that gate and said camp, bubble, drag, smartbomb or the gate is hot. It says just "Camp" when no gate could be read.</li>
+  <li>Orange, the same words: 2 or more kills at one gate in the time window, with no such report.</li>
+  <li>Grey "5BTK-M gate": a report placed them on a gate with no camp words.</li>
+  <li>"toward you", in amber, when the camped gate leads to a system nearer you.</li>
+  <li>The hover says what backs the tag. In the Feed, the report carries a Camp tag beside its "on X gate" note.</li>
+  </ul></li>
+<li><b>Kills at a gate.</b> zKillboard places each kill at its nearest celestial (<code>zkb.locationID</code>). When that's a stargate, ESI is asked once which system the gate leads to, and the answer is kept. The Feed's kill says "at the 3-DMQT gate".</li>
+<li><b>Short names.</b> Four or more letters that are exactly the part of one system's name before its dash ("ymjg" for YMJG-4) read as that system. This is Telescope's rule: fewer letters would catch chat words like "fyi" or "lul". When several systems share the letters, none is chosen.</li>
+<li><b>Your shorthands.</b> A box under Intel's gear takes <code>word = system</code>, one per line.
+  <ul>
+  <li>Each line is checked (✓ or ✗ with why).</li>
+  <li>They're kept with the other Intel settings in this browser.</li>
+  <li>They come before every automatic rule, and apply to new lines.</li>
+  </ul></li>
+<li>How Intel works has a new folded heading, "Gates and camps". CLAUDE.md now says where the backlog lives: in Claude's project memory, never a repo file. <code>todo-inbox/</code> is only read and emptied.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b>New <code>intel_gates_check.py</code></b> runs on Intel's made-up folder with three made-up far systems (ABCD-1, WXYZ-1, WXYZ-2), made-up lines and made-up kills. It covers every rule above, including the line v2026.10.31.4 read wrong, and checks that each gate is asked of ESI only once.</li>
+<li>13 mutants, all caught, one for each rule: gate words, the gates of the system, two names before "gate", 4-letter names, several systems with the same letters, your shorthands, camp words, the kill threshold, the orange colour, "toward you", kills placed at a gate, one ESI question per gate, and a gate word left as typed.</li>
+<li>The Intel checks caught three intended changes, now updated. The request-gates lint wanted the new ESI call listed. <code>intel_place_check</code>'s made-up "on D-W7F0 gate" in 8WA-Z6 named a system that isn't one of 8WA-Z6's gates, so it now reads as a note; the line uses 5BTK-M instead, and How Intel works has a seventh heading. <code>intel_check</code> now expects the Shorthands box under the gear.</li>
+<li>The check caught a page error. The shorthand box redrew the whole card when its text changed, and that change can fire while the page is replacing the box. Now only the list under the box is redrawn.</li>
+</ul>
+
+<h2>Later (backlog)</h2>
+<ul>
+<li>A camp on your autopilot route (needs EVE SSO).</li>
+<li>A "clear" for one gate only.</li>
+<li>Corporation and alliance shorthand, possibly in the same box.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #112: read a short name against what the line is about, not the whole map. A gate word means one of that system's gates. Settle where the line is first, then match the gate among its neighbours, and leave a word that matches nothing as typed. Test with lines where the nearest-to-you reading is the wrong one.</p>
+</body></html>

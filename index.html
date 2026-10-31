@@ -2414,6 +2414,11 @@
   /* v.100 (the owner: "a callout like 'IN SYSTEM'"): your own system, a small amber tag; in Near You its text lines up with the jumps below */
   .it-here{display:inline-block; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.5px; color:var(--amber); background:color-mix(in srgb, var(--amber) 15%, transparent); padding:0 6px; border-radius:3px; white-space:nowrap;}
   .it-nb .j .it-here{margin-left:-6px;}
+  .it-gtag{display:inline-block; margin-left:8px; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.5px; padding:0 6px; border-radius:3px; white-space:nowrap; vertical-align:1px;}   /* v2026.10.31.5: a camp (red: a report says so; orange: kills at the gate), or a gate (grey) */
+  .it-gtag.camp{color:#f08b7e; background:color-mix(in srgb, var(--danger) 22%, transparent);} .it-gtag.camp.kz{color:#f0a868; background:color-mix(in srgb, #d9803c 22%, transparent);} .it-gtag.gt{color:var(--text); background:rgba(255,255,255,.08);}
+  .it-alias textarea{width:100%; box-sizing:border-box; margin-top:6px; background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:4px; font:12.5px var(--mono); padding:6px 8px; resize:vertical;}
+  .it-alias ul{list-style:none; margin:6px 0 0; padding:0;} .it-alias li{font:12px var(--sans);} .it-alias li.ok{color:var(--it-clear);} .it-alias li.bad{color:#f08b7e;}
+  .it-tw{margin-left:6px; font:600 10.5px var(--sans); color:var(--amber); white-space:nowrap;}
   .it-ess{display:inline-block; margin-left:8px; font:700 10px/16px var(--sans); text-transform:uppercase; letter-spacing:.5px; color:#f08b7e; background:color-mix(in srgb, var(--danger) 22%, transparent); padding:0 6px; border-radius:3px; white-space:nowrap; vertical-align:1px;}   /* v2026.10.31.4: the ESS being robbed */
   /* v.100 (the owner: "a subtle button to expand the text to be at the bottom"): the line as typed, who sent it and the channel */
   button.it-rawt{margin-left:auto; flex:none; width:24px; height:20px; min-height:0; padding:0; border:none; border-radius:3px; background:transparent; color:var(--text-dim); opacity:.6; display:inline-flex; align-items:center; justify-content:center; letter-spacing:0; cursor:pointer;}
@@ -2519,7 +2524,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.4</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.5</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2862,6 +2867,7 @@ const CARD_INFO = {
   "**{card:itnear}:** systems with reports or kills within your alert range + 5 jumps, nearest first. An amber edge means within your alert range: the sound, the notification and the amber “N near” at the top, from any tab.",
   "**{card:itfeed}:** every report and kill as it comes in.",
   "[How a line is read] Systems, ship names (English or Chinese), counts (+5, x2) and words like clr and nv; the rest is looked up on ESI as pilot names and coloured by your {card:side}. One word typed by hand is a pilot only in the name's own capitals, and report words like linked, drag, hot or kill only when dragged in from chat. A word it can't place stays plain text, never guessed. “Linked to ESS” tags the system in {card:itnear}. When a line names two systems, they're placed where the line says they are (“on Y gate”, “→ Y”), else in the one within range, else the nearer; the other shows as a note. The copy button on a line copies its shape, names replaced, to report a line read wrong.",
+  "[Gates and camps] A short name before “gate” (“T5Z gate”, “MOG gate”) is read among the gates of the system the line is in. A report that places them on a gate and says camp, bubble, drag, smartbomb or the gate is hot tags the system in {card:itnear} with a red Camp tag and the gate. Two kills at one gate in the time set, with no such report, tag it in orange (zKillboard places each kill at the nearest stargate). A grey tag is a gate named with no camp words. “toward you”: that gate leads closer to you. Your own shorthands (word = system) go under the gear; 4 or more letters before a system's dash (“ymjg”) read as that system when only one has them.",
   "[Kills] While Intel is on, zKillboard's live feed of every kill (about 20 small requests a minute), kept within the Feed's kill range under the gear (10 jumps unless you change it), no NPC kills. A kill near you shows in {card:itnear} with who was there and alerts like a report within your alert range. A kill's label (or a badge in {card:itnear}) opens it in the {card:fleet} tab: the victim and who killed them; a badge for several kills lists them there to pick from. The line under the title says when a kill was last read.",
   "[{card:itnear} and alerts] Everyone and every ship reported in a system in the time set under the gear (15 minutes unless you change it), until someone reports it clear. A hostile or neutral within your alert range plays the sound and notifies, once per system every 30 seconds; friendlies never alert. With the Feed's Distance set, a report beyond both it and your alert range stays out of {card:itnear}.",
   "[Jumps and your system] Your system comes from your character's Local log. Jumps are gate jumps from EVE's published stargate data (no jump bridges or wormholes); the table is checked against each new EVE build every day.",
@@ -23077,10 +23083,11 @@ const it = {
   pilots: new Map(), aff: new Map(), supported: false, loaded: false,
   kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: '',   // v.99: kills, names on kills, security, the Feed's search
   rawOpen: new Set(),   // v.100: Feed rows showing the line as typed
-  nearOpen: new Set()   // v2026.10.30.1: Near You rows opened (system ids; several at once, the owner)
+  nearOpen: new Set(),   // v2026.10.30.1: Near You rows opened (system ids; several at once, the owner)
+  gateDest: new Map(), gateAsk: new Map()   // v2026.10.31.5: stargate id -> the system it leads to (itGateDest)
 };
 function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0, halt: false}; }   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
-function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}}; }
+function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, sound: true, notify: true, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}, alias: ''}; }
 function itReadSet(){
   const d = itDefaults();
   try{
@@ -23092,6 +23099,7 @@ function itReadSet(){
       if(IT_KILL_RANGES.includes(Number(r.killRange))) d.killRange = Number(r.killRange);   // v2026.10.29.3
       if(IT_FORGET.includes(Number(r.forget))) d.forget = Number(r.forget);
       for(const k of ['sound', 'notify', 'hideFriendly']) if(typeof r[k] === 'boolean') d[k] = r[k];
+      if(typeof r.alias === 'string') d.alias = r.alias.slice(0, IT_ALIAS_MAX);   // v2026.10.31.5: your shorthands
       const f = r.feed && typeof r.feed === 'object' ? r.feed : {};   // v.99: the Feed's filters
       if(IT_FEED_TYPES.some(x => x[0] === f.types)) d.feed.types = f.types;
       if(IT_FEED_DIST.includes(Number(f.dist))) d.feed.dist = Number(f.dist);
@@ -23178,9 +23186,12 @@ async function itLoadNames(){
       if(list.filter(Boolean).length < ids.length * 0.9) throw codedError('INTEL-03', `ESI named ${list.filter(Boolean).length} of ${ids.length} systems.`);
       itKvSet(key, list);
     }
-    const ids = itGraphGet().ids, byLower = new Map(), byId = new Map();
+    const ids = itGraphGet().ids, byLower = new Map(), byId = new Map(), heads = new Map();
     list.forEach((n, i) => { if(n){ byLower.set(n.toLowerCase(), ids[i]); byId.set(ids[i], n); } });
-    it.names = {byLower, byId, list: [...byLower.keys()]};
+    // v2026.10.31.5: the letters before a system's dash ("ymjg" for YMJG-4), 4 letters or more (Telescope's rule: fewer would take
+    // chat words like "fyi", "ion" and "lul" for systems); several systems with the same letters: none of them
+    for(const [l, id] of byLower){ const h = /^([a-z]{4,})-/.exec(l); if(h) heads.set(h[1], heads.has(h[1]) ? null : id); }
+    it.names = {byLower, byId, list: [...byLower.keys()], heads};
     return it.names;
   })();
   try{ return await it.namesBusy; }finally{ it.namesBusy = null; }
@@ -23234,7 +23245,7 @@ function itShipNear(s){
 // ---- reading one report ----
 // Words that are never a pilot (filler, intel shorthand); KW are shown as chips.
 const IT_KW = {clr: 'clear', clear: 'clear', nv: 'no visual', novis: 'no visual', status: 'status?', stat: 'status?',
-  cyno: 'cyno', bubble: 'bubble', bubbled: 'bubble', camp: 'camp', camped: 'camp', spike: 'spike', cloaky: 'cloaky', cloaked: 'cloaky',
+  cyno: 'cyno', bubble: 'bubble', bubbled: 'bubble', bubbles: 'bubble', camp: 'camp', camped: 'camp', camping: 'camp', smartbomb: 'smartbomb', smartbombs: 'smartbomb', smartbombing: 'smartbomb', spike: 'spike', cloaky: 'cloaky', cloaked: 'cloaky',
   docked: 'docked', dock: 'docked', gate: 'gate', jumped: 'jumped', red: 'red', reds: 'red', neut: 'neut', neuts: 'neut', hostile: 'red', hostiles: 'red',
   // v2026.10.14.99 (the owner: "ESS refers to the Encounter Surveillance System that null sec systems have"): places in a
   // system and other intel words. Real characters are named "ESS" and "Inside", so a word like these must never reach
@@ -23274,15 +23285,48 @@ function itWords(msg){
   }
   return out;
 }
+// v2026.10.31.5 (the owner chose ideas from the intel-tool research: Telescope's word = system aliases): the owner's own
+// shorthands, one per line "word = system" under the gear (it.set.alias); they come before every automatic rule
+const IT_ALIAS_MAX = 4000;
+let itAliasMemo = null;
+function itAliases(){
+  const text = String(it.set && it.set.alias || ''), N = it.names;
+  if(itAliasMemo && itAliasMemo.text === text && itAliasMemo.N === N) return itAliasMemo;
+  const map = new Map(), rows = [];
+  for(const raw of text.split(/\r?\n/)){
+    const ln = raw.trim(); if(!ln) continue;
+    const m = /^([^=]+?)\s*=\s*(.+)$/.exec(ln), key = m ? m[1].trim().toLowerCase().replace(/\s+/g, ' ') : '';
+    const id = m && N ? N.byLower.get(m[2].trim().toLowerCase()) : null;
+    if(!m || !key || key.split(' ').length > 3) rows.push({ln, bad: 'write it as word = system'});
+    else if(!N) rows.push({ln, key, name: m[2].trim()});
+    else if(!id) rows.push({ln, bad: `no system named ${m[2].trim()}`});
+    else { map.set(key, id); rows.push({ln, key, id}); }
+  }
+  itAliasMemo = {text, N, map, rows};
+  return itAliasMemo;
+}
+// v2026.10.31.5 (the owner: "people will often use shorthand to communicate which gate enemies are on ... usually consists of three
+// characters, one of which may be a "-" ... used in conjunction with "gate""): the word before gate / gt / gat names one of the
+// gates of the system they're in: it is read once that system is known (itGates), never as a pilot
+const IT_GATE_WORDS = new Set(['gate', 'gt', 'gat', 'gates']);
+const IT_CAMP_WORDS = new Set(['camp', 'camped', 'camping', 'bubble', 'bubbled', 'bubbles', 'drag', 'dragged', 'dragging', 'smartbomb', 'smartbombs', 'smartbombing']);
 // The systems in a report: a whole name (any case for null-sec style names with a digit or '-'; Title Case for
 // names like "Jita", up to 3 words like "New Caldari"); else the start of a null-sec name ("QX-L", "1DQ"): the nearest
-// system so named to you, or the only one.
+// system so named to you, or the only one. v2026.10.31.5: first your shorthands; a short word before "gate" is left for itGates
+// (p.gw); 4 or more letters that are exactly the part of one system's name before its dash ("ymjg": YMJG-4).
 function itFindSystems(W, used, mySys, force){
   const N = it.names; if(!N) return [];
   const found = [], forced = (i) => !!force && force.has(i);   // v2026.10.30.2: words read as a pilot on a second look (itForce)
+  found.gw = [];
+  const A = itAliases().map;
   for(let i = 0; i < W.length; i++){
     if(used[i] || forced(i)) continue;
     let hit = null;
+    for(let k = 3; k >= 1 && !hit && A.size; k--){
+      if(i + k > W.length || W.slice(i, i + k).some((x, j) => used[i + j] || forced(i + j))) continue;
+      const id = A.get(W.slice(i, i + k).map(x => x.lw).join(' '));
+      if(id) hit = {id, k, alias: true};
+    }
     for(let k = 3; k >= 1 && !hit; k--){
       if(i + k > W.length || W.slice(i, i + k).some((x, j) => used[i + j] || forced(i + j))) continue;
       const words = W.slice(i, i + k), s = words.map(x => x.w).join(' '), id = N.byLower.get(s.toLowerCase());
@@ -23290,22 +23334,43 @@ function itFindSystems(W, used, mySys, force){
       const nullish = /[0-9-]/.test(s);
       if(nullish || /^[A-Z]/.test(words[0].w)) hit = {id, k};
     }
-    if(!hit){
-      const w = W[i].w;
-      if(w.length >= 3 && /[0-9-]/.test(w) && /^[A-Za-z0-9-]+$/.test(w) && !/^[+x×]?\d+x?$/i.test(w)){
-        const lw = w.toLowerCase(), cands = [];
-        for(const n of N.list) if(n.startsWith(lw) && n.includes('-')) cands.push(N.byLower.get(n));
-        if(cands.length === 1) hit = {id: cands[0], k: 1, short: true};
-        else if(cands.length > 1 && mySys){
-          let best = null, bj = Infinity;
-          for(const c of cands){ const j = itJumps(mySys, c); if(j !== null && j < bj){ bj = j; best = c; } }
-          if(best && bj <= 15) hit = {id: best, k: 1, short: true};
-        }
-      }
+    const gx = W[i + 1] && IT_GATE_WORDS.has(W[i + 1].lw) && !W[i].linked;
+    if(!hit && gx && /^[A-Za-z0-9-]{2,7}$/.test(W[i].w) && !/^\d+$/.test(W[i].w) && !IT_KW[W[i].lw] && !IT_FILLER.has(W[i].lw) && !IT_NOT_PILOT.has(W[i].lw) && !itShips().has(W[i].lw)){ used[i] = 'g'; found.gw.push({at: i, w: W[i].w}); continue; }   // "T5Z gate": itGates
+    if(!hit && /^[A-Za-z]{4,}$/.test(W[i].w) && N.heads){
+      const lw = W[i].lw, id = N.heads.get(lw);
+      if(id && !IT_KW[lw] && !IT_FILLER.has(lw) && !IT_NOT_PILOT.has(lw) && !itShips().has(lw)) hit = {id, k: 1, short: true};
     }
+    if(!hit){ const id = itShortSys(W[i].w, mySys); if(id) hit = {id, k: 1, short: true}; }
     if(hit){ for(let j = 0; j < hit.k; j++) used[i + j] = 's'; found.push({id: hit.id, at: i, k: hit.k, short: !!hit.short}); i += hit.k - 1; }
   }
+  // no other system in the line ("T5Z gate 5 neuts"): the gate word is where they are, read as before (the nearest system so named)
+  if(!found.length) for(const g of found.gw.splice(0)){ const id = itShortSys(g.w, mySys); if(id){ used[g.at] = 's'; found.push({id, at: g.at, k: 1, short: true}); } }
   return found;
+}
+// The start of a null-sec name ("QX-L", "1DQ"): the only system so named, or the nearest to you (within 15 jumps)
+function itShortSys(w, mySys){
+  const N = it.names;
+  if(!N || w.length < 3 || !/[0-9-]/.test(w) || !/^[A-Za-z0-9-]+$/.test(w) || /^[+x×]?\d+x?$/i.test(w)) return null;
+  const lw = w.toLowerCase(), cands = [];
+  for(const n of N.list) if(n.startsWith(lw) && n.includes('-')) cands.push(N.byLower.get(n));
+  if(cands.length === 1) return cands[0];
+  if(cands.length > 1 && mySys){
+    let best = null, bj = Infinity;
+    for(const c of cands){ const j = itJumps(mySys, c); if(j !== null && j < bj){ bj = j; best = c; } }
+    if(best && bj <= 15) return best;
+  }
+  return null;
+}
+// v2026.10.31.5: the systems one gate jump from a system
+function itNeighbours(id){ const g = itGraphGet(), i = g.at.get(id); return i === undefined ? [] : g.adj[i].map(x => g.ids[x]); }
+// A gate word ("T5Z", "MOG", "5bt", "MO-") among a system's own gates: the start of one gate's name, dashes ignored, and no other
+// gate's name starting the same way
+function itGateOf(sys, w){
+  const N = it.names; if(!N || !sys) return null;
+  const lw = w.toLowerCase().replace(/-/g, ''), hits = [];
+  if(lw.length < 2) return null;
+  for(const n of itNeighbours(sys)){ const nm = (N.byId.get(n) || '').toLowerCase(); if(nm.replace(/-/g, '').startsWith(lw) || nm === w.toLowerCase()) hits.push(n); }
+  return hits.length === 1 ? hits[0] : null;
 }
 function itParse(msg, mySys, force){
   const W = itWords(msg), used = new Array(W.length).fill(null);
@@ -23371,7 +23436,11 @@ function itParse(msg, mySys, force){
   // to rob it"): the ESS with linked / hacking / robbing in the same line
   const ess = kw.has('ESS') && W.some(x => /^(link|linked|linking|hack|hacked|hacking|rob|robbed|robbing|stealing)$/.test(x.lw));
   if(ess){ kw.delete('ESS'); kw.add('ESS linked'); }
-  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt, ess};
+  // v2026.10.31.5 (the owner's pick: a camp is a report that places them on a gate and says camp, bubble, drag, smartbomb or "gate is
+  // hot"): the camp words; itGates decides once the gate is known
+  const gateWord = W.some(x => IT_GATE_WORDS.has(x.lw));
+  const campWords = gateWord && W.some(x => IT_CAMP_WORDS.has(x.lw) || (x.lw === 'hot' && gateWord));
+  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt, ess, gw: sys.gw || [], gateWord, campWords};
 }
 // Candidate pilot names in a run: every 1-3 word stretch within EVE's 37 characters.
 function itCandidates(p){
@@ -23620,6 +23689,9 @@ function itChoose(p, mySys){
     return null;
   });
   const J = (i) => mySys ? itJumps(mySys, S[i].id) : null, isP = (i) => !S[i].short && !!it.pilots.get(itSysText(p, S[i]).toLowerCase());
+  // v2026.10.31.5: "D-W7F0 gate camp on T5ZI-S gate": two names before "gate", one gate apart: the first named is where they are
+  // (reports name the system first), the other its gate (v.2026.10.30.2 took the nearer one)
+  if(S.length === 2 && role[0] === 'gate' && role[1] === 'gate' && itJumps(S[0].id, S[1].id) === 1){ const f = S[0].at < S[1].at ? 0 : 1; role[f] = null; }
   let cand = S.map((s, i) => i).filter(i => !role[i]);
   if(!cand.length) cand = S.map((s, i) => i);
   const ring = itRing();
@@ -23648,9 +23720,29 @@ function itForce(p, mySys){
 }
 // Where they are first; the other systems keep their place in the line's words and say what they are (role).
 function itPlace(p, mySys){
-  if(p.sys.length < 2) return;
-  const c = itChoose(p, mySys);
-  p.sys = [p.sys[c.loc], ...p.sys.map((s, i) => ({...s, role: c.role[i] || 'or'})).filter((s, i) => i !== c.loc)];
+  if(p.sys.length >= 2){
+    const c = itChoose(p, mySys);
+    p.sys = [p.sys[c.loc], ...p.sys.map((s, i) => ({...s, role: c.role[i] || 'or'})).filter((s, i) => i !== c.loc)];
+  }
+  itGates(p, mySys);
+}
+// v2026.10.31.5: which gate. A word before "gate" ("T5Z gate") among the gates of where they are (itGateOf); not one of them: the
+// nearest system so named, as a note ("or 23G-XC?"). A whole name before "gate" that isn't one of its gates: a note too. p.gate:
+// the gate (a system id) or null; p.camp: on a gate and the camp words.
+function itGates(p, mySys){
+  p.gate = null;
+  const loc = p.sys[0] && p.sys[0].id;
+  if(!loc) return;
+  for(const s of p.sys.slice(1)) if(s.role === 'gate' && itJumps(loc, s.id) !== 1) s.role = 'or';
+  for(const g of p.gw || []){
+    const id = itGateOf(loc, g.w), other = id ? null : itShortSys(g.w, mySys);
+    if(id) p.sys.push({id, at: g.at, k: 1, short: true, role: 'gate'});
+    else if(other && other !== loc) p.sys.push({id: other, at: g.at, k: 1, short: true, role: 'or'});
+    else if(p.used) p.used[g.at] = null;   // not placed: left as typed in the Feed (never looked up as a pilot)
+  }
+  const gs = p.sys.slice(1).filter(s => s.role === 'gate');
+  p.gate = gs.length ? gs[0].id : null;
+  p.camp = !!p.campWords;
 }
 function itKind(p, pilots){
   if(p.kw.has('clear')) return 'clear';
@@ -23682,11 +23774,11 @@ function itAddReport(l, p, pilots){
 function itNearAdd(e, sys){
   const prev = it.near.get(sys), keep = e.t - it.set.forget * 60000, kind = e.kind === 'kill' ? 'seen' : e.kind;
   if(prev && prev.t > e.t && e.kind === 'kill' && prev.kind === 'clear') return;   // a kill from before the system was reported clear
-  const st = {sys, t: Math.max(e.t, prev ? prev.t : 0), who: e.who, kind, pilots: [], ships: [], extra: [], count: [], pairs: new Map(), kills: [], ess: []};
+  const st = {sys, t: Math.max(e.t, prev ? prev.t : 0), who: e.who, kind, pilots: [], ships: [], extra: [], count: [], pairs: new Map(), kills: [], ess: [], gates: []};
   if(e.kind !== 'clear' && prev && prev.kind !== 'clear'){
     st.pilots = prev.pilots.filter(x => x.t >= keep); st.ships = prev.ships.filter(x => x.t >= keep);
     st.extra = prev.extra.filter(x => x.t >= keep); st.count = (prev.count || []).filter(x => x.t >= keep); for(const [k, v] of prev.pairs) if(v.t >= keep) st.pairs.set(k, v);
-    st.kills = (prev.kills || []).filter(x => x.t >= keep); st.ess = (prev.ess || []).filter(x => x.t >= keep);
+    st.kills = (prev.kills || []).filter(x => x.t >= keep); st.ess = (prev.ess || []).filter(x => x.t >= keep); st.gates = (prev.gates || []).filter(x => x.t >= keep);
     if(prev.t > e.t){ st.kind = prev.kind; st.who = prev.who; }   // an older kill read late doesn't change the latest word
   }
   if(kind === 'seen' || kind === 'nv'){
@@ -23696,6 +23788,8 @@ function itNearAdd(e, sys){
     if(e.p.extra) st.extra.push({n: e.p.extra, t: e.t});
     if(e.p.count) st.count.push({...e.p.count, t: e.t});   // v.104: "1red": a head count
     if(e.p.ess) st.ess.push({t: e.t, who: e.who});   // v2026.10.31.4
+    if(e.kind !== 'kill' && (e.p.gate || e.p.camp)) st.gates.push({t: e.t, gate: e.p.gate || null, camp: !!e.p.camp, src: 'rep', who: e.who});   // v2026.10.31.5
+    if(e.kind === 'kill' && e.kill.gate) st.gates.push({t: e.t, gate: e.kill.gate, camp: false, src: 'kill', id: e.kill.id});
     for(const [id, sh] of e.pairs) st.pairs.set(id, {...sh, t: e.t, who: e.who});
     if(e.kind === 'kill') st.kills.push({t: e.t, id: e.kill.id, v: e.kill.victim.side || 'n'});   // v.100: the victim's standing, for the badges
   }
@@ -23936,8 +24030,39 @@ function itAddKill({km, z, t, history}){
   // they head my way"): a kill by friendlies only of a victim who wasn't friendly is a sighting of the victim's side in Near You
   // (counted, coloured and alerting like a report), the victim named with what they lost and your pilots after "by".
   e.sighting = e.friendlyOnly && victim.side !== 'f' && !!victim.id;
+  // v2026.10.31.5 (the owner: a camp from kills, told apart from one a report names): zKillboard's locationID is the nearest
+  // celestial; a stargate's (50,000,000 to 59,999,999) names the gate the kill was at. Which system that gate leads to: ESI, once
+  // per gate, kept (itGateDest)
+  const loc = Number(z.locationID) || 0;
+  if(loc >= 50000000 && loc < 60000000){ e.kill.loc = loc; e.kill.gate = it.gateDest.get(loc) || null; }
   it.feed.unshift(e);
   if(att.length) itNearAdd(e, km.solar_system_id);
+  if(e.kill.loc && !e.kill.gate) itGateDest(e.kill.loc).then(d => {
+    if(!d) return;
+    e.kill.gate = d;
+    const st = it.near.get(km.solar_system_id);
+    if(st && st.kills.some(k => k.id === e.kill.id) && !st.gates.some(g => g.id === e.kill.id)) st.gates.push({t: e.t, gate: d, camp: false, src: 'kill', id: e.kill.id});
+    itRenderLists();
+  }).catch(() => {});
+}
+// v2026.10.31.5: the system a stargate leads to (ESI /universe/stargates/{id}/: destination.system_id), asked once per gate and kept
+async function itGateDest(id){
+  if(it.gateDest.has(id)) return it.gateDest.get(id);
+  if(it.gateAsk.has(id)) return it.gateAsk.get(id);
+  const q = (async () => {
+    let d = await itKvGet(`gate:${id}`);
+    if(!(Number(d) > 0)){
+      const r = await fetch(`${ESI}/universe/stargates/${id}/?datasource=tranquility`);
+      if(!r.ok) return null;
+      d = Number(((await r.json()).destination || {}).system_id) || 0;
+      if(!d) return null;
+      itKvSet(`gate:${id}`, d);
+    }
+    it.gateDest.set(id, Number(d));
+    return Number(d);
+  })();
+  it.gateAsk.set(id, q);
+  try{ return await q; }finally{ it.gateAsk.delete(id); }
 }
 function itIsk(v){ return v >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}k` : String(Math.round(v)); }
 // System security, for the colour of a system's name (ESI /universe/systems/{id}/, asked once per system shown, kept)
@@ -24137,13 +24262,43 @@ function itNearRowHtml({st, j}){
   const ess = st.kind === 'clear' ? null : (st.ess || []).filter(x => x.t >= Date.now() - it.set.forget * 60000).pop();
   const essH = ess ? ` <span class="it-ess" title="${escapeHtml(`Reported linked to the system's ESS (about to rob it) by ${ess.who}, ${itAgo(ess.t)} ago`)}">ESS linked</span>` : '';
   const open = it.nearOpen.has(st.sys);
+  const gateH = st.kind === 'clear' ? '' : itGateTagHtml(st);   // v2026.10.31.5
   const jt = `<span class="j ${itJClass(j)}" title="${j === null ? 'no gate route from your system' : j === 0 ? 'your system' : `${j} gate jump${j === 1 ? '' : 's'} from you`}">${itJumpsHtml(j)}</span>`;
   const row = `<div class="it-nb${alert ? ' alert' : ''}${open ? ' open' : ''}" data-it-sys="${st.sys}">${jt}<span class="sys it-sn ${itSecClass(st.sys)}" title="${escapeHtml(itSysTitle(st.sys))}">${escapeHtml(itSysName(st.sys))}</span>`
-    + `<span class="st ${wcls}"><b>${escapeHtml(word)}</b>${essH}</span><span class="who"${cap}>${who}</span>`
+    + `<span class="st ${wcls}"><b>${escapeHtml(word)}</b>${essH}${gateH}</span><span class="who"${cap}>${who}</span>`
     + `<span class="rk"><span class="age">${itAgo(st.t)}</span><span class="kb">${itKillBadges(ks, st.sys)}</span></span>`
     + `<button type="button" class="it-rawt" data-it-nbo="${st.sys}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} what this row is built from" title="${open ? 'Hide' : 'Show'} the reports and kills behind this row">${IT_CHEV}</button>`
     + (can ? `<button type="button" class="it-assess" data-it-assess="${st.sys}" title="Send ${escapeHtml(itSysName(st.sys))}'s reported pilots and ships to the ${escapeHtml(cardName('sysan'))}">Assess ▸</button>` : '<span class="it-assess-none"></span>') + '</div>';
   return open ? row + `<div class="it-nbx${alert ? ' alert' : ''}">${itNearItemsHtml(st)}</div>` : row;
+}
+// v2026.10.31.5 (the owner, from the mockup: "A: one tag", a camp needs a gate and camp words in one report, "toward you" yes, and
+// "can we visually differentiate between camp language from a report being the source or zkill proximity being the source? maybe
+// a slight color variation for now?"): one tag after the word. A camp a report names: red, "Camp · T5ZI-S gate" (or "Camp" when
+// no gate could be read); 2 kills or more at one gate in the time window with no such report: the same tag in orange; a report
+// that only places them on a gate: grey, "5BTK-M gate". "toward you" when that gate leads to a system nearer you.
+const IT_CAMP_KILLS = 2;
+function itGateTagHtml(st, now = Date.now()){
+  const keep = now - it.set.forget * 60000, G = (st.gates || []).filter(x => x.t >= keep);
+  if(!G.length) return '';
+  const gname = (g) => g ? `${itSysName(g)} gate` : '';
+  const kills = new Map();
+  for(const x of G) if(x.src === 'kill') kills.set(x.gate, (kills.get(x.gate) || 0) + 1);
+  const rep = G.filter(x => x.src === 'rep' && x.camp).sort((a, b) => b.t - a.t)[0];
+  let cls, gate, text;
+  if(rep){ cls = 'camp'; gate = rep.gate; }
+  else {
+    const kc = [...kills].filter(([g, n]) => n >= IT_CAMP_KILLS).sort((a, b) => b[1] - a[1])[0];
+    if(kc){ cls = 'camp kz'; gate = kc[0]; }
+    else { const g = G.filter(x => x.src === 'rep' && x.gate).sort((a, b) => b.t - a.t)[0]; if(!g) return ''; cls = 'gt'; gate = g.gate; }
+  }
+  text = cls === 'gt' ? gname(gate) : `Camp${gate ? ` · ${gname(gate)}` : ''}`;
+  const why = [];
+  if(rep) why.push(`A camp${gate ? ` on the ${gname(gate)}` : ''}: reported by ${rep.who}, ${itAgo(rep.t)} ago`);
+  else if(cls === 'gt'){ const g = G.filter(x => x.src === 'rep' && x.gate).sort((a, b) => b.t - a.t)[0]; why.push(`Reported on the ${gname(gate)} by ${g.who}, ${itAgo(g.t)} ago (no camp words)`); }
+  for(const [g, n] of kills) if(g) why.push(`${n} kill${n === 1 ? '' : 's'} at the ${gname(g)} in the last ${it.set.forget} min (zKillboard)${cls === 'camp kz' && g === gate ? ': a camp from kills alone' : ''}`);
+  const my = itMySys(), tw = cls !== 'gt' && gate && my ? (() => { const a = itJumps(my, gate), b = itJumps(my, st.sys); return a !== null && b !== null && a < b; })() : false;
+  if(tw) why.push(`The ${gname(gate)} leads toward you: ${itSysName(gate)} is ${itJumps(my, gate)} jump${itJumps(my, gate) === 1 ? '' : 's'} from you`);
+  return ` <span class="it-gtag ${cls}" title="${escapeHtml(why.join('. '))}">${escapeHtml(text)}</span>${tw ? '<span class="it-tw">toward you</span>' : ''}`;
 }
 // The who line: pilots (and "+N"), then "by" your pilots (a kill by friendlies), then the ships; np / ns: how many of P / S shown
 function itNearWho(P, B, S, np, ns, E = 0){
@@ -24265,6 +24420,9 @@ function itFeedRowHtml(e){
   const my = itMySys(), head = [], chips = [];
   const j0 = e.p.sys[0] ? itJumps(my, e.p.sys[0].id) : null;
   e.p.sys.forEach((s, i) => { if(i && s.role){ head.push(itSysNoteHtml(s, my)); return; } const j = i ? itJumps(my, s.id) : null; head.push(`<span class="it-chip sys" title="${escapeHtml(itSysTitle(s.id))}${s.short ? ` (read from “${escapeHtml(e.p.W[s.at].w)}”)` : ''}"><span class="it-sn ${itSecClass(s.id)}">${escapeHtml(itSysName(s.id))}</span>${j === null ? '' : ` <span class="j">${itJumpsHtml(j)}</span>`}</span>`); });
+  // v2026.10.31.5: a camp a report names (the Feed's tag, as Near You's); a kill at a stargate: which gate
+  if(e.kind !== 'kill' && e.p.camp) head.push(`<span class="it-gtag camp" title="A camp: this report places them on a gate and says camp, bubble, drag, smartbomb or the gate is hot">Camp</span>`);
+  if(e.kind === 'kill' && e.kill.gate) head.push(`<span class="it-snote" title="zKillboard places this kill at the stargate to ${escapeHtml(itSysName(e.kill.gate))}">at the <span class="it-sn ${itSecClass(e.kill.gate)}">${escapeHtml(itSysName(e.kill.gate))}</span> gate</span>`);
   const inr = j0 !== null && j0 <= it.set.range && e.kind !== 'clear' && !(e.friendlyOnly && !e.sighting);
   const kw = e.kind === 'kill' ? itKillWord(e) : null;
   const ty = kw ? [`kill ${kw[0]}`, kw[1]] : e.kind === 'clear' ? ['clr', 'Clear'] : ['rep', 'Report'];
@@ -24283,7 +24441,7 @@ function itFeedRowHtml(e){
   if(e.p.extra) chips.push(`<span class="it-chip kw">+${e.p.extra}</span>`);
   if(e.p.count) chips.push(`<span class="it-chip kw">${e.p.count.n} ${e.p.count.kind}</span>`);   // v.104: "1red" shown as "1 red"
   for(const s of e.p.ships) chips.push(itShipChip(s));
-  for(const k of e.p.kw) if(!(k === 'clear' && e.kind === 'clear')) chips.push(`<span class="it-chip ${k === 'clear' ? 'clr' : 'kw'}">${escapeHtml(k)}</span>`);   // v.100: "Clear" once, in the title line
+  for(const k of e.p.kw) if(!(k === 'clear' && e.kind === 'clear') && !(k === 'gate' && e.p.gate) && !(k === 'camp' && e.p.camp)) chips.push(`<span class="it-chip ${k === 'clear' ? 'clr' : 'kw'}">${escapeHtml(k)}</span>`);   // v.100: "Clear" once, in the title line
   const left = e.p.W.filter((x, i) => !e.p.used[i]).map(x => x.w);
   if(left.length) chips.push(`<span class="it-left" title="Words the page couldn't place">${escapeHtml(left.join(' '))}</span>`);
   const toast = it.shape && it.shape.id === e.id ? `<div class="it-toast">${it.shape.ok ? 'Copied the shape' : 'The shape (copy it from here)'}: <code>${escapeHtml(it.shape.text)}</code><br>System and pilot names are replaced, so it's safe to share when a line is read wrong.</div>` : '';
@@ -24430,8 +24588,18 @@ function itSettingsHtml(numbered){
     <div class="it-box">${n(2, 'Intel channels')}${chans.length ? chans.map(c => `<label><input type="checkbox" data-it-chan="${escapeHtml(c)}"${it.set.channels.includes(c) ? ' checked' : ''}> ${escapeHtml(c)}</label>`).join('') : `<div class="c">${it.dir ? 'No channel logs from the last 2 days.' : 'Found in the folder.'}</div>`}</div>
     <div class="it-box">${n(3, 'You')}${chars.length ? chars.map(c => `<label><input type="radio" name="itMe" data-it-me="${c.id}"${c.id === it.set.me ? ' checked' : ''}> ${escapeHtml(c.name)} <span class="it-dim">${escapeHtml(c.sys || '')}</span></label>`).join('') : `<div class="c">${it.dir ? 'No Local log from the last 2 days: log in once with Log Chat to File on.' : 'From your Local log; follows you as you jump.'}</div>`}</div>
     <div class="it-box">${n(4, 'Range and alerts')}<label title="The ring of awareness: kills this close show in ${escapeHtml(cardName('itfeed'))} and ${escapeHtml(cardName('itnear'))} (chat reports show at any distance)">Feed: kills within <select data-it-set="killRange">${opts(IT_KILL_RANGES, it.set.killRange, '')}</select> jumps</label><label title="The ring of being alert: a hostile or neutral this close sounds and notifies">Alert: within <select data-it-set="range">${opts(IT_RANGES, it.set.range, '')}</select> jumps</label><label><input type="checkbox" data-it-set="sound"${it.set.sound ? ' checked' : ''}> sound</label><label><input type="checkbox" data-it-set="notify"${it.set.notify ? ' checked' : ''}> desktop notification${notifyNote}</label><label>forget reports after <select data-it-set="forget">${opts(IT_FORGET, it.set.forget, ' min')}</select></label><label><input type="checkbox" data-it-set="hideFriendly"${it.set.hideFriendly ? ' checked' : ''}> hide friendlies</label></div>
+    ${numbered ? '' : itAliasBoxHtml()}
     ${leaveHosts().length ? `<div class="it-box">${n(5, 'Links outside this site')}<div class="c">${escapeHtml(leaveHosts().map(leaveName).join(', '))} open${leaveHosts().length === 1 ? 's' : ''} without asking (you chose “Don't ask again”).</div><button type="button" data-it-act="leaveask">Ask again</button></div>` : ''}
   </div>`;
+}
+// v2026.10.31.5: your shorthands for system names, one per line "word = system" (itAliases), each line checked
+function itAliasRowsHtml(){
+  return itAliases().rows.map(r => r.bad ? `<li class="bad">✗ ${escapeHtml(r.ln)}: ${escapeHtml(r.bad)}</li>` : `<li class="ok">✓ ${escapeHtml(r.key)} → ${r.id ? escapeHtml(itSysName(r.id)) : escapeHtml(r.name)}</li>`).join('');
+}
+function itAliasBoxHtml(){
+  const rows = itAliasRowsHtml();
+  return `<div class="it-box it-alias"><div class="k">Shorthands</div><div class="c">One per line, <code>word = system</code>, for names your channel shortens. Yours come first. Kept in this browser only.</div>
+    <textarea data-it-alias rows="4" maxlength="${IT_ALIAS_MAX}" spellcheck="false" aria-label="Your shorthands for system names, one per line: word = system" placeholder="ipay = IPAY-2">${escapeHtml(it.set.alias || '')}</textarea><ul>${rows}</ul></div>`;
 }
 // v2026.10.29.4: whether kills are still coming in, beside "last line": a reader stuck without saying so looked like a quiet night
 function itKillStatus(){
@@ -24516,6 +24684,11 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
       const c = t.dataset.itChan;
       it.set.channels = t.checked ? [...new Set([...it.set.channels, c])] : it.set.channels.filter(x => x !== c);
       itWriteSet(); it.lastScan = 0; if(it.on) itTick(); else itRender();
+      return;
+    }
+    if(t.dataset.itAlias !== undefined){   // v2026.10.31.5: for new lines; only the list under the box is redrawn (change comes on blur, maybe from a click elsewhere)
+      it.set.alias = String(t.value || '').slice(0, IT_ALIAS_MAX); itWriteSet();
+      const ul = t.parentNode && t.parentNode.querySelector('ul'); if(ul) ul.innerHTML = itAliasRowsHtml();
       return;
     }
     if(t.dataset.itMe !== undefined){ it.set.me = Number(t.dataset.itMe); itWriteSet(); it.me = it.chars.get(it.set.me) || null; it.lastScan = 0; it.alerted = new Map(); itRender(); return; }
