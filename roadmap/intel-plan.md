@@ -170,6 +170,14 @@ took each "nothing new yet" for the feed being down (INTEL-05, waits of 30 s up 
   itFriendlyOnlyRow, it.rawOpen. `intel_kills_check.py` answers R2Z2 as the real one does.
 - ~~Open: whether `sequence.json` stays stale~~ Answered 2026-10-29: Cloudflare's copy per website (see v2026.10.29.8 below).
 
+## Kills open on the Fleet tab; Near You within the alert range + 5 (v2026.10.31.2)
+
+- Every kill opens on the Fleet tab: the Feed's label, a Near You badge (several kills: the newest, all listed there to pick from,
+  frozen when clicked) and each kill in a Near You row opened. Solo kills too. No Fleet ▸ / Pilot ▸ (roadmap/fleet-from-kill-plan.md).
+- Near You lists systems up to 5 jumps past the alert range (`IT_NEAR_EXTRA`; the owner: "limit the range of what shows up in Near
+  You to (alert range +5)"); farther ones and ones with no gate route stay in the Feed. Its line says "within N jumps". With your
+  own system unknown, all are listed as before.
+
 ## Near You's word never squeezed (v2026.10.31.1)
 
 - The owner: "text wrapping issue ... it's pretty annoying" (a window about 1290 px wide). Near You's one-line row gave the word

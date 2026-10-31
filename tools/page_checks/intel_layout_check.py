@@ -12,6 +12,7 @@ Runs intel_kills_check.py's start (made-up logs and kills, R2Z2 and ESI mocked) 
   * a row opened: the reports behind it with who sent them and the line as typed, no channel name; several open at once;
   * the Feed: the jump count first, the time then the label at the right edge (the labels' right edges lined up), the lines below
     starting under the system name, no background on kill rows, the amber edge within the alert range;
+  * v2026.10.31.2: Near You lists systems up to 5 jumps past the alert range and no farther, and its line says so;
   * v2026.10.31.1: at every width where the Intel card is split in two (905-1700 px), with this table's system column and with
     one 160 px wide: Near You's word on one line within its column, on the system's line when there's room, else under it;
     the times lined up either way;
@@ -72,6 +73,14 @@ _tail = r'''
     chk(all(f['chx'] is None or abs(f['chx'] - f['syx']) < 2 for f in F), f'the lines below start under the system name {[(round(f["syx"]), f["chx"] and round(f["chx"])) for f in F][:3]}')
     chk(len({f['bg'] for f in F}) == 1 and all((amber in f['edge']) == f['inr'] for f in F) and any(f['inr'] for f in F) and any(f['kill'] for f in F),
         f'no background on kill rows; the amber edge only within the alert range {set(f["bg"] for f in F)} {[(f["kill"], f["inr"]) for f in F]}')
+    # ---- v2026.10.31.2 (the owner: "limit the range of what shows up in Near You to (alert range +5)") ----
+    NR = pg.evaluate("""() => { const my = itMySys(), reach = it.set.range + 5, now = Date.now(); let at = null, past = null;
+      for(const id of it.names.byId.keys()){ const j = itJumps(my, id); if(j === reach && !at) at = id; if(j !== null && j > reach && !past) past = id; if(at && past) break; }
+      for(const [i, sys] of [[1, at], [2, past]]) itNearAdd({id: 998000 + i, kind: 'seen', t: now, who: 'Scout Alt', raw: 'far report', chan: '', history: true, pilots: [], pairs: new Map(),
+        p: {sys: [{id: sys, at: 0, k: 1}], ships: [{id: 587, name: 'Rifter', n: 1}], kw: new Set(), extra: 0, W: [], used: []}}, sys);
+      itRenderLists(); const shown = new Set([...document.querySelectorAll('#itNearList .it-nb')].map(r => Number(r.dataset.itSys)));
+      return [reach, !!at, !!past, shown.has(at), shown.has(past), (document.querySelector('#intelPanel .it-h .ctx') || {}).textContent]; }""")
+    chk(NR[1] and NR[2] and NR[3] and not NR[4] and f'within {NR[0]} jumps' in NR[5], f'Near You: up to 5 jumps past the alert range, no farther, and it says so {NR}')
     # ---- v2026.10.31.1: the word never squeezed (the owner: "text wrapping issue ... it's pretty annoying") ----
     # Every width where the Intel card is split in two, with this table's system column and with one as wide as a long real name:
     # the word on one line, never wider than its column; on the system's line when there is room, else under it (itNearFit).

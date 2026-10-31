@@ -48,6 +48,13 @@ the composition is known; only each pilot's fit is an estimate, and the page say
   **Weapon reach** in the summary (nearest to farthest main weapon, turrets optimal + falloff, missiles flight, as pyfa gives them),
   each EWAR kind's farthest optimal, each pilot's main weapon range under the DPS and each module's range on the EWAR badges' hover.
   The victim is a tag in the line under the title (opens them in the Pilot Analyzer). `fleet_vs_check.py` checks all of it.
+- **v2026.10.31.2: done.** The kill to analyze is chosen on the Fleet tab (the owner: "move the 'which kill to analyze' decision
+  to the fleet tab"; Intel's row list was "not very intuitive or easy to read with a constantly changing list on both sides of the
+  page"): a Near You badge opens its kills there, the newest shown, all listed in the header as they were when clicked
+  (`fk.picks`, LESSON #110). Every kill opens there, solo ones too ("Fleet tab too"), from the Feed's label ("kills in the feed
+  should be links as well. same mechanic"), a badge, or a Near You row opened; the Fleet ▸ / Pilot ▸ button is gone. **The victim**
+  card above the fleet: the killmail's own fit (raw DPS and mix, weakest to, weapon reach, tackle and EWAR with reach, EHP), no time
+  to kill. zKillboard not answering: one Retry in the pilots' head, counting down while the page's pause is on (`zkbRetryHtml`).
 - Later (the owner, 2026-10-31): "a range graph ... that reflects where certain things kick in like points, disruptors, webs, dps
   ranges", and how it works for fleets of dozens or hundreds of ships; a lazy-load rule for everything that evaluates fleet ships.
 - Later: group kills by shared attackers ("2 fleets", option D).

@@ -41,6 +41,7 @@ types a name by hand.
 | `aff` | Pilot Affiliation | v2026.10.14.87: the pilot's corporation, alliance and zKillboard stats, top right of the Pilot Analyzer (the owner via todo-inbox; mockup picks) |
 | `dossier` | Pilot Dossier | v2026.10.14.90: what a pilot flies, by gang size, in the Pilot Analyzer (roadmap/pilot-dossier-plan.md) |
 | `fksum` | Their fleet on this kill | v2026.10.14.94: the Fleet tab's summary of a fleet from one of their kills (roadmap/fleet-from-kill-plan.md) |
+| `fkvictim` | The victim | v2026.10.31.2: the Fleet tab's victim, from the killmail's own fit |
 | `fkpilots` | Pilots on the kill | v2026.10.14.94: the Fleet tab's member rows |
 | `intel` | Intel | v2026.10.14.96: the Intel tab, its card and the slider beside Standings (roadmap/intel-plan.md) |
 | `itnear` | Near You | v2026.10.14.96: the Intel card's systems reported near you, nearest first |

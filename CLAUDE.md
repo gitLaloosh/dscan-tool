@@ -15,7 +15,8 @@ are in the git-ignored `tools/pii_terms.local.txt` on the owner's computer.
 of two gates: `zkbFetch` (the API: one at a time, 1 s apart) or `itR2Fetch` (the live feed, v2026.10.30.3: its
 `itKillTurn` gate, at most 5 a second by the clock, waits timed in a worker; a stop for an hour at the first 429, kept in
 localStorage for every copy of the page; a tripwire; LESSON #106). zKillboard's developer has said the limit will be cut
-further if abuse continues, so stay at a third of it. Test against a stand-in, never by provoking the real service. Never pace requests with a batch of timers:
+further if abuse continues, so stay at a third of it. The API's pause after a failure is kept in localStorage (`dscanZkbPause`,
+v2026.10.31.2) so a reload waits it out too, and every Retry after a zKillboard failure is `zkbRetryHtml` (a countdown while paused). Test against a stand-in, never by provoking the real service. Never pace requests with a batch of timers:
 a hidden tab fires them together. Every `fetch()` is listed in `tools/check_request_gates.py` (a chain
 step); `tools/page_checks/request_gates_check.py` tests both gates with the timers bunched. Probing a
 live service from the owner's machine counts against his address too.

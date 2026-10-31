@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-10-31 — Kills picked on the Fleet tab; the victim; Retry for zKillboard; Near You's reach</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Kills picked on the Fleet tab; the victim; Retry for zKillboard; Near You's reach</h1>
+<p><span class="tag">Fleet</span><span class="tag">Intel</span><span class="tag">zKillboard</span> 2026-10-31 &middot; <code>v2026.10.31.2</code></p>
+
+<h2>Why</h2>
+<p>The owner asked for four things in this delivery:</p>
+<ul>
+<li><b>Pick the kill on the Fleet tab.</b> "next iteration of this should also move the 'which kill to analyze' decision to the fleet tab". Opening a row on Intel was "not very intuitive or easy to read with a constantly changing list on both sides of the page". He added "kills in the feed should be links as well. same mechanic".</li>
+<li><b>Analyze the victim.</b> "similar top level analysis of the victim is good to have".</li>
+<li><b>A retry for zKillboard.</b> From a screenshot of the Fleet tab with every pilot saying zKillboard wasn't answering: "the user is going to try refreshing the page as a result of the 'Try again in a few' note. we need a refresh / retry icon that will retry the attempt. even if we need to add a timer per refresh to limit the number of attempts per minute or something."</li>
+<li><b>A shorter Near You.</b> "limit the range of what shows up in Near You to (alert range +5)".</li>
+</ul>
+<p>The mockup settled three choices:</p>
+<ul>
+<li>Solo kills go to the Fleet tab too.</li>
+<li>The victim card sits above the fleet.</li>
+<li>The separate Fleet ▸ / Pilot ▸ button was dropped. He asked "is there any reason to have the fleet or pilot button at this point? i'd like your opinion"; with the label doing the same thing there wasn't.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Every kill opens on the Fleet tab:</b>
+  <ul>
+  <li>from its label in the Feed (HOSTILE KILLED and the rest are now buttons);</li>
+  <li>from a Near You badge;</li>
+  <li>from each kill in a Near You row that's been opened.</li>
+  </ul>
+  A badge for several kills shows the newest, and lists them all in the header to pick from, as they were when it was clicked. New kills arriving on Intel don't change that list (LESSON #110). The Fleet ▸ / Pilot ▸ button is gone, and so is its hover text, which still spoke of the card removed in v2026.10.31.1.</li>
+<li><b>The victim</b> is a new card above the fleet, built from the killmail's own fit: raw DPS and damage mix, weakest to, weapon reach, tackle and EWAR with reach, and EHP. There is no time to kill (LESSON #108).</li>
+<li><b>zKillboard not answering:</b>
+  <ul>
+  <li>The pilots card has one ↻ Retry. It counts down while the page's pause after a failure is on (1 minute, doubling up to 10) and while the request budget is spent, so pressing it can never ask sooner than the page already allows (<code>zkbRetryHtml</code>). The System Analyzer's three Retry buttons now work the same way.</li>
+  <li>The pause is kept in localStorage, so a reload or another tab waits it out too.</li>
+  <li>The message now says reloading won't bring zKillboard back sooner.</li>
+  <li>Each failed row says it in short ("zKillboard didn't answer (ZKB-01): Retry is above"), with the full text on hover.</li>
+  <li>The summary says none could be looked up, instead of "Adds up as the pilots come in…".</li>
+  </ul></li>
+<li><b>Near You</b> lists systems up to 5 jumps past the alert range. Systems farther away, or with no gate route, stay in the Feed. Its line says "within N jumps". If your own system isn't known, it lists all of them as before.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><b><code>intel_fleet_check.py</code></b>, rewritten:
+  <ul>
+  <li>every Feed kill's label is the button;</li>
+  <li>a badge for one kill, for a solo kill, and for 2 kills (the newer shown, both listed, the list frozen against a new kill, picking the other);</li>
+  <li>a Feed label;</li>
+  <li>a Near You row opened.</li>
+  </ul></li>
+<li><b><code>fleet_vs_check.py</code></b>:
+  <ul>
+  <li>the victim card, from the killmail's own fit, and on a fit with weapons and tackle;</li>
+  <li>zKillboard not answering: the countdown, the short rows, the summary, the pause kept for a reload, then Retry pressed and the pilots looked up again.</li>
+  </ul></li>
+<li><b><code>intel_layout_check.py</code></b>: Near You up to the alert range + 5 and no farther, and its line says so.</li>
+<li>The mockup on the real page showed every choice before the build. <code>check_card_names.py</code> caught "The victim" typed by hand in an error message.</li>
+</ul>
+
+<h2>Later (backlog)</h2>
+<ul>
+<li>A permanent Fleet tab: load killmails, or build a fleet from chosen fits.</li>
+<li>A range graph.</li>
+<li>One lazy-loading rule for large fleets.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #110: don't make people pick from a list that is still moving. Take a snapshot when they ask, show it where nothing else moves, open the likeliest choice at once, and use one control per action.</p>
+<p>Added under LESSON #106: a pause kept only in memory ends at a reload, the very thing an error message tends to invite. Keep it where every load sees it, and give the wait a Retry that counts it down.</p>
+</body></html>

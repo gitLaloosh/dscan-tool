@@ -125,6 +125,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #104 escapeHtml() doesn't escape quotes: a value in an attribute needs `&quot;`.
 - #107 One meaning drawn twice drifts: draw it once and use it everywhere. See also #42.
 - #109 A `1fr` column beside fixed and `auto` ones can shrink to nothing: sweep every width the layout spans. See also #103.
+- #110 Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still.
 
 **Checks and test machinery**
 
@@ -1017,6 +1018,17 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 110. Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still
+
+- **What happened (v2026.10.30.4 → v2026.10.31.2):** a Near You badge for several kills opened that row on Intel to list them, each
+  with its own Fleet ▸. Intel redraws as reports and kills arrive, Near You re-sorts by distance and the Feed scrolls beside it. The
+  owner: "this is not very intuitive or easy to read with a constantly changing list on both sides of the page"; "move the 'which
+  kill to analyze' decision to the fleet tab".
+- **Do this instead:** when a choice is offered from live data, take a snapshot when the person asks and show it where nothing else
+  moves (here `fk.picks`, listed in the Fleet tab's header, "as they were when you opened this"); open the likeliest one at once (the
+  newest) so a pick is only needed to change it. One control per action: the kill's label is the button; a second button doing the
+  same was dropped (#84).
+
 ## 109. A `1fr` column beside fixed and `auto` ones can shrink to nothing: sweep every width the layout spans
 
 - **What happened (v2026.10.31.1, the owner: "text wrapping issue ... it's pretty annoying", a window about 1290 px wide):** Near
@@ -1071,6 +1083,12 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   before the service has to, and (4) on the first "too many" answer stops for the service's full ban and drops what is queued.
   Treat an answer you can't read in the middle of a burst as a reason to stop the burst. Keep the pace well under the published
   limit (here a third), from one constant. Test all of it against a stand-in that answers 429 on cue; never provoke the real one.
+
+- **The same for zKillboard's API (v2026.10.31.2):** its pause after a failure (`zkbUnavailableUntil`) lived in memory, so a reload,
+  the thing the error's "try again in a few minutes" invited, started asking again at once. The pause is now kept in localStorage
+  (`dscanZkbPause`), the text says reloading won't help, and every Retry for a zKillboard failure is `zkbRetryHtml`: disabled with
+  a countdown until the pause and the budget allow a request (the owner: "we need a refresh / retry icon ... even if we need to
+  add a timer").
 
 ## 105. A reader that decides a word's kind before its lookups can't use what they say: decide after
 

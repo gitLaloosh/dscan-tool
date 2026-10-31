@@ -264,8 +264,9 @@ with sync_playwright() as p:
     k9 = [r['sys'] for r in R if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S9] + ' ')]
     k12 = [r['sys'] for r in R if r['ty'] in LABELS and (r['sys'] or '').startswith(SYSNAME[S12] + ' ')]
     near9 = pg.evaluate("(n) => [...document.querySelectorAll('#itNearList .it-nb')].filter(r => r.querySelector('.sys').textContent === n).map(r => r.classList.contains('alert'))", SYSNAME[S9])
-    check(k9 == [f'{SYSNAME[S9]} 9 Jumps'] and not k12 and near9 == [False] and pg.evaluate("() => __fs.beeps") == b0 and pg.evaluate("() => itKillRange()") == 10,
-          f'the kill range set to 10 under the gear: a kill 9 jumps away shows in the Feed and Near You, beyond the alert range (no alert); one 12 jumps away does not ({k9}, {k12}, {near9})')
+    # v2026.10.31.2: Near You stops at the alert range + 5 (3 + 5 = 8 here), so the kill 9 jumps away is in the Feed only
+    check(k9 == [f'{SYSNAME[S9]} 9 Jumps'] and not k12 and near9 == [] and pg.evaluate("() => __fs.beeps") == b0 and pg.evaluate("() => itKillRange()") == 10,
+          f'the kill range set to 10 under the gear: a kill 9 jumps away shows in the Feed (not Near You: past the alert range + 5; no alert); one 12 jumps away does not ({k9}, {k12}, {near9})')
     ff = [[r['sys'] for r in R if (r['sys'] or '').startswith(SYSNAME[SFF] + ' ')], pg.evaluate("(n) => [...document.querySelectorAll('#itNearList .it-nb .sys')].filter(x => x.textContent === n).length", SYSNAME[SFF])]
     check(ff == [[], 0] and pg.evaluate("(id) => it.feed.some(e => e.kind === 'kill' && e.p.sys[0].id === id)", SFF),
           f'a friendly killed by friendlies only: read, but hidden in the Feed and in Near You with "hide friendlies" on {ff}')
