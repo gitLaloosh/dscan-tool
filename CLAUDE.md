@@ -132,6 +132,10 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
 - **Names in colour** (v2026.10.31.3, the owner): a system's name in its security colour (`sysNameHtml`, Intel's rule); a person's
   name in its standing's colour with its icon (`standNameHtml` / `std-n`), victims included. A dossier kill from the past 4 hours has
   its time in amber (`PD_RECENT_MS`).
+- **What was asked for stays on screen** (v2026.11.01.5, LESSON #121): the Pilot Dossier draws the hull asked for (a pilot opened
+  from the Fleet tab, a typed hull, a System Analyzer row) as its first row in every size, tagged On this kill / Lost on this kill /
+  Asked for with its rank; the 8 busiest follow; "Show N more hulls" is a button that draws every hull read. A Fleet-tab kill missing
+  from zKillboard's list for the pilot is added from the killmail already open ("+ this one"). `dossier_pin_check.py`.
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
   the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship

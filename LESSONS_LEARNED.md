@@ -133,6 +133,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #118 A claim in a code comment is not a source: find what it rests on before repeating it to the owner.
 - #119 A redraw must carry over what the person was doing (focus, scroll) and compare with what it last drew, not with the new state.
 - #120 A view rebuilt on a timer costs the machine even when nothing changed: build, compare, skip; draw only what can be seen.
+- #121 A list cut to its top rows must still show what was asked for, and its "N more" must open: a selection off screen is a hidden state.
 
 **Checks and test machinery**
 
@@ -1027,6 +1028,19 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 121. A list cut to its top rows must still show what was asked for, and its "N more" must open: a selection off screen is a hidden state
+
+- **What happened (v2026.11.01.5):** the owner opened a pilot from an Intel kill (Fleet tab → Pilot Analyzer). The Pilot Dossier
+  selected the Ferox they flew on that kill and showed its fit, but drew only its 8 busiest hulls, and the Ferox was lower: no row
+  for the hull on screen, and "13 more hulls with fewer" was grey text that couldn't be opened. When zKillboard's list for the pilot
+  hadn't caught up with the minutes-old kill, the dossier didn't have the hull at all and quietly fell back to their busiest one.
+- **How it was caught:** by the owner, from a screenshot: "if the ship the pilot flew on the killmail isn't in their top 15 or
+  whatever, the user wont see that hull in their list."
+- **Do this instead:** whatever the person asked for (a hull from a kill, a typed hull) is drawn first, whatever its rank, and says
+  why it's there and where it ranks; a "more" line is a button that shows the rest, from what is already read. When the page already
+  holds the record the list is built from (the Fleet tab's killmail), use it rather than wait for the list to catch up, and say so
+  ("+ this one"). A check opens the list from each way in and asks for the asked-for row first (dossier_pin_check).
 
 ## 120. A view rebuilt on a timer costs the machine even when nothing changed: build, compare, skip; draw only what can be seen
 

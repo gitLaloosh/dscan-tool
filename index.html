@@ -2265,7 +2265,12 @@
   .pd-gang b{font:600 12px var(--mono); color:var(--heading);}
   .pd-w, .pd-f, .pd-v{overflow:hidden; text-overflow:ellipsis;}
   .pd-dim{color:var(--text-dim);}
-  .pd-more{padding:8px 4px 2px; font:400 12px var(--sans); color:var(--text-dim);}
+  .pd-more{padding:10px 4px 2px 44px;}   /* v2026.11.01.5: the "Show N more hulls" button (the kill list's button, Intel's chevron) */
+  .pd-more button[aria-expanded="true"] svg{transform:rotate(180deg);}
+  .pd-pin{display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; margin-top:4px; font:600 11px var(--sans);}   /* the hull asked for: why it's first */
+  .pd-pin > svg{width:14px; height:14px; color:var(--cyan); flex:none;}
+  .pd-pin .pd-tag{padding:1px 6px; border-radius:3px; background:color-mix(in srgb, var(--cyan) 14%, transparent); color:var(--cyan);}
+  .pd-pin .pd-pin-r{font-weight:400; color:var(--text-dim);}
   .pd-msg{padding:10px 4px;}
   .pd-foot{display:flex; gap:10px 34px; flex-wrap:wrap; margin-top:12px; align-items:flex-end;}
   .pd-foot .k{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); margin-bottom:5px;}
@@ -2279,6 +2284,7 @@
     .pd-rh > button.pd-row{padding-left:50px;}
     button.pd-exp{top:4px; margin-top:0; left:2px; width:40px; height:40px;}
     .pd-kills{padding:2px 4px 10px;}
+    .pd-more{padding-left:4px;}
     .pdk-h{display:none;}
     .pdk{grid-template-columns:auto minmax(0,1fr) auto; grid-template-areas:"f v l" ". g g" ". w w"; row-gap:3px; column-gap:10px; padding:8px 0;}
     .pdk > button.pdk-fb{grid-area:f; position:static; transform:none; width:40px; height:40px; align-self:start;}
@@ -2668,7 +2674,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.4</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.5</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -3051,6 +3057,7 @@ const CARD_INFO = {
  ],
  "dossier": [
   "What they fly, from their newest 50 kills and 30 losses on zKillboard (each killmail read from ESI and kept): one row per hull, the busiest first. Pick a row to see that hull below: their own losses in it, or, when they've never lost one, their alliance's (or corporation's) common fit, said as not theirs.",
+  "Opened on a hull (a pilot on the {card:fleet} tab, a ship you typed, a {card:sysan} row), that hull is the first row whatever its rank, tagged On this kill, Lost on this kill or Asked for. A kill from the Fleet tab that zKillboard's list for them doesn't have yet is added (the header says + this one). The 8 busiest hulls follow; Show N more hulls shows every hull read, with no new request.",
   "Gang size on a kill is the players on that killmail (NPCs left out; anyone who joined in counts): Solo is 1, Small gang 2–10, Fleet 11 or more. The switch keeps only those kills, so you see what they fly alone, in a small gang or in a fleet. Losses show a hull but not a gang size (only who killed them).",
   "Weapons seen: the weapon each killmail credits them with. Flies with: the other players' hulls on those kills. Kills mostly: what they killed, by ship class. Every number is a count, so a pilot with few kills shows few.",
   "Active: the hours of their kills in your own time zone. Usual systems: where their kills and losses were. Capsules, shuttles, rookie ships and Mobile Tractor Units aren't counted as hulls.",
@@ -11273,7 +11280,8 @@ const PD_SIZE_WORD = {solo: 'solo', small: 'small gang', fleet: 'fleet'};
 function fleetSizeMarkHtml(n){ return `<i style="background:${PD_COLOR[pdSize(n)]}"></i>${Number(n).toLocaleString()}`; }
 function fleetSizeHtml(n){ const w = PD_SIZE_WORD[pdSize(n)]; return `<span class="fsz" title="${n} player${n === 1 ? '' : 's'} on this kill: ${w}">${fleetSizeMarkHtml(n)}<span class="fsz-m">${n === 1 ? 'pilot' : 'pilots'}, ${w}</span></span>`; }
 const pd = {charId: null, d: null, mode: 'all', sel: null, character: null, statusEl: null, want: null,
-  kStubs: [], read: 0, older: [], open: null, shown: 10, busy: false, failed: [], names: new Map(), value: new Map()};   // v.93: the kills under a row
+  kStubs: [], read: 0, older: [], open: null, shown: 10, busy: false, failed: [], names: new Map(), value: new Map(),   // v.93: the kills under a row
+  pin: null, allHulls: false, extra: null};   // v2026.11.01.5: the hull asked for, first; every hull shown; the Fleet tab's kill added
 const killStubCache = new Map();
 async function fetchKillsStubs(charId, forceRefresh){
   if(!forceRefresh && killStubCache.has(charId)) return killStubCache.get(charId);
@@ -11339,6 +11347,7 @@ async function pdBuild(charId, kms){
 function pdRows(d, mode){
   const rows = [];
   for(const h of d.hulls){
+    if(h.stub) continue;   // v2026.11.01.5: a hull asked for that isn't among those read: drawn only as the pinned row
     const ks = mode === 'all' ? h.kills : h.kills.filter(k => k.size === mode);
     if(mode !== 'all' && !ks.length) continue;
     const last = Math.max(...h.kills.map(k => k.t), ...h.losses.map(l => l.t));
@@ -11360,7 +11369,16 @@ function pdHtml(d){
   const counts = {all: d.sizes.solo + d.sizes.small + d.sizes.fleet, ...d.sizes};
   const seg = [['all', 'All'], ...PD_SIZES].map(([v, l]) => `<button type="button" data-pd-mode="${v}" aria-pressed="${pd.mode === v}"${pd.mode === v ? ' class="on"' : ''}>${l.replace(' gang', '<span class="pd-long"> gang</span>')}<b>${counts[v]}</b></button>`).join('');
   const key = PD_SIZES.map(([v, l]) => `<span><i style="background:${PD_COLOR[v]}"></i>${v === 'solo' ? 'solo' : v === 'small' ? 'small gang 2–10' : 'fleet 11+'}</span>`).join('');
-  const all = pdRows(d, pd.mode), rows = all.slice(0, PD_ROWS);
+  // v2026.11.01.5 (the owner: "if the ship the pilot flew on the killmail isn't in their top 15 or whatever, the user wont see
+  // that hull in their list"; his picks in Claude outputs/dossier_hull_from_kill_mockup.html: A pinned first, all at once,
+  // C1 the kill added, typed hulls too): the hull asked for is the first row in every size, tagged, with its rank; the
+  // busiest PD_ROWS follow; "Show N more hulls" draws every hull read (no request), "Show fewer" folds them back.
+  const all = pdRows(d, pd.mode);
+  const pinH = pd.pin ? d.hulls.find(h => h.id === pd.pin.id) : null;
+  const pinRow = pinH ? all.find(r => r.h === pinH) || {h: pinH, ks: [], last: Math.max(...pinH.kills.map(k => k.t), ...pinH.losses.map(l => l.t)), score: 0} : null;
+  const rest = pinRow ? all.filter(r => r !== pinRow) : all;
+  const rows = [...(pinRow ? [pinRow] : []), ...(pd.allHulls ? rest : rest.slice(0, PD_ROWS))];
+  const pinRank = pinRow ? all.indexOf(pinRow) + 1 : 0;
   const rowHtml = ({h, ks, last}) => {
     const sz = {solo: 0, small: 0, fleet: 0}; for(const k of h.kills) sz[k.size]++;
     const med = pdMedian(ks.map(k => k.n));
@@ -11368,16 +11386,16 @@ function pdHtml(d){
     const mates = pdTop(ks.flatMap(k => [...new Set(k.mates)]).filter(id => d.info.get(id) && d.info.get(id).cat === 6 && !EXCLUDED_HULL_GROUP_IDS.has(d.info.get(id).group)), 3, nm).map(([id, n]) => `${nm(id)} ${n}`).join(' · ');
     const vic = pdTop(ks.map(k => k.victim).filter(Boolean).map(id => (d.info.get(id) || {}).cls), 2, x => x).map(([c, n]) => `${c} ${n}`).join(' · ');
     const bar = h.kills.length ? `<span class="bar" aria-hidden="true">${PD_SIZES.map(([v]) => `<i style="flex:${sz[v]};background:${PD_COLOR[v]}"></i>`).join('')}</span>` : '';
-    const fit = h.losses.length ? `${h.losses.length} loss${h.losses.length === 1 ? '' : 'es'} · fit from their losses` : 'no loss of theirs';
+    const fit = h.stub ? 'none of theirs among those read' : h.losses.length ? `${h.losses.length} loss${h.losses.length === 1 ? '' : 'es'} · fit from their losses` : 'no loss of theirs';
     const sel = pd.sel === h.id, open = pd.open === h.id, nk = pdKillList(h).length;
     // v.93 (K1): ▶ opens their kills in this hull under the row; the row itself still picks the hull
     const exp = nk ? `<button type="button" class="pd-exp" data-pd-exp="${h.id}" aria-expanded="${open}"${open ? ` aria-controls="pdk-${h.id}"` : ''} aria-label="${open ? 'Hide' : 'Show'} their ${escapeHtml(h.name)} kills" title="${open ? 'Hide' : 'Show'} their ${escapeHtml(h.name)} kills">${IT_CHEV}</button>` : '';   // v2026.10.31.6: Intel's chevron
     return `<div class="pd-rw${open ? ' open' : ''}"><div class="pd-rh">${exp}<button type="button" class="pd-row${sel ? ' sel' : ''}" data-pd-hull="${h.id}" aria-pressed="${sel}" title="Show their ${escapeHtml(h.name)} ${h.losses.length ? 'losses' : '(their group’s common fit)'}">
-      <span class="pd-hull"><span class="nm">${escapeHtml(h.name)}<span class="cls">${escapeHtml(h.cls || '')}</span></span><span class="pd-sub">${escapeHtml(fit)}</span></span>
+      <span class="pd-hull"><span class="nm">${escapeHtml(h.name)}<span class="cls">${escapeHtml(h.cls || '')}</span></span><span class="pd-sub">${escapeHtml(fit)}</span>${pinRow && pinRow.h === h ? pdPinHtml(d, h, pinRank, all.length) : ''}</span>
       <span class="pd-n k">${ks.length}${pd.mode === 'all' ? '' : `<span> of ${h.kills.length}</span>`}</span>
       <span class="pd-gang">${bar}<span>${med === null ? '<span class="pd-dim">no kills</span>' : `usually <b>${med}</b>`}</span></span>
       <span class="pd-w">${escapeHtml(w) || '<span class="pd-dim">—</span>'}</span><span class="pd-f">${escapeHtml(mates) || '<span class="pd-dim">—</span>'}</span>
-      <span class="pd-v pd-dim">${escapeHtml(vic) || '—'}</span><span class="pd-n pd-last">${pdAgo(last)}</span></button></div>${open ? pdKillsHtml(h) : ''}</div>`;
+      <span class="pd-v pd-dim">${escapeHtml(vic) || '—'}</span><span class="pd-n pd-last">${Number.isFinite(last) ? pdAgo(last) : '—'}</span></button></div>${open ? pdKillsHtml(h) : ''}</div>`;
   };
   // footer: active hours in the user's own time zone (D3), usual systems, the split
   const hrs = new Array(24).fill(0); for(const t of d.times) hrs[new Date(t).getHours()]++;
@@ -11388,15 +11406,32 @@ function pdHtml(d){
   const sysRest = sys.slice(3).reduce((s, x) => s + x[1], 0);
   const span = d.from ? `, ${day(d.from)} – ${day(d.to)}` : '';
   const rowsBody = rows.length ? rows.map(rowHtml).join('') : `<div class="pr-msg pd-msg">${pd.mode === 'all' ? 'No ships among their recent kills and losses (capsules, shuttles and rookie ships aren’t counted).' : `No ${PD_SIZES.find(x => x[0] === pd.mode)[1].toLowerCase()} kills among their newest ${d.nKills}.`}</div>`;
-  return `<div class="pd-head"><h3>${escapeHtml(cardName('dossier'))}</h3>${ctxHtml(`newest ${d.nKills} kills, ${d.nLosses} losses${span}`, '', `From their newest ${d.nKills} kills and ${d.nLosses} losses on zKillboard${span}, read from ESI`)}<span class="sa-sp"></span>${infoBtnHtml('dossier')}</div>
+  const nK = d.nKills - (d.added ? 1 : 0), plus = d.added ? ' + this one' : '';   // v2026.11.01.5: the Fleet tab's kill, not yet in zKillboard's list
+  return `<div class="pd-head"><h3>${escapeHtml(cardName('dossier'))}</h3>${ctxHtml(`newest ${nK} kills${plus}, ${d.nLosses} losses${span}`, '', `From their newest ${nK} kills and ${d.nLosses} losses on zKillboard${span}, read from ESI${d.added ? ', and the kill you came from (not in zKillboard’s list for them yet)' : ''}`)}<span class="sa-sp"></span>${infoBtnHtml('dossier')}</div>
     <div class="pd-bar1"><span class="pd-seg" role="group" aria-label="Gang size">${seg}</span><span class="pd-key" aria-hidden="true">${key}</span></div>
     <div class="pd-cols" aria-hidden="true"><span>Hull</span><span class="r">Kills</span><span>Gang size</span><span>Weapons seen</span><span>Flies with</span><span>Kills mostly</span><span class="r">Last</span></div>
-    ${rowsBody}${all.length > rows.length ? `<div class="pd-more">${all.length - rows.length} more hull${all.length - rows.length === 1 ? '' : 's'} with fewer</div>` : ''}
+    ${rowsBody}${pdMoreHtml(d, all, rows)}
     <div class="pd-foot">
       <div><div class="k">Active, your time (${pdTz()})</div><div class="pd-hours" data-pd="hours">${hours}</div><div class="pd-axis"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div></div>
       <div><div class="k">Usual systems</div><div class="v" data-pd="systems">${sysTop || '<span class="pd-dim">—</span>'}${sysRest ? ` · ${sys.length - 3} others ${sysRest}` : ''}</div></div>
       <div><div class="k">Solo / gang</div><div class="v" data-pd="split"><b>${d.sizes.solo}</b> solo · <b>${d.sizes.small}</b> small gang · <b>${d.sizes.fleet}</b> fleet</div></div>
     </div>`;
+}
+// v2026.11.01.5: the pinned row's tag (why it's first, and where it ranks) and the line under the rows
+function pdOrd(n){ const t = n % 100; return n + (t >= 11 && t <= 13 ? 'th' : ({1: 'st', 2: 'nd', 3: 'rd'})[n % 10] || 'th'); }
+function pdPinHtml(d, h, rank, of){
+  const word = {kill: 'On this kill', lost: 'Lost on this kill', asked: 'Asked for'}[pd.pin.why] || 'Asked for';
+  const where = h.stub ? `not in their newest ${d.nKills - (d.added ? 1 : 0)} kills or ${d.nLosses} losses${pd.pin.why === 'asked' ? '' : ' (zKillboard’s list for them hasn’t caught up)'}`
+    : d.added === h.id ? 'not yet in zKillboard’s list for them: added'
+    : rank ? `${pdOrd(rank)} of ${of} hull${of === 1 ? '' : 's'}` : `no ${PD_SIZES.find(x => x[0] === pd.mode)[1].toLowerCase()} kills in it`;
+  return `<span class="pd-pin" data-pd-pin="${pd.pin.why}">${pd.pin.why === 'asked' ? '' : FLEET_ICON}<span class="pd-tag">${word}</span><span class="pd-pin-r">${escapeHtml(where)}</span></span>`;
+}
+function pdMoreHtml(d, all, rows){
+  const left = all.filter(r => !rows.includes(r)).length;
+  if(left) return `<div class="pdk-more pd-more"><button type="button" data-pd-allhulls="1" aria-expanded="false">${IT_CHEV}Show ${left} more hull${left === 1 ? '' : 's'}</button><span>with fewer ${pd.mode === 'all' ? 'kills and losses' : 'of these kills'}</span></div>`;
+  if(!pd.allHulls || all.length <= PD_ROWS) return '';
+  const what = pd.mode === 'all' ? `in their newest ${d.nKills - (d.added ? 1 : 0)} kills${d.added ? ' + this one' : ''} and ${d.nLosses} losses` : `with ${PD_SIZES.find(x => x[0] === pd.mode)[1].toLowerCase()} kills`;
+  return `<div class="pdk-more pd-more"><button type="button" data-pd-allhulls="0" aria-expanded="true">${IT_CHEV}Show fewer</button><span>all ${all.length} hulls ${what}</span></div>`;
 }
 // ---- v.93: their kills in a hull, under its row (the owner's backlog item; mockup Claude outputs/pilot_kills_list_mockup.html,
 // "▶ button per row", "Follow the switch", "Keep reading older kills", columns "As drawn") ----
@@ -11500,7 +11535,21 @@ function pdHullLabel(name, typeId){
   const fc = document.getElementById('fitCandidates');
   if(fc && !fc.querySelector('.km-shared')) fc.innerHTML = `<span class="hull-static">${escapeHtml(name)}</span>${hullClassHtml(typeId)}`;
 }
-function pdClear(){ Object.assign(pd, {charId: null, d: null, sel: null, kStubs: [], read: 0, older: [], open: null, shown: PD_SHOW_STEP, busy: false, failed: []}); pdRender(); }
+function pdClear(){ Object.assign(pd, {charId: null, d: null, sel: null, kStubs: [], read: 0, older: [], open: null, shown: PD_SHOW_STEP, busy: false, failed: [], pin: null, allHulls: false, extra: null}); pdRender(); }
+// v2026.11.01.5: pin a hull asked for; one not among those read gets a row of its own (no numbers), if it's a hull at all
+async function pdPin(d, id, why){
+  id = Number(id);
+  if(!id) return false;
+  if(!d.hulls.some(h => h.id === id)){
+    if(!(await pdIsHull(id))) return false;
+    let t, g = null;
+    try{ t = await getType(id); }catch(e){ return false; }
+    try{ g = await getGroup(t.group_id); }catch(e){}
+    if(!d.hulls.some(h => h.id === id)) d.hulls.push({id, kills: [], losses: [], stub: true, name: t.name, cls: g ? g.name : '', cat: 6, group: t.group_id});
+  }
+  pd.pin = {id, why};
+  return true;
+}
 // Reads the killmails and draws the dossier; returns the hull to show first (the busiest in All), or null.
 async function pdLoad(character, statusEl, forceRefresh, quiet){
   const charId = character.id;
@@ -11513,13 +11562,29 @@ async function pdLoad(character, statusEl, forceRefresh, quiet){
   const [kr, lr] = await Promise.all([analyzeChunks(kStubs.slice(0, PD_KILLS), fetchKillmail, 4), analyzeChunks(lStubs.slice(0, PD_LOSSES), fetchKillmail, 3)]);
   if(pd.charId !== charId) return null;
   const ok = (rs) => rs.filter(r => r && !r.error && r.km).map(r => r.km);
-  const d = await pdBuild(charId, {kills: ok(kr), losses: ok(lr)});
+  // v2026.11.01.5 (C1): opened from a kill on the Fleet tab that zKillboard's list for them doesn't have yet (it lags a
+  // minutes-old kill): that killmail is added to their kills, so the hull they flew on it has its real numbers
+  const kills = ok(kr), losses = ok(lr), wk = want && want.kill && want.kill.km;
+  let added = null;
+  const asAttacker = wk && (wk.attackers || []).find(a => a.character_id === charId && a.ship_type_id);
+  if(asAttacker && ![...kills, ...losses].some(km => km.killmail_id === wk.killmail_id)){ kills.unshift(wk); added = asAttacker.ship_type_id; }
+  const d = await pdBuild(charId, {kills, losses});
   if(pd.charId !== charId) return null;
-  d.stubs = kStubs.length + lStubs.length;
+  if(added && !d.hulls.some(h => h.id === added)) added = null;   // a capsule, a shuttle: not a hull
+  d.added = added;
+  d.stubs = kStubs.length + lStubs.length + (wk && asAttacker && kills.includes(wk) ? 1 : 0);
+  pd.pin = null; pd.allHulls = false;
+  pd.extra = wk && kills.includes(wk) ? {killmail_id: wk.killmail_id, zkb: {hash: want.kill.hash, totalValue: want.kill.value || 0}} : null;
+  if(want && want.hull){
+    const lost = wk && wk.victim && wk.victim.character_id === charId;
+    await pdPin(d, want.hull, wk ? (lost ? 'lost' : 'kill') : 'asked');
+    if(pd.charId !== charId) return null;
+  }
   pd.d = d;
   // v.93: zKillboard's list (newest first) for reading older kills, and its value for each
   Object.assign(pd, {kStubs, read: Math.min(PD_KILLS, kStubs.length), older: [], open: null, shown: PD_SHOW_STEP, busy: false, failed: [], value: new Map()});
   for(const s of kStubs) if(s && s.zkb && s.zkb.totalValue) pd.value.set(s.killmail_id, s.zkb.totalValue);
+  if(pd.extra && pd.extra.zkb.totalValue) pd.value.set(pd.extra.killmail_id, pd.extra.zkb.totalValue);
   // the hull to show first: the busiest in the mode (v.92: or the one a System Analyzer row picked)
   const wantHull = want && want.hull ? d.hulls.find(h => h.id === want.hull) : null;
   const top = wantHull ? {h: wantHull} : pdRows(d, pd.mode)[0] || pdRows(d, 'all')[0];
@@ -11530,8 +11595,11 @@ async function pdLoad(character, statusEl, forceRefresh, quiet){
 // A ship typed or picked: the dossier after that hull's analysis, without touching its status line; that hull selected.
 async function pdLoadQuiet(character, statusEl, shipTypeId){
   try{ await pdLoad(character, statusEl, false, true); }catch(e){ pdClear(); return; }
-  if(pd.d && pd.d.hulls.some(h => h.id === shipTypeId)){ pd.sel = shipTypeId; pdRender(); }
-  else if(pd.d){ pd.sel = null; pdRender(); }
+  if(!pd.d) return;
+  const charId = pd.charId;
+  if(!pd.pin || pd.pin.id !== shipTypeId) await pdPin(pd.d, shipTypeId, 'asked');   // v2026.11.01.5: a hull typed in is pinned too
+  if(pd.charId !== charId) return;
+  pd.sel = pd.d.hulls.some(h => h.id === shipTypeId) ? shipTypeId : null; pdRender();
 }
 // A row: that hull's losses, or (none of theirs) their alliance's / corporation's common fit (saHullFits), said as not theirs.
 async function pdShowHull(character, hull, statusEl, forceRefresh){
@@ -11567,7 +11635,9 @@ async function pdShowHull(character, hull, statusEl, forceRefresh){
     const mo = e.target.closest('[data-pd-more]');
     if(mo){ const id = Number(mo.dataset.pdMore); await pdMore(id); const again = el.querySelector(`[data-pd-more="${id}"]`) || el.querySelector(`[data-pd-exp="${id}"]`); if(again) again.focus({preventScroll: true}); return; }
     const fb = e.target.closest('[data-pd-fleet]');   // v.94: the fleet on that kill, in the Fleet tab
-    if(fb){ const id = Number(fb.dataset.pdFleet), st = pd.kStubs.find(x => x && x.killmail_id === id); if(st && st.zkb && st.zkb.hash) fkOpen(id, st.zkb.hash, pd.charId); return; }
+    if(fb){ const id = Number(fb.dataset.pdFleet), st = pd.kStubs.find(x => x && x.killmail_id === id) || (pd.extra && pd.extra.killmail_id === id ? pd.extra : null); if(st && st.zkb && st.zkb.hash) fkOpen(id, st.zkb.hash, pd.charId); return; }
+    const ah = e.target.closest('[data-pd-allhulls]');   // v2026.11.01.5: every hull read, or the busiest again
+    if(ah){ pd.allHulls = ah.dataset.pdAllhulls === '1'; pdRender(); const again = el.querySelector('[data-pd-allhulls]'); if(again) again.focus({preventScroll: true}); return; }
     if(e.target.closest('.pd-kills')) return;   // a zKillboard link opens on its own
     const r = e.target.closest('[data-pd-hull]');
     if(!r || !pd.d || isBusy('fitStatus')) return;
@@ -21922,8 +21992,8 @@ function saPumpRows(){
   };
   for(let w = 0; w < SA_ROW_WORKERS; w++) worker();
 }
-function saOpenRow(name, hull, size, typeId){
-  pd.want = size ? {name, mode: size, hull: Number(typeId) || null} : null;   // v.92: the dossier opens on the size and hull the row used
+function saOpenRow(name, hull, size, typeId, kill){
+  pd.want = size ? {name, mode: size, hull: Number(typeId) || null, kill: kill || null} : null;   // v.92: the dossier opens on the size and hull the row used (v2026.11.01.5: and the Fleet tab's kill)
   switchTab('pilot');
   document.getElementById('pilotName').value = name;
   document.getElementById('manualShip').value = hull;
@@ -23201,7 +23271,8 @@ function fkClose(){
     if(pk){ const P = fk.picks, i = pk.dataset.fkPick, p = P && P[Number(i)]; if(p && p.id !== fk.killId){ fkOpen(p.id, p.hash, null, null, {from: fk.from, km: p.km, picks: P}); const b = el.querySelector(`[data-fk-pick="${i}"]`); if(b) b.focus({preventScroll: true}); } return; }
     if(e.target.closest('[data-fk-retry]')){ for(const m of fk.members) if(m.state === 'err'){ m.state = 'later'; delete m.msg; } fk.order = null; fkPump(); fkRender(); return; }   // v2026.10.31.2
     const r = e.target.closest('[data-fk-pilot]');
-    if(r) saOpenRow(r.dataset.fkPilot, '', 'all', r.dataset.fkType);   // the dossier on that hull: its losses, or their group's fit
+    if(r){ const pk = (fk.picks || []).find(p => p.id === fk.killId);   // the dossier on that hull, first (v2026.11.01.5), with this kill
+      saOpenRow(r.dataset.fkPilot, '', 'all', r.dataset.fkType, fk.km ? {km: fk.km, hash: fk.hash, value: pk ? pk.isk : (pd.value.get(fk.killId) || 0)} : null); }
   });
 })();
 

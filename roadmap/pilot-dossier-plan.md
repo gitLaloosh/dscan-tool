@@ -60,3 +60,10 @@ number a count, so thin data shows as thin. zKillboard's own size labels, if its
   names in their security colour; the victim's name in its standing's colour with its icon (the owner: "we're going to be drawn to
   names of people in our alliance that they kill"); a kill from the past 4 hours has its time in amber ("timestamps in the WHEN
   column within the past 4 hours should be in amber"). `tools/page_checks/outside_links_check.py`.
+- **v2026.11.01.5: done.** The hull asked for is always on screen (the owner's bug, from an Intel kill: "if the ship the pilot flew
+  on the killmail isn't in their top 15 or whatever, the user wont see that hull in their list"; his picks in
+  `Claude outputs/dossier_hull_from_kill_mockup.html`): **A** pinned first in every size, tagged On this kill / Lost on this kill /
+  Asked for, with its rank ("13th of 23 hulls"); **all at once**: "Show N more hulls" draws every hull read (no request), "Show
+  fewer" folds them; **C1** a Fleet-tab kill missing from zKillboard's list for them is added from the killmail already open (the
+  header says "+ this one"; its fleet icon works); **typed and System Analyzer hulls** pinned too, one not among those read gets a
+  row of its own ("not in their newest N kills or M losses", not counted). `tools/page_checks/dossier_pin_check.py`.

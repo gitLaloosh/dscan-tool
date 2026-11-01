@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-01 — The hull from the kill stays on screen</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td,th{border:1px solid #ddd; padding:4px 8px; text-align:left; font-size:14px;} th{background:#f6f6f6;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The hull from the kill stays on screen</h1>
+<p><span class="tag">Bug</span><span class="tag">Pilot Dossier</span><span class="tag">Fleet</span> 2026-11-01 &middot; <code>v2026.11.01.5</code></p>
+
+<h2>Why</h2>
+<p>The owner opened a pilot from an Intel kill (Intel → Fleet tab → Pilot Analyzer). They had flown a Ferox on the kill, and the page showed their alliance's common Ferox fit, but the Pilot Dossier listed 8 other hulls and "13 more hulls with fewer", with no Ferox row. The owner: "if the ship the pilot flew on the killmail isn't in their top 15 or whatever, the user wont see that hull in their list. we need to be able to see the reset of the hulls with a lazy load or something."</p>
+<p>What the code did: the Fleet tab passed the hull, the dossier selected it, but drew only its 8 busiest hulls (<code>PD_ROWS</code>), so a hull ranked lower was selected and never drawn; "N more hulls with fewer" was text, not a button. And an Intel kill is minutes old: when zKillboard's list for the pilot hadn't caught up, the hull wasn't in the dossier at all and the page quietly fell back to their busiest hull. A hull typed in the Pilot Analyzer had the same gap.</p>
+<p>Mockup <code>Claude outputs/dossier_hull_from_kill_mockup.html</code> (rows drawn by the page's own code, made-up data). The owner picked all four as recommended: A pinned first; all at once; C1 add this kill; typed hulls too.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Pinned first.</b> The hull asked for is the dossier's first row in every gang size, selected, with a tag: <b>On this kill</b> (a pilot opened from the Fleet tab), <b>Lost on this kill</b> (the victim), or <b>Asked for</b> (a typed hull or a System Analyzer row), and where it ranks ("13th of 23 hulls"; in a size with none of its kills, "0 of 1" and "no solo kills in it"). The 8 busiest follow, the pinned hull not repeated.</li>
+<li><b>Show N more hulls</b> is a button (the kill list's button with Intel's chevron) that draws every hull read, at most 80, from what's already read: no request. <b>Show fewer</b> folds them back; the button keeps focus; the choice holds across the size switch.</li>
+<li><b>The kill added.</b> Opened from the Fleet tab on a kill that zKillboard's list for the pilot doesn't have yet, the dossier adds that killmail (already open on the Fleet tab) to their kills: the row has its real gang size, weapon and wingmates, the header says "newest 47 kills <b>+ this one</b>", the tag "not yet in zKillboard's list for them: added", and its fleet icon opens it again. A pilot with nothing on zKillboard yet gets a dossier from that kill instead of PILOT-03. A kill they lost isn't added (their losses come from zKillboard's list, and the Fleet tab's victim card already shows that fit).</li>
+<li><b>A hull not among those read</b> (typed, or from a System Analyzer row) gets a row of its own, first: "none of theirs among those read", "not in their newest N kills or M losses", no numbers, no ▾, not counted among their hulls. Its fit is their group's common fit, as before.</li>
+<li>The dossier's info panel says so; no hull asked for, the dossier opens as before on the busiest hull, with no tag.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/dossier_pin_check.py</code> (areas pilot, system), on made-up pilots added to <code>sa_mocks.py</code> in the check: one with 23 hulls in 47 kills and 2 losses (the Ferox 13th), one with nothing on zKillboard. Expected rows worked out in Python. From the Fleet tab: Ferox first with its tag and rank, the 8 busiest after it, Show 14 more hulls → 23 rows → Show fewer, focus kept, Solo keeps it first; a kill not in the list added (+ this one, All 48, its kill under the row, its fleet icon opens it with its hash); Lost on this kill; the new pilot without PILOT-03; typed Kikimora (not read: its own row, not counted, "all 23 hulls" when opened) and typed Ferox (Asked for, 13th); no hull asked for; 390 px. Fails on v2026.11.01.4. 16 mutants, all caught (two only after the check spied on the fleet icon's call and counted the hulls with the list opened).</li>
+<li>Run: see the ledger row for v2026.11.01.5.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #121: a list cut to its top rows must still show what was asked for, and its "N more" must open: a selection off screen is a hidden state. When the page already holds the record a list is built from, use it rather than wait for the list to catch up, and say so.</p>
+</body></html>
