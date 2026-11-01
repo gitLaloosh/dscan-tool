@@ -123,6 +123,15 @@ with sync_playwright() as p:
       return [Math.round(f.height), f.right <= v.left + 1, Math.abs(f.top - v.top) < 6, Math.round(z.height), document.documentElement.scrollWidth]; }""", M.byname['Curse'])
     check(L[0] >= 40 and L[1] and L[2] and L[3] >= 32 and L[4] <= 390, f'390 px: the fleet icon 40 px at the start of the kill, zK 32 px, nothing off the page {L}')
     ctx.close()
+    # v2026.11.01.4: the footer: the license and CCP's notice; its links leave as every link does (asked first); zKillboard named, not linked
+    ctx = new_ctx(1440); pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(300)
+    F = pg.evaluate("() => { const f = document.getElementById('siteFoot'); return f ? [f.textContent.replace(/\\s+/g, ' ').trim(), [...f.querySelectorAll('a')].map(a => a.getAttribute('href')), f.checkVisibility()] : null; }")
+    pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)"); pg.click('#siteFoot a[href*="gnu.org"]'); pg.wait_for_timeout(200)
+    fb = pg.evaluate("() => { const b = document.getElementById('leaveBox'); return b ? b.querySelector('b').textContent : null; }")
+    check(F and F[2] and 'GNU General Public License v3 or later' in F[0] and '© CCP hf. All rights reserved.' in F[0] and 'trademarks or registered trademarks of CCP hf.' in F[0]
+          and 'Not made, endorsed or supported by CCP hf.' in F[0] and not any('zkillboard' in h for h in F[1]) and fb == 'Open www.gnu.org?' and len(ctx.pages) == 1,
+          f'the footer: the GPL v3, CCP\'s notice, not CCP\'s; zKillboard named, not linked; its links asked first {F} {fb}')
+    ctx.close()
     check(not errs, f'no page errors {errs[:3]}')
     b.close()
 print(f'FAILURES: {fails}')

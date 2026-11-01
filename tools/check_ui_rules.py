@@ -74,7 +74,7 @@ for sel, body, ln in rules:
         if (':not(:checked)' in part or re.search(r'(?:^|;)\s*animation\s*:', body)) and not part.startswith('#intelSw'):
             problems.append(f'line {ln}: {part}: an off state or motion of its own (only #intelSw has one, CLAUDE.md "UI rules")')
 moving = [ln for s, b, ln in rules if s.startswith('#intelSw') and re.search(r'animation\s*:\s*(?!none)', b)]
-if moving and not re.search(r'@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*#intelSw\{animation:none', clean):
+if moving and not re.search(r'@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*#intelSw[^{]*\{animation:none', clean):
     problems.append(f'line {moving[0]}: #intelSw moves, with no prefers-reduced-motion rule that stops it')
 
 # 3. sliders

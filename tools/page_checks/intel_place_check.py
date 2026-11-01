@@ -81,7 +81,7 @@ _tail = r'''
     # ---- the switch ----
     SW = """() => { const s = document.querySelector('#intelSw'), c = getComputedStyle(s), k = getComputedStyle(s, '::after'), l = getComputedStyle(s.nextElementSibling);
       const u = document.querySelector('#myShipUse'), cu = getComputedStyle(u);
-      return {on: s.checked, edge: c.borderTopColor, knob: k.backgroundColor, label: l.color, anim: c.animationName, use: [cu.borderTopColor, cu.animationName]}; }"""
+      return {on: s.checked, edge: c.borderTopColor, knob: k.backgroundColor, label: l.color, anim: getComputedStyle(s, '::before').animationName, use: [cu.borderTopColor, cu.animationName]}; }"""
     on = pg.evaluate(SW)
     check(on['on'] and on['edge'] == 'rgb(31, 111, 128)' and on['anim'] == 'none', f'the Intel switch on: the usual teal, still {on}')
     pg.click('#intelSwLabel'); pg.wait_for_timeout(400)

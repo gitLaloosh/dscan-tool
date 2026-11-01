@@ -120,7 +120,8 @@ with sync_playwright() as p:
     # ---- Intel's mark ----
     MARK = """() => { const b = document.querySelector('#intelNear'), c = getComputedStyle(b), t = document.querySelector('#tabBtnIntel .tb'), tc = getComputedStyle(t);
       return {s: document.querySelector('#profile').dataset.s, hidden: b.hidden, bg: c.backgroundColor, border: c.borderTopColor, txt: b.innerText.replace(/\\s+/g, ' ').trim(),
-        anim: getComputedStyle(document.querySelector('#profile')).animationName, dot: tc.display, dotBg: tc.backgroundColor, dotShadow: tc.boxShadow, w: Math.round(b.getBoundingClientRect().width)}; }"""
+        anim: getComputedStyle(document.querySelector('#profile'), '::before').animationName,   // v2026.11.01.4: the ring that pulses (opacity) is the profile's ::before
+        dot: tc.display, dotBg: tc.backgroundColor, dotShadow: tc.boxShadow, w: Math.round(b.getBoundingClientRect().width)}; }"""
     def state(js):
         pg.evaluate("(js) => { (new Function(js))(); itHeaderSync(); }", js); pg.wait_for_timeout(100); return pg.evaluate(MARK)
     pg.evaluate("() => { window.__nl = []; window.itNearList = () => window.__nl; window.itThreat = () => true; window.itNearCount = () => window.__nl.filter(x => x.j <= it.set.range).length; }")

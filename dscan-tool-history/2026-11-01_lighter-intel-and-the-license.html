@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-01 — A lighter Intel card, and the license</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td,th{border:1px solid #ddd; padding:4px 8px; text-align:left; font-size:14px;} th{background:#f6f6f6;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>A lighter Intel card, and the license</h1>
+<p><span class="tag">Performance</span><span class="tag">Intel</span><span class="tag">License</span> 2026-11-01 &middot; <code>v2026.11.01.4</code></p>
+
+<h2>Why</h2>
+<p>The owner: "one of my issues with using RIFT is that it seems to eat up a lot of resources on my machine when i am trying to run the game at the same time. Can you help me evaluate the performance of eta?" The measurement (Project doc <code>roadmap/performance-2026-11-01.md</code>, harness in <code>roadmap/perf-harness/</code>) found the Intel card rebuilt and measured every 2 seconds whether anything had changed, also with another tab in front, and two endless animations that kept the page repainting. On his PC, ETA used about four times RIFT's CPU while visible. The owner asked for the fixes to be flagged for the next release, with the GPL v3 license ("Should i add any licensing restrictions to this code?", then yes), and then "yes please" to both in one delivery.</p>
+
+<h2>What changed: performance</h2>
+<ul>
+<li><b>Drawn only when something changed.</b> Each tick first compares a cheap key of what the card is drawn from (reports, kills, names, settings, what's open). If nothing changed and the ages aren't due, nothing is built. Otherwise the card is built and compared with the last drawing, and the page is only written when the text differs. The search box, an opened row or a name arriving rewrite only the list that changed.</li>
+<li><b>The ages move on their own timer:</b> every 10 s while something is under a minute old, otherwise every 30 s. The status line ("last line 2 min ago · last kill read 3 s ago") is written on its own, only when its text changes.</li>
+<li><b>Nothing is drawn while it can't be seen:</b> with another tab in front, or with the browser tab hidden or minimized. Reading the logs and kills, the alerts and the profile's Intel mark carry on. The card is drawn once when it's shown again.</li>
+<li><b>Measured once:</b> the system-column widths are kept until a font loads or the window crosses the phone width; each Near You row's three-line fit is kept per row and width. The profile's header mark writes only what changed.</li>
+<li><b>No endless repainting:</b> the header's sweeping line runs three times, then stops. The Intel switch's breathing (while off) and the profile's in-system pulse are now rings that fade in and out (opacity, which the compositor animates on its own) instead of growing shadows. Both still stop with reduced motion.</li>
+</ul>
+
+<h2>Measured: before and after, same harness, same session</h2>
+<p>The harness from the Project (<code>roadmap/perf-harness/</code>), unchanged: v2026.11.01.2's test data for both runs, Intel on with a made-up report line every 20 s and a stand-in kill feed publishing one kill every 5 s, 1440×1000, a visible browser window on a virtual display. Before = v2026.11.01.3 (the page as delivered last), after = v2026.11.01.4. A 2-core cloud container: absolute numbers are higher than on a gaming PC; the change between the two runs is what counts.</p>
+<table>
+<tr><th>Measure</th><th>Before</th><th>After</th></tr>
+<tr><td>Intel off, page open (main thread, % of one core)</td><td>4.1%</td><td>0.1%</td></tr>
+<tr><td>Intel on, tab visible, 14 min (main thread)</td><td>12.2%</td><td>2.8%</td></tr>
+<tr><td>Intel on, all Chromium processes</td><td>22.5%</td><td>4.8%</td></tr>
+<tr><td>Layouts per minute, Intel on</td><td>807</td><td>127</td></tr>
+<tr><td>Card drawn and measured (3 min, Intel tab in front)</td><td>118 times, ~33 ms each</td><td>33 times</td></tr>
+<tr><td>Intel drawing with the Pilot tab in front (3 min)</td><td>113 builds, 2.2 s</td><td>0.02 s (none drawn)</td></tr>
+<tr><td>JS heap after garbage collection</td><td>4.7 MB</td><td>5.2 MB, steady (no leak)</td></tr>
+<tr><td>Image requests per minute (uncacheable stand-ins)</td><td>912</td><td>192</td></tr>
+</table>
+<p>What's left with Intel visible is the drawing that has a reason: in this test a report arrives every 20 s and a kill near you about once a minute, so something is always under a minute old and the ages move every 10 s. With quieter intel the card draws less often. Network use is unchanged: it comes from reading the kill feed, not from drawing.</p>
+
+<h2>What changed: the license</h2>
+<ul>
+<li><b><code>LICENSE</code></b>: the GNU GPL v3 text (the current text from gnu.org, as Debian ships it; the same as pyfa's except for https in its links).</li>
+<li><b><code>NOTICE.md</code></b>: GPL v3 or later, the copyright line ("the EVE Threat Assessment contributors", no names), why GPL v3 (the calculations follow pyfa: GPL v3 or later; its eos engine LGPL v2 or later), credits (pyfa, CCP's game data and images, zKillboard), and CCP's notice.</li>
+<li><b>A footer on the page</b>: the license with a link, the source on GitHub (the link is built from the address the page is served from, so no account name is written in the file), pyfa, "Not made, endorsed or supported by CCP hf.", CCP's notice, and zKillboard named as the source of killmails (not linked: its links are the zK icon). The links leave the site as every link does: asked first, then a new tab.</li>
+<li><b>CCP's notice</b> is worded as the EVE Developer License Agreement's section 7.1 gives it (read 2026-11-01 at developers.eveonline.com/license-agreement). The agreement asks for no separate "built under the Developer License Agreement" line, so none was added; it does require free, non-commercial use (sections 1.13 and 4), which the notice states. Not legal advice.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/intel_redraw_check.py</code> (areas intel, layout): nothing redrawn with nothing new (a MutationObserver), a new line drawn, the ages moving on their own, nothing drawn behind another tab or in a hidden browser tab while alerts and the profile's mark still follow, drawn on return, the header line 3 times, endless animations only on opacity or transform (the profile's ring, the switch's breathing), reduced motion. It fails five ways on v2026.11.01.3. 11 mutants, all caught (two only after the check counted how often the card is built over 32 quiet seconds and made the age timer due for 10 s): rebuilt every tick, drawn whenever built, drawn behind another tab, a hidden browser tab ignored, not drawn on return to the tab or when the browser tab shows again, the ages never moving, the header line endless, the switch or the profile ring by box-shadow, reduced motion ignored.</li>
+<li><code>outside_links_check</code>: the footer (the license, CCP's notice, "not made, endorsed or supported by CCP"), zKillboard named and not linked, its links asked first like every link leaving the site.</li>
+<li>Updated: <code>check_ui_rules</code> (the switch's reduced-motion rule now names its ring), <code>profile_check</code> and <code>intel_place_check</code> (the pulse and the breathing are on the ring).</li>
+<li>Run: <code>--auto</code> chose all (a new top-level file): 12 lints, the pyfa chain and 59 page checks in 33 minutes; one failure, <code>outside_links_check</code>: the footer's links had <code>target="_blank"</code> and one linked zKillboard, against the rules that zKillboard links are the zK icon and every link leaving asks first. Fixed (plain links, zKillboard named), then <code>--area intel,layout</code>: 21 page checks, 0 failed. 1 flaky (<code>busy_check</code> under load, passed alone).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #120: a view rebuilt on a timer costs the machine even when nothing changed. Build, compare and skip; draw only what can be seen; animate endlessly only opacity or transform. Measure before and after with the same harness in the same session, never against numbers from another machine.</p>
+</body></html>

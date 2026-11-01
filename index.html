@@ -150,7 +150,7 @@
     position:absolute; left:0; right:0; height:1px;
     background:linear-gradient(90deg, transparent, var(--amber), transparent);
     top:0;
-    animation:sweep 5s linear infinite;
+    animation:sweep 5s linear 3 both;   /* v2026.11.01.4: three passes when the page opens, then still (an endless one kept the page drawing every frame) */
     opacity:0.7;
   }
   /* Version tag (2026-10-13, the owner: "let's start including an actual version
@@ -2309,11 +2309,14 @@
   /* v2026.10.30.2 (users: "the intel on/off blends in too much. First time in took me a minute to figure out how to start it"; the
      owner chose option 2 of the mockup): the one switch whose off state asks for attention (CLAUDE.md "UI rules", its named
      exception): an amber edge, knob and "Off", breathing slowly; none of the motion when the system asks for reduced motion */
-  #intelSw:not(:checked):not(:disabled){border-color:var(--amber); animation:itSwBreathe 2.4s ease-in-out infinite;}
+  /* v2026.11.01.4: the breathing is a ring that fades in and out (opacity, which the compositor animates on its own) instead of a
+     growing box-shadow, which made the page repaint every frame while the switch was off */
+  #intelSw:not(:checked):not(:disabled){border-color:var(--amber);}
+  #intelSw:not(:checked):not(:disabled)::before{content:''; position:absolute; inset:-1px; border-radius:3px; box-shadow:0 0 0 4px rgba(217,154,60,0.28); opacity:0; pointer-events:none; animation:itSwBreathe 2.4s ease-in-out infinite;}
   #intelSw:not(:checked):not(:disabled)::after{background:var(--amber);}
   #intelSw:not(:checked):not(:disabled) + span{color:var(--amber); font-weight:600;}
-  @keyframes itSwBreathe{0%,100%{box-shadow:0 0 0 0 rgba(217,154,60,0);} 50%{box-shadow:0 0 0 4px rgba(217,154,60,0.28);}}
-  @media (prefers-reduced-motion: reduce){ #intelSw{animation:none !important;} }
+  @keyframes itSwBreathe{0%,100%{opacity:0;} 50%{opacity:1;}}
+  @media (prefers-reduced-motion: reduce){ #intelSw, #intelSw::before{animation:none !important;} }
   button.it-near-btn{display:inline-flex; align-items:center; min-height:28px; margin-left:0; padding:0 2px; border:none; background:transparent; cursor:pointer; letter-spacing:0;}
   button.it-near-btn[hidden]{display:none;}
   button.it-near-btn .it-near{display:inline-block; white-space:nowrap; padding:0 7px; border-radius:3px; background:var(--danger); color:#fff; font:700 11px/18px var(--sans);}
@@ -2606,9 +2609,11 @@
   .pf[data-s="near"] .pf-main, .pf[data-s="in"] .pf-main{border-top-left-radius:0; border-bottom-left-radius:0;}
   .pf[data-s="near"] button.pf-intel{background:var(--st-near); color:#1a1206;}
   .pf[data-s="in"] button.pf-intel{background:var(--st-in); color:#fff;}
-  .pf[data-s="in"]{box-shadow:0 0 0 2px color-mix(in srgb, var(--st-in) 55%, transparent); animation:pfring 1.6s ease-in-out infinite;}
-  @keyframes pfring{50%{box-shadow:0 0 0 4px color-mix(in srgb, var(--st-in) 25%, transparent);}}
-  @media (prefers-reduced-motion: reduce){ .pf[data-s="in"]{animation:none;} }
+  /* v2026.11.01.4: the pulse is an outer ring fading in and out (opacity: the compositor's own work), not an animated box-shadow */
+  .pf[data-s="in"]{box-shadow:0 0 0 2px color-mix(in srgb, var(--st-in) 55%, transparent);}
+  .pf[data-s="in"]::before{content:''; position:absolute; inset:0; border-radius:4px; box-shadow:0 0 0 4px color-mix(in srgb, var(--st-in) 25%, transparent); opacity:0; pointer-events:none; animation:pfring 1.6s ease-in-out infinite;}
+  @keyframes pfring{50%{opacity:1;}}
+  @media (prefers-reduced-motion: reduce){ .pf[data-s="in"]::before{animation:none;} }
   /* the Intel tab's dot, the same kind of mark, no text */
   #tabBtnIntel .tb{display:none; margin-left:7px; vertical-align:1px;}
   #tabBtnIntel[data-s="clear"] .tb, #tabBtnIntel[data-s="broken"] .tb, #tabBtnIntel[data-s="near"] .tb, #tabBtnIntel[data-s="in"] .tb{display:inline-block;}
@@ -2652,6 +2657,10 @@
     .pp, .pp .side-panel, .pp .mys-panel{border-radius:0;}
     .pp{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-height:85vh; border-radius:14px 14px 0 0; z-index:61;}
   }
+  /* v2026.11.01.4: the footer: the license and CCP's notice, small and dim; its links in the outside-the-site cyan */
+  .site-foot{margin:40px 0 24px; padding-top:14px; border-top:1px solid var(--line); font:400 11.5px/1.55 var(--sans); color:var(--text-dim);}
+  .site-foot p{margin:0 0 6px; max-width:900px;}
+  .site-foot a{color:var(--cyan); text-decoration:none;} .site-foot a:hover, .site-foot a:focus-visible{text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -2659,7 +2668,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.3</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.4</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2803,6 +2812,16 @@
     <div id="fitAnalyzerResults"></div>
   </section>
   </div>
+
+  <!-- v2026.11.01.4 (the owner: "Should i add any licensing restrictions to this code?", then yes for the next delivery): the license and
+       the notices. GPL v3 or later, as pyfa (whose calculations the page follows) is; CCP's notice as its Developer License Agreement
+       (section 7.1) words it; LICENSE and NOTICE.md in the repository. The source link is built from the address the page is served
+       from (owner.github.io/repo), so no account name is written here. Its links leave the site as every link does: asked first (leaveAsk),
+       then a new tab; zKillboard is named, not linked (its links are the zK icon). -->
+  <footer class="site-foot" id="siteFoot">
+    <p>EVE Threat Assessment is free software under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU General Public License v3</a> or later<span id="siteSrc">; the source is on GitHub</span>. Its fitting calculations follow <a href="https://github.com/pyfa-org/Pyfa">pyfa</a> (GPL v3). Not made, endorsed or supported by CCP hf.</p>
+    <p>© CCP hf. All rights reserved. “EVE”, “EVE Online”, “CCP”, and all related logos and images are trademarks or registered trademarks of CCP hf. Killmails and kill statistics from zKillboard.</p>
+  </footer>
 
 </div>
 
@@ -9403,6 +9422,7 @@ function switchTab(tab){
     document.getElementById('tabBtn' + key.charAt(0).toUpperCase() + key.slice(1)).classList.toggle('active', active);
   }
   myShipRefreshStale(); // v2026.10.14.33: redraw My Ship views changed on another tab
+  if(tab === 'intel' && typeof itShowAgain === 'function') itShowAgain();   // v2026.11.01.4: Intel isn't drawn while another tab is in front
 }
 document.getElementById('tabBtnDscan').addEventListener('click', () => switchTab('dscan'));
 document.getElementById('tabBtnPilot').addEventListener('click', () => switchTab('pilot'));
@@ -23209,6 +23229,7 @@ const INTEL_SHIPS = {"582":["Bantam","矮脚鸡级"],"583":["Condor","秃鹫级"
 // beyond this visit.
 const IT_KEY = 'dscanIntel';                 // localStorage: the settings (never the on state: a reload starts off)
 const IT_TICK_MS = 2000;                     // how often the watched files are read
+const IT_AGE_FAST_MS = 10000, IT_AGE_SLOW_MS = 30000;   // v2026.11.01.4: how often the ages ("2 min") move with nothing new: 10 s while something is under a minute old
 const IT_RESCAN_MS = 15000;                  // how often the folder is looked at for a new file (a relog)
 const IT_RECENT_DAYS = 2;                    // channels and characters offered: logs from the last 2 days
 const IT_FIRST_READ = 2 * 1024 * 1024;       // a long session's log: only its last 2 MB is read at the start
@@ -24378,7 +24399,11 @@ async function itChooseFolder(){
 
 // ---- drawing ----
 const IT_GEAR = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>';
-function itAgo(t){ const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? `${s} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`; }
+// v2026.11.01.4 (performance, Project doc roadmap/performance-2026-11-01.md): while the card is built its ages are read against one clock
+// (itFrozenNow, set by itRender), so a card with nothing new builds the same text and isn't redrawn; the ages move on their own timer
+// (itAgePeriod: every 10 s while something is under a minute old, else every 30 s)
+let itFrozenNow = null;
+function itAgo(t){ const s = Math.max(0, Math.round(((itFrozenNow === null ? Date.now() : itFrozenNow) - t) / 1000)); return s < 60 ? `${s} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`; }
 function itClock(t){ return new Date(t).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit'}); }
 function itJClass(j){ return j === null ? 'jx' : j <= 3 ? `j${j}` : 'jf'; }
 function itNearList(){
@@ -24591,12 +24616,17 @@ function itNearFit(el){   // v2026.10.31.6: layout D gives the word the whole wi
   const l = el && el.querySelector && el.querySelector('#itNearList');
   if(l && l.classList) l.classList.remove('it-narrow');
 }
+// v2026.11.01.4: the fitted result is kept per row text and width, so a row already fitted is set at once, not measured again
+const IT_CAP = new Map();
 function itNearCap(el){
   if(!el || !el.querySelectorAll) return;
   for(const w of el.querySelectorAll('#itNearList .who[data-it-cap]')){
     if(typeof w.getBoundingClientRect !== 'function') return;   // LESSON #36: the suites' stub DOM
+    const key = `${w.clientWidth}|${w.dataset.itCap}`, kept = IT_CAP.get(key);
+    if(kept !== undefined){ if(kept) w.innerHTML = kept; continue; }
+    if(IT_CAP.size > 400) IT_CAP.clear();
     const lh = parseFloat(getComputedStyle(w).lineHeight) || 17, fits = () => w.getBoundingClientRect().height <= lh * IT_WHO_LINES + 1;
-    if(fits()) continue;
+    if(fits()){ IT_CAP.set(key, ''); continue; }
     let d; try{ d = JSON.parse(w.dataset.itCap); }catch(e){ continue; }
     const draw = (np, ns) => { w.innerHTML = itNearWho(d.P, d.B, d.S, np, ns, d.E); return fits(); };
     let lo = 0, hi = d.P.length, ns = d.S.length;
@@ -24604,6 +24634,7 @@ function itNearCap(el){
     let np = Math.max(lo, Math.min(1, d.P.length));
     if(!draw(np, ns)) while(ns > 0 && !draw(np, ns)) ns--;
     if(!draw(np, ns)) draw(Math.min(1, d.P.length), 0);
+    IT_CAP.set(key, w.innerHTML);
   }
 }
 // What a Near You row is built from (the owner: open a row): its reports and kills since the system was last reported clear, within the
@@ -24624,12 +24655,15 @@ function itNearItemsHtml(st){
 // v2026.10.30.1 (the owner: "determine the length of the system in the ESI data with the longest name ... leave space for that name"):
 // the system columns are as wide as the widest system name in the table, measured in the font the browser really draws (the page asks
 // for Space Grotesk, which isn't loaded: Segoe UI on Windows, Arial elsewhere; Tash-Murkon Prime, 120 px in Segoe UI at 13 px bold).
-let itSysW = null;
+let itSysW = null, itFontEpoch = 0;
+if(typeof document !== 'undefined' && document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { itFontEpoch++; if(typeof it !== 'undefined' && it.lastHtml){ it.lastHtml = null; itRender(); } });
 function itSysWidths(el){
   if(!el || !el.style || typeof document === 'undefined' || !document.createElement || !it.names) return;
   const a = el.querySelector('#itNearList .it-nb .sys'), f = el.querySelector('#itFeedList .it-fh .it-sn');
   const jn = el.querySelector('#itNearList .it-nb .j'), jf = el.querySelector('#itFeedList .it-fh .fj');
-  const key = `${a ? getComputedStyle(a).font : ''}|${f ? getComputedStyle(f).font : ''}|${jn ? getComputedStyle(jn).font : ''}|${jf ? getComputedStyle(jf).font : ''}|${it.names.list.length}`;
+  // v2026.11.01.4: the key no longer reads four computed fonts on every draw (~15 ms): what changes the widths is the font loading
+  // (itFontEpoch), the width class (a phone's smaller fonts) and the table; which lists are on the card decides what can be measured
+  const key = `${itFontEpoch}|${typeof innerWidth === 'number' && innerWidth < 600 ? 'n' : 'w'}|${!!a}${!!f}${!!jn}${!!jf}|${it.names.list.length}`;
   if(itSysW && itSysW.key === key){ itSysW.apply(el); return; }
   let c; try{ c = document.createElement('canvas').getContext('2d'); }catch(e){ return; }
   if(!c) return;
@@ -24784,10 +24818,15 @@ function itRenderLists(){
   itHeaderSync();
   const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('intelPanel');
   if(!el || !el.querySelector) return;
+  if(!itShown()){ it.stale = true; return; }   // v2026.11.01.4: drawn when shown again
   const n = el.querySelector('#itNearList'), f = el.querySelector('#itFeedList'), m = el.querySelector('#itNotes');
-  if(m) m.innerHTML = itNotesHtml();
-  if(n) n.innerHTML = itNearListHtml();
-  if(f) f.innerHTML = itFeedListHtml();
+  // v2026.11.01.4: each part rewritten only when its text changed (a search typed, a row opened, a name or a security level arrived)
+  let any = false;
+  const put = (x, h) => { if(x && x._h !== h){ x.innerHTML = h; x._h = h; any = true; } };
+  itFrozenNow = Date.now();
+  try{ put(m, itNotesHtml()); put(n, itNearListHtml()); put(f, itFeedListHtml()); }finally{ itFrozenNow = null; }
+  if(!any) return;
+  it.lastHtml = null; it.drawNow = Date.now();   // the card no longer matches the last full build: the next itRender draws it whole
   itAfterDraw(el);
 }
 function itAfterDraw(el){
@@ -24923,9 +24962,18 @@ function itRender(force){   // force: a press that changes what is open (the gea
   itHeaderSync();
   const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('intelPanel');
   if(!el || !el.querySelector) return;
+  // v2026.11.01.4: nothing is drawn while nobody can see it (another tab in front, or the browser tab hidden or minimized); reading the
+  // logs and kills and the alerts carry on, and the card is drawn once when it's shown again (itShowAgain)
+  if(!force && !itShown()){ it.stale = true; return; }
   const act = document.activeElement;
   if(!force && act && el.contains(act) && act.closest('.it-fbar')){ itRenderLists(); return; }   // v.99: the filter bar in use
   if(!force && (el.querySelector('details.info-pop[open]') || (act && el.contains(act) && (act.tagName === 'SELECT' || act.closest('.it-pop'))))) return;   // don't redraw under an open info panel, an open list or the settings in use
+  // v2026.11.01.4: a cheap look first: if none of what the card is drawn from changed since the last build and the ages aren't due,
+  // nothing is built at all (building it to compare cost ~14 ms a tick); a change this key misses still shows at the next age refresh
+  const qk = itQuickKey();
+  if(!force && !it.stale && qk === it.lastKey && it.drawNow && Date.now() - it.drawNow < itAgePeriod()){ itStatusPaint(el); return; }
+  it.lastKey = qk;
+  const make = () => {
   // v2026.10.14.97 (the owner: "shouldn't one slider control it?" -> "keep the intel slider"): one on/off switch. v2026.10.29.1 (the
   // owner, from other users: "they didn't see how to turn intel on while on the intel tab"): that switch is here, beside the
   // gear (#intelSw); the header keeps only the "N near" pill
@@ -24939,7 +24987,7 @@ function itRender(force){   // force: a press that changes what is open (the gea
     body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The switch beside the gear starts and stops it; closing the page stops it too. While it runs, a mark on your profile at the top shows from any tab: cyan when all is clear, an amber “N near” when a hostile is within your alert range, red “In system” in your own system.</div>${itSettingsHtml(true)}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
   } else {
     // v.98 (the owner: "the feed keeps growing ... drop entries older than 15 minutes"): the Feed keeps the same time as Near You
-    body = `${it.on ? `<div class="it-sub" data-it-status>${itStatusLine()}</div>` : `<div class="it-sub">Stopped. The switch beside the gear starts it again.</div>`}
+    body = `${it.on ? `<div class="it-sub" data-it-status></div>` : `<div class="it-sub">Stopped. The switch beside the gear starts it again.</div>`}
       ${it.on && it.me && !itMySys() ? `<div class="it-sub it-warn">Your system isn’t known yet (it’s read from your Local log when you jump), so no jumps and no alerts until then.</div>` : ''}
       <div class="it-cols">
         <div><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3>${ctxHtml(itMySys() ? `last ${it.set.forget} min, within ${itNearReach()} jumps, nearest first` : `last ${it.set.forget} min, nearest first`, '', itMySys() ? `Systems up to ${IT_NEAR_EXTRA} jumps past your alert range (${it.set.range}); farther reports are in the ${cardName('itfeed')}` : '')}</div><div id="itNearList">${itNearListHtml()}</div></div>
@@ -24947,14 +24995,53 @@ function itRender(force){   // force: a press that changes what is open (the gea
       </div>`;
   }
   const pop = it.pop && !setup ? `<div class="it-pop" role="dialog" aria-label="Intel settings"><div class="it-h"><h3>Intel settings</h3><span class="sa-sp"></span><button type="button" class="x-close info-close" data-it-act="gear" aria-label="Close" title="Close (Esc)">×</button></div>${itSettingsHtml(false)}</div>` : '';
+  return `<div class="card it-card"><div class="it-head"><h2>${escapeHtml(cardName('intel'))}</h2>${sw}</div>
+    <div id="itNotes">${itNotesHtml()}</div>
+    ${body}${pop}</div>`;
+  };
+  // v2026.11.01.4: redrawn only when what it shows changed. The card is built against the clock of the last draw: the same text means
+  // nothing new, so nothing is redrawn or measured (it was rebuilt and measured every 2 s, ~42 ms each); when the age timer is due or
+  // something changed, it's built again against the clock now
+  const now = Date.now(), due = force || it.stale || !it.drawNow || now - it.drawNow >= itAgePeriod();
+  let html = itBuildAt(due ? now : it.drawNow, make);
+  if(!due && html === it.lastHtml){ itStatusPaint(el); return; }
+  if(!due){ html = itBuildAt(now, make); }
+  it.drawNow = now; it.stale = false;
+  if(html === it.lastHtml && el.firstElementChild){ itStatusPaint(el); return; }
+  it.lastHtml = html;
   // v2026.11.01.3: a redraw (the lists, as lines and kills arrive) keeps the focus on the head's control that had it (the gear after its
   // panel closed, the switch, the info button), instead of dropping it to the page
   const hf = act && el.contains(act) && act.closest('.it-head') ? (act.matches('.it-gear') ? '.it-head .it-gear' : act.matches('summary.info-btn') ? '.it-head summary.info-btn' : act.id ? `#${act.id}` : null) : null;
-  el.innerHTML = `<div class="card it-card"><div class="it-head"><h2>${escapeHtml(cardName('intel'))}</h2>${sw}</div>
-    <div id="itNotes">${itNotesHtml()}</div>
-    ${body}${pop}</div>`;
+  el.innerHTML = html;
+  itStatusPaint(el, true);
   if(hf){ const f = el.querySelector(hf); if(f) f.focus({preventScroll: true}); }
   itAfterDraw(el);
+}
+function itQuickKey(){
+  const f = it.feed[0], sz = (m) => m ? m.size : 0;
+  return [it.on, it.dirName, it.err, it.note, it.pop, it.kfNote, it.q, it.feed.length, f ? f.id : 0, it.near.size, it.me && it.me.sys, sz(it.chars), sz(it.files),
+    it.chans.length, it.names ? it.names.list.length : 0, sz(it.pilots), sz(it.aff), sz(it.charNames), sz(it.sec), sz(it.gateDest), sz(orgCache),
+    sz(it.rawOpen), sz(it.nearOpen), it.shape ? it.shape.id : 0, JSON.stringify(it.set), itR2Stopped()].join('|');
+}
+function itBuildAt(now, make){ itFrozenNow = now; try{ return make(); }finally{ itFrozenNow = null; } }
+// the status line ("last line 2 min ago · last kill read 3 s ago") is kept out of that comparison and written on its own, when its text changes
+function itStatusPaint(el, fresh){
+  const s = el.querySelector('[data-it-status]'); if(!s) return;
+  const h = itStatusLine();
+  if(fresh || s._h !== h){ s.innerHTML = h; s._h = h; }
+}
+function itShown(){
+  if(typeof document === 'undefined' || !document.getElementById) return true;
+  if(document.hidden) return false;
+  const t = document.getElementById('tabIntel');
+  return !t || !t.style || t.style.display !== 'none';
+}
+function itShowAgain(){ if(it.stale && itShown()) itRender(); }
+function itAgePeriod(){
+  let newest = 0;
+  for(const e of it.feed.slice(0, 1)) newest = Math.max(newest, e.t);
+  for(const st of it.near.values()) newest = Math.max(newest, st.t || 0);
+  return Date.now() - newest < 60000 ? IT_AGE_FAST_MS : IT_AGE_SLOW_MS;
 }
 // v2026.11.01.1 (the profile, decided 2026-10-29 and 2026-10-31): Intel's mark on the profile and a dot on the Intel tab. Off: none. On,
 // clear: a cyan square on the portrait's corner. On, not working (an error, the kill feed failing or stopped): a hollow cyan square.
@@ -24971,20 +25058,22 @@ function itHeaderSync(){
   const b = document.getElementById('intelNear');
   if(!b) return;
   const s = itMarkState(), n = itNearCount(), name = cardName('intel');
+  // v2026.11.01.4: it runs on every tick, also with Intel hidden: each attribute and text written only when it changes (an unchanged
+  // write still costs the page a style and layout pass)
   const box = document.getElementById('profile');
-  if(box && box.dataset) box.dataset.s = s;
-  const t = document.getElementById('intelNearN');
-  if(t) t.textContent = s === 'in' ? 'In system' : s === 'near' ? `${n} near` : '';
-  b.hidden = s === 'off';
+  if(box && box.dataset && box.dataset.s !== s) box.dataset.s = s;
+  const t = document.getElementById('intelNearN'), tt = s === 'in' ? 'In system' : s === 'near' ? `${n} near` : '';
+  if(t && t.textContent !== tt) t.textContent = tt;
+  if(b.hidden !== (s === 'off')) b.hidden = s === 'off';
   const why = s === 'clear' ? 'on, nothing reported within your alert range'
     : s === 'broken' ? `on but not working: ${it.err ? 'an error' : 'the kill feed isn\'t answering'} (see the ${name} tab)`
     : s === 'near' ? `${n} system${n === 1 ? '' : 's'} with a hostile or neutral report within ${it.set.range} jump${it.set.range === 1 ? '' : 's'}`
     : s === 'in' ? 'a hostile or neutral reported in your system' : 'off';
-  b.title = `${name}: ${why}. Open ${name}`;
-  b.setAttribute('aria-label', `${name}: ${why}. Open ${name}`);
+  const lbl = `${name}: ${why}. Open ${name}`;
+  if(b.title !== lbl){ b.title = lbl; b.setAttribute('aria-label', lbl); }
   const tab = document.getElementById('tabBtnIntel');
   if(tab && tab.dataset){
-    tab.dataset.s = s;
+    if(tab.dataset.s !== s) tab.dataset.s = s;
     if(!tab.querySelector('.tb')){ const d = document.createElement('span'); d.className = 'tb'; d.setAttribute('aria-hidden', 'true'); tab.appendChild(d); }
   }
 }
@@ -25079,8 +25168,9 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
     if(a.dataset.itAct === 'folder') itChooseFolder();
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && it.pop){ it.pop = false; itRender(true); itGearFocus(); } });
-  setInterval(() => { if(it.on){ const s = el.querySelector('[data-it-status]'); if(s) s.innerHTML = itStatusLine(); } }, 1000);
-  if(typeof window !== 'undefined' && window.addEventListener){ let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if(it.on || it.near.size) itRenderLists(); }, 200); }); }   // v2026.10.30.1: the 3-line cap follows the width
+  setInterval(() => { if(it.on && itShown()) itStatusPaint(el); }, 1000);   // v2026.11.01.4: only while it can be seen, and only when its text changed
+  document.addEventListener('visibilitychange', itShowAgain);   // v2026.11.01.4: the browser tab shown again: draw what came in meanwhile
+  if(typeof window !== 'undefined' && window.addEventListener){ let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if(it.on || it.near.size){ for(const x of el.querySelectorAll('#itNearList, #itFeedList, #itNotes')) x._h = null; itRenderLists(); } }, 200); }); }   // v2026.11.01.4: redrawn though the text is the same: the widths changed   // v2026.10.30.1: the 3-line cap follows the width
   itKvGet('dir').then(async (h) => {   // the folder chosen before; read it now if the browser still allows it (else the slider asks)
     if(h && !it.dir){
       it.dir = h; it.dirName = h.name;
@@ -25118,6 +25208,12 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
   };
   window.addEventListener('hashchange', go);
   go();
+})();
+// v2026.11.01.4: the footer's source link, from the address the page is served from (owner.github.io/repo/): no account name in the file
+(function siteSrc(){
+  if(typeof document === 'undefined' || !document.getElementById || typeof location === 'undefined') return;   // LESSON #36: stub DOM
+  const el = document.getElementById('siteSrc'), m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname || ''), repo = (location.pathname || '').split('/').filter(Boolean)[0];
+  if(el && m && repo && /^[A-Za-z0-9._-]+$/.test(repo)) el.innerHTML = `; the <a href="https://github.com/${m[1]}/${repo}">source is on GitHub</a>`;
 })();
 </script>
 

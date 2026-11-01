@@ -132,6 +132,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
 - #118 A claim in a code comment is not a source: find what it rests on before repeating it to the owner.
 - #119 A redraw must carry over what the person was doing (focus, scroll) and compare with what it last drew, not with the new state.
+- #120 A view rebuilt on a timer costs the machine even when nothing changed: build, compare, skip; draw only what can be seen.
 
 **Checks and test machinery**
 
@@ -1026,6 +1027,21 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 120. A view rebuilt on a timer costs the machine even when nothing changed: build, compare, skip; draw only what can be seen
+
+- **What happened (v2026.11.01.4):** the owner asked what the tool costs his machine next to EVE and RIFT. The measurement (Project
+  doc roadmap/performance-2026-11-01.md, harness in roadmap/perf-harness/) found Intel's 2-second tick ending in a full rebuild of
+  the card plus its measuring (~42-50 ms) whether anything had changed or not, also with another tab in front, and two endless
+  animations of `box-shadow` that made the page repaint every frame even with Intel off. In his Task Manager ETA used about 4x
+  RIFT's CPU while visible.
+- **How it was caught:** by measuring, not by reading: the per-function timers named itRender / itAfterDraw / itNearCap /
+  itSysWidths, and Chrome's own counters showed ~800 layouts a minute with nothing happening.
+- **Do this instead:** a timer that may draw first asks whether what it draws from changed (a cheap key), then builds and compares
+  with the last drawing, and only then writes the DOM. Ages move on their own slower timer. Nothing is drawn while the view is hidden
+  (another tab, `document.hidden`); it is drawn once on return. Endless animations use only opacity or transform. Measure before and
+  after with the same harness in the same session (never against numbers from another machine), and keep a page check that counts
+  DOM changes with nothing new (intel_redraw_check).
 
 ## 119. A redraw must carry over what the person was doing (focus, scroll) and compare with what it last drew, not with the new state
 
