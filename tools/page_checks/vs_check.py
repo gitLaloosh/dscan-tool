@@ -115,7 +115,7 @@ def same_card(pg, label, o):
 def setv(pg, v):
     pg.click(f'#saVs [data-vs-set="{v}"]'); pg.wait_for_timeout(250)
 def save_ship(pg):
-    pg.click('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
 def setup(ctx, ship=True, on=True):
     pg = ctx.new_page(); pg.goto('file://' + HTML)
     pg.evaluate("(s) => localStorage.setItem('dscanSide', JSON.stringify(s))", SIDE); pg.reload(); pg.wait_for_timeout(300)
@@ -177,9 +177,9 @@ with sync_playwright() as p:
     pg.locator('#saFleet details.fl-pick[open] button.fl-opt').nth(1).click(); pg.wait_for_timeout(400)
     same_card(pg, 'Curse variant 2 picked', o)
     # Use in assessments off, then on
-    pg.click('#myShipChip'); pg.uncheck('#myShipUse'); pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); (pg.click('#myShipUseLabel') if pg.is_checked('#myShipUse') else None); pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
     off = card(pg)['msg']
-    pg.click('#myShipChip'); pg.check('#myShipUse'); pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); (pg.click('#myShipUseLabel') if not pg.is_checked('#myShipUse') else None); pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
     pg.wait_for_function("() => document.querySelector('#saVs [data-vs=last]')", timeout=30000)
     check(off.startswith('Turn on “Use in assessments”') and card(pg)['last'], f"“Use in assessments” off: {off[:60]!r}; on again: the numbers")
     # phone
@@ -204,7 +204,7 @@ with sync_playwright() as p:
     pg.wait_for_function("() => document.querySelector('#saVs .vs-msg')", timeout=60000)
     msg = card(pg)['msg']
     pg.click('#saVs [data-vs-myship]'); pg.wait_for_timeout(300)
-    check(msg.startswith('Save your ship in My Ship') and pg.is_visible('#myShipPanel'), f"no ship saved: {msg[:48]!r}, its button opens My Ship")
+    check(msg.startswith('Save your fit in My Fits') and pg.is_visible('#myShipPanel'), f"no fit saved: {msg[:48]!r}, its button opens My Fits")
     ctx.close()
 
     # the Pilots view

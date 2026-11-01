@@ -174,8 +174,8 @@ with sync_playwright() as p:
     pg.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); localStorage.removeItem('dscanIntel'); }", SIDE); pg.reload(); pg.wait_for_timeout(400)
     tabs = pg.evaluate("() => [...document.querySelectorAll('.tabs .tab-btn')].filter(b => b.checkVisibility()).map(b => b.textContent)")
     check(tabs == ['Intel', 'System Analyzer', 'Pilot Analyzer', 'Fit Analyzer'], f'the tabs in the order of use, Intel first (v2026.10.30.1, the owner: "intel > system > pilot > fit") {tabs}')
-    hdr = pg.evaluate("() => { const b = document.querySelector('#intelNear'); return [b.nextElementSibling.id, b.hidden, document.querySelectorAll('#myShipBar input[aria-label=\"Watch the intel channels\"]').length]; }")
-    check(hdr == ['sideChip', True, 0], f'v2026.10.29.1: no Intel switch in the header, only the "N near" pill beside Standings, hidden {hdr}')
+    hdr = pg.evaluate("() => { const b = document.querySelector('#intelNear'); return [b.closest('#profile') ? 'profile' : '', b.hidden, document.querySelectorAll('#myShipBar input[aria-label=\"Watch the intel channels\"]').length, document.querySelector('#profile').dataset.s]; }")
+    check(hdr == ['profile', True, 0, 'off'], f'v2026.10.29.1: no Intel switch in the header; v2026.11.01.1: Intel\'s mark on the profile, hidden while Intel is off {hdr}')
     pg.click('#tabBtnIntel'); pg.wait_for_timeout(200)
     box = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-setup .it-box .k')].map(k => k.textContent)")
     check(box == ['1 · Chat logs folder', '2 · Intel channels', '3 · You', '4 · Range and alerts'], f'the card: four setup boxes {box}')
@@ -277,11 +277,11 @@ with sync_playwright() as p:
     check(not pg.evaluate("() => !!document.querySelector('.it-pop:not([hidden])')") and leak == [], f'no intel channel name shown outside the gear (text or hover) {leak}')
     al = pg.evaluate("() => [__fs.beeps, __fs.notes.map(n => n[0])]")
     check(al == [3, ['8WA-Z6 · 1 jump', 'Y-OMTZ · 3 jumps', 'D-W7F0 · 2 jumps']], f'alerts: sound and notification for hostile/neutral within 3 jumps, not 4, not friendlies {al}')
-    badge = pg.evaluate("() => [document.querySelector('#intelNear').hidden, document.querySelector('#intelNear').textContent]")
-    check(badge == [False, '4 near'], f'the header: "4 near" {badge}')
+    badge = pg.evaluate("() => [document.querySelector('#intelNear').hidden, document.querySelector('#intelNearN').textContent, document.querySelector('#profile').dataset.s, document.querySelector('#tabBtnIntel').dataset.s]")
+    check(badge == [False, '4 near', 'near', 'near'], f'the header: Intel\'s mark on the profile says "4 near", the Intel tab\'s dot too {badge}')
     pg.click('#tabBtnPilot'); pg.click('#intelNear'); pg.wait_for_timeout(300)   # v.97: the pill opens Intel and doesn't switch it off
     pill = pg.evaluate("() => [it.on, document.querySelector('#intelSw').checked, getComputedStyle(document.querySelector('#tabIntel')).display, document.querySelector('#intelNear').title]")
-    check(pill[:3] == [True, True, 'block'] and pill[3] == '4 systems with a hostile or neutral report within 3 jumps: open Intel',
+    check(pill[:3] == [True, True, 'block'] and pill[3] == 'Intel: 4 systems with a hostile or neutral report within 3 jumps. Open Intel',
           f'pressing "4 near" opens the Intel tab and leaves Intel on (v.96: it turned Intel off) {pill}')
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', '8WA-Z6 Marrek Ketter still'))
     tick(pg)

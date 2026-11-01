@@ -15,7 +15,7 @@ types a name by hand.
 
 | Key | Name | Was / notes |
 |---|---|---|
-| `weak` | Weaknesses | v2026.10.14.58 (the owner 2026-10-24): its title starts with whose they are, "Threat" (amber) or "Your" (cyan, My Ship Perspective and Viewing My Ship), drawn by `cardWhoHtml`; other text still says "Weaknesses" |
+| `weak` | Weaknesses | v2026.10.14.58 (the owner 2026-10-24): its title starts with whose they are, "Threat" (amber) or "Your" (cyan, My Fit Perspective and Viewing My Fit), drawn by `cardWhoHtml`; other text still says "Weaknesses" |
 | `ewar` | EWAR / Misc | some text said "EWAR card" |
 | `fp` | Firepower | |
 | `rs` | Resistance | |
@@ -26,8 +26,8 @@ types a name by hand.
 | `board` | Matchup | the scoreboard; was "switch" / "strip" in text and error codes |
 | `lastkill` | Last Kill | the header line and its panel; was "last-kill box" |
 | `perspective.threat` | Threat Perspective | which ship the cards describe, picked on the Matchup; key was `views` (the owner 2026-10-23: "change the 'views' key to 'perspective' and we'll adjust names/text accordingly"); was "threat view" in text. Text reads e.g. "from the Threat Perspective" |
-| `perspective.mine` | My Ship Perspective | the other side of `perspective`; was "My ship view" |
-| `myshippage` | Viewing My Ship | the Fit Analyzer page that shows your saved ship on its own (no Matchup); a different thing from the My Ship Perspective, so it keeps its own key |
+| `perspective.mine` | My Fit Perspective | the other side of `perspective`; was "My ship view" |
+| `myshippage` | Viewing My Fit | the Fit Analyzer page that shows your saved ship on its own (no Matchup); a different thing from the My Fit Perspective, so it keeps its own key |
 | `tdmode` | Mode | the Tactical Destroyer / Anhinga mode row (v2026.10.14.49); its label was typed by hand ("Mode:") |
 | `sysan` | System Analyzer | v2026.10.14.81: the tab that replaced the D-Scan tab (local-and-fleet-plan.md D1; the owner: "System Analyzer sounds fine"); also its heading |
 | `side` | Standings | v2026.10.14.95 (was Your Side, v2026.10.14.81): your pilot, friendly and hostile lists, the pilot-rows number (the chip beside My Ship and its panel; D7 "A: chip by My Ship") |

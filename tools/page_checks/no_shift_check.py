@@ -102,7 +102,7 @@ with sync_playwright() as p:
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
         pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', M.HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); M.settle(pg)
-        pg.click('#myShipChip'); pg.fill('#myShipEft', M.VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+        pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', M.VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
         pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); M.settle(pg, 800)
         if pg.locator(f'{R} .fl-dmg .dmg-card').count() == 0:     # phone: the card starts collapsed
             pg.click(f'{R} .fl-dmg .cc-toggle[data-card="dmg"]'); pg.wait_for_timeout(400)

@@ -95,6 +95,10 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   (amber); no background highlighting; standing colours on words and names (neutral a bright grey). Intel channel names are
   shown only under the gear, never elsewhere (the owner: "security reasons"). `tools/page_checks/intel_layout_check.py`.
   A line naming several systems is placed after the name lookups, never before (LESSON #105; `intel_place_check.py`).
+  Your profile (v2026.11.01.1; roadmap/my-ship-plan.md "Your profile"): one control at the top right (portrait, name, the fit
+  in use inside the "Use in assessments" switch) and its panel (Pilot, Standings, My Fits; the shared close button). Intel's
+  mark lives on it (off, clear cyan, not working hollow, near amber, in system the Hostile red + pulse); the tokens --st-clear,
+  --st-near, --st-in. "My Fit", never "My Ship", in what users read. `profile_check.py`.
   Layout D (v2026.10.31.6, the owner; Project doc roadmap/near-you-layout-d.md), both lists: line 1 jumps, the system (a button that
   filters the Feed only, never Near You), Near You's analyze icon (radar rings, always the System Analyzer), the tags, the time; Near
   You's kill badges on their own line, only when there are kills; then the toggle under the jumps and what was reported. No Assess

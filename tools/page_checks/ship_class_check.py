@@ -99,7 +99,7 @@ def fit(b, w):
     pg.fill('#fitAnalyzerInput', MEGATHRON); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout', timeout=60000); pg.wait_for_timeout(300)
     head = pg.evaluate(CLS_OF, f'{R} .mys-fa-head .cmeta')[0]
     check(head['cls'] == cls(641) and head['shown'] and head['text'] == 'Megathron Battleship — Battleship target', f'{tag}: the name line ({head["text"]!r})')
-    pg.click('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
     pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); pg.wait_for_timeout(500)
     th = pg.evaluate(CLS_OF, f'{R} button.mys-half.is-threat .mys-sw-v')[0]
     su = pg.evaluate(CLS_OF, f'{R} details.mys-pick > summary')[0]
@@ -116,7 +116,7 @@ def fit(b, w):
     sc = pg.evaluate("[document.documentElement.scrollWidth, innerWidth]")
     check(sc[0] <= sc[1], f'{tag}: no sideways scroll {sc}')
     if w == 1440:
-        pg.click('#myShipChip'); pg.click('#myShipPanel [data-act="open"]'); pg.wait_for_selector(f'{R} .mys-banner .mys-banner-v')
+        pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.click('#myShipPanel [data-act="open"]'); pg.wait_for_selector(f'{R} .mys-banner .mys-banner-v')
         ban = pg.evaluate(CLS_OF, f'{R} .mys-banner-v')[0]
         check(ban['text'] == 'Vexor Cruiser · Brawl' and ban['shown'], f'{tag}: the "Viewing my ship" banner ({ban["text"]!r})')
     check(not errs, f'{tag}: no page errors {errs[:2]}')

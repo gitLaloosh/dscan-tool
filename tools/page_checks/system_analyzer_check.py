@@ -33,10 +33,10 @@ def check(ok, msg):
     print(('OK   ' if ok else 'FAIL ') + msg); fails += not ok
 
 def side_text(pg):
-    return pg.evaluate("() => { const c = document.querySelector('#sideChip'); return c ? [...c.children].filter(e => !e.classList.contains('sa-mark') && e.checkVisibility()).map(e => e.innerText).join(' ').replace(/\\s+/g, ' ').trim() : null; }")
+    return pg.evaluate("() => { const c = document.querySelector('#profileL1'); return c ? c.innerText.replace(/\\s+/g, ' ').trim() : null; }")   # v2026.11.01.1: the profile (was the Standings chip)
 def open_side(pg):
-    if pg.evaluate("() => document.querySelector('#sidePanel').hidden"): pg.click('#sideChip')
-    pg.wait_for_selector('#sidePanel:not([hidden])')
+    if pg.evaluate("() => document.querySelector('#profilePanel').hidden"): pg.click('#profileBtn', position={'x': 12, 'y': 14})
+    pg.wait_for_selector('#profilePanel:not([hidden])')
 def panel_msg(pg, which):
     return pg.evaluate(f"""() => {{ const f = document.querySelector('#sidePanel [data-side-list="{which}"]'); const m = f && f.querySelector('.side-msg'); return m ? m.textContent : ''; }}""")
 def chips(pg, which):
@@ -98,9 +98,9 @@ with sync_playwright() as p:
     check(r['total'] == E['found'] and r['h']['n'] == 0 and r['f'] == 0 and r['n']['n'] == E['found'] and any('Set your Standings' in w for w in r['warns']) and not M.ZKB_CALLS,
           f"Standings not set: all {E['found']} found pilots neutral, a note to set it, no zKillboard request ({r['keys']}, {r['warns']}, {len(M.ZKB_CALLS)})")
     # --- Standings ---
-    check(side_text(pg) == 'Standings' and pg.evaluate("() => document.querySelector('#sideChip').classList.contains('is-empty')"), f'the chip, not set: "Standings" ({side_text(pg)!r})')
+    check(side_text(pg) == 'Set up your profile 0 of 3' and pg.evaluate("() => document.querySelector('#profile').dataset.p") == 'empty', f'the profile, not set up: "Set up your profile", 0 of 3 ({side_text(pg)!r})')
     for t in ('#tabBtnPilot', '#tabBtnFit'):
-        pg.click(t); check(pg.is_visible('#sideChip'), f'the chip shows on {t}')
+        pg.click(t); check(pg.is_visible('#profile'), f'the profile shows on {t}')
     open_side(pg)
     pg.fill('#sidePilot', 'Nobody Here'); pg.click('[data-side-act="pilot"]'); pg.wait_for_timeout(500)
     m = pg.evaluate("() => (document.querySelector('#sidePanel .side-msg') || {}).textContent || ''")
@@ -133,10 +133,12 @@ with sync_playwright() as p:
           f"suggested friendlies = co-attackers on 2+ kills, not listed ({sug} vs {E['suggest']}; {[c[0] for c in M.ZKB_CALLS]})")
     pg.click('[data-side-act="sugadd:alliance:%d"]' % M.ALLIED); pg.wait_for_timeout(300)
     check(chips(pg, 'friendly') == ['Blue Coalition Member', 'Allied Wing'], f"Add puts a suggestion on the friendly list ({chips(pg, 'friendly')})")
-    pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
-    check(pg.evaluate("() => document.querySelector('#sidePanel').hidden"), 'Escape closes the panel')
+    nsec = pg.evaluate("() => [(document.querySelector('#sidePanel .pp-sec[data-k=\"side\"] .pp-n') || {}).textContent, document.querySelector('#sidePanel .pp-sec[data-k=\"side\"]').classList.contains('done'), document.querySelector('#sidePanel .pp-sec[data-k=\"pilot\"]').classList.contains('done')]")
+    check(nsec == ['2 friendly · 2 hostile', True, True], f'the panel: Pilot and Standings ticked, "2 friendly · 2 hostile" {nsec}')
+    pg.keyboard.press('Escape'); pg.wait_for_timeout(400)
+    check(pg.evaluate("() => document.querySelector('#profilePanel').hidden"), 'Escape closes the panel')
     chip = side_text(pg)
-    check(chip.startswith('Example Alliance') and '+2 friendly' in chip and '2 hostile' in chip, f'the chip: your alliance, +2 friendly, 2 hostile ({chip!r})')
+    check(chip.startswith('Test Pilot') and '[EXMPL]' in chip and '<EXA>' in chip and chip.endswith('2 of 3'), f'the profile: your pilot with the tickers, 2 of 3 set up (no fit yet) ({chip!r})')
     # reload: all kept
     pg.reload(); pg.wait_for_timeout(500)
     pg.evaluate(GROUPS_VIEW)
@@ -211,11 +213,11 @@ with sync_playwright() as p:
     check('Hostile · your hostile list' in t2, f'a hostile corp inside a friendly alliance: tagged Hostile ({t2!r})')
     # --- phone ---
     pg.set_viewport_size({'width': 390, 'height': 844}); pg.click('#tabBtnDscan'); pg.wait_for_timeout(300)
-    over = pg.evaluate("() => [document.documentElement.scrollWidth, [...document.querySelectorAll('#tabDscan *, #sideChip')].filter(e => { const r = e.getBoundingClientRect(); return e.checkVisibility() && r.width && (r.right > innerWidth + 1 || r.left < -1); }).map(e => [e.className || e.tagName, e.parentElement.className, Math.round(e.getBoundingClientRect().left), Math.round(e.getBoundingClientRect().right), e.closest('details') && e.closest('details').open]).slice(0, 5)]")
+    over = pg.evaluate("() => [document.documentElement.scrollWidth, [...document.querySelectorAll('#tabDscan *, #profile')].filter(e => { const r = e.getBoundingClientRect(); return e.checkVisibility() && r.width && (r.right > innerWidth + 1 || r.left < -1); }).map(e => [e.className || e.tagName, e.parentElement.className, Math.round(e.getBoundingClientRect().left), Math.round(e.getBoundingClientRect().right), e.closest('details') && e.closest('details').open]).slice(0, 5)]")
     check(over[0] <= 390 and not over[1], f'390 px: nothing runs off the page {over}')
     open_side(pg)
-    sheet = pg.evaluate("() => { const r = document.querySelector('#sidePanel').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), Math.round(r.bottom)]; }")
-    check(sheet == [0, 390, 844], f'390 px: Standings is a sheet from the bottom {sheet}')
+    sheet = pg.evaluate("() => { const r = document.querySelector('#profilePanel').getBoundingClientRect(); return [Math.round(r.left), Math.round(r.right), Math.round(r.bottom)]; }")
+    check(sheet == [0, 390, 844], f'390 px: the profile (with Standings) is a sheet from the bottom {sheet}')
     check(not errs, f'no page errors {errs[:3]}')
     b.close()
 print(f'FAILURES: {fails}')

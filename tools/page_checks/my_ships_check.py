@@ -65,7 +65,7 @@ Light Neutron Blaster II, Void S
 Light Neutron Blaster II, Void S
 """
 HECATE3 = HECATE.replace("Light Neutron Blaster II, Void S\nLight Neutron Blaster II, Void S\n", "", 1)
-CHIP_MORE = "() => { const m = document.querySelector('#myShipChip .mys-chip-more'); return m ? m.textContent : ''; }"
+CHIP_MORE = "() => myShip.list.length > 1 ? '+' + (myShip.list.length - 1) : ''"   # v2026.11.01.1: the profile shows the fit in use; the others are counted in My Fits
 R = '#fitAnalyzerResults'
 fails = 0
 def check(ok, msg):
@@ -83,7 +83,7 @@ def wait_tiles(pg):
 def tile(pg, k):
     return pg.evaluate("(k) => { const t = [...document.querySelectorAll('#myShipPanel .mys-tile')].find(x => x.querySelector('.mys-tile-k').textContent === k); return t ? t.querySelector('.mys-tile-v').textContent : null; }", k)
 def open_panel(pg):
-    if pg.is_hidden('#myShipPanel'): pg.click('#myShipChip')
+    if pg.is_hidden('#profilePanel'): pg.click('#profileBtn', position={'x': 12, 'y': 14})
 def add(pg, text):
     open_panel(pg)
     if pg.locator('#myShipPanel [data-act="add"]').count(): pg.click('#myShipPanel [data-act="add"]')
@@ -110,7 +110,7 @@ def desktop(b):
     pg.evaluate("(t) => { localStorage.removeItem('dscanMyShips'); localStorage.setItem('dscanMyShip', JSON.stringify({v: 1, eft: t, shipName: 'Vexor', fitName: 'Brawl', shipTypeId: 626, shipGroup: 'Cruiser', use: true, savedAt: '2026-10-20T10:00:00Z'})); }", VEXOR)
     pg.reload(); open_panel(pg); wait_tiles(pg)
     r = rows(pg)
-    check(len(r) == 1 and r[0]['t'].startswith('Vexor') and r[0]['inUse'] and 'Vexor' in pg.inner_text('#myShipChip') and pg.evaluate(CHIP_MORE) == '',
+    check(len(r) == 1 and r[0]['t'].startswith('Vexor') and r[0]['inUse'] and 'Vexor' in pg.inner_text('#profile') and pg.evaluate(CHIP_MORE) == '',
           f'v.33 ship read as the first saved fit {r}')
     vexor_ehp = tile(pg, 'EHP')
     add(pg, HECATE)
@@ -122,19 +122,19 @@ def desktop(b):
     r = rows(pg)
     check([x['t'].split(' ·')[0] for x in r] == ['Osprey Navy Issue', 'Hecate', 'Vexor'] and r[0]['inUse'] and not r[1]['inUse'] and r[0]['sel'],
           f'added fits: most recently used first, "In use" on the new one {[x["t"] for x in r]}')
-    check(pg.evaluate(CHIP_MORE) == '+2' and 'Osprey Navy Issue' in pg.inner_text('#myShipChip'), f'chip: the ship in use and "+2" ({pg.evaluate(CHIP_MORE)!r})')
+    check(pg.evaluate(CHIP_MORE) == '+2' and 'Osprey Navy Issue' in pg.inner_text('#profile'), f'chip: the ship in use and "+2" ({pg.evaluate(CHIP_MORE)!r})')
     # pasting a fit already saved adds nothing and uses it
     add(pg, VEXOR)
     r = rows(pg)
-    check(len(r) == 3 and r[0]['t'].startswith('Vexor') and r[0]['inUse'] and 'already in My Ships' in pg.inner_text('#myShipPanel'), f'duplicate paste: nothing added, the saved Vexor is used {[x["t"] for x in r]}')
+    check(len(r) == 3 and r[0]['t'].startswith('Vexor') and r[0]['inUse'] and 'already in My Fits' in pg.inner_text('#myShipPanel'), f'duplicate paste: nothing added, the saved Vexor is used {[x["t"] for x in r]}')
     # a fit that isn't in use: its own numbers, "Use this ship"
     hid = next(x['id'] for x in r if x['t'].startswith('Hecate'))
     pg.click(f'#myShipPanel .mys-row-main[data-id="{hid}"]'); wait_tiles(pg)
-    check(tile(pg, 'EHP') == hecate_ehp and pg.locator('#myShipPanel .mys-open[data-act="use"]').count() == 1 and 'Vexor' in pg.inner_text('#myShipChip'),
+    check(tile(pg, 'EHP') == hecate_ehp and pg.locator('#myShipPanel .mys-open[data-act="use"]').count() == 1 and 'Vexor' in pg.inner_text('#profile'),
           f'viewing a fit not in use: its numbers ({tile(pg, "EHP")} = {hecate_ehp}), "Use this ship", the chip unchanged')
     pg.click('#myShipPanel .mys-open[data-act="use"]'); pg.wait_for_timeout(200); wait_tiles(pg)
     s2, s1 = store(pg)
-    check('Hecate' in pg.inner_text('#myShipChip') and rows(pg)[0]['t'].startswith('Hecate') and s1['eft'] == HECATE and next(f for f in s2['fits'] if f['id'] == s2['inUse'])['eft'] == HECATE,
+    check('Hecate' in pg.inner_text('#profile') and rows(pg)[0]['t'].startswith('Hecate') and s1['eft'] == HECATE and next(f for f in s2['fits'] if f['id'] == s2['inUse'])['eft'] == HECATE,
           '"Use this ship": chip, list order and storage follow')
     pg.keyboard.press('Escape')
     # the Fit Analyzer's EHP for the Vexor paste = the panel's number for it (computed while it was in use)
@@ -166,7 +166,7 @@ def desktop(b):
     view0 = pg.get_attribute(f'{R} .mys-sw-btn.is-threat', 'aria-pressed')
     pg.click(f'{R} .mys-pick-menu button.mys-pick-opt[data-id="{hid}"]')
     pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && /Hecate/.test(b.querySelector('.mys-pick summary').textContent) && !/…/.test(b.textContent); }}", timeout=60000); settle(pg, 800)
-    check('Hecate' in pg.inner_text('#myShipChip') and pg.get_attribute(f'{R} .mys-sw-btn.is-threat', 'aria-pressed') == view0, 'picking from the board: the chip follows, the view stays')
+    check('Hecate' in pg.inner_text('#profile') and pg.get_attribute(f'{R} .mys-sw-btn.is-threat', 'aria-pressed') == view0, 'picking from the board: the chip follows, the view stays')
     check(pg.evaluate(BOARD) == pg.evaluate(EXPECT, R), f'board numbers = mysMatchup for the new ship {pg.evaluate(BOARD)}')
     pg.click(f'{R} details.mys-pick > summary'); pg.keyboard.press('Escape')
     check(pg.evaluate(f"() => !document.querySelector('{R} details.mys-pick').open"), 'Escape closes the board menu')
@@ -176,7 +176,7 @@ def desktop(b):
     pg.click('#myShipPanel [data-act="rename"]'); pg.fill('#myShipRename', 'Kite 2'); pg.click('#myShipPanel [data-act="rename-save"]'); pg.wait_for_timeout(400)
     s2, s1 = store(pg)
     eft_out = pg.evaluate("() => myShipEftOut(myShip.rec)")
-    check('Kite 2' in pg.inner_text('#myShipChip') and rows(pg)[0]['t'] == 'Hecate · Kite 2' and s1['fitName'] == 'Kite 2' and eft_out.startswith('[Hecate, Kite 2]') and s1['eft'] == HECATE,
+    check('Kite 2' in pg.inner_text('#profile') and rows(pg)[0]['t'] == 'Hecate · Kite 2' and s1['fitName'] == 'Kite 2' and eft_out.startswith('[Hecate, Kite 2]') and s1['eft'] == HECATE,
           f'Rename: chip, list, storage, Copy EFT header (stored text unchanged) ({rows(pg)[0]["t"]!r})')
     check('Kite 2' in pg.inner_text(f'{R} details.mys-pick > summary'), 'Rename: the board follows')
     # Replace a fit that isn't in use (the Osprey) with another paste: same entry
@@ -190,7 +190,7 @@ def desktop(b):
     vid = next(x['id'] for x in rows(pg) if x['t'].startswith('Vexor'))
     pg.click(f'#myShipPanel .mys-row-main[data-id="{vid}"]'); pg.click('#myShipPanel [data-act="delete"]'); pg.click('#myShipPanel [data-act="delete-yes"]'); pg.wait_for_timeout(300)
     s2, s1 = store(pg)
-    check(len(s2['fits']) == 2 and s1['eft'] == HECATE and 'Kite 2' in pg.inner_text('#myShipChip') and pg.evaluate(CHIP_MORE) == '+1', 'Delete a fit not in use: the ship in use stays')
+    check(len(s2['fits']) == 2 and s1['eft'] == HECATE and 'Kite 2' in pg.inner_text('#profile') and pg.evaluate(CHIP_MORE) == '+1', 'Delete a fit not in use: the ship in use stays')
     pg.keyboard.press('Escape')
     # the limit: 20
     pg.evaluate("""(t) => { const fits = []; for(let i = 0; i < 20; i++) fits.push({v: 1, id: 'x' + i, eft: t.replace('[Vexor, Brawl]', '[Vexor, Copy ' + i + ']'), shipName: 'Vexor', fitName: 'Copy ' + i, shipTypeId: 626,
@@ -214,11 +214,11 @@ def phone(b):
     ctx = b.new_context(viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("() => { localStorage.removeItem('dscanMyShips'); localStorage.removeItem('dscanMyShip'); }"); pg.reload()
-    pg.tap('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-list'); wait_tiles(pg)
+    pg.tap('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-list'); wait_tiles(pg)
     pg.tap('#myShipPanel [data-act="add"]'); pg.fill('#myShipEft', HECATE); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-list'); wait_tiles(pg)
     hs = pg.evaluate("() => [...document.querySelectorAll('#myShipPanel .mys-row-main, #myShipPanel .mys-add')].map(b => b.getBoundingClientRect().height)")
     check(min(hs) >= 44 and pg.evaluate("document.documentElement.scrollWidth") <= W, f'phone: panel rows and buttons sized for a finger, no sideways scroll {[round(h) for h in hs]}')
-    pg.tap('#myShipBackdrop', position={'x': 20, 'y': 20})   # above the sheet
+    pg.tap('#sideBackdrop', position={'x': 20, 'y': 20})   # above the sheet
     pg.tap('#tabBtnFit'); pg.fill('#fitAnalyzerInput', ORTHRUS); pg.tap('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .mys-board', timeout=60000)
     pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); settle(pg, 600)
     d = pg.evaluate(ALIGN); check(d <= 1, f'375: the menu name sits exactly on the half\'s name ({d:.1f} px)')

@@ -248,7 +248,7 @@ def desktop(b):
     pg.click(f'{R} .fl-dmg .cc-toggle[data-card="dmg"]'); ready(pg)
     check(pg.is_visible(f'{C} .dmg-svg'), 'opened again')
     # my ship replaces the preset
-    pg.click('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles')
     pg.keyboard.press('Escape')
     pg.wait_for_function(f"() => /your Vexor/.test((document.querySelector('{C} .dmg-vs') || {{}}).textContent || '')", timeout=60000); ready(pg)
     check(pg.locator(f'{C} .dmg-presets').count() == 0 and head(pg) == pg.evaluate(EXPECT, C) and '50MN Microwarpdrive II' in pg.inner_text(f'{C} .dmg-controls'),

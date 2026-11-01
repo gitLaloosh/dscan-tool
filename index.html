@@ -1601,6 +1601,7 @@
      not against the button, so a card in a narrow left column doesn't push it off the screen's left edge. It sits
      where it would be in flow (top:auto), i.e. just under the button. */
   details.info-pop{position:static; display:inline-block; flex:none;}
+  details.info-pop:not([open]) > .info-body{display:none;}   /* v2026.11.01.1: a closed panel takes no room (Chrome lays out a closed <details>' content; at a card's right edge it ran past the window) */
   .fit-summary, .ewar-card{position:relative;}
   summary.info-btn{list-style:none; display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; box-sizing:border-box; border:1px solid var(--line); border-radius:6px; color:var(--text-dim); cursor:pointer;}
   summary.info-btn::-webkit-details-marker{display:none;}
@@ -2433,7 +2434,7 @@
     .it-raw{flex-wrap:wrap; row-gap:2px;} .it-raw .raw{flex-basis:100%; order:5;} .it-fbar select, .it-fbar input{min-height:40px;}
   }
   @media (max-width: 900px){
-    .it-setup, .it-pop .it-setup{grid-template-columns:1fr 1fr;} .it-cols{grid-template-columns:1fr;} .it-sw{margin-left:0;}
+    .it-setup, .it-pop .it-setup{grid-template-columns:1fr 1fr;} .it-cols{grid-template-columns:1fr;}
     .it-pop{position:fixed; left:8px; right:8px; top:auto; bottom:8px; width:auto; max-height:80vh; overflow:auto;}
     button.it-gear{width:44px; height:44px; border-radius:4px;} .it-box label{min-height:36px;} button.it-near-btn{min-height:44px;}
   }
@@ -2540,6 +2541,97 @@
   input[type=range]:focus{outline:none;}
   input[type=range]:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
   input[type=range]:disabled{opacity:.45; cursor:not-allowed;}
+
+  /* ---- v2026.11.01.1: the profile (one control at the top right) and its panel; profile_mockup_5.html ---- */
+  :root{--st-clear:var(--cyan); --st-near:var(--amber); --st-in:var(--danger);}   /* Intel's states (the owner: cyan, amber, A = the Hostile red) */
+  .pf-bar{gap:10px;}
+  .pf{position:relative; display:inline-flex; border-radius:4px;}
+  .pf-main{position:relative; display:inline-flex; align-items:center; gap:10px; min-height:48px; padding:5px 10px 5px 6px; border-radius:4px; border:1px solid transparent; background:var(--tag-fill); color:var(--text); max-width:340px; box-sizing:border-box;}
+  .pf-main:has(.pf-hit:hover), .pf-main:has(.pf-hit[aria-expanded="true"]){background:var(--tag-fill-hover); border-color:var(--accent-edge);}
+  button.pf-hit{position:absolute; inset:0; z-index:1; width:100%; height:100%; min-height:0; padding:0; margin:0; border:none; border-radius:inherit; background:transparent; cursor:pointer;}
+  button.pf-hit:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .pf-av{position:relative; width:36px; height:36px; border-radius:4px; overflow:hidden; flex:none; display:block; background:#1a2128;}
+  .pf-av > img, .pf-av > svg{display:block; width:100%; height:100%;}
+  .pf-ini{display:flex; width:100%; height:100%; align-items:center; justify-content:center; font:700 13px var(--sans); color:var(--heading); background:#22323c;}
+  .pf-txt{display:flex; flex-direction:column; gap:3px; min-width:210px;}
+  .pf-l1, .pf-l2{display:flex; align-items:center; gap:6px; white-space:nowrap; min-width:0;}
+  .pf-name{font:600 13px var(--sans); color:var(--heading); overflow:hidden; text-overflow:ellipsis;}
+  .pf-tk{font:400 11px var(--mono); color:var(--text-dim);} .pf-tk .tk{margin-left:0;}
+  .pf-setup{font:600 13px var(--sans); color:var(--text);}
+  .pf-need{display:inline-flex; align-items:center; gap:6px; margin-left:4px; font-size:11.5px; color:var(--text-dim);}
+  .pf-prog{display:inline-flex; gap:3px;} .pf-prog i{width:14px; height:4px; border-radius:1px; background:#2c3842;} .pf-prog i.on{background:var(--cyan);}
+  .pf-chev{flex:none; color:var(--text-dim);}
+  /* the one wide switch, the fit in use inside it */
+  label.pf-fsw{position:relative; z-index:2; display:block; flex:1 1 auto; min-width:0; cursor:pointer;}
+  label.pf-fsw[hidden]{display:none;}
+  .pf-fsw-in{position:absolute; opacity:0; width:1px; height:1px; margin:0;}
+  .pf-fsw-track{position:relative; display:flex; align-items:center; height:22px; box-sizing:border-box; border-radius:3px; border:1px solid #2c3842; background:#1a2229; padding:0 8px 0 24px; transition:background 0.12s, border-color 0.12s, padding 0.12s;}
+  .pf-fsw-knob{position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:2px; background:var(--text-faint); transition:left 0.12s, background 0.12s;}
+  .pf-fsw-txt{display:flex; align-items:center; gap:5px; min-width:0; overflow:hidden; white-space:nowrap; font-size:12px; color:var(--text-dim);}
+  .pf-fsw-txt b{font-weight:600; color:var(--text-dim);} .pf-fsw-fit{overflow:hidden; text-overflow:ellipsis;}
+  .pf-fsw-txt img{width:16px; height:16px; flex:none; border-radius:2px; opacity:0.6;}
+  .pf-fsw-in:checked + .pf-fsw-track{background:#1f6f80; border-color:#1f6f80; padding:0 24px 0 8px;}
+  .pf-fsw-in:checked + .pf-fsw-track .pf-fsw-knob{left:calc(100% - 17px); background:var(--heading);}
+  .pf-fsw-in:checked + .pf-fsw-track .pf-fsw-txt, .pf-fsw-in:checked + .pf-fsw-track .pf-fsw-txt b{color:var(--heading);}
+  .pf-fsw-in:checked + .pf-fsw-track .pf-fsw-txt img{opacity:1;}
+  label.pf-fsw:hover .pf-fsw-track{border-color:var(--accent-edge);}
+  .pf-fsw-in:focus-visible + .pf-fsw-track{outline:2px solid var(--cyan); outline-offset:2px;}
+  button.pf-nofit{position:relative; z-index:2; flex:1 1 auto; height:22px; min-height:0; box-sizing:border-box; text-align:left; padding:0 8px; border:1px solid transparent; border-radius:3px; background:#1a2229; font:600 12px var(--sans); color:var(--text); cursor:pointer;}
+  button.pf-nofit:hover, button.pf-nofit:focus-visible{border-color:var(--accent-edge); outline:none;}
+  button.pf-nofit[hidden]{display:none;}
+  /* Intel's mark: a square on the portrait's corner (on: cyan; not working: hollow), a tab on the profile's left (near, in system) */
+  button.pf-intel{position:absolute; left:33px; top:33px; transform:translate(-50%, -50%); z-index:3; min-width:12px; width:12px; height:12px; min-height:0; padding:0; border-radius:3px; border:2px solid var(--panel-2); background:var(--st-clear); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--heading);}
+  button.pf-intel[hidden]{display:none;}
+  button.pf-intel::after{content:""; position:absolute; inset:-10px;}   /* a bigger target than the mark */
+  button.pf-intel:hover{filter:brightness(1.15);} button.pf-intel:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .pf-k, .pf-iv{display:none;}
+  .pf[data-s="broken"] button.pf-intel{background:var(--panel-2); border:2px solid var(--st-clear); box-shadow:0 0 0 2px var(--panel-2);}
+  .pf[data-s="near"] button.pf-intel, .pf[data-s="in"] button.pf-intel{position:relative; left:auto; top:auto; transform:none; order:-1; width:auto; min-width:0; height:auto; min-height:48px; padding:0 10px; border:none; border-radius:4px 0 0 4px; flex-direction:column; justify-content:center; gap:2px;}
+  .pf[data-s="near"] button.pf-intel::after, .pf[data-s="in"] button.pf-intel::after{inset:0;}
+  .pf[data-s="near"] .pf-k, .pf[data-s="in"] .pf-k{display:block; font:600 9.5px/1 var(--sans); letter-spacing:0.6px; text-transform:uppercase; opacity:0.8;}
+  .pf[data-s="near"] .pf-iv, .pf[data-s="in"] .pf-iv{display:block; font:700 12.5px/1.1 var(--sans); white-space:nowrap;}
+  .pf[data-s="in"] .pf-iv{text-transform:uppercase; letter-spacing:0.4px;}
+  .pf[data-s="near"] .pf-main, .pf[data-s="in"] .pf-main{border-top-left-radius:0; border-bottom-left-radius:0;}
+  .pf[data-s="near"] button.pf-intel{background:var(--st-near); color:#1a1206;}
+  .pf[data-s="in"] button.pf-intel{background:var(--st-in); color:#fff;}
+  .pf[data-s="in"]{box-shadow:0 0 0 2px color-mix(in srgb, var(--st-in) 55%, transparent); animation:pfring 1.6s ease-in-out infinite;}
+  @keyframes pfring{50%{box-shadow:0 0 0 4px color-mix(in srgb, var(--st-in) 25%, transparent);}}
+  @media (prefers-reduced-motion: reduce){ .pf[data-s="in"]{animation:none;} }
+  /* the Intel tab's dot, the same kind of mark, no text */
+  #tabBtnIntel .tb{display:none; margin-left:7px; vertical-align:1px;}
+  #tabBtnIntel[data-s="clear"] .tb, #tabBtnIntel[data-s="broken"] .tb, #tabBtnIntel[data-s="near"] .tb, #tabBtnIntel[data-s="in"] .tb{display:inline-block;}
+  #tabBtnIntel[data-s="clear"] .tb{width:7px; height:7px; border-radius:2px; background:var(--st-clear);}
+  #tabBtnIntel[data-s="broken"] .tb{width:7px; height:7px; border-radius:2px; box-shadow:inset 0 0 0 1.5px var(--st-clear);}
+  #tabBtnIntel[data-s="near"] .tb{width:9px; height:9px; border-radius:2px; background:var(--st-near);}
+  #tabBtnIntel[data-s="in"] .tb{width:9px; height:9px; border-radius:50%; background:var(--st-in); box-shadow:0 0 0 3px color-mix(in srgb, var(--st-in) 35%, transparent);}
+  /* the panel: Pilot, Standings, My Fits */
+  .pp{position:absolute; right:0; top:calc(100% + 8px); z-index:60; width:min(500px, calc(100vw - 32px)); max-height:calc(100vh - 160px); overflow-y:auto; overscroll-behavior:auto; box-sizing:border-box; background:var(--panel); border:1px solid #2c3842; border-radius:8px; padding:14px 16px 16px; box-shadow:0 18px 40px rgba(0,0,0,0.55); text-align:left;}
+  .pp[hidden]{display:none;}
+  .pp-head{display:flex; align-items:flex-start; gap:12px;} .pp-av{width:56px; height:56px;}
+  .pp-who{display:flex; flex-direction:column; gap:3px; flex:1; min-width:0;} .pp-who .pf-name{font-size:15px;} .pp-who .pf-tk{white-space:normal; font-family:var(--sans); font-size:12px;}
+  button.x-close{display:inline-flex; align-items:center; justify-content:center; flex:none; width:32px; height:32px; min-height:0; padding:0; margin:-6px -8px 0 auto; border:1px solid transparent; border-radius:4px; background:transparent; color:var(--text-dim); font:400 20px/1 var(--sans); cursor:pointer;}
+  button.x-close:hover{background:var(--tag-fill-hover); border-color:var(--accent-edge); color:var(--heading);}
+  button.x-close:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .pp-steps{display:flex; align-items:center; gap:8px; margin:12px 0 2px; font-size:12px; color:var(--text-dim);} .pp-steps[hidden]{display:none;}
+  .pp .pp-sec{border-top:1px solid var(--line); padding:12px 0 4px; margin-top:10px;}
+  .pp-sh{display:flex; align-items:center; gap:8px; font:600 13px var(--sans); color:var(--heading); margin-bottom:8px;}
+  .pp-sh .sa-sp{flex:1;} .pp-sub{font-weight:400; color:var(--text-dim);}
+  .pp-n{margin-left:auto; font:400 12px var(--sans); color:var(--text-dim);} .pp-sh .sa-sp + details + .pp-n, .pp-sh .info-pop + .pp-n{margin-left:8px;}
+  .pp-ok{width:16px; height:16px; border-radius:3px; background:var(--tag-fill); display:inline-flex; align-items:center; justify-content:center; font:700 11px var(--sans); color:var(--text-dim); flex:none;}
+  .pp-ok::before{content:"·";}
+  .pp-sec.done .pp-ok{background:color-mix(in srgb, var(--cyan) 20%, #151b20); color:var(--cyan);} .pp-sec.done .pp-ok::before{content:"✓";}
+  button.pp-sso{min-height:34px; margin-top:6px; padding:0 12px; border-radius:4px; border:1px solid transparent; background:var(--tag-fill); color:var(--text); font:600 12.5px var(--sans); opacity:0.5; cursor:default;}
+  .pp-foot{margin-top:12px; font-size:12px; color:var(--text-dim);} button.pp-sso .ctx{display:inline; margin-left:4px;}
+  /* the two sections that were panels of their own: no frame, no position of their own now */
+  .pp .side-panel, .pp .mys-panel{position:static; width:auto; max-height:none; overflow:visible; border:none; border-radius:0; box-shadow:none; background:none; padding:0; z-index:auto;}
+  .pp .side-panel{padding:0;}
+  @media (max-width: 599px){
+    .pf-bar{justify-content:flex-end;}
+    .pf-main{min-height:48px; max-width:none;}
+    .pf-txt{min-width:0;} .pf-l1{display:none;} label.pf-fsw{max-width:190px;}
+    .pp, .pp .side-panel, .pp .mys-panel{border-radius:0;}
+    .pp{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-height:85vh; border-radius:14px 14px 0 0; z-index:61;}
+  }
 </style>
 </head>
 <body>
@@ -2547,7 +2639,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.10.31.7</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.1</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2575,18 +2667,29 @@
     <button type="button" class="tab-btn" id="tabBtnFit">Fit Analyzer</button>
     <!-- v2026.10.14.94: the Fleet tab, shown only while a fleet from a kill is open (roadmap/fleet-from-kill-plan.md) -->
     <span class="tab-fleet" id="fleetTabWrap" hidden><button type="button" class="tab-btn" id="tabBtnFleet" data-card="fleet"></button><button type="button" class="tab-x" id="fleetCloseBtn" aria-label="Close the Fleet tab" title="Close the Fleet tab">×</button></span>
-    <div class="mys-bar" id="myShipBar">
-      <!-- v2026.10.14.81 Standings (Your Side until v.95; System Analyzer step 1, D7 "A: chip by My Ship"): labels set by renderSideChip -->
-      <!-- v2026.10.29.1 (the owner, from other users: "they didn't see how to turn intel on while on the intel tab"): the Intel
-           on / off switch is back on the Intel card, beside the gear; the "N near" pill stays here and opens the tab -->
-      <button type="button" class="it-near-btn" id="intelNear" hidden><span class="it-near" id="intelNearN"></span></button>
-      <button type="button" class="side-chip is-empty" id="sideChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="sidePanel"></button>
+    <div class="mys-bar pf-bar" id="myShipBar">
+      <!-- v2026.11.01.1 (the owner: "turn the upper right portion of the page into something of a 'profile' of the user ... Pilot name,
+           associations, fits, etc. Intel could sit outside of that but somehow attached as a decorator"; profile_mockup_5.html): one
+           profile control in place of the Standings chip, the My Ship chip, "Use in assessments" and the "N near" pill. The Intel mark
+           (#intelNear) sits on the portrait's corner, or as a tab on the profile's left when something is near; the switch with the fit
+           in use is "Use in assessments"; the panel holds Pilot, Standings (#sidePanel) and My Fits (#myShipPanel). -->
+      <div class="pf" id="profile" data-s="off" data-p="empty">
+        <button type="button" class="pf-intel" id="intelNear" hidden><span class="pf-k">Intel</span><span class="pf-iv" id="intelNearN"></span></button>
+        <div class="pf-main">
+          <button type="button" class="pf-hit" id="profileBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="profilePanel" aria-label="Your profile"></button>
+          <span class="pf-av" id="profileAv"></span>
+          <span class="pf-txt"><span class="pf-l1" id="profileL1"></span>
+            <span class="pf-l2"><label class="pf-fsw" id="myShipUseLabel"><input type="checkbox" class="pf-fsw-in" id="myShipUse" role="switch" disabled aria-label="Use my fit in assessments"><span class="pf-fsw-track"><span class="pf-fsw-knob"></span><span class="pf-fsw-txt" id="myShipUseTxt"></span></span></label><button type="button" class="pf-nofit" id="profileAddFit" title="Paste a fit you fly">+ Add a fit</button></span></span>
+          <svg class="pf-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
       <div class="side-backdrop" id="sideBackdrop" hidden></div>
-      <div class="side-panel" id="sidePanel" role="dialog" hidden></div>
-      <button type="button" class="mys-chip is-empty" id="myShipChip" aria-haspopup="dialog" aria-expanded="false" aria-controls="myShipPanel"></button>
-      <label class="mys-use is-off" id="myShipUseLabel" title="Save your ship first"><input type="checkbox" class="mys-sw" id="myShipUse" disabled aria-label="Use my ship in assessments"><span class="mys-use-long">Use in assessments</span><span class="mys-use-short">Use</span></label>
-      <div class="mys-backdrop" id="myShipBackdrop" hidden></div>
-      <div class="mys-panel" id="myShipPanel" role="dialog" aria-label="My Ship" hidden></div>
+      <div class="pp" id="profilePanel" role="dialog" aria-label="Your profile" hidden>
+        <div class="pp-head" id="profileHead"></div>
+        <div class="pp-steps" id="profileSteps"></div>
+        <div class="side-panel" id="sidePanel"></div>
+        <div class="pp-sec mys-panel" id="myShipPanel" data-k="ship" aria-label="My Fits"></div>
+      </div>
     </div>
   </div>
 
@@ -2707,8 +2810,8 @@ const CARD_NAMES = {
  "board": "Matchup",
  "lastkill": "Last Kill",
  "perspective.threat": "Threat Perspective",
- "perspective.mine": "My Ship Perspective",
- "myshippage": "Viewing My Ship",
+ "perspective.mine": "My Fit Perspective",
+ "myshippage": "Viewing My Fit",
  "tdmode": "Mode",
  "sysan": "System Analyzer",
  "side": "Standings",
@@ -2868,7 +2971,7 @@ const CARD_INFO = {
   "Each group is 4 zKillboard requests (its kills, and the losses of its 3 main hulls), kept for an hour."
  ],
  "vs": [
-  "Your ship (My Ship, with “Use in assessments” on) against the ships counted here: in the Fleet view each main hull's common fit (the variant picked) × its ≈ count; in the Pilots view each row's fit once (rows with “fit unknown” aren't counted). All, or only what's on your D-Scan.",
+  "Your fit (My Fits, with “Use in assessments” on) against the ships counted here: in the Fleet view each main hull's common fit (the variant picked) × its ≈ count; in the Pilots view each row's fit once (rows with “fit unknown” aren't counted). All, or only what's on your D-Scan.",
   "One fight setup for all of them: the range, starting at your guns' best range, and you sitting still or moving with your MWD or afterburner on (their webs and painters as fitted). Each ship's damage on you and yours on it is worked out as in {card:dmg} and the {card:board} (pyfa's damage application), then their damage is added up by type.",
   "You last: all of that damage through your resists and repairs, layer by layer, as the {card:board}'s “you last”, the tool's own rule on pyfa's numbers. Your capacitor is pyfa's simulation of your fit with their neutralizers and nosferatus in reach draining it, as pyfa adds projected ones (their optimal and falloff at this range); your repairs stop when it's empty.",
   "Holding you: ships whose scram or web reaches you at this range (T), and whose neutralizers or nosferatus do (C).",
@@ -2887,7 +2990,7 @@ const CARD_INFO = {
  ],
  "intel": [
   "**Start:** in EVE, Settings → Chat → Log Chat to File. Here: choose the Chatlogs folder, tick your intel channels, then turn on the switch beside the gear (amber while Intel is off).",
-  "**{card:itnear}:** systems with reports or kills within your alert range + 5 jumps, nearest first. An amber edge means within your alert range: the sound, the notification and the amber “N near” at the top, from any tab.",
+  "**{card:itnear}:** systems with reports or kills within your alert range + 5 jumps, nearest first. An amber edge means within your alert range: the sound, the notification and the amber “N near” on your profile, from any tab.",
   "**{card:itfeed}:** every report and kill as it comes in.",
   "[How a line is read] Systems, ship names (English or Chinese), counts (+5, x2) and words like clr and nv; the rest is looked up on ESI as pilot names and coloured by your {card:side}. One word typed by hand is a pilot only in the name's own capitals, and report words like linked, drag, hot or kill only when dragged in from chat. A word it can't place stays plain text, never guessed. A report about the ESS tags the system in {card:itnear}: white when someone is at it, red when they're linked to it; a bubble that isn't a gate camp is a tag too. When a line names two systems, they're placed where the line says they are (“on Y gate”, “→ Y”), else in the one within range, else the nearer; the other shows as a note. The copy button on a line copies its shape, names replaced, to report a line read wrong.",
   "[Gates and camps] A short name before “gate” (“T5Z gate”, “MOG gate”) is read among the gates of the system the line is in. A report that places them on a gate and says camp, bubble, drag, smartbomb or the gate is hot tags the system in {card:itnear} with a red Camp tag and the gate. Two kills at one gate in the time set, with no such report, tag it in orange (zKillboard places each kill at the nearest stargate). A grey tag is a gate named with no camp words. “toward you”: that gate leads closer to you. Your own shorthands (word = system) go under the gear; 4 or more letters before a system's dash (“ymjg”) read as that system when only one has them.",
@@ -3345,7 +3448,7 @@ const ERROR_CODES = {
  },
  "FIT-04": {
   "title": "Some fit lines weren't recognized",
-  "where": "Fit Analyzer, note under the fit; My Ship panel, the \"{card:myshippage}\" page and the {card:perspective.mine}",
+  "where": "Fit Analyzer, note under the fit; your profile's My Fits, the \"{card:myshippage}\" page and the {card:perspective.mine}",
   "trigger": "Item names that don't resolve in ESI; they're left out of the fit.",
   "check": "Spelling, SKIN variants, renamed or removed items.",
   "why": "The rest of the fit is still analyzed; the note lists what was dropped.",
@@ -3354,16 +3457,16 @@ const ERROR_CODES = {
  },
  "MYSHIP-01": {
   "title": "Browser storage unavailable",
-  "where": "My Ship panel",
+  "where": "Your profile's My Fits",
   "trigger": "The browser refused to store or read the saved ship: a private window, blocked site data, or full storage.",
-  "check": "The browser's site-data settings for the page. My Ship still works until the page is closed.",
-  "why": "My Ship lives only in the browser; without storage it is gone after a reload, and the user should know that before relying on it.",
+  "check": "The browser's site-data settings for the page. My Fit still works until the page is closed.",
+  "why": "My Fit lives only in the browser; without storage it is gone after a reload, and the user should know that before relying on it.",
   "since": "v2026.10.14.33",
   "doc": "2026-10-23_my-ship-phase1.html"
  },
  "MYSHIP-02": {
   "title": "The saved ship couldn't be loaded",
-  "where": "My Ship panel, the Fit Analyzer's \"{card:myshippage}\" page, the {card:board}",
+  "where": "Your profile's My Fits, the Fit Analyzer's \"{card:myshippage}\" page, the {card:board}",
   "trigger": "The saved fit is recomputed from its EFT text when first needed, and that failed (the message includes the underlying code, e.g. ESI-01), or the stored copy is damaged.",
   "check": "The underlying code in the message. If an item was renamed or removed from the game, Replace the fit.",
   "why": "Recomputing on load lets tool fixes and game patches apply to a saved ship; when it fails, the saved text is kept rather than dropped.",
@@ -3371,8 +3474,8 @@ const ERROR_CODES = {
   "doc": "2026-10-23_my-ship-phase1.html"
  },
  "MYSHIP-03": {
-  "title": "My Ships is full",
-  "where": "My Ship panel (+ Add a fit, the paste box), the Fit Analyzer's \"Set as my ship\"",
+  "title": "My Fits is full",
+  "where": "Your profile's My Fits (+ Add a fit, the paste box), the Fit Analyzer's \"Set as my fit\"",
   "trigger": "Adding a fit when 20 are already saved (MY_SHIPS_MAX; the owner 2026-10-25: \"limit the list of fits they can save to 20 for now\").",
   "check": "Delete a saved fit you no longer fly, or Replace one, then add the new fit.",
   "why": "A fixed limit keeps the list and the {card:board}'s ship menu short; the browser could hold far more.",
@@ -3399,7 +3502,7 @@ const ERROR_CODES = {
  },
  "WP-01": {
   "title": "Weaknesses picks not worked out",
-  "where": "{card:weak} card, with My Ship saved and \"Use in assessments\" on (the {card:perspective.threat} and the {card:perspective.mine})",
+  "where": "{card:weak} card, with My Fit saved and \"Use in assessments\" on (the {card:perspective.threat} and the {card:perspective.mine})",
   "trigger": "Running the fit again with one of its carried charges or drone types failed, usually because a charge or drone type couldn't be fetched (the message includes the underlying code, e.g. ESI-01).",
   "check": "The underlying code in the message; pick the other side on the {card:board} or move a slider to try again.",
   "why": "The picks are pyfa numbers for each charge and drone aboard; when one can't be worked out the card says so instead of ranking what's left.",
@@ -18302,7 +18405,7 @@ function dmgPresetPickerHtml(T){
   return `<div class="dmg-presets"><span class="dmg-faint">No ship of yours is in use. Charting against a typical:</span>
       <div class="dmg-chips">${DMG_CLASS_PRESETS.map(p => `<button type="button" class="dmg-chip" data-preset="${p.key}" aria-pressed="${p.key === T.presetKey}">${escapeHtml(p.label)}</button>`).join('')}</div>
       ${T.preset ? `<div class="dmg-faint">${escapeHtml(T.preset.hull)} with a ${escapeHtml(T.preset.prop)}, nothing else fitted (the hull nearest the class median of MWD speed and signature).</div>` : ''}
-      <button type="button" class="dmg-link" data-act="dmg-set-ship">Set my ship for exact numbers</button></div>`;
+      <button type="button" class="dmg-link" data-act="dmg-set-ship">Set my fit for exact numbers</button></div>`;
 }
 // Fills a card for fit f once its target is known; every control redraws in place (dmgDraw).
 async function dmgFill(host, f){
@@ -18512,7 +18615,7 @@ function dmgDraw(card){
   const reset = card.querySelector('.dmg-reset');
   const d = dmgDefaultsFor(f);   // the fight's defaults (f is the threat on both cards)
   reset.disabled = Object.keys(d).every(k => (mine && k === 'axis') || d[k] === st[k]) && (!mine || c.axis === 'distance');
-  const rl = !mine && T.kind === 'mine' ? 'Reset to my ship' : 'Reset';
+  const rl = !mine && T.kind === 'mine' ? 'Reset to my fit' : 'Reset';
   reset.setAttribute('aria-label', rl); reset.title = reset.disabled ? `${rl} (already at the defaults)` : rl;
   const tip = card.querySelector('.dmg-tip');
   if(c.hover === null){ tip.hidden = true; }
@@ -20197,7 +20300,7 @@ function myShipReadStored(){
   let raw2, raw1;
   try{ raw2 = localStorage.getItem(MY_SHIPS_KEY); raw1 = localStorage.getItem(MY_SHIP_KEY); }catch(e){ myShip.storageOk = false; myShip.list = []; return null; }
   myShip.list = [];
-  const damaged = () => { myShip.error = withCode("The saved My Ship couldn't be read (the stored copy is damaged). Paste your fit again to replace it.", 'MYSHIP-02'); return null; };
+  const damaged = () => { myShip.error = withCode("The saved My Fit couldn't be read (the stored copy is damaged). Paste your fit again to replace it.", 'MYSHIP-02'); return null; };
   if(raw2){
     let s = null;
     try{ s = JSON.parse(raw2); }catch(e){}
@@ -20360,58 +20463,104 @@ function myShipRefreshStale(){
 }
 
 // ---- header chip and switch ----
-function renderMyShipChip(){
-  const chip = document.getElementById('myShipChip'), use = document.getElementById('myShipUse'), lab = document.getElementById('myShipUseLabel');
-  const r = myShip.rec;
-  if(!r){
-    chip.classList.add('is-empty');
-    chip.innerHTML = `${MY_SHIP_PLUS_SVG}<span>My Ship</span>`;
-    chip.setAttribute('aria-label', 'My Ship: not set. Paste your fit');
-    chip.title = 'Save the fit you fly';
-    use.checked = false; use.disabled = true;
-    lab.classList.add('is-off'); lab.title = 'Save your ship first';
-    return;
+// v2026.11.01.1: the chip is the profile's switch now (renderProfile); "My Ship" is "My Fit" (the owner: "accuracy matters")
+function renderMyShipChip(){ renderProfile(); }
+
+// ==== PROFILE (v2026.11.01.1; the owner's idea, mockups profile_mockup.html .. profile_mockup_5.html) ====
+// One control at the top right: your portrait (from CCP's image server once your pilot is set), name and tickers, and one wide switch
+// with the fit in use inside it ("Use in assessments"; the owner: "have the switch actually span the length of the profile row and
+// put the fit name inside of it"); no fit: "+ Add a fit" ("Calls the user to action"). Not set up: "Set up your profile", n of 3.
+// Its panel: Pilot, Standings and My Fits, each ticked when done, the shared close button at its top right (Esc, a press outside),
+// never past the bottom of the window (it scrolls inside; at its end the wheel scrolls the page, LESSON #96). The Intel mark on
+// the portrait's corner (itHeaderSync).
+const PF_SIL = '<svg viewBox="0 0 40 40" width="100%" height="100%" aria-hidden="true"><rect width="40" height="40" fill="#1a2128"/><circle cx="20" cy="15" r="7" fill="#2c3842"/><path d="M6 38c2-9 8-13 14-13s12 4 14 13z" fill="#2c3842"/></svg>';
+function profileState(){
+  let r = null;
+  try{ r = side.rec; }catch(e){ r = null; }   // side is declared further down the script; until then, no Standings yet
+  const pilot = !!(r && r.pilot), stand = !!(r && (r.friendly.length || r.hostile.length)), fits = !!(myShip.list && myShip.list.length);
+  return {r, pilot, stand, fits, n: (pilot ? 1 : 0) + (stand ? 1 : 0) + (fits ? 1 : 0)};
+}
+function profileEl(){ return typeof document !== 'undefined' && document.getElementById ? document.getElementById('profilePanel') : null; }
+function profileIsOpen(){ const p = profileEl(); return !!(p && !p.hidden); }
+function profileAvHtml(r, size){
+  return r && r.pilot ? `<img src="https://images.evetech.net/characters/${Number(r.pilot.id)}/portrait?size=${size}" alt="" width="${size}" height="${size}" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'pf-ini', textContent: '${r.pilot.name.split(/\s+/).map(w => w.replace(/[^A-Za-z0-9]/g, '')[0] || '').join('').slice(0, 2).toUpperCase()}'}))">` : PF_SIL;
+}
+function profileProgHtml(n){ return `<span class="pf-prog" aria-hidden="true">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`; }
+function renderProfile(){
+  const box = typeof document !== 'undefined' && document.getElementById ? document.getElementById('profile') : null;
+  if(!box || !box.querySelector) return;
+  const st = profileState(), r = st.r, f = myShip.rec;
+  box.dataset.p = st.n === 3 ? 'full' : st.pilot ? 'partial' : 'empty';
+  document.getElementById('profileAv').innerHTML = profileAvHtml(r, 64);
+  const tk = r && r.pilot ? `${r.corp ? orgTickerHtml('corporation', r.corp.id) : ''}${r.alliance ? orgTickerHtml('alliance', r.alliance.id) : ''}` : '';
+  const need = st.n < 3 ? `<span class="pf-need">${profileProgHtml(st.n)}<span>${st.n} of 3</span></span>` : '';
+  document.getElementById('profileL1').innerHTML = r && r.pilot ? `<b class="pf-name">${escapeHtml(r.pilot.name)}</b><span class="pf-tk">${tk}</span>${need}` : `<span class="pf-setup">Set up your profile</span>${need}`;
+  const use = document.getElementById('myShipUse'), lab = document.getElementById('myShipUseLabel');
+  use.disabled = !f; use.checked = !!(f && f.use);
+  lab.hidden = !f; document.getElementById('profileAddFit').hidden = !!f;
+  document.getElementById('myShipUseTxt').innerHTML = f ? `${f.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(f.shipTypeId)}/icon?size=32" alt="" width="16" height="16" onerror="this.remove()">` : ''}<b>${escapeHtml(f.shipName)}</b>${f.fitName ? `<span class="pf-fsw-fit">· ${escapeHtml(f.fitName)}</span>` : ''}` : '';
+  use.setAttribute('aria-label', f ? `Use ${myShipLabel()} in assessments` : 'Use my fit in assessments');
+  lab.title = !f ? '' : f.use ? `On: the Pilot and Fit Analyzers show the ${cardName('board')} with ${myShipLabel()}, to switch between the ${cardName('perspective.threat')} and the ${cardName('perspective.mine')}` : `Off: assessments leave ${myShipLabel()} out`;
+  const btn = document.getElementById('profileBtn');
+  btn.setAttribute('aria-label', `Your profile: ${r && r.pilot ? r.pilot.name : 'not set up'}${st.n < 3 ? `, ${st.n} of 3 set up` : ''}. Open it`);
+  btn.title = r && r.pilot ? `${r.pilot.name}: your pilot, ${cardName('side')} and My Fits` : 'Set up your profile: your pilot, Standings and a fit you fly';
+  const p = profileEl();
+  if(p){
+    document.getElementById('profileHead').innerHTML = `<span class="pf-av pp-av">${profileAvHtml(r, 128)}</span>
+      <span class="pp-who">${r && r.pilot ? `<b class="pf-name">${escapeHtml(r.pilot.name)}</b><span class="pf-tk">${r.corp ? `${escapeHtml(r.corp.name)} ${orgTickerHtml('corporation', r.corp.id)}` : ''}${r.alliance ? ` · ${escapeHtml(r.alliance.name)} ${orgTickerHtml('alliance', r.alliance.id)}` : ''}</span>` : '<b class="pf-setup">Your profile isn\'t set up yet</b>'}</span>
+      <button type="button" class="x-close pp-x" aria-label="Close your profile" title="Close (Esc)">×</button>`;
+    document.getElementById('profileSteps').innerHTML = st.n < 3 ? `${profileProgHtml(st.n)}<span>${st.n} of 3 set up: your pilot, ${cardName('side')}, a fit</span>` : '';
+    document.getElementById('profileSteps').hidden = st.n === 3;
+    document.getElementById('myShipPanel').classList.toggle('done', st.fits);
   }
-  chip.classList.remove('is-empty');
-  const more = myShip.list.length - 1;   // v2026.10.14.65: the other saved fits
-  chip.innerHTML = `${MY_SHIP_HULL_SVG(18)}<span class="mys-chip-k">My ship</span><span class="mys-chip-ship">${escapeHtml(r.shipName)}</span>${r.fitName ? `<span class="mys-chip-fit">· ${escapeHtml(r.fitName)}</span>` : ''}${more > 0 ? `<span class="mys-chip-more">+${more}</span>` : ''}${MY_SHIP_CHEV_SVG}`;
-  chip.setAttribute('aria-label', `My Ship: ${myShipLabel()}${more > 0 ? `, ${more} more saved` : ''}. Open My Ships`);
-  chip.title = myShipLabel();
-  use.disabled = false; use.checked = !!r.use;
-  lab.classList.remove('is-off');
-  lab.title = r.use ? `On: the Pilot and Fit Analyzers show the ${cardName('board')}, to switch between the ${cardName('perspective.threat')} and the ${cardName('perspective.mine')}` : 'Off: assessments leave your ship out';
+  fillOrgTickers(box); if(p) fillOrgTickers(p);
+}
+function openProfile(sel){   // sel: what to show (and focus, when it can take the focus)
+  const p = profileEl();
+  if(!p) return;
+  p.hidden = false;
+  document.getElementById('sideBackdrop').hidden = false;
+  document.getElementById('profileBtn').setAttribute('aria-expanded', 'true');
+  renderProfile(); renderSidePanel(); renderMyShipPanel(); profileFit();
+  const el = sel && p.querySelector(sel);
+  if(el){ try{ el.scrollIntoView({block: 'nearest'}); }catch(e){} }
+  (el && el.matches('input, textarea, button, select, [tabindex]') ? el : p.querySelector('.pp-x')).focus({preventScroll: true});
+}
+function closeProfile(returnFocus = true){
+  const p = profileEl();
+  if(!p || p.hidden) return;
+  p.hidden = true;
+  document.getElementById('sideBackdrop').hidden = true;
+  const b = document.getElementById('profileBtn');
+  b.setAttribute('aria-expanded', 'false');
+  try{ side.msg = {}; }catch(e){}
+  myShip.saveNote = '';
+  if(returnFocus) b.focus({preventScroll: true});
+}
+// the panel never runs past the bottom of the window: as tall as what's left under the profile (a phone: a sheet, by CSS)
+function profileFit(){
+  const p = profileEl();
+  if(!p || p.hidden) return;
+  if(window.matchMedia && matchMedia('(max-width: 599px)').matches){ p.style.maxHeight = ''; return; }
+  const top = p.getBoundingClientRect().top;   // where it opens, under the profile
+  p.style.maxHeight = `${Math.max(240, Math.floor(innerHeight - Math.max(top, 8) - 16))}px`;
 }
 
 // ---- panel ----
 function myShipPanelEl(){ return document.getElementById('myShipPanel'); }
-function myShipPanelIsOpen(){ return !myShipPanelEl().hidden; }
-function openMyShipPanel(mode, opt = {}){   // opt.replaceId (v.65): the paste box replaces that saved fit
+function myShipPanelIsOpen(){ return profileIsOpen(); }   // v2026.11.01.1: My Fits is a section of the profile panel
+function openMyShipPanel(mode, opt = {}){   // opt.replaceId (v.65): the paste box replaces that saved fit; opt.focus: what to focus
   const panel = myShipPanelEl();
   myShip.panelMode = mode || (myShip.list.length ? 'summary' : 'paste');
   myShip.replaceId = (myShip.panelMode === 'paste' && opt.replaceId) || null;
   if(myShip.panelMode === 'paste' && !myShip.replaceId && myShip.list.length >= MY_SHIPS_MAX) myShip.panelMode = 'summary';   // full: the list says so
   myShip.selId = myShip.rec ? myShip.rec.id : null;
-  panel.hidden = false;
-  document.getElementById('myShipBackdrop').hidden = false;
-  document.getElementById('myShipChip').setAttribute('aria-expanded', 'true');
-  renderMyShipPanel();
-  const ta = panel.querySelector('#myShipEft');
-  (ta || panel.querySelector('button.mys-x')).focus({preventScroll: true});
-  try{ panel.scrollIntoView({block: 'nearest'}); }catch(e){}
+  openProfile(opt.focus !== undefined ? opt.focus : (panel && myShip.panelMode === 'paste' ? '#myShipEft' : '#myShipPanel'));
   if(myShip.panelMode !== 'paste' && myShip.rec && !myShip.f){
     myShipEnsureFit().then(() => { if(myShipPanelIsOpen() && myShip.panelMode !== 'paste') renderMyShipPanel(); });
   }
 }
-function closeMyShipPanel(returnFocus = true){
-  const panel = myShipPanelEl();
-  if(panel.hidden) return;
-  panel.hidden = true;
-  document.getElementById('myShipBackdrop').hidden = true;
-  const chip = document.getElementById('myShipChip');
-  chip.setAttribute('aria-expanded', 'false');
-  myShip.saveNote = '';
-  if(returnFocus) chip.focus({preventScroll: true});
-}
+function closeMyShipPanel(returnFocus = true){ closeProfile(returnFocus); }
 function myShipTilesHtml(src = myShip){   // src: {f, loading} (the ship in use, or the panel's preview of another)
   const f = src.f, e = f && f.estimate;
   const keys = ['EHP', 'DPS', 'Capacitor', 'Speed', 'Signature', 'Lock range'];
@@ -20441,23 +20590,26 @@ function myShipCustomStates(f){
 function renderMyShipPanel(){
   const panel = myShipPanelEl();
   const r = myShip.rec;
-  const x = `<button type="button" class="mys-x" data-act="close" aria-label="Close">${MY_SHIP_X_SVG}</button>`;
+  // v2026.11.01.1: a section of the profile panel, headed "My Fits" (the panel has the one close button)
+  const done = myShip.list.length > 0;
+  const sh = (sub) => `<div class="pp-sh"><span class="pp-ok" aria-hidden="true"></span>My Fits${sub ? `<span class="pp-sub">${sub}</span>` : ''}<span class="pp-n">${myShip.list.length} of ${MY_SHIPS_MAX} saved</span></div>`;
+  panel.classList.toggle('done', done);
   const storageNote = myShip.storageOk ? ''
-    : `<div class="note">${escapeHtml(withCode("This browser isn't letting the page store anything (a private window, blocked site data, or full storage), so My Ship is kept only until this page is closed.", 'MYSHIP-01'))}</div>`;
+    : `<div class="note">${escapeHtml(withCode("This browser isn't letting the page store anything (a private window, blocked site data, or full storage), so My Fit is kept only until this page is closed.", 'MYSHIP-01'))}</div>`;
   const full = myShip.list.length >= MY_SHIPS_MAX;
   const replacing = myShip.panelMode === 'paste' && myShip.replaceId ? myShipById(myShip.replaceId) : null;
   if(!myShip.list.length || myShip.panelMode === 'paste'){
     // v2026.10.14.65: the paste box adds a fit to My Ships (and uses it), or replaces the one being viewed
-    const title = replacing ? `Replace ${escapeHtml(myShipLabel(replacing))}` : (myShip.list.length ? 'Add a fit' : 'My Ship');
+    const title = replacing ? `Replace ${escapeHtml(myShipLabel(replacing))}` : (myShip.list.length ? 'Add a fit' : '');
     const what = replacing ? ` It replaces ${escapeHtml(myShipLabel(replacing))} and its module states.`
-      : (myShip.list.length ? ` It's added to My Ships (${myShip.list.length} of ${MY_SHIPS_MAX} saved) and used in assessments.` : '');
+      : (myShip.list.length ? ` It's added to My Fits (${myShip.list.length} of ${MY_SHIPS_MAX} saved) and used in assessments.` : '');
     panel.innerHTML = `
-      <div class="mys-panel-head"><h2>${title}</h2>${x}</div>
+      ${sh(title)}
       <p class="mys-p">Paste the fit you fly, in EFT format (pyfa: Export to clipboard; in game: Copy to clipboard in the Fitting window).${what}</p>
       <label class="mys-label" for="myShipEft">EFT fit</label>
       <textarea id="myShipEft" rows="10" spellcheck="false" placeholder="[Vexor, Brawl]&#10;Damage Control II&#10;Medium Armor Repairer II&#10;...&#10;&#10;Hammerhead II x5"></textarea>
       <div class="mys-actions">
-        <button type="button" class="mys-primary" data-act="save">${replacing ? 'Replace fit' : (myShip.list.length ? 'Save to My Ships' : 'Save as my ship')}</button>
+        <button type="button" class="mys-primary" data-act="save">${replacing ? 'Replace fit' : (myShip.list.length ? 'Save to My Fits' : 'Save as my fit')}</button>
         <button type="button" class="mys-quiet" data-act="cancel">Cancel</button>
       </div>
       <div class="status" id="myShipPanelStatus"></div>
@@ -20483,7 +20635,7 @@ function renderMyShipPanel(){
         ${cur ? '<span class="mys-inuse">In use</span>' : `<button type="button" class="mys-quiet mys-use-btn" data-act="use" data-id="${escapeHtml(s.id)}" aria-label="Use ${escapeHtml(myShipLabel(s))}">Use</button>`}
       </div>`;
   }).join('');
-  const addTitle = full ? withCode(`My Ships holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03') : 'Paste another fit you fly';
+  const addTitle = full ? withCode(`My Fits holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03') : 'Paste another fit you fly';
   const view = inUse ? myShip : (myShip.preview && myShip.preview.id === sel.id ? myShip.preview : {f: null, loading: true, error: ''});
   const statesLine = !inUse ? (view.f ? 'Not in use. Its module states are kept with it.' : '')
     : !myShip.f ? (myShip.loading ? 'Calculating…' : '')
@@ -20509,7 +20661,7 @@ function renderMyShipPanel(){
       </div>` : '';
   const err = inUse ? (myShip.error && !myShip.f && !myShip.loading ? myShip.error : '') : (view.error || '');
   panel.innerHTML = `
-      <div class="mys-panel-head"><h2>My Ships</h2>${x}</div>
+      ${sh('')}
       <div class="mys-list">
         <div class="mys-list-head"><span class="mys-list-k">${myShip.list.length} saved · most recent first</span>
           <button type="button" class="mys-add" data-act="add"${full ? ' disabled' : ''} title="${escapeHtml(addTitle)}">+ Add a fit</button></div>
@@ -20587,7 +20739,7 @@ async function myShipSaveFromPaste(){
   const text = ta.value;
   if(!text.trim()){ setStatus(st, 'Paste a fit first.', true); ta.focus(); return; }
   if(!myShip.replaceId && myShip.list.length >= MY_SHIPS_MAX && !myShip.list.some(r => r.eft === text)){
-    setStatus(st, withCode(`My Ships holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03'), true); return;
+    setStatus(st, withCode(`My Fits holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03'), true); return;
   }
   btn.disabled = true;
   try{
@@ -20614,7 +20766,7 @@ async function myShipAdopt(text, meta, f, states, opt = {}){
   const dup = myShip.list.find(r => r.eft === text && r.id !== opt.replaceId);
   if(dup){
     if(states){ Object.assign(dup, states); myShip.cache.delete(dup.id); if(myShip.rec === dup){ myShip.f = null; myShip.fId = null; } }
-    myShip.saveNote = `${myShipLabel(dup)} is already in My Ships${opt.replaceId ? ', so nothing was replaced' : ''}; it's the ship in use now.`;
+    myShip.saveNote = `${myShipLabel(dup)} is already in My Fits${opt.replaceId ? ', so nothing was replaced' : ''}; it's the ship in use now.`;
     myShipUse(dup.id);
     myShip.selId = dup.id;
     return dup;
@@ -20633,7 +20785,7 @@ async function myShipAdopt(text, meta, f, states, opt = {}){
     document.querySelectorAll('.mys-switch-host').forEach(h => mysRenderSwitch(h));   // the board's menu
     return target;
   }
-  if(!target && myShip.list.length >= MY_SHIPS_MAX) throw codedError('MYSHIP-03', `My Ships holds ${MY_SHIPS_MAX} fits. Delete one to add another`);
+  if(!target && myShip.list.length >= MY_SHIPS_MAX) throw codedError('MYSHIP-03', `My Fits holds ${MY_SHIPS_MAX} fits. Delete one to add another`);
   const group = await myShipGroupOf(meta.shipTypeId);
   const now = new Date().toISOString();
   const use = myShip.rec ? !!myShip.rec.use : true;
@@ -20746,16 +20898,16 @@ function mysRenderSetSlot(slot){
   const {f, shipName, fitName} = slot._mysFit || {};
   if(!f) return;
   if(myShip.rec && f.eftText && myShip.rec.eft === f.eftText){
-    slot.innerHTML = `<span class="mys-is-tag">${MY_SHIP_HULL_SVG(13)} This is my ship</span>`;
+    slot.innerHTML = `<span class="mys-is-tag">${MY_SHIP_HULL_SVG(13)} This is my fit</span>`;
     return;
   }
   // v2026.10.14.65: adds the fit to My Ships and uses it (one already saved is just used); full list: MYSHIP-03
   const saved = f.eftText ? myShip.list.find(r => r.eft === f.eftText) : null;
   const full = !saved && myShip.list.length >= MY_SHIPS_MAX;
-  const title = saved ? `In My Ships as ${myShipLabel(saved)}: use it, with this fit's current module states`
-    : full ? withCode(`My Ships holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03')
-    : `Saves this fit to My Ships (${myShip.list.length + 1} of ${MY_SHIPS_MAX}) and uses it, with its current module states`;
-  slot.innerHTML = `<button type="button" class="mys-set"${full ? ' disabled' : ''} title="${escapeHtml(title)}">${MY_SHIP_HULL_SVG(14)} ${saved ? 'Use as my ship' : 'Set as my ship'}</button>`;
+  const title = saved ? `In My Fits as ${myShipLabel(saved)}: use it, with this fit's current module states`
+    : full ? withCode(`My Fits holds ${MY_SHIPS_MAX} fits. Delete one to add another.`, 'MYSHIP-03')
+    : `Saves this fit to My Fits (${myShip.list.length + 1} of ${MY_SHIPS_MAX}) and uses it, with its current module states`;
+  slot.innerHTML = `<button type="button" class="mys-set"${full ? ' disabled' : ''} title="${escapeHtml(title)}">${MY_SHIP_HULL_SVG(14)} ${saved ? 'Use as my fit' : 'Set as my fit'}</button>`;
   slot.querySelector('button').addEventListener('click', async (e) => {
     const b = e.currentTarget;
     b.disabled = true;
@@ -20801,7 +20953,7 @@ async function showMyShipInFitAnalyzer(o = {}){
   if(!f){ setStatus(statusEl, myShip.error || '', true); return; }
   const p = myShip.parsed;
   renderFitAnalyzerResult(p.shipName, p.fitName, f, p.idToName, p.unresolved, p.implantsNotApplied, {myShip: true});
-  setStatus(statusEl, `Showing my ship, ${myShipLabel()}. Module, drone and mode changes are kept with it.`);
+  setStatus(statusEl, `Showing my fit, ${myShipLabel()}. Module, drone and mode changes are kept with it.`);
   if(!o.keepPanel) el.scrollIntoView({block: 'start'});
 }
 
@@ -20851,9 +21003,9 @@ function mysPickHtml(){
           <div class="mys-pick-head"><span>Your ship for this matchup</span><button type="button" class="info-close" aria-label="Close">×</button></div>
           ${opts}
           <div class="mys-pick-sep"></div>
-          <button type="button" class="mys-pick-opt mys-pick-manage" role="menuitem"><span class="mys-pick-chk"></span><span class="mys-pick-name">Manage My Ships</span></button>
+          <button type="button" class="mys-pick-opt mys-pick-manage" role="menuitem"><span class="mys-pick-chk"></span><span class="mys-pick-name">Manage My Fits</span></button>
         </div>
-      </details><span class="mys-sw-k" aria-hidden="true">My ship</span></span></div>`;
+      </details><span class="mys-sw-k" aria-hidden="true">My fit</span></span></div>`;
 }
 function mysWirePick(host){
   const d = host.querySelector('details.mys-pick');
@@ -20885,7 +21037,7 @@ function mysBoardHtml(host){
       </div>
       <div class="mys-half-wrap is-mine">
       <button type="button" class="mys-sw-btn mys-half is-mine" data-view="mine" aria-pressed="false" aria-describedby="${id}-you" title="Show the ${escapeHtml(cardName('perspective.mine'))}">
-        <span class="mys-half-head"><span class="mys-sw-v mys-pick-ghost">${myShipLabelHtml()}${MYS_PICK_CHEV}</span><span class="mys-sw-k">My ship</span></span>
+        <span class="mys-half-head"><span class="mys-sw-v mys-pick-ghost">${myShipLabelHtml()}${MYS_PICK_CHEV}</span><span class="mys-sw-k">My fit</span></span>
         <span class="mys-half-nums">${cell('youLast', 'you last')}${cell('your', 'DPS applied to them')}</span>
       </button>
       ${mysPickHtml()}
@@ -21172,25 +21324,15 @@ async function mysRenderMineView(mv){
 }
 
 (function myShipInit(){
-  const chip = document.getElementById('myShipChip');
+  const chip = document.getElementById('profileBtn');   // v2026.11.01.1: the profile opens My Fits (profileInit)
   if(!chip || !chip.classList) return; // LESSON #36: the regression suites run this script against a stub DOM
   myShip.rec = myShipReadStored();
   renderMyShipChip();
-  chip.addEventListener('click', () => { if(myShipPanelIsOpen()) closeMyShipPanel(); else openMyShipPanel(); });
   document.getElementById('myShipUse').addEventListener('change', (e) => {
     if(!myShip.rec) return;
     for(const r of myShip.list) r.use = e.target.checked;   // v.65: one switch for whichever saved fit is in use
     myShipWriteStored();
     myShipAfterChange();
-  });
-  // Outside press closes the panel (pointerdown, so the click that opens it from a page button can't close it).
-  document.addEventListener('pointerdown', (e) => {
-    if(!myShipPanelIsOpen()) return;
-    if(myShipPanelEl().contains(e.target) || chip.contains(e.target)) return;
-    closeMyShipPanel(false);
-  }, true);
-  document.addEventListener('keydown', (e) => {
-    if(e.key === 'Escape' && myShipPanelIsOpen()){ e.preventDefault(); closeMyShipPanel(); }
   });
 })();
 // ==== SYSTEM ANALYZER (v2026.10.14.81; roadmap/local-and-fleet-plan.md step 1 = L1 friendlies + L2 local list) ====
@@ -22214,9 +22356,9 @@ function saVsShell(inner, ship, attrs = ''){
   return `<div class="card vs-card" id="saVs"${attrs}><div class="vs-head"><h3>${escapeHtml(cardName('vs'))}</h3>${ship || ''}<span class="sa-sp"></span>${infoBtnHtml('vs')}</div>${inner}</div>`;
 }
 function saVsHtml(units, kind){
-  const myBtn = '<button type="button" data-vs-myship="1">My Ship</button>';
-  if(!myShip.rec) return saVsShell(`<div class="pr-msg vs-msg">Save your ship in My Ship to see how long it lasts against them. ${myBtn}</div>`);
-  if(!myShip.rec.use) return saVsShell(`<div class="pr-msg vs-msg">Turn on “Use in assessments” in My Ship to see how long it lasts against them. ${myBtn}</div>`);
+  const myBtn = '<button type="button" data-vs-myship="1">My Fits</button>';
+  if(!myShip.rec) return saVsShell(`<div class="pr-msg vs-msg">Save your fit in My Fits to see how long it lasts against them. ${myBtn}</div>`);
+  if(!myShip.rec.use) return saVsShell(`<div class="pr-msg vs-msg">Turn on “Use in assessments” on your profile to see how long it lasts against them. ${myBtn}</div>`);
   const r = myShip.rec;
   const ship = `<span class="vs-ship">${escapeHtml(r.shipName)}${r.fitName ? `<span class="vs-fit">${escapeHtml(r.fitName)}</span>` : ''}</span>`;
   const mf = saVsReady(units);
@@ -22309,47 +22451,13 @@ async function sideUpdateFromAffiliation(a){
   sideWrite(); renderSideChip();
   if(sidePanelIsOpen()) renderSidePanel();
 }
-function renderSideChip(){
-  const chip = document.getElementById('sideChip');
-  if(!chip) return;
-  const r = side.rec, g = sideOwnGroup();
-  const more = r.friendly.length, hostile = r.hostile.length;
-  if(!g){
-    chip.classList.add('is-empty');
-    chip.innerHTML = `${SIDE_MARK.f}<span class="side-chip-name">${escapeHtml(cardName('side'))}</span>`;   // a phone shows the mark alone
-    chip.title = `${cardName('side')}: not set. Your pilot, friendlies and hostiles`;
-    chip.setAttribute('aria-label', `${cardName('side')}: not set`);
-    return;
-  }
-  chip.classList.remove('is-empty');
-  const label = `${g.name}${more ? ` +${more} friendly` : ''}${hostile ? ` · ${hostile} hostile` : ''}`;
-  chip.innerHTML = `${SIDE_MARK.f}<span class="side-chip-name">${escapeHtml(g.name)}</span><span class="side-chip-more">${more ? `+${more} friendly` : ''}${hostile ? `${more ? ' · ' : ''}${hostile} hostile` : ''}</span><span class="side-chip-short">${orgTickerHtml(g.kind, g.id) || escapeHtml(g.name.slice(0, 5))}</span>`;
-  chip.title = `${cardName('side')}: ${label}`;
-  chip.setAttribute('aria-label', `${cardName('side')}: ${label}. Open ${cardName('side')}`);
-  fillOrgTickers(chip);
-}
+// v2026.11.01.1: the Standings chip is the profile now (renderProfile); the panel is two sections of the profile panel, Pilot and
+// Standings (#sidePanel), with My Fits (#myShipPanel) after them
+function renderSideChip(){ renderProfile(); }
 function sidePanelEl(){ return document.getElementById('sidePanel'); }
-function sidePanelIsOpen(){ const p = sidePanelEl(); return !!(p && !p.hidden); }
-function openSidePanel(){
-  const p = sidePanelEl();
-  p.hidden = false;
-  document.getElementById('sideBackdrop').hidden = false;
-  document.getElementById('sideChip').setAttribute('aria-expanded', 'true');
-  renderSidePanel();
-  const first = p.querySelector('#sidePilot');
-  if(first) first.focus({preventScroll: true});
-  try{ p.scrollIntoView({block: 'nearest'}); }catch(e){}
-}
-function closeSidePanel(returnFocus = true){
-  const p = sidePanelEl();
-  if(!p || p.hidden) return;
-  p.hidden = true;
-  document.getElementById('sideBackdrop').hidden = true;
-  const chip = document.getElementById('sideChip');
-  chip.setAttribute('aria-expanded', 'false');
-  side.msg = {};
-  if(returnFocus) chip.focus({preventScroll: true});
-}
+function sidePanelIsOpen(){ return profileIsOpen(); }
+function openSidePanel(){ openProfile('#sidePilot'); }
+function closeSidePanel(returnFocus = true){ closeProfile(returnFocus); }
 function sideMsgHtml(k){ const m = side.msg[k]; return m ? `<div class="status side-msg${m.err ? ' err' : ''}">${escapeHtml(m.text)}</div>` : ''; }
 function sideChipsHtml(list, which){
   return `<div class="side-chips">${list.map(g => `<span><span class="nm" title="${escapeHtml(g.name)}">${escapeHtml(g.name)}</span>${orgTickerHtml(g.kind, g.id)}<button type="button" class="side-x" data-side-rm="${which}:${g.kind}:${g.id}" aria-label="Remove ${escapeHtml(g.name)}" title="Remove">×</button></span>`).join('')}</div>`;
@@ -22366,7 +22474,7 @@ function sideListFieldHtml(which){
 }
 function renderSidePanel(){
   const p = sidePanelEl();
-  if(!p || p.hidden) return;
+  if(!p || !profileIsOpen()) return;
   const r = side.rec, g = sideOwnGroup();
   const sug = side.sug;
   const sugHtml = !g ? ctxHtml('set your pilot first')
@@ -22374,12 +22482,15 @@ function renderSidePanel(){
     : sug ? (sug.list.length ? sug.list.map(s => `<div class="side-sug"><span class="side-sug-t"><span class="nm" title="${escapeHtml(s.name)}">${escapeHtml(s.name)} ${orgTickerHtml(s.kind, s.id)}</span>${ctxHtml(`on ${s.shared} of your last ${sug.n} kills`)}</span><button type="button" data-side-act="sugadd:${s.kind}:${s.id}">Add</button></div>`).join('')
                                      : ctxHtml(sug.n ? 'no other group on 2+ of your kills' : 'no kills by your side in 7 days'))
     : '';
-  p.innerHTML = `
-    <div class="sa-head"><h2>${escapeHtml(cardName('side'))}</h2><span class="sa-sp"></span>${infoBtnHtml('side')}<button type="button" class="mys-x" data-side-act="close" aria-label="Close" title="Close">×</button></div>
+  const sec = (k, done, head, n, body) => `<div class="pp-sec${done ? ' done' : ''}" data-k="${k}"><div class="pp-sh"><span class="pp-ok" aria-hidden="true"></span>${head}${n ? `<span class="pp-n">${n}</span>` : ''}</div>${body}</div>`;
+  const nf = r.friendly.length, nh = r.hostile.length;
+  p.innerHTML = sec('pilot', !!r.pilot, 'Pilot', '', `
     <div class="side-fld"><label class="side-lab" for="sidePilot">Your pilot</label>
       <div class="side-row"><input type="text" id="sidePilot" value="${escapeHtml(r.pilot ? r.pilot.name : '')}" placeholder="Your pilot's name" maxlength="${EVE_NAME_MAX}"><button type="button" data-side-act="pilot">Set</button></div>
       ${r.corp ? `<div class="side-res">${SIDE_MARK.f}<span>${escapeHtml(r.corp.name)} ${orgTickerHtml('corporation', r.corp.id)}${r.alliance ? ` · ${escapeHtml(r.alliance.name)} ${orgTickerHtml('alliance', r.alliance.id)}` : ' · no alliance'}</span></div>` : ''}
       ${sideMsgHtml('pilot')}</div>
+    <button type="button" class="pp-sso" disabled title="Not yet: EVE's own login comes later">Log in with EVE <span class="ctx">(later)</span></button>`)
+    + sec('side', !!(nf || nh), `${escapeHtml(cardName('side'))}<span class="sa-sp"></span>${infoBtnHtml('side')}`, nf || nh ? `${nf} friendly · ${nh} hostile` : '', `
     ${sideListFieldHtml('friendly')}
     ${sideListFieldHtml('hostile')}
     <div class="side-fld"><div class="side-lab">Suggested friendlies</div>
@@ -22387,7 +22498,7 @@ function renderSidePanel(){
       <div style="margin-top:6px;">${sugHtml}</div>${sideMsgHtml('sug')}</div>
     <div class="side-fld"><label class="side-lab" for="sideRows">Pilot rows up to</label>
       <div class="side-num"><input type="text" id="sideRows" inputmode="numeric" value="${r.rows}" maxlength="2">${ctxHtml(`hostile + neutral; at most ${SIDE_ROWS_MAX}`)}</div></div>
-    <div class="side-foot">${ctxHtml('Saved in this browser only')}</div>`;
+    <div class="side-foot">${ctxHtml('Saved in this browser only')}</div>`);
   fillOrgTickers(p);
 }
 // After any change: save, redraw the chip, the panel and the analysis on screen (no new lookups).
@@ -22610,14 +22721,12 @@ async function sideTagForPilot(charId){
 }
 
 (function systemAnalyzerInit(){
-  const chip = document.getElementById('sideChip');
+  const chip = document.getElementById('profileBtn');   // v2026.11.01.1: the profile opens Standings (profileInit)
   if(!chip || !chip.classList || typeof document.querySelectorAll !== 'function') return;   // LESSON #36: stub DOM in the suites
   for(const el of document.querySelectorAll('[data-card]')) el.textContent = cardName(el.dataset.card);
   const info = document.getElementById('saInfo'); if(info) info.innerHTML = infoBtnHtml('sysan');
-  sidePanelEl().setAttribute('aria-label', cardName('side'));
   side.rec = sideRead();
   renderSideChip();
-  chip.addEventListener('click', () => { if(sidePanelIsOpen()) closeSidePanel(); else openSidePanel(); });
   const p = sidePanelEl();
   p.addEventListener('click', (e) => {
     const rm = e.target.closest('[data-side-rm]');
@@ -22636,17 +22745,6 @@ async function sideTagForPilot(charId){
     if(e.target.id !== 'sideRows') return;
     side.rec.rows = sideRows(e.target.value);
     sideChanged();
-  });
-  document.getElementById('sideBackdrop').addEventListener('click', () => closeSidePanel(false));
-  document.addEventListener('pointerdown', (e) => {
-    if(!sidePanelIsOpen()) return;
-    if(p.contains(e.target) || chip.contains(e.target)) return;
-    closeSidePanel(false);
-  }, true);
-  document.addEventListener('keydown', (e) => {
-    if(e.key !== 'Escape' || !sidePanelIsOpen()) return;
-    if(p.querySelector('details.info-pop[open]')) return;   // Escape closes the (i) panel first
-    e.preventDefault(); closeSidePanel();
   });
   // the System Analyzer's own buttons
   document.getElementById('saClearBtn').addEventListener('click', saClear);
@@ -22693,6 +22791,31 @@ async function sideTagForPilot(charId){
     const ab = e.target.closest('[data-sa-act]');
     if(ab){ if(ab.dataset.saAct === 'side') openSidePanel(); else if(ab.dataset.saAct === 'refresh') runSystemAnalyzer(true); }
   });
+})();
+
+// v2026.11.01.1: the profile's own presses; one closer for the whole panel (it holds Pilot, Standings and My Fits)
+(function profileInit(){
+  const btn = document.getElementById('profileBtn');
+  if(!btn || !btn.addEventListener || typeof document.addEventListener !== 'function') return;   // LESSON #36: stub DOM in the suites
+  btn.addEventListener('click', () => {
+    if(profileIsOpen()) return closeProfile();
+    const st = profileState();
+    openMyShipPanel(undefined, {focus: !st.pilot ? '#sidePilot' : !st.fits ? '#myShipEft' : null});
+  });
+  document.getElementById('profileAddFit').addEventListener('click', () => openMyShipPanel('paste'));
+  document.getElementById('sideBackdrop').addEventListener('click', () => closeProfile(false));
+  const p = profileEl(), box = document.getElementById('profile');
+  p.addEventListener('click', (e) => { if(e.target.closest('.pp-x')) closeProfile(); });
+  // a press outside closes it (pointerdown, so the click that opens it from a page button can't close it)
+  document.addEventListener('pointerdown', (e) => { if(profileIsOpen() && !p.contains(e.target) && !box.contains(e.target)) closeProfile(false); }, true);
+  document.addEventListener('keydown', (e) => {
+    if(e.key !== 'Escape' || !profileIsOpen()) return;
+    if(p.querySelector('details.info-pop[open]')) return;   // Escape closes the (i) panel first
+    e.preventDefault(); closeProfile();
+  });
+  addEventListener('resize', profileFit);
+  addEventListener('scroll', profileFit, {passive: true});
+  renderProfile();
 })();
 
 
@@ -24721,11 +24844,13 @@ function itRender(force){   // force: a press that changes what is open (the gea
   // owner, from other users: "they didn't see how to turn intel on while on the intel tab"): that switch is here, beside the
   // gear (#intelSw); the header keeps only the "N near" pill
   const onoff = `<label class="mys-use it-onoff" id="intelSwLabel" title="${it.on ? (it.set.channels.length ? `Watching ${it.set.channels.length} intel channel${it.set.channels.length === 1 ? '' : 's'} (named under the gear)` : 'Watching no channel yet') : 'Intel is off'}"><input type="checkbox" class="mys-sw" id="intelSw" aria-label="Watch the intel channels"${it.on ? ' checked' : ''}><span>${it.on ? 'On' : 'Off'}</span></label>`;
-  const sw = `<span class="it-sw">${onoff}<button type="button" class="it-gear" data-it-act="gear" aria-label="Intel settings" title="Intel settings" aria-expanded="${it.pop ? 'true' : 'false'}">${IT_GEAR}</button></span>`;
+  // v2026.11.01.1 (the owner: "move the intel tab's info button to the right of the on/off switch", then B: the switch, the gear, the
+  // info button, as every other card ends its head with its info button), at the top right at every width
+  const sw = `<span class="it-sw">${onoff}<button type="button" class="it-gear" data-it-act="gear" aria-label="Intel settings" title="Intel settings" aria-expanded="${it.pop ? 'true' : 'false'}">${IT_GEAR}</button>${infoBtnHtml('intel')}</span>`;
   const setup = !itReady() || (!it.on && !it.feed.length);
   let body = '';
   if(setup){
-    body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The switch beside the gear starts and stops it; closing the page stops it too. While it runs, a “N near” pill at the top shows from any tab when a hostile is within your alert range.</div>${itSettingsHtml(true)}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
+    body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The switch beside the gear starts and stops it; closing the page stops it too. While it runs, a mark on your profile at the top shows from any tab: cyan when all is clear, an amber “N near” when a hostile is within your alert range, red “In system” in your own system.</div>${itSettingsHtml(true)}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
   } else {
     // v.98 (the owner: "the feed keeps growing ... drop entries older than 15 minutes"): the Feed keeps the same time as Near You
     body = `${it.on ? `<div class="it-sub" data-it-status>${itStatusLine()}</div>` : `<div class="it-sub">Stopped. The switch beside the gear starts it again.</div>`}
@@ -24736,20 +24861,42 @@ function itRender(force){   // force: a press that changes what is open (the gea
       </div>`;
   }
   const pop = it.pop && !setup ? `<div class="it-pop" role="dialog" aria-label="Intel settings"><div class="it-h"><h3>Intel settings</h3><span class="sa-sp"></span><button type="button" class="info-close" data-it-act="gear" aria-label="Close">×</button></div>${itSettingsHtml(false)}</div>` : '';
-  el.innerHTML = `<div class="card it-card"><div class="it-head"><h2>${escapeHtml(cardName('intel'))}</h2>${infoBtnHtml('intel')}${sw}</div>
+  el.innerHTML = `<div class="card it-card"><div class="it-head"><h2>${escapeHtml(cardName('intel'))}</h2>${sw}</div>
     <div id="itNotes">${itNotesHtml()}</div>
     ${body}${pop}</div>`;
   itAfterDraw(el);
+}
+// v2026.11.01.1 (the profile, decided 2026-10-29 and 2026-10-31): Intel's mark on the profile and a dot on the Intel tab. Off: none. On,
+// clear: a cyan square on the portrait's corner. On, not working (an error, the kill feed failing or stopped): a hollow cyan square.
+// Near: an amber tab on the profile's left, "Intel · N near". In system: the Hostile red, "In system", with a ring and a slow pulse,
+// so it differs by shape as well as colour. Pressing it opens the Intel tab; only the card's switch turns Intel on or off (LESSON #95).
+function itMarkState(){
+  if(!it.on) return 'off';
+  if(it.err || it.kfNote || itR2Stopped()) return 'broken';
+  const near = itNearList().filter(x => x.j !== null && x.j <= it.set.range && itThreat(x.st));
+  return near.some(x => x.j === 0) ? 'in' : near.length ? 'near' : 'clear';
 }
 function itHeaderSync(){
   if(typeof document === 'undefined' || !document.getElementById) return;
   const b = document.getElementById('intelNear');
   if(!b) return;
-  const n = itNearCount();
+  const s = itMarkState(), n = itNearCount(), name = cardName('intel');
+  const box = document.getElementById('profile');
+  if(box && box.dataset) box.dataset.s = s;
   const t = document.getElementById('intelNearN');
-  if(t) t.textContent = n ? `${n} near` : '';
-  b.hidden = !n;
-  b.title = n ? `${n} system${n === 1 ? '' : 's'} with a hostile or neutral report within ${it.set.range} jump${it.set.range === 1 ? '' : 's'}: open ${cardName('intel')}` : '';
+  if(t) t.textContent = s === 'in' ? 'In system' : s === 'near' ? `${n} near` : '';
+  b.hidden = s === 'off';
+  const why = s === 'clear' ? 'on, nothing reported within your alert range'
+    : s === 'broken' ? `on but not working: ${it.err ? 'an error' : 'the kill feed isn\'t answering'} (see the ${name} tab)`
+    : s === 'near' ? `${n} system${n === 1 ? '' : 's'} with a hostile or neutral report within ${it.set.range} jump${it.set.range === 1 ? '' : 's'}`
+    : s === 'in' ? 'a hostile or neutral reported in your system' : 'off';
+  b.title = `${name}: ${why}. Open ${name}`;
+  b.setAttribute('aria-label', `${name}: ${why}. Open ${name}`);
+  const tab = document.getElementById('tabBtnIntel');
+  if(tab && tab.dataset){
+    tab.dataset.s = s;
+    if(!tab.querySelector('.tb')){ const d = document.createElement('span'); d.className = 'tb'; d.setAttribute('aria-hidden', 'true'); tab.appendChild(d); }
+  }
 }
 function itToggle(on){ if(on) itStart(); else itStop(); }
 (function itInit(){
@@ -24758,6 +24905,7 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
   if(!el || !el.addEventListener || typeof window === 'undefined' || !document.addEventListener) return;   // LESSON #36: stub DOM (and no timer there)
   it.supported = typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
   document.getElementById('tabBtnIntel').textContent = cardName('intel');
+  itHeaderSync();   // v2026.11.01.1: the tab's dot and the profile's mark
   document.getElementById('tabBtnIntel').addEventListener('click', () => switchTab('intel'));
   el.addEventListener('change', (e) => { if(e.target && e.target.id === 'intelSw') itToggle(e.target.checked); });   // v2026.10.29.1: the switch on the card
   document.getElementById('intelNear').addEventListener('click', () => switchTab('intel'));   // the pill opens the tab; only the card's switch turns Intel on or off

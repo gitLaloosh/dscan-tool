@@ -130,7 +130,7 @@ with sync_playwright() as p:
     summ = pg.inner_text(f'{R} .cc-closed [data-card="bay:fighter"]')
     check('4 / 4 tubes' in summ, f'collapsed row: "{summ}"')
     pg.reload(); pg.wait_for_timeout(500)
-    pg.click('#myShipChip'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000)
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000)
     restored = pg.evaluate("async () => { const f = await myShipEnsureFit(); return f && f.estimate.application.fighters.filter(x => x.typeId === 40559).map(x => [x.squadrons, x.activeAbilities]); }")
     check(restored and all(x[0] == 2 and 6441 in x[1] for x in restored), f'after a reload my ship has the stored states: {restored}')
     pg.keyboard.press('Escape')

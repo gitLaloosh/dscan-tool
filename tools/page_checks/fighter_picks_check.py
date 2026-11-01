@@ -80,7 +80,7 @@ with sync_playwright() as p:
     pg = b.new_page(viewport={'width': 1440, 'height': 1000})
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
-    pg.click('#myShipChip'); pg.fill('#myShipEft', NYX); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000); pg.keyboard.press('Escape')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', NYX); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000); pg.keyboard.press('Escape')
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', OMEN); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout', timeout=60000)
     pg.wait_for_selector(f'{TV} .weak-picks[data-filled]', timeout=120000); settle(pg, 800)
     t1 = tiles(pg, TV)
@@ -111,7 +111,7 @@ with sync_playwright() as p:
     pg.click(f'{TV} button.cc-row[data-card="weak"]'); settle(pg, 400)
     # My ship view: the Nyx as the threat, the Omen as my ship
     pg.evaluate("localStorage.clear()"); pg.reload()
-    pg.click('#myShipChip'); pg.fill('#myShipEft', OMEN); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000); pg.keyboard.press('Escape')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', OMEN); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000); pg.keyboard.press('Escape')
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', NYX); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout', timeout=60000); settle(pg, 800)
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{MV} .weak-picks[data-filled]', timeout=120000); settle(pg, 800)
     m1 = tiles(pg, MV)
@@ -123,7 +123,7 @@ with sync_playwright() as p:
     pg = b.new_page(viewport={'width': 390, 'height': 900}, is_mobile=True, has_touch=True, device_scale_factor=2)
     errs2 = []; pg.on('pageerror', lambda e: errs2.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
-    pg.tap('#myShipChip'); pg.fill('#myShipEft', NYX); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000); pg.keyboard.press('Escape')
+    pg.tap('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', NYX); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000); pg.keyboard.press('Escape')
     pg.tap('#tabBtnFit'); pg.fill('#fitAnalyzerInput', OMEN); pg.tap('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout', timeout=60000)
     pg.wait_for_selector(f'{TV} .weak-picks[data-filled]', timeout=120000); settle(pg, 800)
     ph = pg.evaluate(f"""() => {{ const card = document.querySelector('{TV} .weak-picks').closest('.fit-summary'); const cr = card.getBoundingClientRect();

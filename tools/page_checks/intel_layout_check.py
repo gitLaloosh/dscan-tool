@@ -72,7 +72,7 @@ _tail = r'''
     amber = 'rgb(217, 154, 60)'
     chk(all((amber in r['edge']) == r['alert'] for r in rows) and any(r['alert'] for r in rows) and len({r['bg'] for r in rows}) == 1,
         f'the amber edge only within the alert range, the same quiet background on every row {[(r["sys"], r["alert"], r["edge"][:22]) for r in rows]} {set(r["bg"] for r in rows)}')
-    pill = pg.evaluate("() => { const p = document.querySelector('#intelNearN'); return [p.textContent, getComputedStyle(p).backgroundColor]; }")
+    pill = pg.evaluate("() => { const p = document.querySelector('#intelNear'); return [p.textContent, getComputedStyle(p).backgroundColor]; }")   # v2026.11.01.1: the mark on the profile
     chk(pill[1] == amber, f'the "N near" alert in the same amber {pill}')
     # a gang of 300 named in one report: the word keeps the count, the names stop at 3 lines with "+N more"
     cap = pg.evaluate("""() => { const sys = it.names.byLower.get('d-w7f0'), now = Date.now();

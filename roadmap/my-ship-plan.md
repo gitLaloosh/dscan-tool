@@ -161,3 +161,29 @@ As built:
   - "Use in assessments" is one switch for whichever fit is in use.
 - **Checks:** new `tools/page_checks/my_ships_check.py`; `my_ship_check.py` (Delete now passes to the saved Vexor first)
   and `mine_damage_check.py` (a phone tap on "My ship", since the name opens the menu) follow.
+
+## Your profile (v2026.11.01.1)
+
+The owner (2026-10-29): "turn the upper right portion of the page into something of a 'profile' of the user that starts out as
+being incomplete or not started. similar to a profile for a discord account. encompasses all things associated with the user
+(and later tied into Eve SSO). Pilot name, associations, fits, etc. Intel could sit outside of that but somehow attached as a
+decorator." Five mockup passes (Claude outputs/profile_mockup.html .. profile_mockup_5.html, made-up pilot), each piece settled:
+
+- **One control at the top right** in place of the Standings chip, the My Ship chip, "Use in assessments" and the "N near" pill:
+  your portrait (CCP's image server; initials when it can't load), name and tickers; "Set up your profile" and "n of 3" until
+  your pilot, Standings and a fit are set.
+- **"Use in assessments" is one wide switch with the fit in use inside it** (pass 3: "have the switch actually span the length
+  of the profile row and put the fit name inside of it"); with no fit, "+ Add a fit" ("Calls the user to action").
+- **The panel:** Pilot (with "Log in with EVE" waiting for SSO), Standings, My Fits, each ticked when done; the shared close
+  button at its top right (Esc and a press outside close it too, the focus goes back to the profile); it never runs past the
+  bottom of the window and scrolls inside (the My Ships bug), without trapping the wheel. A phone: a sheet from the bottom.
+- **"My Ship" is "My Fit"** across the site ("accuracy matters"): My Fits, the My Fit Perspective, Viewing My Fit.
+- **Intel's mark** (the status colours step, 2026-10-31): off none; on and clear a cyan square on the portrait's corner (cyan,
+  not the Clear tag's green: green and amber are 3.8 apart for red-green colour blindness, below the floor of 8); on but not
+  working a hollow cyan square; near an amber "Intel · N near" tab on the profile's left; in system the Hostile standing's red
+  ("A"), "IN SYSTEM", with a ring that pulses (none with reduced motion), so it differs by shape too. The Intel tab carries a
+  small dot of the same kind. Pressing the mark opens the Intel tab; only the card's switch turns Intel on or off.
+- **The Intel card's head:** the switch, the gear, then the info button ("B": every other card ends its head with its info
+  button), at the top right at every width.
+- **Checks:** `tools/page_checks/profile_check.py`; the checks that opened the old chips open the profile (by its portrait: the
+  switch and "+ Add a fit" sit over the rest of its button, LESSON #117).

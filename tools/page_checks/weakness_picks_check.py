@@ -98,7 +98,7 @@ def desktop(b):
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
     check(vis(pg, f'{TV} .weak-generic') and not vis(pg, f'{TV} .weak-picks') and pg.locator(f'{R} .wp-tag').count() == 0 and title(pg, TV) == 'threat weaknesses',
           f'no ship saved: generic tiles, no picks, no tag, "{title(pg, TV)}"')
-    pg.click('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
     pg.wait_for_selector(f'{TV} .weak-picks .wp-stat', timeout=60000); settle(pg, 600)
     check(title(pg, TV) == 'threat weaknesses' and pg.locator(f'{R} .wp-tag').count() == 0 and not vis(pg, f'{TV} .weak-generic'), f'threat view: "{title(pg, TV)}", generic tiles hidden')
     t1 = tiles(pg, TV)
@@ -167,7 +167,7 @@ def desktop(b):
     yp = tiles(pg, f'{V1} .mys-threat-view')
     check(yp == pg.evaluate(EXPECT, [V1, 'yours']) and len(yp) == 2, 'Pilot losses: your picks on the visible loss')
     # Viewing my ship (Fit Analyzer): no opponent, generic tiles
-    pg.click('#tabBtnFit'); pg.click('#myShipChip'); pg.click('#myShipPanel [data-act="open"]'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
+    pg.click('#tabBtnFit'); pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.click('#myShipPanel [data-act="open"]'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
     pg.keyboard.press('Escape')
     check(vis(pg, f'{R} .weak-generic') and not vis(pg, f'{R} .weak-picks') and title(pg, R) == 'your weaknesses', f'"Viewing my ship": generic tiles (no opponent), "{title(pg, R)}"')
     check(not errs, f'desktop: no page errors {errs}')
@@ -178,7 +178,7 @@ def phone(b):
     ctx = b.new_context(viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
-    pg.tap('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles')
+    pg.tap('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles')
     pg.touchscreen.tap(W // 2, 40); pg.wait_for_timeout(200)
     pg.tap('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.tap('#fitAnalyzerBtn'); pg.wait_for_selector(f'{TV} .weak-picks .wp-stat', timeout=60000); settle(pg)
     box = pg.locator(f'{TV} .weak-picks').bounding_box()

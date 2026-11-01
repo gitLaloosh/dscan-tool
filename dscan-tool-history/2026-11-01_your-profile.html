@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-01 — Your profile</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Your profile</h1>
+<p><span class="tag">UI</span><span class="tag">Intel</span><span class="tag">My Fits</span> 2026-11-01 &middot; <code>v2026.11.01.1</code></p>
+
+<h2>Why</h2>
+<p>The owner (2026-10-29): "turn the upper right portion of the page into something of a 'profile' of the user that starts out as being incomplete or not started. similar to a profile for a discord account. encompasses all things associated with the user (and later tied into Eve SSO). Pilot name, associations, fits, etc. Intel could sit outside of that but somehow attached as a decorator." Four mockup passes followed on 10-29; the fifth (2026-10-31, on today's page) settled the rest: the status colours for Intel's mark, the panel with 20 fits, the close button, and the Intel card's info button. Bundled at the owner's choice: the status-colour step, the My Ships panel running past the window (a bug), the close button for these panels (a bug, in part), and Intel's info button (a bug).</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>One profile control at the top right</b> replaces the Standings chip, the My Ship chip, "Use in assessments" and the "N near" pill: your portrait (initials when it can't load), name and tickers; "Set up your profile" and "n of 3" until your pilot, Standings and a fit are set.</li>
+<li><b>"Use in assessments" is one wide switch with the fit in use inside it</b>; with no fit, "+ Add a fit", which opens the profile at the paste box.</li>
+<li><b>The panel:</b> Pilot (with "Log in with EVE" waiting for SSO), Standings and My Fits, each ticked when done. It has the shared close button at its top right; Esc and a press outside close it too, and the focus goes back to the profile. It never runs past the bottom of the window: it scrolls inside, and the wheel isn't trapped. On a phone it's a sheet from the bottom.</li>
+<li><b>"My Ship" reads "My Fit"</b> everywhere users read it: My Fits, the My Fit Perspective, Viewing My Fit, "Set as my fit", the error texts (ERRORS.md regenerated) and roadmap/card-names.md.</li>
+<li><b>Intel's mark</b> on the profile: off none; on and clear a cyan square on the portrait's corner; on but not working (an error, or the kill feed failing or stopped) a hollow cyan square; near an amber "Intel · N near" tab on the profile's left; in system the Hostile standing's red, "IN SYSTEM", with a ring that pulses (none with reduced motion). The Intel tab carries a small dot of the same kind. The colours are tokens (<code>--st-clear</code>, <code>--st-near</code>, <code>--st-in</code>); the three sets offered were checked with the colour-blind validator, and green for "clear" was turned down because green and amber are 3.8 apart for red-green colour blindness (the floor is 8).</li>
+<li><b>The Intel card's head:</b> the switch, the gear, then the info button, at the top right at every width (in windows 900 px wide and under they used to move beside the title). A closed info panel now takes no room (Chrome laid out its content at the card's right edge, past a phone's window).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/profile_check.py</code>: the profile not set up and set up, the panel and its close button, 20 fits inside the window, the five Intel states and the tab's dot, the Intel head at 1280, 860 and 390 px, "My Fit", the phone. 10 mutants, all caught: the panel not sized to the window, the wheel trapped in it, "in system" in amber, no pulse, the info button before the switch, the close button first in the head, Esc not closing, My Fits on the left, "not working" not shown, the phone dropping the name line.</li>
+<li>Updated: the checks that opened the old chips open the profile by its portrait (LESSON #117); <code>my_ship_check</code>, <code>my_ships_check</code>, <code>system_analyzer_check</code>, <code>intel_check</code>, <code>intel_layout_check</code>, <code>header_check</code>, <code>ui_rules_check</code> and <code>vs_check</code> read the profile and the new wording.</li>
+<li>Run: <code>--auto</code> picked the area tier with all 8 areas: 12 lints and 56 page checks in 12 minutes, 0 failed, 1 flaky (<code>extension_check</code> under load, passed alone).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #117: a button laid under other controls has to be pressed where nothing sits on top. The profile is one big button with the switch and "+ Add a fit" on top of it; a click aimed at its middle lands on "+ Add a fit".</p>
+</body></html>

@@ -149,6 +149,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #94 Guard a whole class of failure with a check on the code, not only a test of today's case.
 - #115 Time what the code promises where it makes the promise: a later step's clock flakes on a busy machine.
 - #116 Check the checks' data is the verified version: an older pyfa checkout passed nearly every check.
+- #117 A button laid under other controls: click it where nothing sits on top, or the click lands on what does.
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1023,6 +1024,16 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 117. A button laid under other controls: click it where nothing sits on top, or the click lands on what does
+
+- **What happened (v2026.11.01.1):** the profile is one big button (an invisible `.pf-hit` laid over the whole row) with the
+  "Use in assessments" switch and "+ Add a fit" on top of it, so they stay pressable. The checks pressed the old chips with
+  `pg.click('#myShipChip')`, which Playwright aims at the middle; the middle of the profile is "+ Add a fit", so the click
+  was refused ("intercepts pointer events") or, by hand, did the wrong thing.
+- **Do this instead:** press such a button where it is uncovered (`position={'x': 12, 'y': 14}`, the portrait's top left: Intel's mark sits on its bottom right), and test the
+  controls on top on their own (the switch by its label, "+ Add a fit" by its id). When a page lays a hit area under other
+  controls, say so in a comment where the checks will look.
 
 ## 116. Check the checks' data is the verified version: an older pyfa checkout passed nearly every check
 

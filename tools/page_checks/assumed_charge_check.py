@@ -71,7 +71,7 @@ with sync_playwright() as p:
     check(abs(c2['headW'] - w0) < 0.5 and c2['head'] == f"{round(c2['cur']):,}", f'range 25 km: the headline box keeps its width ({w0} -> {c2["headW"]}), {c2["head"]} = PYFA CORE, assumed {c2["assumed"]}')
     check(not any(x in c2['text'] for x in ('NaN', 'undefined')), 'card has no NaN / undefined')
     # with a ship saved: the board
-    pg.click('#myShipChip'); pg.fill('#myShipEft', OSPREY); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', OSPREY); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
     pg.click('#tabBtnFit'); paste(pg, NERGAL)
     pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); settle(pg, 800)
     cells = pg.evaluate(f"() => Object.fromEntries([...document.querySelector('{R} .mys-board').querySelectorAll('[data-cell]')].map(c => [c.dataset.cell, [(c.querySelector('.mys-cell-v') || c).textContent, c.classList.contains('is-assumed'), c.title || '']]))")
@@ -85,8 +85,8 @@ with sync_playwright() as p:
     pick = pg.evaluate(f"() => {{ const t = [...document.querySelectorAll('{R} .mys-mine-view .wp-stat')].find(x => /Disintegrator/.test(x.textContent)); return t ? t.querySelector('.wp-value').textContent : null; }}")
     check(pick == c['assumed'][0], f'the assumed charge is the pick "What the Nergal should use against you": {pick} = {c["assumed"][0]}')
     # v2026.10.14.68 (the owner's screenshot: his Nergal as My Ship, its gun not Active): the cards say why it's 0
-    pg.click('#myShipChip'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.click('#myShipPanel [data-act="delete"]'); pg.click('#myShipPanel [data-act="delete-yes"]'); pg.wait_for_timeout(300)
-    if pg.is_hidden('#myShipPanel'): pg.click('#myShipChip')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.click('#myShipPanel [data-act="delete"]'); pg.click('#myShipPanel [data-act="delete-yes"]'); pg.wait_for_timeout(300)
+    if pg.is_hidden('#profilePanel'): pg.click('#profileBtn', position={'x': 12, 'y': 14})
     pg.fill('#myShipEft', NERGAL); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
     pg.click('#tabBtnFit'); paste(pg, OSPREY)
     pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); settle(pg, 800)

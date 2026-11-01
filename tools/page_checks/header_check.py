@@ -63,9 +63,9 @@ def run(b, W):
         check(st == [True, False], f'{W}: 5 s later the version tag is back {st}')
     if W > 600:
         # a ship saved under the old name's key is still there after a reload
-        pg.click('#myShipChip'); pg.fill('#myShipEft', OSPREY); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+        pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', OSPREY); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
         pg.reload(); pg.wait_for_timeout(500)
-        chip = ' '.join(pg.inner_text('#myShipChip').split())
+        chip = ' '.join(pg.inner_text('#profile').split())   # v2026.11.01.1: the profile's switch shows the fit in use
         check(pg.evaluate("() => !!localStorage.getItem('dscanMyShip')") and 'Osprey Navy Issue' in chip, f'{W}: a saved ship survives a reload under the kept key ("{chip}")')
     check(not errs, f'{W}: no page errors {errs}')
     ctx.close()

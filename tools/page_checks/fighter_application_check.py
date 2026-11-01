@@ -87,7 +87,7 @@ with sync_playwright() as p:
     tem = rows.get('Templar II ×18')
     check(tem and 'anti-' not in tem[0] and 'takes' not in tem[0], f'Templar II row: no resistance note ({tem})')
     # with a ship saved: the scoreboard's DPS applied to you is the card's headline, the times are numbers
-    pg.click('#myShipChip'); pg.fill('#myShipEft', OSPREY); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', OSPREY); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
     paste(pg, REVENANT)
     pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); settle(pg, 600)
     cells = pg.evaluate(f"() => Object.fromEntries([...document.querySelector('{R} .mys-board').querySelectorAll('[data-cell]')].map(c => [c.dataset.cell, (c.querySelector('.mys-cell-v') || c).textContent]))")

@@ -72,7 +72,7 @@ EXPECT = """(sel) => { const c = document.querySelector(sel)._dmg; const m = mys
 def st(pg): return pg.evaluate(f"() => document.querySelector('{MC}')._dmg.f.dmg")
 def pressed(pg, seg, sel=MC): return pg.get_attribute(f'{sel} button[data-seg="{seg}"][aria-pressed="true"]', 'data-v')
 def save_ship(pg):
-    pg.click('#myShipChip'); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
+    pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles'); pg.keyboard.press('Escape')
 def to_mine(pg):
     pg.click(f'{R} .mys-sw-btn.is-mine'); pg.wait_for_selector(f'{MV} .fl-dmg'); settle(pg)
 def to_threat(pg):
