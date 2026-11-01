@@ -136,6 +136,12 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   from the Fleet tab, a typed hull, a System Analyzer row) as its first row in every size, tagged On this kill / Lost on this kill /
   Asked for with its rank; the 8 busiest follow; "Show N more hulls" is a button that draws every hull read. A Fleet-tab kill missing
   from zKillboard's list for the pilot is added from the killmail already open ("+ this one"). `dossier_pin_check.py`.
+- **Kills grouped into fleets** (v2026.11.01.6, Project doc roadmap/kill-groups-impact.md §0, LESSON #122): the Fleet tab's kill picker
+  (opened from Intel with 2+ kills) groups kills by shared player attackers: 2 shared pilots link two kills, 1 when either kill had
+  1–2; chains are one fleet; victims and NPCs never link; "Not linked" last; biggest fleet first, newest kill first inside. Every
+  group starts closed (a lone group open), headings with Intel's chevron stay pinned at the top of the list while their kills scroll
+  (`top:-2px` over the list's padding); open groups are kept per set of kills. Only the picker: Intel, the analysis, `#fleet=` and
+  the zKillboard budget don't change; no request. `kill_groups_check.py`; `check_ui_rules.py` (6) keeps list expanders on IT_CHEV.
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
   the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship

@@ -90,6 +90,8 @@ _tail = r'''
     pg.evaluate("() => { document.querySelector('#fleetPanel .fk-picks').scrollTop = 0; window.scrollTo(0, 0); document.querySelector('#fleetPanel [data-fk-pick=\"29\"]').click(); }"); pg.wait_for_timeout(3000)
     s2 = pg.evaluate(LIST); y2 = pg.evaluate("() => window.scrollY")
     check(s2 and s2['pressed'] == 29 and s2['seen'] and y2 == 0, f'a kill opened out of view: the list scrolled to it, the page not ({y2}) {s2 and (s2["pressed"], s2["seen"], s2["top"])}')
+    under = pg.evaluate("() => { const b = document.querySelector('#fleetPanel button.fk-pk[aria-pressed=\"true\"]'), h = b && b.closest('.fk-kg') && b.closest('.fk-kg').querySelector('.fk-kg-h'); return h ? [b.getBoundingClientRect().top - h.getBoundingClientRect().bottom, getComputedStyle(h).position] : null; }")
+    check(under and under[0] >= -1 and under[1] == 'sticky', f'(v2026.11.01.6: the 31 kills are one fleet, open) the kill scrolled to is below its fleet\'s pinned heading, not under it {under}')
     # a Fleet tab info panel: the same close button
     pg.click('#fleetPanel .fk-sum summary.info-btn'); pg.wait_for_timeout(300)
     x4 = pg.evaluate(XB, ['#fleetPanel .fk-sum details.info-pop[open] .info-body'])

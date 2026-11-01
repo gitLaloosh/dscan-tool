@@ -134,6 +134,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #119 A redraw must carry over what the person was doing (focus, scroll) and compare with what it last drew, not with the new state.
 - #120 A view rebuilt on a timer costs the machine even when nothing changed: build, compare, skip; draw only what can be seen.
 - #121 A list cut to its top rows must still show what was asked for, and its "N more" must open: a selection off screen is a hidden state.
+- #122 A heading pinned inside a scrolling list needs its own group box, must cover the list's padding, and whatever is scrolled into view must clear it.
 
 **Checks and test machinery**
 
@@ -1028,6 +1029,21 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 122. A heading pinned inside a scrolling list needs its own group box, must cover the list's padding, and whatever is scrolled into view must clear it
+
+- **What happened (v2026.11.01.6):** the Fleet tab's kill picker got fleet headings that stay at the top of the list while their
+  kills scroll (`position: sticky`). Three things had to be right: each fleet (heading + kills) in its own box, so a pinned heading
+  lets go when its fleet scrolls past instead of every open heading piling up at the top; `top: -2px`, because the list has 2px of
+  padding and a heading pinned at `top: 0` left a strip where the kill above showed through; and the code that scrolls the pressed
+  kill into view (v2026.11.01.3) had to count the heading's height, or a kill half under the heading stayed half hidden. With every
+  fleet starting closed, the kill being analyzed is often hidden, so its fleet's heading (tagged "analyzing") is what gets scrolled to.
+- **How it was caught:** by the new kill_groups_check measuring the heading against the list's top (2 px off) and a kill pressed
+  half under the heading (its top above the heading's bottom), before delivery.
+- **Do this instead:** for a pinned heading, wrap each group, pin it over the scroll box's padding, and give every "scroll into view"
+  the pinned heading's height. Measure the pinned position in a check; a screenshot hides a 2 px strip. When closing a group can
+  move its heading, keep the heading where it was on screen (scroll by the difference) and keep the focus through the redraws
+  (LESSON #119).
 
 ## 121. A list cut to its top rows must still show what was asked for, and its "N more" must open: a selection off screen is a hidden state
 

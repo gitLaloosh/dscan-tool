@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-01 — Kills grouped into fleets</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td,th{border:1px solid #ddd; padding:4px 8px; text-align:left; font-size:14px;} th{background:#f6f6f6;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Kills grouped into fleets</h1>
+<p><span class="tag">Fleet tab</span><span class="tag">Intel</span> 2026-11-01 &middot; <code>v2026.11.01.6</code></p>
+
+<h2>Why</h2>
+<p>A Near You badge with several kills opens them in the Fleet tab's kill list, newest first. In a fight, nothing told you which kills were one gang's and which the other side's. The owner, on a multi-kill badge: "later D = group kills by shared attackers ('2 fleets')". Before it was built he asked for an impact study ("i like the idea of doing it but worry about how it could impact other things we might do using that tab or those killmails"), decided the rule and the layout on a mockup, and had the spec written up as section 0 of the Project doc <code>roadmap/kill-groups-impact.md</code> for this build ("Build exactly what section 0 says").</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Only the kill list</b> on the Fleet tab, opened from Intel with 2 or more kills. Near You, the Feed, alerts, the camp tag, the analysis of a kill, the <code>#fleet=</code> link and the zKillboard budget don't change. No request: the grouping reads the killmails the list already holds (under a millisecond for 120 kills).</li>
+<li><b>The rule:</b> two kills are one fleet when they share 2 player attackers ("go with 2 shared pilots"), or 1 when either kill had only 1 or 2 ("keep the exception as you intended"); fleets are the chains (A–B, B–C: one fleet). Victims and NPCs never link kills, so a brawl splits into its two sides. Kills linked to nothing go last, as <b>Not linked</b>.</li>
+<li><b>Headings:</b> <code>Fleet N · N pilots · N kills</code>, the ISK added up (amber), the newest kill's age, the victims as Near You counts them ("7 neutrals killed"), the rule in the hover. Biggest fleet first ("biggest first sounds good"), the newest kill first inside one. The line above the list adds "N fleets by shared pilots".</li>
+<li><b>Open and close</b> with Intel's chevron (a button with <code>aria-expanded</code>). Every group starts closed ("just have each fleet default to collapsed"), except a lone group (all one fleet, or all not linked), which starts open: the owner's "Open it" before the build. The fleet holding the kill being analyzed says <b>analyzing</b>. Several can be open; what's open is kept through the tab's redraws and when a kill is pressed, and starts over with a new set of kills.</li>
+<li><b>Headings stay in place:</b> an open fleet's heading stays at the top of the list while its kills scroll under it ("let's do the headers staying in place and add the expand/collapse"). Pressing a heading leaves it where it was on screen and keeps the focus on it; a kill pressed keeps the focus through the redraws as its pilots come in. The list keeps its six and a half rows and lets the wheel move the page on at either end.</li>
+<li><b>Phone:</b> each heading on one line, 44 px tall; opened, its ISK, age and victims on a second line (the owner: "Second line when open").</li>
+<li>When the kill being analyzed is inside a closed fleet, its fleet's heading is what's scrolled into view (v2026.11.01.3 scrolled the kill itself); a kill scrolled to clears the pinned heading.</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li>New <code>tools/page_checks/kill_groups_check.py</code> (areas intel, pilot, system): made-up battles only, on <code>sa_mocks.py</code>'s made-up pilots, the expected fleets worked out again in Python. A brawl with a third party on one kill of each side (2 fleets, not merged), a solo hunter (the 1-pilot exception), unrelated kills (Not linked), victims and NPCs never linking, biggest first rather than newest; every behaviour above; a camp (one fleet, open); 120 kills (order, the scroll area, a kill half under a pinned heading, the wheel not trapped, timing); 390 px. Fails on v2026.11.01.5. 25 mutants: 24 caught, 1 equivalent (the heading's own focus call, which the redraw's focus keeping already covers).</li>
+<li>Extended: <code>intel_fleet_check</code> (2 kills by the same pilots: one fleet, open), <code>fleet_kill_check</code> (from the dossier: no list, no fleets), <code>close_buttons_check</code> (the kill scrolled to is below its fleet's pinned heading), <code>check_ui_rules</code> rule 6 (list expanders carry Intel's chevron, no arrow glyph).</li>
+<li>Page size: 617,509 → 620,323 bytes gzipped (+2.8 KB, +0.46%; 2,088,866 → 2,097,438 raw).</li>
+<li>Perf harness (Project <code>roadmap/perf-harness/</code>), before (v2026.11.01.5) and after in one session, same settings as before: Intel off 0.12% / 0.13% of a core; Intel on, tab visible, 14 min: 2.83% / 2.96% main thread, 4.9% / 4.9% all Chromium, layouts 128 / 122 a minute; heap 5.2 / 5.1–5.2 MB. Unchanged, as expected: the list is drawn only on the Fleet tab, not on Intel's tick. Results: Project <code>roadmap/perf-harness/results-v2026.11.01.6.md</code>.</li>
+<li>Run: <code>--auto</code> chose intel, layout, pilot, system: 12 lints + 40 page checks, 0 failed, 0 flaky.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #122: a heading pinned inside a scrolling list needs its own group box, must cover the list's padding, and whatever is scrolled into view must clear it. Measure the pinned position in a check; a screenshot hides a 2 px strip.</p>
+</body></html>

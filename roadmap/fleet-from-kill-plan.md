@@ -76,3 +76,20 @@ folded into the next delivery for that page"; picked "Scroll inside" (mockup `Cl
 - ISK: zKillboard's value already on each Intel kill (`isk` on the pick, from `e.kill.value`), written as the Feed writes it (itIsk),
   amber; the exact value in its hover; none without a value. No new request.
 - `tools/page_checks/close_buttons_check.py`.
+
+## The kill list grouped into fleets (v2026.11.01.6)
+
+The owner's backlog item "Intel kills grouped by shared attackers" ("later D = group kills by shared attackers ('2 fleets')"); the
+spec in the Project doc roadmap/kill-groups-impact.md section 0, mockup claude/roadmap/kill-groups-mockup/.
+- Only the kill picker (opened from Intel with 2+ kills). Intel, the per-kill analysis, the `#fleet=` link and the zKillboard budget
+  are unchanged; grouping reads the killmails already in `fk.picks` (`fkGroupKills`, under 1 ms for 120 kills).
+- Rule: 2 shared player attackers link two kills ("go with 2 shared pilots"), 1 when either kill had 1–2 ("keep the exception as you
+  intended"); fleets are the chains; victims and NPCs never link; kills linked to nothing go last as "Not linked". Later, not now: a
+  size-based mix with a percentage.
+- Layout: a heading per fleet (`Fleet N · N pilots · N kills`, the ISK in amber, the newest kill's age, the victims as Near You
+  counts them, the rule in its hover), Intel's chevron, `aria-expanded`; biggest first ("biggest first sounds good"); every group
+  closed ("just have each fleet default to collapsed"), a lone group open (the owner: "Open it"); the fleet holding the kill analyzed
+  says "analyzing"; an open fleet's heading stays at the top of the list while its kills scroll ("let's do the headers staying in
+  place and add the expand/collapse"); open groups kept for this set of kills. Phone: one line, ISK, age and victims on a second line
+  when open (the owner: "Second line when open").
+- `tools/page_checks/kill_groups_check.py`; intel_fleet_check, fleet_kill_check and close_buttons_check extended; `check_ui_rules.py` (6).

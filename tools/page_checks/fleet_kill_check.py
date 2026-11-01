@@ -66,6 +66,8 @@ with sync_playwright() as p:
     pg.click(f'[data-pd-fleet="{M.FLEET_KILL}"]'); pg.wait_for_timeout(300); fleet_done(pg, 6)
     tab = pg.evaluate("() => [!document.querySelector('#fleetTabWrap').hidden, document.querySelector('#tabBtnFleet').textContent, document.querySelector('#tabBtnFleet').classList.contains('active'), getComputedStyle(document.querySelector('#tabFleet')).display, getComputedStyle(document.querySelector('#tabPilot')).display]")
     check(tab == [True, 'Fleet', True, 'block', 'none'], f'Fleet ▸: the Fleet tab shown and open {tab}')
+    nk = pg.evaluate("() => [document.querySelectorAll('#fleetPanel .fk-picks, #fleetPanel .fk-kg-h').length, !!document.querySelector('#fleetPanel .fk-pk-h')]")
+    check(nk == [0, False], f'from the dossier: one kill, no kill list and no fleets to pick from (v2026.11.01.6) {nk}')
     sub = ' '.join(pg.inner_text('#fleetPanel .fk-sub').split())   # v2026.10.31.1: the victim is a tag (its name, then ›)
     VIC = pg.evaluate("() => fk.info.get(fk.victim.id)")
     check(VIC and sub.startswith(f"Chosen from {ORLA}'s Pilot Dossier · killed {VIC} › in a Thanatos (Carrier) · ") and sub.endswith('· 1DQ1-A · 8 pilots on the kill, 6 in ships'),

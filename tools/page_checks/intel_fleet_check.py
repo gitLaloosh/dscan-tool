@@ -11,8 +11,9 @@ intel_kills_check.py's start (made-up logs and kills, R2Z2 and ESI answered by s
   * a badge for one kill by several pilots: the Fleet tab, "From Intel", the killmail the feed gave (no ESI killmail request),
     the pilots in ships, no list to pick from; Close: back to Intel, the Fleet tab hidden;
   * a badge for one solo kill: the Fleet tab too, its one pilot;
-  * a badge for 2 kills: the Fleet tab on the newer, both listed to pick from, the newer pressed; a new kill in Intel doesn't
-    change the list; picking the other shows it, the list kept;
+  * a badge for 2 kills: the Fleet tab on the newer, both listed to pick from, the newer pressed; by the same pilots, they're one
+    fleet, open from the start (v2026.11.01.6, kill_groups_check); a new kill in Intel doesn't change the list; picking the other
+    shows it, the list kept;
   * a Feed kill's label: that kill in the Fleet tab; a Near You row opened: each kill's label opens it too;
   * no page errors.
 """
@@ -52,6 +53,8 @@ _tail = r'''
     lbl = pg.evaluate("(a) => { const b = document.querySelector(`#itNearList [data-it-kb=\"${a[0]}:${a[1]}\"]`); if(!b) return null; const t = b.textContent; b.click(); return t; }", two); pg.wait_for_timeout(2500)
     P = pg.evaluate("() => [fk.killId, [...document.querySelectorAll('#fleetPanel .fk-pk')].map(b => b.getAttribute('aria-pressed')), (document.querySelector('#fleetPanel .fk-pk-h') || {}).textContent || '']")
     check(lbl and lbl.startswith('2 ') and P[0] == two[3] and P[1] == ['true', 'false'] and P[2].startswith('2 kills'), f'a badge for 2 kills: the Fleet tab on the newer, both listed, the newer pressed ({lbl}) {P}')
+    G = pg.evaluate("() => [[...document.querySelectorAll('#fleetPanel button.fk-kg-h')].map(h => [h.querySelector('.fk-kg-t').textContent, h.getAttribute('aria-expanded'), !!h.querySelector('.fk-kg-here')]), (document.querySelector('#fleetPanel .fk-pk-h') || {}).textContent || '']")
+    check(G[0] == [['Fleet 1', 'true', True]] and '· 1 fleet by shared pilots ·' in G[1], f'the 2 kills by the same pilots: one fleet, open (a lone group), "analyzing" (v2026.11.01.6) {G}')
     pg.evaluate("""() => { const e0 = it.feed.find(x => x.kind === 'kill' && x.kill.ships >= 2); const km = JSON.parse(JSON.stringify(e0.kill.km)); km.killmail_id += 888888;
       itAddKill({km, z: {hash: 'b'.repeat(40), totalValue: 3e6}, t: Date.now(), history: true}); itRenderLists(); }"""); pg.wait_for_timeout(300)
     n2 = pg.evaluate("() => document.querySelectorAll('#fleetPanel .fk-pk').length")

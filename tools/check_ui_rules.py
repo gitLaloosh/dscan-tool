@@ -17,6 +17,8 @@ far as a static read can (the look itself: tools/page_checks/ui_rules_check.py):
      right"): every panel the script marks role="dialog" has the shared button.x-close near where it is built; no close button
      of its own kind (a bare info-close / chg-close / lk-close class); no rule hides .x-close, except on a hover's tip
      (.ttk-why[role="tooltip"]). (The My Fit picker is a menu on a wide window: its head, with the button, shows on a phone only.)
+  6. one chevron for a list's expand / collapse (v2026.11.01.6): Intel's rows, the dossier's hull rows and "Show N more hulls", the
+     Fleet tab's fleet headings carry IT_CHEV and no arrow glyph (the cards' CC_CHEV waits for the expand/collapse bug).
 """
 import sys, os, re
 
@@ -114,6 +116,19 @@ for sel, body, ln in rules:
     for part in sel.split(','):
         if 'x-close' in part and re.search(r'display\s*:\s*none', body) and not re.search(r'ttk-why\[role="tooltip"\]', part):
             problems.append(f'line {ln}: {part.strip()}: hides the close button')
+
+# 6. one chevron for a list's expand / collapse (v2026.11.01.6, the kill picker's fleets; the open bug "expand/collapse looks and works
+#    differently" keeps the cards' own CC_CHEV for now): the list expanders built since v2026.10.31.6 (Intel's rows, the dossier's
+#    hull rows and "Show N more hulls", the kill picker's fleet headings) carry Intel's chevron, IT_CHEV, and no arrow glyph
+CHEV_BTN = re.compile(r'<button[^>]*?(?:class="(?:it-rawt|pd-exp|fk-kg-h)"|data-pd-allhulls=)')
+n_chev = 0
+for m_ in CHEV_BTN.finditer(src):
+    if css_start <= m_.start() <= css_start + len(css): continue
+    end = src.find('</button>', m_.start()); body = src[m_.start(): end if end > 0 else m_.start() + 600]
+    ln = src.count('\n', 0, m_.start()) + 1; n_chev += 1
+    if '${IT_CHEV}' not in body: problems.append(f'line {ln}: a list expander without Intel\'s chevron (IT_CHEV)')
+    if re.search('[\u25b6\u25bc\u25be\u25b8\u25ba]', body): problems.append(f'line {ln}: a list expander with an arrow glyph (use IT_CHEV)')
+if n_chev < 6: problems.append(f'only {n_chev} list expanders found (Intel rows x2, dossier rows, Show N more hulls x2, fleet headings): update rule 6')
 
 for p in problems: print('PROBLEM', p)
 print(f'UI RULES: {len(problems)} problems')
