@@ -93,3 +93,5 @@ spec in the Project doc roadmap/kill-groups-impact.md section 0, mockup claude/r
   place and add the expand/collapse"); open groups kept for this set of kills. Phone: one line, ISK, age and victims on a second line
   when open (the owner: "Second line when open").
 - `tools/page_checks/kill_groups_check.py`; intel_fleet_check, fleet_kill_check and close_buttons_check extended; `check_ui_rules.py` (6).
+- v2026.11.01.7 (the owner: "we should swap the fleet size and isk value placement"): each kill's pilots, then its ISK, so the ISK sits
+  under its fleet heading's ISK (wide; at 390 px the ISK last on the second line).

@@ -2225,7 +2225,7 @@
   .fk-kg-x{display:flex; align-items:center; flex-wrap:wrap; gap:3px 8px; margin-left:auto;} .fk-kg-x .it-kl{margin-left:0;}
   .fk-kg-a{color:var(--text-dim); font:400 12px var(--mono); white-space:nowrap;}
   .fk-pk-i{text-align:right; font:600 11.5px var(--mono); color:var(--amber); white-space:nowrap;}
-  button.fk-pk{display:grid; grid-template-columns:16px minmax(0,1.6fr) minmax(0,1fr) 64px 70px 90px 130px; gap:10px; align-items:center; width:100%; min-height:0; padding:7px 10px; text-align:left;
+  button.fk-pk{display:grid; grid-template-columns:16px minmax(0,1.6fr) minmax(0,1fr) 70px 64px 90px 130px; gap:10px; align-items:center; width:100%; min-height:0; padding:7px 10px; text-align:left;
     border:1px solid transparent; border-radius:4px; background:var(--tag-fill); color:var(--text); font:400 12.5px var(--sans); letter-spacing:0; cursor:pointer;}
   button.fk-pk:hover, button.fk-pk:focus-visible{background:var(--tag-fill-hover); border-color:var(--accent-edge);}
   button.fk-pk[aria-pressed="true"]{background:var(--tag-on); border-color:var(--cyan);}
@@ -2234,7 +2234,7 @@
   .fk-pk-a, .fk-pk-t{text-align:right; font:400 12px var(--mono); color:var(--text-dim); white-space:nowrap;} .fk-pk-l{justify-self:end;} .fk-pk-l .it-kl{margin-left:0;}
   @media (max-width:599px){ button.fk-kg-h{min-height:44px; flex-wrap:nowrap;} button.fk-kg-h[aria-expanded="true"]{flex-wrap:wrap;} .fk-kg-m{min-width:0; overflow:hidden; text-overflow:ellipsis;}
     button.fk-kg-h .fk-kg-x{display:none;} button.fk-kg-h[aria-expanded="true"] .fk-kg-x{display:flex; flex-basis:100%; margin-left:22px;} .fk-kg-r{padding-left:0;} }   /* v2026.11.01.6: one line; ISK, age and victims on a second line when open */
-  @media (max-width:599px){ .fk-picks{--fk-pk-h:46px;} button.fk-pk{grid-template-columns:16px minmax(0,1fr) auto auto; row-gap:2px; min-height:44px;} .fk-pk > svg{grid-row:1 / span 2;} .fk-pk .fk-pk-n{grid-column:2; grid-row:1;} .fk-pk .fk-pk-s{grid-column:2; grid-row:2;} .fk-pk .fk-pk-t{grid-column:3 / span 2; grid-row:1;} .fk-pk .fk-pk-i{grid-column:3; grid-row:2;} .fk-pk .fk-pk-a{grid-column:4; grid-row:2;} .fk-pk .fk-pk-l{display:none;} }
+  @media (max-width:599px){ .fk-picks{--fk-pk-h:46px;} button.fk-pk{grid-template-columns:16px minmax(0,1fr) auto auto; row-gap:2px; min-height:44px;} .fk-pk > svg{grid-row:1 / span 2;} .fk-pk .fk-pk-n{grid-column:2; grid-row:1;} .fk-pk .fk-pk-s{grid-column:2; grid-row:2;} .fk-pk .fk-pk-t{grid-column:3 / span 2; grid-row:1;} .fk-pk .fk-pk-a{grid-column:3; grid-row:2;} .fk-pk .fk-pk-i{grid-column:4; grid-row:2;} .fk-pk .fk-pk-l{display:none;} }
   /* v2026.10.31.1: the victim, a tag in the line under the title; opens them in the Pilot Analyzer on the ship they lost */
   button.fk-vbtn{display:inline-flex; align-items:center; gap:6px; min-height:0; padding:1px 8px; margin:0 2px; border:1px solid transparent; border-radius:4px; background:var(--tag-fill); color:var(--heading); font:600 13px var(--sans); cursor:pointer; vertical-align:baseline;}
   button.fk-vbtn:hover, button.fk-vbtn:focus-visible{background:var(--tag-fill-hover); border-color:var(--accent-edge);}
@@ -2688,7 +2688,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.6</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.7</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -23253,9 +23253,11 @@ function fkGroups(){
   if(fk.kgFor !== P){ fk.kgFor = P; fk.kg = P ? fkGroupKills(P) : null; fk.kgOpen = new Set(fk.kg && fk.kg.all.length === 1 ? [fk.kg.all[0].key] : []); }
   return fk.kg;
 }
+// v2026.11.01.7 (the owner: "we should swap the fleet size and isk value placement"): the pilots, then the ISK, so each kill's ISK
+// sits under its fleet heading's
 function fkPickHtml(p, i){
   const kind = {f: 'good', h: 'bad'};
-  return `<button type="button" class="fk-pk" data-fk-pick="${i}" aria-pressed="${p.id === fk.killId}" title="${escapeHtml(`Analyze the kill of ${p.name || 'no pilot'}'s ${p.ship || 'ship'}`)}">${standIcon(kind[p.v] || 'neu')}<span class="fk-pk-n"><span class="nm std-n ${p.v === 'f' || p.v === 'h' ? p.v : 'n'}">${escapeHtml(p.name || 'no pilot')}</span><span class="cls">${escapeHtml(p.ship || '')}</span></span><span class="fk-pk-s">${p.sysId ? sysNameHtml(p.sysId, p.sys) : escapeHtml(p.sys || '')}</span><span class="fk-pk-i"${p.isk ? ` title="${escapeHtml(`${Math.round(p.isk).toLocaleString('en-US')} ISK (zKillboard's value)`)}"` : ''}>${p.isk ? `${itIsk(p.isk)}` : ''}</span><span class="fk-pk-a">${p.ships === 1 ? 'solo' : p.ships ? `${p.ships} pilots` : 'NPCs'}</span><span class="fk-pk-t">${escapeHtml(itAgo(p.t))} ago</span><span class="fk-pk-l"><span class="it-kl ${p.word[0]}">${escapeHtml(p.word[1])}</span></span></button>`;
+  return `<button type="button" class="fk-pk" data-fk-pick="${i}" aria-pressed="${p.id === fk.killId}" title="${escapeHtml(`Analyze the kill of ${p.name || 'no pilot'}'s ${p.ship || 'ship'}`)}">${standIcon(kind[p.v] || 'neu')}<span class="fk-pk-n"><span class="nm std-n ${p.v === 'f' || p.v === 'h' ? p.v : 'n'}">${escapeHtml(p.name || 'no pilot')}</span><span class="cls">${escapeHtml(p.ship || '')}</span></span><span class="fk-pk-s">${p.sysId ? sysNameHtml(p.sysId, p.sys) : escapeHtml(p.sys || '')}</span><span class="fk-pk-a">${p.ships === 1 ? 'solo' : p.ships ? `${p.ships} pilots` : 'NPCs'}</span><span class="fk-pk-i"${p.isk ? ` title="${escapeHtml(`${Math.round(p.isk).toLocaleString('en-US')} ISK (zKillboard's value)`)}"` : ''}>${p.isk ? `${itIsk(p.isk)}` : ''}</span><span class="fk-pk-t">${escapeHtml(itAgo(p.t))} ago</span><span class="fk-pk-l"><span class="it-kl ${p.word[0]}">${escapeHtml(p.word[1])}</span></span></button>`;
 }
 function fkGroupHtml(g){
   const P = fk.picks, open = fk.kgOpen.has(g.key), here = g.idx.some(i => P[i].id === fk.killId), k = g.idx.length;

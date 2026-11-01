@@ -135,6 +135,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #120 A view rebuilt on a timer costs the machine even when nothing changed: build, compare, skip; draw only what can be seen.
 - #121 A list cut to its top rows must still show what was asked for, and its "N more" must open: a selection off screen is a hidden state.
 - #122 A heading pinned inside a scrolling list needs its own group box, must cover the list's padding, and whatever is scrolled into view must clear it.
+- #123 A check that compares a time-ago text must give it a value that can't tick between the page drawing it and the check reading it.
 
 **Checks and test machinery**
 
@@ -1029,6 +1030,15 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 123. A check that compares a time-ago text must give it a value that can't tick between the page drawing it and the check reading it
+
+- **What happened (v2026.11.01.7):** kill_groups_check made a kill 30 seconds old and compared the heading's "newest 30 s ago" with
+  `itAgo` called a moment later. Seconds tick, so the two could differ; it surfaced as a failure in a mutant run that had nothing to do
+  with ages.
+- **Do this instead:** made-up times in whole minutes (itAgo rounds to the minute past 60 s), placed well inside a rounding step
+  (not at x.5 minutes, not under a minute), or read the page's text and its clock in the same evaluate. A failure in an unrelated
+  part of a check is a hint of a flake: look before blaming the mutant.
 
 ## 122. A heading pinned inside a scrolling list needs its own group box, must cover the list's padding, and whatever is scrolled into view must clear it
 

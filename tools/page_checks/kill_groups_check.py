@@ -23,6 +23,8 @@ picks), so nothing is read from zKillboard. The expected fleets are worked out a
     scroll inside, a kill half under the pinned heading pressed shows whole below it, the wheel at the end moves the page on
     (LESSON #96); grouping them takes a few milliseconds;
   * 390 px: each heading one line, 44 px tall; opened, the ISK, age and victims on a second line; nothing off the page;
+  * v2026.11.01.7 (the owner: "we should swap the fleet size and isk value placement"): each kill's pilots, then its ISK, wide
+    and at 390 px;
   * no page errors.
 v2026.11.01.5 fails (no fleets: every kill in one list).
 """
@@ -56,10 +58,10 @@ def kill(att, victim, v, isk, mins, ship='Rifter'):
 # ---- battle 1: a brawl, a third party, a solo hunter, a pair, a gank
 A, B, X, H, C, Y, VN = take(14), take(9), take(1), take(1), take(2), take(3), take(12)
 pk = lambda arr, idx: [arr[i] for i in idx]
-B1 = [kill(pk(A, range(8)), VN[0], 'n', 180e6, 1), kill(pk(A, [0, 2, 4, 6, 8, 9]) + X, VN[1], 'n', 95e6, 2), kill(pk(A, [1, 3, 5, 10, 11]), VN[2], 'n', 60e6, 3),
+B1 = [kill(pk(A, range(8)), VN[0], 'n', 180e6, 3), kill(pk(A, [0, 2, 4, 6, 8, 9]) + X, VN[1], 'n', 95e6, 2), kill(pk(A, [1, 3, 5, 10, 11]), VN[2], 'n', 60e6, 3),
       kill(A, VN[3], 'n', 240e6, 4), kill(pk(A, [6, 7, 12, 13]), VN[4], 'n', 70e6, 6), kill(pk(A, [6, 7]), VN[5], 'n', 2e6, 6.5, 'Capsule'), kill(pk(A, [2, 3, 9, 11, 12]), VN[6], 'n', 85e6, 9),
       kill(pk(B, range(6)), A[2], 'h', 310e6, 2.5), kill(pk(B, [1, 2, 6, 7]) + X, A[7], 'h', 75e6, 3.5), kill(pk(B, [0, 3, 4, 8]), A[10], 'h', 280e6, 5), kill(pk(B, [5, 6, 7, 8]), A[12], 'h', 40e6, 8),
-      kill(H, VN[7], 'n', 8e6, 0.5), kill(H, VN[8], 'n', 12e6, 13), kill(C, VN[9], 'f', 30e6, 7), kill(Y, VN[10], 'n', 25e6, 14)]
+      kill(H, VN[7], 'n', 8e6, 1.9), kill(H, VN[8], 'n', 12e6, 13), kill(C, VN[9], 'f', 30e6, 7), kill(Y, VN[10], 'n', 25e6, 14)]
 # ---- battle 2: a camp, the same 4 campers (and a fifth now and then)
 CAMP, VC = take(5), take(5)
 B2 = [kill(CAMP[:4] + ([CAMP[4]] if i % 2 else []), VC[i], 'n', 20e6 + i, 2 + i * 3) for i in range(5)]
@@ -129,6 +131,9 @@ with sync_playwright() as p:
     y0 = pg.evaluate(Y_OF, 'f1'); pg.click('#fleetPanel [data-fk-kg="f1"]'); pg.wait_for_timeout(300)
     hs = pg.evaluate(HEADS); y1 = pg.evaluate(Y_OF, 'f1'); fo = pg.evaluate(FOCUS)
     ctl = pg.evaluate("(id) => !!document.getElementById(id)", hs[1]['ctl'] or 'x')
+    ORDER = "() => [...document.querySelectorAll('#fleetPanel .fk-kg-r button.fk-pk')].map(b => { const a = b.querySelector('.fk-pk-a').getBoundingClientRect(), i = b.querySelector('.fk-pk-i').getBoundingClientRect(); return [a.right <= i.left + 1, Math.abs(a.top - i.top) < 3]; })"
+    od = pg.evaluate(ORDER); hi = pg.evaluate("() => { const h = document.querySelector('#fleetPanel [data-fk-kg=\"f1\"] .it-isk').getBoundingClientRect(), r = document.querySelector('#fleetPanel .fk-kg-r button.fk-pk .fk-pk-i').getBoundingClientRect(); return Math.round(h.right - r.right); }")
+    check(od and all(x == [True, True] for x in od), f'v2026.11.01.7 ("swap the fleet size and isk value placement"): each kill\'s pilots, then its ISK (under the heading\'s ISK, {hi} px apart) {od[:2]}')
     check(hs[1]['open'] == 'true' and hs[1]['rows'] == fl[1]['ids'] and ctl and abs(y1 - y0) <= 1 and fo == 'kg:f1' and all(h['open'] == 'false' for i, h in enumerate(hs) if i != 1),
           f'Fleet 2 opened: its kills newest first, aria-expanded, the focus on the heading, the heading where it was ({y0} -> {y1}, {fo}) {hs[1]["rows"]} want {fl[1]["ids"]}')
     # a kill in it pressed: analyzed; the fleet still open, now "analyzing"; the focus kept through the redraws
@@ -198,6 +203,8 @@ with sync_playwright() as p:
     pg.click('#fleetPanel [data-fk-kg="f0"]'); pg.wait_for_timeout(300)
     po = pg.evaluate("() => { const h = document.querySelector('#fleetPanel [data-fk-kg=\"f0\"]'), t = h.querySelector('.fk-kg-t').getBoundingClientRect(), x = h.querySelector('.fk-kg-x'), r = x.getBoundingClientRect(); return [getComputedStyle(x).display, r.top >= t.bottom - 1, h.querySelector('.it-isk').checkVisibility(), r.right <= h.getBoundingClientRect().right + 1]; }")
     ow = pg.evaluate("() => [document.documentElement.scrollWidth, [...document.querySelectorAll('#fleetPanel .fk-picks *')].filter(e => { const r = e.getBoundingClientRect(); return e.checkVisibility() && r.width && r.right > innerWidth + 1; }).length]")
+    pod = pg.evaluate("() => [...document.querySelectorAll('#fleetPanel .fk-kg-r button.fk-pk')].map(b => { const a = b.querySelector('.fk-pk-a').getBoundingClientRect(), i = b.querySelector('.fk-pk-i').getBoundingClientRect(); return a.right <= i.left + 1 && Math.abs(a.top - i.top) < 3; })")
+    check(pod and all(pod), f'390 px: the pilots, then the ISK, on the second line {pod[:3]}')
     check(all(h[0] >= 44 and h[0] <= 48 and h[1] == 'none' for h in ph) and po == ['flex', True, True, True] and ow[0] <= 390 and ow[1] == 0,
           f'390 px: each heading one line, 44 px; opened, the ISK, age and victims on a second line; nothing off the page {ph} {po} {ow}')
     ctx.close()
