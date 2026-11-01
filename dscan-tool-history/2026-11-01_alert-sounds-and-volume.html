@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-01 — Alert sounds and volume</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td,th{border:1px solid #ddd; padding:4px 8px; text-align:left; font-size:14px;} th{background:#f6f6f6;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Alert sounds and volume</h1>
+<p><span class="tag">Intel</span><span class="tag">Alerts</span> 2026-11-01 &middot; <code>v2026.11.01.8</code></p>
+
+<h2>Why</h2>
+<p>Two backlog items from the owner's to-do inbox, built together: "volume control for the intel alerts. they're a little quiet. would like to be able to turn them up manually" and "add ability for user to pick their own alert sound for the intel alerts." The research session wrote the plan (Project doc <code>roadmap/alert-sound-plan.md</code>) with his answers: "the five" built-in sounds, "different sounds for near you and in system would be fantastic", 70% to start ("sure"), and your own file up to 1 MB and 5 seconds ("yes"). Build queue item 002.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Two sounds, by distance:</b> a threat in your own system (a kill there too) plays <b>In system</b>, Klaxon to start; one 1 jump away up to your alert range plays <b>Near You</b>, Chime to start. The once-per-system-every-30-seconds rule is unchanged.</li>
+<li><b>Five sounds made in code</b>, no audio files: Chime (the old sound, number for number), Ping, Triple beep, Klaxon, Sonar; each about a second at most, levelled to sound about as loud as each other.</li>
+<li><b>Your own file</b> per slot ("Your own file…" in its list): MP3, WAV or OGG up to 1 MB, played at most 5 seconds. It's decoded once when chosen, kept in its own small IndexedDB database in this browser (<code>dscan-intel-sounds</code>, not the ESI cache), never sent anywhere, and kept across reloads. Its name shows under the list with × to remove it. Too big: refused with INTEL-09; not sound: refused with INTEL-10, the slot keeping its sound; a kept file that can't be played later falls back to the slot's built-in sound with INTEL-10. Choosing a built-in sound over a file removes the file.</li>
+<li><b>One volume</b> for both, 70% to start, with its % beside it; loudness is (volume/100)² through one master gain, so the old sound is 50% on the new scale (70% is about twice as loud as before). 0% plays nothing; the Sound switch stays the on/off, and the rows are disabled at 45% while it's off.</li>
+<li><b>▶ Test</b> beside each slot plays it at the current volume. Switching Intel on wakes the audio (browsers want a press first), so the first real alert isn't silent. Nothing about audio is made before a sound or a press.</li>
+<li><b>Notifications</b> are silent when the page plays its own sound, so Windows doesn't chime on top of it; with Sound off or at 0% they're as before.</li>
+<li>Settings saved before this version load with the defaults. The Intel info panel's alerts paragraph says all of this.</li>
+<li>In the gear the first slot is named <b>Near You</b>, the card's own name (the card-name lint asks for one spelling of it), rather than the plan's "Near you".</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li>New <code>tools/page_checks/alert_sound_check.py</code> (areas intel, layout): a stand-in AudioContext records every node, frequency, gain and start/stop; files are decoded by the browser's own OfflineAudioContext; the only sound files are tones generated in the check. It covers everything above, a database made without its store, and 390 px. Fails on v2026.11.01.7. 20 mutants: 19 caught, 1 equivalent (▶ Test's own wake call: playing a sound wakes the audio too).</li>
+<li>Caught while building: the gear didn't show a chosen file or a refusal, because Intel's card won't redraw while a select inside it has focus (LESSON #125); and the check's own peek into the sound database created it without its store, so the page's writes failed quietly (LESSON #124; the page now adds a missing store).</li>
+<li>Page size: 620,389 → 625,368 bytes gzipped (+5.0 KB, +0.8%; 2,097,604 → 2,113,523 raw, mostly the comments, the two error codes and the info text).</li>
+<li>Perf harness (Project <code>roadmap/perf-harness/</code>), before (v2026.11.01.7) and after in one session: Intel off 0.13% / 0.12% of a core; Intel on, tab visible, 14 min: 2.84% / 2.78% main thread, 4.9% / 4.9% all Chromium, layouts 126 / 128 a minute. Unchanged: nothing runs until an alert, and no timer was added. Results: Project <code>roadmap/perf-harness/results-v2026.11.01.8.md</code>.</li>
+<li>Run: the full run (every 5th delivery: 12 lints, the pyfa chain, 62 page checks) failed 6 Intel checks on one cause in the checks: intel_check's shared stand-in AudioContext counted a sound as two gain nodes and didn't know <code>frequency.setValueAtTime</code>. It now counts a sound once, when its first node starts. Then <code>--area intel,layout</code>: 23 page checks, 0 failed, 0 flaky.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #124: opening an IndexedDB database by name creates it, so don't assume its store exists at version 1, and don't open one in a check just to look. LESSON #125: a view that won't redraw while a control inside it has focus will also drop the change that control just made; force that redraw.</p>
+</body></html>

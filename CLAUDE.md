@@ -142,6 +142,11 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   group starts closed (a lone group open), headings with Intel's chevron stay pinned at the top of the list while their kills scroll
   (`top:-2px` over the list's padding); open groups are kept per set of kills. Only the picker: Intel, the analysis, `#fleet=` and
   the zKillboard budget don't change; no request. `kill_groups_check.py`; `check_ui_rules.py` (6) keeps list expanders on IT_CHEV.
+- **Alert sounds** (v2026.11.01.8, Project doc roadmap/alert-sound-plan.md): two slots by jumps, Near You (1 jump to the alert range)
+  and In system (0 jumps, kills too); five sounds made in code (Chime = the old sound exactly), or your own file (≤ 1 MB, ≤ 5 s,
+  kept only in its own IndexedDB database `dscan-intel-sounds`, never the ESI cache); one master gain, loudness (volume/100)²; the
+  notification is silent when the page's sound plays. No audio is made before a sound or a press. `alert_sound_check.py` (a stand-in
+  AudioContext; generated tones only, never a real recording in the repo).
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
   the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship

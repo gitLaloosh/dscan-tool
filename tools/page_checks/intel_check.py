@@ -127,9 +127,15 @@ FS = r"""(() => {
     async queryPermission(){ return __fs.perm; }, async requestPermission(){ return __fs.perm; }};
   window.showDirectoryPicker = window.__noFsApi ? undefined : async () => dir;   // Chromium has its own: replaced (or taken away)
   window.Notification = class { constructor(t, o){ __fs.notes.push([t, o && o.body]); } static get permission(){ return 'granted'; } static requestPermission(){ return Promise.resolve('granted'); } };
-  window.AudioContext = class { constructor(){ this.currentTime = 0; this.destination = {}; }
-    createOscillator(){ return {frequency: {}, connect: (g) => g, start(){ }, stop(){ }, set type(v){ }}; }
-    createGain(){ const g = {gain: {setValueAtTime(){ }, exponentialRampToValueAtTime(){ }}, connect: () => g}; __fs.beeps += 0.5; return g; } };
+  // a stand-in AudioContext; a sound counts once, when its first node starts (every sound starts one at the current time).
+  // v2026.11.01.8: the five sounds and your own file (alert_sound_check tests the sounds themselves)
+  const prm = () => ({value: 1, setValueAtTime(){ }, exponentialRampToValueAtTime(){ }, linearRampToValueAtTime(){ }});
+  window.AudioContext = class { constructor(){ this.currentTime = 0; this.destination = {}; this.state = 'running'; }
+    resume(){ return Promise.resolve(); }
+    createOscillator(){ const c = this; return {frequency: prm(), connect: (g) => g, start(t){ if(t === c.currentTime) __fs.beeps++; }, stop(){ }, set type(v){ }}; }
+    createBufferSource(){ const c = this; return {buffer: null, connect: (g) => g, start(t){ if(t === c.currentTime) __fs.beeps++; }, stop(){ }}; }
+    createGain(){ const g = {gain: prm(), connect: (n) => n}; return g; }
+    decodeAudioData(){ return Promise.reject(new Error('no audio here')); } };
 })();"""
 def eve(t): return time.strftime('%Y.%m.%d %H:%M:%S', time.gmtime(t))
 def fname(chan, t, cid): return f"{chan}_{time.strftime('%Y%m%d_%H%M%S', time.gmtime(t))}_{cid}.txt"

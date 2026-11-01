@@ -136,6 +136,8 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #121 A list cut to its top rows must still show what was asked for, and its "N more" must open: a selection off screen is a hidden state.
 - #122 A heading pinned inside a scrolling list needs its own group box, must cover the list's padding, and whatever is scrolled into view must clear it.
 - #123 A check that compares a time-ago text must give it a value that can't tick between the page drawing it and the check reading it.
+- #124 Opening an IndexedDB database by name creates it: don't assume its store exists because the version is 1, and don't open one in a check just to look.
+- #125 A view that won't redraw while a control inside it has focus will also drop the change that control just made: force that redraw.
 
 **Checks and test machinery**
 
@@ -1030,6 +1032,24 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 125. A view that won't redraw while a control inside it has focus will also drop the change that control just made: force that redraw
+
+- **What happened (v2026.11.01.8):** Intel's card doesn't redraw while a select inside it has focus (so an open list isn't pulled away
+  from under the pointer). The new sound select kept focus after a file was chosen, so the redraw that should have shown "Your own
+  file" and the file's name, or the refusal message, was skipped: the setting had changed, the page hadn't.
+- **How it was caught:** alert_sound_check read the select and the lines under it after each pick.
+- **Do this instead:** a change the person just made from inside the guarded view redraws with `itRender(true)` and puts the focus
+  back itself; anything the cheap redraw key (`itQuickKey`) can't see (here the files, kept outside `it.set`) bumps a counter in it.
+
+## 124. Opening an IndexedDB database by name creates it: don't assume its store exists because the version is 1, and don't open one in a check just to look
+
+- **What happened (v2026.11.01.8):** the sound files have their own database, opened at version 1 with the store made in
+  `onupgradeneeded`. The new check peeked into it with `indexedDB.open(name)` before the page had ever opened it, which created it at
+  version 1 with no store; the page's own open then had nothing to upgrade, every write failed quietly, and the file looked kept
+  until the next read.
+- **Do this instead:** the page checks that the store exists after opening and, if not, reopens one version up to add it; a check
+  looks with `indexedDB.databases()` first and closes what it opens. alert_sound_check covers a database made without its store.
 
 ## 123. A check that compares a time-ago text must give it a value that can't tick between the page drawing it and the check reading it
 
