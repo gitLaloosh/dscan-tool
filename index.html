@@ -2376,14 +2376,14 @@
   /* v.100 (the owner: "System font color should match the security level"): EVE's colour for each tenth of security */
   .it-sn.s10{color:#2e74df;} .it-sn.s9{color:#389cf6;} .it-sn.s8{color:#4acff3;} .it-sn.s7{color:#62daa6;} .it-sn.s6{color:#71e452;} .it-sn.s5{color:#eeff83;}
   .it-sn.s4{color:#de6a0c;} .it-sn.s3{color:#ce4611;} .it-sn.s2{color:#bb1014;} .it-sn.s1{color:#6d221d;} .it-sn.s0{color:#8f2f69;}
-  .it-chip.p, .it-chip.ent{gap:4px; padding:2px 7px 2px 4px; background:rgba(255,255,255,.055);}
+  .it-chip.p, .it-chip.ent{gap:0; padding:0; background:rgba(255,255,255,.055); outline:1px solid transparent; transition:background .12s, outline-color .12s;}
   /* v.100 (the owner: "we should use those instead"): EVE's standing icons, drawn here: a coloured square, a white symbol with a slight
      shadow; a star for your corporation (green) and alliance (blue), + friendly, = neutral, - hostile */
   .it-st{width:13px; height:13px; flex:none;} .it-st .gl{fill:#fff;} .it-st .sh{fill:rgba(0,0,0,.5);}
   .it-st.corp rect{fill:#3f9b3f;} .it-st.all rect{fill:#3d55d6;} .it-st.good rect{fill:#4a86e0;} .it-st.neu rect{fill:#6f777f;} .it-st.bad rect{fill:#d03a2e;}
   .it-lg{width:18px; height:18px; border-radius:3px; background:#222b33; overflow:hidden; display:inline-block; flex:none;} .it-lg.c{border-radius:50%;} .it-lg img{width:100%; height:100%; display:block;}
   .it-chip .nm{font-weight:600;} .it-chip.h .nm{color:var(--side-hostile);} .it-chip.f .nm{color:var(--side-friendly);} .it-chip.n .nm{color:var(--heading);}
-  .it-tks .tk{font:600 10.5px var(--mono); color:var(--text-dim); margin-left:3px;}
+  .it-seg .tk{font:600 10.5px var(--mono); color:var(--text-dim);}
   .it-chip.ship img{width:18px; height:18px; border-radius:3px; margin-left:-3px;}
   .it-by{font:400 12px var(--sans); color:var(--text-dim); align-self:center;} .it-isk{font:600 11.5px var(--mono); color:var(--amber); align-self:center;}
   .it-chips a.zk-ic, .nbx-r a.zk-ic{align-self:center; margin-left:4px;}
@@ -2394,7 +2394,22 @@
   .it-fbar select option{background:var(--panel); color:var(--heading);}
   .it-fbar input{flex:1; min-width:140px; min-height:32px; padding:0 9px; border:1px solid var(--line); border-radius:4px; background:var(--bg); color:var(--text); font:400 12px var(--sans); border-color:var(--field-border);}
   /* v2026.10.14.98 Intel delivery 2: pilot links, Assess, copy shape, the From Intel lines */
-  button.it-chip.p{cursor:pointer; letter-spacing:0; min-height:0;} button.it-chip.p:hover, button.it-chip.p:focus-visible{text-decoration:underline; text-underline-offset:2px; background:color-mix(in srgb, currentColor 10%, transparent);}
+  /* v2026.11.01.2 (the owner: "Go with B2", Claude outputs/pilot_chip_hover_mockup.html): the chip's parts: standing (a tip only), name,
+     corporation, alliance. Hover or focus anywhere: the chip gets an outline and thin dividers; the part under the pointer fills
+     (white tints, never cyan: cyan means a link that leaves the site). A group whose filter is on: its standing colour, ringed. */
+  .it-seg{display:inline-flex; align-items:center; gap:4px; padding:2px 4px; border-radius:2px; white-space:nowrap; transition:background .12s;}
+  .it-chip.p, .it-chip.ent{flex-wrap:wrap; max-width:100%;}   /* a narrow column (a phone): the groups go under the name, never the name onto two lines */
+  .it-seg.st{padding-left:4px; cursor:default;} .it-chip > .it-seg:last-child{padding-right:7px;}
+  button.it-seg{all:unset; display:inline-flex; align-items:center; gap:4px; padding:2px 4px; border-radius:2px; white-space:nowrap; cursor:pointer; letter-spacing:0; min-height:0; transition:background .12s;}
+  .it-chip > button.it-seg:last-child{padding-right:7px;}
+  .it-chip.p:hover, .it-chip.p:focus-within, .it-chip.p.armed, .it-chip.ent:hover, .it-chip.ent:focus-within, .it-chip.ent.armed{background:rgba(255,255,255,.075); outline-color:rgba(255,255,255,.18);}
+  .it-chip:is(.p, .ent):is(:hover, :focus-within, .armed) > .it-seg + .it-seg{box-shadow:inset 1px 0 0 rgba(255,255,255,.12);}
+  button.it-seg:hover, button.it-seg:focus-visible{background:rgba(255,255,255,.14); filter:brightness(1.15);}
+  button.it-seg:hover .tk, button.it-seg:focus-visible .tk, button.it-seg[aria-pressed="true"] .tk{color:var(--text);}
+  button.it-seg:focus-visible{outline:2px solid var(--heading); outline-offset:-1px;}
+  .it-chip.h{--it-sc:var(--side-hostile);} .it-chip.f{--it-sc:var(--side-friendly);} .it-chip.n{--it-sc:#9aa6ae;}
+  .it-chip > button.it-seg[aria-pressed="true"], .it-chip:is(.p, .ent):is(:hover, :focus-within, .armed) > button.it-seg[aria-pressed="true"]{background:color-mix(in srgb, var(--it-sc) 22%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--it-sc) 60%, transparent);}
+  @media (prefers-reduced-motion: reduce){ .it-chip.p, .it-chip.ent, .it-seg, button.it-seg{transition:none;} }
   button.it-pl{all:unset; cursor:pointer; color:inherit;} button.it-pl.h{color:var(--side-hostile);} button.it-pl.f{color:var(--side-friendly);}
   button.it-pl:hover, button.it-pl:focus-visible{text-decoration:underline; text-underline-offset:2px; color:var(--heading);}
   .it-fd{position:relative;}
@@ -2639,7 +2654,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.1</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.2</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -24365,13 +24380,14 @@ function itNearList(){
 function itNearCount(){ return it.on ? itNearList().filter(x => x.j !== null && x.j <= it.set.range && itThreat(x.st)).length : 0; }
 // v.98: a pilot's name opens them in the Pilot Analyzer (in the ship the line pairs them with, the owner: "Paired ship")
 function itPilotTitle(x, pair){ return `${SIDE_WORD[x.side]} (${cardName('side')}). Open ${x.name} in the Pilot Analyzer${pair ? `, in the ${pair.name} reported with them` : ''}`; }
-// v.99 (the owner: "As drawn"): who's who as EVE's intel tools show it: a standing mark, the corporation and alliance logos, the
-// name coloured by standing, then [CORP] <ALLIANCE>. Logos from CCP's image server (none shown if it doesn't answer).
+// v.99 (the owner: "As drawn"): who's who: a standing mark, the corporation and alliance logos, the name coloured by standing, then
+// [CORP] <ALLIANCE>. That order was this tool's own v.99 mockup (an earlier comment here said it was how EVE's intel tools show it;
+// nothing backed that: the owner's reference screenshot was RIFT's Intel Feed, a third-party app). Logos from CCP's image server
+// (none shown if it doesn't answer). v2026.11.01.2 regroups it (itPilotChip).
 // v.100 (the owner: "we should use those instead"): EVE's standing icons, drawn here (not CCP's files): a star for your corporation
 // and your alliance, + friendly, = neutral, - hostile. The page knows friendly or hostile, not +5 or +10, so one of each.
 // (v2026.10.30.4: the drawing moved to STAND / standIcon, used site-wide)
 function itStandKind(x){ const o = itOrgOf(x); return standKind(x.side, o.corp, o.alliance); }
-function itStandIcon(k){ return standIcon(k); }
 function itOrgOf(x){ const a = it.aff.get(x.id); return {corp: x.corp || (a && a.corp) || null, alliance: x.alliance || (a && a.alliance) || null}; }
 function itTkHtml(kind, id){
   if(!id) return '';
@@ -24380,14 +24396,55 @@ function itTkHtml(kind, id){
   return orgTickerHtml(kind, id);
 }
 function itLogo(kind, id){ return id ? `<span class="it-lg${kind === 'corporation' ? ' c' : ''}"><img src="https://images.evetech.net/${kind === 'corporation' ? 'corporations' : 'alliances'}/${id}/logo?size=32" alt="" loading="lazy" onerror="this.remove()"></span>` : ''; }
-function itWhoHtml(x){
-  const o = itOrgOf(x);
-  return `${itStandIcon(itStandKind(x))}${itLogo('corporation', o.corp)}${itLogo('alliance', o.alliance)}<span class="nm">${escapeHtml(x.name)}</span><span class="it-tks">${itTkHtml('corporation', o.corp)}${itTkHtml('alliance', o.alliance)}</span>`;
+// v2026.11.01.2 (the owner, from Claude outputs/pilot_chip_hover_mockup.html: "Go with B2"; "i would prefer that alliance and corp were
+// not grouped. should be able to filter by either. also remove the ability to change standing from there. once we move to SSO,
+// standing is set by the corp and alliance"): one chip, four parts: the standing (a tip only), the name (the Pilot Analyzer), the
+// corporation (its logo and [TICKER]) and the alliance (logo and <TICKER>). Pressing a group shows only it in the Feed: its ticker goes
+// in the Feed's search box as [CORP] or <ALLIANCE> (an exact ticker match, as a system's name does for a system); pressed again, or
+// the box cleared, everything. On hover (or focus) the whole chip gets an outline and dividers; the part under the pointer fills.
+// Without hover (a phone) the first tap shows the parts and the second does what the part says (itChipTap).
+function itGrpTk(kind, id){ const v = id && orgCache.get(`${kind}:${id}`); return v && typeof v.then !== 'function' && v.ticker ? v : null; }
+function itGrpTok(kind, tk){ return kind === 'alliance' ? `<${tk}>` : `[${tk}]`; }
+function itGrpBtn(kind, id){
+  if(!id) return '';
+  const v = itGrpTk(kind, id), word = kind === 'alliance' ? 'alliance' : 'corporation';
+  const on = !!v && it.q.trim().toLowerCase() === itGrpTok(kind, v.ticker).toLowerCase();
+  const t = `${v ? `${v.name} ${itGrpTok(kind, v.ticker)}. ` : ''}${on ? 'Show everything in the Feed again' : `Show only this ${word} in the Feed`}`;
+  return `<button type="button" class="it-seg grp ${kind === 'alliance' ? 'al' : 'co'}" data-it-grp="${kind}:${Number(id)}" aria-pressed="${on}" title="${escapeHtml(t)}">${itLogo(kind, id)}${itTkHtml(kind, id)}</button>`;
+}
+function itWhoHtml(x, e){
+  const o = itOrgOf(x), k = itStandKind(x), sw = (STAND[k] || STAND.neu)[1];
+  const st = `<span class="it-seg st" role="img" aria-label="${sw}" title="${sw}, from your ${cardName('side')}">${standIcon(k, true)}</span>`;
+  const nm = !x.id ? `<span class="it-seg nmb"><span class="nm">${escapeHtml(x.name)}</span></span>`
+    : `<button type="button" class="it-seg nmb" data-it-pilot="${x.id}" data-it-e="${e.id}" title="${escapeHtml(itPilotTitle(x, e.pairs.get(x.id)))}"><span class="nm">${escapeHtml(x.name)}</span></button>`;
+  return `${st}${nm}${itGrpBtn('corporation', o.corp)}${itGrpBtn('alliance', o.alliance)}`;
 }
 function itPilotChip(x, e){
-  if(!x.id) return `<span class="it-chip ent ${x.side}">${itWhoHtml({...x, name: 'no pilot'})}</span>`;
-  const pair = e.pairs.get(x.id);
-  return `<button type="button" class="it-chip p ${x.side}" data-it-pilot="${x.id}" data-it-e="${e.id}" title="${escapeHtml(itPilotTitle(x, pair))}">${itWhoHtml(x)}</button>`;
+  const key = `${e.id}:${x.id || 'v'}`, arm = it.armed === key ? ' armed' : '';   // it.armed: kept across redraws (the lists redraw as lines arrive)
+  if(!x.id) return `<span class="it-chip ent ${x.side}${arm}" data-it-chip="${key}">${itWhoHtml({...x, name: 'no pilot'}, e)}</span>`;
+  return `<span class="it-chip p ${x.side}${arm}" data-it-chip="${key}">${itWhoHtml(x, e)}</span>`;
+}
+// Without hover (touch): the first tap on a chip shows its parts (the chip "armed", drawn as on hover); a tap on a part of an armed chip
+// does what it says; a tap anywhere else puts it back. With a mouse or the keyboard, every press acts at once.
+function itNoHover(){ return typeof matchMedia === 'function' && matchMedia('(hover: none)').matches; }
+function itChipTap(ev, root){
+  const c = ev.target.closest('.it-chip.p, .it-chip.ent'), key = c ? c.dataset.itChip : null;
+  if(it.armed && it.armed !== key){ it.armed = null; root.querySelectorAll('.it-chip.armed').forEach(x => x.classList.remove('armed')); }
+  if(!c || !itNoHover() || it.armed === key || ev.detail === 0) return false;   // detail 0: the keyboard (Enter/Space)
+  it.armed = key; c.classList.add('armed'); ev.preventDefault(); return true;
+}
+async function itGrpPress(b, root){
+  const [kind, id] = b.dataset.itGrp.split(':'), near = !!b.closest('#itNearList');
+  let v = itGrpTk(kind, Number(id));
+  if(!v){ try{ v = await getOrg(kind, Number(id)); }catch(err){ v = null; } }
+  if(!v || !v.ticker) return;   // no ticker to filter by (ESI didn't answer): nothing happens; the tip says what it would do
+  const tok = itGrpTok(kind, v.ticker);
+  it.q = it.q.trim().toLowerCase() === tok.toLowerCase() ? '' : tok;
+  const q = root.querySelector('[data-it-q]'); if(q) q.value = it.q;
+  itRenderLists();
+  const again = root.querySelector(`${near ? '#itNearList' : '#itFeedList'} [data-it-grp="${kind}:${Number(id)}"]`); if(again) again.focus({preventScroll: true});
+  const f = root.querySelector('#itFeedList');   // a phone (the lists stacked): the Feed is below, so go to it, as a system's name does
+  if(near && f && typeof window !== 'undefined' && window.innerWidth < 600 && f.scrollIntoView) f.scrollIntoView({block: 'start', behavior: 'smooth'});
 }
 function itShipChip(s){ return `<span class="it-chip ship"><img src="https://images.evetech.net/types/${s.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(itShipText(s))}</span>`; }
 function itShipText(s){ return `${s.name}${s.n > 1 ? ` ×${s.n}` : ''}`; }
@@ -24670,9 +24727,18 @@ function itFeedShown(){
   if(f.types === 'reports') L = L.filter(e => e.kind !== 'kill');
   if(f.types === 'kills') L = L.filter(e => e.kind === 'kill');
   if(f.dist) L = L.filter(e => { const j = jOf(e); return j !== null && j <= f.dist; });
-  if(q) L = L.filter(e => itSearchText(e).includes(q));
+  const g = itGrpQ(q);   // v2026.11.01.2: [CORP] or <ALLIANCE>: that group's ticker exactly (a group pressed on a chip)
+  if(g) L = L.filter(e => itGrpIn(e, g));
+  else if(q) L = L.filter(e => itSearchText(e).includes(q));
   L.sort(f.sort === 'near' ? (a, b) => ((jOf(a) ?? 999) - (jOf(b) ?? 999)) || b.t - a.t : (a, b) => b.t - a.t);
   return L.slice(0, IT_FEED_SHOWN);
+}
+function itGrpQ(q){ const m = /^\[([^\[\]]+)\]$/.exec(q) || /^<([^<>]+)>$/.exec(q); return m ? {kind: q[0] === '<' ? 'alliance' : 'corporation', tk: m[1].trim().toLowerCase()} : null; }
+function itGrpIn(e, g){
+  return [...e.pilots, ...(e.kill ? [e.kill.victim] : [])].some(x => {
+    const o = itOrgOf(x), v = itGrpTk(g.kind, g.kind === 'alliance' ? o.alliance : o.corp);
+    return !!v && v.ticker.toLowerCase() === g.tk;
+  });
 }
 function itSearchText(e){
   const who = [...e.pilots, ...(e.kill ? [e.kill.victim] : [])], parts = [e.raw, e.who];
@@ -24944,6 +25010,9 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
   });
   el.addEventListener('input', (e) => { if(e.target.matches('[data-it-q]')){ it.q = e.target.value; itRenderLists(); } });   // v.99: Search
   el.addEventListener('click', (e) => {
+    if(itChipTap(e, el)) return;   // v2026.11.01.2: without hover, the first tap on a pilot chip shows its parts
+    const grp = e.target.closest('[data-it-grp]');   // v2026.11.01.2: a corporation or alliance on a chip: the Feed shows only it
+    if(grp){ itGrpPress(grp, el); return; }
     const fsb = e.target.closest('[data-it-fsys]');   // v2026.10.31.6: a system's name: the Feed shows only it; pressed again, everything
     if(fsb){
       const nm = fsb.dataset.itFsys, near = !!fsb.closest('#itNearList');

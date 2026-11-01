@@ -215,7 +215,7 @@ with sync_playwright() as p:
     check(sorted(kn) == [('Hostile killed', 'kh'), ('Neutral killed', 'kn')], f'kills by friendlies only of a hostile and of a neutral: shown with "hide friendly" on (the owner: "Definitely show enemy kills as well") {kn}')
     look = pg.evaluate("""() => { const r = [...document.querySelectorAll('#itFeedList .it-fd.kill')].find(x => x.querySelector('.it-chip.sys').textContent.startsWith('8WA-Z6'));
       const c = [...r.querySelectorAll('.it-chip.p')].find(x => x.querySelector('.nm').textContent === 'Marrek Ketter'), v = r.querySelector('.it-chip.p');
-      return [c.className, c.querySelector('svg.it-st').getAttribute('class'), c.querySelectorAll('.it-lg').length, c.querySelector('.it-tks').textContent, v.className.includes(' f'), v.querySelector('svg.it-st').getAttribute('class'), r.querySelector('.it-sn').className, r.querySelector('.it-chip.sys').title, r.querySelector('a.zk-ic').href]; }""")
+      return [c.className, c.querySelector('svg.it-st').getAttribute('class'), c.querySelectorAll('.it-lg').length, [...c.querySelectorAll('.it-seg.grp .tk')].map(t => t.textContent).join(''), v.className.includes(' f'), v.querySelector('svg.it-st').getAttribute('class'), r.querySelector('.it-sn').className, r.querySelector('.it-chip.sys').title, r.querySelector('a.zk-ic').href]; }""")
     # v2026.10.30.4: one set of standing icons site-wide (standIcon); they also carry sa-mark h / n / f
     check(look == ['it-chip p h', 'it-st bad sa-mark h', 2, '[RLH]<CRTS>', True, 'it-st corp sa-mark f', 'it-sn ns s0', 'Show only 8WA-Z6 in the Feed (8WA-Z6 (security -0.3))', 'https://zkillboard.com/kill/9200010/'],
           f"who's who: standing icons (hostile -, your corporation's star), logos, name coloured, tickers; the system's security tenth and title; the zKillboard link {look}")
@@ -348,7 +348,7 @@ with sync_playwright() as p:
     s2 = pg.evaluate("() => { const e = document.querySelector('[data-it-status] .it-kslow'); return e ? [e.textContent, getComputedStyle(e).color] : null; }")
     check(s2 is not None and s2[0] == 'no kill read for 6 min' and s2[1] == 'rgb(217, 154, 60)', f'no kill read for 5 minutes or more: the status line says so in amber {s2}')
     pg.evaluate("() => { it.kf.lastGot = Date.now(); }")
-    pg.evaluate("() => [...[...document.querySelectorAll('#itFeedList .it-fd.kill')].find(x => x.querySelector('.it-chip.sys').textContent.startsWith('8WA-Z6')).querySelectorAll('.it-chip.p')].find(x => x.querySelector('.nm').textContent === 'Marrek Ketter').click()")
+    pg.evaluate("() => [...[...document.querySelectorAll('#itFeedList .it-fd.kill')].find(x => x.querySelector('.it-chip.sys').textContent.startsWith('8WA-Z6')).querySelectorAll('.it-chip.p')].find(x => x.querySelector('.nm').textContent === 'Marrek Ketter').querySelector('.nmb').click()")   # v2026.11.01.2: the name part
     pg.wait_for_function("() => !document.querySelector('#fitBtn').disabled && document.querySelector('#pilotBusy').hidden", timeout=120000); pg.wait_for_timeout(300)
     got = pg.evaluate("() => [document.querySelector('#pilotName').value, document.querySelector('#manualShip').value]")
     check(got == ['Marrek Ketter', 'Vedmak'], f'a pilot on a kill opens in the ship they flew {got}')

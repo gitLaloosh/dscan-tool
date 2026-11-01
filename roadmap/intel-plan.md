@@ -473,3 +473,18 @@ later by `<system> clr`: a pilot passing through in a Probe frigate, read correc
   channel's last line. itParse no longer makes "status?" from a question with no system (it could not reach a row).
 - Not done: tying an answer ("clr") to the question it answers ("78 status?"). A two-character system can't be placed,
   and a guessed answer could clear the wrong system.
+
+## The pilot chip's parts (v2026.11.01.2)
+
+The owner (2026-10-31): the chip's standing, logos, name and tickers should "pop a bit on hover so we know it all fits together",
+each element "clearly represented as different properties of a whole pilot". Mockup `Claude outputs/pilot_chip_hover_mockup.html`:
+A (brighten + underline), B (segmented: outline, dividers, the hovered part filled), C (a rail along the bottom). The owner: B; then
+"i would prefer that alliance and corp were not grouped. should be able to filter by either. also remove the ability to change
+standing from there. once we move to SSO, standing is set by the corp and alliance"; of B1 (the old order, a group's logo and ticker
+lit together) and B2 (each logo beside its ticker): "Go with B2."
+
+- **v2026.11.01.2: done.** itPilotChip / itWhoHtml: standing (a tip only), name (Pilot Analyzer), corporation (logo + [TICKER]),
+  alliance (logo + <TICKER>); itGrpPress puts `[CORP]` or `<ALLIANCE>` in the Feed's search box, which itGrpQ / itGrpIn match as
+  that ticker exactly; itChipTap: without hover the first tap shows the parts. `tools/page_checks/pilot_chip_check.py`.
+- The old order was this tool's own v.99 mockup, not EVE's (LESSON #118): the screenshot behind it was RIFT's Intel Feed.
+- Later: with the EVE login, the standing comes from your corporation's and alliance's contacts (the chip's tip still says where).

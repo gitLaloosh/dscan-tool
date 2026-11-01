@@ -130,6 +130,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
+- #118 A claim in a code comment is not a source: find what it rests on before repeating it to the owner.
 
 **Checks and test machinery**
 
@@ -1024,6 +1025,18 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 118. A claim in a code comment is not a source: find what it rests on before repeating it to the owner
+
+- **What happened (v2026.11.01.2):** comparing two layouts of Intel's pilot chip, Claude told the owner one of them "no longer
+  matches EVE's order". The only basis was a comment an earlier session wrote in `itWhoHtml` (v.99): who's who "as EVE's intel
+  tools show it". The owner asked for the reference. The project notes showed the order was the tool's own v.99 mockup, and the
+  screenshot behind it was RIFT's Intel Feed (a third-party app), whose recorded layout says nothing about that order. The
+  recommendation flipped once the claim was gone.
+- **How it was caught:** the owner: "what is your reference for this? i wasn't aware of it".
+- **Do this instead:** when a comment, a history doc or an earlier reply says something is how EVE (or pyfa, or CCP) does it,
+  trace it to the primary source (the client, the SDE, pyfa's code, CCP's docs, or the owner's own words) before using it in an
+  argument. If it can't be traced, say so and leave it out. Correct the comment when you find it wrong (done in `itWhoHtml`).
 
 ## 117. A button laid under other controls: click it where nothing sits on top, or the click lands on what does
 

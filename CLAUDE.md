@@ -99,6 +99,10 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   in use inside the "Use in assessments" switch) and its panel (Pilot, Standings, My Fits; the shared close button). Intel's
   mark lives on it (off, clear cyan, not working hollow, near amber, in system the Hostile red + pulse); the tokens --st-clear,
   --st-near, --st-in. "My Fit", never "My Ship", in what users read. `profile_check.py`.
+  Intel's pilot chip (v2026.11.01.2, the owner's B2): standing (a tip only: standings aren't changed from a chip), name (Pilot
+  Analyzer), corporation (logo + [TICKER]) and alliance (logo + <TICKER>) as separate parts; a group pressed filters the Feed by its
+  ticker (`[CORP]` / `<ALLIANCE>` in the search box); hover: outline + dividers, the part under the pointer filled white; without
+  hover the first tap shows the parts. `pilot_chip_check.py`.
   Layout D (v2026.10.31.6, the owner; Project doc roadmap/near-you-layout-d.md), both lists: line 1 jumps, the system (a button that
   filters the Feed only, never Near You), Near You's analyze icon (radar rings, always the System Analyzer), the tags, the time; Near
   You's kill badges on their own line, only when there are kills; then the toggle under the jumps and what was reported. No Assess

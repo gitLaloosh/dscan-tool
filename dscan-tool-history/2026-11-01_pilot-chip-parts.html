@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-01 — The pilot chip's parts</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The pilot chip's parts</h1>
+<p><span class="tag">UI</span><span class="tag">Intel</span> 2026-11-01 &middot; <code>v2026.11.01.2</code></p>
+
+<h2>Why</h2>
+<p>The owner (2026-10-31, from a screenshot of Intel's rows): make the standing, logos, name and tickers "pop a bit on hover so we know it all fits together", and let hover "work for each element so they're clearly represented as different properties of a whole pilot." The mockup (<code>Claude outputs/pilot_chip_hover_mockup.html</code>) showed three ways; the owner picked B, the segmented chip, then: "i would prefer that alliance and corp were not grouped. should be able to filter by either. also remove the ability to change standing from there. once we move to SSO, standing is set by the corp and alliance." Of the two layouts that followed, the owner chose B2: "Go with B2."</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>One chip, four parts</b>, in this order: the standing, the name, the corporation (its logo and <code>[TICKER]</code>), the alliance (its logo and <code>&lt;TICKER&gt;</code>). A pilot without an alliance has no alliance part.</li>
+<li><b>The standing shows only.</b> Its tip says "Hostile, from your Standings"; pressing it does nothing.</li>
+<li><b>The name</b> opens the Pilot Analyzer, as the whole chip did before.</li>
+<li><b>A corporation or an alliance</b> shows only that group in the Feed. Its ticker goes in the Feed's search box as <code>[CORP]</code> or <code>&lt;ALLIANCE&gt;</code>, which matches that ticker exactly (a corporation's or an alliance's, as the brackets say), the way a system's name filters the Feed. Pressed again, or the box cleared, everything shows. The button looks pressed while its filter is on. Near You is not filtered (as for systems). Typing <code>[rlh]</code> works the same.</li>
+<li><b>Hover and keyboard focus:</b> the whole chip gets an outline and thin dividers between its parts; the part under the pointer fills with a white tint (never cyan, which means a link that leaves the site). Reduced motion: no transitions.</li>
+<li><b>Without hover</b> (a phone), the first tap on a chip shows its parts and does nothing else (kept when the lists redraw); a second tap on a part does what it says; a tap anywhere else puts it back. The keyboard acts at once.</li>
+<li><b>Narrow columns:</b> a name never breaks onto two lines; the groups go under it inside the chip instead.</li>
+<li>The comment in <code>itWhoHtml</code> that called the old order "as EVE's intel tools show it" is corrected (see the lesson).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/pilot_chip_check.py</code> (area intel): the parts and their tips, hover and focus, a corporation and an alliance pressed and pressed again, a ticker typed, the standing pressed, the name, the first tap without hover, 390 px, reduced motion. 13 mutants, all caught: the standing a button, the corporation and alliance grouped, every part filled on hover, no dividers, a cyan fill, the ticker matched as plain text, an alliance read as a corporation, no first tap without hover, the shown chip not put back, the shown chip lost on a redraw, names wrapping on a phone, motion kept, a group never shown pressed. Two were missed at first and the check was sharpened (a wrapped name is read by its height; the shown state is read after a redraw).</li>
+<li>Updated for the new markup: <code>intel_kills_check</code> (the tickers from the group parts; the name part clicked), <code>intel_assess_check</code> (the name part is the button), <code>intel_check</code> (the standing's word on its part).</li>
+<li>Run: <code>--auto</code> picked the area tier (intel, pilot, system): 12 lints and 32 page checks in 9 minutes, 0 failed, 2 flaky. One flake was the new check, and it was a real bug: on a phone the first tap's state lived only in the page and the lists' redraw (as lines arrive) wiped it. It is now kept across redraws (<code>it.armed</code>); <code>--area intel</code> rerun on the fix: 15 page checks, 0 failed, 0 flaky.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #118: a claim in a code comment is not a source. Comparing the two layouts, Claude said B2 "no longer matches EVE's order". The only basis was an earlier session's comment; the order was the tool's own v.99 mockup, and the screenshot behind it was a third-party app. The owner asked for the reference, and the recommendation flipped once the claim was gone. Trace "this is how EVE does it" to the client, the SDE, pyfa, CCP's docs or the owner before using it in an argument.</p>
+</body></html>

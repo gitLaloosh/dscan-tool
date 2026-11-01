@@ -81,9 +81,9 @@ with sync_playwright() as p:
     gone = pg.evaluate("() => { const st = it.near.get(it.names.byLower.get('8wa-z6')); const L = itLive(st, Date.now() + 16 * 60000); return [L.pilots.length, L.ships.length, L.extra]; }")
     check(gone == [0, 0, 0], f'the time set drops old names and ships {gone}')
     # ---- a pilot link in the Feed: paired ----
-    btn = pg.evaluate("() => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith('8WA-Z6 Vesna Dossier vedmak')); const c = r.querySelector('button.it-chip.p'); return [c.tagName, c.querySelector('.nm').textContent, c.title]; }")
+    btn = pg.evaluate("() => { const r = [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith('8WA-Z6 Vesna Dossier vedmak')); const c = r.querySelector('.it-chip.p button.it-seg.nmb'); return [c.tagName, c.querySelector('.nm').textContent, c.title]; }")   # v2026.11.01.2: the chip's name part
     check(btn == ['BUTTON', 'Vesna Dossier', 'Neutral (Standings). Open Vesna Dossier in the Pilot Analyzer, in the Vedmak reported with them'], f'a pilot in the Feed is a button, its title names the paired ship {btn}')
-    pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith('8WA-Z6 Vesna Dossier vedmak')).querySelector('button.it-chip.p').click()")
+    pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith('8WA-Z6 Vesna Dossier vedmak')).querySelector('.it-chip.p button.it-seg.nmb').click()")
     pa_done(pg)
     got = pg.evaluate("() => [getComputedStyle(document.querySelector('#tabPilot')).display, document.querySelector('#pilotName').value, document.querySelector('#manualShip').value, document.querySelector('#pilotFromIntel').hidden, document.querySelector('#pilotFromIntel').textContent]")
     check(got[:4] == ['block', 'Vesna Dossier', 'Vedmak', False] and re.match(r'From Intel · Vesna Dossier reported in a Vedmak at 8WA-Z6 \(1 jump\) · \d+ s ago← Back to Intel$', got[4]),
@@ -93,7 +93,7 @@ with sync_playwright() as p:
     pg.click('#pilotFromIntel [data-fi-act="back"]'); pg.wait_for_timeout(200)
     check(pg.evaluate("() => getComputedStyle(document.querySelector('#tabIntel')).display") == 'block', 'Back to Intel')
     # unpaired: Marrek Ketter in the long line
-    pg.evaluate(f"() => [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith({json.dumps(LONG)})).querySelector('button.it-chip.p').click()")
+    pg.evaluate(f"() => [...document.querySelectorAll('#intelPanel .it-fd')].find(f => f.querySelector('.raw').textContent.endsWith({json.dumps(LONG)})).querySelector('.it-chip.p button.it-seg.nmb').click()")
     pa_done(pg)
     got = pg.evaluate("() => [document.querySelector('#pilotName').value, document.querySelector('#manualShip').value, document.querySelector('#pilotFromIntel').textContent]")
     check(got[:2] == ['Marrek Ketter', ''] and got[2].startswith('From Intel · Marrek Ketter reported at 8WA-Z6 (1 jump)'), f'an unpaired pilot: no ship, the dossier picks {got}')
