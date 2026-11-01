@@ -187,4 +187,5 @@ format `**Severity | Scope — Name** — [stated] "<the owner's words>"`, plus 
 file, starting with `**BUG | …`. Never put the backlog in a repo file: the repo is public and the backlog quotes the owner.
 **If you don't have the memory tools, say so and stop.** Tell the owner you can't add it to the backlog from here; don't write it
 anywhere else.
+Build queue: the Project docs folder `claude/build-queue/` holds prompts waiting to be built; read its README when the owner says to take the next item.
 **`todo-inbox/` is the owner's drop box.** Agents read it and empty it; agents never write new items into it.
