@@ -103,6 +103,9 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   Analyzer), corporation (logo + [TICKER]) and alliance (logo + <TICKER>) as separate parts; a group pressed filters the Feed by its
   ticker (`[CORP]` / `<ALLIANCE>` in the search box); hover: outline + dividers, the part under the pointer filled white; without
   hover the first tap shows the parts. `pilot_chip_check.py`.
+  One close button (v2026.11.01.3): every info and settings panel (role="dialog") has the shared `button.x-close`, 32 px in its top
+  right (44 px on a phone), at every width; Esc and a press outside still close, the focus back on the opener. Menus (⋮ fit actions,
+  hull variants, slot menus, the My Fit picker on a wide window) have none. `check_ui_rules.py` (5), `close_buttons_check.py`.
   Layout D (v2026.10.31.6, the owner; Project doc roadmap/near-you-layout-d.md), both lists: line 1 jumps, the system (a button that
   filters the Feed only, never Near You), Near You's analyze icon (radar rings, always the System Analyzer), the tags, the time; Near
   You's kill badges on their own line, only when there are kills; then the toggle under the jumps and what was reported. No Assess

@@ -12,7 +12,11 @@ far as a static read can (the look itself: tools/page_checks/ui_rules_check.py):
   3. one slider: the one global input[type=range] style (a 4px track filled to --p) and rangeFillSet in the script;
      no other rule restyles a slider's track or handle;
   4. one text field: a :focus rule on a text field, select or textarea sets the cyan border and the ring, never amber;
-     a field rule's corners are 4px.
+     a field rule's corners are 4px;
+  5. one close button (v2026.11.01.3, the owner: "all info and settings panels need to have their own close button in the top
+     right"): every panel the script marks role="dialog" has the shared button.x-close near where it is built; no close button
+     of its own kind (a bare info-close / chg-close / lk-close class); no rule hides .x-close, except on a hover's tip
+     (.ttk-why[role="tooltip"]). (The My Fit picker is a menu on a wide window: its head, with the button, shows on a phone only.)
 """
 import sys, os, re
 
@@ -96,6 +100,20 @@ need = ['input[type=search]:focus', '.it-fbar select:focus', '.it-box select:foc
 for n in need:
     if not any(n in [x.strip() for x in s.split(',')] and 'var(--accent-ring)' in b for s, b, _ in rules):
         problems.append(f'{n}: no focus rule with the cyan ring')
+
+# 5. one close button
+for m_ in re.finditer(r'''role="dialog"|setAttribute\('role', '?[^)]*'dialog''', src):
+    if css_start <= m_.start() <= css_start + len(css): continue   # the stylesheet itself
+    ln = src.count('\n', 0, m_.start()) + 1
+    near = src[max(0, m_.start() - 3000): m_.start() + 3000]
+    if 'id="profilePanel"' in src[m_.start() - 200: m_.start() + 200]: near = 'x-close' if re.search(r'class="x-close pp-x"', src) else ''   # the profile's head is drawn by renderProfile
+    if 'x-close' not in near: problems.append(f'line {ln}: a panel (role="dialog") with no button.x-close where it is built')
+for m_ in re.finditer(r'class="(info|chg|lk)-close"', src):
+    problems.append(f'line {src.count(chr(10), 0, m_.start()) + 1}: a close button of its own kind ({m_.group(1)}-close without x-close)')
+for sel, body, ln in rules:
+    for part in sel.split(','):
+        if 'x-close' in part and re.search(r'display\s*:\s*none', body) and not re.search(r'ttk-why\[role="tooltip"\]', part):
+            problems.append(f'line {ln}: {part.strip()}: hides the close button')
 
 for p in problems: print('PROBLEM', p)
 print(f'UI RULES: {len(problems)} problems')

@@ -87,6 +87,8 @@ def start(b, w, h, mobile=False):
     pg.wait_for_selector('.lk-sum')
     return ctx, pg, errs
 def box(pg, sel): return pg.locator(sel).first.bounding_box()
+XBTN = "(sel) => { const p = [...document.querySelectorAll(sel)].find(e => e.checkVisibility()); const x = p && [...p.querySelectorAll('button.x-close')].find(x => !x.closest('details:not([open])')); if(!x) return null; const r = x.getBoundingClientRect(), q = p.getBoundingClientRect(); return [x.checkVisibility(), Math.round(r.width), Math.round(q.right - r.right), Math.round(r.top - q.top)]; }"   # v2026.11.01.3: the shared close button: [shown, size, gap to the right edge, gap to the top]
+def xbtn_ok(x, size): return bool(x) and x[0] is True and x[1] == size and 0 <= x[2] <= 18 and 0 <= x[3] <= 16
 def rows(pg):
     return pg.evaluate("() => [...document.querySelectorAll('#attackerList .lk-att-row')].map(r => ({hidden: r.hidden, who: r.querySelector('.lk-att-who').textContent, ship: r.querySelector('.lk-att-ship').textContent, weapon: r.querySelector('.lk-att-weapon').textContent, tag: r.querySelector('.lk-att-dmg').textContent.trim(), fb: r.classList.contains('finalblow')}))")
 
@@ -97,6 +99,8 @@ def desktop(b):
     before = [box(pg, x) for x in ('#pilotHeadName', '#fitCandidates .hull-static', '.lk-sum', '#fitResults .assess-tabs')]
     pg.click('.lk-sum'); pg.wait_for_selector('#attackerList .lk-att-row', timeout=30000); pg.wait_for_timeout(200)
     after = [box(pg, x) for x in ('#pilotHeadName', '#fitCandidates .hull-static', '.lk-sum', '#fitResults .assess-tabs')]
+    xb = pg.evaluate(XBTN, '.lk-body')
+    check(xbtn_ok(xb, 32), f'open: the shared close button in the panel\'s top right at a wide width too (v2026.11.01.3; was a phone only) {xb}')
     check(all(abs(a['y'] - c['y']) < 1 and abs(a['x'] - c['x']) < 1 for a, c in zip(before, after)), 'open: the header line and the loss box do not move')
     pb, sb, tb = box(pg, '.lk-body'), box(pg, '.lk-sum'), box(pg, '#fitResults .assess-tabs')
     check(pb['y'] >= sb['y'] + sb['height'] and pb['y'] < tb['y'] + 40 and abs(pb['x'] - sb['x']) < 2 and pb['height'] > 200,

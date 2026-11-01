@@ -62,3 +62,17 @@ the composition is known; only each pilot's fit is an estimate, and the page say
 - Later: group kills by shared attackers ("2 fleets", option D).
 - Known simplification: a shared link's alliance fits are built from that variant's newest loss with its own charges (the
   tab itself uses the variant's most common charge per weapon, as the dossier does).
+
+## The kill list scrolls, with each kill's ISK (v2026.11.01.3)
+
+The owner (2026-10-31): "fleet tab > list of kills originating from intel tab needs scrolling. systems with large battles will fill the
+entire screen and cause endless scrolling"; (2026-11-01) "add isk value of a kill to the list of killmails in the fleet tab", "can be
+folded into the next delivery for that page"; picked "Scroll inside" (mockup `Claude outputs/close_buttons_kill_list_mockup.html`).
+
+- About six and a half rows show (the cut-off row says there's more); the rest scroll inside `.fk-picks`; at either end the wheel moves
+  the page on (overscroll-behavior auto, LESSON #96).
+- fkRender keeps the list's scroll through its redraws (fkPicksTop / fkPicksKeep); a kill opened while out of view is scrolled into view
+  within the list, never the page (LESSON #119).
+- ISK: zKillboard's value already on each Intel kill (`isk` on the pick, from `e.kill.value`), written as the Feed writes it (itIsk),
+  amber; the exact value in its hover; none without a value. No new request.
+- `tools/page_checks/close_buttons_check.py`.

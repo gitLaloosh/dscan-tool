@@ -42,7 +42,7 @@ AREAS = {
     'scan_contacts_check': ['system'], 'shared_kill_check': ['pilot'], 'ship_class_check': ['fit', 'system'],
     'support_fighters_check': ['fit', 'calc'], 'system_analyzer_check': ['system'], 'ttk_why_check': ['myship', 'calc'],
     'ui_rules_check': ['layout'], 'unload_check': ['fit'], 'vs_check': ['system', 'myship'], 'weakness_picks_check': ['myship', 'calc'],
-    'zkb_outage_check': ['pilot'], 'profile_check': ['layout', 'myship', 'system', 'intel'], 'pilot_chip_check': ['intel'],
+    'zkb_outage_check': ['pilot'], 'profile_check': ['layout', 'myship', 'system', 'intel'], 'pilot_chip_check': ['intel'], 'close_buttons_check': ['intel', 'pilot', 'layout'],
 }
 NAMES = sorted({a for v in AREAS.values() for a in v})
 # v2026.10.31.7: a page check gets 5 minutes, these more (their longest run under load, x1.5); a hung check fails fast

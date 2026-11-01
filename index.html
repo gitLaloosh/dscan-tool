@@ -1457,8 +1457,6 @@
   .chg-away-tag{font:600 10.5px var(--sans); color:var(--amber); border:1px solid var(--amber-dim); border-radius:3px; padding:2px 8px; white-space:nowrap; border-color:transparent; background:color-mix(in srgb, var(--amber) 12%, transparent);}
   .chg-pop{position:absolute; left:10px; right:10px; top:52px; z-index:30; display:flex; flex-direction:column; max-height:min(620px, calc(100vh - 120px)); background:var(--panel-2); border:1px solid var(--line); border-radius:8px; box-shadow:0 12px 32px rgba(0,0,0,0.55); padding:10px 10px 8px; transition:opacity 0.12s;}
   .chg-head{display:flex; justify-content:space-between; align-items:center; color:var(--heading); font-size:14px; margin-bottom:6px;}
-  button.chg-close{width:32px; height:32px; min-height:32px; padding:0; border:none; background:transparent; color:var(--text-dim); font-size:20px; cursor:pointer;}
-  button.chg-close:hover{color:var(--heading);}
   .chg-filter{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px;}
   button.chg-chip{display:inline-flex; align-items:center; gap:5px; min-height:26px; padding:2px 10px; font-size:11.5px; color:var(--text-dim); border:1px solid var(--line); border-radius:4px; background:#151b20; cursor:pointer; border-color:transparent;}
   button.chg-chip.on{color:var(--heading); border-color:transparent; background:var(--tag-on);}
@@ -1555,7 +1553,6 @@
     .chg-w.k-burst .chg-cols, .chg-w.k-burst .chg-row{grid-template-columns:30px minmax(0,1fr) minmax(0,1fr);}
     .chg-row .chg-n{white-space:normal; overflow-wrap:anywhere; line-height:1.25;}   /* v.77: names wrap rather than "Scourge ..." */
     .chg-cols, .chg-row{grid-template-columns:30px minmax(0,1fr) 3em 5.8em;}
-    button.chg-close{width:44px; height:44px; min-height:44px;}
   }
   /* v2026.10.14.74: a hull's class beside its name (hullClassHtml), muted */
   .hull-cls{font:400 12px var(--sans); color:var(--text-dim); margin-left:0.3em; white-space:nowrap; letter-spacing:normal; text-transform:none;}
@@ -1618,13 +1615,10 @@
   .info-body .info-more summary::before{content:'▸'; color:var(--text-dim); width:10px;}
   .info-body .info-more[open] summary::before{content:'▾';}
   .info-body .info-more p{margin:0 0 8px 16px;}
-  button.info-close{display:none; margin-left:auto; width:44px; height:44px; min-height:44px; padding:0; border:none; background:transparent; color:var(--text-dim); font-size:20px;}
   @media (max-width: 599px){
     .info-body{position:fixed; left:0; right:0; bottom:0; top:auto; margin-top:0; width:auto; max-width:none; max-height:82vh; border-radius:14px 14px 0 0;
       padding:8px 16px 24px; box-shadow:0 0 0 100vmax rgba(0,0,0,0.55);}
-    button.info-close{display:block;}
   }
-  .mys-fmenu-head .info-close{margin-left:auto;}
   .lk-pop .lk-sum{padding:0 10px; border:1px solid transparent; border-radius:6px;}
   .lk-pop[open] .lk-sum{background:var(--panel-2); border-color:var(--line);}
   .lk-pop[open] .lk-caret{transform:rotate(180deg);}
@@ -1633,7 +1627,6 @@
   .lk-head{display:flex; align-items:baseline; gap:12px;}
   .lk-title{font-size:16px; color:var(--text); flex:1 1 auto; min-width:0;}
   .lk-when{font:400 12px var(--mono); color:var(--text-dim); white-space:nowrap;}
-  button.lk-close{display:none; width:44px; height:44px; padding:0; border:none; background:transparent; color:var(--text-dim); font-size:20px; flex:none;}
   .lk-weapon{margin-top:6px; font-size:13px; color:var(--text-dim);}
   .lk-actions{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:12px;}
   .lk-actions .lk-toggle{margin:0; min-height:32px; font-size:12.5px; border-color:#1f6f80;}
@@ -1660,7 +1653,6 @@
     .lk-body{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; max-height:82vh; border-radius:14px 14px 0 0;
       padding:8px 16px 24px; box-shadow:0 0 0 100vmax rgba(0,0,0,0.55);}
     .lk-head{align-items:center;}
-    button.lk-close{display:block;}
     .lk-head{flex-wrap:wrap;} .lk-when{order:3; flex-basis:100%;}
     .lk-actions .lk-toggle{flex:1 1 auto; min-height:44px;}
     .lk-att-row{display:flex; flex-wrap:wrap; align-items:center; gap:2px 6px; padding:8px 0;}
@@ -1754,6 +1746,7 @@
   .mys-cell-why .mys-cell-v{text-decoration:underline dotted var(--text-dim); text-decoration-thickness:1px; text-underline-offset:5px; cursor:help;}
   .info-body.ttk-why{z-index:60;}
   .info-body.ttk-why[hidden]{display:none;}
+  .info-body.ttk-why[role="tooltip"] .x-close{display:none;}   /* v2026.11.01.3: a hover's tip has no close button; tapped open (a dialog) it has */
   @media (min-width: 600px){ .info-body.ttk-why{position:absolute; right:auto; margin-top:0; width:360px;} }
   .mys-mid{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:8px 10px; text-align:center; color:var(--text-dim);}
   .mys-mid .mys-cell-v{font:400 11.5px var(--sans); color:var(--text-dim);}
@@ -1831,11 +1824,9 @@
     .mys-pick-row{padding:10px 12px;}
     .mys-pick-menu{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; border-radius:14px 14px 0 0; padding:8px 10px 24px; box-shadow:0 0 0 100vmax rgba(0,0,0,0.55);}
     .mys-pick-head{display:flex; align-items:center; justify-content:space-between; padding:4px 10px 8px; color:var(--heading); font-weight:600; font-size:14px;}
-    .mys-pick-head .info-close{display:inline-flex;}
     button.mys-pick-opt{min-height:44px;}
     button.mys-add, button.mys-use-btn{min-height:44px;}
     .mys-fpart-range .mys-fmenu{left:0; transform:none;}
-    .mys-fmenu .info-close{display:block;}
     .assess-tabs .subtab-btn{padding:0 12px; min-height:44px;}
     .hull-pick-btn, .lk-sum{min-height:44px;}
     .mys-banner .mys-actions{width:100%;}
@@ -2215,15 +2206,21 @@
   button.pdk-fb:hover, button.pdk-fb:focus-visible{background:var(--tag-fill-hover); border-color:var(--accent-edge);} button.pdk-fb svg{width:15px; height:15px;}
   /* v2026.10.31.2: the kills a badge covered, to pick from (tags; the one shown pressed) */
   .fk-pk-h{margin:12px 0 4px; font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
-  .fk-picks{display:flex; flex-direction:column; gap:4px;}
-  button.fk-pk{display:grid; grid-template-columns:16px minmax(0,1.6fr) minmax(0,1fr) 70px 90px 130px; gap:10px; align-items:center; width:100%; min-height:0; padding:7px 10px; text-align:left;
+  /* v2026.11.01.3 (the owner: "list of kills originating from intel tab needs scrolling. systems with large battles will fill the entire
+     screen"; "Scroll inside"; and "add isk value of a kill to the list"): about six and a half rows show (the cut-off row says there's
+     more), the rest scroll inside; at either end the wheel moves the page on (overscroll-behavior auto, LESSON #96); the kill being
+     analyzed is kept in view (fkPicksKeep). The ISK: zKillboard's value, amber as in the Feed (.it-isk). */
+  .fk-picks{display:flex; flex-direction:column; gap:4px; max-height:calc(6.5 * (var(--fk-pk-h) + 4px)); overflow-y:auto; overscroll-behavior:auto; padding:2px; margin:-2px; --fk-pk-h:34px;}
+  .fk-picks > button.fk-pk{flex:none; min-height:var(--fk-pk-h);}
+  .fk-pk-i{text-align:right; font:600 11.5px var(--mono); color:var(--amber); white-space:nowrap;}
+  button.fk-pk{display:grid; grid-template-columns:16px minmax(0,1.6fr) minmax(0,1fr) 64px 70px 90px 130px; gap:10px; align-items:center; width:100%; min-height:0; padding:7px 10px; text-align:left;
     border:1px solid transparent; border-radius:4px; background:var(--tag-fill); color:var(--text); font:400 12.5px var(--sans); letter-spacing:0; cursor:pointer;}
   button.fk-pk:hover, button.fk-pk:focus-visible{background:var(--tag-fill-hover); border-color:var(--accent-edge);}
   button.fk-pk[aria-pressed="true"]{background:var(--tag-on); border-color:var(--cyan);}
   .fk-pk-n{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;} .fk-pk-n .nm{font-weight:600; color:var(--heading);} .fk-pk-n .cls{color:var(--text-dim); margin-left:6px;}
   .fk-pk-s{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .fk-pk-a, .fk-pk-t{text-align:right; font:400 12px var(--mono); color:var(--text-dim); white-space:nowrap;} .fk-pk-l{justify-self:end;} .fk-pk-l .it-kl{margin-left:0;}
-  @media (max-width:599px){ button.fk-pk{grid-template-columns:16px minmax(0,1fr) auto; row-gap:2px; min-height:44px;} .fk-pk .fk-pk-s{grid-column:2;} .fk-pk .fk-pk-t{grid-column:3; grid-row:1;} .fk-pk .fk-pk-a{grid-column:3; grid-row:2;} .fk-pk .fk-pk-l{display:none;} }
+  @media (max-width:599px){ .fk-picks{--fk-pk-h:46px;} button.fk-pk{grid-template-columns:16px minmax(0,1fr) auto auto; row-gap:2px; min-height:44px;} .fk-pk > svg{grid-row:1 / span 2;} .fk-pk .fk-pk-n{grid-column:2; grid-row:1;} .fk-pk .fk-pk-s{grid-column:2; grid-row:2;} .fk-pk .fk-pk-t{grid-column:3 / span 2; grid-row:1;} .fk-pk .fk-pk-i{grid-column:3; grid-row:2;} .fk-pk .fk-pk-a{grid-column:4; grid-row:2;} .fk-pk .fk-pk-l{display:none;} }
   /* v2026.10.31.1: the victim, a tag in the line under the title; opens them in the Pilot Analyzer on the ship they lost */
   button.fk-vbtn{display:inline-flex; align-items:center; gap:6px; min-height:0; padding:1px 8px; margin:0 2px; border:1px solid transparent; border-radius:4px; background:var(--tag-fill); color:var(--heading); font:600 13px var(--sans); cursor:pointer; vertical-align:baseline;}
   button.fk-vbtn:hover, button.fk-vbtn:focus-visible{background:var(--tag-fill-hover); border-color:var(--accent-edge);}
@@ -2627,6 +2624,14 @@
   button.x-close{display:inline-flex; align-items:center; justify-content:center; flex:none; width:32px; height:32px; min-height:0; padding:0; margin:-6px -8px 0 auto; border:1px solid transparent; border-radius:4px; background:transparent; color:var(--text-dim); font:400 20px/1 var(--sans); cursor:pointer;}
   button.x-close:hover{background:var(--tag-fill-hover); border-color:var(--accent-edge); color:var(--heading);}
   button.x-close:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  /* v2026.11.01.3 (the owner: "all info and settings panels need to have their own close button in the top right. only some do
+     currently"): this one close button on every info and settings panel, at every width (info panels, Intel settings, Charges, Last
+     Kill details, the fight's menus, leaving the site); 44 px on a phone. Menus (⋮ fit actions, hull variants, slot menus, the My
+     Fit picker on a wide window) close when you pick, press Esc or press outside, and have none. Mockup:
+     Claude outputs/close_buttons_kill_list_mockup.html. Checked: tools/page_checks/close_buttons_check.py, check_ui_rules. */
+  .info-head button.x-close, .chg-head button.x-close, .lk-head button.x-close, .mys-fmenu-head button.x-close, .leave-h button.x-close{margin:-6px -8px -6px auto;}
+  .leave-h{display:flex; align-items:center; gap:8px;}
+  @media (max-width:599px){ button.x-close{width:44px; height:44px;} }
   .pp-steps{display:flex; align-items:center; gap:8px; margin:12px 0 2px; font-size:12px; color:var(--text-dim);} .pp-steps[hidden]{display:none;}
   .pp .pp-sec{border-top:1px solid var(--line); padding:12px 0 4px; margin-top:10px;}
   .pp-sh{display:flex; align-items:center; gap:8px; font:600 13px var(--sans); color:var(--heading); margin-bottom:8px;}
@@ -2654,7 +2659,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.2</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.01.3</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -3066,7 +3071,7 @@ function leaveAsk(a, u){
   const name = leaveName(u.hostname), r = a.getBoundingClientRect(), W = 300;
   const box = document.createElement('div');
   box.id = 'leaveBox'; box.className = 'leave-box'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', `Open ${name}?`);
-  box.innerHTML = `<div><b>Open ${escapeHtml(name)}?</b> It opens in a new tab, outside this site.</div><div class="leave-url">${escapeHtml(u.host + u.pathname)}</div>
+  box.innerHTML = `<div class="leave-h"><b>Open ${escapeHtml(name)}?</b><button type="button" class="x-close" data-leave="no" aria-label="Close" title="Close (Esc)">×</button></div><div>It opens in a new tab, outside this site.</div><div class="leave-url">${escapeHtml(u.host + u.pathname)}</div>
     <div class="leave-row"><button type="button" class="leave-go" data-leave="go">Open ↗</button><button type="button" data-leave="no">Cancel</button></div>
     <label class="leave-skip"><input type="checkbox" data-leave="skip"> Don't ask again for ${escapeHtml(name)}</label>`;
   box._from = a; box._url = u.href; box._host = u.hostname;
@@ -3121,7 +3126,7 @@ function infoBtnHtml(key){
   if(!paras) throw new Error(`infoBtnHtml: no CARD_INFO for "${key}"`);
   const title = INFO_TITLE[key] || `How ${cardName(key.split('#')[0])} works`;
   return `<details class="info-pop" data-info="${key}"><summary class="info-btn" aria-label="${escapeHtml(title)}" title="${escapeHtml(title)}">${INFO_SVG}</summary>
-    <div class="info-body" role="dialog" aria-label="${escapeHtml(title)}"><div class="info-head"><span>${escapeHtml(title)}</span><button type="button" class="info-close" aria-label="Close">×</button></div>
+    <div class="info-body" role="dialog" aria-label="${escapeHtml(title)}"><div class="info-head"><span>${escapeHtml(title)}</span><button type="button" class="x-close info-close" aria-label="Close" title="Close (Esc)">×</button></div>
     ${paras.map(infoParaHtml).join('')}</div></details>`;
 }
 
@@ -10918,7 +10923,7 @@ async function renderLastKill(character, pilotName, statusEl){
           <div class="lk-head">
             <div class="lk-title"><b>${escapeHtml(flownName)}</b> killed a <b>${escapeHtml(targetName)}</b></div>
             <div class="lk-when">${escapeHtml([killDay, killTime].filter(Boolean).join(' · '))}</div>
-            <button type="button" class="lk-close" aria-label="Close">×</button>
+            <button type="button" class="x-close lk-close" aria-label="Close" title="Close (Esc)">×</button>
           </div>
           ${realWeapon ? `<div class="lk-weapon">using <b>${escapeHtml(weaponName)}</b> ${lkDamageTagHtml(weaponInfo)}</div>` : ''}
           <div class="lk-actions">
@@ -19738,7 +19743,7 @@ function chgPanelHtml(f){
   }
   // v2026.10.14.77 (subtext rule): how to use the list is behind its info button (CARD_INFO["fit#charges"]), not a paragraph
   return `<div class="chg-pop" role="dialog" aria-label="Charges">
-      <div class="chg-head"><b>Charges</b><span class="chg-head-r">${infoBtnHtml('fit#charges')}<button type="button" class="chg-close" aria-label="Close">×</button></span></div>
+      <div class="chg-head"><b>Charges</b><span class="chg-head-r">${infoBtnHtml('fit#charges')}<button type="button" class="x-close chg-close" aria-label="Close" title="Close (Esc)">×</button></span></div>
       ${chips ? `<div class="chg-filter" role="group" aria-label="Damage type">${chips}</div>` : ''}
       ${wchips ? `<div class="chg-filter chg-wfilter" role="group" aria-label="Module">${wchips}</div>` : ''}
       <div class="chg-body">${body}</div>
@@ -21015,7 +21020,7 @@ function mysPickHtml(){
   return `<div class="mys-pick-row"><span class="mys-half-head">
       <details class="mys-pick"><summary class="mys-sw-v" aria-label="Your ship: ${escapeHtml(myShipLabel())}. Change it" title="Change your ship">${myShipLabelHtml()}${MYS_PICK_CHEV}</summary>
         <div class="mys-pick-menu" role="menu" aria-label="Your ship for this matchup">
-          <div class="mys-pick-head"><span>Your ship for this matchup</span><button type="button" class="info-close" aria-label="Close">×</button></div>
+          <div class="mys-pick-head"><span>Your ship for this matchup</span><button type="button" class="x-close info-close" aria-label="Close" title="Close (Esc)">×</button></div>
           ${opts}
           <div class="mys-pick-sep"></div>
           <button type="button" class="mys-pick-opt mys-pick-manage" role="menuitem"><span class="mys-pick-chk"></span><span class="mys-pick-name">Manage My Fits</span></button>
@@ -21070,7 +21075,7 @@ function ttkWhyEl(){
   if(ttkWhyPop.el && ttkWhyPop.el.isConnected) return ttkWhyPop.el;
   const el = document.createElement('div');
   el.className = 'info-body ttk-why'; el.hidden = true;
-  el.innerHTML = '<div class="info-head"><span class="ttk-why-title"></span><button type="button" class="info-close" aria-label="Close">×</button></div><div class="ttk-why-text"></div>';
+  el.innerHTML = '<div class="info-head"><span class="ttk-why-title"></span><button type="button" class="x-close info-close" aria-label="Close" title="Close (Esc)">×</button></div><div class="ttk-why-text"></div>';
   el.querySelector('.info-close').addEventListener('click', () => ttkWhyHide());
   document.body.appendChild(el);
   return (ttkWhyPop.el = el);
@@ -21155,7 +21160,7 @@ const FIGHT_MENUS = {
 };
 function mysFightStripHtml(host){
   const threat = (host.dataset.threat || 'Threat').split(' · ')[0];
-  const head = (title) => `<div class="mys-fmenu-head"><span>${escapeHtml(title)}</span><button type="button" class="info-close" aria-label="Close">×</button></div>`;
+  const head = (title) => `<div class="mys-fmenu-head"><span>${escapeHtml(title)}</span><button type="button" class="x-close info-close" aria-label="Close" title="Close (Esc)">×</button></div>`;
   const moveMenu = (side, title) => `${head(title)}
       ${FIGHT_MENUS[side].opts.map(([v, sub]) => `<button type="button" class="mys-fopt" data-fset="${FIGHT_MENUS[side].key}" data-v="${v}" aria-pressed="false"><span class="mys-fopt-t">${FIGHT_MOVE_NAME[v]}</span>${ctxHtml(sub)}</button>`).join('')}
       <label class="mys-fslider"><span class="dmg-ctl-row"><span>${side === 'you' ? 'Your speed' : 'Their speed'}</span><span class="dmg-num" data-fout="${side}"></span></span>
@@ -23047,7 +23052,7 @@ function fkRender(){
     sub = `<div class="fk-sub">${from} · killed ${vBtn ? `${vBtn} in a` : 'a'} <b>${escapeHtml(v.name || '')}</b>${v.cls ? ` (${escapeHtml(v.cls)})` : ''} · ${when}${fk.sys ? ` · <b>${sysNameHtml(fk.km.solar_system_id, fk.sys)}</b>` : ''} · <b>${fk.players}</b> pilot${fk.players === 1 ? '' : 's'} on the kill, <b>${fk.members.length}</b> in ships</div>`;
   }
   const head = `<div class="card fk-head"><div class="fk-top"><h2>${escapeHtml(cardName('fleet'))} on a kill</h2>${acts}</div>${sub}${fkPicksHtml()}${fk.err ? `<div class="pr-msg err">${escapeHtml(fk.err)}</div>` : ''}${!fk.km && !fk.err ? `<div class="pr-msg"><span class="busy-spin" aria-hidden="true"></span>Reading killmail ${fk.killId || ''} from ESI…</div>` : ''}</div>`;
-  if(!fk.km){ el.innerHTML = head; return; }
+  if(!fk.km){ const keep = fkPicksTop(el); el.innerHTML = head; fkPicksKeep(el, keep); return; }
   const batch = fk.members.slice(0, fk.limit), later = fk.members.slice(fk.limit);
   const done = batch.filter(m => ['done', 'err'].includes(m.state)).length;
   let shown = batch;
@@ -23081,7 +23086,9 @@ function fkRender(){
     ${shown.map(fkRowHtml).join('')}${later.map(fkRowHtml).join('')}
     ${later.length ? `<div class="pr-more"><button type="button" data-fk-more="1">Load ${Math.min(later.length, FK_BATCH)} more pilot${Math.min(later.length, FK_BATCH) === 1 ? '' : 's'}</button>${ctxHtml(`${later.length} not looked up yet`, '', `${later.length} not looked up yet: about 1 zKillboard request each`)}</div>` : ''}</div>`;
   const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.fkPilot : null;
+  const keep = fkPicksTop(el);
   el.innerHTML = head + fkVictimHtml() + sum + rows;
+  fkPicksKeep(el, keep);
   fillOrgTickers(el);
   if(focused){ const f = el.querySelector(`[data-fk-pilot="${CSS.escape(focused)}"]`); if(f) f.focus({preventScroll: true}); }
 }
@@ -23089,12 +23096,24 @@ function fkRender(){
 // or easy to read with a constantly changing list on both sides of the page"): a kill badge covering several kills opens the newest
 // with the others listed here, as they were when it was clicked (Intel's later kills don't reshuffle it). picks: {id, hash, km, name,
 // ship, sys, ships, t, v (the victim's side), word}.
+// v2026.11.01.3: the kill list keeps its scroll when the tab redraws (it does as each pilot comes in), and shows the kill being analyzed
+// (scrolled within the list only, never the page)
+function fkPicksTop(el){ const L = el.querySelector('.fk-picks'); return L ? {top: L.scrollTop, id: L.dataset.kid} : null; }   // id: the kill the list last showed pressed
+function fkPicksKeep(el, keep){
+  const L = el.querySelector('.fk-picks'); if(!L) return;
+  if(keep) L.scrollTop = keep.top;
+  const was = keep && keep.id; L.dataset.kid = String(fk.killId);
+  if(was === String(fk.killId)) return;   // the same kill: leave the list where the person scrolled it
+  const b = L.querySelector('button.fk-pk[aria-pressed="true"]'); if(!b) return;
+  const top = b.getBoundingClientRect().top - L.getBoundingClientRect().top + L.scrollTop - 2, bot = top + b.offsetHeight + 4;
+  if(top < L.scrollTop) L.scrollTop = top; else if(bot > L.scrollTop + L.clientHeight) L.scrollTop = bot - L.clientHeight;
+}
 function fkPicksHtml(){
   const P = fk.picks;
   if(!P || P.length < 2) return '';
   const where = [...new Set(P.map(p => p.sys))], kind = {f: 'good', h: 'bad'};
   return `<div class="fk-pk-h">${P.length} kills${where.length === 1 && where[0] ? ` in ${P[0].sysId ? sysNameHtml(P[0].sysId, where[0]) : escapeHtml(where[0])}` : ''} from ${escapeHtml(cardName('intel'))} · as they were when you opened this</div>
-    <div class="fk-picks" role="group" aria-label="Kill to analyze">${P.map((p, i) => `<button type="button" class="fk-pk" data-fk-pick="${i}" aria-pressed="${p.id === fk.killId}" title="${escapeHtml(`Analyze the kill of ${p.name || 'no pilot'}'s ${p.ship || 'ship'}`)}">${standIcon(kind[p.v] || 'neu')}<span class="fk-pk-n"><span class="nm std-n ${p.v === 'f' || p.v === 'h' ? p.v : 'n'}">${escapeHtml(p.name || 'no pilot')}</span><span class="cls">${escapeHtml(p.ship || '')}</span></span><span class="fk-pk-s">${p.sysId ? sysNameHtml(p.sysId, p.sys) : escapeHtml(p.sys || '')}</span><span class="fk-pk-a">${p.ships === 1 ? 'solo' : p.ships ? `${p.ships} pilots` : 'NPCs'}</span><span class="fk-pk-t">${escapeHtml(itAgo(p.t))} ago</span><span class="fk-pk-l"><span class="it-kl ${p.word[0]}">${escapeHtml(p.word[1])}</span></span></button>`).join('')}</div>`;
+    <div class="fk-picks" role="group" aria-label="Kill to analyze">${P.map((p, i) => `<button type="button" class="fk-pk" data-fk-pick="${i}" aria-pressed="${p.id === fk.killId}" title="${escapeHtml(`Analyze the kill of ${p.name || 'no pilot'}'s ${p.ship || 'ship'}`)}">${standIcon(kind[p.v] || 'neu')}<span class="fk-pk-n"><span class="nm std-n ${p.v === 'f' || p.v === 'h' ? p.v : 'n'}">${escapeHtml(p.name || 'no pilot')}</span><span class="cls">${escapeHtml(p.ship || '')}</span></span><span class="fk-pk-s">${p.sysId ? sysNameHtml(p.sysId, p.sys) : escapeHtml(p.sys || '')}</span><span class="fk-pk-i"${p.isk ? ` title="${escapeHtml(`${Math.round(p.isk).toLocaleString('en-US')} ISK (zKillboard's value)`)}"` : ''}>${p.isk ? `${itIsk(p.isk)}` : ''}</span><span class="fk-pk-a">${p.ships === 1 ? 'solo' : p.ships ? `${p.ships} pilots` : 'NPCs'}</span><span class="fk-pk-t">${escapeHtml(itAgo(p.t))} ago</span><span class="fk-pk-l"><span class="it-kl ${p.word[0]}">${escapeHtml(p.word[1])}</span></span></button>`).join('')}</div>`;
 }
 // The victim, from the killmail's own fit: the same facts as the fleet's summary (no time to kill, LESSON #108)
 function fkVictimHtml(){
@@ -24419,6 +24438,7 @@ function itWhoHtml(x, e){
     : `<button type="button" class="it-seg nmb" data-it-pilot="${x.id}" data-it-e="${e.id}" title="${escapeHtml(itPilotTitle(x, e.pairs.get(x.id)))}"><span class="nm">${escapeHtml(x.name)}</span></button>`;
   return `${st}${nm}${itGrpBtn('corporation', o.corp)}${itGrpBtn('alliance', o.alliance)}`;
 }
+function itGearFocus(){ const g = document.querySelector('#intelPanel .it-gear'); if(g) g.focus({preventScroll: true}); }
 function itPilotChip(x, e){
   const key = `${e.id}:${x.id || 'v'}`, arm = it.armed === key ? ' armed' : '';   // it.armed: kept across redraws (the lists redraw as lines arrive)
   if(!x.id) return `<span class="it-chip ent ${x.side}${arm}" data-it-chip="${key}">${itWhoHtml({...x, name: 'no pilot'}, e)}</span>`;
@@ -24648,7 +24668,7 @@ function itKillBadges(ks, sys){
 // with a killmail opens in the Fleet tab, from its label in the Feed, its badge in Near You or its line in a Near You row opened.
 function itKillPick(e){
   const k = e.kill, v = k.victim, s = e.p.sys[0];
-  return {id: k.id, hash: k.hash, km: k.km, name: v.name || '', ship: v.ship ? v.ship.name : '', sys: s ? itSysName(s.id) : '', sysId: s ? s.id : 0, ships: k.ships || 0, t: e.t, v: v.side || 'n', word: [itKillWord(e)[0], itKillWord(e)[1]]};
+  return {id: k.id, hash: k.hash, km: k.km, name: v.name || '', ship: v.ship ? v.ship.name : '', sys: s ? itSysName(s.id) : '', sysId: s ? s.id : 0, ships: k.ships || 0, t: e.t, v: v.side || 'n', word: [itKillWord(e)[0], itKillWord(e)[1]], isk: k.value || 0};   // isk: zKillboard's value (v2026.11.01.3)
 }
 function itOpenKills(list){   // the newest first; the others to pick from on the Fleet tab
   const P = list.filter(e => e && e.kind === 'kill' && e.kill && e.kill.km).sort((a, b) => b.t - a.t).map(itKillPick);
@@ -24926,10 +24946,14 @@ function itRender(force){   // force: a press that changes what is open (the gea
         <div><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3>${ctxHtml(`last ${it.set.forget} min, reports and kills`)}</div>${itFeedBarHtml()}<div id="itFeedList">${itFeedListHtml()}</div></div>
       </div>`;
   }
-  const pop = it.pop && !setup ? `<div class="it-pop" role="dialog" aria-label="Intel settings"><div class="it-h"><h3>Intel settings</h3><span class="sa-sp"></span><button type="button" class="info-close" data-it-act="gear" aria-label="Close">×</button></div>${itSettingsHtml(false)}</div>` : '';
+  const pop = it.pop && !setup ? `<div class="it-pop" role="dialog" aria-label="Intel settings"><div class="it-h"><h3>Intel settings</h3><span class="sa-sp"></span><button type="button" class="x-close info-close" data-it-act="gear" aria-label="Close" title="Close (Esc)">×</button></div>${itSettingsHtml(false)}</div>` : '';
+  // v2026.11.01.3: a redraw (the lists, as lines and kills arrive) keeps the focus on the head's control that had it (the gear after its
+  // panel closed, the switch, the info button), instead of dropping it to the page
+  const hf = act && el.contains(act) && act.closest('.it-head') ? (act.matches('.it-gear') ? '.it-head .it-gear' : act.matches('summary.info-btn') ? '.it-head summary.info-btn' : act.id ? `#${act.id}` : null) : null;
   el.innerHTML = `<div class="card it-card"><div class="it-head"><h2>${escapeHtml(cardName('intel'))}</h2>${sw}</div>
     <div id="itNotes">${itNotesHtml()}</div>
     ${body}${pop}</div>`;
+  if(hf){ const f = el.querySelector(hf); if(f) f.focus({preventScroll: true}); }
   itAfterDraw(el);
 }
 // v2026.11.01.1 (the profile, decided 2026-10-29 and 2026-10-31): Intel's mark on the profile and a dot on the Intel tab. Off: none. On,
@@ -25050,11 +25074,11 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
     if(rw){ const id = Number(rw.dataset.itRaw); if(it.rawOpen.has(id)) it.rawOpen.delete(id); else it.rawOpen.add(id); itRenderLists(); const b = el.querySelector(`[data-it-raw="${id}"]`); if(b) b.focus(); return; }
     const a = e.target.closest('[data-it-act]');
     if(!a) return;
-    if(a.dataset.itAct === 'gear'){ it.pop = !it.pop; itRender(true); return; }
+    if(a.dataset.itAct === 'gear'){ it.pop = !it.pop; itRender(true); if(!it.pop) itGearFocus(); return; }   // v2026.11.01.3: closed: the focus back on the gear
     if(a.dataset.itAct === 'leaveask'){ leaveSave([]); itRender(true); return; }   // v2026.10.31.3: links outside the site ask again
     if(a.dataset.itAct === 'folder') itChooseFolder();
   });
-  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && it.pop){ it.pop = false; itRender(true); } });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && it.pop){ it.pop = false; itRender(true); itGearFocus(); } });
   setInterval(() => { if(it.on){ const s = el.querySelector('[data-it-status]'); if(s) s.innerHTML = itStatusLine(); } }, 1000);
   if(typeof window !== 'undefined' && window.addEventListener){ let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if(it.on || it.near.size) itRenderLists(); }, 200); }); }   // v2026.10.30.1: the 3-line cap follows the width
   itKvGet('dir').then(async (h) => {   // the folder chosen before; read it now if the browser still allows it (else the slider asks)

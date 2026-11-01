@@ -38,6 +38,8 @@ HTML = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')),
 CHROMIUM = os.environ.get('CHROMIUM_PATH') or ('/opt/pw-browsers/chromium' if os.path.exists('/opt/pw-browsers/chromium') else None)
 R = '#fitAnalyzerResults'
 HML, SCOURGE, NOVA, FURY, NAVY = 2410, 209, 206, 2629, 27441
+XBTN = "(sel) => { const p = [...document.querySelectorAll(sel)].find(e => e.checkVisibility()); const x = p && [...p.querySelectorAll('button.x-close')].find(x => !x.closest('details:not([open])')); if(!x) return null; const r = x.getBoundingClientRect(), q = p.getBoundingClientRect(); return [x.checkVisibility(), Math.round(r.width), Math.round(q.right - r.right), Math.round(r.top - q.top)]; }"   # v2026.11.01.3: the shared close button: [shown, size, gap to the right edge, gap to the top]
+def xbtn_ok(x, size): return bool(x) and x[0] is True and x[1] == size and 0 <= x[2] <= 18 and 0 <= x[3] <= 16
 def drake(charges, launchers=None, cargo=True):
     lines = [f'Heavy Missile Launcher II, {c}' if c else 'Heavy Missile Launcher II' for c in charges]
     return ("[Drake, Charges]\nBallistic Control System II\nBallistic Control System II\nDamage Control II\n\n"
@@ -159,6 +161,8 @@ with sync_playwright() as p:
     loaded = pg.inner_text(f'{R} .fit-ring-loaded')
     check(total(pg) == f'{want_total:,}' and pg.locator(f'{R} .chg-away-tag').count() == 1 and [x['charge'] for x in t] == [NAVY] * 6 and all(x['away'] for x in t)
           and 'not on board' in loaded, f'1440: a click loads Caldari Navy Scourge in all six: {total(pg)} DPS (pasted {want_total}), "not on board" tag, dashed tiles, Loaded line ({loaded!r})')
+    xb = pg.evaluate(XBTN, f'{R} .chg-pop')
+    check(xbtn_ok(xb, 32), f'1440: the list has the shared close button in its top right (v2026.11.01.3) {xb}')
     pg.click(f'{R} .chg-close'); settle(pg)   # the list covers the ring while open
     check(pg.inner_text(f'{R} button.chg-own').strip() == 'Use original charges', f'1440: the link back reads "Use original charges" ({pg.inner_text(f"{R} button.chg-own")!r})')
     pg.click(f'{R} button.chg-own'); settle(pg)

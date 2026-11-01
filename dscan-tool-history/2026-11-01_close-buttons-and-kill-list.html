@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-01 — One close button, and the Fleet tab's kill list</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>One close button, and the Fleet tab's kill list</h1>
+<p><span class="tag">UI</span><span class="tag">Fleet</span><span class="tag">Intel</span> 2026-11-01 &middot; <code>v2026.11.01.3</code></p>
+
+<h2>Why</h2>
+<p>Two bugs from 2026-10-31 and one small request. The owner: "all info and settings panels need to have their own close button in the top right. only some do currently"; "fleet tab > list of kills originating from intel tab needs scrolling. systems with large battles will fill the entire screen and cause endless scrolling"; and (2026-11-01) "add isk value of a kill to the list of killmails in the fleet tab", "can be folded into the next delivery for that page". Built overnight at the owner's word, from the mockup (<code>Claude outputs/close_buttons_kill_list_mockup.html</code>) with the recommended options: "Build with my picks", "Scroll inside", "Close buttons only" (making expand/collapse the same everywhere stays its own item).</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>One close button</b> (the profile's, since v2026.11.01.1): 32 px in the panel's top right, 44 px on a phone, at every width. Esc and a press outside still close every panel, and the focus goes back to what opened it.
+  <ul>
+  <li>Info (ⓘ) panels on every card, and Intel settings (the gear): the button showed on phones only; now always.</li>
+  <li>Charges (Fit Analyzer): its own close button replaced by the shared one.</li>
+  <li>Last Kill details (Pilot Analyzer): phones only before; now always.</li>
+  <li>The fight's menus (range, speed): phones only before; now always.</li>
+  <li>"Open zKillboard?" (leaving the site): a close button beside the question; Cancel stays.</li>
+  <li>The "why" under a time to kill: a tip while hovering (no button), a panel with the button when tapped open.</li>
+  <li>Menus (⋮ fit actions, hull variants, slot menus, the My Fit picker on a wide window) have none: they close when you pick, press Esc or press outside. On a phone the My Fit picker is a sheet and has it.</li>
+  <li>Closing Intel settings puts the focus back on the gear, and the Intel card's redraws (as lines and kills arrive) now keep the focus on the head's control that had it.</li>
+  </ul></li>
+<li><b>The Fleet tab's kill list</b> (a badge in Intel covering several kills): about six and a half rows show, so the cut-off row says there's more; the rest scroll inside the list; at either end the wheel moves the page on, as in the profile panel. The list keeps its place while the tab redraws as pilots come in, and a kill opened while out of view is scrolled into view (the list only, never the page). On a phone the rows are taller and the same rules hold.</li>
+<li><b>Each kill's ISK</b> in that list: zKillboard's value, already on every Intel kill (no new request), written as the Feed writes it (10.0M, 1.66B) in the Feed's amber; the exact value in its hover; nothing for a kill without a value. On a phone it sits on the second line beside the pilot count.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>tools/page_checks/close_buttons_check.py</code> (areas intel, pilot, layout): the close button on an info panel, Intel settings, "Open zKillboard?" and a Fleet tab info panel (32 px, top right; closes; the focus back; Esc), the kill list with 31 kills (rows shown, scrolls inside, the wheel not trapped, ISK, a far kill kept in view through redraws, one opened out of view scrolled to), 390 px. 14 mutants, all caught: the button on phones only again, the gear and Esc not giving the focus back, a redraw dropping it, no button on "Open zKillboard?", the list growing, the wheel trapped, the ISK written its own way or not amber, the scroll lost on a redraw, the "kill changed" test against the new state, the phone's ISK on line 1, a 32 px button on a phone, the button on the left. One (Esc without the focus back) was missed until the check pressed Esc from inside the panel; two were caught by a timeout on a hidden button.</li>
+<li><code>check_ui_rules.py</code> rule 5: every panel the script marks <code>role="dialog"</code> has the shared button where it is built; no close button of its own kind; no rule hides it except on a hover's tip. It finds 14 problems in v2026.11.01.2 (7 panels without the button, 7 buttons of their own kind) and none now; 3 mutants (a panel without it, a rule hiding it, a close button of its own kind), all caught.</li>
+<li><code>charges_check</code>, <code>last_kill_check</code> and <code>fight_strip_check</code> each check their panel's button at a wide width.</li>
+<li>Run: <code>--auto</code> chose all (a line no region maps): 12 lints, the pyfa chain and 58 page checks in 33 minutes, 0 failed, 1 flaky (<code>request_gates_check</code> under load, passed alone).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #119: a redraw must carry over what the person was doing (focus, scroll) and compare with what it last drew, not with the new state. The new check caught both before delivery: Esc put the focus on the gear and the Intel card's next redraw dropped it; and the kill list compared the analyzed kill before and after a redraw that had already switched it, so it never scrolled. Neither showed in a quick try where nothing redrew in between.</p>
+</body></html>

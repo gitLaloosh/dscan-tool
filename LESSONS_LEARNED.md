@@ -131,6 +131,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
 - #118 A claim in a code comment is not a source: find what it rests on before repeating it to the owner.
+- #119 A redraw must carry over what the person was doing (focus, scroll) and compare with what it last drew, not with the new state.
 
 **Checks and test machinery**
 
@@ -1025,6 +1026,20 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 119. A redraw must carry over what the person was doing (focus, scroll) and compare with what it last drew, not with the new state
+
+- **What happened (v2026.11.01.3):** two things the new close_buttons_check caught before delivery. (1) Esc closed Intel's
+  settings and put the focus back on the gear, and a moment later the focus was on the page: the Intel card redraws as lines and
+  kills arrive, and the redraw replaced the gear it had focused. (2) The Fleet tab's kill list was to scroll a newly opened kill
+  into view, but only "when the kill changed". The check compared `fk.killId` before and after the redraw, and by then both
+  were the new kill (fkOpen sets it before drawing), so the list never moved.
+- **How it was caught:** the check pressed Esc and read the focus after a wait, and opened a kill that was scrolled out of view.
+  Both passed in a first quick try by hand, where nothing redrew in between.
+- **Do this instead:** anything that redraws a block on a timer keeps the focus and scroll of what it replaces (itRender keeps the
+  head's control; fkRender keeps the list's scrollTop). To ask "did this change since the last draw", store what was drawn on the
+  element itself (`L.dataset.kid`) and compare with that. In a check, wait past at least one redraw before reading focus or
+  scroll.
 
 ## 118. A claim in a code comment is not a source: find what it rests on before repeating it to the owner
 

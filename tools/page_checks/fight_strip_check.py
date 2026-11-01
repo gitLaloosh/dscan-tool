@@ -36,6 +36,8 @@ R = '#fitAnalyzerResults'
 S = f'{R} .mys-fight'
 C = f'{R} .fl-dmg .dmg-card'
 failures = []
+XBTN = "(sel) => { const p = [...document.querySelectorAll(sel)].find(e => e.checkVisibility()); const x = p && [...p.querySelectorAll('button.x-close')].find(x => !x.closest('details:not([open])')); if(!x) return null; const r = x.getBoundingClientRect(), q = p.getBoundingClientRect(); return [x.checkVisibility(), Math.round(r.width), Math.round(q.right - r.right), Math.round(r.top - q.top)]; }"   # v2026.11.01.3: the shared close button: [shown, size, gap to the right edge, gap to the top]
+def xbtn_ok(x, size): return bool(x) and x[0] is True and x[1] == size and 0 <= x[2] <= 18 and 0 <= x[3] <= 16
 def check(ok, msg):
     print(('OK   ' if ok else 'FAIL ') + msg)
     if not ok: failures.append(msg)
@@ -92,6 +94,8 @@ def desktop(b, W):
     menu = pg.locator(f'{S} details.mys-fpart-them .mys-fmenu').bounding_box()
     check(pg.is_visible(f'{S} details.mys-fpart-them .mys-fmenu') and menu['x'] >= 0 and menu['x'] + menu['width'] <= W
           and pg.get_attribute(f'{S} details.mys-fpart-them button.mys-fopt[aria-pressed="true"]', 'data-v') == 'still', f'{W}: the threat\'s menu opens on screen, Stopped pressed')
+    xb = pg.evaluate(XBTN, f'{S} details.mys-fpart-them .mys-fmenu')
+    check(xbtn_ok(xb, 32 if W >= 600 else 44), f'{W}: the menu has the shared close button in its top right (v2026.11.01.3; was a phone only) {xb}')
     pg.click(f'{S} details.mys-fpart-them button.mys-fopt[data-v="orbit"]'); pg.wait_for_timeout(300)
     m1 = model(pg)
     check(open_parts(pg) == [] and st(pg)['theirMode'] == 'orbit' and pressed(pg, 'Them') == 'orbit' and pg.is_enabled(f'{C} input[data-in="theirPct"]')
