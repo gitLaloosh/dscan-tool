@@ -17,7 +17,8 @@ Runs intel_kills_check.py's start (made-up logs and kills, R2Z2 and ESI mocked) 
     at the right (lined up); the system names the same distance from each list's left edge in both lists; no REPORT label, a
     kill's label among the tags, its fleet size the dossier's; the lines below starting under the system name; no background on
     kill rows, the amber edge within the alert range;
-  * v2026.10.31.2: Near You lists systems up to 5 jumps past the alert range and no farther, and its line says so;
+  * v2026.10.31.2: Near You lists systems up to 5 jumps past the alert range and no farther, and its line says so (v2026.11.02.4:
+    its range under the gear, alert + 5 held at the Feed's range unless set);
   * a busy row (a camp, the ESS, a bubble, kills and pilots of all three standings) at every width where the Intel card is split
     in two (905-1700 px), with this table's system column and with one 160 px wide (as wide as the longest real names: the made-up
     names here are short, which is how v2026.10.31.6's icon floating past the column went unseen): nothing overlaps or leaves a row,
@@ -107,13 +108,14 @@ _tail = r'''
     chk(len({f['bg'] for f in F}) == 1 and all((amber in f['edge']) == f['inr'] for f in F) and any(f['inr'] for f in F) and any(f['kill'] for f in F),
         f'no background on kill rows; the amber edge only within the alert range {set(f["bg"] for f in F)} {[(f["kill"], f["inr"]) for f in F]}')
     # ---- v2026.10.31.2 (the owner: "limit the range of what shows up in Near You to (alert range +5)") ----
-    NR = pg.evaluate("""() => { const my = itMySys(), reach = it.set.range + 5, now = Date.now(); let at = null, past = null;
+    # v2026.11.02.4: Near You's range is alert + 5 held at the Feed's range (3 here), read from the page
+    NR = pg.evaluate("""() => { const my = itMySys(), reach = itNearReach(), now = Date.now(); let at = null, past = null;
       for(const id of it.names.byId.keys()){ const j = itJumps(my, id); if(j === reach && !at) at = id; if(j !== null && j > reach && !past) past = id; if(at && past) break; }
       for(const [i, sys] of [[1, at], [2, past]]) itNearAdd({id: 998000 + i, kind: 'seen', t: now, who: 'Scout Alt', raw: 'far report', chan: '', history: true, pilots: [], pairs: new Map(),
         p: {sys: [{id: sys, at: 0, k: 1}], ships: [{id: 587, name: 'Rifter', n: 1}], kw: new Set(), extra: 0, W: [], used: []}}, sys);
       itRenderLists(); const shown = new Set([...document.querySelectorAll('#itNearList .it-nb')].map(r => Number(r.dataset.itSys)));
-      return [reach, !!at, !!past, shown.has(at), shown.has(past), (document.querySelector('#intelPanel .it-h .ctx') || {}).textContent]; }""")
-    chk(NR[1] and NR[2] and NR[3] and not NR[4] and f'within {NR[0]} jumps' in NR[5], f'Near You: up to 5 jumps past the alert range, no farther, and it says so {NR}')
+      return [reach, !!at, !!past, shown.has(at), shown.has(past), (document.querySelector('#intelPanel [data-it-nearctx]') || {}).textContent]; }""")   # v2026.11.02.4: Near You's own line (the map's comes first)
+    chk(NR[1] and NR[2] and NR[3] and not NR[4] and f'within {NR[0]} jumps' in NR[5], f'Near You: up to its range (alert + 5, held at the Feed\'s since v2026.11.02.4), no farther, and it says so {NR}')
     # ---- a busy row (Project doc: "Add a busy row to the layout check"): a camp on a gate, the ESS, a bubble, kills of all three standings and
     # pilots of all three standings, at every width where the Intel card is split in two (905-1700 px), with this table's system column and
     # with one 160 px wide, and on a phone: nothing overlaps or leaves its row, line 1 stays one line, the word never wraps ----

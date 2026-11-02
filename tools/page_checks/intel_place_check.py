@@ -22,7 +22,8 @@ system names; you in 1DQ1-A) up to Intel turned on, then, with made-up lines and
   * the Feed row shows the note after the system (v2026.10.31.6: among the line's tags), no second jump count;
   * the switch: on, the usual teal, still; off, an amber edge, knob and "Off", breathing (itSwBreathe); with reduced motion, still;
     "Use in assessments" (off) unchanged;
-  * How Intel works: 3 short paragraphs, each with a bold lead, and 7 folded headings (v2026.10.31.5: Gates and camps), closed; one opens on a click; no
+  * How Intel works: 3 short paragraphs, each with a bold lead, and 8 folded headings (v2026.10.31.5: Gates and camps; v2026.11.02.4:
+    the map), closed; one opens on a click; no
     "slider" or "red row" left; no page errors.
 """
 import sys, os
@@ -99,8 +100,8 @@ _tail = r'''
       return [[...b.children].filter(x => x.tagName === 'P').length, b.querySelectorAll(':scope > p b').length, ds.length, ds.filter(d => d.open).length, b.innerText.split(/\\s+/).length, b.textContent]; }""")
     pg.evaluate("() => { const s = document.querySelector('#intelPanel .it-head .info-body details.info-more summary'); if(s) s.click(); }"); pg.wait_for_timeout(100)
     op = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-head .info-body details.info-more')].map(d => d.open)")
-    check(inf[:4] == [3, 3, 7, 0] and inf[4] < 110 and op[0] and not any(op[1:]),
-          f'How Intel works: 3 short paragraphs (each with a bold lead) and 7 folded headings, closed ({inf[4]} words shown); one opens on a click {inf[:5]} {op}')
+    check(inf[:4] == [3, 3, 8, 0] and inf[4] < 110 and op[0] and not any(op[1:]),
+          f'How Intel works: 3 short paragraphs (each with a bold lead) and 8 folded headings (v2026.11.02.4: the map), closed ({inf[4]} words shown); one opens on a click {inf[:5]} {op}')
     check('slider' not in inf[5] and 'red row' not in inf[5], 'no "slider" or "red row" left in it')
     check(not errs, f'no page errors {errs[:3]}')
     b.close()

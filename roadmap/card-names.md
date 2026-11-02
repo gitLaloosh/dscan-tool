@@ -46,6 +46,7 @@ types a name by hand.
 | `intel` | Intel | v2026.10.14.96: the Intel tab, its card and the slider beside Standings (roadmap/intel-plan.md) |
 | `itnear` | Near You | v2026.10.14.96: the Intel card's systems reported near you, nearest first |
 | `itfeed` | Feed | v2026.10.14.96: the Intel card's lines, newest first |
+| `itmap` | Map | v2026.11.02.4: the Intel card's map of the systems around you, beside Near You |
 
 Settled: Title Case for every name (the open capitalisation question is closed).
 

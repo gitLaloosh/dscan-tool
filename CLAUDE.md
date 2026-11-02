@@ -147,6 +147,14 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   kept only in its own IndexedDB database `dscan-intel-sounds`, never the ESI cache); one master gain, loudness (volume/100)²; the
   notification is silent when the page's sound plays. No audio is made before a sound or a press. `alert_sound_check.py` (a stand-in
   AudioContext; generated tones only, never a real recording in the repo).
+- **Intel map** (v2026.11.02.4, Project doc roadmap/intel-map-plan.md): layout B, the map beside Near You and the Feed below (a
+  List | Map switch in Near You on a phone, `it.set.nearView`). `INTEL_MAP` (CCP position2D /1e14, security in hundredths, region)
+  comes only from `tools/jump_table_update.py`, aligned to `INTEL_JUMPS` (its `jumps` = the jump table's md5; `gen_intel_tables.py`
+  keeps it and says when it no longer fits). One canvas (`itm`), made once and moved into each card (`#itMapSlot`); drawn only when
+  what it shows changed (`itMapRefresh`'s key), never while hidden. Reach: Jumps shown from Near You's reach to `IT_MAP_MAX` (the
+  Feed's largest), following the Feed until set; Near You's reach is a setting (`nearRange`, alert range to the Feed's, default
+  alert + 5). Rings: standing colour, gang size (1 / 2–10 / 11+). Routes: one per system (BFS, neighbours in index order), hover
+  dashed, press kept. One stepper for every range (`RS`, `rsHtml`, `rsPaint`). `intel_map_check.py`.
 - **Kills and losses in the system** (v2026.11.02.3, Project doc roadmap/system-activity-plan.md): one zKillboard request per
   system an hour (`/kills/systemID/<id>/pastSeconds/259200/`), then killmails from ESI newest first to the window or
   `SA_ACT_KM_MAX` (300). The system: an Intel Assess's, else ⚙ (`saSet`, localStorage dscanSaSet): your location from Intel or a

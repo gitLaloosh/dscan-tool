@@ -2,6 +2,8 @@
 
   INTEL_JUMPS  every stargate connection, from the EVE client's own res:/staticdata/jumps.static
   INTEL_SHIPS  every published ship's name (English, and Chinese) -> type ID, from pyfa's SDE data
+  INTEL_MAP    (v2026.11.02.4) kept as it is: tools/jump_table_update.py derives it from CCP's static data, aligned to
+               INTEL_JUMPS; when the jump table here changes, that script must be run again (this one says so and fails)
 
     EVE_RES=/path/with/resfileindex.txt+ResFiles PYFA_SRC=/path/to/Pyfa python3 -I tools/gen_intel_tables.py [index.html]          # diff
     EVE_RES=... PYFA_SRC=... python3 -I tools/gen_intel_tables.py [index.html] --write                                          # embed
@@ -97,8 +99,13 @@ CLIENT_BUILD = jumps['build']
 _oj = cur_json('INTEL_JUMPS') or {}
 if RES and all(_oj.get(k) == jumps[k] for k in ('sys', 'edges', 'n', 'systems')): jumps = _oj
 
+_mp = re.search(r'^const INTEL_MAP = .*;$', cur, re.M)
 new = ('const INTEL_JUMPS = ' + json.dumps(jumps, separators=(',', ':')) + ';\n'
-       + 'const INTEL_SHIPS = ' + json.dumps(shipRows, ensure_ascii=False, separators=(',', ':')) + ';')
+       + 'const INTEL_SHIPS = ' + json.dumps(shipRows, ensure_ascii=False, separators=(',', ':')) + ';'
+       + ('\n' + _mp.group(0) if _mp else ''))
+_mj = cur_json('INTEL_MAP')
+if _mj and _mj.get('jumps') != jumps['md5']:
+    print(f"INTEL_MAP is aligned to jump table {_mj.get('jumps')}, not {jumps['md5']}: run tools/jump_table_update.py --write")
 if new == cur:
     print(f"intel tables match: {len(shipRows)} ships (pyfa), {jumps['n']} gate connections between {jumps['systems']} systems "
           f"(client build {CLIENT_BUILD}, the page's table from build {jumps['build']}){'' if RES else ' -- jumps: skipped (no EVE_RES, the table in the page kept)'}")

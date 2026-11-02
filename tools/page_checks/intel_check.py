@@ -327,11 +327,11 @@ with sync_playwright() as p:
     lum = lambda c: (lambda v: 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2])([int(x) for x in re.findall(r'\d+', c)[:3]])
     check(opt and all(re.match(r'rgb\(', bg) and lum(bg) < 60 and lum(fg) > 180 for bg, fg in opt),
           f'the open lists of the settings: light text on a dark background (v.96: light on white on Windows) {sorted(set(map(tuple, opt)))}')
-    pg.select_option('.it-pop [data-it-set="range"]', '5'); pg.wait_for_timeout(100)
+    pg.fill('.it-pop [data-rs="range"] .rs-v', '5'); pg.keyboard.press('Enter'); pg.wait_for_timeout(100)   # v2026.11.02.4: the ranges are steppers (intel_map_check.py)
     check(pg.evaluate("() => JSON.parse(localStorage.getItem('dscanIntel')).range") == 5, 'alert range kept')
-    kr = pg.evaluate("() => [document.querySelector('.it-pop [data-it-set=\"killRange\"]').value, [...document.querySelectorAll('.it-pop [data-it-set=\"killRange\"] option')].map(o => o.value).join(',')]")
-    pg.select_option('.it-pop [data-it-set="killRange"]', '15'); pg.wait_for_timeout(100)
-    check(kr == ['10', '3,5,7,10,15,20,30'] and pg.evaluate("() => [JSON.parse(localStorage.getItem('dscanIntel')).killRange, itKillRange()]") == [15, 15],
+    kr = pg.evaluate("() => [document.querySelector('.it-pop [data-rs=\"killRange\"] .rs-v').value, RS.killRange.steps().join(',')]")
+    pg.fill('.it-pop [data-rs="killRange"] .rs-v', '15'); pg.keyboard.press('Enter'); pg.wait_for_timeout(100)
+    check(kr == ['10', '5,7,10,15,20,30'] and pg.evaluate("() => [JSON.parse(localStorage.getItem('dscanIntel')).killRange, itKillRange()]") == [15, 15],
           f'v2026.10.29.3: the Feed\'s kill range under the gear, 10 jumps unless changed, kept (15) {kr}')
     pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
     check(pg.evaluate("() => !document.querySelector('.it-pop')"), 'Escape closes the settings')

@@ -162,6 +162,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #127 Going to the same page with only a new #fragment doesn't load it again: a check that means a fresh load opens a new page.
 - #128 A full-page screenshot resizes the window (so does a phone's address bar): a popup should move on resize, not close.
 - #129 Made-up killmails must have IDs that grow with time, as zKillboard's do: the page reads its lists newest first by ID.
+- #130 A canvas is see-through where nothing is drawn: weigh a colour read with getImageData by its alpha, or a faint glow reads as a solid colour.
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1036,6 +1037,17 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 130. A canvas is see-through where nothing is drawn: weigh a colour read with getImageData by its alpha, or a faint glow reads as a solid colour
+
+- **What happened (v2026.11.02.4):** intel_map_check reads each report ring's size off the map's canvas, along rays from the system's
+  dot. Its first version counted a pixel as red from its red, green and blue alone and found "red" at every radius, rings and gaps
+  alike: `getImageData` returns colours not multiplied by their alpha, so the edge of the rings' glow (alpha 4 of 255) reads as a
+  full (191, 64, 64). The map's dark background is the box's CSS behind the canvas, not in its pixels.
+- **How it was caught:** the ring checks failed for every size; one ray printed pixel by pixel showed the colour holding steady far
+  past the ring while the alpha fell to 4, 0.
+- **Do this instead:** multiply what you measure by alpha / 255 (or draw the canvas onto an opaque one first), and find the strongest
+  point along a line rather than testing one radius: a glow spreads several pixels either side of what it surrounds.
 
 ## 129. Made-up killmails must have IDs that grow with time, as zKillboard's do: the page reads its lists newest first by ID
 

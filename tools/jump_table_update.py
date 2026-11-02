@@ -15,6 +15,13 @@ with its solarSystemID and destination.solarSystemID). When the gate connections
 opens a pull request with the new table; otherwise nothing happens. Only the connections are compared: a new build with
 the same gates changes nothing (the table keeps the build it was last rebuilt from).
 
+v2026.11.02.4 (the Intel map, roadmap/intel-map-plan.md): the same run also derives INTEL_MAP, the map's table, from
+mapSolarSystems.jsonl and mapRegions.jsonl, aligned to INTEL_JUMPS's sorted systems: CCP's flat schematic position
+(position2D x and y, in units of 1e14 m, rounded half up, int16), the security status (to 3 decimals, then in
+hundredths, rounded half up, int8: the same arithmetic as the browser-side export the first table came from,
+claude/roadmap/intel-map-mockup/sde_extract3.js) and the region (an index into the region names, sorted by region ID).
+A change there opens the same pull request; `--check` fails on it too.
+
 Checked 2026-10-29 in the owner's browser: build 3660036's 13,978 gates make the same 6,989 connections as the page's
 table from the client's jumps.static (build 3654997), none missing either way.
 
@@ -22,7 +29,7 @@ Encoding as tools/gen_intel_tables.py: sys = base64 of uint16 LE deltas of the s
 30000000); edges = base64 of uint16 LE index pairs into sys, each connection once, sorted; md5 = the table's fingerprint
 (here the md5 of the sorted "a-b" lines; the page keys its cached system names by it, so new systems get their names).
 """
-import sys, os, re, io, json, base64, struct, hashlib, zipfile, tempfile, urllib.request
+import sys, os, re, io, json, math, base64, struct, hashlib, zipfile, tempfile, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
@@ -61,7 +68,7 @@ def latest_build(text):
 def read_sde():
     files = {}
     if SDE and os.path.isdir(SDE):
-        for n in ('mapStargates.jsonl', 'mapSolarSystems.jsonl', 'latest.jsonl'):
+        for n in ('mapStargates.jsonl', 'mapSolarSystems.jsonl', 'mapRegions.jsonl', 'latest.jsonl'):
             p = os.path.join(SDE, n)
             if os.path.exists(p): files[n] = open(p, encoding='utf-8').read()
         build = latest_build(files['latest.jsonl']) if 'latest.jsonl' in files else int(opt('--build') or 0)
@@ -71,19 +78,23 @@ def read_sde():
             build = latest_build(fetch(f'{BASE}/latest.jsonl').decode('utf-8'))
             blob = fetch(f'{BASE}/eve-online-static-data-{build}-jsonl.zip')
         with zipfile.ZipFile(io.BytesIO(blob)) as z:
-            for n in ('mapStargates.jsonl', 'mapSolarSystems.jsonl'): files[n] = z.read(n).decode('utf-8')
+            for n in ('mapStargates.jsonl', 'mapSolarSystems.jsonl', 'mapRegions.jsonl'): files[n] = z.read(n).decode('utf-8')
     conns, gates = set(), 0
     for line in files['mapStargates.jsonl'].splitlines():
         if not line.strip(): continue
         g = json.loads(line); a = g['solarSystemID']; c = g['destination']['solarSystemID']; gates += 1
         assert a != c, g
         conns.add((min(a, c), max(a, c)))
-    names = {}
+    names, info, regions = {}, {}, {}
     for line in files.get('mapSolarSystems.jsonl', '').splitlines():
         if line.strip():
-            o = json.loads(line); names[int(o['_key'])] = (o.get('name') or {}).get('en', str(o['_key']))
+            o = json.loads(line); k = int(o['_key']); names[k] = (o.get('name') or {}).get('en', str(k))
+            if o.get('position2D') is not None: info[k] = (o['position2D']['x'], o['position2D']['y'], float(o['securityStatus']), int(o['regionID']))
+    for line in files.get('mapRegions.jsonl', '').splitlines():
+        if line.strip():
+            o = json.loads(line); regions[int(o['_key'])] = (o.get('name') or {}).get('en', str(o['_key']))
     assert gates == 2 * len(conns), f'{gates} gates, {len(conns)} connections: a gate without its other end'
-    return build, conns, names, gates
+    return build, conns, names, gates, info, regions
 
 # ---- the page's table ----
 src = open(HTML, encoding='utf-8').read()
@@ -109,12 +120,27 @@ def encode(conns, build):
     return {'build': build, 'md5': md5, 'n': len(conns), 'systems': len(S),
             'sys': base64.b64encode(struct.pack('<%dH' % len(deltas), *deltas)).decode(),
             'edges': base64.b64encode(struct.pack('<%dH' % len(pairs), *pairs)).decode()}
+# v2026.11.02.4: the map's table, aligned to the jump table's sorted systems (see the top)
+def jr(v): return math.floor(v + 0.5)   # half up, as JavaScript's Math.round (Python's round() rounds half to even)
+def encode_map(conns, info, regions, build, jumps_md5):
+    S = sorted({s for c in conns for s in c}); missing = [s for s in S if s not in info]
+    assert not missing, f'{len(missing)} systems without a position2D: {missing[:5]}'
+    rids = sorted({info[s][3] for s in S}); ri = {r: i for i, r in enumerate(rids)}
+    assert len(rids) < 256
+    x = [jr(info[s][0] / 1e14) for s in S]; y = [jr(info[s][1] / 1e14) for s in S]
+    sec = [jr(jr(info[s][2] * 1000) / 1000 * 100) for s in S]; reg = [ri[info[s][3]] for s in S]
+    assert all(-32768 <= v < 32768 for v in x + y) and all(-128 <= v < 128 for v in sec)
+    b64 = lambda f, a: base64.b64encode(struct.pack('<%d%s' % (len(a), f), *a)).decode()
+    return {'build': build, 'jumps': jumps_md5, 'systems': len(S), 'x': b64('h', x), 'y': b64('h', y),
+            'sec': b64('b', sec), 'reg': b64('B', reg), 'regions': [regions.get(r, str(r)) for r in rids]}
+mp = re.search(r'^const INTEL_MAP = (.*);$', m.group(1), re.M)
+PM = json.loads(mp.group(1)) if mp else None
 page = decode(J)
 # the encoding round-trips: the page's own connections encode to the page's own sys and edges
 t = encode(page, J['build']); assert (t['sys'], t['edges'], t['n'], t['systems']) == (J['sys'], J['edges'], J['n'], J['systems']), 'the encoding differs from gen_intel_tables.py'
 
 try:
-    build, conns, names, gates = read_sde()
+    build, conns, names, gates, info, regions = read_sde()
 except Exception as e:
     if CHECK and not SDE:   # the chain may run where CCP's site can't be reached: say so; the Action checks it twice a day
         print(f"jump table: skipped (CCP's static data not reachable from here: {type(e).__name__}); the GitHub Action checks it twice a day")
@@ -124,24 +150,37 @@ except Exception as e:
 added, gone = sorted(conns - page), sorted(page - conns)
 nm = lambda s: names.get(s, str(s))
 out('build', build)
-if not added and not gone:
+NM = encode_map(conns, info, regions, build, encode(conns, build)['md5'] if added or gone else J['md5'])   # 'jumps': the INTEL_JUMPS fingerprint it is aligned to
+same_map = PM is not None and all(PM.get(k) == NM[k] for k in ('jumps', 'systems', 'x', 'y', 'sec', 'reg', 'regions'))
+if not same_map:   # how many systems moved, changed security or region (a jump-table change re-aligns every row)
+    if PM and PM.get('systems') == NM['systems'] and PM.get('jumps') == NM['jumps']:
+        dec = lambda t, f: struct.unpack('<%d%s' % (NM['systems'], f), base64.b64decode(t))
+        diff = sum(1 for k, f in (('x', 'h'), ('y', 'h'), ('sec', 'b'), ('reg', 'B')) for a, b in zip(dec(PM[k], f), dec(NM[k], f)) if a != b)
+        map_msg = f'map table: {diff} value(s) differ from build {build}' + ('' if PM.get('regions') == NM['regions'] else ', region names changed')
+    else: map_msg = 'map table: missing or made for another jump table'
+    print(map_msg)
+if not added and not gone and same_map:
     msg = f"jump table matches CCP's build {build}: {len(conns)} connections ({gates} gates); the page's table is from build {J['build']}"
     print(msg); summary(f'**No stargate changed.** {msg}.'); out('changed', 'false')
     sys.exit(0)
-lines = [f'- added: {nm(a)} – {nm(c)}' for a, c in added] + [f'- removed: {nm(a)} – {nm(c)}' for a, c in gone]
-msg = f"jump table differs from CCP's build {build}: {len(added)} connection(s) added, {len(gone)} removed"
+lines = [f'- added: {nm(a)} – {nm(c)}' for a, c in added] + [f'- removed: {nm(a)} – {nm(c)}' for a, c in gone] + ([] if same_map else [f'- {map_msg}'])
+msg = (f"jump table differs from CCP's build {build}: {len(added)} connection(s) added, {len(gone)} removed" if added or gone
+       else f"the map table differs from CCP's build {build} (no stargate changed)")
 print(msg); print('\n'.join(lines[:40])); out('changed', 'true')
-summary(f'**Stargates changed in EVE build {build}.** {len(added)} added, {len(gone)} removed.\n\n' + '\n'.join(lines))
+summary(f'**{msg}.**\n\n' + '\n'.join(lines))
 if WRITE:
-    new = encode(conns, build)
+    new = encode(conns, build) if added or gone else J
     blk = m.group(1)
     blk = blk[:mm.start()] + 'const INTEL_JUMPS = ' + json.dumps(new, separators=(',', ':')) + ';' + blk[mm.end():]
+    ml = 'const INTEL_MAP = ' + json.dumps(NM, ensure_ascii=False, separators=(',', ':')) + ';'
+    mp2 = re.search(r'^const INTEL_MAP = (.*);$', blk, re.M)
+    blk = blk[:mp2.start()] + ml + blk[mp2.end():] if mp2 else blk + '\n' + ml
     open(HTML, 'w', encoding='utf-8').write(src[:m.start(1)] + blk + src[m.end(1):])
-    print(f'written: {new["n"]} connections, {new["systems"]} systems, build {build}')
+    print(f'written: {new["n"]} connections, {new["systems"]} systems' + (f', build {build}' if added or gone else ' (unchanged)') + f'; map table from build {build}')
     if BODY:
         open(BODY, 'w', encoding='utf-8').write(
-            f'EVE build {build} changed the stargates. This updates the page\'s jump table (`INTEL_JUMPS` in index.html) '
-            f'from CCP\'s published static data; nothing else changes.\n\n' + '\n'.join(lines) +
+            f'EVE build {build} changed the stargates or the map. This updates the page\'s jump table (`INTEL_JUMPS`) and map table '
+            f'(`INTEL_MAP`) in index.html from CCP\'s published static data; nothing else changes.\n\n' + '\n'.join(lines) +
             f'\n\nThe table now has {new["n"]} connections between {new["systems"]} systems. Made by '
             f'`.github/workflows/jump-table.yml` with `tools/jump_table_update.py`. After merging, run `git pull` before your next commit.\n')
 sys.exit(1 if CHECK else 0)

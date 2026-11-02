@@ -243,9 +243,9 @@ with sync_playwright() as p:
     check(pr == {'Marrek Ketter': 'Vedmak', 'Seren Ketter': 'Sabre'}, f'each attacker paired with their ship {pr}')
     # ---- v2026.10.29.3: the Feed's kill range (the owner: "feed range as the ring of awareness, alert range is my ring of being alert") ----
     pg.click('[data-it-act="gear"]'); pg.wait_for_timeout(200)
-    has_kr = pg.locator('.it-pop [data-it-set="killRange"]').count() == 1
+    has_kr = pg.locator('.it-pop [data-rs="killRange"]').count() == 1   # v2026.11.02.4: a stepper
     check(has_kr, 'the gear has the Feed\'s kill range')
-    if has_kr: pg.select_option('.it-pop [data-it-set="killRange"]', '10'); pg.wait_for_timeout(200)
+    if has_kr: pg.fill('.it-pop [data-rs="killRange"] .rs-v', '10'); pg.keyboard.press('Enter'); pg.wait_for_timeout(200)
     pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
     S9 = next(i for i, d in sorted(D0.items()) if d == 9 and i in SYSNAME); S12 = next(i for i, d in sorted(D0.items()) if d == 12 and i in SYSNAME)
     for _ in range(60):

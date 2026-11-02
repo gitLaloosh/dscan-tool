@@ -141,7 +141,7 @@ with sync_playwright() as p:
     # ---- the Feed keeps the time set (the owner: "drop entries older than 15 minutes") ----
     n0 = pg.evaluate("() => document.querySelectorAll('#intelPanel .it-fd').length")
     pg.evaluate("() => { const e = it.feed.find(x => x.raw === 'D-W7F0 Marrek Ketter vedmak x2'); e.t -= 16 * 60000; itRender(true); }")
-    feed = pg.evaluate("() => [document.querySelectorAll('#intelPanel .it-fd').length, [...document.querySelectorAll('#intelPanel .it-fd .raw')].some(r => r.textContent.endsWith('D-W7F0 Marrek Ketter vedmak x2')), document.querySelector('#intelPanel .it-cols > div:last-child .it-h .ctx').textContent]")
+    feed = pg.evaluate("() => [document.querySelectorAll('#intelPanel .it-fd').length, [...document.querySelectorAll('#intelPanel .it-fd .raw')].some(r => r.textContent.endsWith('D-W7F0 Marrek Ketter vedmak x2')), document.querySelector('#intelPanel .it-feedcol .it-h .ctx').textContent]")
     check(feed == [n0 - 1, False, 'last 15 min, reports and kills'], f'the Feed drops a line older than 15 minutes {feed} (was {n0})')
     W(pg, F_INTEL, line(time.time(), 'Scout Alt', 'T5ZI-S Kirra Longtail')); tick(pg)
     check(pg.evaluate("() => !it.feed.some(x => x.raw === 'D-W7F0 Marrek Ketter vedmak x2')"), 'and lets it go from memory with the next line')

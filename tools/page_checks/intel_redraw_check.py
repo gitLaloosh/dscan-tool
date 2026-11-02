@@ -36,7 +36,7 @@ _tail = r'''
       window.__mo.observe(el, {childList: true, subtree: true, characterData: true}); }"""
     SEEN = "() => [document.getElementById('intelPanel').firstElementChild === window.__card, window.__mut, (document.querySelector('#intelPanel [data-it-status]') || {}).textContent || '']"
     ROWS = "() => [[...document.querySelectorAll('#itNearList .it-nb .sys')].map(b => b.textContent), [...document.querySelectorAll('#itFeedList .it-fd .raw')].map(r => r.textContent)]"
-    TXT = "() => [...document.querySelectorAll('#intelPanel .it-cols, #intelPanel .it-head')].map(x => x.textContent).join('|')"
+    TXT = "() => [...document.querySelectorAll('#intelPanel .it-top, #intelPanel .it-feedcol, #intelPanel .it-head')].map(x => x.textContent).join('|')"
     pg.evaluate(WATCH); t0_ = pg.evaluate(TXT)
     pg.evaluate("() => { const f = itBuildAt; window.__builds = 0; window.itBuildAt = function(...a){ window.__builds++; return f.apply(this, a); }; }")   # how often the card is built to compare
     tick(pg, 32000)

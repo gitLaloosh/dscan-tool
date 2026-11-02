@@ -22,7 +22,7 @@ ALL, PAGES, CHAIN = 'all', 'pages', 'chain'   # everything; every page check (no
 # A top-level name's prefix -> areas. Only prefixes that mean one thing everywhere in the file (case matters: DMG_* are engine
 # constants, dmg* the damage chart).
 PREFIX = {
-    'it': ['intel'], 'IT': ['intel'], 'INTEL': ['intel'],
+    'it': ['intel'], 'IT': ['intel'], 'INTEL': ['intel'], 'rs': ['intel'], 'RS': ['intel'],   # v2026.11.02.4: the range steppers (Intel's settings and map)
     'sa': ['system'], 'SA': ['system'], 'side': ['system'], 'SIDE': ['system'], 'stand': ['system'], 'STAND': ['system'],
     'std': ['system'], 'org': ['system', 'pilot', 'intel'],
     'scan': ['system'], 'SCAN': ['system'], 'CYNO': ['system'],   # v2026.11.02.2: the Ships on Scan rail

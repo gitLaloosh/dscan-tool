@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-02 — The Intel map</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Intel map</h1>
+<p><span class="tag">Intel</span> 2026-11-02 &middot; <code>v2026.11.02.4</code></p>
+
+<h2>Why</h2>
+<p>The owner: "galaxy map for intel page (defaults to centered on user's pilot system). pins for enemy locations", then "a visual representation of where systems (and hostiles) are around you would be very helpful in actually seeing the route they have to take to get to you. would be perfect for the intel tab but we need to keep performance in mind." Research, three mockups and his answers settled it (Project doc <code>roadmap/intel-map-plan.md</code>, build queue 002): "lets go with B" (the map beside Near You, the Feed below), a List | Map switch on a phone, routes on hover that a press keeps, drag and wheel, "standing color with gang-size rings", the reach from Near You's to "the largest option for the feed's upper bound range", following the Feed by default, a Near You range under the gear ("can't be less than alert range, can't be greater than feed range") and one stepper for every range ("Yes, all four").</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>The map</b> (the card's new name Map), left of Near You at the top of the Intel card, the Feed below at full width; stacked under 900 px; on a phone Near You gets a List | Map switch (List first, as before; the choice is kept).</li>
+<li><b>Its picture:</b> the systems within its reach by gate jumps, placed from CCP's own flat map and spread apart a little so names fit; dots in the Feed's security colours; your system ringed in white; the alert range a soft amber; systems past Near You's reach faded.</li>
+<li><b>Reports:</b> a ring in the standing's colour (hostile red, neutral grey, friendly blue, the worst one there) as large as the gang (solo, 2–10, 11 or more: the Pilot Analyzer's sizes); the count beside the name, ✕ for kills; a clear report: no ring, its CLEAR tag. Friendlies follow Near You's "hide friendlies".</li>
+<li><b>Routes:</b> none until asked. Hovering a system, or a Near You or Feed row, draws its shortest stargate route to you, dashed; a press keeps it, solid, with a cyan "Route shown" on its rows, until pressed again or "Hide all routes". One route per system, always the same.</li>
+<li><b>Moving it:</b> drag, the wheel around the pointer (the page doesn't scroll over the map: he asked for it), + / − / ⤢; on a phone two fingers move and zoom it and one finger scrolls the page (a hint says so when a finger tries).</li>
+<li><b>Jumps shown</b> under the map: from Near You's reach up to 30 (the Feed's largest), following the Feed until set.</li>
+<li><b>Near You's range</b> is a setting under the gear: from the alert range to the Feed's, alert + 5 unless set. One change from before: with an alert range of 7 or 10 the default is now held at the Feed's range (it was 12 or 15 with a Feed of 10), so reports past the Feed's range show only in the Feed.</li>
+<li><b>The steppers:</b> Feed, Near You and Alert under the gear and the map's Jumps shown are one − N + control: a button greys out at a limit and says why, holding it keeps stepping, Enter or Space step, the number can be typed on a wide window (snapped to the nearest allowed value), 44 px buttons on a phone. "Forget reports after" stays a list.</li>
+<li><b>The table:</b> <code>INTEL_MAP</code> (about 23 KB gzipped): each gate system's position2D, security and region, aligned to <code>INTEL_JUMPS</code>. Only <code>tools/jump_table_update.py</code> makes it; the twice-daily Action now rewrites it too when CCP moves a system, and <code>gen_intel_tables.py</code> keeps it. It also holds every system's region, which the Dossier's REGION column can use later.</li>
+<li>Unchanged: the Feed, its filters and the system-name filter, alerts, requests (the map asks nothing of zKillboard or ESI).</li>
+</ul>
+
+<h2>Choices made while building</h2>
+<ul>
+<li>The container can't reach CCP's site, so the first table came from SDE build 3662168 read in the owner's browser pane (the mockup's export, <code>sde_extract3.js</code>), fed to <code>jump_table_update.py</code> as a stand-in folder with the same rounding the script uses on CCP's files; the Action checks it against the full data twice a day and opens a pull request if anything differs.</li>
+<li>Labels for you and the reports are always drawn inside the box (a narrow phone map first cut them off at its edge); route names only where there's room.</li>
+<li>The map's element is made once and moved into each new card, so a redraw of the card never rebuilds or repaints it.</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li>New <code>tools/page_checks/intel_map_check.py</code>: see tools/README. Fails on v2026.11.02.3. 26 mutants, all caught; three only after the check was made stricter: a ring drawn for a clear report in no particular colour (now: nothing solid around it at all), a typed number saved unsnapped (now: the kept value is read back) and Near You's default not held at the Feed's range (now tested with an alert range of 10).</li>
+<li>Updated: <code>intel_check.py</code>, <code>intel_kills_check.py</code> (the ranges are steppers), <code>intel_redraw_check.py</code>, <code>intel_assess_check.py</code> (the new columns), <code>independent_checks/check_jump_table_update.py</code> (the map table), <code>check_picker.py</code>, <code>roadmap/card-names.md</code>.</li>
+<li>Layout: 4,049 systems (30 jumps around Amamake) took about 0.1 s to lay out in the test container (mockup v3; the first, all-pairs version 0.5 s); 68 systems (10 around 1DQ1-A) about 4 ms. The full run (12 lints, the pyfa chain, 66 page checks, 39 min) failed two: intel_layout_check (at 905–1000 px Near You's busiest row spilled out of its column beside the map: Near You is now at least 400 px wide) and intel_place_check (How Intel works grew past its 110 shown words: the map's text is a folded heading of its own). After both: the Intel and layout page checks (27) 0 failed; extension_check flaky under load, passed alone.</li>
+<li>Page size: 644,010 → 682,258 bytes gzipped (+38.2 KB, +5.9%): the table about 23 KB, the rest the map, the stepper and their comments. Perf harness, before and after in one session (Project doc roadmap/perf-harness/results-v2026.11.02.4.md): Intel on and in front for 14 min, the main thread 2.93% of a core before and after; the map drawn 15 times in 3 minutes (one per new report or kill in reach), laid out once (11 ms for 68 systems); with the Pilot tab in front, not at all.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #130: a canvas is see-through where nothing is drawn, and <code>getImageData</code> gives colours not multiplied by their alpha. The check's first ring test read the faint edge of a glow (alpha 4 of 255) as solid red at every radius. Weigh what you read by its alpha, and find the strongest point along a line rather than testing one spot.</p>
+</body></html>
