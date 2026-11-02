@@ -71,6 +71,7 @@ if '--run' in sys.argv:
         ('mode table', env + 'python3 -I tools/gen_mode_table.py index.html', lambda o: 'up to date' in o),
         ('speed tables', env + 'python3 -I tools/gen_speed_table.py index.html', lambda o: 'up to date' in o),
         ('EWAR tables', env + 'python3 -I tools/gen_ewar_table.py index.html', lambda o: 'up to date' in o),
+        ('cyno table', env + 'python3 -I tools/gen_cyno_table.py index.html', lambda o: 'up to date' in o),   # v2026.11.02.2
         ('implant / booster tables', env + 'python3 -I tools/gen_implant_table.py index.html', lambda o: 'up to date' in o),
         ('projected tables', env + 'python3 -I tools/gen_projected_table.py index.html', lambda o: 'up to date' in o),   # v2026.10.14.35
         ('module-state tables', env + 'python3 -I tools/gen_module_state_tables.py index.html', lambda o: o.count('matches pyfa + SDE') >= 3),

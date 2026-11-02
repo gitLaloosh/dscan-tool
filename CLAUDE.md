@@ -147,6 +147,17 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   kept only in its own IndexedDB database `dscan-intel-sounds`, never the ESI cache); one master gain, loudness (volume/100)²; the
   notification is silent when the page's sound plays. No audio is made before a sound or a press. `alert_sound_check.py` (a stand-in
   AudioContext; generated tones only, never a real recording in the repo).
+- **Kills and losses in the system** (v2026.11.02.3, Project doc roadmap/system-activity-plan.md): one zKillboard request per
+  system an hour (`/kills/systemID/<id>/pastSeconds/259200/`), then killmails from ESI newest first to the window or
+  `SA_ACT_KM_MAX` (300). The system: an Intel Assess's, else ⚙ (`saSet`, localStorage dscanSaSet): your location from Intel or a
+  typed gate system (SYS-03). Every group, corporation, pilot and hull counts its own kills (once, whole value) and losses; NPCs
+  count for nobody; folds show none. Numbers that link out use `zkLinkHtml(url, what, text)`; inside a button they are text only.
+  `system_activity_check.py`.
+- **Ships on Scan** (v2026.11.02.2, Project doc roadmap/scan-rail-plan.md): the D-Scan's hulls in a rail left of Local's results
+  (sticky, ~320 px; full width with no Local; stacked on a phone), by role from the ESI group (`SCAN_ROLES`); Cyno Capable and the
+  cyno tag come from `CYNO_FIT` (tools/gen_cyno_table.py, never typed by hand). On grid ≤ `SCAN_GRID_KM`; a "-" is "no reading", its
+  own count. One hover card (`#scanCard`), built when it opens, from the numbers the old per-type cards showed. No pilot is ever
+  tied to a hull. `scan_rail_check.py`.
 - **Fleet fits on request** (v2026.11.02.1, Project doc roadmap/fleet-fit-budget-plan.md): opening a fleet asks zKillboard nothing
   (fits from a share link or kept from the last hour load at once); Damage on the kill has its own column beside the ship; the Fit
   column has Load per row and Load all above it (Common fits above 10 pilots: one request per alliance-and-hull pair, victims in it

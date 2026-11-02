@@ -160,6 +160,8 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #117 A button laid under other controls: click it where nothing sits on top, or the click lands on what does.
 - #126 A lint that finds a function's body at its first brace reads a default object parameter as the body: skip the parameters first.
 - #127 Going to the same page with only a new #fragment doesn't load it again: a check that means a fresh load opens a new page.
+- #128 A full-page screenshot resizes the window (so does a phone's address bar): a popup should move on resize, not close.
+- #129 Made-up killmails must have IDs that grow with time, as zKillboard's do: the page reads its lists newest first by ID.
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1034,6 +1036,24 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 129. Made-up killmails must have IDs that grow with time, as zKillboard's do: the page reads its lists newest first by ID
+
+- **What happened (v2026.11.02.3):** system_activity_check first made its 40 kills newest first, so the newest kill had the lowest
+  ID. The page sorts zKillboard's list by ID (newest first, as zKillboard numbers kills in time), so it read the oldest ten, saw
+  they were older than the window and stopped: every window but 72 h showed no kills.
+- **How it was caught:** the check's own first run (the page's counts for 1, 6 and 24 h were zero).
+- **Do this instead:** make made-up killmails oldest first (sa_mocks.py's dossier kills already say so). When a check's data
+  breaks an order the real source keeps, the page isn't wrong; fix the data, and say in the data which order it keeps.
+
+## 128. A full-page screenshot resizes the window (so does a phone's address bar): a popup should move on resize, not close
+
+- **What happened (v2026.11.02.2):** the scan rail's hover card first closed on `resize` (its place is worked out from its row).
+  The first screenshots to check it were full-page ones, which Playwright takes by growing the viewport to the page's height: the
+  card closed before the picture was taken, and the pictures looked as if pressing a row did nothing. It also showed a real problem:
+  a phone fires `resize` when its address bar hides during a scroll, so an open card would have closed under the reader's thumb.
+- **Do this instead:** an open popup moves with its opener on resize instead of closing. To look at one, scroll its opener into
+  view and take a viewport screenshot; read its state from the DOM in the same step when a check depends on it.
 
 ## 127. Going to the same page with only a new #fragment doesn't load it again: a check that means a fresh load opens a new page
 

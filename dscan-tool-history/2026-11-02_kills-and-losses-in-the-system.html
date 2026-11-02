@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-02 — Kills and losses in the system</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Kills and losses in the system</h1>
+<p><span class="tag">System Analyzer</span><span class="tag">zKillboard</span> 2026-11-02 &middot; <code>v2026.11.02.3</code></p>
+
+<h2>Why</h2>
+<p>The owner: "see what it would take (and cost in zkill requests) to add combined losses and kills they've accrued in the past "N hours" in the system being analyzed (user's location or system row linked from intel tab) ... provide two clickable links to losses and kills (provide total isk value of both). would be nice to be able to do the same with hull types (losses and kills) over the same timeframe." His answers are in the plan (Project doc <code>roadmap/system-activity-plan.md</code>, build queue 006): windows "1,3,6,12,24,48,72 capped at 72"; "if you have the player's location, give them the option of entering a system name or using their current location ... a settings panel similar to intel"; "the number will be tied to the entity represented at the top level"; hull numbers visible, not on hover. Before the build: gate systems only, and he checks the hull link by hand.</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>A line over the results:</b> "Last 24 h in 1DQ1-A (your location) · 63 kills · 4.1B ISK destroyed" with the zK icon to the system on zKillboard; "reading killmails 120 of 300…" while it reads; a quiet system says so; zKillboard failures with the shared Retry.</li>
+<li><b>Cost:</b> one zKillboard request per system an hour (its kills in the past 72 h; in a system every killmail is a kill and a loss), through the page's queue and budget, kept an hour. Then the killmails from ESI, newest first, until one is older than the window or 300 are read. Changing the window asks zKillboard nothing; a wider one reads on from where it stopped.</li>
+<li><b>Each entity its own numbers:</b> alliance and corporation groups get "▲ 12 kills · 3.4B ▼ 4 losses · 820M" under their name, or "quiet here in 24 h"; corporations inside a group get "▲3 ▼1"; pilots (the group view's names and the small-gang rows) get the same as text; the scan rail's hulls get "▼ 3 lost · 120M ▲ on 14 kills · 2.1B" under the hull. A kill counts once per entity with its whole value, so totals across rows don't add up; NPCs count for nobody; an NPC's kill of a player is still that player's group's loss; pods are losses too. The NPC fold, the smaller-groups fold and the Friendly bar show no total; what's inside shows its own.</li>
+<li><b>Links</b> go to zKillboard's page for that entity in this system (alliance, corporation, ship), which shows all time: its pages have no hour filter. The info text says so.</li>
+<li><b>Coverage notes:</b> "counted from the newest 300 of 412" when the 300 cap stops it; "the newest 1,000 kills only reach back 31 h" when zKillboard's list is full and shorter than the window (one extra ESI read, the oldest listed, says how far back it goes).</li>
+<li><b>Which system:</b> an Intel Assess uses its system; otherwise the new ⚙ beside ⓘ: on/off (on to start), the window (24 h to start), My location (from Intel's Local log; disabled with Intel off) or a typed system with suggestions from the page's 5,268 gate systems (a name it doesn't know: SYS-03, not saved). With no system: "Pick a system in ⚙ to see kills and losses here", and no request. Settings are kept in this browser; old saves get the defaults.</li>
+</ul>
+
+<h2>Choices made while building</h2>
+<ul>
+<li><b>No links inside buttons:</b> pilot names (the group view's chips and the small-gang rows) and the rail's rows are buttons, and a link can't sit inside one. Pilots show their numbers as text with the ISK on hover; the rail's hull line sits under its row button, outside it, so its numbers are links.</li>
+<li>The plan's "zKillboard ↗" text links became numbers that are links, through the site's one zKillboard link helper (<code>zkLinkHtml</code>, which now takes the text to show), so "Open zKillboard?" asks first as everywhere else.</li>
+<li>When the 300 cap stops it short of the window and the list's end isn't known to be inside it, the note says "there are more in 24 h" instead of a number.</li>
+<li>The activity line shows as soon as its answer is in, not after Local's; the first build waited for Local and stayed hidden when the activity answered first (caught by the new check).</li>
+<li><b>The hull link</b> (<code>zkillboard.com/ship/&lt;id&gt;/system/&lt;id&gt;/kills/</code>) was built as the plan says and never opened here. The owner checks one by hand; if it doesn't show that hull in that system, a follow-up links to the hull's own page and says so in ⓘ.</li>
+<li>The first live request is the owner's: if zKillboard refuses the one-ID form, the plan's regionID form is the fallback.</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li>New <code>tools/page_checks/system_activity_check.py</code>: stand-ins only, a made-up system with 40 killmails over 80 h and two more for the caps; every count worked out from the killmails for N = 1/6/24/72; requests; reads; notes; the system choice; links; settings; the small-gang rows; 390 px. Fails on v2026.11.02.2. 19 mutants, all caught (the window ignored, ISK split, NPCs counted, a fold total, a request per window change, the cache bypassed, the cap ignored, Off still asking, the Assess ignored, an unknown name saved, and more).</li>
+<li>Run: the full run (zkLinkHtml sits in shared code): 12 lints, the pyfa chain and 65 page checks; scan_rail_check failed once: a fit pasted after a scan brought the rail back when the kills and losses arrived and redrew it from the last scan (a hidden rail now forgets its scan). Then the system and layout checks: 25, 0 failed. request_gates_check flaky under load, passed alone.</li>
+<li>Page size: 637,204 → 644,010 bytes gzipped (+6.8 KB, +1.07%). Counting 300 killmails takes about 4 ms.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #129: made-up killmails must have IDs that grow with time, as zKillboard's do; the page reads its lists newest first by ID. When a check's data breaks an order the real source keeps, fix the data, not the page.</p>
+</body></html>

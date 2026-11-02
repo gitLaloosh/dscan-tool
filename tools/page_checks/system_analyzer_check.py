@@ -5,7 +5,7 @@
 The real page with ESI and zKillboard answered from made-up data (sa_mocks.py). Every expected count, side and reason is
 worked out here, in Python, from the same data -- not read back from the page. Checks:
   * the tab: "System Analyzer" in the D-Scan tab's place (last), two inputs; a D-Scan alone still shows its contacts
-    under "On Scan"; Local pasted in the D-Scan box's place (a scan) or a fit refused with SYS-02;
+    under "On Scan" (v2026.11.02.2: the Ships on Scan rail, full width); Local pasted in the D-Scan box's place (a scan) or a fit refused with SYS-02;
   * Standings (Your Side until v.95; D7 "A: chip by My Ship"): the chip on every tab; your pilot sets corp + alliance (SIDE-01 for an unknown
     name); a friendly added by name; a pasted list (tickers ignored, not-found names named with SIDE-02); adding to one
     list takes a group off the other; pilot rows clamped to 1-30; everything back after a reload;
@@ -79,11 +79,11 @@ with sync_playwright() as p:
     pg.click('#tabBtnDscan')
     ins = pg.evaluate("() => [!!document.querySelector('#localInput'), !!document.querySelector('#dscanInput'), document.querySelector('#tabDscan h2').textContent]")
     check(ins == [True, True, 'System Analyzer'], f'two inputs, the heading from CARD_NAMES {ins}')
-    # D-Scan alone: today's contacts under On Scan
+    # D-Scan alone: its ships in the Ships on Scan rail, full width (v2026.11.02.2)
     analyze(pg, '', M.SCAN)
-    pg.wait_for_function("() => document.querySelectorAll('#resultsGrid > .card').length >= 2", timeout=60000)
-    scan = pg.evaluate("() => ({shown: getComputedStyle(document.querySelector('#resultsWrap')).display !== 'none', head: document.querySelector('.sa-onscan-head h2').textContent, cards: [...document.querySelectorAll('#resultsGrid .cname')].map(e => e.textContent), local: document.querySelector('#saResults').innerHTML.trim()})")
-    check(scan['shown'] and scan['head'] == 'On Scan' and set(scan['cards']) >= {'Ferox', 'Scimitar'} and scan['local'] == '', f"a D-Scan alone: its contacts under On Scan, no Local result {scan['cards']}")
+    pg.wait_for_function("() => document.querySelectorAll('#scanRail button.sr-row').length >= 2", timeout=60000)
+    scan = pg.evaluate("() => ({shown: !document.querySelector('#scanRail').hidden, wide: document.querySelector('#saOut').classList.contains('wide'), head: document.querySelector('#scanRail .sr-head h3').textContent, cards: [...document.querySelectorAll('#scanRail button.sr-row .nm')].map(e => e.textContent), local: document.querySelector('#saResults').innerHTML.trim()})")
+    check(scan['shown'] and scan['wide'] and scan['head'] == 'Ships on Scan' and set(scan['cards']) >= {'Ferox', 'Scimitar'} and scan['local'] == '', f"a D-Scan alone: its ships in Ships on Scan, full width, no Local result {scan['cards']}")
     # the wrong box
     analyze(pg, M.SCAN)
     st = pg.inner_text('#localStatus')

@@ -25,6 +25,7 @@ PREFIX = {
     'it': ['intel'], 'IT': ['intel'], 'INTEL': ['intel'],
     'sa': ['system'], 'SA': ['system'], 'side': ['system'], 'SIDE': ['system'], 'stand': ['system'], 'STAND': ['system'],
     'std': ['system'], 'org': ['system', 'pilot', 'intel'],
+    'scan': ['system'], 'SCAN': ['system'], 'CYNO': ['system'],   # v2026.11.02.2: the Ships on Scan rail
     'pd': ['pilot'], 'PD': ['pilot'], 'lk': ['pilot'], 'LK': ['pilot'], 'pa': ['pilot'], 'PA': ['pilot'],
     'zkb': ['pilot', 'intel'], 'ZKB': ['pilot', 'intel'],
     'fk': ['pilot', 'system', 'intel'], 'FK': ['pilot', 'system', 'intel'], 'fleet': ['pilot', 'system', 'intel'], 'FLEET': ['pilot', 'system', 'intel'],
@@ -62,6 +63,7 @@ CSS = {
     'intel': ['intel'], 'intelPanel': ['intel'], 'intelSw': ['intel'], 'tabIntel': ['intel'],
     'sa': ['system'], 'side': ['system'], 'std': ['system'], 'vs': ['system', 'myship'], 'ds': ['system'], 'contacts': ['system'],
     'candidate': ['system'], 'candidates': ['system'], 'saResults': ['system'], 'tabDscan': ['system'],
+    'sr': ['system'], 'scanRail': ['system'], 'scanCard': ['system'],
     'pd': ['pilot'], 'pdk': ['pilot'], 'fsz': ['pilot', 'intel'], 'lk': ['pilot'], 'lastkill': ['pilot'], 'pa': ['pilot'],
     'zk': ['pilot', 'intel'], 'zkb': ['pilot'], 'attacker': ['pilot'], 'finalblow': ['pilot'], 'lossrow': ['pilot'], 'tabPilot': ['pilot'],
     'pilotSideTag': ['pilot'], 'lastKillInfo': ['pilot'], 'lkPivotBtn': ['pilot'],

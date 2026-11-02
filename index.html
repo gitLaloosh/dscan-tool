@@ -1917,10 +1917,6 @@
   details.sa-friendly{margin-top:14px; background:var(--panel-2); border:1px solid var(--line); border-radius:4px;}
   details.sa-friendly > summary{grid-template-columns:18px minmax(0,1fr) auto 14px; min-height:44px; padding:8px 14px;}
   .sa-friendly-body{padding:0 14px 6px;}
-  .sa-onscan-head{display:flex; align-items:baseline; gap:6px 12px; flex-wrap:wrap; margin-bottom:10px;}
-  .sa-onscan-head h2{margin:0;}
-  .sa-onscan-head .ctx{display:inline-block;}
-  .sa-onscan-head .legend{margin:0 0 0 auto;}
   /* Standings (v.95, was Your Side): a chip beside My Ship, on every tab; the panel is a popover (a sheet from the bottom on a phone) */
   button.side-chip{display:inline-flex; align-items:center; gap:8px; min-height:36px; max-width:320px; padding:0 12px 0 9px; border:1px solid var(--line); border-radius:4px;
     background:var(--tag-fill); color:var(--text); font:600 12.5px var(--sans); letter-spacing:0; white-space:nowrap; border-color:transparent;}
@@ -1980,7 +1976,6 @@
     .sa-pilots button.sa-pilot{min-height:36px;}
     button.sa-link{min-height:36px;}
   }
-  .sa-onscan-head .count{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
   .is-busy#saResults{opacity:0.45; pointer-events:none; transition:opacity 0.15s 0.25s;}
   /* PILOT ROWS (v2026.10.14.82; local-and-fleet-plan.md L3, D8 "A: Pilots / Groups switch"): one row per hostile or
      neutral pilot in a small gang. A grid of 8 columns on a wide screen; a small card per pilot on a phone. */
@@ -2240,6 +2235,75 @@
   button.fk-vbtn:hover, button.fk-vbtn:focus-visible{background:var(--tag-fill-hover); border-color:var(--accent-edge);}
   button.fk-vbtn .pr-chev{color:var(--text-dim); font-weight:400;}
   @media (max-width:599px){ button.fk-vbtn{min-height:32px;} }
+  /* v2026.11.02.2: Ships on Scan, the scan rail beside Local's results (roadmap/scan-rail-plan.md) */
+  .sa-out{margin-top:14px;}
+  .sa-out.rail:not(.wide){display:grid; grid-template-columns:320px minmax(0,1fr); gap:16px; align-items:start;}
+  .sa-out.rail:not(.wide) > #saResults > .sa-sum:first-child{margin-top:0;}
+  .sr-rail[hidden]{display:none;}
+  .sr-rail{position:relative; z-index:5; padding:14px 12px 10px; margin:0;}
+  .sa-out.rail:not(.wide) > .sr-rail{position:sticky; top:12px;}
+  .sr-head{display:flex; align-items:center; gap:8px;} .sr-head h3{margin:0; font:600 15px var(--sans); color:var(--heading);}
+  .sr-top{display:flex; align-items:baseline; gap:8px; margin-top:8px;}
+  .sr-total{font:600 26px var(--mono); color:var(--heading); line-height:1;} .sr-total-l{font:400 13px var(--sans); color:var(--text);}
+  .sr-sub{font:400 12px var(--sans); color:var(--text-dim); margin-top:4px;}
+  .sr-bar{display:flex; gap:2px; height:8px; margin:10px 0 6px; border-radius:2px; overflow:hidden;} .sr-bar i{display:block; height:100%;}
+  .sr-leg{display:flex; flex-wrap:wrap; gap:3px 12px; font:400 11.5px var(--sans); color:var(--text-dim);}
+  .sr-leg span{display:inline-flex; align-items:center; gap:5px;} .sr-leg i{display:inline-block; width:9px; height:9px; border-radius:2px;} .sr-leg b{font:600 11.5px var(--mono); color:var(--text);}
+  .sr-grp{break-inside:avoid; margin-top:10px;}
+  .sr-rh{display:flex; align-items:center; gap:7px; padding:4px 4px 3px; border-bottom:1px solid var(--line); font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim);}
+  .sr-rh i{display:inline-block; width:8px; height:8px; border-radius:50%;} .sr-rh b{font:600 12px var(--mono); color:var(--heading); margin-left:auto;}
+  button.sr-row{display:grid; grid-template-columns:24px minmax(0,1fr) auto auto 26px; gap:8px; align-items:center; width:100%; min-height:34px; padding:4px; border:none; border-bottom:1px solid var(--line-soft); border-radius:0; background:transparent; color:var(--text); font:400 12.5px var(--sans); letter-spacing:0; text-align:left; cursor:pointer;}
+  button.sr-row:hover, button.sr-row.open{background:var(--panel-2);}
+  button.sr-row:focus-visible{outline:2px solid var(--cyan); outline-offset:-2px;}
+  .sr-ico{width:24px; height:24px; border-radius:3px; background:#222b33; flex:none;}
+  .sr-nm{display:flex; align-items:center; gap:6px; min-width:0;} .sr-nm .nm{font-weight:600; color:var(--heading); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sr-cy{flex:none; padding:0 5px; border-radius:3px; background:color-mix(in srgb, var(--therm) 16%, transparent); color:var(--therm); font:600 10px/15px var(--sans); text-transform:uppercase; letter-spacing:.4px;}
+  .dmg-badge.sr-wb{font-size:10px; padding:1px 5px; line-height:1.3;}
+  .sr-og{font:400 11px var(--sans); color:var(--cyan); white-space:nowrap;}
+  .sr-n{font:600 13px var(--mono); color:var(--heading); text-align:right;}
+  .sr-foot{display:flex; flex-direction:column; gap:4px; margin-top:12px; padding-top:8px; border-top:1px solid var(--line); font:400 11.5px var(--sans); color:var(--text-dim);}
+  .sr-foot b{color:var(--text); font-weight:600; margin-right:4px;} .sr-note{display:block; margin-top:2px;}
+  .sa-out.wide .sr-groups{columns:3 250px; column-gap:22px;}
+  .sa-out.wide .sr-foot{flex-direction:row; flex-wrap:wrap; gap:4px 22px;}
+  .sr-card{position:absolute; z-index:30; width:300px; padding:12px 12px 10px; background:var(--panel); border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.55); font:400 12px var(--sans); color:var(--text);}
+  .sr-card[hidden]{display:none;}
+  .sr-card.inline{position:static; width:auto; margin:6px 0 8px; box-shadow:none;}
+  .sr-ct{display:flex; align-items:center; gap:8px;} .sr-ct .nm{font:600 14px var(--sans); color:var(--heading);} .sr-cn{font:600 13px var(--mono); color:var(--text-dim);}
+  .sr-cm{color:var(--text-dim); margin-top:3px;}
+  .sr-cw{display:flex; align-items:center; gap:8px; margin:9px 0 6px; color:var(--text-dim);}
+  .sr-cb{display:flex; flex-direction:column; gap:3px;}
+  .sr-br{display:grid; grid-template-columns:42px minmax(0,1fr) 36px; gap:8px; align-items:center; font:400 11px var(--mono); color:var(--text-dim);} .sr-br.w{color:var(--heading); font-weight:600;}
+  .sr-br b{text-align:right; font-weight:inherit;} .sr-bt{height:6px; background:var(--line-soft); border-radius:3px; overflow:hidden;} .sr-bt i{display:block; height:100%;}
+  .sr-ca{display:flex; flex-direction:column; gap:3px; margin-top:10px; padding-top:8px; border-top:1px solid var(--line-soft);}
+  .sr-ca > div{display:grid; grid-template-columns:74px minmax(0,1fr); gap:8px;} .sr-ca span{color:var(--text-dim);} .sr-ca b{font-weight:500; color:var(--text);}
+  .sr-ca > div.sr-alt{display:block; color:var(--text-dim);}
+  .sr-ccy{display:flex; gap:6px; align-items:flex-start; margin-top:8px; color:var(--text-dim);}
+  .sr-cf{margin-top:8px; font-size:11px; color:var(--text-dim);}
+  @media (max-width: 760px){
+    .sa-out.rail:not(.wide){display:block;}
+    .sa-out.rail:not(.wide) > .sr-rail{position:relative; top:auto; margin-bottom:14px;}
+    button.sr-row{min-height:44px;}
+  }
+  /* v2026.11.02.3: kills and losses in the system (roadmap/system-activity-plan.md) */
+  .sa-act{display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:12px; padding:8px 12px; border:1px solid var(--line); border-radius:8px; background:var(--panel-2); font:400 12.5px var(--sans); color:var(--text);}
+  .sa-act[hidden]{display:none;} .sa-act b{color:var(--heading); font-weight:600;} .sa-act .busy-spin{margin:0 6px 0 2px;}
+  .sa-act .err, .sa-set-err, .sa-act-note.err{color:var(--danger);} .sa-act-note{color:var(--text-dim); font-size:12px;}
+  a.zk-t{color:var(--cyan); text-decoration:none; white-space:nowrap; font:500 11.5px var(--sans);} a.zk-t:hover, a.zk-t:focus-visible{text-decoration:underline;}
+  .sa-act-g{display:flex; flex-wrap:wrap; gap:2px 12px; margin-top:2px;} .sa-act-g.quiet{color:var(--text-dim); font:400 11.5px var(--sans);}
+  .sa-act-m{display:inline-flex; gap:6px; margin-left:auto; padding-left:8px; font:500 11px var(--mono); color:var(--text-dim); white-space:nowrap;}
+  .sa-pilot .sa-act-m{margin-left:6px; padding-left:0;} .pr-pn .sa-act-m{margin-left:6px; padding-left:0;}
+  .sa-act-m a.zk-t{font:500 11px var(--mono);}
+  .sr-r{break-inside:avoid;} .sr-act{display:flex; flex-wrap:wrap; gap:2px 12px; padding:0 4px 5px 36px; border-bottom:1px solid var(--line-soft); margin-top:-1px;}
+  .sr-r:has(.sr-act) > button.sr-row{border-bottom:none;}
+  .sa-pop{position:absolute; right:0; top:calc(100% + 8px); z-index:20; width:min(460px, calc(100% - 32px)); background:var(--panel); border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.45); padding:12px 16px 16px;}
+  .sa-pop[hidden]{display:none;} .sa-pop .it-h{display:flex; align-items:center; gap:8px; margin-bottom:10px;} .sa-pop h3{margin:0; font:600 15px var(--sans); color:var(--heading);}
+  .sa-pop .sa-set-k{margin-top:12px;} .sa-pop label.sa-dis{color:var(--text-dim);} .sa-pop .c.err{color:var(--danger);}
+  .sa-pop input.sa-sys-in{width:min(220px, 100%); min-height:28px; padding:0 8px;}
+  @media (max-width: 760px){
+    .sa-pop{position:fixed; left:8px; right:8px; top:auto; bottom:8px; width:auto; max-height:80vh; overflow:auto;}
+    a.zk-t{display:inline-flex; align-items:center; min-height:44px;} .sa-pop label{min-height:44px;} .sa-pop input.sa-sys-in, .sa-pop select{min-height:44px;}
+    button#saGear{width:44px; height:44px;}
+  }
   /* v.94: the Fleet tab */
   .tab-fleet{display:inline-flex; align-items:center;} .tab-fleet[hidden]{display:none;}
   .tab-x{min-height:0; width:24px; height:24px; padding:0; margin-left:-6px; border:none; background:transparent; color:var(--text-dim); font:400 15px var(--sans); border-radius:4px;}
@@ -2725,7 +2789,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.02.1</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.02.3</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2783,9 +2847,11 @@
   <!-- v2026.10.14.81 (roadmap/local-and-fleet-plan.md, D1: "it should replace it", "System Analyzer sounds fine"): the
        D-Scan tab is now the System Analyzer, in its place (last): Local (everyone in system) and D-Scan (ships within
        ~14 AU) side by side, one Analyze. With only a scan pasted it does what the D-Scan tab did. Element ids kept
-       (tabDscan, dscanInput, analyzeBtn, resultsWrap) so the scan code and its checks are unchanged. -->
+       (tabDscan, dscanInput, analyzeBtn) so the scan code and its checks are unchanged. v2026.11.02.2: the per-type cards
+       (resultsWrap) became the scan rail beside Local's results (scanRail, roadmap/scan-rail-plan.md). -->
   <section class="panel">
-    <div class="sa-head"><h2 data-card="sysan"></h2><span class="sa-sp"></span><span id="saInfo"></span></div>
+    <div class="sa-head"><h2 data-card="sysan"></h2><span class="sa-sp"></span><button type="button" class="it-gear" id="saGear" aria-expanded="false"></button><span id="saInfo"></span>
+      <div class="sa-pop" id="saPop" hidden></div></div>
     <!-- v2026.10.14.98: Intel delivery 2: a system sent from Intel (Assess) -->
     <div class="from-intel" id="saFromIntel" hidden></div>
     <div class="sa-inputs">
@@ -2803,23 +2869,10 @@
     <div class="fit-hint" id="dscanFitHint" style="display:none;"></div>
     <div id="debugRows" style="display:none; margin-top:14px; padding-top:12px; border-top:1px solid var(--line-soft);"></div>
     <div class="busy-bar" id="saBusy" role="status" aria-live="polite" hidden><span class="busy-spin" aria-hidden="true"></span><span class="busy-label"></span><span class="busy-detail"></span></div>
-    <div id="saResults"></div>
+    <!-- v2026.11.02.2: the scan rail (Ships on Scan) on the left, Local's results on the right; D-Scan alone: the rail, full width -->
+    <div class="sa-act" id="saAct" role="status" aria-live="polite" hidden></div>
+    <div class="sa-out" id="saOut"><aside class="card sr-rail" id="scanRail" hidden></aside><div id="saResults"></div></div>
   </section>
-
-  <div id="resultsWrap" style="display:none;">
-    <div class="sa-onscan-head">
-      <h2 data-card="onscan"></h2>
-      <span class="count" id="contactsCount"></span>
-      <span class="ctx">near you, not the whole system</span>
-      <div class="legend">
-        <span><i style="background:var(--em)"></i>EM</span>
-        <span><i style="background:var(--therm)"></i>Thermal</span>
-        <span><i style="background:var(--kin)"></i>Kinetic</span>
-        <span><i style="background:var(--exp)"></i>Explosive</span>
-      </div>
-    </div>
-    <div class="grid" id="resultsGrid"></div>
-  </div>
   </div>
 
   <div id="tabFleet" class="tab-panel" style="display:none;"><section class="panel fk-panel" id="fleetPanel"></section></div>
@@ -2914,7 +2967,7 @@ const CARD_NAMES = {
  "hostile": "Hostile",
  "neutral": "Neutral",
  "friendly": "Friendly",
- "onscan": "On Scan",
+ "onscan": "Ships on Scan",
  "pilots": "Pilots",
  "fleet": "Fleet",
  "vs": "Against Your Ship",
@@ -3032,7 +3085,8 @@ const CARD_INFO = {
   "Paste the Local member list (in the Local window, select the members and press Ctrl+C) and, if you have one, your D-Scan. Local lists everyone in the system, in space or docked; the D-Scan shows only ships within about 14 AU of you. So who is here comes from Local, and the scan only says what is near you now.",
   "Each name is looked up on ESI (its corporation and alliance) and sorted into hostile, neutral and friendly by your {card:side}. A name ESI doesn't know (a typo, a renamed pilot) is listed as not found.",
   "Up to the “pilot rows up to” number of hostile + neutral pilots (15 unless you change it) is a small gang: one row per pilot ({card:pilots}). More is shown by group, as the columns. Groups shows the columns for a small gang too.",
-  "With only a D-Scan pasted, {card:onscan} shows the ships on scan, as the D-Scan tab did."
+  "[Kills and losses] With a system known (an Intel Assess's, else ⚙: your location from Intel, or a typed system), the line over the results counts its kills and losses in the last 1 to 72 hours (24 unless you change it) from one zKillboard request per system an hour, and the killmails read from ESI (the newest 300 at most; zKillboard lists 1,000). Each group, corporation, pilot and hull gets its own: ▲ kills it was on, ▼ its losses, with the whole kill's ISK, so totals across rows don't add up; NPCs count for nobody; folded rows show none. The numbers link to zKillboard, whose pages show all time, not the hours chosen.",
+  "{card:onscan} (with a D-Scan pasted) sits beside Local's results, or takes the whole width when there's no Local: the hulls on scan by role, with their resists, ammo and drones on hover."
  ],
  "side": [
   "Your pilot sets your corporation and alliance; they're looked up again each time you analyze Local, so a change of corporation is picked up.",
@@ -3096,6 +3150,13 @@ const CARD_INFO = {
   "[Buttons] A pilot's name opens them in the Pilot Analyzer, in their ship when the line says it. A system's name shows only that system in the Feed (press it again for everything); the radar icon beside it in {card:itnear} sends its pilots and ships to the {card:sysan}; Restore my paste puts yours back.",
   "[Privacy and the folder] Nothing from your logs leaves the browser except the words looked up on ESI, and nothing is kept after you close the page. Chrome or Edge read the folder once you choose it (after a browser restart, turning Intel on asks once more); the logs are read every 2 seconds, also in a hidden tab."
  ],
+ "onscan": [
+  "The ships your D-Scan sees, by hull and by role. D-Scan shows hulls, not fits or pilots, so nothing here is tied to a name in Local.",
+  "[Roles] From each hull's group: Logistics, Tackle (interceptors, interdictors, heavy interdictors), EWAR (recons, electronic attack ships), Command, Bombers, Capitals, DPS for every other combat hull, Cyno Capable, Non-combat (mining, hauling, freighters, shuttles, capsules, rookie ships).",
+  "[Cyno] Which hulls can fit a cynosural field generator comes from CCP's fitting rules (regular, covert or industrial). Cyno Capable: hulls that would otherwise be DPS or Non-combat, such as haulers, Blockade Runners, Deep Space Transports, Covert Ops and the Venture. A combat hull that can fit one keeps its role with a cyno tag. D-Scan can't say whether one is fitted.",
+  "[On grid] Within 10,000 km (m or km); AU is off grid. A contact D-Scan shows with a “-” has no reading and is counted on its own. A scan with no distances (typed names) shows no grid counts.",
+  "[Each hull] Hover a hull, focus it or press it (a press keeps it open; Esc closes it): its resists for its base hull weighted by shield, armor and hull HP (higher % = less resisted), the weakest damage type and the next, a charge for each weapon system (the reason on hover) and the best drone for its size."
+ ],
  "fkvictim": [
   "The ship that died, from the killmail's own fit: what it carried, not a guess (v2026.10.31.2). Raw DPS: at its best, no application or resists. Weakest to: its lowest resist. Weapon reach: the weapon doing the most DPS, turrets optimal + falloff, missiles their flight, as pyfa gives them. Tackle and EWAR: its modules by kind, each with the farthest optimal. EHP: against uniform damage.",
   "No time to kill: how long it lasted depended on ranges and ships the killmail can't show."
@@ -3132,9 +3193,9 @@ function ctxHtml(text, extraCls = '', full = ''){
 // asks first (leaveAsk), unless the person said not to for that site (localStorage LEAVE_KEY; "Ask again" under Intel's gear).
 const FLEET_ICON = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5l2.2 4H5.8z"/><path d="M3.2 7.5l2.2 4H1z"/><path d="M12.8 7.5l2.2 4h-4.4z"/><rect x="3" y="13" width="10" height="1.2" rx=".6"/></svg>';   // three ships: a fleet
 const LEAVE_KEY = 'dscanLeaveOk', LEAVE_NAMES = {'zkillboard.com': 'zKillboard'};
-function zkLinkHtml(url, what){
+function zkLinkHtml(url, what, text){   // text (v2026.11.02.3): a number to show in place of the icon, e.g. "▲ 12 kills · 3.4B"
   const t = `${what} on zKillboard (outside this site)`;
-  return `<a class="zk-ic" href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(t)}" aria-label="${escapeHtml(t)}">zK</a>`;
+  return `<a class="${text ? 'zk-t' : 'zk-ic'}" href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(t)}"${text ? '' : ` aria-label="${escapeHtml(t)}"`}>${text ? escapeHtml(text) : 'zK'}</a>`;
 }
 function leaveHosts(){ try{ const a = JSON.parse(localStorage.getItem(LEAVE_KEY) || '[]'); return Array.isArray(a) ? a.filter(h => typeof h === 'string') : []; }catch(e){ return []; } }
 function leaveSave(a){ try{ localStorage.setItem(LEAVE_KEY, JSON.stringify(a)); }catch(e){ /* private window: asked again next time */ } }
@@ -3661,6 +3722,15 @@ const ERROR_CODES = {
   "why": "Names from a scan or a fit aren't pilots; looking them up would only fill the not-found list.",
   "since": "v2026.10.14.81",
   "doc": "2026-10-27_system-analyzer-local-and-your-side.html"
+ },
+ "SYS-03": {
+  "title": "Not a system the page knows",
+  "where": "{card:sysan} settings (⚙), the typed system",
+  "trigger": "The typed name isn't one of the systems with stargates in the page's own table (wormhole systems aren't in it).",
+  "check": "The spelling; pick the name from the suggestions.",
+  "why": "Kills and losses are asked of zKillboard by system ID; a name the page can't place would ask for the wrong system or none.",
+  "since": "v2026.11.02.3",
+  "doc": "2026-11-02_kills-and-losses-in-the-system.html"
  },
  "SIDE-01": {
   "title": "Your pilot wasn't found",
@@ -9518,7 +9588,7 @@ async function runAnalysis(){
   // Bug list #1: an EFT fit is not a scan -- stop before any lookup.
   const fitPaste = detectFitPaste(input);
   if(fitPaste){
-    document.getElementById('resultsWrap').style.display = 'none';
+    scanRailHide();
     setStatus(statusEl, withCode(`That's a ship fit (EFT format, ${fitPaste.shipName}), not D-Scan results.`, 'DSCAN-01'), true);
     showDscanFitHint(`This box reads what your directional scanner shows: one contact per line with its type and distance. To check a fit, use the Fit Analyzer. <button type="button" id="dscanOpenFitBtn">Analyze it in the Fit Analyzer</button>`);
     const openBtn = document.getElementById('dscanOpenFitBtn');
@@ -9530,7 +9600,7 @@ async function runAnalysis(){
 
   const btn = document.getElementById('analyzeBtn');
   btn.disabled = true;
-  document.getElementById('resultsWrap').style.display = 'none';
+  scanRailHide();
 
   renderDebugRows(rows);
 
@@ -9603,7 +9673,24 @@ async function runAnalysis(){
         contactResults.push(t);
       }
     }
-    renderResults(contactResults, typeCounts, unresolvedCounts, celestialCounts, fittingCounts);
+    // v2026.11.02.2: the scan rail (scanRailRender): ships by role with each type's distances, the rest as footer lines
+    const grid = new Map();
+    for(const r of okRows){
+      if(!r.resolvedName) continue;
+      const g = grid.get(r.resolvedName) || {on: 0, off: 0, none: 0, dist: false};
+      g[scanGridClass(r.distance)]++; if(r.distance) g.dist = true;
+      grid.set(r.resolvedName, g);
+    }
+    const okC = contactResults.filter(t => t && !t.error);
+    const ships = okC.filter(t => t.group.category_id === 6).map(t => {
+      const g = grid.get(t.name) || {on: 0, off: 0, none: typeCounts.get(t.name) || 1, dist: false};
+      return {name: t.name, typeId: t.typeId, type: t.type, group: t.group, n: typeCounts.get(t.name) || 1, on: g.on, off: g.off, none: g.none, dist: g.dist,
+              ...scanRole(t.group.name, t.type.group_id, t.typeId)};
+    });
+    scanData = {ships, hasDist: ships.some(x => x.dist),
+      other: new Map(okC.filter(t => t.group.category_id !== 6).map(t => [t.name, {n: typeCounts.get(t.name) || 1, g: t.group.name}])),
+      celestial: celestialCounts, fitting: fittingCounts, unresolved: unresolvedCounts};
+    scanRailRender();
     const fittingLines = [...fittingCounts.values()].reduce((a, b) => a + b, 0);
     if(fittingLines){
       showDscanFitHint(`${fittingLines} line(s) are fitting items (modules, rigs, subsystems...), which never appear on D-Scan, so they're left out of the contacts. To check a fit, paste the whole fit, including its <code>[Ship, Fit name]</code> header line, into the Fit Analyzer.`);
@@ -9631,135 +9718,201 @@ async function runAnalysis(){
   }
 }
 
-function renderResults(typeResults, typeCounts, unresolvedCounts, celestialCounts, fittingCounts = new Map()){
-  const grid = document.getElementById('resultsGrid');
-  grid.innerHTML = '';
-  const wrap = document.getElementById('resultsWrap');
-  wrap.style.display = 'block';
-  const celestialTotal = [...celestialCounts.values()].reduce((a,b) => a+b, 0);
-  const unresolvedTotal = [...unresolvedCounts.values()].reduce((a,b) => a+b, 0);
-  const fittingTotal = [...fittingCounts.values()].reduce((a,b) => a+b, 0);
-  // v2026.10.14.86 (the owner via todo-inbox: "scanner probes are showing up in the resistance results"; "your recommendation
-  // sounds fine"): a contact that isn't a ship (probes, drones, deployables, structures...) gets no card of its own; they
-  // share one "Other contacts" line after the ship cards, as celestials do.
-  const okResults = typeResults.filter(t => t && !t.error);
-  const shipResults = okResults.filter(t => t.group.category_id === 6), otherResults = okResults.filter(t => t.group.category_id !== 6);
-  const otherTotal = otherResults.reduce((s, t) => s + (typeCounts.get(t.name) || 1), 0);
-  document.getElementById('contactsCount').textContent = `${shipResults.length} ship type(s), ${celestialTotal + unresolvedTotal + fittingTotal + otherTotal} other line(s)`;
-
-  for(const item of shipResults){
-    const { name, type, group } = item;
-    const count = typeCounts.get(name) || 1;
-    const card = document.createElement('div');
-    card.className = 'card';
-
-    const dogma = type.dogma_attributes;
-    const shieldHP = attrVal(dogma, SHIELD_HP_ATTR, 0);
-    const armorHP  = attrVal(dogma, ARMOR_HP_ATTR, 0);
-    const hullHP   = attrVal(dogma, HULL_HP_ATTR, 0);
-    const totalHP = shieldHP + armorHP + hullHP || 1;
-
-    const weighted = {};
-    for(const d of DMG){
-      const sRes = attrVal(dogma, SHIELD_ATTR[d], 1);
-      const aRes = attrVal(dogma, ARMOR_ATTR[d], 1);
-      const hRes = attrVal(dogma, HULL_ATTR[d], 1);
-      weighted[d] = (sRes*shieldHP + aRes*armorHP + hRes*hullHP) / totalHP;
-    }
-    const weakest = DMG.reduce((a,b) => weighted[b] > weighted[a] ? b : a, DMG[0]);
-    const secondWeakest = secondWeakestOf(weighted, weakest);
-    // Drone size now driven by this hull's real (raw base, D-Scan reveals
-    // no fit) signature radius rather than its ESI group name -- see
-    // sizeClassFromSignature()'s comment above. No speed data exists on
-    // this path (D-Scan never reveals a fit), so droneRecommendation()
-    // falls back to its simpler sentry-only caveat, same as before.
-    const sizeInfo = sizeClassFromSignature(attrVal(dogma, SIGNATURE_RADIUS_ATTR, 0), group.name);
-    const rec = RECS[weakest];
-    const turretRecs = buildTurretRecs(weakest, secondWeakest);
-    const drones = droneRecommendation(weakest, sizeInfo.droneSizes);
-
-    const barsHtml = DMG.map(d => {
-      const pct = Math.min(1, weighted[d]) * 100;
-      const isWeak = d === weakest;
-      return `
-        <div class="bar-row ${isWeak ? 'weakest' : ''}">
-          <span class="bar-label">${DMG_LABEL[d]}</span>
-          <div class="bar-track"><div class="bar-fill fill-${d}" style="width:${pct.toFixed(0)}%"></div></div>
-          <span class="bar-pct">${pct.toFixed(0)}%</span>
-        </div>`;
-    }).join('');
-
-    card.innerHTML = `
-      <div class="ctop"><span class="cname">${escapeHtml(name)}</span><span class="ccount">x${count}</span></div>
-      <div class="cmeta">${escapeHtml(group.name)} · ${sizeInfo.label}${sizeInfo.note || ''}</div>
-      <div class="bars">${barsHtml}</div>
-      <div class="weak-line">
-        <span class="dmg-badge ${weakest}">${DMG_FULL[weakest]}</span>
-        <span class="weak-sub">weakest damage type (higher % = less resisted)</span>
-      </div>
-      <div class="drone-rec">
-        <span class="drone-rec-label">Best drone</span>
-        <span class="drone-rec-value">${drones.primary.name} (${drones.primary.size})</span>
-      </div>
-      ${drones.alt ? `
-      <div class="drone-alt">
-        Sentries can't chase — if the target won't sit still, use <b>${drones.alt.name}</b> (${drones.alt.size}) instead.
-      </div>` : ''}
-      <div class="rec">
-        <b>Missile:</b> ${rec.missile}<br>
-        <b>Laser:</b> ${turretRecText(turretRecs.laser, weakest, secondWeakest)}<br>
-        <b>Hybrid:</b> ${turretRecText(turretRecs.hybrid, weakest, secondWeakest)}<br>
-        <b>Projectile:</b> ${turretRecText(turretRecs.projectile, weakest, secondWeakest)}
-      </div>
-    `;
-    grid.appendChild(card);
-  }
-
-  if(otherResults.length){
-    const card = document.createElement('div');
-    card.className = 'card sc-other';
-    const list = otherResults.map(t => `<span title="${escapeHtml(t.group.name)}">${escapeHtml(t.name)} (x${typeCounts.get(t.name) || 1})</span>`).join(', ');
-    card.innerHTML = `
-      <div class="cname" style="margin-bottom:8px;">Other contacts (${otherResults.length})</div>
-      <div class="cmeta notship">${list} — not ships, no resistance profile</div>
-    `;
-    grid.appendChild(card);
-  }
-
-  if(celestialCounts.size){
-    const card = document.createElement('div');
-    card.className = 'card';
-    const list = [...celestialCounts.entries()].map(([n,c]) => `${escapeHtml(n)} (x${c})`).join(', ');
-    card.innerHTML = `
-      <div class="cname" style="margin-bottom:8px;">Celestials (${celestialCounts.size})</div>
-      <div class="cmeta notship">${list} — skipped, not ships</div>
-    `;
-    grid.appendChild(card);
-  }
-
-  if(fittingCounts.size){
-    const card = document.createElement('div');
-    card.className = 'card';
-    const list = [...fittingCounts.entries()].map(([n,c]) => `${escapeHtml(n)} (x${c})`).join(', ');
-    card.innerHTML = `
-      <div class="cname" style="margin-bottom:8px;">Fitting items (${fittingCounts.size})</div>
-      <div class="cmeta notship">${list} — skipped, these never appear on D-Scan</div>
-    `;
-    grid.appendChild(card);
-  }
-
-  if(unresolvedCounts.size){
-    const card = document.createElement('div');
-    card.className = 'card';
-    const list = [...unresolvedCounts.entries()].map(([n,c]) => `${escapeHtml(n)} (x${c})`).join(', ');
-    card.innerHTML = `
-      <div class="cname" style="margin-bottom:8px;">Unrecognized (${unresolvedCounts.size})</div>
-      <div class="cmeta notship">${list}</div>
-      <div class="note">No match on ESI, as-typed or in Title Case. Open "parsed rows" above the scan box to check what was extracted — if it's a real ship/item name, it may be misspelled or not yet indexed by ESI.</div>
-    `;
-    grid.appendChild(card);
-  }
+// ==== SHIPS ON SCAN: the System Analyzer's scan rail (v2026.11.02.2; Project doc roadmap/scan-rail-plan.md) ====
+// The owner: "plan changes to the system analyzer that includes a breakdown of hulls and their counts (no pilot association,
+// just the hulls and their numbers)"; "placement of the new card like B but the resistance info and weaknesses become a little
+// hover card instead. frees up a lot of space on the page"; "I like option 1" (the rail on the left, Local's results as they
+// were on the right). Before the build: D-Scan alone takes the full width; pressing a row pins its card; a "-" distance is its
+// own count ("no reading"); "Cyno Capable" ("some industrial ships can light cynos"), then "Role + tag". It replaced one big
+// card per ship type (#resultsGrid). D-Scan never says who flies what, so the rail and Local's groups are never joined.
+const SCAN_GRID_KM = 10000;   // on grid: within 10,000 km (m or km); AU and ly are off grid
+// CCP's SDE: the hulls each cynosural field generator fits (tools/gen_cyno_table.py; do not edit by hand)
+const CYNO_FIT = {"regular":{"g":[833,894,898],"t":[]},"covert":{"g":[830,833,834,898,963,1202],"t":[32790,33697,42245]},"industrial":{"g":[28,380,1202],"t":[32880,89648]}};
+// Roles from the ESI group name, first match wins; anything else is DPS. Cyno: a hull that can fit a cyno and would be DPS or
+// Non-combat is Cyno Capable (haulers, Blockade Runners, Deep Space Transports, Covert Ops, the Venture, the Prospect), except
+// the combat hulls in SCAN_CYNO_COMBAT; a hull with a combat role keeps it and gets the cyno tag (Force Recons, Heavy
+// Interdictors, Stealth Bombers, Black Ops, Strategic Cruisers, the Etana and Rabisu).
+const SCAN_ROLES = [
+  // colours: each role is also named in the legend and its heading (9 roles can't all be told apart by colour alone; dataviz check)
+  {k: 'logi', label: 'Logistics', c: 'var(--it-clear)', g: ['Logistics', 'Logistics Frigate', 'Force Auxiliary']},
+  {k: 'tackle', label: 'Tackle', c: 'var(--amber)', g: ['Interceptor', 'Interdictor', 'Heavy Interdiction Cruiser']},
+  {k: 'ewar', label: 'EWAR', c: 'var(--drain)', g: ['Combat Recon Ship', 'Force Recon Ship', 'Electronic Attack Ship']},
+  {k: 'command', label: 'Command', c: 'var(--cyan)', g: ['Command Ship', 'Command Destroyer']},
+  {k: 'bomber', label: 'Bombers', c: 'var(--em)', g: ['Stealth Bomber']},
+  {k: 'capital', label: 'Capitals', c: 'var(--tank-armor)', g: ['Carrier', 'Dreadnought', 'Supercarrier', 'Titan', 'Lancer Dreadnought']},
+  {k: 'dps', label: 'DPS', c: 'var(--text)', g: null},
+  {k: 'cyno', label: 'Cyno Capable', c: 'var(--therm)', g: null},
+  {k: 'noncombat', label: 'Non-combat', c: 'var(--text-dim)', g: ['Mining Barge', 'Exhumer', 'Expedition Frigate', 'Industrial Command Ship', 'Capital Industrial Ship',
+    'Expedition Command Ship', 'Freighter', 'Jump Freighter', 'Hauler', 'Blockade Runner', 'Deep Space Transport', 'Shuttle', 'Capsule', 'Corvette',
+    'Special Edition Yachts', 'Prototype Exploration Ship']}
+];
+const SCAN_CYNO_COMBAT = ['Black Ops', 'Strategic Cruiser'];
+const CYNO_WORD = {regular: 'a cyno', covert: 'a covert cyno', industrial: 'an industrial cyno'};
+function scanCynoKinds(groupId, typeId){ return Object.keys(CYNO_FIT).filter(k => CYNO_FIT[k].g.includes(groupId) || CYNO_FIT[k].t.includes(typeId)); }
+function scanRole(groupName, groupId, typeId){
+  const base = (SCAN_ROLES.find(r => r.g && r.g.includes(groupName)) || {k: 'dps'}).k;
+  const cyno = scanCynoKinds(groupId, typeId);
+  if(cyno.length && (base === 'dps' || base === 'noncombat') && !SCAN_CYNO_COMBAT.includes(groupName)) return {role: 'cyno', cyno, tag: false};
+  return {role: base, cyno, tag: cyno.length > 0};
 }
+// A D-Scan distance: 'on' grid, 'off' grid, or 'none' (a "-", which D-Scan shows with no reading, or a typed name with none)
+function scanGridClass(d){
+  const m = /^(\d[\d,\s ]*(?:\.\d+)?)\s*(m|km|au|ly)$/i.exec(String(d || '').trim());
+  if(!m) return 'none';
+  const u = m[2].toLowerCase();
+  if(u === 'au' || u === 'ly') return 'off';
+  const v = parseFloat(m[1].replace(/[,\s ]/g, '')) / (u === 'm' ? 1000 : 1);
+  return v <= SCAN_GRID_KM ? 'on' : 'off';
+}
+// The numbers the old per-type card showed, worked out once per type: resists weighted by HP, weakest and second, size, ammo, drones
+function scanHullInfo(s){
+  if(s.info) return s.info;
+  const dogma = s.type.dogma_attributes;
+  const shieldHP = attrVal(dogma, SHIELD_HP_ATTR, 0), armorHP = attrVal(dogma, ARMOR_HP_ATTR, 0), hullHP = attrVal(dogma, HULL_HP_ATTR, 0);
+  const totalHP = shieldHP + armorHP + hullHP || 1;
+  const weighted = {};
+  for(const d of DMG) weighted[d] = (attrVal(dogma, SHIELD_ATTR[d], 1) * shieldHP + attrVal(dogma, ARMOR_ATTR[d], 1) * armorHP + attrVal(dogma, HULL_ATTR[d], 1) * hullHP) / totalHP;
+  const weakest = DMG.reduce((a, b) => weighted[b] > weighted[a] ? b : a, DMG[0]);
+  const second = secondWeakestOf(weighted, weakest);
+  // drone size from the hull's own signature radius (D-Scan shows no fit; sizeClassFromSignature)
+  const sizeInfo = sizeClassFromSignature(attrVal(dogma, SIGNATURE_RADIUS_ATTR, 0), s.group.name);
+  return (s.info = {weighted, weakest, second, sizeInfo, turret: buildTurretRecs(weakest, second), drones: droneRecommendation(weakest, sizeInfo.droneSizes)});
+}
+let scanData = null;   // the last scan: {ships, other, celestial, fitting, unresolved, hasDist}
+const scanCard = {id: null, pinned: false, openT: 0, closeT: 0, row: null};
+function scanRailHide(){
+  const r = document.getElementById('scanRail'), out = document.getElementById('saOut');
+  scanCardClose();
+  scanData = null;   // v2026.11.02.3: a hidden rail has no data, so a later redraw (the kills and losses arriving) can't bring it back
+  if(r){ r.hidden = true; r.innerHTML = ''; }
+  if(out) out.classList.remove('rail');
+}
+function scanGridText(s, all){   // "5 on grid · 1 off grid · 2 no reading", only the parts there are
+  return [s.on ? `${s.on} on grid` : '', s.off ? `${s.off} off grid` : '', s.none ? `${s.none} no reading` : ''].filter(Boolean).join(' · ') || (all ? 'no distances' : '');
+}
+function scanRailRender(){
+  const el = document.getElementById('scanRail'), out = document.getElementById('saOut');
+  if(!el || !scanData) return;
+  const keep = scanCard.row ? {id: scanCard.id, pinned: scanCard.pinned} : null;   // v2026.11.02.3: an open card survives a redraw
+  scanCardClose();
+  const D = scanData, ships = D.ships, n = ships.reduce((a, s) => a + s.n, 0);
+  const tot = {on: 0, off: 0, none: 0};
+  for(const s of ships) for(const k in tot) tot[k] += s[k];
+  const byRole = SCAN_ROLES.map(r => ({...r, ships: ships.filter(s => s.role === r.k).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))}))
+    .map(r => ({...r, n: r.ships.reduce((a, s) => a + s.n, 0)})).filter(r => r.n);
+  const head = `${ships.length} hull${ships.length === 1 ? '' : 's'}${D.hasDist ? ` · ${scanGridText(tot)}` : ''}`;
+  const bar = n ? `<div class="sr-bar" role="img" aria-label="${escapeHtml(byRole.map(r => `${r.label} ${r.n}`).join(', '))}">${byRole.map(r => `<i style="flex:${r.n};background:${r.c}"></i>`).join('')}</div>
+    <div class="sr-leg">${byRole.map(r => `<span><i style="background:${r.c}"></i>${escapeHtml(r.label)} <b>${r.n}</b></span>`).join('')}</div>` : '';
+  const row = (s) => {
+    const w = scanHullInfo(s).weakest;
+    return `<button type="button" class="sr-row" data-sr="${s.typeId}" aria-expanded="false" title="${escapeHtml(`${s.name}: ${s.n} on scan; hover, focus or press for its resists, ammo and drones`)}">`
+      + `<img class="sr-ico" src="https://images.evetech.net/types/${s.typeId}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
+      + `<span class="sr-nm"><span class="nm">${escapeHtml(s.name)}</span>${s.tag ? '<span class="sr-cy">cyno</span>' : ''}</span>`
+      + `<span class="dmg-badge ${w} sr-wb" title="${escapeHtml(`Weakest to ${DMG_FULL[w]}`)}">${DMG_LABEL[w]}</span>`
+      + `<span class="sr-og">${D.hasDist && s.on ? `${s.on} on grid` : ''}</span><span class="sr-n">${s.n}</span></button>`;
+  };
+  const groups = byRole.map(r => `<div class="sr-grp"><div class="sr-rh"><i style="background:${r.c}"></i>${escapeHtml(r.label)} <b>${r.n}</b></div>${r.ships.map(s => `<div class="sr-r">${row(s)}${saActHullHtml(s.typeId)}</div>`).join('')}</div>`).join('');
+  const list = (m) => [...m.entries()].map(([k, c]) => `${escapeHtml(k)} ×${c}`).join(', ');
+  const sum = (m) => [...m.values()].reduce((a, b) => a + b, 0);
+  const foot = [
+    D.other.size ? `<div><b>Not ships:</b> ${[...D.other].map(([k, o]) => `<span title="${escapeHtml(o.g)}">${escapeHtml(k)} ×${o.n}</span>`).join(', ')}</div>` : '',
+    D.celestial.size ? `<div><b>Celestials:</b> ${sum(D.celestial)}, skipped</div>` : '',
+    D.fitting.size ? `<div><b>Fitting items:</b> ${list(D.fitting)}, skipped (they never appear on D-Scan)</div>` : '',
+    D.unresolved.size ? `<div class="sr-unk"><b>Unrecognized:</b> ${list(D.unresolved)}<span class="sr-note">No match on ESI, as typed or in Title Case. Open the parsed rows above the scan box to check what was read: a real ship or item name may be misspelled.</span></div>` : ''
+  ].join('');
+  el.innerHTML = `<div class="sr-head"><h3>${escapeHtml(cardName('onscan'))}</h3><span class="sa-sp"></span>${infoBtnHtml('onscan')}</div>
+    <div class="sr-top"><span class="sr-total">${n}</span><span class="sr-total-l">ship${n === 1 ? '' : 's'} on scan</span></div>
+    <div class="sr-sub">${escapeHtml(head)}</div>${bar}
+    <div class="sr-groups">${groups || '<div class="pr-msg">No ships on this scan.</div>'}</div>
+    ${foot ? `<div class="sr-foot">${foot}</div>` : ''}
+    <div class="sr-card" id="scanCard" role="tooltip" hidden></div>`;
+  el.hidden = false;
+  if(out) out.classList.add('rail');
+  if(keep){ const r = el.querySelector(`button.sr-row[data-sr="${keep.id}"]`); if(r) scanCardOpen(r, keep.pinned); }
+}
+// The hover card: one at a time, built when it opens
+function scanCardHtml(s){
+  const I = scanHullInfo(s), w = I.weakest, t = I.turret, sz = I.sizeInfo;
+  const bars = DMG.map(d => { const pct = Math.min(1, I.weighted[d]) * 100;
+    return `<div class="sr-br${d === w ? ' w' : ''}"><span>${DMG_LABEL[d]}</span><span class="sr-bt"><i class="fill-${d}" style="width:${pct.toFixed(0)}%"></i></span><b>${pct.toFixed(0)}%</b></div>`; }).join('');
+  const ammo = (label, rec, full) => `<div><span>${label}</span><b title="${escapeHtml(full)}">${escapeHtml(rec)}</b></div>`;
+  const tur = (sys) => ammo(sys[0].toUpperCase() + sys.slice(1), t[sys] ? `${t[sys].name}${t[sys].fallbackTo ? ` (${DMG_LABEL[t[sys].fallbackTo]})` : ''}` : 'no good charge', turretRecText(t[sys], w, I.second));
+  const dr = I.drones;
+  const cyno = s.cyno.length ? `<div class="sr-ccy"><span class="sr-cy">cyno</span>Can fit ${s.cyno.map(k => CYNO_WORD[k]).join(' or ')} (CCP's fitting rules; D-Scan can't say if one is fitted)</div>` : '';
+  return `<div class="sr-ct"><img class="sr-ico" src="https://images.evetech.net/types/${s.typeId}/icon?size=32" alt="" onerror="this.style.visibility='hidden'"><span class="nm">${escapeHtml(s.name)}</span><span class="sr-cn">×${s.n}</span></div>
+    <div class="sr-cm">${escapeHtml(s.group.name)} · ${sz.label}${sz.note || ''}</div>
+    <div class="sr-cw"><span class="dmg-badge ${w}">${DMG_FULL[w]}</span><span>weakest, then ${DMG_FULL[I.second]}</span></div>
+    <div class="sr-cb" title="Damage that gets through each resist, weighted by shield, armor and hull HP: higher % = less resisted">${bars}</div>
+    <div class="sr-ca">${ammo('Missile', RECS[w].missile.replace(/\s*\(.*\)$/, ''), RECS[w].missile)}${tur('laser')}${tur('hybrid')}${tur('projectile')}
+      <div><span>Drone</span><b>${escapeHtml(`${dr.primary.name} (${dr.primary.size})`)}</b></div>
+      ${dr.alt ? `<div class="sr-alt">Sentries can't chase: if it won't sit still, <b>${escapeHtml(dr.alt.name)}</b> (${escapeHtml(dr.alt.size)}) instead.</div>` : ''}</div>
+    ${cyno}
+    <div class="sr-cf">${scanData.hasDist ? `${escapeHtml(scanGridText(s, true))} · ` : ''}base hull, no fit (D-Scan shows no fits)</div>`;
+}
+function scanCardOpen(row, pin){
+  const rail = document.getElementById('scanRail'), card = document.getElementById('scanCard');
+  if(!rail || !card || !scanData) return;
+  clearTimeout(scanCard.openT); clearTimeout(scanCard.closeT);
+  const s = scanData.ships.find(x => String(x.typeId) === row.dataset.sr);
+  if(!s) return;
+  if(scanCard.row && scanCard.row !== row){ scanCard.row.setAttribute('aria-expanded', 'false'); scanCard.row.classList.remove('open'); scanCard.row.removeAttribute('aria-describedby'); }
+  if(scanCard.id !== s.typeId || card.hidden) card.innerHTML = scanCardHtml(s);
+  Object.assign(scanCard, {id: s.typeId, row, pinned: !!pin});
+  row.setAttribute('aria-expanded', 'true'); row.classList.add('open'); row.setAttribute('aria-describedby', 'scanCard');
+  card.classList.toggle('pinned', !!pin);
+  card.hidden = false;
+  // phone: in place under its row; wide: beside the row (right, else left), flipped up when it would leave the window at the bottom
+  const inline = window.matchMedia('(max-width: 760px)').matches;
+  card.classList.toggle('inline', inline); card.classList.remove('up', 'left');
+  if(inline){ row.after(card); card.style.left = card.style.top = ''; return; }
+  if(card.parentElement !== rail) rail.appendChild(card);
+  const R = rail.getBoundingClientRect(), r = row.getBoundingClientRect(), W = card.offsetWidth || 300, H = card.offsetHeight;
+  let left = r.right - R.left + 10;
+  if(r.right + 10 + W > window.innerWidth - 8){ left = r.left - R.left - W - 10; card.classList.add('left'); }
+  let top = r.top - R.top - 8;
+  if(r.top - 8 + H > window.innerHeight - 8){ top = Math.max(8 - R.top, r.bottom - R.top + 8 - H); card.classList.add('up'); }
+  card.style.left = `${Math.round(left)}px`; card.style.top = `${Math.round(top)}px`;
+}
+function scanCardClose(){
+  clearTimeout(scanCard.openT); clearTimeout(scanCard.closeT);
+  const card = document.getElementById('scanCard');
+  if(card){ card.hidden = true; card.classList.remove('pinned'); }
+  if(scanCard.row){ scanCard.row.setAttribute('aria-expanded', 'false'); scanCard.row.classList.remove('open'); scanCard.row.removeAttribute('aria-describedby'); }
+  Object.assign(scanCard, {id: null, pinned: false, row: null});
+}
+(function scanRailInit(){
+  const rail = typeof document !== 'undefined' && document.getElementById && document.getElementById('scanRail');
+  if(!rail || !rail.addEventListener || typeof document.addEventListener !== 'function' || typeof window === 'undefined' || !window.addEventListener) return;   // LESSON #36: stub DOM
+  const later = (fn, ms) => setTimeout(fn, ms);
+  rail.addEventListener('mouseover', (e) => {
+    const row = e.target.closest('.sr-row');
+    if(row){ clearTimeout(scanCard.closeT); if(scanCard.pinned || scanCard.row === row) return; clearTimeout(scanCard.openT); scanCard.openT = later(() => scanCardOpen(row, false), 120); return; }
+    if(e.target.closest('#scanCard')) clearTimeout(scanCard.closeT);
+  });
+  rail.addEventListener('mouseout', (e) => {
+    const from = e.target.closest('.sr-row, #scanCard'), to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget.closest('.sr-row, #scanCard') : null;
+    if(!from || from === to) return;
+    clearTimeout(scanCard.openT);
+    if(scanCard.pinned || (to && to.id === 'scanCard') || (to && from.id === 'scanCard' && to === scanCard.row)) return;
+    scanCard.closeT = later(() => { if(!scanCard.pinned) scanCardClose(); }, 150);
+  });
+  rail.addEventListener('focusin', (e) => { const row = e.target.closest('.sr-row'); if(row && !scanCard.pinned && scanCard.row !== row) scanCardOpen(row, false); });
+  rail.addEventListener('focusout', (e) => {
+    const to = e.relatedTarget;
+    if(scanCard.pinned || (to && to.closest && to.closest('#scanCard, .sr-row'))) return;
+    scanCardClose();
+  });
+  rail.addEventListener('click', (e) => {
+    const row = e.target.closest('.sr-row');
+    if(!row) return;
+    if(scanCard.pinned && scanCard.row === row){ scanCardClose(); return; }
+    scanCardOpen(row, true);   // a press (or a tap) keeps it open until pressed again, Esc or a press elsewhere
+  });
+  rail.addEventListener('keydown', (e) => { if(e.key === 'Escape' && scanCard.row){ const r = scanCard.row; scanCardClose(); r.focus({preventScroll: true}); e.stopPropagation(); } });
+  document.addEventListener('click', (e) => { if(scanCard.pinned && !e.target.closest('#scanCard, .sr-row')) scanCardClose(); });
+  // a resize (a phone's address bar hiding as you scroll, a window dragged) moves an open card with its row (LESSON #128)
+  window.addEventListener('resize', () => { if(scanCard.row && scanCard.row.isConnected) scanCardOpen(scanCard.row, scanCard.pinned); });
+})();
 
 function renderDebugRows(rows){
   const el = document.getElementById('debugRows');
@@ -21865,7 +22018,7 @@ function saWhyText(g){
 }
 function saPilotsHtml(c, gkey){
   const all = sa.more.has(`${gkey}|${c.id}`), shown = all ? c.pilots : c.pilots.slice(0, SA_NAMES_PER_CORP), rest = c.pilots.length - shown.length;
-  return `<div class="sa-pilots">${shown.map(({name: n}) => `<button type="button" class="sa-pilot" data-pilot="${escapeHtml(n)}" title="${escapeHtml(n)}: open in the Pilot Analyzer">${escapeHtml(n)}</button>`).join('')}${rest > 0 ? `<button type="button" class="sa-link" data-more="${escapeHtml(`${gkey}|${c.id}`)}">+${rest} more</button>` : ''}</div>`;
+  return `<div class="sa-pilots">${shown.map(({name: n, id}) => `<button type="button" class="sa-pilot" data-pilot="${escapeHtml(n)}" title="${escapeHtml(n)}: open in the Pilot Analyzer">${escapeHtml(n)}${saActMiniHtml('character', id, false)}</button>`).join('')}${rest > 0 ? `<button type="button" class="sa-link" data-more="${escapeHtml(`${gkey}|${c.id}`)}">+${rest} more</button>` : ''}</div>`;
 }
 function saGroupHtml(g, colKey){
   const gk = `${colKey}:${g.key}`;
@@ -21885,9 +22038,10 @@ function saGroupHtml(g, colKey){
       const ck = g.small ? `${c.group.kind}:${c.group.id}` : null;
       const label = g.small ? `${escapeHtml(c.group.name)} ${orgTickerHtml(c.group.kind, c.group.id)}${c.group.kind === 'alliance' ? ` · ${escapeHtml(c.name)}` : ''}`
                             : `${escapeHtml(c.name)} ${orgTickerHtml('corporation', c.id)}`;
-      return `<div class="sa-corp"><span${ck ? ` data-org="${ck}"` : ''}>${label}</span><span class="c">${c.pilots.length}</span></div>${saPilotsHtml(c, gk)}`;
+      return `<div class="sa-corp"><span${ck ? ` data-org="${ck}"` : ''}>${label}</span>${saActMiniHtml('corporation', c.id, true)}<span class="c">${c.pilots.length}</span></div>${saPilotsHtml(c, gk)}`;
     }).join('')}</div>`;
-  return `<details class="sa-g" data-sa-g="${escapeHtml(gk)}"${open ? ' open' : ''}><summary>${logo}<span class="sa-gname"><span class="nm">${title}</span>${sub}</span><span class="sa-gn">${g.n}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>${body}</details>`;
+  const act = g.npc || g.small ? '' : saActGroupHtml(g.kind, g.id);   // v2026.11.02.3: no total on a fold; each group inside shows its own
+  return `<details class="sa-g" data-sa-g="${escapeHtml(gk)}"${open ? ' open' : ''}><summary>${logo}<span class="sa-gname"><span class="nm">${title}</span>${sub}${act}</span><span class="sa-gn">${g.n}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>${body}</details>`;
 }
 function saColHtml(k, groups){
   const n = groups.reduce((s, g) => s + g.n, 0), key = k === 'h' ? 'hostile' : 'neutral';
@@ -22103,7 +22257,7 @@ function saRowHtml(x){
   const p = x.p, r = sa.rows.get(p.id) || {state: 'later'};
   const org = x.org;
   const ally = p.alliance ? orgTickerHtml('alliance', p.alliance) : '';
-  const pilot = `<span class="pr-pilot">${standMark(x.side, p.corp, p.alliance)}<span class="pr-pn"><span class="nm" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="ctx">${ally} ${escapeHtml(org.name)}</span></span></span>`;
+  const pilot = `<span class="pr-pilot">${standMark(x.side, p.corp, p.alliance)}<span class="pr-pn"><span class="nm" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}${saActMiniHtml('character', p.id, false)}</span><span class="ctx">${ally} ${escapeHtml(org.name)}</span></span></span>`;
   const open = (hull) => `data-pr-pilot="${escapeHtml(p.name)}" data-pr-hull="${escapeHtml(hull || '')}" title="${escapeHtml(`${p.name}: open in the Pilot Analyzer`)}"`;
   if(r.state === 'wait' || r.state === 'load') return `<button type="button" class="pr-row" ${open('')}>${pilot}<span class="pr-msg"><span class="busy-spin" aria-hidden="true"></span>${r.state === 'load' ? 'Looking up on zKillboard…' : 'Waiting for zKillboard…'}</span></button>`;
   if(r.state === 'later') return `<button type="button" class="pr-row" ${open('')}>${pilot}<span class="pr-msg">Not looked up yet</span></button>`;
@@ -22637,13 +22791,15 @@ async function runSystemAnalyzer(force){
   const wrong = local.trim() ? localLooksWrong(local) : null;
   const jobs = [];
   // v.82: the pilot rows prefer a ship that is on this scan; they wait for it (lastScanShips, only when the scan worked)
+  // v2026.11.02.2: with no Local to show, the scan rail takes the whole width (the owner: "Full width, columns")
+  document.getElementById('saOut').classList.toggle('wide', !local.trim() || !!wrong);
   const scanJob = scan.trim() ? runAnalysis() : null;
   sa.scanReady = (scanJob || Promise.resolve()).then(() => {
-    const shown = scanJob && getComputedStyle(document.getElementById('resultsWrap')).display !== 'none';
+    const shown = scanJob && !document.getElementById('scanRail').hidden;
     sa.scanTypes = new Set(shown ? lastScanShips.map(s => s.typeId) : []);
   });
   if(scanJob) jobs.push(scanJob);
-  else { document.getElementById('resultsWrap').style.display = 'none'; }
+  else { scanData = null; scanRailHide(); }
   if(wrong){
     setStatus(statusEl, withCode(wrong === 'fit' ? 'That\'s a ship fit, not the Local member list: use the Fit Analyzer.' : 'That looks like D-Scan results, not the Local member list: paste it in the D-Scan box.', 'SYS-02'), true);
   }else if(local.trim()){
@@ -22652,6 +22808,7 @@ async function runSystemAnalyzer(force){
       catch(e){ setStatus(statusEl, withCode('Error: ' + e.message + (e.zkbUnavailable ? '.' : '. Check your network connection to esi.evetech.net.'), errorCodeOf(e)), true); }
     }));
   }else{ sa.last = null; saRender(); }
+  saActRun(force);   // v2026.11.02.3: the system's kills and losses, alongside (not holding up) the rest
   await Promise.all(jobs);
 }
 function saClear(){
@@ -22659,7 +22816,8 @@ function saClear(){
   for(const id of ['localInput', 'dscanInput']) document.getElementById(id).value = '';
   for(const id of ['localStatus', 'scanStatus']) setStatus(document.getElementById(id), '');
   sa.last = null; sa.evidence = null; sa.evidenceErr = null; sa.gen++; sa.rows = new Map(); sa.fleet = new Map(); sa.fleetExtra = new Set(); saRender();
-  document.getElementById('resultsWrap').style.display = 'none';
+  scanData = null; scanRailHide();
+  saActGen++; sa.act = null; saActDraw(false);   // v2026.11.02.3
   showDscanFitHint('');
   document.getElementById('localInput').focus();
 }
@@ -25750,6 +25908,256 @@ function itToggle(on){ if(on) itStart(); else itStop(); }
   if(typeof document === 'undefined' || !document.getElementById || typeof location === 'undefined') return;   // LESSON #36: stub DOM
   const el = document.getElementById('siteSrc'), m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname || ''), repo = (location.pathname || '').split('/').filter(Boolean)[0];
   if(el && m && repo && /^[A-Za-z0-9._-]+$/.test(repo)) el.innerHTML = `; the <a href="https://github.com/${m[1]}/${repo}">source is on GitHub</a>`;
+})();
+// ==== KILLS AND LOSSES IN THE SYSTEM (v2026.11.02.3; Project doc roadmap/system-activity-plan.md) ====
+// The owner: "add combined losses and kills they've accrued in the past "N hours" in the system being analyzed (user's location or
+// system row linked from intel tab) ... provide two clickable links to losses and kills (provide total isk value of both). would be
+// nice to be able to do the same with hull types"; windows "1,3,6,12,24,48,72 capped at 72"; "if you have the player's location,
+// give them the option of entering a system name or using their current location ... a settings panel similar to intel"; "the
+// number will be tied to the entity represented at the top level"; hull numbers "in the non-hover content"; before the build: gate
+// systems only (the page's own names); the hull link checked by the owner by hand.
+// One zKillboard request per system per hour (its kills in the past 72 h; in a system every killmail is a kill and a loss), then
+// the killmails from ESI newest first until one is older than the window or SA_ACT_KM_MAX are read. Every row's numbers come from
+// those: a kill counts once per entity, with the kill's whole value (so totals across rows don't add up); NPC attackers count for
+// nobody. Changing the window asks zKillboard nothing.
+const SA_ACT_WIN = [1, 3, 6, 12, 24, 48, 72], SA_ACT_PAST = 259200, SA_ACT_KM_MAX = 300, SA_ACT_LIST_MAX = 1000, SA_SET_KEY = 'dscanSaSet';
+function saSetDefaults(){ return {act: true, win: 24, src: 'me', typed: ''}; }
+function saSetRead(){
+  const d = saSetDefaults();
+  try{
+    const v = JSON.parse(localStorage.getItem(SA_SET_KEY) || 'null');
+    if(v && typeof v === 'object'){
+      if(typeof v.act === 'boolean') d.act = v.act;
+      if(SA_ACT_WIN.includes(v.win)) d.win = v.win;
+      if(v.src === 'me' || v.src === 'typed') d.src = v.src;
+      if(typeof v.typed === 'string') d.typed = v.typed.slice(0, 40);
+    }
+  }catch(e){}
+  return d;
+}
+const saSet = saSetRead();
+function saSetWrite(){ try{ localStorage.setItem(SA_SET_KEY, JSON.stringify(saSet)); }catch(e){ /* private window: this visit only */ } }
+let saActGen = 0;
+sa.act = null;   // {sysId, name, from, list, at, kms, next, failed, busy, err} or {none} / {err}
+sa.setOpen = false; sa.setMsg = '';
+// Which system: an Intel Assess's, else the setting (your location from Intel, or a typed gate system)
+async function saActSystem(){
+  if(sa.intel && sa.intel.sys) return {id: sa.intel.sys, name: itSysName(sa.intel.sys), from: 'intel'};
+  if(saSet.src === 'me'){
+    if(!it.on || !it.me) return {none: 'Turn Intel on (with your character chosen) to use your location, or type a system in ⚙'};
+    const id = itMySys();
+    return id ? {id, name: itSysName(id), from: 'me'} : {none: 'Your location isn’t known yet (Intel reads it from your Local log)'};
+  }
+  const t = saSet.typed.trim();
+  if(!t) return {none: 'Pick a system in ⚙ to see kills and losses here'};
+  let N;
+  try{ N = await itLoadNames(); }catch(e){ return {err: e}; }
+  const id = N.byLower.get(t.toLowerCase());
+  return id ? {id, name: itSysName(id), from: 'typed'} : {err: codedError('SYS-03', `“${t}” isn't a system with stargates that the page knows`)};
+}
+function saActUrl(id){ return `${ZKB}/kills/systemID/${id}/pastSeconds/${SA_ACT_PAST}/`; }
+async function saActRun(force){
+  const gen = ++saActGen;
+  if(!saSet.act){ sa.act = null; saActDraw(true); return; }
+  const S = await saActSystem();
+  if(gen !== saActGen) return;
+  if(S.none || S.err){ sa.act = S; saActDraw(true); return; }
+  const A = sa.act = {sysId: S.id, name: S.name, from: S.from, list: null, at: 0, kms: [], next: 0, failed: 0, busy: true, err: null};
+  saActDraw(true);
+  try{
+    const {data, at} = await zkbCachedJson(saActUrl(S.id), force, 'system kills lookup');
+    if(gen !== saActGen) return;
+    A.list = data.filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id); A.at = at;
+  }catch(e){
+    if(gen !== saActGen) return;
+    A.err = e; A.busy = false; saActDraw(true); return;
+  }
+  await saActRead(gen);
+}
+// Read the killmails newest first until one is older than the window, or SA_ACT_KM_MAX are read (a wider window reads on from there)
+async function saActRead(gen){
+  const A = sa.act;
+  if(!A || !A.list) return;
+  const cut = Date.now() - saSet.win * 3600000;
+  A.busy = true;
+  while(A.next < A.list.length && A.kms.length + A.failed < SA_ACT_KM_MAX){
+    const last = A.kms[A.kms.length - 1];
+    if(last && Date.parse(last.killmail_time) < cut) break;
+    const take = A.list.slice(A.next, A.next + Math.min(10, SA_ACT_KM_MAX - A.kms.length - A.failed));
+    A.next += take.length;
+    const rs = await analyzeChunks(take, fetchKillmail, 5);
+    if(gen !== saActGen) return;
+    for(const r of rs){ if(r && r.km) A.kms.push(r.km); else A.failed++; }
+    saActDraw(false);
+  }
+  // stopped at the cap with more listed: the oldest one listed says how far back the list reaches (1 more ESI read)
+  if(A.next < A.list.length && A.kms.length + A.failed >= SA_ACT_KM_MAX && !A.oldestList){
+    const r = await fetchKillmail(A.list[A.list.length - 1]);
+    if(gen !== saActGen) return;
+    if(r && r.km) A.oldestList = Date.parse(r.km.killmail_time);
+  }
+  A.busy = false;
+  saActDraw(true);
+}
+// Each entity's kills and losses in the window: alliance (a), corporation (c), pilot (p), hull (h)
+function saActCount(){
+  const A = sa.act;
+  if(!A || !A.list || A.busy) return null;
+  const key = `${A.kms.length}|${saSet.win}|${Math.floor(Date.now() / 60000)}`;
+  if(A.count && A.countKey === key) return A.count;
+  const cut = Date.now() - saSet.win * 3600000, isk = new Map(A.list.map(s => [s.killmail_id, Number(s.zkb.totalValue) || 0]));
+  const C = {kills: 0, isk: 0, a: new Map(), c: new Map(), p: new Map(), h: new Map(), oldest: Infinity, inWin: 0};
+  const add = (m, id, kill, v) => { if(!id) return; let e = m.get(id); if(!e){ e = {k: 0, ki: 0, l: 0, li: 0}; m.set(id, e); } if(kill){ e.k++; e.ki += v; } else { e.l++; e.li += v; } };
+  for(const km of A.kms){
+    const t = Date.parse(km.killmail_time);
+    C.oldest = Math.min(C.oldest, t);
+    if(t < cut) continue;
+    const v = isk.get(km.killmail_id) || 0, V = km.victim || {};
+    C.kills++; C.isk += v;
+    add(C.a, V.alliance_id, false, v); add(C.c, V.corporation_id, false, v); add(C.p, V.character_id, false, v); add(C.h, V.ship_type_id, false, v);
+    const P = (km.attackers || []).filter(x => x.character_id);   // players only: an NPC is nobody's kill
+    for(const [m, f] of [[C.a, 'alliance_id'], [C.c, 'corporation_id'], [C.p, 'character_id'], [C.h, 'ship_type_id']])
+      for(const id of new Set(P.map(x => x[f]).filter(Boolean))) add(m, id, true, v);
+  }
+  A.count = C; A.countKey = key;
+  return C;
+}
+function saActLink(kind, id, which, text, title){   // zKillboard's page for that entity in this system (all time: its pages have no hour filter)
+  return zkLinkHtml(`https://zkillboard.com/${kind}/${id}/system/${sa.act.sysId}/${which}/`, title, text);
+}
+const SA_ACT_UP = '▲', SA_ACT_DOWN = '▼';
+function saActWord(n, one, many){ return `${n} ${n === 1 ? one : many}`; }
+// A group's second line ("▲ 12 kills · 3.4B  ▼ 4 losses · 820M"); null when there's nothing to say
+function saActGroupHtml(kind, id){
+  const C = saActCount();
+  if(!C) return '';
+  const e = (kind === 'alliance' ? C.a : C.c).get(id);
+  if(!e) return `<span class="sa-act-g quiet">quiet here in ${saSet.win} h</span>`;
+  const k = e.k ? saActLink(kind, id, 'kills', `${SA_ACT_UP} ${saActWord(e.k, 'kill', 'kills')} · ${itIsk(e.ki)}`, `Their kills in ${sa.act.name} (zKillboard shows all time)`) : '';
+  const l = e.l ? saActLink(kind, id, 'losses', `${SA_ACT_DOWN} ${saActWord(e.l, 'loss', 'losses')} · ${itIsk(e.li)}`, `Their losses in ${sa.act.name} (zKillboard shows all time)`) : '';
+  return `<span class="sa-act-g">${k}${l}</span>`;
+}
+// Compact numbers for a corporation or pilot: "▲3 ▼1" (links for a corporation; text inside a pilot's button, which can't hold links)
+function saActMiniHtml(kind, id, links){
+  const C = saActCount();
+  if(!C) return '';
+  const e = (kind === 'character' ? C.p : C.c).get(id);
+  if(!e) return '';
+  const t = `In ${sa.act.name}, last ${saSet.win} h: ${saActWord(e.k, 'kill', 'kills')} (${itIsk(e.ki)} ISK), ${saActWord(e.l, 'loss', 'losses')} (${itIsk(e.li)} ISK)`;
+  if(!links) return `<span class="sa-act-m" title="${escapeHtml(t)}">${e.k ? `${SA_ACT_UP}${e.k}` : ''}${e.k && e.l ? ' ' : ''}${e.l ? `${SA_ACT_DOWN}${e.l}` : ''}</span>`;
+  return `<span class="sa-act-m">${e.k ? saActLink(kind, id, 'kills', `${SA_ACT_UP}${e.k}`, t) : ''}${e.l ? saActLink(kind, id, 'losses', `${SA_ACT_DOWN}${e.l}`, t) : ''}</span>`;
+}
+// A hull row's second line in the scan rail ("▼ 3 lost · 120M  ▲ on 14 kills · 2.1B"), always shown when there's something
+function saActHullHtml(typeId){
+  const C = saActCount();
+  if(!C) return '';
+  const e = C.h.get(typeId);
+  if(!e) return '';
+  const nm = (scanData && (scanData.ships.find(s => s.typeId === typeId) || {}).name) || 'this hull';
+  return `<div class="sr-act">${e.l ? saActLink('ship', typeId, 'losses', `${SA_ACT_DOWN} ${e.l} lost · ${itIsk(e.li)}`, `${nm} losses in ${sa.act.name} (zKillboard shows all time)`) : ''}${e.k ? saActLink('ship', typeId, 'kills', `${SA_ACT_UP} on ${saActWord(e.k, 'kill', 'kills')} · ${itIsk(e.ki)}`, `Kills with a ${nm} on them in ${sa.act.name} (zKillboard shows all time)`) : ''}</div>`;
+}
+function saActSummaryHtml(){
+  const A = sa.act;
+  if(!A) return '';
+  if(A.none) return `<span class="sa-act-note">${escapeHtml(A.none)}</span>`;
+  if(A.err && !A.list && !A.sysId) return `<span class="sa-act-note err">${escapeHtml(withCode(`Kills and losses: ${A.err.message}`, errorCodeOf(A.err)))}</span>`;
+  const where = `<b>${escapeHtml(A.name)}</b>${A.from === 'intel' ? ' (from Intel)' : A.from === 'me' ? ' (your location)' : ''}`;
+  const head = `Last ${saSet.win} h in ${where}`;
+  const zk = zkLinkHtml(`https://zkillboard.com/system/${A.sysId}/`, `${A.name}`);
+  if(A.err) return `<span>${head} · <span class="err">${escapeHtml(withCode(`zKillboard didn't answer: ${A.err.message}`, errorCodeOf(A.err)))}</span></span>${zkbRetryHtml('data-sa-act="actretry"')}`;
+  if(A.busy) return `<span>${head} · <span class="busy-spin" aria-hidden="true"></span>${A.list ? `reading killmails ${A.kms.length + A.failed} of ${Math.min(A.list.length, SA_ACT_KM_MAX)}…` : 'asking zKillboard…'}</span>`;
+  const C = saActCount();
+  if(!C.kills) return `<span>${head}: no kills or losses</span>${zk}`;
+  const notes = [];
+  const all = A.next >= A.list.length, cut = Date.now() - saSet.win * 3600000;
+  const oldestList = all ? C.oldest : A.oldestList || null;   // how far back zKillboard's list reaches, when known
+  if(A.list.length >= SA_ACT_LIST_MAX && oldestList && oldestList > cut) notes.push(`the newest ${SA_ACT_LIST_MAX.toLocaleString()} kills only reach back ${Math.max(1, Math.round((Date.now() - oldestList) / 3600000))} h`);
+  const capped = A.kms.length + A.failed >= SA_ACT_KM_MAX && !all && C.oldest >= cut;
+  if(capped) notes.push(saSet.win === 72 || (oldestList && oldestList >= cut) ? `counted from the newest ${SA_ACT_KM_MAX} of ${A.list.length.toLocaleString()}` : `counted from the newest ${SA_ACT_KM_MAX}; there are more in ${saSet.win} h`);
+  if(A.failed) notes.push(`${A.failed} killmail${A.failed === 1 ? '' : 's'} couldn't be read`);
+  return `<span>${head} · <b>${saActWord(C.kills, 'kill', 'kills')}</b> · <b>${itIsk(C.isk)}</b> ISK destroyed</span>${zk}${notes.length ? `<span class="sa-act-note">${escapeHtml(notes.join(' · '))}</span>` : ''}`;
+}
+// full: the rows too (once the numbers are in, or they went away); else just the summary line (progress)
+function saActDraw(full){
+  const el = document.getElementById('saAct');
+  if(el){
+    const h = saActSummaryHtml();
+    el.hidden = !h;
+    el.innerHTML = h;
+  }
+  if(!full) return;
+  if(sa.last) saRender();
+  if(scanData) scanRailRender();
+}
+// ---- the System Analyzer's settings (⚙), like Intel's ----
+function saSetHtml(){
+  const meOk = it.on && it.me, sel = (v) => v === saSet.src ? ' checked' : '';
+  const t = `${cardName('sysan')} settings`;
+  return `<div role="dialog" aria-label="${escapeHtml(t)}"><div class="it-h"><h3>${escapeHtml(t)}</h3><span class="sa-sp"></span><button type="button" class="x-close info-close" data-sa-act="gear" aria-label="Close" title="Close">×</button></div>
+    <div class="it-box">
+      <div class="k">Kills and losses here</div>
+      <label><input type="checkbox" class="dmg-sw" role="switch" data-sa-set="act"${saSet.act ? ' checked' : ''}> Show the system's kills and losses (1 zKillboard request per system an hour)</label>
+      <label>In the last <select data-sa-set="win" aria-label="Hours to count">${SA_ACT_WIN.map(h => `<option value="${h}"${h === saSet.win ? ' selected' : ''}>${h} h</option>`).join('')}</select></label>
+      <div class="k sa-set-k">System</div>
+      <label class="${meOk ? '' : 'sa-dis'}"><input type="radio" name="saSrc" value="me" data-sa-set="src"${sel('me')}${meOk ? '' : ' disabled'}> My location${meOk ? (itMySys() ? `: ${escapeHtml(itSysName(itMySys()))}` : ' (not known yet)') : ' (turn Intel on to use your location)'}</label>
+      <label><input type="radio" name="saSrc" value="typed" data-sa-set="src"${sel('typed')}> Typed: <input type="text" class="sa-sys-in" data-sa-set="typed" list="saSysList" value="${escapeHtml(saSet.typed)}" placeholder="System name" aria-label="System name" autocomplete="off" spellcheck="false"></label>
+      <datalist id="saSysList"></datalist>
+      ${sa.setMsg ? `<div class="c err">${escapeHtml(sa.setMsg)}</div>` : ''}
+      <div class="c">${sa.intel ? `An Intel Assess uses its own system (now ${escapeHtml(itSysName(sa.intel.sys))}).` : 'An Intel Assess always uses the system it sends.'} Systems with stargates only.</div>
+    </div></div>`;
+}
+function saSetRender(focusSel){
+  const pop = document.getElementById('saPop'), gear = document.getElementById('saGear');
+  if(!pop) return;
+  pop.hidden = !sa.setOpen;
+  if(gear) gear.setAttribute('aria-expanded', sa.setOpen ? 'true' : 'false');
+  if(!sa.setOpen){ pop.innerHTML = ''; return; }
+  pop.innerHTML = saSetHtml();
+  if(focusSel){ const f = pop.querySelector(focusSel); if(f) f.focus({preventScroll: true}); }
+  itLoadNames().then(N => {   // the names for the typed box's suggestions, once
+    const dl = document.getElementById('saSysList');
+    if(dl && !dl.childElementCount) dl.innerHTML = [...N.byId.values()].filter(Boolean).sort().map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+  }, () => {});
+}
+function saSetToggle(open){
+  sa.setOpen = open === undefined ? !sa.setOpen : open; sa.setMsg = '';
+  saSetRender(sa.setOpen ? '[data-sa-set="act"]' : null);
+  if(!sa.setOpen){ const g = document.getElementById('saGear'); if(g) g.focus({preventScroll: true}); }
+}
+async function saSetChange(t){
+  const k = t.dataset.saSet, shown = !!(sa.last || scanData);
+  if(k === 'act'){ saSet.act = t.checked; saSetWrite(); if(!saSet.act){ saActGen++; sa.act = null; saActDraw(true); } else if(shown) saActRun(false); return; }
+  if(k === 'win'){
+    saSet.win = Number(t.value); saSetWrite();
+    if(sa.act && sa.act.list){ const A = sa.act; A.count = null; saActDraw(true); if(!A.busy && A.next < A.list.length) await saActRead(saActGen); }
+    return;
+  }
+  if(k === 'src'){ saSet.src = t.value; saSetWrite(); if(shown) saActRun(false); return; }
+  if(k === 'typed'){
+    const v = t.value.trim();
+    if(!v){ saSet.typed = ''; saSetWrite(); sa.setMsg = ''; if(shown && saSet.src === 'typed') saActRun(false); return; }
+    let N; try{ N = await itLoadNames(); }catch(e){ sa.setMsg = withCode(e.message, errorCodeOf(e)); saSetRender('[data-sa-set="typed"]'); return; }
+    const id = N.byLower.get(v.toLowerCase());
+    if(!id){ sa.setMsg = withCode(`“${v}” isn't a system with stargates that the page knows`, 'SYS-03'); saSetRender('[data-sa-set="typed"]'); return; }
+    saSet.typed = itSysName(id); saSet.src = 'typed'; saSetWrite(); sa.setMsg = '';
+    saSetRender('[data-sa-set="typed"]');
+    if(shown) saActRun(false);
+  }
+}
+(function saSetInit(){
+  const pop = typeof document !== 'undefined' && document.getElementById && document.getElementById('saPop');
+  if(!pop || !pop.addEventListener || typeof document.addEventListener !== 'function') return;   // LESSON #36: stub DOM
+  const gear = document.getElementById('saGear');
+  gear.innerHTML = IT_GEAR; gear.setAttribute('aria-label', `${cardName('sysan')} settings`); gear.title = `${cardName('sysan')} settings`;
+  gear.addEventListener('click', () => saSetToggle());
+  pop.addEventListener('click', (e) => { if(e.target.closest('[data-sa-act="gear"]')) saSetToggle(false); });
+  pop.addEventListener('change', (e) => { const t = e.target.closest('[data-sa-set]'); if(t) saSetChange(t); });
+  pop.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){ e.stopPropagation(); saSetToggle(false); }
+    else if(e.key === 'Enter' && e.target.matches('[data-sa-set="typed"]')){ e.preventDefault(); saSetChange(e.target); }
+  });
+  const act = document.getElementById('saAct');
+  act.addEventListener('click', (e) => { if(e.target.closest('[data-sa-act="actretry"]')) saActRun(true); });
 })();
 </script>
 

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-02 — Ships on Scan</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Ships on Scan</h1>
+<p><span class="tag">System Analyzer</span><span class="tag">D-Scan</span> 2026-11-02 &middot; <code>v2026.11.02.2</code></p>
+
+<h2>Why</h2>
+<p>The owner: "plan changes to the system analyzer that includes a breakdown of hulls and their counts (no pilot association, just the hulls and their numbers) will make use of any d-scan data provided by the user." From the mockups: "placement of the new card like B but the resistance info and weaknesses become a little hover card instead. frees up a lot of space on the page", then "I like option 1" (the rail on the left, Local's results as they were on the right). The research session wrote the plan (Project doc <code>roadmap/scan-rail-plan.md</code>, build queue 005). Before the build he settled its open calls: D-Scan alone takes the full width ("Full width, columns"), a press pins the card ("Pin the card open"), a "-" distance is its own count ("Its own count"), and "some industrial ships can light cynos so let's have a 'Cyno Capable' category", then "Role + tag".</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Ships on Scan</b> (the card's new name, was On Scan): a rail about 320 px wide, left of Local's results and sticky while they scroll. With no Local pasted it takes the whole width with its hulls in 2–3 columns; on a phone it comes first, full width. The old per-type cards are gone.</li>
+<li><b>The head:</b> ships on scan, hulls, on grid (within 10,000 km), off grid (AU, or further), and "no reading" for D-Scan's "-". A scan with no distances (typed names) shows no grid figures at all. Then a role bar with its legend.</li>
+<li><b>Roles</b> from each hull's ESI group: Logistics, Tackle, EWAR, Command, Bombers, Capitals, DPS, <b>Cyno Capable</b>, <b>Non-combat</b>. Which hulls can fit a cyno comes from CCP's data: the three cynosural field generators' fitting attributes, generated into the page (<code>tools/gen_cyno_table.py</code>, in the update chain), never typed by hand. Cyno Capable: hulls that would otherwise be DPS or Non-combat (haulers, Blockade Runners, Deep Space Transports, Covert Ops, Venture, Prospect). Combat hulls that can fit one keep their role and get a small <b>cyno</b> tag: Force Recons, Heavy Interdictors, Stealth Bombers, Black Ops, Strategic Cruisers, and the Etana and Rabisu, which CCP files as Logistics. Non-combat: mining, Orca and Rorqual, freighters, shuttles, capsules, rookie ships, yachts.</li>
+<li><b>Each row:</b> icon, name, the cyno tag, a small weakest-type badge, "N on grid", the count. Biggest first within a role.</li>
+<li><b>The hover card</b> (hover, keyboard focus, or a press that keeps it open; Esc and a press elsewhere close it; one at a time, above Local's cards, flipping up near the window's bottom; under its row on a phone): resists weighted by shield, armor and hull HP, weakest and second, a charge name per weapon system with the old card's full sentence on hover, the best drone and the sentry note, the cyno line, the grid line. Its numbers are the old cards' own: compared for all 21 hulls of the test scan against v2026.11.02.1, none differed.</li>
+<li><b>The footer:</b> not ships (group on hover), celestials, fitting items, unrecognized names, as short lines.</li>
+<li>Unchanged: the scan still feeds the Pilot rows (<code>lastScanShips</code>, <code>sa.scanTypes</code>), Intel's Assess, the fit-paste guard (DSCAN-01). No new requests.</li>
+</ul>
+
+<h2>Choices made while building</h2>
+<ul>
+<li>The Etana: in the decision it was listed with the Cyno Capable hulls, but CCP files it as a Logistics cruiser, so it stays Logistics with the cyno tag, like the Rabisu.</li>
+<li>Nine roles can't all be told apart by colour (the dataviz palette check fails on Logistics green next to Tackle amber for some colour blindness, and on Command next to Bombers). Every role is also named in the legend and its heading, and the bar has gaps; colours come only from the page's existing tokens.</li>
+<li>An open card moves with its row when the window resizes instead of closing (a phone resizes when its address bar hides during a scroll; LESSON #128).</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li>New <code>tools/page_checks/scan_rail_check.py</code> on a made-up 52-line scan, everything expected worked out from the SDE: head, roles and cyno tags, order, badges, counts, footer, four hover cards, hover / focus / press / Esc / one at a time / above Local / flip / resize, every layout, 390 px. Fails on v2026.11.02.1. 24 mutants: 23 caught; 1 equivalent (the row-to-card guard, which the card's own mouseover already covers). A zero-grace mutant was only caught after the check moved the pointer in small steps across the gap between row and card.</li>
+<li>Updated: <code>scan_contacts_check.py</code> (the "Not ships:" line), <code>system_analyzer_check.py</code> (Ships on Scan full width with no Local), <code>layout_check.py</code> (long names inside the rail and its card); <code>check_picker.py</code> maps the rail's names to the system area; <code>roadmap/card-names.md</code>.</li>
+<li>Run: the full run first failed the node suites on one cause, the rail's init calling <code>document.addEventListener</code> in their stub DOM (LESSON #36 again; guarded). Again: 12 lints, the pyfa chain and 64 page checks, 0 failed; request_gates_check flaky under load, passed alone.</li>
+<li>Page size: 631,937 → 637,068 bytes gzipped (+5.0 KB, +0.8%; mostly comments, the role table and the info text; the plan hoped for flat). Drawing a 100-hull scan: 11.7 ms → 4.9 ms.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #128: a full-page screenshot resizes the window, and so does a phone's address bar: a popup that closes on resize disappears from the picture and from under the reader's thumb. Move it with its opener instead, and shoot the viewport to look at one.</p>
+</body></html>

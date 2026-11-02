@@ -47,6 +47,7 @@ pilot name.", "Paste a fit first.") carry no code: they are instructions, not er
 |---|---|---|---|---|---|---|
 | SYS-01 | Local lookup failed (affiliations) | System Analyzer status line, and setting your pilot in Standings | ESI's POST /characters/affiliation/ failed (no response or an error status). | The status in the message; ESI's status page. | Without each pilot's corporation and alliance nobody can be sorted into a side. | v2026.10.14.81 ([2026-10-27_system-analyzer-local-and-your-side.html](dscan-tool-history/2026-10-27_system-analyzer-local-and-your-side.html)) |
 | SYS-02 | Not a Local member list | System Analyzer status line | The Local box holds D-Scan rows (tab-separated) or a ship fit (EFT). | Paste the D-Scan in the D-Scan box, a fit in the Fit Analyzer. | Names from a scan or a fit aren't pilots; looking them up would only fill the not-found list. | v2026.10.14.81 ([2026-10-27_system-analyzer-local-and-your-side.html](dscan-tool-history/2026-10-27_system-analyzer-local-and-your-side.html)) |
+| SYS-03 | Not a system the page knows | System Analyzer settings (⚙), the typed system | The typed name isn't one of the systems with stargates in the page's own table (wormhole systems aren't in it). | The spelling; pick the name from the suggestions. | Kills and losses are asked of zKillboard by system ID; a name the page can't place would ask for the wrong system or none. | v2026.11.02.3 ([2026-11-02_kills-and-losses-in-the-system.html](dscan-tool-history/2026-11-02_kills-and-losses-in-the-system.html)) |
 
 ## Your Side
 
