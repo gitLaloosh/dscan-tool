@@ -30,7 +30,7 @@ PC = os.path.join(ROOT, 'tools', 'page_checks')
 AREAS = {
     'affiliation_check': ['pilot'], 'assumed_charge_check': ['fit', 'calc'], 'busy_check': ['pilot'],
     'card_width_check': ['layout'], 'charges_check': ['fit', 'calc'], 'damage_chart_check': ['myship', 'calc'],
-    'dossier_check': ['pilot'], 'dossier_kills_check': ['pilot'], 'dossier_pin_check': ['pilot', 'system'], 'kill_groups_check': ['intel', 'pilot', 'system'], 'alert_sound_check': ['intel', 'layout'], 'extension_check': ['pilot', 'extension'],
+    'dossier_check': ['pilot'], 'dossier_kills_check': ['pilot'], 'dossier_pin_check': ['pilot', 'system'], 'kill_groups_check': ['intel', 'pilot', 'system'], 'alert_sound_check': ['intel', 'layout'], 'fleet_fit_budget_check': ['pilot', 'system', 'intel'], 'extension_check': ['pilot', 'extension'],
     'fight_strip_check': ['myship', 'calc'], 'fighter_application_check': ['fit', 'calc'], 'fighter_bay_check': ['fit', 'calc'],
     'fighter_bombs_check': ['fit', 'calc'], 'fighter_picks_check': ['myship', 'calc'], 'fighter_tile_check': ['myship', 'calc'],
     'fleet_kill_check': ['pilot', 'system'], 'fleet_view_check': ['system'], 'header_check': ['layout', 'intel'],

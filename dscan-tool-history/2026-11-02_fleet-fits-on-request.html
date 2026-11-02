@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-02 — Fleet fits on request</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; margin:8px 0;} td,th{border:1px solid #ddd; padding:4px 8px; text-align:left; font-size:14px;} th{background:#f6f6f6;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fleet fits on request</h1>
+<p><span class="tag">Fleet</span><span class="tag">zKillboard</span> 2026-11-02 &middot; <code>v2026.11.02.1</code></p>
+
+<h2>Why</h2>
+<p>The owner, looking at a 48-pilot fleet over 4 kills: "figure out how we can best avoid hitting our 10 minute cap on zkill requests when dealing with fleets this large. loading the list of killmail participants is going to quickly drain our zkill tank." The Fleet tab asked zKillboard once per pilot as soon as it opened (plus once per alliance and hull for pilots with no loss of their own), so one big fleet cost about half of the page's 100 requests per 10 minutes. The research session wrote the plan with his answers (Project doc <code>roadmap/fleet-fit-budget-plan.md</code>, build queue item 004): "what if we didn't automatically load the fits? default to ship type/weapon and damage on the kill"; "a column added to the far right that has a Load All button/link and the rows have a Load button/link"; "give an option to use common fits for large fleets"; "anything above small gang should prob go into the common/alliance fits default"; "25 seems like a good starting point". Before building he chose where the damage goes (a screenshot: its own column beside the ship) and that rows "Stay put until all load".</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Nothing is asked of zKillboard when a fleet opens.</b> Fits a share link carries load at once (the killmails come from ESI), and so do fits kept from the last hour: a pilot's hull losses are now kept an hour in IndexedDB like every other zKillboard answer (the Pilot Analyzer gains too; Refresh losses still forces), and a cache-only pass on open loads every pilot it can settle without asking.</li>
+<li><b>Damage</b> has its own column beside the ship: what each pilot did on this kill, its share of the damage the ship took, and the final blow. Free, from the killmail. Rows are in that order until every pilot is in, then sort once by DPS as before (the dossier's pilot first either way).</li>
+<li><b>The Fit column</b> on the far right. Unloaded: <b>Load</b> (its hover gives the cost: 1 request, 2 when they have no loss in that hull and their alliance's list isn't kept). Loaded: where the fit came from, short (<b>own</b>, <b>alliance</b>, <b>corp</b>, <b>unknown</b>; the whole sentence on hover), and <b>own?</b> on any row without their own fit (1 request). A row is now its button plus this cell, so no button sits inside another.</li>
+<li><b>Load all</b>, above the column, with its choice of fits and its exact cost: e.g. "Load all (7 requests · 62 left)". <b>Common fits</b> (the choice above 10 pilots in ships) asks once per alliance (or corporation) and hull; anyone who is a victim in that list gets their own newest loss from it at no cost; everyone else the list's most common fit; an NPC corporation's pilots stay unknown with own?. <b>Own fits</b> (up to 10) is the per-pilot rule, "N requests, up to M".</li>
+<li><b>The reserve:</b> Load all leaves 25 of the 100 for the rest of the page. The request that would eat into them is refused at the moment it's counted, in the page's zKillboard queue, so it stops at exactly 75 even with three lookups in the air. It then shows "Paused to keep 25 lookups · continues in m:ss" (disabled, on the page's one countdown timer) and carries on by itself when older requests age out. A row's Load and own? are presses of their own and may use the rest.</li>
+<li><b>The summary</b> before any fit shows what's free (pilots in ships, their hulls, logistics, the damage on the kill) and points to Load all; with some fits in it adds up as before, its fits line saying how many are their own (and how many were found in alliance losses) and how many aren't loaded.</li>
+<li>The Systems tab's fleet section is unchanged (the owner: "leave it as is for now"): <code>saHullFits</code> keeps its answer; the killmails it read ride along out of sight, for the Fleet tab's free own fits. The share link is unchanged; members never loaded aren't in it and open unloaded.</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li>New <code>tools/page_checks/fleet_fit_budget_check.py</code> on a made-up 48-pilot kill (7 alliance-and-hull pairs, 2 NPC-corporation pilots), stand-ins counting every zKillboard request: 0 on open; the Damage column and its order; Load all, common fits: exactly the 7 pair lookups, the 5 victims their own fits; own? 1 request; kept across a reload with 0 requests, unloaded an hour later; from 70 spent, stops at exactly 75 with the countdown, a row's Load still asks, and it finishes by itself; own fits up to 10, common from 11, the choice followed; a share link's fit with no request; 390 px. Fails on v2026.11.01.8. 24 mutants: 22 caught (3 by a timeout), 2 not: the saved per-list answer (speed only, the same output) and the shared promise for two callers asking at once (it closes a gap too short to hit on purpose).</li>
+<li>fleet_kill_check, fleet_vs_check and outside_links_check now press Load all; fleet_kill_check's 21-pilot kill is common fits in 1 request (was "Load 6 more pilots").</li>
+<li><code>check_request_gates.py</code>: the reserve may only lower the cap; its body finder now skips a function's parameters (LESSON #126).</li>
+<li>Caught while building: the request-gates lint read <code>zkbFetch(url, o = {})</code>'s default <code>{}</code> as its body (LESSON #126); the new check's share link opened on the same page changed only the fragment, so nothing loaded (LESSON #127); at 390 px the fits choice stayed 30 px tall under a more specific rule.</li>
+<li>Run: the full run (fetchLossesStubs sits in the region that chooses all): 12 lints, the pyfa chain and 63 page checks, 0 failed, 0 flaky. The Systems tab's fleet checks (fleet_view_check, system_analyzer_check) pass unchanged.</li>
+<li>Page size: 625,368 → 631,937 bytes gzipped (+6.6 KB, +1.05%; 2,113,523 → 2,135,510 raw, mostly the comments and the info text).</li>
+<li>Perf harness (Project <code>roadmap/perf-harness/</code>), before (v2026.11.01.8) and after in one session: Intel off 0.14% / 0.12% of a core; Intel on, tab visible, 14 min: 2.74% / 2.69% main thread, 4.7% / 4.7% all Chromium, layouts 126 / 125 a minute. Unchanged, as expected: nothing here runs on Intel's tick, and the Fleet tab adds no timer of its own (the pause uses one setTimeout and the page's existing countdown). Results: Project <code>roadmap/perf-harness/results-v2026.11.02.1.md</code>.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #126: a lint that finds a function's body at its first brace reads a default object parameter as the body; skip the parameters first, and when a lint fails on a change that didn't touch what it guards, read what it read before changing code to please it. LESSON #127: going to the same page with only a new #fragment doesn't load it again; a check that means "someone opens this link" opens a new page.</p>
+</body></html>

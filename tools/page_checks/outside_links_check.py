@@ -104,6 +104,8 @@ with sync_playwright() as p:
     check(g and 'zKillboard opens without asking' in g and g2 == ['[]', False] and g3, f'under Intel\'s gear, "Ask again" brings the question back {g!r} {g2} {g3}')
     # the Fleet tab, from the fleet icon
     pg.click(f'#pdk-{M.byname["Curse"]} button.pdk-fb[data-pd-fleet="{M.FLEET_KILL}"]'); pg.wait_for_timeout(300)
+    pg.wait_for_function("() => fk.ready && !fk.checking", timeout=120000)   # v2026.11.02.1: the fits load on request
+    pg.click('#fleetPanel [data-fk-loadall]')
     pg.wait_for_function("() => { const c = document.querySelector('#fleetPanel .fk-sum .pr-head .ctx'); return c && /^(\\d+) of \\1 looked up/.test(c.textContent); }", timeout=120000)
     F = pg.evaluate("""() => { const a = document.querySelector('#fleetPanel .fk-acts a.zk-ic').getBoundingClientRect(), c = document.querySelector('#fleetPanel [data-fk-close]').getBoundingClientRect();
       return [document.querySelector('.tab-btn.active').textContent, fk.killId, (document.querySelector('#fleetPanel .fk-sub .it-sn') || {className: ''}).className, Math.abs((a.top + a.bottom) / 2 - (c.top + c.bottom) / 2), fk.victim.corp,

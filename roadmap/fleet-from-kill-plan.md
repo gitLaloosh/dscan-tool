@@ -95,3 +95,26 @@ spec in the Project doc roadmap/kill-groups-impact.md section 0, mockup claude/r
 - `tools/page_checks/kill_groups_check.py`; intel_fleet_check, fleet_kill_check and close_buttons_check extended; `check_ui_rules.py` (6).
 - v2026.11.01.7 (the owner: "we should swap the fleet size and isk value placement"): each kill's pilots, then its ISK, so the ISK sits
   under its fleet heading's ISK (wide; at 390 px the ISK last on the second line).
+
+## Fits on request, common fits for big fleets (v2026.11.02.1)
+
+Project doc roadmap/fleet-fit-budget-plan.md (decisions D1–D6, build queue 004). The owner: "figure out how we can best avoid hitting
+our 10 minute cap on zkill requests when dealing with fleets this large"; "what if we didn't automatically load the fits? default to
+ship type/weapon and damage on the kill"; "a column added to the far right that has a Load All button/link and the rows have a Load
+button/link"; "give an option to use common fits for large fleets"; "25 seems like a good starting point".
+- Opening a fleet asks zKillboard nothing. Fits the share link carries (ESI) and fits kept from the last hour (a cache-only pass:
+  pilot hull losses now kept 1 h in IndexedDB 'zkb' like every other zKillboard answer) load at once.
+- **Damage** gets its own column beside the ship (where the owner's screenshot put it): what they did on this kill, its share of
+  the ship's, the final blow. Rows stay in damage order until every pilot is in ("Stay put until all load"), then sort by DPS.
+- **Fit column** on the far right: Load per row (1 request, 2 when the alliance's list isn't kept); once loaded, own / alliance /
+  corp / unknown (the whole sentence on hover) and own? (their own losses, 1 request). A row is its button plus this cell, never a
+  button in a button.
+- **Load all** above the column: Common fits, the choice above 10 pilots (`FK_COMMON_FROM` 11), one request per alliance-and-hull
+  pair not kept, and a pilot who is a victim in that list gets their own loss from it at no cost; Own fits (up to 10), the per-pilot
+  rule, "N requests, up to M". The label is exact and says what's left. It keeps `FK_ZKB_RESERVE` (25) of the 100: the request that
+  would eat into it is refused as it's counted in the queue (`zkbFetchNow`'s `o.reserve`), so it stops at exactly 75; then a
+  countdown and one timer carry on. A row's Load and own? may use the whole 100.
+- The summary before fits: pilots in ships, hulls, logistics, damage on the kill, "Load all" for the rest.
+- The Systems tab fleet section unchanged (D5): `saHullFits` keeps its output; the killmails it read are a non-enumerable `.losses`.
+- `tools/page_checks/fleet_fit_budget_check.py`; fleet_kill_check, fleet_vs_check and outside_links_check press Load all;
+  `check_request_gates.py` allows the reserve (it can only lower the cap).

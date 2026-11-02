@@ -40,7 +40,10 @@ SIDE = {'pilot': {'id': 90000001, 'name': 'Test Pilot'}, 'corp': {'id': M.CORP, 
         'friendly': [{'id': M.THIRD, 'name': 'Random Third Party', 'kind': 'alliance'}], 'hostile': [{'id': M.CRTS, 'name': 'Crimson Tide Syndicate', 'kind': 'alliance'}], 'rows': 15}
 def idle(pg):
     pg.wait_for_function("() => !document.querySelector('#fitBtn').disabled && document.querySelector('#pilotBusy').hidden", timeout=120000); pg.wait_for_timeout(400)
-def fleet_done(pg):
+def fleet_done(pg, timeout=120000):
+    # v2026.11.02.1: nothing is looked up on open; once the fits kept from the last hour are in, Load all (when anything is left)
+    pg.wait_for_function("() => fk.ready && !fk.checking", timeout=timeout)
+    if pg.query_selector('#fleetPanel [data-fk-loadall]:not([disabled])'): pg.click('#fleetPanel [data-fk-loadall]')
     pg.wait_for_function("() => { const c = document.querySelector('#fleetPanel .fk-sum .pr-head .ctx'); return c && /^(\\d+) of \\1 looked up/.test(c.textContent); }", timeout=120000)
     pg.wait_for_timeout(600)
 # Worked out here, not with the page's fkReach / fkSummary: each fit's main weapon is its range entry whose ammo does the most DPS

@@ -46,7 +46,10 @@ def enclosing(starts, pos):
 def body(s, name):
     m = re.search(r'^\s*(?:async\s+)?function\s+' + re.escape(name) + r'\s*\(', s, re.M)
     if not m: return None
-    i = s.index('{', m.end()); d = 0
+    i, d = m.end(), 1   # v2026.11.02.1: past the parameters first (a default like o = {} has a brace of its own)
+    while d:
+        d += {'(': 1, ')': -1}.get(s[i], 0); i += 1
+    i = s.index('{', i); d = 0
     for j in range(i, len(s)):
         if s[j] == '{': d += 1
         elif s[j] == '}':
@@ -79,7 +82,11 @@ if not (re.search(r'zkbLastStart\s*\+\s*ZKB_SPACING_MS\s*-\s*Date\.now\(\)', q) 
     problems.append('zkbFetch no longer queues one at a time, ZKB_SPACING_MS after the last start by Date.now()')
 mm = re.search(r'const ZKB_SPACING_MS = (\d+);', src)
 if not mm or int(mm.group(1)) < 1000: problems.append(f'ZKB_SPACING_MS is {mm and mm.group(1)} (at least 1000 ms)')
-if not re.search(r'if\(!zkbBudgetSpend\(\)\)', body(src, 'zkbFetchNow') or ''): problems.append('zkbFetchNow no longer spends the ZKB_BUDGET')
+# v2026.11.02.1: a caller may keep a reserve (the Fleet tab's Load all), which only ever lowers the cap, never raises it
+if not re.search(r'if\(!zkbBudgetSpend\((?:ZKB_BUDGET - \(o\.reserve \|\| 0\))?\)\)', body(src, 'zkbFetchNow') or ''): problems.append('zkbFetchNow no longer spends the ZKB_BUDGET')
+_sp = re.search(r'function zkbBudgetSpend\((lim = ZKB_BUDGET)?\)\{', src)
+if not _sp or not re.search(r'if\(a\.length >= ' + ('lim' if _sp.group(1) else 'ZKB_BUDGET') + r'\) return false;', body(src, 'zkbBudgetSpend') or ''):
+    problems.append('zkbBudgetSpend no longer caps at ZKB_BUDGET (or a lower limit its caller passes)')
 
 # R2Z2: every request waits its turn at the gate
 b = body(src, 'itR2Fetch') or ''

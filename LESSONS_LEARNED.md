@@ -158,6 +158,8 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #115 Time what the code promises where it makes the promise: a later step's clock flakes on a busy machine.
 - #116 Check the checks' data is the verified version: an older pyfa checkout passed nearly every check.
 - #117 A button laid under other controls: click it where nothing sits on top, or the click lands on what does.
+- #126 A lint that finds a function's body at its first brace reads a default object parameter as the body: skip the parameters first.
+- #127 Going to the same page with only a new #fragment doesn't load it again: a check that means a fresh load opens a new page.
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1032,6 +1034,23 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 127. Going to the same page with only a new #fragment doesn't load it again: a check that means a fresh load opens a new page
+
+- **What happened (v2026.11.02.1):** fleet_fit_budget_check opened a share link with `pg.goto(page + '#fleet=…')` on a tab already
+  showing that page. Only the fragment changed, so the browser scrolled instead of loading: the page never read the link, and the
+  check waited a minute for a fleet that was never opened.
+- **Do this instead:** for "someone opens this link", open a new page (or a new context) and go there; `reload()` when the same
+  page must load again. fleet_kill_check already opened its share link in a fresh context.
+
+## 126. A lint that finds a function's body at its first brace reads a default object parameter as the body: skip the parameters first
+
+- **What happened (v2026.11.02.1):** `zkbFetch(url, o = {})` gained an options parameter for the Fleet tab's reserve.
+  check_request_gates.py's `body()` took the first `{` after the name, the `{}` of the default, as the whole function, and reported
+  that zkbFetch no longer queued its requests, when nothing in the queue had changed.
+- **How it was caught:** the lint's own run, before any page check.
+- **Do this instead:** `body()` now walks past the balanced parameter list before looking for the body's brace. When a lint fails
+  on a change that didn't touch what it guards, read what the lint read before changing the code to please it.
 
 ## 125. A view that won't redraw while a control inside it has focus will also drop the change that control just made: force that redraw
 

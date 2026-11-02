@@ -147,6 +147,12 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   kept only in its own IndexedDB database `dscan-intel-sounds`, never the ESI cache); one master gain, loudness (volume/100)²; the
   notification is silent when the page's sound plays. No audio is made before a sound or a press. `alert_sound_check.py` (a stand-in
   AudioContext; generated tones only, never a real recording in the repo).
+- **Fleet fits on request** (v2026.11.02.1, Project doc roadmap/fleet-fit-budget-plan.md): opening a fleet asks zKillboard nothing
+  (fits from a share link or kept from the last hour load at once); Damage on the kill has its own column beside the ship; the Fit
+  column has Load per row and Load all above it (Common fits above 10 pilots: one request per alliance-and-hull pair, victims in it
+  get their own fit free; Own fits up to 10), its exact cost in its label. Load all keeps `FK_ZKB_RESERVE` (25) of `ZKB_BUDGET`,
+  refused when counted (`zkbFetchNow` `o.reserve`, which can only lower the cap). Rows stay in damage order until all are in.
+  `fleet_fit_budget_check.py`.
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
   the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship
