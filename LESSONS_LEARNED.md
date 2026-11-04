@@ -139,6 +139,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #124 Opening an IndexedDB database by name creates it: don't assume its store exists because the version is 1, and don't open one in a check just to look.
 - #125 A view that won't redraw while a control inside it has focus will also drop the change that control just made: force that redraw.
 - #135 Saving a growing list to localStorage on every event rewrites it all each time: keep a small fixed shape and save on a timer (at most once a second, and on page close).
+- #137 A control put where a sheet's backdrop is pressed gets that tap's click when the sheet closes on the press. See also #117.
 
 **Checks and test machinery**
 
@@ -1043,6 +1044,16 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 137. A control put where a sheet's backdrop is pressed gets that tap's click when the sheet closes on the press
+
+- **What happened (v2026.11.04.4):** on a phone the lookup budgets' gauge took the top-left corner of the header, where nothing
+  could be pressed before. The profile's sheet closes on `pointerdown` outside it (so a press anywhere dismisses it at once); the
+  backdrop was gone by the time the same tap's `click` arrived, so the click landed on the gauge and opened the budgets panel.
+- **How it was caught:** the full check chain: `my_ships_check` taps the backdrop at (20, 20) to close the sheet, then could no
+  longer press the Fit tab (the budgets panel was open over it).
+- **Do this instead:** when a new control goes where people press to dismiss something, check a tap there with that something
+  open. A control under such a layer opens only for a click whose press began on it (keyboard clicks have `detail` 0).
 
 ## 136. A replace checked for one match before the edit can match twice after it: check the count where the replace runs
 

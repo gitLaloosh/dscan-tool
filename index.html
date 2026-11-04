@@ -4246,7 +4246,7 @@ function bgInit(){
   if(!bgDoc()) return;
   const g = document.getElementById('bgGauge'), p = document.getElementById('bgPop');
   // a press that closed a sheet over the gauge (the profile on a phone closes on the press) must not open it with that tap's click:
-  // only a click whose press began on the gauge counts (keyboard clicks have no press, detail 0)
+  // only a click whose press began on the gauge counts (keyboard clicks have no press, detail 0); LESSON #137
   let downOnGauge = false;
   document.addEventListener('pointerdown', (e) => { downOnGauge = g.contains(e.target); }, true);
   g.addEventListener('click', (e) => { if(e.detail > 0 && !downOnGauge) return; bgOpen ? bgClosePanel() : bgOpenPanel(); });

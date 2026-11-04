@@ -9,6 +9,7 @@ the real page with made-up data, and every picture embedded in a page is looked 
 `tools/pii_reviewed_images.json`. `python3 -I tools/check_pii.py` refuses all of it (a chain step
 and a git pre-commit hook: `git config core.hooksPath tools/git-hooks`); personal names it looks for
 are in the git-ignored `tools/pii_terms.local.txt` on the owner's computer.
+A build session's clone lacks it: copy it in from the Project first (build queue README, "The personal-data check's names list").
 
 **Never get the user's address blocked (LESSON #93).** zKillboard blocks an address that asks too fast
 (its live feed: over 15 requests a second, for an hour). Every request to zKillboard goes through one
