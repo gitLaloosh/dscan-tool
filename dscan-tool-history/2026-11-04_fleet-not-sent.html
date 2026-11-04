@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-04 — Fleet tab: lookups held back say they weren't sent</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fleet tab: lookups held back say they weren't sent</h1>
+<p><span class="tag">Page</span> 2026-11-04 &middot; <code>v2026.11.04.7</code></p>
+<h2>Why</h2>
+<ul>
+<li>The owner asked whether one failed request fails the rest. It does, on purpose: after one zKillboard lookup fails, the pause holds every later one back without sending it (so the address isn't blocked, LESSON #93). But every row said "zKillboard isn't answering (ZKB-01)" alike. The owner: "build it. it's giving the impression that that tool just doesn't work."</li>
+</ul>
+<h2>What changed</h2>
+<ul>
+<li><code>zkbFetchNow</code>'s error for a lookup held back by the pause carries <code>notSent</code>; the one that reached zKillboard and failed doesn't.</li>
+<li>On the Fleet tab, the row whose lookup failed stays red ("zKillboard isn't answering (ZKB-01)"). The rows held back are dim: "Not sent: zKillboard needs a rest (ZKB-01)", and the hover says why (the page holds the rest back until zKillboard answers, so your address isn't blocked; Load or Load all asks again when the wait ends).</li>
+<li>With no pilot loaded, the summary says it plainly: "zKillboard isn't answering: 1 lookup failed and the other 10 weren't sent, so your address isn't blocked. Load all asks again when the wait ends."</li>
+<li>Nothing about when requests are sent changed.</li>
+</ul>
+<h2>Checks</h2>
+<ul>
+<li><code>fleet_vs_check.py</code>: its stand-in now fails like the real gate (the first lookup sent and failing, the rest held back); one row red, the rest "Not sent" in the dim colour with the reason on hover; the real gate marks a held lookup <code>notSent</code>; the summary's counts. Two mutants caught: no <code>notSent</code> mark, held rows with the same text as the failed one.</li>
+<li><code>run_checks.py --auto</code> against main picked <code>area</code> (intel, myship, pilot, system): 13 lints and 56 page checks, 0 failed (<code>extension_check</code> flaked once under load and passed on its retry).</li>
+<li>Page size: 746,978 &rarr; 747,570 bytes gzipped (<code>gzip -9</code>), +592 bytes, under the 800 KB ceiling.</li>
+</ul>
+</body></html>
