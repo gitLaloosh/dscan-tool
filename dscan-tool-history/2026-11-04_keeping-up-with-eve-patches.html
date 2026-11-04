@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-04 — Keeping up with EVE patches: fresh item data, a patch-day report, a note on changed items</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+pre{background:#f4f4f4; padding:12px; overflow-x:auto; font-size:12.5px; line-height:1.4;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Keeping up with EVE patches: fresh item data, a patch-day report, and a note on changed items</h1>
+<p><span class="tag">Data</span> 2026-11-04 &middot; <code>v2026.11.04.3</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 008, Project doc <code>roadmap/game-data-update-plan.md</code>. The owner (2026-11-02): "Eve has an expansion releasing on Nov 10th. Can you find out what the update process generally looks like for tools like ours? How do we identify stat changes, new skills or modules, etc. Also need to address any implication on pyfa calculations changing."</li>
+<li>A mockup came first (<code>Claude outputs/game_data_note_mockup.html</code>). His answers: the place and amber "this is fine"; "keep the rule" (the short line, the rest on hover); the Fleet tag "on the hull is fine"; "status line is good but make it "Item data refreshing" if that's what it's actually doing". The workflow file: "You paste it in". Order: "008 first".</li>
+<li>Not brought back: the amber note after every EVE build (gone since v2026.10.29.4). The note now shows only on items that changed.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Item data after a patch</b> (section 1):
+  <ul>
+  <li>Once per page load the page asks ESI for EVE's server version (<code>/status/</code>). When it differs from the last one seen, the item data kept in the browser (types and groups, a week) is dropped before the first lookup, and "Item data refreshing" shows where the version tag is, for a few seconds.</li>
+  <li>The first lookup waits for this at most 3 s. A slow or failed answer: the kept data is used as before, and the next load asks again.</li>
+  <li>The first visit only remembers the version. Killmails, zKillboard answers and organisations are never cleared by it. No cache-busting.</li>
+  </ul></li>
+<li><b>A note on changed items</b> (section 3): <code>GAME_DATA_PENDING</code>, the items changed in EVE's update and not yet checked against pyfa (empty today).
+  <ul>
+  <li>A fit that uses one, in the Fit Analyzer, a Pilot Analyzer loss or My Fit: "Changed in EVE's update:" and up to 3 names, then "+N more", above the cards. The hover gives the build, every name, and "This tool checks its numbers against pyfa after pyfa updates; until then they may be off."</li>
+  <li>The Fleet tab: a small amber "changed" tag after the hull's name. Ships on scan: the line in that hull's card.</li>
+  <li>The cargo doesn't count. Never on Intel, never page-wide.</li>
+  </ul></li>
+<li><b>The patch-day report</b> (section 2), <code>tools/sde_change_report.py</code>: what changed in CCP's data since the build pyfa's data came from. New items, published or not, attributes old &rarr; new, effects added or removed, and for each new effect whether pyfa has a handler. With <code>--write</code> it updates the page's list. It reads only the five files it needs from CCP's zips (about 25 MB a build).</li>
+<li><b>The pyfa update empties the list</b> (PYFA_CORE.md step 5).</li>
+</ul>
+
+<h2>For the owner: the workflow job to paste</h2>
+<p>The build can't write <code>.github/workflows/jump-table.yml</code>. Paste this at the end of that file, under <code>jobs:</code> after the <code>check</code> job (same indentation as <code>check:</code>). It runs on the same schedule. It opens a pull request only when the list of changed items changes; it never commits to the main branch. Its steps were run here against made-up copies of CCP's site, but the job itself only runs on GitHub: the first real run shows in the Actions tab.</p>
+<pre>  # v2026.11.04.3 (build queue 008, tools/sde_change_report.py): after a CCP build that changed ships, modules, charges,
+  # skills, drones, implants, subsystems or fighters since the build the page was checked against pyfa, open a pull request
+  # with the report and the page&#x27;s updated list of changed items (GAME_DATA_PENDING). Never commits to the main branch.
+  game-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: pyfa&#x27;s newest release (only its effect handlers, for the report)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view -R pyfa-org/Pyfa --json tagName -q .tagName)
+          mkdir -p &quot;$RUNNER_TEMP/pyfa/eos&quot;
+          curl -sSfL &quot;https://raw.githubusercontent.com/pyfa-org/Pyfa/$tag/eos/effects.py&quot; -o &quot;$RUNNER_TEMP/pyfa/eos/effects.py&quot;
+          echo &quot;version: $tag&quot; &gt; &quot;$RUNNER_TEMP/pyfa/version.yml&quot;
+      - name: Compare CCP&#x27;s newest item data with the build the page was checked against
+        id: report
+        run: python3 -I tools/sde_change_report.py index.html --pyfa &quot;$RUNNER_TEMP/pyfa&quot; --write --body &quot;$RUNNER_TEMP/game-data-pr.md&quot;
+      - name: Open a pull request (only when the list of changed items changed)
+        if: steps.report.outputs.changed == &#x27;true&#x27;
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD: ${{ steps.report.outputs.build }}
+          BASE: ${{ github.event.repository.default_branch }}
+        run: |
+          branch=&quot;game-data/build-$BUILD&quot;
+          if git ls-remote --exit-code --heads origin &quot;$branch&quot; &gt; /dev/null; then
+            echo &quot;A pull request branch for build $BUILD already exists ($branch); nothing to do.&quot;
+            exit 0
+          fi
+          git config user.name &quot;github-actions[bot]&quot;
+          git config user.email &quot;41898282+github-actions[bot]@users.noreply.github.com&quot;
+          git checkout -b &quot;$branch&quot;
+          git add index.html
+          git commit -m &quot;Game data: items changed in EVE build $BUILD&quot;
+          git push origin &quot;$branch&quot;
+          gh pr create --base &quot;$BASE&quot; --head &quot;$branch&quot; --title &quot;Game data: items changed in EVE build $BUILD&quot; --body-file &quot;$RUNNER_TEMP/game-data-pr.md&quot;
+</pre>
+
+<h2>Choices made while building</h2>
+<ul>
+<li><b>No shared /status/ call:</b> the plan said to share Intel's call, but the page hasn't made one since v2026.10.29.5. It's now one call per load, started as the page loads.</li>
+<li><b>The "changes" fallback gives IDs, not values:</b> CCP's <code>changes/&lt;build&gt;.jsonl</code> files only say which items changed (LESSON #133). When the older zip is no longer published, the report lists those items as "changed (old values not published)".</li>
+<li><b>pyfa's data build isn't an SDE build:</b> 3624425 isn't published. The report compares from the newest SDE build at or before it (3607705 today), found through the changes files.</li>
+<li><b>Its own job:</b> the report is a separate job, so its pull request and the jump table's never share a branch.</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li><b>New <code>tools/page_checks/game_data_check.py</code></b> (see tools/README): the version check with a stand-in <code>/status/</code> on six loads, and the note on a copy of the page with a made-up list, in every place it shows and none it doesn't. The old page fails it.</li>
+<li><b>New <code>tools/independent_checks/check_sde_change_report.py</code></b>: the report on made-up CCP data, a local server standing in for CCP's site (with and without range requests, the older zip gone, nothing changed). In the chain.</li>
+<li><b>New <code>tools/check_game_data_pending.py</code></b>: the list in the tools' form. A fast lint and a chain step.</li>
+<li><code>check_request_gates.py</code> lists the new ESI call (<code>gdServerVersion</code>).</li>
+<li>26 mutants, all caught: 17 on the page (clearing other stores, clearing on the first visit or the same version, waiting forever, not waiting, a late answer clearing, a /status/ per lookup, saying nothing, the note on every fit, the cargo counted, 4 names, the Fleet tag or scan line on every hull, the line below the cards, a pressable tag, a note page-wide, the plan's full sentence) and 9 in the report and list check. One was missed at first (the first lookup not waiting): /status/ is now held back inside the page, so the wait is measured.</li>
+<li><b>The whole run</b> (<code>run_checks.py --auto</code>, every tier): 13 lints, the pyfa chain and 69 page checks in 37 min. It caught two older checks that counted every request (<code>alert_sound_check</code>, <code>intel_check</code>): the page now asks <code>/status/</code> once as it loads. Both now leave that one out (Intel itself still asks nothing) and pass. <code>extension_check</code> was flaky under load and passed alone.</li>
+<li><b>Page size:</b> 735,221 &rarr; 737,330 bytes gzipped (+2.1 KB), under the 800 KB stop. No perf harness: Intel's drawing isn't touched.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #133: a data source's name says what it's about, not what's in it. Open one real file before a plan counts on it, and write its fields into the plan. CCP's "changes" files hold IDs, not values.</p>
+</body></html>

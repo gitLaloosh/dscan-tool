@@ -1093,6 +1093,13 @@
   header.hero p, section.panel .sub{max-width:860px;}
   /* v2026.10.14.37: grid-template-columns / -rows / -areas per width are written from FIT_LAYOUT
      (fitLayoutGridCss, <style id="fitLayoutGrid">); the rules here are everything else. */
+  /* v2026.11.04.3 (build queue 008, roadmap/game-data-update-plan.md section 3; approved from the mockup): a fit or hull that changed in
+     EVE's last update and isn't checked against pyfa yet (GAME_DATA_PENDING). Amber, the page's "not certain" colour; the line's own
+     words stay short (the owner: "keep the rule"), the whole sentence is on hover. */
+  .gd-note{margin:0 0 10px; padding:6px 10px; border:1px solid var(--line); border-left:3px solid var(--amber); border-radius:3px; font-size:12.5px; line-height:1.45; color:var(--text-dim);}
+  .gd-note b{color:var(--amber); font-weight:600;}
+  .gd-mark{display:inline-block; margin-left:6px; padding:0 5px; border-radius:3px; background:var(--tag-fill); color:var(--amber); font:600 10.5px/1.5 var(--sans); vertical-align:1px; white-space:nowrap;}
+  .sr-card .gd-note{margin:8px 0 0; padding:4px 8px; font-size:11.5px;}
   .fit-layout{display:grid; grid-template-columns:minmax(0, 1fr); gap:0 18px; align-items:start;}
   .fl-beat{grid-area:beat; min-width:0;}
   .fl-fit{grid-area:fit; min-width:0;}
@@ -2860,7 +2867,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.2</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.3</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -9107,6 +9114,81 @@ async function clearDscanCache(){
   }
 }
 
+// v2026.11.04.3 (build queue 008, roadmap/game-data-update-plan.md section 1; the owner 2026-11-02: "Eve has an expansion releasing on
+// Nov 10th ... How do we identify stat changes"): item data kept in this browser (the 'types' / 'groups' stores, a week) is dropped
+// when EVE's server version changes, so a returning user doesn't see last week's numbers after a patch. Once per page load: ESI
+// /status/ (no cache-busting: ESI's own caching rules). The first item lookup waits for it, GD_VERSION_WAIT_MS at most; too slow or
+// failed = the cache is used as before, and the next load tries again (nothing stored). The first visit stores the version and
+// clears nothing. Only types and groups: killmails never change; zKillboard answers and organisations have their own lifetimes.
+// Said once where the version tag is (the owner: "make it "Item data refreshing" if that's what it's actually doing": the
+// cleared items are fetched fresh from ESI as the page needs them).
+const GD_VERSION_KEY = 'dscanServerVersion';   // localStorage: the last EVE server version seen
+const GD_VERSION_WAIT_MS = 3000;
+let gdVersionGate = null;
+async function gdServerVersion(){
+  const r = await fetch(`${ESI}/status/?datasource=tranquility`);
+  if(!r.ok) return '';
+  const d = await r.json();
+  return d && d.server_version ? String(d.server_version) : '';
+}
+function gdVersionCheck(){
+  if(gdVersionGate) return gdVersionGate;
+  if(typeof indexedDB === 'undefined' || typeof localStorage === 'undefined'){ gdVersionGate = Promise.resolve(); return gdVersionGate; }   // nothing kept to clear (the regression suite's sandbox too)
+  let late = false;
+  const check = (async () => {
+    let v = '';
+    try{ v = await gdServerVersion(); }catch(e){ return; }
+    if(!v || late) return;   // failed, or past the wait: this load keeps the cache; the next one asks again
+    let prev = null;
+    try{ prev = localStorage.getItem(GD_VERSION_KEY); }catch(e){ return; }
+    if(prev === v) return;
+    if(prev !== null){ await clearDscanCache(); try{ heroRefreshStatus('Item data refreshing', 5000); }catch(e){} }
+    try{ localStorage.setItem(GD_VERSION_KEY, v); }catch(e){}
+  })();
+  gdVersionGate = Promise.race([check, new Promise(res => setTimeout(() => { late = true; res(); }, GD_VERSION_WAIT_MS))]);
+  return gdVersionGate;
+}
+
+// ==== GAME DATA PENDING (v2026.11.04.3; roadmap/game-data-update-plan.md section 3) ====
+// The items that changed in EVE's last update and aren't checked against pyfa yet: sorted uint32 type IDs, big-endian, base64.
+// Written only by tools/sde_change_report.py --write (the workflow's pull request) and emptied by the pyfa update process
+// (PYFA_CORE.md); never typed by hand (tools/check_game_data_pending.py). build: the EVE build they changed in.
+const GAME_DATA_PENDING = {verified: 3624425, build: 0, types: ''};
+let gdSet = null;
+function gdPendingSet(){
+  if(gdSet) return gdSet;
+  gdSet = new Set();
+  try{ const b = atob(GAME_DATA_PENDING.types || ''); for(let i = 0; i + 3 < b.length; i += 4) gdSet.add(((b.charCodeAt(i) << 24) | (b.charCodeAt(i + 1) << 16) | (b.charCodeAt(i + 2) << 8) | b.charCodeAt(i + 3)) >>> 0); }catch(e){ }
+  return gdSet;
+}
+function gameDataPending(ids){ const s = gdPendingSet(), out = []; if(!s.size) return out; for(const id of ids){ const n = Number(id); if(s.has(n) && !out.includes(n)) out.push(n); } return out; }
+function gdFitIds(input){   // the hull and what's fitted or in the drone and fighter bays; not the cargo or the fleet hangar
+  if(!input) return [];
+  const ids = [input.shipTypeId];
+  for(const [g, o] of Object.entries(input.tally || {})) if(g !== 'Cargo' && g !== 'Fleet hangar') ids.push(...Object.keys(o || {}));
+  return ids;
+}
+function gdName(id, idToName){ return (idToName && idToName.get && (idToName.get(id) || idToName.get(String(id)))) || (typeCache.get(id) || {}).name || `type ${id}`; }
+const GD_WHY = 'This tool checks its numbers against pyfa after pyfa updates; until then they may be off.';
+const gdFull = (names) => `Changed in EVE's update (build ${GAME_DATA_PENDING.build}): ${names.join(', ')}. ${GD_WHY}`;
+// The line above a fit's cards (fitLayoutHtml: Pilot Analyzer, Fit Analyzer, My Fit): up to 3 names, then "+N more"
+function gdNoteHtml(f, idToName){
+  const ids = gameDataPending(gdFitIds(f && f.input));
+  if(!ids.length) return '';
+  const names = ids.map(id => gdName(id, idToName)), shown = names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3} more` : '');
+  return `<div class="gd-note" title="${escapeHtml(gdFull(names))}"><b>Changed in EVE's update:</b> ${escapeHtml(shown)}</div>`;
+}
+// The Fleet tab's pilot rows: a tag after the hull's name (the owner: "on the hull is fine"); a span, not a control (the row is a button)
+function gdHullMarkHtml(hullId, name){
+  if(!gameDataPending([hullId]).length) return '';
+  return `<span class="gd-mark" title="${escapeHtml(gdFull([name]))}">changed</span>`;
+}
+// Ships on scan: the line in a hull's hover card
+function gdHullNoteHtml(hullId, name){
+  if(!gameDataPending([hullId]).length) return '';
+  return `<div class="gd-note" title="${escapeHtml(gdFull([name]))}"><b>Changed in EVE's update:</b> ${escapeHtml(name)}</div>`;
+}
+
 function setStatus(el, msg, isErr){
   el.textContent = msg || '';
   el.classList.toggle('err', !!isErr);
@@ -9336,6 +9418,8 @@ async function resolveNamesToIdsFlexible(names){
 
 async function getType(typeId){
   if(typeCache.has(typeId)) return typeCache.get(typeId);
+  await gdVersionCheck();   // v2026.11.04.3: a new EVE build drops the kept item data first (at most GD_VERSION_WAIT_MS)
+  if(typeCache.has(typeId)) return typeCache.get(typeId);
   const cached = await dscanCacheGet('types', typeId);
   if(cached !== undefined){ typeCache.set(typeId, cached); return cached; }
   let res;
@@ -9356,6 +9440,8 @@ async function getType(typeId){
 }
 
 async function getGroup(groupId){
+  if(groupCache.has(groupId)) return groupCache.get(groupId);
+  await gdVersionCheck();   // v2026.11.04.3: as getType
   if(groupCache.has(groupId)) return groupCache.get(groupId);
   const cached = await dscanCacheGet('groups', groupId);
   if(cached !== undefined){ groupCache.set(groupId, cached); return cached; }
@@ -9629,6 +9715,7 @@ document.getElementById('refreshCacheBtn').addEventListener('click', async () =>
   await clearDscanCache();
   heroRefreshStatus('Cleared — next analysis will re-fetch from ESI.', 5000);
 });
+gdVersionCheck();   // v2026.11.04.3: asked as the page loads, so the first lookup seldom waits (section 1, game-data-update-plan.md)
 document.getElementById('analyzeBtn').addEventListener('click', () => runSystemAnalyzer(false));   // v2026.10.14.81: Local and D-Scan
 document.getElementById('debugToggle').addEventListener('click', () => {
   const el = document.getElementById('debugRows');
@@ -9914,6 +10001,7 @@ function scanCardHtml(s){
   const cyno = s.cyno.length ? `<div class="sr-ccy"><span class="sr-cy">cyno</span>Can fit ${s.cyno.map(k => CYNO_WORD[k]).join(' or ')} (CCP's fitting rules; D-Scan can't say if one is fitted)</div>` : '';
   return `<div class="sr-ct"><img class="sr-ico" src="https://images.evetech.net/types/${s.typeId}/icon?size=32" alt="" onerror="this.style.visibility='hidden'"><span class="nm">${escapeHtml(s.name)}</span><span class="sr-cn">×${s.n}</span></div>
     <div class="sr-cm">${escapeHtml(s.group.name)} · ${sz.label}${sz.note || ''}</div>
+    ${gdHullNoteHtml(s.typeId, s.name)}
     <div class="sr-cw"><span class="dmg-badge ${w}">${DMG_FULL[w]}</span><span>weakest, then ${DMG_FULL[I.second]}</span></div>
     <div class="sr-cb" title="Damage that gets through each resist, weighted by shield, armor and hull HP: higher % = less resisted">${bars}</div>
     <div class="sr-ca">${ammo('Missile', RECS[w].missile.replace(/\s*\(.*\)$/, ''), RECS[w].missile)}${tur('laser')}${tur('hybrid')}${tur('projectile')}
@@ -17299,7 +17387,7 @@ function renderFitSummaryHtml(f){
 function fitLayoutHtml(f, idToName, cardOpts = {}){
   const parts = fitSummaryParts(f) || {beat: '', stats: ''};
   const bands = {dmg: cardOpts.dmg ? dmgCardShellHtml(f, cardOpts.dmg === 'mine') : ''};
-  return `
+  return `${gdNoteHtml(f, idToName)}
     <div class="fit-layout">${FIT_LAYOUT.bands.filter(k => bands[k]).map(k => `
       <div class="fl-${k}">${bands[k]}</div>`).join('')}
       <div class="fl-beat">${parts.beat}</div>
@@ -23546,7 +23634,7 @@ function fkRowHtml(m){
   const pilot = `<span class="pr-pilot">${standMark(s, m.corp, m.alliance)}<span class="pr-pn"><span class="nm std-n ${s}" title="${escapeHtml(nm)}">${escapeHtml(nm)}${m.id === fk.origin ? '<span class="fk-you">dossier</span>' : ''}</span><span class="ctx">${ally} ${escapeHtml(fk.info.get(m.corp) || '')}</span></span></span>`;
   const open = `data-fk-pilot="${escapeHtml(nm)}" data-fk-type="${m.hull}" title="${escapeHtml(`${nm}: open in the Pilot Analyzer, on the ${hull}`)}"`;
   const weapon = m.weapon ? (fk.info.get(m.weapon) || `type ${m.weapon}`) : '';
-  const hullCell = (src) => `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${m.hull}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(hull)}<span class="cls">${escapeHtml(m.cls || '')}</span></span>${weapon ? `<span class="fk-w" title="${escapeHtml(`The weapon the killmail credits them with: ${weapon}`)}">on the kill: ${escapeHtml(weapon)}</span>` : ''}${src}</span></span>`;
+  const hullCell = (src) => `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${m.hull}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(hull)}${gdHullMarkHtml(m.hull, hull)}<span class="cls">${escapeHtml(m.cls || '')}</span></span>${weapon ? `<span class="fk-w" title="${escapeHtml(`The weapon the killmail credits them with: ${weapon}`)}">on the kill: ${escapeHtml(weapon)}</span>` : ''}${src}</span></span>`;
   // the damage they did on this kill (the killmail's own number), its share of the ship's, and the final blow
   const tot = (fk.km && fk.km.victim && fk.km.victim.damage_taken) || 0, pct = tot ? Math.round((m.dmg || 0) / tot * 100) : 0;
   const dmgT = `${(m.dmg || 0).toLocaleString()} damage on this kill${tot ? `, ${pct}% of the ${tot.toLocaleString()} the ${fk.victim ? fk.victim.name : 'ship'} took` : ''}${m.fb ? '; the final blow' : ''}`;

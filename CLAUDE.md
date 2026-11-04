@@ -38,6 +38,14 @@ Change a core section only to match pyfa, then re-verify and run
 `node tools/check_pyfa_core.mjs --update`. Every deliberate difference from pyfa
 is listed in `DEVIATIONS.md`; an unlisted difference is a bug.
 
+**After an EVE patch** (v2026.11.04.3, build queue 008, Project doc roadmap/game-data-update-plan.md; the runbook is
+roadmap/expansion-update-runbook.md): the page drops the item data kept in the browser when EVE's server version changes
+(`gdVersionCheck`: ESI /status/ once per load, the first lookup waits 3 s at most, only the `types` / `groups` stores; "Item
+data refreshing"). `tools/sde_change_report.py` lists what changed in CCP's data since the manifest's `pyfa.clientBuild`
+and writes `GAME_DATA_PENDING`, the items changed and not yet checked against pyfa; fits and hulls using one say "Changed in
+EVE's update:" (`gdNoteHtml`, `gdHullMarkHtml`, `gdHullNoteHtml`; never on Intel or page-wide). The pyfa update empties the
+list (PYFA_CORE.md); `tools/check_game_data_pending.py` keeps it in the tools' form. `game_data_check.py`.
+
 Before changing any calculation:
 
 1. Read `LESSONS_LEARNED.md`, the catalog of mistakes already made here:
@@ -60,7 +68,8 @@ Before changing any calculation:
    old build. Add a dated note to `dscan-tool-history/`.
    Exception: the pull requests `.github/workflows/jump-table.yml` opens (the stargate table, `INTEL_JUMPS`,
    when an EVE build changed a gate; `tools/jump_table_update.py`) change only that table and no version.
-   After the owner merges one, work from the merged copy (he runs `git pull`).
+   The same for its "Game data" pull requests (v2026.11.04.3, `tools/sde_change_report.py`): they change only
+   `GAME_DATA_PENDING`. After the owner merges one, work from the merged copy (he runs `git pull`).
 5. End every delivery's reply with a commit message for the owner (he commits himself; the owner, 2026-10-30): a
    Summary line under 72 characters that starts with the version (or says "page unchanged" for tools and docs only)
    and a Description of short bullets. No names, paths or intel channel names.

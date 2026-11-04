@@ -348,12 +348,13 @@ with sync_playwright() as p:
     pg.click('#intelSwLabel'); pg.wait_for_timeout(200)
     # ---- v2026.10.29.5: no build warning ----
     STATUS['v'] = str(J['build'] + 1); pg.reload(); pg.wait_for_timeout(300); pg.click('#tabBtnIntel')
+    STATUS['asked'] = 0   # v2026.11.04.3: the page's own /status/ as it loads (item data after a patch, game_data_check.py) is not Intel's
     setup_logs(pg); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300)   # the made-up folder can't be kept in IndexedDB: chosen again
     pg.click('#intelSwLabel'); tick(pg)
     warn = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-warn')].map(e => e.textContent)")
     info = pg.evaluate("() => CARD_INFO.intel.join(' ')")
     # v2026.10.29.5 (the owner: "is there a way to automate the update so the user never has to see it?"): EVE on a newer build
-    # than the table's says nothing and asks ESI nothing; the GitHub Action keeps the table current (tools/jump_table_update.py)
+    # than the table's says nothing and Intel asks ESI nothing; the GitHub Action keeps the table current (tools/jump_table_update.py)
     check(not any('jump table' in w for w in warn) and not STATUS.get('asked') and 'checked against each new EVE build every day' in info,
           f'EVE on a newer build than the jump table: no warning, no /status/ request ({STATUS.get("asked", 0)}), the info panel says the table is checked daily {warn}')
     STATUS['v'] = str(J['build'])

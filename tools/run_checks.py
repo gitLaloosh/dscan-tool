@@ -30,7 +30,7 @@ PC = os.path.join(ROOT, 'tools', 'page_checks')
 AREAS = {
     'affiliation_check': ['pilot'], 'assumed_charge_check': ['fit', 'calc'], 'busy_check': ['pilot'],
     'card_width_check': ['layout'], 'charges_check': ['fit', 'calc'], 'damage_chart_check': ['myship', 'calc'],
-    'dossier_check': ['pilot'], 'dossier_kills_check': ['pilot'], 'dossier_pin_check': ['pilot', 'system'], 'kill_groups_check': ['intel', 'pilot', 'system'], 'fleet_hulls_check': ['intel', 'pilot', 'system', 'layout'], 'alert_sound_check': ['intel', 'layout'], 'fleet_fit_budget_check': ['pilot', 'system', 'intel'], 'scan_rail_check': ['system', 'layout'], 'system_activity_check': ['system', 'intel'], 'extension_check': ['pilot', 'extension'],
+    'dossier_check': ['pilot'], 'dossier_kills_check': ['pilot'], 'dossier_pin_check': ['pilot', 'system'], 'kill_groups_check': ['intel', 'pilot', 'system'], 'fleet_hulls_check': ['intel', 'pilot', 'system', 'layout'], 'game_data_check': ['calc', 'fit', 'myship', 'pilot', 'system', 'intel', 'layout'], 'alert_sound_check': ['intel', 'layout'], 'fleet_fit_budget_check': ['pilot', 'system', 'intel'], 'scan_rail_check': ['system', 'layout'], 'system_activity_check': ['system', 'intel'], 'extension_check': ['pilot', 'extension'],
     'fight_strip_check': ['myship', 'calc'], 'fighter_application_check': ['fit', 'calc'], 'fighter_bay_check': ['fit', 'calc'],
     'fighter_bombs_check': ['fit', 'calc'], 'fighter_picks_check': ['myship', 'calc'], 'fighter_tile_check': ['myship', 'calc'],
     'fleet_kill_check': ['pilot', 'system'], 'fleet_view_check': ['system'], 'header_check': ['layout', 'intel'],
@@ -79,6 +79,7 @@ def fast(html):
         ('subtext rule', q('check_subtext.py'), lambda l: l.endswith(' 0 problems')),
         ('card names', q('check_card_names.py'), lambda l: l.endswith(' 0 problems')),
         ('zKillboard request gates', q('check_request_gates.py'), lambda l: l.endswith(' 0 problems')),
+        ('changed-items list (GAME_DATA_PENDING)', q('check_game_data_pending.py'), lambda l: l.endswith(' 0 problems')),   # v2026.11.04.3
         ('error codes and ERRORS.md', q('gen_errors_md.py'), lambda l: l.endswith('ERRORS.md is up to date')),
         ('LESSONS index', 'python3 -I tools/check_lessons_index.py', lambda l: l.endswith(' 0 problems')),
         # v2026.10.31.7: seconds, not part of the 40-minute chain's cost; they load the page script in a stub DOM (LESSON #36)
