@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-04 — Fleet tab: a row's Load counts down as just the time</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fleet tab: a row's Load counts down as just the time</h1>
+<p><span class="tag">Page</span> 2026-11-04 &middot; <code>v2026.11.04.6</code></p>
+<h2>Why</h2>
+<ul>
+<li>The owner, testing v2026.11.04.5: "load button for individual rows alignment issue. let's drop the "Load in" text while the timer is active. just show the timer until it completes then switch back to "Load"." His screenshot showed "Load in 0:41" wider than the Fit column, so the buttons stuck out past the rows' right edge.</li>
+</ul>
+<h2>What changed</h2>
+<ul>
+<li>A row's Load shows only the time while zKillboard can't be asked ("0:41"), then "Load". Screen readers hear "Load, in 0:41"; the hover still says why.</li>
+<li>Load and its countdown are one width (58 px, even-width digits), so the column doesn't shift when one turns into the other. Load all keeps "Load all in m:ss": it has room above the list.</li>
+</ul>
+<h2>Checks</h2>
+<ul>
+<li><code>fleet_vs_check.py</code>: the countdown is only the time; Load and the countdown are one width at one right edge, inside the row. The old "Load in 0:41" fails both (100 px against 55 px).</li>
+<li><code>run_checks.py --auto</code> against main picked <code>area</code> (intel, myship, pilot, system): 13 lints and 56 page checks, 0 failed (<code>system_analyzer_check</code> flaked once under load and passed on its retry).</li>
+<li>Page size: 746,862 &rarr; 746,989 bytes gzipped (<code>gzip -9</code>), +127 bytes, under the 800 KB ceiling.</li>
+</ul>
+</body></html>
