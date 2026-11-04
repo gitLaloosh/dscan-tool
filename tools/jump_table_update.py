@@ -22,6 +22,13 @@ hundredths, rounded half up, int8: the same arithmetic as the browser-side expor
 claude/roadmap/intel-map-mockup/sde_extract3.js) and the region (an index into the region names, sorted by region ID).
 A change there opens the same pull request; `--check` fails on it too.
 
+v2026.11.04.1 (light-years in the map's hover, roadmap/map-ly-hover-plan.md): INTEL_MAP also holds each system's place in
+space, CCP's geographic `position` (3D, metres; position2D is only the flat map's), as p3: x for every system, then y,
+then z, each in units of p3u = 0.0001 light-year (CCP's light-year, LY_M = 9.46e15 m, not the real-world one), rounded
+half up, int24 little-endian (the largest is about 54 LY: 540,000 units). 0.0001 LY rather than 0.001: the page rounds
+distances UP to 0.01 LY (the owner: "Round up to 0.01"), so the table's own error must stay far below that step; it cost
+4.1 KB gzipped more (measured on build 3665151).
+
 Checked 2026-10-29 in the owner's browser: build 3660036's 13,978 gates make the same 6,989 connections as the page's
 table from the client's jumps.static (build 3654997), none missing either way.
 
@@ -89,7 +96,9 @@ def read_sde():
     for line in files.get('mapSolarSystems.jsonl', '').splitlines():
         if line.strip():
             o = json.loads(line); k = int(o['_key']); names[k] = (o.get('name') or {}).get('en', str(k))
-            if o.get('position2D') is not None: info[k] = (o['position2D']['x'], o['position2D']['y'], float(o['securityStatus']), int(o['regionID']))
+            if o.get('position2D') is not None:
+                p = o.get('position') or {}
+                info[k] = (o['position2D']['x'], o['position2D']['y'], float(o['securityStatus']), int(o['regionID']), tuple(p.get(a) for a in 'xyz'))
     for line in files.get('mapRegions.jsonl', '').splitlines():
         if line.strip():
             o = json.loads(line); regions[int(o['_key'])] = (o.get('name') or {}).get('en', str(o['_key']))
@@ -121,6 +130,7 @@ def encode(conns, build):
             'sys': base64.b64encode(struct.pack('<%dH' % len(deltas), *deltas)).decode(),
             'edges': base64.b64encode(struct.pack('<%dH' % len(pairs), *pairs)).decode()}
 # v2026.11.02.4: the map's table, aligned to the jump table's sorted systems (see the top)
+LY_M, P3U = 9.46e15, 0.0001   # CCP's light-year in metres; the position table's unit in light-years (v2026.11.04.1)
 def jr(v): return math.floor(v + 0.5)   # half up, as JavaScript's Math.round (Python's round() rounds half to even)
 def encode_map(conns, info, regions, build, jumps_md5):
     S = sorted({s for c in conns for s in c}); missing = [s for s in S if s not in info]
@@ -131,8 +141,15 @@ def encode_map(conns, info, regions, build, jumps_md5):
     sec = [jr(jr(info[s][2] * 1000) / 1000 * 100) for s in S]; reg = [ri[info[s][3]] for s in S]
     assert all(-32768 <= v < 32768 for v in x + y) and all(-128 <= v < 128 for v in sec)
     b64 = lambda f, a: base64.b64encode(struct.pack('<%d%s' % (len(a), f), *a)).decode()
+    nopos = [s for s in S if None in info[s][4]]
+    assert not nopos, f'{len(nopos)} systems without a position: {nopos[:5]}'
+    p3 = [jr(info[s][4][a] / LY_M / P3U) for a in range(3) for s in S]   # x for every system, then y, then z
+    assert all(-(1 << 23) <= v < (1 << 23) for v in p3)
     return {'build': build, 'jumps': jumps_md5, 'systems': len(S), 'x': b64('h', x), 'y': b64('h', y),
-            'sec': b64('b', sec), 'reg': b64('B', reg), 'regions': [regions.get(r, str(r)) for r in rids]}
+            'sec': b64('b', sec), 'reg': b64('B', reg), 'regions': [regions.get(r, str(r)) for r in rids],
+            'p3': base64.b64encode(b''.join((v & 0xFFFFFF).to_bytes(3, 'little') for v in p3)).decode(), 'p3u': P3U}
+def p3_values(t):   # the int24 values back (the checks and the diff count)
+    b = base64.b64decode(t); return [int.from_bytes(b[i:i + 3], 'little', signed=True) for i in range(0, len(b), 3)]
 mp = re.search(r'^const INTEL_MAP = (.*);$', m.group(1), re.M)
 PM = json.loads(mp.group(1)) if mp else None
 page = decode(J)
@@ -151,11 +168,13 @@ added, gone = sorted(conns - page), sorted(page - conns)
 nm = lambda s: names.get(s, str(s))
 out('build', build)
 NM = encode_map(conns, info, regions, build, encode(conns, build)['md5'] if added or gone else J['md5'])   # 'jumps': the INTEL_JUMPS fingerprint it is aligned to
-same_map = PM is not None and all(PM.get(k) == NM[k] for k in ('jumps', 'systems', 'x', 'y', 'sec', 'reg', 'regions'))
+same_map = PM is not None and all(PM.get(k) == NM[k] for k in ('jumps', 'systems', 'x', 'y', 'sec', 'reg', 'regions', 'p3', 'p3u'))
 if not same_map:   # how many systems moved, changed security or region (a jump-table change re-aligns every row)
     if PM and PM.get('systems') == NM['systems'] and PM.get('jumps') == NM['jumps']:
         dec = lambda t, f: struct.unpack('<%d%s' % (NM['systems'], f), base64.b64decode(t))
         diff = sum(1 for k, f in (('x', 'h'), ('y', 'h'), ('sec', 'b'), ('reg', 'B')) for a, b in zip(dec(PM[k], f), dec(NM[k], f)) if a != b)
+        if PM.get('p3') and PM.get('p3u') == NM['p3u']: diff += sum(1 for a, b in zip(p3_values(PM['p3']), p3_values(NM['p3'])) if a != b)
+        elif PM.get('p3') != NM['p3']: diff += NM['systems']   # positions missing (a page from before v2026.11.04.1) or in other units
         map_msg = f'map table: {diff} value(s) differ from build {build}' + ('' if PM.get('regions') == NM['regions'] else ', region names changed')
     else: map_msg = 'map table: missing or made for another jump table'
     print(map_msg)

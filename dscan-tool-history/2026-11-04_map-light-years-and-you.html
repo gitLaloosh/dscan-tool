@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-04 — The map: light-years, center on me, your system</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Intel map: light-years from you, center on me, your system made obvious</h1>
+<p><span class="tag">Intel</span> 2026-11-04 &middot; <code>v2026.11.04.1</code></p>
+
+<h2>Why</h2>
+<p>Three requests from the owner, built together (build queue 007, Project doc <code>roadmap/map-ly-hover-plan.md</code>):</p>
+<ul>
+<li>Jump distances for capital pilots: "i'm just looking for the distance in LY (from the player's current system) to show up in the data seen on hover", rounded up ("Round up to 0.01").</li>
+<li>A button to center the map on you: "Add to 007", "Keep current zoom", "Center on me after a jump", "With + − ⤢, top right", "crosshair is fine".</li>
+<li>"the user's pilot location is not obvious on the galaxy map": a pin, a filled label, a short beacon and an edge arrow ("fold it in").</li>
+</ul>
+<p>Mockup v4 (the real page with this change, made-up Intel around Amamake; the repo's <code>Claude outputs/intel_map_mockup_v4.html</code>) was approved as is: the pin and label "yes", the beacon "Keep as is", a jump at the starting zoom "Center on me", the light-years line "Yes, as in the mockup".</p>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Light-years in the hover</b> (a press on a phone): the second line says "3.84 LY from Amamake". It is the straight distance through space, as a jump drive counts it, from CCP's 3D position of each system (not the flat map's), with CCP's light-year (9.46&times;10<sup>15</sup> m). It is rounded <i>up</i> to 0.01, so 7.004 shows 7.01 and a system that reads within a jump range always is. There is no line on your own system, and none while your system isn't known.</li>
+<li><b>Center on me:</b> a crosshair after + − ⤢ slides the map so your system is in the middle, at the zoom you have. It isn't shown while your system isn't known. After a jump, the map keeps your zoom and centers on the new system. The first draw, a change of Jumps shown, a resize and ⤢ still show the whole area. On a phone all four corner buttons are 44 px.</li>
+<li><b>Your system:</b>
+  <ul>
+  <li>A white pin stands on its dot, drawn after everything else, so no report ring, search ring or hover ring covers it. Its security colour still shows under the tip.</li>
+  <li>Your label is the only filled one on the map: a white "YOU · name" chip, beside the pin's head. Your own system's report count sits in it, and no other name goes over the pin.</li>
+  <li>The legend's first entry is the pin, "you".</li>
+  </ul></li>
+<li><b>The beacon:</b> three white rings spread from you for 1.6 s, on the map's first draw and on a jump. They are drawn on their own canvas over the map, so the map isn't redrawn for them, and nothing runs once they end. There is none with reduced motion, and none for a jump nobody saw (another tab in front, or the page hidden).</li>
+<li><b>The "You" arrow:</b> when a drag or zoom leaves you out of view, a white "You" arrow sits on the map's edge, pointing at you. Pressing it centers on you, like the crosshair.</li>
+<li><b>Fixed:</b> names of reported systems moved out of view were pinned to the map's edge and piled up there (v2026.11.02.4). A system out of view is no longer named; for you, the arrow stands in.</li>
+<li><b>The table:</b> <code>INTEL_MAP</code> gains <code>p3</code>, every system's 3D position in units of 0.0001 LY (int24, x for every system, then y, then z), and <code>p3u</code>. Only <code>tools/jump_table_update.py</code> makes it, and the twice-daily Action keeps it current. It now comes from SDE build 3665151 (2026-11-02). Its stargates, flat positions, security and regions are identical to build 3662168, so only the positions are new.</li>
+</ul>
+
+<h2>Choices made while building</h2>
+<ul>
+<li><b>0.0001 LY, not the plan's 0.001:</b> since the page rounds <i>up</i> to 0.01, the table's own error must stay far below that step. It cost 4.1 KB gzipped more, measured on build 3665151: under the plan's 5 KB rule.</li>
+<li><b>Where the positions came from:</b> the container can't reach CCP's site. The positions were read in the owner's browser pane on developers.eveonline.com (the SDE zip unzipped in the page), packed as 0.0001 LY integers and read back in three pieces. They were checked by hash, then fed to <code>jump_table_update.py</code> as a stand-in SDE folder. The Action checks them against CCP's own files twice a day.</li>
+<li><b>Which jumps play the beacon:</b> a jump plays it only if it was read while Intel was in front and the page shown (LESSON #131).</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li><b>New <code>tools/page_checks/intel_map_you_check.py</code></b> (see tools/README):
+  <ul>
+  <li>Every system on the map has its light-years worked out in the check from the decoded table, with exact decimals, and rounded up.</li>
+  <li>Spot pairs come from CCP's positions: 8WA-Z6 0.51, E-VKJV 2.96, JP4-AA 3.20, FM-JK5 2.05, F-TE1T 7.00. Three of them would read 0.01 lower with plain rounding.</li>
+  <li>The pin is read off the canvas where a red fleet ring and the cyan hover ring cross it.</li>
+  <li>Also covered: the YOU chip among 34 reports, the crosshair, the arrow, a jump at 2.25&times;, the beacon (time, nothing left running, no redraws, the unseen and reduced-motion cases) and a phone.</li>
+  <li>19 mutants of the page, all caught: 18 at once, and the pin with no dark outline or hole after the check also read the outline and the hole.</li>
+  </ul></li>
+<li><b><code>independent_checks/check_jump_table_update.py</code>:</b> CCP's positions are made in the check with its own 9.46e15. A system moved only in space rewrites its 3 values. A page without positions gets them, and a system without a position stops the script. Six mutants of the generator were all caught: the real-world light-year, 0.001 units, positions not compared, axes swapped, truncation instead of rounding, and no stop.</li>
+<li><b>The full run</b> (12 lints, the pyfa chain, 45 page checks for calc, intel and layout, 31 min): 0 failed, 0 flaky.</li>
+<li><b>Page size:</b> 683,788 → 732,662 bytes gzipped (<code>gzip -9</code>), +48.9 KB (+7.1%); the position table is about 45 KB of it. That is under the 800 KB ceiling, which is now in CLAUDE.md's delivery steps. <b>Perf harness</b>, before and after in one session (Project doc roadmap/perf-harness/results-v2026.11.04.1.md): Intel on and in front for 14 min, the main thread 2.56% before, 2.43% after. The map is drawn 15 times in 3 minutes either way, about 0.7 ms more per draw for the pin and the chip. The beacon ran once (the first draw), without a map redraw.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #131: "recent" isn't "seen". The beacon first played for any jump under 5 s old when the map next drew, so a jump made while the page was hidden replayed it when the page came back. Record at the event whether anyone could see it, and test with the event during the hidden time and the draw after.</p>
+</body></html>

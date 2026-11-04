@@ -16,6 +16,12 @@ region names, made from the page's own INTEL_MAP, so:
     fingerprint and systems (a new system gets its position);
   * one system moved on CCP's map with no gate changed: changed=true, the pull request says the map changed, only INTEL_MAP
     rewritten (that system's position, nothing else), --check exits 1 before and 0 after.
+v2026.11.04.1 (light-years in the map's hover): mapSolarSystems.jsonl also carries each system's geographic position (3D,
+metres), made here from the page's own INTEL_MAP.p3 with CCP's light-year (9.46e15 m) written out in this check, so:
+  * the same data still matches (a script using another light-year, or another unit, fails here);
+  * one system moved in space only (position2D unchanged): changed=true, only that system's x, y, z rewritten (3 values);
+  * a page from before (INTEL_MAP without p3): changed=true, the positions added, every other value of INTEL_MAP unchanged;
+  * a system with no position in CCP's data: the script stops (exit not 0) and the page is untouched.
 """
 import sys, os, re, json, base64, struct, subprocess, tempfile, shutil
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.join(HERE, '..', '..')
@@ -39,10 +45,14 @@ def mtable(path):
     s = open(path, encoding='utf-8').read(); m = re.search(r'^const INTEL_MAP = (.*);$', s, re.M)
     return json.loads(m.group(1)) if m else None
 M0 = mtable(HTML)
-def m_rows(M, S):   # system id -> (x, y, sec100, region index), from the page's INTEL_MAP aligned to S
+LY_M, P3U = 9.46e15, 0.0001   # CCP's light-year (developers.eveonline.com map-data guide), the table's unit (the plan)
+def p3_of(M):   # INTEL_MAP.p3 -> [x..., y..., z...] (int24 LE, signed), independently of the script
+    b = base64.b64decode(M['p3']); return [int.from_bytes(b[i:i + 3], 'little', signed=True) for i in range(0, len(b), 3)]
+def m_rows(M, S):   # system id -> (x, y, sec100, region index, (px, py, pz) in 0.0001 LY), from the page's INTEL_MAP aligned to S
     dec = lambda k, f: struct.unpack('<%d%s' % (M['systems'], f), base64.b64decode(M[k]))
-    return {s: v for s, v in zip(S, zip(dec('x', 'h'), dec('y', 'h'), dec('sec', 'b'), dec('reg', 'B')))}
-def sde(folder, conns, systems, build, rows=None, regions=None):
+    n = M['systems']; P = p3_of(M) if M.get('p3') else [0] * (3 * n)
+    return {s: v + ((P[k], P[n + k], P[2 * n + k]),) for k, (s, v) in enumerate(zip(S, zip(dec('x', 'h'), dec('y', 'h'), dec('sec', 'b'), dec('reg', 'B'))))}
+def sde(folder, conns, systems, build, rows=None, regions=None, nopos=()):
     os.makedirs(folder, exist_ok=True); L, g = [], 50000000
     for a, c in sorted(conns):
         L.append(json.dumps({'_key': g, 'destination': {'solarSystemID': c, 'stargateID': g + 1}, 'solarSystemID': a, 'typeID': 16}))
@@ -50,8 +60,10 @@ def sde(folder, conns, systems, build, rows=None, regions=None):
     open(os.path.join(folder, 'mapStargates.jsonl'), 'w', encoding='utf-8').write('\r\n'.join(L) + '\r\n')   # CRLF, as CCP's latest.jsonl
     rows = rows or {}; regions = regions or ['Region A']
     def rec(s):
-        x, y, sec, rg = rows.get(s, (0, 0, 50, 0))
-        return {'_key': s, 'name': {'en': f'SYS-{s - 30000000}'}, 'position2D': {'x': x * 1e14, 'y': y * 1e14}, 'securityStatus': sec / 100, 'regionID': 10000001 + rg}
+        x, y, sec, rg, p = rows.get(s, (0, 0, 50, 0, (0, 0, 0)))
+        o = {'_key': s, 'name': {'en': f'SYS-{s - 30000000}'}, 'position2D': {'x': x * 1e14, 'y': y * 1e14}, 'securityStatus': sec / 100, 'regionID': 10000001 + rg}
+        if s not in nopos: o['position'] = {a: v * P3U * LY_M for a, v in zip('xyz', p)}   # metres, as CCP's file
+        return o
     open(os.path.join(folder, 'mapSolarSystems.jsonl'), 'w', encoding='utf-8').write('\n'.join(json.dumps(rec(s)) for s in sorted(systems)) + '\n')
     open(os.path.join(folder, 'mapRegions.jsonl'), 'w', encoding='utf-8').write('\n'.join(json.dumps({'_key': 10000001 + k, 'name': {'en': r}}) for k, r in enumerate(regions)) + '\n')
     open(os.path.join(folder, 'latest.jsonl'), 'w', encoding='utf-8').write(json.dumps({'_key': 'sde', 'buildNumber': build, 'releaseDate': '2026-10-29T11:10:30Z'}) + '\r\n')
@@ -66,11 +78,13 @@ try:
     same, changed = os.path.join(tmp, 'same'), os.path.join(tmp, 'changed')
     R0 = m_rows(M0, S0) if M0 else {}; REG = M0['regions'] if M0 else None
     check(M0 is not None and M0['jumps'] == J0['md5'] and M0['systems'] == len(S0), "the page's INTEL_MAP is aligned to its INTEL_JUMPS")
+    check(M0 is not None and M0.get('p3u') == P3U and len(p3_of(M0)) == 3 * len(S0) and max(abs(v) for v in p3_of(M0)) < 1 << 23 and len({R0[s][4] for s in S0}) > len(S0) - 5,
+          f"the page's INTEL_MAP holds every system's position in space (p3, units {M0 and M0.get('p3u')} LY, {len(p3_of(M0)) if M0 and M0.get('p3') else 0} values)")
     sde(same, C0, S0, J0['build'] + 5063, R0, REG)
     gone = sorted(C0)[0]; new_sys = 30100000; added = (S0[5], new_sys)
     C1 = (C0 - {gone}) | {added}
     sde(changed, C1, set(S0) | {new_sys}, J0['build'] + 5100, R0, REG)
-    moved = os.path.join(tmp, 'moved'); mv = S0[7]; R2 = dict(R0); R2[mv] = (R0[mv][0] + 3, R0[mv][1] - 2, R0[mv][2], R0[mv][3])
+    moved = os.path.join(tmp, 'moved'); mv = S0[7]; R2 = dict(R0); R2[mv] = (R0[mv][0] + 3, R0[mv][1] - 2, R0[mv][2], R0[mv][3], R0[mv][4])
     sde(moved, C0, S0, J0['build'] + 5200, R2, REG)
     page = os.path.join(tmp, 'index.html'); shutil.copy(HTML, page); before = open(page, encoding='utf-8').read()
     out_f, sum_f, body = os.path.join(tmp, 'out.txt'), os.path.join(tmp, 'summary.md'), os.path.join(tmp, 'pr.md')
@@ -96,7 +110,7 @@ try:
     after = open(page, encoding='utf-8').read()
     strip = lambda s: re.sub(r'^const INTEL_(JUMPS|MAP) = .*;$', '', s, flags=re.M)
     M1 = mtable(page); S1 = conns_of(J1)[1]; R1 = m_rows(M1, S1)
-    check(strip(after) == strip(before) and M1['jumps'] == J1['md5'] and M1['systems'] == J1['systems'] and R1[new_sys] == R0.get(new_sys, (0, 0, 50, 0)) and all(R1[s] == R0[s] for s in S0 if s in R1),
+    check(strip(after) == strip(before) and M1['jumps'] == J1['md5'] and M1['systems'] == J1['systems'] and R1[new_sys] == R0.get(new_sys, (0, 0, 50, 0, (0, 0, 0))) and all(R1[s] == R0[s] for s in S0 if s in R1),
           'only INTEL_JUMPS and INTEL_MAP changed in the page; the map re-aligned to the new table (every system keeps its own place)')
     rc5, o5 = run(page, changed, '--check')
     check(rc5 == 0 and 'matches' in o5, f'the rewritten page against the same data: nothing to do ({rc5})')
@@ -113,6 +127,27 @@ try:
           'only INTEL_MAP rewritten: that system moved, nothing else')
     rc8, o8 = run(page2, moved, '--check')
     check(rc8 == 0, f'the rewritten page against the same data: nothing to do ({rc8})')
+    # v2026.11.04.1: one system moved in space only (its flat-map place unchanged)
+    sp = os.path.join(tmp, 'space'); sv = S0[11]; R3 = dict(R0); x3, y3, z3 = R0[sv][4]; R3[sv] = R0[sv][:4] + ((x3 + 17, y3 - 4, z3 + 250),)
+    sde(sp, C0, S0, J0['build'] + 5300, R3, REG)
+    page3 = os.path.join(tmp, 'index3.html'); shutil.copy(HTML, page3); open(out_f, 'w').close(); os.path.exists(body) and os.remove(body)
+    rc9, _ = run(page3, sp, '--check')
+    rc10, o10 = run(page3, sp, '--write', '--body', body, env={'GITHUB_OUTPUT': out_f, 'GITHUB_STEP_SUMMARY': sum_f})
+    M3 = mtable(page3); R3r = m_rows(M3, S0)
+    check(rc9 == 1 and rc10 == 0 and 'map table: 3 value(s) differ' in o10 and R3r == R3 and all(M3[k] == M0[k] for k in ('x', 'y', 'sec', 'reg', 'regions')),
+          f'a system moved in space only: --check exits 1, its x, y, z rewritten (3 values), nothing else ({rc9}, {rc10}, {[l for l in o10.splitlines() if "map table" in l][:1]})')
+    # a page from before v2026.11.04.1: no positions yet
+    page4 = os.path.join(tmp, 'index4.html'); old = dict(M0); old.pop('p3'); old.pop('p3u')
+    open(page4, 'w', encoding='utf-8').write(re.sub(r'^const INTEL_MAP = .*;$', lambda m_: 'const INTEL_MAP = ' + json.dumps(old, ensure_ascii=False, separators=(',', ':')) + ';', open(HTML, encoding='utf-8').read(), count=1, flags=re.M))
+    rc11, _ = run(page4, same, '--check'); rc12, _ = run(page4, same, '--write'); M4 = mtable(page4)
+    check(rc11 == 1 and rc12 == 0 and M4.get('p3') == M0['p3'] and M4.get('p3u') == P3U and all(M4[k] == M0[k] for k in ('x', 'y', 'sec', 'reg', 'regions', 'jumps', 'systems')),
+          f'a page without positions: --check exits 1, --write adds them (equal to the page\'s own), nothing else changes ({rc11}, {rc12})')
+    # a system with no position in CCP's data: stop, the page untouched
+    nop = os.path.join(tmp, 'nopos'); sde(nop, C0, S0, J0['build'] + 5400, R0, REG, nopos={S0[3]})
+    page5 = os.path.join(tmp, 'index5.html'); shutil.copy(HTML, page5)
+    rc13, o13 = run(page5, nop, '--write')
+    check(rc13 != 0 and 'without a position' in o13 and open(page5, encoding='utf-8').read() == open(HTML, encoding='utf-8').read(),
+          f'a system without a position in CCP\'s data: the script stops, the page untouched ({rc13})')
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 print(f'JUMP TABLE UPDATE: {len(problems)} problems')

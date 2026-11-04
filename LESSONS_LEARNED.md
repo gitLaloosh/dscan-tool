@@ -163,6 +163,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #128 A full-page screenshot resizes the window (so does a phone's address bar): a popup should move on resize, not close.
 - #129 Made-up killmails must have IDs that grow with time, as zKillboard's do: the page reads its lists newest first by ID.
 - #130 A canvas is see-through where nothing is drawn: weigh a colour read with getImageData by its alpha, or a faint glow reads as a solid colour.
+- #131 "Recent" isn't "seen": decide whether a one-time effect may still play when its event happens, from who could see it then.
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1037,6 +1038,18 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 131. "Recent" isn't "seen": decide whether a one-time effect may still play when its event happens, from who could see it then
+
+- **What happened (v2026.11.04.1):** the Intel map's beacon (three rings spreading from your system for 1.6 s) plays on a jump,
+  never later. The first version stamped every jump with its time and played the beacon when the map next drew, if the jump was
+  under 5 s old. A jump made while the page was hidden (another browser tab) was 3 s old when the page came back, so the beacon
+  played for a jump nobody had seen happen, the replay the plan ruled out.
+- **How it was caught:** intel_map_you_check's own first run: the page hidden (`document.hidden`), a jump, the page shown again:
+  one beacon more.
+- **Do this instead:** record at the event whether anyone could see it (`it.me.sysAt` is the time only when Intel was in front
+  and the page shown, else 0); a later draw plays only what was seen. Test it with the event during the hidden time and the
+  draw after, not only with the event while hidden.
 
 ## 130. A canvas is see-through where nothing is drawn: weigh a colour read with getImageData by its alpha, or a faint glow reads as a solid colour
 

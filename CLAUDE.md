@@ -64,6 +64,9 @@ Before changing any calculation:
 5. End every delivery's reply with a commit message for the owner (he commits himself; the owner, 2026-10-30): a
    Summary line under 72 characters that starts with the version (or says "page unchanged" for tools and docs only)
    and a Description of short bullets. No names, paths or intel channel names.
+6. Report index.html's gzipped size in every delivery (`gzip -9 -c index.html | wc -c`). Past 800 KB, stop and ask
+   the owner before delivering (the owner, 2026-11-03: "At 800 KB"); the planned answer is a publish step that strips
+   comments (about 38% of the gzipped page), not moving tables out of the page.
 
 **Error messages carry codes** (`ERRORS.md`). Every error the page writes ends
 with a code such as `(ZKB-01)`, defined once in `ERROR_CODES` in `index.html`
@@ -155,6 +158,11 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   Feed's largest), following the Feed until set; Near You's reach is a setting (`nearRange`, alert range to the Feed's, default
   alert + 5). Rings: standing colour, gang size (1 / 2–10 / 11+). Routes: one per system (BFS, neighbours in index order), hover
   dashed, press kept. One stepper for every range (`RS`, `rsHtml`, `rsPaint`). `intel_map_check.py`.
+  v2026.11.04.1 (roadmap/map-ly-hover-plan.md): `INTEL_MAP.p3` holds CCP's 3D positions (0.0001 LY, int24) for the hover's
+  "N.NN LY from <you>" (`itMapLy`, `itMapLyText`: rounded UP to 0.01, the owner). Your system: a pin drawn last
+  (`itMapPinDraw`), the only filled label (YOU · name), a 1.6 s beacon on its own canvas (`itMapBeacon`; first draw and a jump
+  seen while Intel was in front, `it.me.sysAt`; none with reduced motion), the "You" edge arrow (`itMapYouArrow`); the
+  crosshair centers at the same zoom (`itMapCenter`); a jump keeps the zoom and centers. `intel_map_you_check.py`.
 - **Kills and losses in the system** (v2026.11.02.3, Project doc roadmap/system-activity-plan.md): one zKillboard request per
   system an hour (`/kills/systemID/<id>/pastSeconds/259200/`), then killmails from ESI newest first to the window or
   `SA_ACT_KM_MAX` (300). The system: an Intel Assess's, else ⚙ (`saSet`, localStorage dscanSaSet): your location from Intel or a
