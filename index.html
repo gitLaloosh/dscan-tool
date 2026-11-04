@@ -22322,7 +22322,7 @@ function attackerKey(a){ return a.alliance_id || a.corporation_id; }
 async function saEvidence(force){
   const g = sideOwnGroup();
   if(!g) return null;
-  const {data, at} = await zkbCachedJson(`${ZKB}/losses/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'losses lookup', 'array', {who: 'System Analyzer'});
+  const {data, at} = await zkbCachedJson(`${ZKB}/losses/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'losses lookup', 'array', {who: cardName('sysan')});
   const kms = await saKillmails(data);
   const byKey = new Map();
   for(const km of kms){
@@ -22339,7 +22339,7 @@ async function saEvidence(force){
 async function saSuggestions(force){
   const g = sideOwnGroup();
   if(!g) return null;
-  const {data} = await zkbCachedJson(`${ZKB}/kills/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'kills lookup', 'array', {who: 'System Analyzer'});
+  const {data} = await zkbCachedJson(`${ZKB}/kills/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'kills lookup', 'array', {who: cardName('sysan')});
   const kms = await saKillmails(data);
   const sets = sideSets(), count = new Map(), kind = new Map();
   for(const km of kms){
@@ -22573,8 +22573,8 @@ function saRowTypeDps(e){
 // v.92 (pilot-dossier-plan.md D4-D6): each row reads the Pilot Dossier's data (their newest PD_KILLS kills and PD_LOSSES
 // losses, from ESI, kept for good; the same 2 zKillboard requests as before) and picks the possible ship for a gang size.
 async function saPilotData(p){
-  const kills = await zkbCachedJson(`${ZKB}/kills/characterID/${p.id}/`, false, 'kills lookup', 'array', {who: 'System Analyzer'});
-  const losses = await zkbCachedJson(`${ZKB}/losses/characterID/${p.id}/`, false, 'losses lookup', 'array', {who: 'System Analyzer'});
+  const kills = await zkbCachedJson(`${ZKB}/kills/characterID/${p.id}/`, false, 'kills lookup', 'array', {who: cardName('sysan')});
+  const losses = await zkbCachedJson(`${ZKB}/losses/characterID/${p.id}/`, false, 'losses lookup', 'array', {who: cardName('sysan')});
   const newest = (list, n) => [...list.data].filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, n);
   const [kk, lk] = await Promise.all([analyzeChunks(newest(kills, PD_KILLS), fetchKillmail, 3), analyzeChunks(newest(losses, PD_LOSSES), fetchKillmail, 3)]);
   const kms = {kills: kk.filter(r => r && r.km).map(r => r.km), losses: lk.filter(r => r && r.km && r.km.victim).map(r => r.km)};
@@ -22885,7 +22885,7 @@ async function saHullFitsFrom(data, hullId){
   return keep({variants: out, vary, of: take.length, from: Math.min(...times), to: Math.max(...times)});
 }
 async function saFleetGroupData(g){
-  const {data} = await zkbCachedJson(`${ZKB}/kills/${saGroupPath(g)}/`, false, 'kills lookup', 'array', {who: 'System Analyzer'});
+  const {data} = await zkbCachedJson(`${ZKB}/kills/${saGroupPath(g)}/`, false, 'kills lookup', 'array', {who: cardName('sysan')});
   const kms = await (async () => {
     const take = [...data].filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, SA_FLEET_KILLS);
     return (await analyzeChunks(take, fetchKillmail, 5)).filter(r => r && r.km).map(r => r.km);
@@ -22903,7 +22903,7 @@ async function saFleetGroupData(g){
   for(const [id, n] of ships.slice(0, SA_FLEET_HULLS)){
     const t = await getType(id), gr = await getGroup(t.group_id);
     const h = {typeId: id, name: t.name, cls: gr.name, n, share: n / total, logi: /Logistics|Force Auxiliary/i.test(gr.name), pick: 0};
-    try{ Object.assign(h, await saHullFits(g, id, {who: 'System Analyzer'})); }catch(e){ h.err = withCode(e.message, errorCodeOf(e)); }
+    try{ Object.assign(h, await saHullFits(g, id, {who: cardName('sysan')})); }catch(e){ h.err = withCode(e.message, errorCodeOf(e)); }
     hulls.push(h);
   }
   const rest = ships.slice(SA_FLEET_HULLS);
@@ -26943,7 +26943,7 @@ async function saActRun(force){
   const A = sa.act = {sysId: S.id, name: S.name, from: S.from, list: null, at: 0, kms: [], next: 0, failed: 0, busy: true, err: null};
   saActDraw(true);
   try{
-    const {data, at} = await zkbCachedJson(saActUrl(S.id), force, 'system kills lookup', 'array', {who: 'System Analyzer'});
+    const {data, at} = await zkbCachedJson(saActUrl(S.id), force, 'system kills lookup', 'array', {who: cardName('sysan')});
     if(gen !== saActGen) return;
     A.list = data.filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id); A.at = at;
   }catch(e){
