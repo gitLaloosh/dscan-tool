@@ -138,6 +138,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #123 A check that compares a time-ago text must give it a value that can't tick between the page drawing it and the check reading it.
 - #124 Opening an IndexedDB database by name creates it: don't assume its store exists because the version is 1, and don't open one in a check just to look.
 - #125 A view that won't redraw while a control inside it has focus will also drop the change that control just made: force that redraw.
+- #135 Saving a growing list to localStorage on every event rewrites it all each time: keep a small fixed shape and save on a timer (at most once a second, and on page close).
 
 **Checks and test machinery**
 
@@ -166,6 +167,8 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #131 "Recent" isn't "seen": decide whether a one-time effect may still play when its event happens, from who could see it then.
 - #132 A plan's layout promise ("one line at these widths") is a guess until the real element is measured with its busiest content.
 - #133 A data source's name says what it's about, not what's in it: open one real file before a plan counts on it (CCP's "changes" files hold IDs, not values).
+- #134 A plan's promises about the code are guesses until checked against it: who knows the answer, when a timer runs, when text is built. See also #132, #133.
+- #136 A replace checked for one match before the edit can match twice after it: check the count where the replace runs (a moved line is a duplicate until the old one is gone).
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1040,6 +1043,46 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 136. A replace checked for one match before the edit can match twice after it: check the count where the replace runs
+
+- **What happened (v2026.11.04.4):** moving the header's status line (`<span class="hero-status" id="cacheStatus" ...>`) into the
+  new gauge's row, a script first checked the old line appeared once, then inserted the new row (which contained the same line,
+  indented two spaces deeper), then removed the old line with `str.replace`. The old line's text was now inside the new copy too,
+  so both went: the page lost `#cacheStatus`, and Refresh item data would have thrown.
+- **How it was caught:** a layout probe that pressed Refresh item data found no `#cacheStatus` (the header check presses it too).
+- **Do this instead:** count the matches in the same step as the replace (assert one, then replace once), or remove the old text
+  before inserting its moved copy; search for the element's id afterwards. A moved line is a duplicate until the old one is gone.
+
+## 135. Saving a growing list to localStorage on every event rewrites it all each time: keep a small fixed shape and save on a timer
+
+- **What happened (v2026.11.04.4, plan review before the build):** the lookup budgets' plan kept ESI's use as "a rolling 15-min
+  list in localStorage (time + caller + status code), trimmed on write". A busy minute is hundreds of ESI requests (a big Local's
+  names and affiliation, a Fleet tab's killmails, 300 killmails for kills in a system). Each save would stringify and write the
+  whole list on the main thread, so the cost of a burst grows with the square of its size.
+- **How it was caught:** the build session's review of the plan against the code, counting the call sites and what a busy minute
+  sends, before writing any of it.
+- **Do this instead:** keep what is shown, not every event: counts per minute per kind (at most 15 x 7 small numbers in
+  `dscanEsiUse`), merged into what another tab saved (read just before writing), saved at most once a second and on `pagehide`.
+  A list that is already small and capped (zKillboard's 100 spends) can still be written per event.
+
+## 134. A plan's promises about the code are guesses until checked against it: who knows the answer, when a timer runs, when text is built
+
+- **What happened (v2026.11.04.4, plan review before the build):** the lookup budgets' plan, written two versions earlier, made
+  three promises about the code that it doesn't do:
+  - "pass `who` from the call sites": ESI's calls sit in shared helpers (`getType` has 47 callers, `getGroup` 34) that every
+    feature and Intel's background lookups reach, so the call site knows only the kind of lookup, not the feature. Even for
+    zKillboard the caller had to be threaded through five helpers (`saHullFits` alone serves three features). ESI is counted by kind;
+  - "refresh it on the existing 10 s / 30 s age timer": that timer runs only while Intel is on, so with Intel off "37/100" would
+    never go down. One timeout set for the next expiry does it;
+  - "the message counts down": ZKB-01's text is written when the error is thrown and shown as plain text in about 16 places
+    (`textContent`, escaped HTML, stored row messages), so it can't count down where it was made. It is found on the page and
+    counted down there (`bgMsgSweep`; one pause for the page, so every copy shows the same time).
+- **How it was caught:** the build session's review of the plan against the latest main (the build-queue README's rule since
+  2026-11-04), by counting callers, reading when the timer starts and stops, and following one error to where it is shown.
+- **Do this instead:** before a plan says "pass X from the call site", count the callers and find the layer that actually knows X;
+  before it leans on an existing timer, read when that timer runs; before it promises live text, find where the text is built and
+  every place it is shown. Extends #132 (layout) and #133 (data sources) to the code itself.
 
 ## 133. A data source's name says what it's about, not what's in it: open one real file before a plan counts on it
 

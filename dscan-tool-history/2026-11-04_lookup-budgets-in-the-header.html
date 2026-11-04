@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-04 — Lookup budgets in the header, and the zKillboard pause counted down</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+table{border-collapse:collapse; font-size:14px;} td,th{border:1px solid #ddd; padding:4px 8px; text-align:left;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Lookup budgets in the header, and the zKillboard pause counted down</h1>
+<p><span class="tag">Page</span> 2026-11-04 &middot; <code>v2026.11.04.4</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 012, Project doc <code>roadmap/budget-gauge-plan.md</code>. The owner (2026-11-03): "add info to the page that lets the user see what their ESI and zKill budgets are. update the number as it changes. i have been running into zkill not responding frequently but i've also been loading larger datasets. it would be helpful (for now) to have these numbers visible at all times so i know how quickly (and which actions) my budget's being used. make sense? high priority".</li>
+<li>On the pause: "please show me how long the pause is and count it down for me", and "this is dangerous for the user because they might mistakenly extend the wait time by constantly retrying the search if not given a warning about doing so". A mockup came first; he picked option A (Analyze stays pressable).</li>
+<li>The build session's review against the latest main (2026-11-04), answered by the owner: ESI is counted by kind of lookup, not by feature ("let's go with your recommendation"); amber from 80 of 100 and "used by" kept across reloads. The header check was run in his browser on the live page: ESI's rate-limit and error-limit headers are both readable there, so the page shows ESI's own numbers.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>The gauge</b>, beside the version tag: <code>zKill 37/100 · ESI ok · Kills ok</code>.
+  <ul>
+  <li>zKillboard: lookups in the last 10 minutes of the page's 100; amber from 80; "zKill full m:ss" at 100; "zKill paused m:ss" while zKillboard isn't answering.</li>
+  <li>ESI: "ok"; amber "ESI N errors" from 50 errors in a minute, or "ESI low" when a route group is under 20% of its allowance; "ESI wait m:ss" after a 420 or 429 (Retry-After, else the error limit's reset, else 60 s).</li>
+  <li>Kills (only while Intel is on): "ok", or "Kills stopped m:ss" during the hour's stop.</li>
+  <li>Amber when near, full, paused or stopped, never the Hostile red. On a phone it is its own 44 px row above the name; below 480 px "zKill" is "zK" and Kills its dot and time, below 380 px the state words go too (the worst case, all three stopped at once, measured at each width).</li>
+  </ul></li>
+<li><b>The panel</b> (press the gauge): zKillboard's count, a bar, when the next one frees up, who used it (System Analyzer, Pilot Analyzer, Fleet tab, Kill link), and the pause note (the time left, failures in a row, "Pressing Analyze now sends nothing and doesn't add time", the next wait). ESI: errors this minute (ESI's own count when its answers carry it), the route group's allowance, the last 15 minutes by kind of lookup (item data, names, killmails, corporations and alliances, pilots, systems and gates, server status). Intel's live kills: the rate, or the stop. The shared close button; Escape and a press outside close it.</li>
+<li><b>ZKB-01 says the time and counts down</b> wherever it shows (the status lines, the Last Kill line, the System Analyzer's notes, the Fleet rows): "zKillboard's API isn't answering, so the page waits m:ss before asking again. Pressing Analyze now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is M min". At 0: "zKillboard can be asked again". Pressing during the pause sent nothing before too; now the page says so.</li>
+<li><b>One way to ESI</b>: every ESI request goes through <code>esiFetch</code>, which sends it exactly as before and only reads the answer's headers. Nothing new is asked of ESI or zKillboard.</li>
+<li><b>Kept in this browser</b>, shared by its tabs: <code>dscanZkbWho</code> (who used zKillboard) beside <code>dscanZkbBudget</code>, whose list of times is unchanged; <code>dscanEsiUse</code>, ESI's counts per minute per kind, saved at most once a second and when the page closes.</li>
+<li><b>Timers</b>: none while nothing counts down. One 1 s tick runs only while a countdown shows or the panel is open, never in a hidden tab (the Retry buttons' countdown moved onto it, so it now pauses in a hidden tab too and is right again on return). The zKillboard count goes down on one timeout set for when the oldest lookup ages out.</li>
+</ul>
+
+<h2>Stored data, both ways</h2>
+<ul>
+<li>Upgrading: a browser with only the old <code>dscanZkbBudget</code> list shows its spends as "Other" until new ones come in.</li>
+<li>Reverting: the older page reads <code>dscanZkbBudget</code> exactly as before and ignores the two new keys.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>budget_gauge_check.py</code> (new): the count and "Used by" from kept spends, amber at 80, full at 100, another tab sees the same; the Pilot Analyzer's lookups recorded as its own; a 503 pauses with the gauge and both messages counting down; Analyze during the pause sends no zKillboard request and doesn't move the end; the end says "can be asked again"; a second failure is 2 min with the next 4; one answer resets; ESI's error limit, a low route group, a 420 with Retry-After, and answers without headers; Kills only with Intel on, never in the zKillboard count; no tick when nothing counts down or in a hidden tab; the panel's focus and closing; amber not red; the worst case at 1440, 390 and 320 px.</li>
+<li>Mutants: MUTANTS_HERE</li>
+<li><code>check_request_gates.py</code>: esiFetch is the one fetch to ESI, sends <code>fetch(url, init)</code> unchanged, and every call names ESI, sits in a listed function and gives a kind. Three broken copies, each caught: a direct ESI fetch, a call without its kind, a cache-busting esiFetch.</li>
+<li><code>close_buttons_check.py</code> covers the new panel. ZKB-01 and ZKB-04 in ERRORS.md updated.</li>
+<li>CHECKS_HERE</li>
+<li>Perf harness, before (main) and after in one session: PERF_HERE</li>
+<li>Page size: 737,319 &rarr; 746,194 bytes gzipped (<code>gzip -9</code>), +8.9 KB, under the 800 KB ceiling.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #134: a plan's promises about the code are guesses until checked against it. "Pass who from the call site" assumed the call site knows who is asking (ESI's are in helpers with 30 to 50 callers each); "refresh on the existing timer" assumed it always runs (only with Intel on); "the message counts down" assumed the text is built where it is shown (it is fixed when thrown and shown in about 16 places).</li>
+<li>LESSON #135: saving a growing list to localStorage on every event rewrites the whole list each time. Keep a small fixed shape (counts per minute) and save on a timer.</li>
+<li>LESSON #136: a replace checked for one match before an edit can match twice after it. Moving the status line, its text was also inside the moved copy, and both were removed; count where the replace runs.</li>
+<li>CLAUDE.md step 5's stored-data rule was the wrong way round ("still reads the old format, so reverting stays safe"): reading the old format makes upgrading safe; reverting is safe only when the older page can read what the new one writes. It now asks for both.</li>
+</ul>
+</body></html>

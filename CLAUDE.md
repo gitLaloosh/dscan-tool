@@ -79,8 +79,10 @@ Before changing any calculation:
    - Commit and run the checks on the branch, then open a pull request into `main`. Its title is the Summary line: under
      72 characters, starting with the version (or "page unchanged" for tools and docs only). Its body is the
      Description's short bullets and the page-size line (step 6). No names, paths or intel channel names.
-   - At the top of the body: any change under `.github/workflows/`. When the page changes what it keeps in users'
-     browsers (localStorage keys, IndexedDB stores), say that it still reads the old format, so reverting stays safe.
+   - At the top of the body: any change under `.github/workflows/`, and any change to what the page keeps in users'
+     browsers (localStorage keys, IndexedDB stores). Such a change must be safe both ways (the 012 review, 2026-11-04):
+     the new page still reads what the older page wrote (upgrading is safe), and the older page still reads what the new
+     page writes (reverting is safe; keep an existing key's form and put new data under a new key). Say both in the body.
    - The owner reads the diff and merges; GitHub Pages publishes only after his merge. The reply links the pull request.
    - A session without write access delivers as before: the files into the owner's folder, and a commit message in the
      reply (Summary + Description as above) for him to commit himself (the owner, 2026-10-30).
@@ -205,6 +207,15 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   get their own fit free; Own fits up to 10), its exact cost in its label. Load all keeps `FK_ZKB_RESERVE` (25) of `ZKB_BUDGET`,
   refused when counted (`zkbFetchNow` `o.reserve`, which can only lower the cap). Rows stay in damage order until all are in.
   `fleet_fit_budget_check.py`.
+- **Lookup budgets** (v2026.11.04.4, Project doc roadmap/budget-gauge-plan.md; the owner: "have these numbers visible at all times"): the
+  header's gauge beside the version tag (`#bgGauge`: zKill N/100, or "full" / "paused" m:ss; ESI ok, N errors, low or wait m:ss, from
+  ESI's own headers; Kills only while Intel is on) and its panel (`#bgPop`: Used by, ESI by kind of lookup, the pause note; the shared
+  close button). ESI only through `esiFetch(url, init, kind)`, which sends what it's given and reads the answer's headers
+  (`ESI_KINDS`; check_request_gates); every zKillboard caller passes `{who}`. Kept in this browser: `dscanZkbWho` beside
+  `dscanZkbBudget` (whose list of times keeps its old form), `dscanEsiUse` per minute per kind, saved at most once a second. One tick
+  (`bgTick`) only while a countdown shows or the panel is open, never in a hidden tab; ZKB-01's text (`zkbUnavailableText`, matched by
+  `ZKB_MSG_RX`) counts down wherever it is shown (`bgMsgSweep`). Amber when near, full, paused or stopped; never red.
+  `budget_gauge_check.py`.
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
   the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship
