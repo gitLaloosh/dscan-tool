@@ -207,7 +207,10 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   column has Load per row and Load all above it (Common fits above 10 pilots: one request per alliance-and-hull pair, victims in it
   get their own fit free; Own fits up to 10), its exact cost in its label. Load all keeps `FK_ZKB_RESERVE` (25) of `ZKB_BUDGET`,
   refused when counted (`zkbFetchNow` `o.reserve`, which can only lower the cap). Rows stay in damage order until all are in.
-  `fleet_fit_budget_check.py`.
+  v2026.11.04.5 (the owner: "retry should probably be the same Load and Load All buttons"): a failed lookup leaves the pilot unloaded
+  with why on the row (`m.fail`, `fkFailShort`); no Retry in the head; Load and Load all count down on the button while zKillboard
+  can't be asked (`zkbWaitMs`; the end redraws the tab, `data-zkb-redraw`), and "All loaded" only when every pilot is.
+  `fleet_fit_budget_check.py`, `fleet_vs_check.py`.
 - **Lookup budgets** (v2026.11.04.4, Project doc roadmap/budget-gauge-plan.md; the owner: "have these numbers visible at all times"): the
   header's gauge beside the version tag (`#bgGauge`: zKill N/100, or "full" / "paused" m:ss; ESI ok, N errors, low or wait m:ss, from
   ESI's own headers; Kills only while Intel is on) and its panel (`#bgPop`: Used by, ESI by kind of lookup, the pause note; the shared

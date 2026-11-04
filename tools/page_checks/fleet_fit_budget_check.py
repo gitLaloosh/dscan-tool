@@ -84,7 +84,7 @@ def open_kill(pg, k):
     pg.evaluate(f"() => fkOpen({k}, '{M.H[k]}', null, null, {{from: 'intel', km: {json.dumps(M.KM[k])}}})")
     pg.wait_for_function("() => document.querySelector('#fleetPanel .fk-card') && !fk.checking && fk.members.length && !fk.members.some(m => m.state === 'check')", timeout=60000); pg.wait_for_timeout(300)
 def all_in(pg, timeout=180000):
-    pg.wait_for_function("() => fk.members.length && fk.members.every(m => ['done', 'err'].includes(m.state)) && !fk.members.some(m => m.ownBusy)", timeout=timeout); pg.wait_for_timeout(500)
+    pg.wait_for_function("() => fk.members.length && fk.members.every(m => m.state === 'done' || (m.state === 'later' && m.fail)) && !fk.members.some(m => m.ownBusy)", timeout=timeout); pg.wait_for_timeout(500)
 def stamps(pg): return pg.evaluate("() => zkbBudgetRead().length")
 
 with sync_playwright() as p:

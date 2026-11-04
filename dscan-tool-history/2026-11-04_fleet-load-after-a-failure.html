@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-04 — Fleet tab: Load and Load all after a failed lookup</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Fleet tab: Load and Load all after a failed lookup</h1>
+<p><span class="tag">Page</span> 2026-11-04 &middot; <code>v2026.11.04.5</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>The owner, testing v2026.11.04.4: "retry should probably be the same "Load" and "Load All" buttons. modify the message to indicate the nature of the issue and show the retry timer on the buttons themselves. doable?" His screenshot also showed "All loaded" while 11 rows had failed ("that's what drew my attention to it"). No mockup (the owner's choice: "skip").</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>A failed lookup leaves the pilot unloaded</b>, with why on the row, instead of a separate error state: "zKillboard isn't answering (ZKB-01)", "zKillboard limit reached in this browser (ZKB-04)", or any other failure as its own message says. The full message is the hover.</li>
+<li><b>Their Load is back</b> in the Fit column. While zKillboard can't be asked (its pause, or the page's 100 in 10 minutes) it is disabled and counts down, "Load in 0:42"; at the end the tab is drawn again and it says "Load". A row whose fit needs no request (kept from the last hour, or the share link's) isn't held back.</li>
+<li><b>Load all covers the failed pilots too</b>, with its exact cost, and counts down the same way ("Load all in 0:42"). The Retry in the card's head is gone.</li>
+<li><b>"All loaded" only when every pilot is loaded.</b> With any failed, Load all stays. When none could be looked up, the summary says why and points at Load all.</li>
+<li><b>The row's cost now uses Load all's rule</b>: a pilot whose own kept losses already hold one in that hull needs no request for their group's list. Before, the row said "1 zKillboard request" while Load all rightly counted none (LESSON #107: one meaning worked out twice drifts).</li>
+<li>No new requests, timers or stored data; the countdowns use the one 1 s tick (v2026.11.04.4).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>fleet_vs_check.py</code> (rewritten for this): zKillboard failing on the lookups (the pause starting at the failure, as <code>zkbFetchNow</code> does): no Retry in the head; each failed row says what happened, the full message with the reload warning on hover; Load and Load all disabled and counting down, never "All loaded"; at the end both can be pressed with their own labels, and Load all loads every pilot, then "All loaded". The short messages for ZKB-01, ZKB-04 and another code. Its stand-in now returns nothing for a cache-only check, as the real lookup does.</li>
+<li>Six mutants, each caught: the old error state, no countdown on the rows, none on Load all, "All loaded" with failures, no redraw at the end, the old vague message.</li>
+<li><code>fleet_fit_budget_check.py</code> waits for failed pilots in their new form. The Fleet, Intel fleet, shared kill and kill group checks and the budgets check pass.</li>
+<li>The whole chain (<code>run_checks.py --auto</code> against main picked <code>all</code>): 13 lints, the pyfa chain and 70 page checks, 0 failed, 0 flaky. Regression suite ALL PASS.</li>
+<li>Page size: 746,311 &rarr; 746,873 bytes gzipped (<code>gzip -9</code>), +0.6 KB, under the 800 KB ceiling.</li>
+</ul>
+</body></html>
