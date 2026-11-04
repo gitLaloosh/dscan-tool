@@ -70,9 +70,20 @@ Before changing any calculation:
    when an EVE build changed a gate; `tools/jump_table_update.py`) change only that table and no version.
    The same for its "Game data" pull requests (v2026.11.04.3, `tools/sde_change_report.py`): they change only
    `GAME_DATA_PENDING`. After the owner merges one, work from the merged copy (he runs `git pull`).
-5. End every delivery's reply with a commit message for the owner (he commits himself; the owner, 2026-10-30): a
-   Summary line under 72 characters that starts with the version (or says "page unchanged" for tools and docs only)
-   and a Description of short bullets. No names, paths or intel channel names.
+5. Deliver on a branch, through a pull request the owner merges (the owner, 2026-11-03: "one builder with access to
+   branch. the rest can read for planning purposes."; the build queue README's "Repo access: one builder, on branches").
+   - Only the one build session with write access pushes. Research and planning sessions only read the repository.
+   - Never push to `main` and never force-push: `main`'s ruleset requires a pull request, blocks force pushes and
+     deletion, and merges by squash. One branch per queue item, named after it (`011-list-caps`), started from `main`
+     after the previous pull request is merged (index.html is one file: parallel branches would conflict).
+   - Commit and run the checks on the branch, then open a pull request into `main`. Its title is the Summary line: under
+     72 characters, starting with the version (or "page unchanged" for tools and docs only). Its body is the
+     Description's short bullets and the page-size line (step 6). No names, paths or intel channel names.
+   - At the top of the body: any change under `.github/workflows/`. When the page changes what it keeps in users'
+     browsers (localStorage keys, IndexedDB stores), say that it still reads the old format, so reverting stays safe.
+   - The owner reads the diff and merges; GitHub Pages publishes only after his merge. The reply links the pull request.
+   - A session without write access delivers as before: the files into the owner's folder, and a commit message in the
+     reply (Summary + Description as above) for him to commit himself (the owner, 2026-10-30).
 6. Report index.html's gzipped size in every delivery (`gzip -9 -c index.html | wc -c`). Past 800 KB, stop and ask
    the owner before delivering (the owner, 2026-11-03: "At 800 KB"); the planned answer is a publish step that strips
    comments (about 38% of the gzipped page), not moving tables out of the page.
