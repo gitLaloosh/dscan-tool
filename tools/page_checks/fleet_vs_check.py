@@ -147,13 +147,13 @@ with sync_playwright() as p:
     LS = """() => { const rows = [...document.querySelectorAll('#fleetPanel .fk-card .fk-src.err')], ld = [...document.querySelectorAll('#fleetPanel .fk-card button.fk-ld')],
         la = document.querySelector('#fleetPanel .fk-card button.fk-la');
       return {head: !!document.querySelector('#fleetPanel .fk-card .pr-head .zkb-retry'), rows: rows.length, text: rows.map(r => r.textContent)[0], hover: rows.map(r => r.title)[0],
-        load: ld.map(b => [b.disabled, b.textContent.trim()]), all: la && [la.disabled, la.textContent.trim()], allLoaded: !!document.querySelector('#fleetPanel .fk-card .fk-all'),
+        load: ld.map(b => [b.disabled, b.textContent.trim()]), box: ld.map(b => { const r = b.getBoundingClientRect(), row = b.closest('.fk-row, .pr-wrap, li, tr') || b.parentElement.parentElement, q = row.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.right), r.right <= q.right + 0.5]; }), all: la && [la.disabled, la.textContent.trim()], allLoaded: !!document.querySelector('#fleetPanel .fk-card .fk-all'),
         sum: (document.querySelector('#fleetPanel .fk-sum:not(.fk-vic) .pr-msg') || {}).textContent || '', n: fk.members.length,
         later: fk.members.filter(m => m.state === 'later').length, failed: fk.members.filter(m => m.state === 'later' && m.fail).length, done: fk.members.filter(m => m.state === 'done').length}; }"""
     R1 = pg.evaluate(LS)
     check(not R1['head'] and R1['failed'] > 0 and R1['rows'] == R1['failed'] and R1['text'] == "zKillboard isn't answering (ZKB-01)" and R1['hover'].endswith('(ZKB-01)') and 'reloading' in R1['hover'],
           f'zKillboard not answering: no Retry in the head; each failed row says what happened, short (all of it on hover) {R1["head"]} {R1["rows"]} of {R1["failed"]} failed ({R1["done"]} loaded from what was kept) {R1["text"]!r}')
-    check(R1['load'] and all(d and re.match(r'Load in 0:0\d$', t) for d, t in R1['load']) and R1['all'] and R1['all'][0] and re.match(r'Load all in 0:0\d$', R1['all'][1])
+    check(R1['load'] and all(d and re.match(r'0:0\d$', t) for d, t in R1['load']) and R1['all'] and R1['all'][0] and re.match(r'Load all in 0:0\d$', R1['all'][1])
           and not R1['allLoaded'] and R1['later'] == R1['failed'] and (R1['done'] > 0 or R1['sum'].startswith(f'None of the {R1["n"]} could be looked up yet (zKillboard')),
           f'... their Load and Load all wait out the pause with a countdown on the button; never "All loaded" {R1["load"][:2]} {R1["all"]} {R1["sum"][:70]!r}')
     fs = pg.evaluate("() => [fkFailShort(zkbUnavailableText() + ' (ZKB-01)'), fkFailShort(zkbBudgetError().message + ' (ZKB-04)'), fkFailShort('Killmail 1 fetch: not found (status 404) (ESI-05)')]")
@@ -169,6 +169,11 @@ with sync_playwright() as p:
     check(all(not d and t == 'Load' for d, t in R2['load']) and R2['all'] and not R2['all'][0] and R2['all'][1].startswith('Load all (') and R2['rows'] == R1['failed']
           and dn == R3['n'] and R3['allLoaded'] and not R3['rows'] and not pg.evaluate("() => !!document.querySelector('#fleetPanel .zkb-retry')"),
           f'... when the pause ends Load and Load all can be pressed with their own labels; Load all looks them up, then "All loaded" {R2["load"][:2]} {R2["all"]} {dn}/{R3["n"]}')
+    # v2026.11.04.6 (the owner: "load button for individual rows alignment issue. let's drop the "Load in" text while the timer is
+    # active"): the countdown is only the time, and Load and its countdown are one width at one right edge, inside the row
+    w1, w2 = {b[0] for b in R1['box']}, {b[0] for b in R2['box']}
+    check(len(w1) == 1 and w1 == w2 and {b[1] for b in R1['box']} == {b[1] for b in R2['box']} and all(b[2] for b in R1['box'] + R2['box']),
+          f'... the countdown and "Load" are one width at one right edge, inside the row (widths {sorted(w1)} -> {sorted(w2)})')
     ctx.close()
     # phone
     ctx = new_ctx(390); pg = ctx.new_page(); open_fleet(pg)

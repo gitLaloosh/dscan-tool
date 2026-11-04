@@ -2393,7 +2393,10 @@
   .fk-fit{display:flex; flex-wrap:wrap; gap:2px 8px; align-items:center; padding:0 4px; min-width:0;}
   button.fk-ld{min-height:30px; padding:3px 12px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0;}
   button.fk-ld:hover, button.fk-ld:focus-visible{border-color:var(--accent-edge); background:var(--tag-fill-hover);}
-  button.fk-ld.zkb-retry{margin-left:0;} button.fk-ld:disabled{border-color:var(--line); background:transparent;}   /* v2026.11.04.5: "Load in m:ss" while zKillboard can't be asked */
+  button.fk-ld.zkb-retry{margin-left:0;} button.fk-ld:disabled{border-color:var(--line); background:transparent;}   /* v2026.11.04.5: the countdown while zKillboard can't be asked */
+  /* v2026.11.04.6 (the owner: "drop the "Load in" text while the timer is active. just show the timer"): Load and its countdown one
+     width, the time in even digits, so the Fit column doesn't move when one turns into the other */
+  button.fk-ld{min-width:58px; font-variant-numeric:tabular-nums; text-align:center;}
   .fk-fs{font:600 12px var(--sans); color:var(--text); white-space:nowrap;} .fk-fs.ally{color:var(--amber);} .fk-fs.unk{color:var(--text-dim); font-style:italic; font-weight:400;}
   .fk-fs.busy{display:inline-flex; align-items:center; min-height:30px;}
   button.fk-ownq{min-height:0; padding:0; font:400 11.5px var(--sans);}
@@ -2920,7 +2923,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.5</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.6</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -23960,7 +23963,7 @@ function fkRowHtml(m){
       : own ? `1 zKillboard request${pair ? ` (2 if they have no loss in this hull: their ${grp}'s isn't kept)` : ''}` : `1 zKillboard request (their ${grp}'s ${hull} losses)`;
     const zw = m.state === 'later' && !cost.startsWith('No zKillboard request') ? zkbWaitMs() : 0;   // v2026.11.04.5: zKillboard paused or the page's limit reached: the countdown on the button
     if(zw > 0) zkbRetryTick();
-    const cell = zw > 0 ? `<button type="button" class="zkb-retry fk-ld" data-fk-load="${m.id}" disabled data-zkb-at="${Date.now() + zw}" data-zkb-redraw="fk" title="${escapeHtml(`${fkWaitWhy()} Load their fit then: ${cost}`)}">Load in <span class="zkb-cd">${zkbClock(zw)}</span></button>`
+    const cell = zw > 0 ? `<button type="button" class="zkb-retry fk-ld" data-fk-load="${m.id}" disabled data-zkb-at="${Date.now() + zw}" data-zkb-redraw="fk" aria-label="Load, in ${zkbClock(zw)}" title="${escapeHtml(`${fkWaitWhy()} Load their fit then: ${cost}`)}"><span class="zkb-cd">${zkbClock(zw)}</span></button>`
       : m.state === 'later' ? `<button type="button" class="fk-ld" data-fk-load="${m.id}" title="${escapeHtml(`Load their fit: ${cost}`)}">Load</button>`
       : spin(m.state === 'check' ? 'Checking the fits kept from the last hour' : m.state === 'load' ? 'Looking up their fit' : 'Waiting for zKillboard');
     return wrap(`<button type="button" class="pr-row" ${open}>${pilot}${hullCell(line)}${dmgH}
