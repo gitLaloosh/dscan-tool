@@ -96,7 +96,12 @@ When pyfa or its data moves:
 2. Run `--run`.
 3. Explain every change, fix what needs fixing, and re-pin with notes.
 4. Update the manifest's `pyfa` block and fingerprints.
-5. Record it all in a history doc.
+5. Empty the page's list of changed items in the same delivery (v2026.11.04.3, build queue 008): set
+   `GAME_DATA_PENDING` to `{verified: <the new pyfa.clientBuild>, build: 0, types: ''}`. The fits it named are now
+   checked against pyfa. `tools/check_game_data_pending.py` fails until `verified` matches the manifest. If CCP's
+   newest build is past pyfa's data, run `tools/sde_change_report.py --pyfa $PYFA_SRC --write` afterwards: it lists
+   only what changed since the new verified build.
+6. Record it all in a history doc.
 
 When comparing with one of the owner's pyfa screenshots, ask for Help → About:
 his pyfa must be the same version and data build (LESSON #10).

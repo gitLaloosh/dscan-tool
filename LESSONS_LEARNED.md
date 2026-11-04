@@ -165,6 +165,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #130 A canvas is see-through where nothing is drawn: weigh a colour read with getImageData by its alpha, or a faint glow reads as a solid colour.
 - #131 "Recent" isn't "seen": decide whether a one-time effect may still play when its event happens, from who could see it then.
 - #132 A plan's layout promise ("one line at these widths") is a guess until the real element is measured with its busiest content.
+- #133 A data source's name says what it's about, not what's in it: open one real file before a plan counts on it (CCP's "changes" files hold IDs, not values).
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1039,6 +1040,20 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 133. A data source's name says what it's about, not what's in it: open one real file before a plan counts on it
+
+- **What happened (v2026.11.04.3):** the patch-day report's plan said that when an older build's data is no longer
+  published, the report can "chain the per-build changes/<build>.jsonl files back" instead. Read for real (the owner's
+  browser pane; this workspace can't reach CCP's site), a changes file only lists which IDs were added, changed or removed
+  in each file, with no values: it can say WHICH items changed, never old -> new. Two smaller surprises in the same read:
+  pyfa's data build (3624425) is not an SDE build at all (the chain jumps from 3632936 to 3607705), and the plan's "reuse
+  Intel's /status/ call" pointed at a call removed in v2026.10.29.5.
+- **How it was caught:** before writing the report, one real changes file, CCP's latest.jsonl and the first lines of the
+  five files it reads (types, groups, typeDogma, dogmaEffects, dogmaAttributes) were opened and their keys listed.
+- **Do this instead:** before a plan or a build relies on an outside file, open a real one and write its fields into the
+  plan; say plainly what a fallback can and can't give (here: "changed (old values not published)"). Search the current
+  code for a call a plan says to reuse before planning around it.
 
 ## 132. A plan's layout promise ("one line at these widths") is a guess until the real element is measured with its busiest content
 

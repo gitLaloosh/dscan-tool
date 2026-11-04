@@ -44,3 +44,41 @@ jobs:
           git commit -m "Jump table: stargates changed in EVE build $BUILD"
           git push origin "$branch"
           gh pr create --base "$BASE" --head "$branch" --title "Jump table: stargates changed in EVE build $BUILD" --body-file "$RUNNER_TEMP/jump-pr.md"
+  # v2026.11.04.3 (build queue 008, tools/sde_change_report.py): after a CCP build that changed ships, modules, charges,
+  # skills, drones, implants, subsystems or fighters since the build the page was checked against pyfa, open a pull request
+  # with the report and the page's updated list of changed items (GAME_DATA_PENDING). Never commits to the main branch.
+  game-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: pyfa's newest release (only its effect handlers, for the report)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view -R pyfa-org/Pyfa --json tagName -q .tagName)
+          mkdir -p "$RUNNER_TEMP/pyfa/eos"
+          curl -sSfL "https://raw.githubusercontent.com/pyfa-org/Pyfa/$tag/eos/effects.py" -o "$RUNNER_TEMP/pyfa/eos/effects.py"
+          echo "version: $tag" > "$RUNNER_TEMP/pyfa/version.yml"
+      - name: Compare CCP's newest item data with the build the page was checked against
+        id: report
+        run: python3 -I tools/sde_change_report.py index.html --pyfa "$RUNNER_TEMP/pyfa" --write --body "$RUNNER_TEMP/game-data-pr.md"
+      - name: Open a pull request (only when the list of changed items changed)
+        if: steps.report.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD: ${{ steps.report.outputs.build }}
+          BASE: ${{ github.event.repository.default_branch }}
+        run: |
+          branch="game-data/build-$BUILD"
+          if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            echo "A pull request branch for build $BUILD already exists ($branch); nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add index.html
+          git commit -m "Game data: items changed in EVE build $BUILD"
+          git push origin "$branch"
+          gh pr create --base "$BASE" --head "$branch" --title "Game data: items changed in EVE build $BUILD" --body-file "$RUNNER_TEMP/game-data-pr.md"

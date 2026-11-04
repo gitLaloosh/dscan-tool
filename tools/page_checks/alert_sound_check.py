@@ -198,6 +198,7 @@ with sync_playwright() as p:
       return [c.every(r => r.height >= 44), c.every(r => r.right <= box.right + 1 && r.left >= box.left - 1), document.documentElement.scrollWidth]; }""")
     check(ph[0] and ph[1] and ph[2] <= 390, f'390 px: 44 px controls inside the box, nothing off the page {ph}')
     ctx.close()
+    reqs = [u for u in reqs if not re.match(r'https://esi\.evetech\.net/latest/status/\?datasource=tranquility$', u)]   # v2026.11.04.3: the page's own, once per load (item data after a patch)
     check(not reqs, f'nothing sent anywhere by the sounds {reqs[:3]}')
     check(not errs, f'no page errors {errs[:3]}')
     b.close()
