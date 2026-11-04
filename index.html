@@ -2219,6 +2219,14 @@
   .fk-kg-here{padding:1px 6px; border-radius:3px; background:color-mix(in srgb, var(--cyan) 14%, transparent); color:var(--cyan); font:600 11px var(--sans); white-space:nowrap;}
   .fk-kg-x{display:flex; align-items:center; flex-wrap:wrap; gap:3px 8px; margin-left:auto;} .fk-kg-x .it-kl{margin-left:0;}
   .fk-kg-a{color:var(--text-dim); font:400 12px var(--mono); white-space:nowrap;}
+  /* v2026.11.04.2: the fleet's hulls (each pilot once), up to 4 icons with their counts, then "+N more"; the full list in the hover */
+  .fk-kg-hulls{display:inline-flex; align-items:center; gap:8px; white-space:nowrap; min-width:0;}
+  .fk-kg-hl{display:inline-flex; align-items:center; gap:3px;} .fk-kg-hl img{width:20px; height:20px; border-radius:3px; background:var(--tag-fill);}
+  .fk-kg-hl b{font:600 12px var(--mono); color:var(--text-dim);} .fk-kg-more{display:none; color:var(--text-dim); font:400 12px var(--sans);} .fk-kg-more[data-n="4"]{display:inline;}
+  /* where a heading can't hold the hulls on its one line (Fleet 1 with "analyzing" and two victim tags: below ~930 px), they take their own line under it, all
+     still shown (the owner: "B · own line"; a mockup's option A, fewer hulls, was not taken) */
+  .fk-picks{container-type:inline-size;}
+  @container (max-width: 930px){ button.fk-kg-h .fk-kg-hulls{order:5; flex-basis:100%; margin-left:22px;} }
   .fk-pk-i{text-align:right; font:600 11.5px var(--mono); color:var(--amber); white-space:nowrap;}
   button.fk-pk{display:grid; grid-template-columns:16px minmax(0,1.6fr) minmax(0,1fr) 70px 64px 90px 130px; gap:10px; align-items:center; width:100%; min-height:0; padding:7px 10px; text-align:left;
     border:1px solid transparent; border-radius:4px; background:var(--tag-fill); color:var(--text); font:400 12.5px var(--sans); letter-spacing:0; cursor:pointer;}
@@ -2228,7 +2236,9 @@
   .fk-pk-s{min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .fk-pk-a, .fk-pk-t{text-align:right; font:400 12px var(--mono); color:var(--text-dim); white-space:nowrap;} .fk-pk-l{justify-self:end;} .fk-pk-l .it-kl{margin-left:0;}
   @media (max-width:599px){ button.fk-kg-h{min-height:44px; flex-wrap:nowrap;} button.fk-kg-h[aria-expanded="true"]{flex-wrap:wrap;} .fk-kg-m{min-width:0; overflow:hidden; text-overflow:ellipsis;}
-    button.fk-kg-h .fk-kg-x{display:none;} button.fk-kg-h[aria-expanded="true"] .fk-kg-x{display:flex; flex-basis:100%; margin-left:22px;} .fk-kg-r{padding-left:0;} }   /* v2026.11.01.6: one line; ISK, age and victims on a second line when open */
+    button.fk-kg-h .fk-kg-x{display:none;} button.fk-kg-h[aria-expanded="true"] .fk-kg-x{display:flex; flex-basis:100%; margin-left:22px;} .fk-kg-r{padding-left:0;}
+    button.fk-kg-h .fk-kg-hulls{display:none;} button.fk-kg-h[aria-expanded="true"] .fk-kg-hulls{display:inline-flex; flex-basis:100%; margin-left:22px; order:5;}   /* v2026.11.04.2: open only, up to 3 */
+    .fk-kg-hl[data-k="4"], .fk-kg-more[data-n="4"]{display:none;} .fk-kg-more[data-n="3"]{display:inline;} }   /* v2026.11.01.6: one line; ISK, age and victims on a second line when open */
   @media (max-width:599px){ .fk-picks{--fk-pk-h:46px;} button.fk-pk{grid-template-columns:16px minmax(0,1fr) auto auto; row-gap:2px; min-height:44px;} .fk-pk > svg{grid-row:1 / span 2;} .fk-pk .fk-pk-n{grid-column:2; grid-row:1;} .fk-pk .fk-pk-s{grid-column:2; grid-row:2;} .fk-pk .fk-pk-t{grid-column:3 / span 2; grid-row:1;} .fk-pk .fk-pk-a{grid-column:3; grid-row:2;} .fk-pk .fk-pk-i{grid-column:4; grid-row:2;} .fk-pk .fk-pk-l{display:none;} }
   /* v2026.10.31.1: the victim, a tag in the line under the title; opens them in the Pilot Analyzer on the ship they lost */
   button.fk-vbtn{display:inline-flex; align-items:center; gap:6px; min-height:0; padding:1px 8px; margin:0 2px; border:1px solid transparent; border-radius:4px; background:var(--tag-fill); color:var(--heading); font:600 13px var(--sans); cursor:pointer; vertical-align:baseline;}
@@ -2850,7 +2860,7 @@
 
   <header class="hero">
     <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.1</span>
+    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.2</span>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -23323,7 +23333,7 @@ async function fkOpen(killId, hash, originId, shared, opts = {}){
   const from = opts.from || (shared ? 'shared' : 'dossier');
   clearTimeout(fk.pauseT);
   Object.assign(fk, {killId, hash, km: null, origin: originId || null, members: [], players: 0, order: null, shared: shared || null, err: null, sys: '', victim: null,
-    from, back: from === 'intel' ? 'intel' : 'pilot', picks: opts.picks && opts.picks.length > 1 ? opts.picks : null, victimF: null,
+    from, back: from === 'intel' ? 'intel' : 'pilot', picks: opts.picks && (opts.picks.length > 1 || from === 'intel') ? opts.picks : null, victimF: null,   // v2026.11.04.2: one Intel kill too (the owner: "treating any single killmails being sent from the intel tab the same as we do for multiple")
     mode: null, queue: [], wk: 0, pause: null, pauseT: 0, checking: false, ready: false});
   fkShow(true); switchTab('fleet'); fkRender();
   const r = opts.km ? {km: opts.km} : await fetchKillmail({killmail_id: killId, zkb: {hash}});
@@ -23708,9 +23718,44 @@ function fkGroupKills(P){
     return {idx, pilots: new Set(idx.flatMap(i => att[i])).size, isk: idx.reduce((s, i) => s + (P[i].isk || 0), 0), newest: P[idx[0]].t, vic}; };
   const fleets = [...by.values()].filter(l => l.length > 1).map(grp).sort((a, b) => b.pilots - a.pilots || b.idx.length - a.idx.length || b.newest - a.newest);
   fleets.forEach((g, i) => { g.key = `f${i}`; g.name = `Fleet ${i + 1}`; });
+  if(n === 1){ const g = Object.assign(grp([0]), {key: 'f0', name: 'Fleet 1', one: true}); return {fleets: [g], loose: null, all: [g]}; }   // v2026.11.04.2: one Intel kill: its attackers are its fleet ("fleet 1 is fine"), open (a lone group)
   const lone = [...by.values()].filter(l => l.length === 1).flat();
   const loose = lone.length ? Object.assign(grp(lone), {key: 'nl', name: 'Not linked', loose: true}) : null;
   return {fleets, loose, all: loose ? [...fleets, loose] : fleets};
+}
+// v2026.11.04.2 (roadmap/fleet-hulls-plan.md; the owner: "add a column to the "fleet N" summary row ... that shows a count of each hull in
+// the fleet"): each pilot once, in the ship from their newest kill in that fleet; ships only (fkOpen's rule: category 6, not a capsule),
+// so NPCs, pods and structures are left out. From the killmails already here; the hulls' groups through the cached getType/getGroup:
+// null until every one is known (nothing drawn meanwhile), then the next fkRender draws it. No timer, no request to zKillboard.
+const FK_KG_HULLS_TIP = 'Hulls: each pilot once, in the ship from their newest kill in the fleet; pods, NPCs and structures left out.';
+function fkHullKind(t){   // 1 a ship, 0 not one, undefined while its type or group is unknown
+  const ty = typeCache.get(t), gr = ty && groupCache.get(ty.group_id);
+  return gr ? (gr.category_id === 6 && ty.group_id !== 29 ? 1 : 0) : undefined;
+}
+function fkGroupHulls(g){
+  if(g.loose) return null;
+  const P = fk.picks, ship = new Map();   // pilot -> the ship on their newest kill here (g.idx: newest first)
+  for(const i of g.idx) for(const a of (P[i].km && P[i].km.attackers) || []) if(a.character_id && !ship.has(a.character_id)) ship.set(a.character_id, a.ship_type_id || 0);
+  const want = [...new Set([...ship.values()].filter(Boolean))], miss = want.filter(t => fkHullKind(t) === undefined);
+  if(miss.length){ fkHullsLoad(miss); return null; }
+  const n = new Map();
+  for(const t of ship.values()) if(t && fkHullKind(t) === 1) n.set(t, (n.get(t) || 0) + 1);
+  const list = [...n].map(([t, c]) => ({t, c, name: typeCache.get(t).name, cls: hullClassName(t)})).sort((a, b) => b.c - a.c || a.name.localeCompare(b.name));
+  return {list, inShips: list.reduce((s, h) => s + h.c, 0), pilots: ship.size};
+}
+const fkHullsAsked = new Set();
+async function fkHullsLoad(types){
+  const ask = types.filter(t => !fkHullsAsked.has(t)); if(!ask.length) return;
+  ask.forEach(t => fkHullsAsked.add(t));
+  await Promise.all(ask.map(async t => { try{ const ty = await getType(t); await getGroup(ty.group_id); }catch(e){ /* not counted: no strip until it is known */ } }));
+  if(fk.picks) fkRender();
+}
+function fkHullsHtml(g){
+  const H = fkGroupHulls(g); if(!H || !H.list.length) return '';
+  const many = H.list.length > 4, show = H.list.slice(0, 4);
+  const tip = `${H.list.map(h => `${h.name}${h.cls ? ` (${h.cls})` : ''} ×${h.c}`).join('\n')}\n${H.inShips} of ${H.pilots} pilot${H.pilots === 1 ? '' : 's'} in ships. ${FK_KG_HULLS_TIP}`;
+  const more = [4, 3, 2, 1].filter(n => H.list.length > n).map(n => `<span class="fk-kg-more" data-n="${n}">+${H.list.length - n} more</span>`).join('');   // one per number of hulls shown; the CSS shows the right one
+  return `<span class="fk-kg-hulls" title="${escapeHtml(tip)}">${show.map((h, k) => `<span class="fk-kg-hl" data-k="${k + 1}"><img src="https://images.evetech.net/types/${h.t}/icon?size=32" alt="${escapeHtml(h.name)}" loading="lazy" onerror="this.style.visibility='hidden'"><b>×${h.c}</b></span>`).join('')}${more}</span>`;
 }
 function fkGroups(){
   const P = fk.picks;
@@ -23725,17 +23770,17 @@ function fkPickHtml(p, i){
 }
 function fkGroupHtml(g){
   const P = fk.picks, open = fk.kgOpen.has(g.key), here = g.idx.some(i => P[i].id === fk.killId), k = g.idx.length;
-  const who = g.loose ? `${k} kill${k === 1 ? '' : 's'}` : `${g.pilots === 1 ? 'solo' : `${g.pilots} pilots`} · ${k} kills`;
+  const who = g.loose ? `${k} kill${k === 1 ? '' : 's'}` : `${g.pilots === 1 ? 'solo' : g.pilots ? `${g.pilots} pilots` : 'NPCs'} · ${k} kill${k === 1 ? '' : 's'}`;   // NPCs: a kill with no player on it (only a single Intel kill makes such a fleet)
   const vic = ['h', 'n', 'f'].filter(v => g.vic[v]).map(v => `<span class="it-kl ${IT_KILL_WORD[v][0]}">${g.vic[v]} ${IT_KILL_WORD[v][g.vic[v] === 1 ? 2 : 3]}</span>`).join('');
   const isk = g.isk ? `<span class="it-isk" title="${escapeHtml(`${Math.round(g.isk).toLocaleString('en-US')} ISK (zKillboard's value), all ${k} kill${k === 1 ? '' : 's'}`)}">${itIsk(g.isk)}</span>` : '';
-  const tip = `${g.name}: ${who.replace(' · ', ', ')}${g.isk ? `, ${itIsk(g.isk)} ISK` : ''}, newest ${itAgo(g.newest)} ago. ${g.loose ? FK_KG_LOOSE_TIP : FK_KG_TIP}`;
-  return `<div class="fk-kg${g.loose ? ' loose' : ''}"><button type="button" class="fk-kg-h" data-fk-kg="${g.key}" aria-expanded="${open}"${open ? ` aria-controls="fkkg-${g.key}"` : ''} title="${escapeHtml(tip)}"><span class="fk-kg-c" aria-hidden="true">${IT_CHEV}</span><span class="fk-kg-t">${escapeHtml(g.name)}</span><span class="fk-kg-m">${who}</span>${here ? '<span class="fk-kg-here">analyzing</span>' : ''}<span class="fk-kg-x">${isk}<span class="fk-kg-a">newest ${escapeHtml(itAgo(g.newest))} ago</span>${vic}</span></button>${open ? `<div class="fk-kg-r" id="fkkg-${g.key}" role="group" aria-label="${escapeHtml(`${g.name}: its kills`)}">${g.idx.map(i => fkPickHtml(P[i], i)).join('')}</div>` : ''}</div>`;
+  const tip = `${g.name}: ${who.replace(' · ', ', ')}${g.isk ? `, ${itIsk(g.isk)} ISK` : ''}, ${k === 1 ? '' : 'newest '}${itAgo(g.newest)} ago. ${g.loose ? FK_KG_LOOSE_TIP : g.one ? 'The pilots on this one kill.' : FK_KG_TIP}${g.loose ? '' : ` ${FK_KG_HULLS_TIP}`}`;
+  return `<div class="fk-kg${g.loose ? ' loose' : ''}"><button type="button" class="fk-kg-h" data-fk-kg="${g.key}" aria-expanded="${open}"${open ? ` aria-controls="fkkg-${g.key}"` : ''} title="${escapeHtml(tip)}"><span class="fk-kg-c" aria-hidden="true">${IT_CHEV}</span><span class="fk-kg-t">${escapeHtml(g.name)}</span><span class="fk-kg-m">${who}</span>${here ? '<span class="fk-kg-here">analyzing</span>' : ''}${fkHullsHtml(g)}<span class="fk-kg-x">${isk}<span class="fk-kg-a">${k === 1 ? '' : 'newest '}${escapeHtml(itAgo(g.newest))} ago</span>${vic}</span></button>${open ? `<div class="fk-kg-r" id="fkkg-${g.key}" role="group" aria-label="${escapeHtml(`${g.name}: its kills`)}">${g.idx.map(i => fkPickHtml(P[i], i)).join('')}</div>` : ''}</div>`;
 }
 function fkPicksHtml(){
   const P = fk.picks;
-  if(!P || P.length < 2) return '';
-  const G = fkGroups(), where = [...new Set(P.map(p => p.sys))], nf = G.fleets.length;
-  return `<div class="fk-pk-h">${P.length} kills${where.length === 1 && where[0] ? ` in ${P[0].sysId ? sysNameHtml(P[0].sysId, where[0]) : escapeHtml(where[0])}` : ''} from ${escapeHtml(cardName('intel'))} · <span title="${escapeHtml(FK_KG_TIP)}">${nf} fleet${nf === 1 ? '' : 's'} by shared pilots</span> · as they were when you opened this</div>
+  if(!P || !P.length) return '';   // v2026.11.04.2: one Intel kill gets the list too (was: 2 or more)
+  const G = fkGroups(), where = [...new Set(P.map(p => p.sys))], nf = G.fleets.length, one = P.length === 1;
+  return `<div class="fk-pk-h">${P.length} kill${one ? '' : 's'}${where.length === 1 && where[0] ? ` in ${P[0].sysId ? sysNameHtml(P[0].sysId, where[0]) : escapeHtml(where[0])}` : ''} from ${escapeHtml(cardName('intel'))}${one ? '' : ` · <span title="${escapeHtml(FK_KG_TIP)}">${nf} fleet${nf === 1 ? '' : 's'} by shared pilots</span>`} · as ${one ? 'it was' : 'they were'} when you opened this</div>
     <div class="fk-picks" role="group" aria-label="Kill to analyze">${G.all.map(fkGroupHtml).join('')}</div>`;
 }
 // The victim, from the killmail's own fit: the same facts as the fleet's summary (no time to kill, LESSON #108)

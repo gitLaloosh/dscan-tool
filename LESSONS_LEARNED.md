@@ -164,6 +164,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #129 Made-up killmails must have IDs that grow with time, as zKillboard's do: the page reads its lists newest first by ID.
 - #130 A canvas is see-through where nothing is drawn: weigh a colour read with getImageData by its alpha, or a faint glow reads as a solid colour.
 - #131 "Recent" isn't "seen": decide whether a one-time effect may still play when its event happens, from who could see it then.
+- #132 A plan's layout promise ("one line at these widths") is a guess until the real element is measured with its busiest content.
 
 **Intel and live data (chat logs, zKillboard's feed)**
 
@@ -1038,6 +1039,18 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 132. A plan's layout promise ("one line at these widths") is a guess until the real element is measured with its busiest content
+
+- **What happened (v2026.11.04.2):** the hull-count plan said each Fleet heading keeps its hulls on one line at 1440, 1024 and 900 px
+  and drops icons rather than wrapping. It was written from reading the code, not from the page. Measured in the mockup with the
+  busiest heading the battle could make (Fleet 1: "analyzing", 4 hulls with "+7 more", two victim tags), one line needs about a
+  1,050 px window; at 900 px even one hull doesn't fit.
+- **How it was caught:** the mockup on the real page, measured at each width before building, not after (the owner was then
+  shown both ways out, and picked the hulls on their own line).
+- **Do this instead:** before a plan promises a layout, put the change on the real page and measure the element at each width with
+  its longest content (tags, counts, long names, the "analyzing" mark), and say the numbers in the plan. When it can't hold, name
+  the choices for the owner rather than picking one in the build.
 
 ## 131. "Recent" isn't "seen": decide whether a one-time effect may still play when its event happens, from who could see it then
 

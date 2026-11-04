@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-04 — Hulls on each fleet, and one kill shown like several</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The Fleet tab: hulls on each fleet, and one kill from Intel shown like several</h1>
+<p><span class="tag">Fleet</span> 2026-11-04 &middot; <code>v2026.11.04.2</code></p>
+
+<h2>Why</h2>
+<ul>
+<li><b>Hull counts</b> (build queue 009, Project doc <code>roadmap/fleet-hulls-plan.md</code>). The owner: "add a column to the "fleet N" summary row for Fleet on a kill that shows a count of each hull in the fleet." A mockup on the real page came first ("mockup first"; the repo's <code>Claude outputs/fleet_hulls_mockup.html</code>). He answered: "looks good"; narrow headings "B · own line"; the pilots not in ships "Hover only"; a solo fleet "Show it"; a phone "Only when opened".</li>
+<li><b>One kill like several.</b> The owner: "let's start treating any single killmails being sent from the intel tab the same as we do for multiple ... it's more clear to the user what they are looking at." Its mockup is <code>Claude outputs/single_kill_mockup.html</code>. He answered "yes", "fleet 1 is fine" and "with 009 as one version". Asked "does this cover solo kills as well?": yes, and a kill with only NPCs on it reads "NPCs".</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Each Fleet heading's hulls</b> sit after its pilots and kills: up to 4 hull icons with their counts, most first (then by name), then "+N more".
+  <ul>
+  <li>Each pilot counts once, in the ship from their newest kill in that fleet, so a pilot who reshipped counts in the newer hull.</li>
+  <li>Ships only: pods, NPCs and structures are left out, by the same rule the fleet's own pilot list uses.</li>
+  <li>The hover lists every hull with its ship class and count, then "45 of 48 pilots in ships" and the rule.</li>
+  </ul></li>
+<li><b>No hulls on "Not linked"</b>: those kills aren't one fleet.</li>
+<li><b>No hulls before the types load</b>: nothing shows until the hulls' types are known (the page's own cached ESI lookups), and then they appear. No spinner, no timer, no request to zKillboard.</li>
+<li><b>Pressing works as before</b>: the hulls are part of the heading, so pressing them opens or closes the fleet.</li>
+<li><b>A narrow list</b> (below 930 px, about a 1,050 px window): the hulls take their own line under the heading, and all 4 still show.</li>
+<li><b>A phone</b>: a closed heading stays one line with no hulls. An open one shows 3 hulls and "+N more" on their own line.</li>
+<li><b>One kill from Intel</b> (its label in the Feed, or a Near You badge with one kill) now opens with the same list as several:
+  <ul>
+  <li>the line "1 kill in &lt;system&gt; from Intel · as it was when you opened this";</li>
+  <li>a Fleet 1 heading, open and "analyzing", with its pilots ("solo" for one, "NPCs" for none), its hulls, the ISK, "N min ago" and the victim;</li>
+  <li>the kill itself, under the heading.</li>
+  </ul>
+  Kills opened from a Pilot Dossier or a shared link are unchanged.</li>
+</ul>
+
+<h2>Choices made while building</h2>
+<ul>
+<li><b>The narrow-width layout:</b> the plan had asked for one line at 1440, 1024 and 900 px, with fewer icons instead of wrapping. The mockup measured that this can't hold for a busy heading (LESSON #132), and the owner picked the own-line layout over fewer icons.</li>
+<li><b>Layout follows the list's width:</b> a container query on the kill list, not the window's width, so the hulls follow the list wherever the list is drawn.</li>
+</ul>
+
+<h2>Checks and gates</h2>
+<ul>
+<li><b>New <code>tools/page_checks/fleet_hulls_check.py</code></b> (see tools/README):
+  <ul>
+  <li>Each fleet's hulls are worked out again in Python on a made-up battle, with sa_mocks.py's pilots and real hulls.</li>
+  <li>Fleet 1 has 48 pilots over 4 kills and 11 hulls, including a reshipped pilot, 2 pods, an Astrahus and an NPC. Fleet 2 is a small gang, Fleet 3 a solo Loki, and 2 kills are Not linked.</li>
+  <li>Also covered: the hover, the lookups held back, the layout at four widths and a phone, the three one-kill cases, and a Dossier kill.</li>
+  <li>The old page fails it.</li>
+  <li>20 mutants, all caught. 4 of them (every hull per pilot, the oldest hull, the strip as a button, a spinner) were only caught after the reshipped pilot really flew a Ferox in an earlier kill and the check counted the strip itself.</li>
+  </ul></li>
+<li><b>Updated <code>intel_fleet_check.py</code>:</b> a badge for one kill now opens with its list (it said "nothing to pick").</li>
+<li><b>The whole run</b> (<code>run_checks.py --auto</code>, all tiers since run_checks.py changed): 12 lints, the pyfa chain and 68 page checks in 32 min, 0 failed, 0 flaky.</li>
+<li><b>Page size:</b> 732,664 &rarr; 735,221 bytes gzipped (+2.6 KB), under the 800 KB stop. No perf harness: Intel's tick isn't touched.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<p>LESSON #132: a plan's layout promise ("one line at these widths") is a guess until the real element is measured with its busiest content. Put the change on the real page and measure it with the longest tags, counts and names before promising a layout. When the promise can't hold, give the owner the choices.</p>
+</body></html>

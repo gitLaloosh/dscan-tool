@@ -9,7 +9,8 @@ intel_kills_check.py's start (made-up logs and kills, R2Z2 and ESI answered by s
   * the Feed: every kill's label is the button (data-it-fleet), no Fleet ▸ / Pilot ▸ anywhere;
   * Near You's kill badges are buttons;
   * a badge for one kill by several pilots: the Fleet tab, "From Intel", the killmail the feed gave (no ESI killmail request),
-    the pilots in ships, no list to pick from; Close: back to Intel, the Fleet tab hidden;
+    the pilots in ships; v2026.11.04.2: the kill list too ("1 kill in ... from Intel", its one Fleet 1 open, "analyzing", the kill
+    pressed; was: no list); Close: back to Intel, the Fleet tab hidden;
   * a badge for one solo kill: the Fleet tab too, its one pilot;
   * a badge for 2 kills: the Fleet tab on the newer, both listed to pick from, the newer pressed; by the same pilots, they're one
     fleet, open from the start (v2026.11.01.6, kill_groups_check); a new kill in Intel doesn't change the list; picking the other
@@ -37,8 +38,12 @@ _tail = r'''
     pg.evaluate("() => { window.__kmReq = []; const f = window.fetch; window.fetch = function(u){ if(String(u).includes('/killmails/')) window.__kmReq.push(String(u)); return f.apply(this, arguments); }; }")
     kb = pg.evaluate(BADGE, 'fleet'); pg.wait_for_timeout(2500)
     fl = pg.evaluate(STATE)
-    check(kb and fl[0] == 'Fleet' and fl[1] and fl[2] == 'intel' and fl[3].startswith('From Intel') and fl[4] == 0 and fl[5] >= 2 and fl[6] == 0,
-          f'a badge for one kill by several pilots: the Fleet tab from Intel, the killmail the feed gave (no ESI request), its pilots, nothing to pick {kb} {fl}')
+    one = pg.evaluate("() => [(document.querySelector('#fleetPanel .fk-pk-h') || {}).textContent || '', [...document.querySelectorAll('#fleetPanel button.fk-kg-h')].map(h => [h.querySelector('.fk-kg-t').textContent, h.querySelector('.fk-kg-m').textContent, h.getAttribute('aria-expanded'), !!h.querySelector('.fk-kg-here')]), [...document.querySelectorAll('#fleetPanel .fk-pk')].map(b => b.getAttribute('aria-pressed'))]")
+    check(kb and fl[0] == 'Fleet' and fl[1] and fl[2] == 'intel' and fl[3].startswith('From Intel') and fl[4] == 0 and fl[5] >= 2 and fl[6] == 1,
+          f'a badge for one kill by several pilots: the Fleet tab from Intel, the killmail the feed gave (no ESI request), its pilots {kb} {fl}')
+    check(one[0].startswith('1 kill in ') and one[0].endswith('from Intel · as it was when you opened this') and 'fleet' not in one[0] and len(one[1]) == 1 and one[1][0][0] == 'Fleet 1'
+          and one[1][0][1] == f'{fl[5]} pilots · 1 kill' and one[1][0][2] == 'true' and one[1][0][3] and one[2] == ['true'],
+          f'v2026.11.04.2 (the owner: "treating any single killmails being sent from the intel tab the same as we do for multiple"): the kill list with its one fleet, open, "analyzing", the kill pressed {one}')
     pg.click('#fleetPanel [data-fk-close]'); pg.wait_for_timeout(400)
     cl = pg.evaluate("() => [document.querySelector('.tab-btn.active').textContent, document.querySelector('#fleetTabWrap').hidden]")
     check(cl == ['Intel', True], f'Close: back to Intel, the Fleet tab hidden {cl}')

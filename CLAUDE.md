@@ -145,6 +145,11 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   group starts closed (a lone group open), headings with Intel's chevron stay pinned at the top of the list while their kills scroll
   (`top:-2px` over the list's padding); open groups are kept per set of kills. Only the picker: Intel, the analysis, `#fleet=` and
   the zKillboard budget don't change; no request. `kill_groups_check.py`; `check_ui_rules.py` (6) keeps list expanders on IT_CHEV.
+  v2026.11.04.2 (roadmap/fleet-hulls-plan.md): each fleet heading shows its hulls (`fkGroupHulls`: each pilot once, in the ship from
+  their newest kill; ships only, fkOpen's rule) as up to 4 icons + "+N more", the full list and "N of M pilots in ships" in its hover,
+  none on Not linked or before the types are known; below a 930 px list (a container query) the hulls take their own line; on a phone
+  only when open, 3. One Intel kill gets the list too ("1 kill in ...", an open Fleet 1; "NPCs" with no player); kills from a
+  Pilot Dossier or a link don't. `fleet_hulls_check.py`.
 - **Alert sounds** (v2026.11.01.8, Project doc roadmap/alert-sound-plan.md): two slots by jumps, Near You (1 jump to the alert range)
   and In system (0 jumps, kills too); five sounds made in code (Chime = the old sound exactly), or your own file (≤ 1 MB, ≤ 5 s,
   kept only in its own IndexedDB database `dscan-intel-sounds`, never the ESI cache); one master gain, loudness (volume/100)²; the
