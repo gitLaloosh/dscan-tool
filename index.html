@@ -2393,6 +2393,7 @@
   .fk-fit{display:flex; flex-wrap:wrap; gap:2px 8px; align-items:center; padding:0 4px; min-width:0;}
   button.fk-ld{min-height:30px; padding:3px 12px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); font:600 12px var(--sans); letter-spacing:0;}
   button.fk-ld:hover, button.fk-ld:focus-visible{border-color:var(--accent-edge); background:var(--tag-fill-hover);}
+  button.fk-ld.zkb-retry{margin-left:0;} button.fk-ld:disabled{border-color:var(--line); background:transparent;}   /* v2026.11.04.5: "Load in m:ss" while zKillboard can't be asked */
   .fk-fs{font:600 12px var(--sans); color:var(--text); white-space:nowrap;} .fk-fs.ally{color:var(--amber);} .fk-fs.unk{color:var(--text-dim); font-style:italic; font-weight:400;}
   .fk-fs.busy{display:inline-flex; align-items:center; min-height:30px;}
   button.fk-ownq{min-height:0; padding:0; font:400 11.5px var(--sans);}
@@ -2919,7 +2920,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.4</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.5</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -4032,11 +4033,16 @@ function zkbRetryHtml(attrs, label = 'Retry'){
 function zkbRetryTick(){ bgTickStart(); }
 function zkbRetryStep(now){   // one step of every Retry countdown; true while one is left
   const B = [...document.querySelectorAll('button.zkb-retry[data-zkb-at]')];
+  let fkAgain = false;
   for(const b of B){
     const w = Number(b.dataset.zkbAt) - now, cd = b.querySelector('.zkb-cd');
     if(w > 0){ if(cd) cd.textContent = zkbClock(w); continue; }
-    b.disabled = false; b.removeAttribute('data-zkb-at'); b.title = 'Ask zKillboard again'; b.textContent = `↻ ${b.dataset.zkbLabel || 'Retry'}`;
+    b.removeAttribute('data-zkb-at');
+    // v2026.11.04.5: the Fleet tab's Load and Load all are drawn again with their own label and cost (fkRender), not a Retry
+    if(b.dataset.zkbRedraw === 'fk'){ fkAgain = true; continue; }
+    b.disabled = false; b.title = 'Ask zKillboard again'; b.textContent = `↻ ${b.dataset.zkbLabel || 'Retry'}`;
   }
+  if(fkAgain && typeof fkRender === 'function') fkRender();
   return B.some(b => b.hasAttribute('data-zkb-at'));
 }
 
@@ -23744,6 +23750,17 @@ async function fkOpen(killId, hash, originId, shared, opts = {}){
 }
 // v2026.11.02.1: what Load all would use: common fits above 10 pilots in ships, unless chosen
 function fkMode(){ return fk.mode || (fk.members.length >= FK_COMMON_FROM ? 'common' : 'own'); }
+// v2026.11.04.5 (the owner: "modify the message to indicate the nature of the issue"): a failed lookup said short on its row (the full
+// message on hover); and why Load and Load all are counting down
+function fkFailShort(msg){
+  const c = (/\(([A-Z]+-\d+)\)\s*$/.exec(msg || '') || [])[1];
+  return c === 'ZKB-01' ? "zKillboard isn't answering (ZKB-01)" : c === 'ZKB-04' ? 'zKillboard limit reached in this browser (ZKB-04)' : msg;
+}
+function fkWaitWhy(){
+  zkbPauseRead();
+  return zkbUnavailableUntil > Date.now() ? "zKillboard isn't answering, so the page waits before asking again; pressing now would send nothing."
+    : `This page has asked zKillboard ${ZKB_BUDGET} times in 10 minutes, its limit in this browser.`;
+}
 function fkPair(m){ return m.alliance ? {kind: 'alliance', id: m.alliance} : !isNpcCorp(m.corp) ? {kind: 'corporation', id: m.corp} : null; }   // NPC corporations: no common fit
 function fkPairUrl(g, hull){ return `${ZKB}/losses/${saGroupPath(g)}/shipTypeID/${hull}/`; }
 // What Load all costs now, exactly (the killmail gives every pilot's alliance and hull): common, one request per pair not kept; own,
@@ -23804,10 +23821,13 @@ async function fkWorker(gen){
     catch(e){
       if(gen !== fk.gen) return;
       if(e.zkbReserve){ m.state = 'later'; fkPause(j.mode); fkRender(); continue; }
-      r = j.own ? {ownErr: withCode(e.message, errorCodeOf(e))} : {state: 'err', msg: withCode(e.message, errorCodeOf(e))};
+      // v2026.11.04.5 (the owner: "retry should probably be the same Load and Load All buttons"): a failed lookup leaves the pilot
+      // unloaded, with why (m.fail): their Load and Load all ask again, counting down while zKillboard can't be asked
+      r = j.own ? {ownErr: withCode(e.message, errorCodeOf(e))} : {state: 'later', fail: withCode(e.message, errorCodeOf(e))};
     }
     if(gen !== fk.gen) return;
     Object.assign(m, r || {}, j.own ? {ownBusy: false} : {});
+    if(m.state === 'done') delete m.fail;
     fkRender();
   }
   if(gen === fk.gen) fk.wk--;
@@ -23931,19 +23951,21 @@ function fkRowHtml(m){
   const spin = (t) => `<span class="fk-fs busy" title="${escapeHtml(t)}"><span class="busy-spin" aria-hidden="true"></span></span>`;
   const g = fkPair(m), grp = m.alliance ? 'alliance' : 'corporation';
   if(['later', 'check', 'wait', 'load'].includes(m.state)){
-    const line = m.state === 'load' ? '<span class="fk-src"><span class="busy-spin" aria-hidden="true"></span>looking up their fit…</span>' : m.state === 'wait' ? '<span class="fk-src"><span class="busy-spin" aria-hidden="true"></span>waiting for zKillboard…</span>' : '';
-    const own = !lossStubCache.has(`${m.id}|${m.hull}`), pair = g && !zkbKept(fkPairUrl(g, m.hull));
+    const line = m.state === 'load' ? '<span class="fk-src"><span class="busy-spin" aria-hidden="true"></span>looking up their fit…</span>' : m.state === 'wait' ? '<span class="fk-src"><span class="busy-spin" aria-hidden="true"></span>waiting for zKillboard…</span>'
+      : m.state === 'later' && m.fail ? `<span class="fk-src err" title="${escapeHtml(m.fail)}">${escapeHtml(fkFailShort(m.fail))}</span>` : '';   // v2026.11.04.5: what went wrong, said short (all of it on hover)
+    // own: their losses aren't kept; pair: their group's list in that hull isn't kept and is needed (v2026.11.04.5: not when their own
+    // kept losses already hold one in that hull, fkCost's rule, so the row and Load all agree on what costs a request)
+    const ownL = lossStubCache.get(`${m.id}|${m.hull}`), own = !ownL, pair = g && !(ownL && ownL.length) && !zkbKept(fkPairUrl(g, m.hull));
     const cost = fk.shared && fk.shared[m.id] ? 'No zKillboard request: the share link has it' : !own && !pair ? 'No zKillboard request: kept from the last hour'
       : own ? `1 zKillboard request${pair ? ` (2 if they have no loss in this hull: their ${grp}'s isn't kept)` : ''}` : `1 zKillboard request (their ${grp}'s ${hull} losses)`;
-    const cell = m.state === 'later' ? `<button type="button" class="fk-ld" data-fk-load="${m.id}" title="${escapeHtml(`Load their fit: ${cost}`)}">Load</button>`
+    const zw = m.state === 'later' && !cost.startsWith('No zKillboard request') ? zkbWaitMs() : 0;   // v2026.11.04.5: zKillboard paused or the page's limit reached: the countdown on the button
+    if(zw > 0) zkbRetryTick();
+    const cell = zw > 0 ? `<button type="button" class="zkb-retry fk-ld" data-fk-load="${m.id}" disabled data-zkb-at="${Date.now() + zw}" data-zkb-redraw="fk" title="${escapeHtml(`${fkWaitWhy()} Load their fit then: ${cost}`)}">Load in <span class="zkb-cd">${zkbClock(zw)}</span></button>`
+      : m.state === 'later' ? `<button type="button" class="fk-ld" data-fk-load="${m.id}" title="${escapeHtml(`Load their fit: ${cost}`)}">Load</button>`
       : spin(m.state === 'check' ? 'Checking the fits kept from the last hour' : m.state === 'load' ? 'Looking up their fit' : 'Waiting for zKillboard');
     return wrap(`<button type="button" class="pr-row" ${open}>${pilot}${hullCell(line)}${dmgH}
     <span class="pr-dps"><span class="pr-dash">—</span></span><span class="pr-num pr-ehp"><span class="pr-dash">—</span></span><span class="pr-weak"><span class="pr-dash">—</span></span><span class="pr-ew"><span class="pr-dash">—</span></span>
     <span class="pr-chev" aria-hidden="true">›</span><span class="pr-mob">${dmgM}</span></button>`, cell);
-  }
-  if(m.state === 'err'){   // v2026.10.31.2: a zKillboard failure said short (the whole message on hover); the Retry is in the card's head
-    const z = /\((ZKB-0[14])\)$/.exec(m.msg || ''), short = z ? `zKillboard didn't answer (${z[1]}): Retry is above` : m.msg;
-    return wrap(`<button type="button" class="pr-row" ${open}>${pilot}${hullCell(`<span class="fk-src err" title="${escapeHtml(m.msg)}">${escapeHtml(short)}</span>`)}${dmgH}<span class="pr-mob">${dmgM}</span></button>`, '<span class="pr-dash">—</span>');
   }
   const e = m.est, dps = m.fitUnknown ? null : saRowDps(e), td = m.fitUnknown ? {} : saRowTypeDps(e);
   const bar = dps && dps.v > 0 ? `<span class="pr-dbar" aria-hidden="true">${DMG.filter(d => td[d] > 0).map(d => `<i style="flex:${td[d]};background:var(--${d})"></i>`).join('')}</span>` : '';
@@ -23995,7 +24017,7 @@ function fkRender(){
   }
   const head = `<div class="card fk-head"><div class="fk-top"><h2>${escapeHtml(cardName('fleet'))} on a kill</h2>${acts}</div>${sub}${fkPicksHtml()}${fk.err ? `<div class="pr-msg err">${escapeHtml(fk.err)}</div>` : ''}${!fk.km && !fk.err ? `<div class="pr-msg"><span class="busy-spin" aria-hidden="true"></span>Reading killmail ${fk.killId || ''} from ESI…</div>` : ''}</div>`;
   if(!fk.km){ const focused = fkFocusKey(el), keep = fkPicksTop(el); el.innerHTML = head; fkPicksKeep(el, keep); fkFocusBack(el, focused); return; }
-  const n = fk.members.length, done = fk.members.filter(m => ['done', 'err'].includes(m.state)).length, busy = fk.members.some(m => ['check', 'wait', 'load'].includes(m.state));
+  const n = fk.members.length, done = fk.members.filter(m => m.state === 'done').length, busy = fk.members.some(m => ['check', 'wait', 'load'].includes(m.state));
   let shown = fk.members;   // v2026.11.02.1: the damage order (fkOpen) until every pilot is in, then by DPS as before
   if(done === n && n){   // the dossier's pilot first, then DPS (no fit, then errors, last)
     const key = (m) => m.state !== 'done' ? -2 : m.fitUnknown ? -1 : saRowDps(m.est).v;
@@ -24019,6 +24041,7 @@ function fkRender(){
       ${logiStat}
       <div class="fl-stat"><div class="k">Damage on the kill</div><div class="v">${S.dmg.toLocaleString()}</div>${ctxHtml('the killmail’s own numbers')}</div>
     </div>`;
+  const failed = fk.members.filter(m => m.state === 'later' && m.fail).length;   // v2026.11.04.5: unloaded after a failure (was a Retry in the head)
   const sum = `<div class="card fl-sum fk-sum"><div class="pr-head"><h3>${escapeHtml(cardName('fksum'))}</h3>${ctxHtml(`${done} of ${n} looked up${notIn ? `, ${notIn} not yet` : ''}`)}<span class="sa-sp"></span>${infoBtnHtml('fksum')}</div>
     ${S.ships ? `<div class="fk-cov">fits: ${escapeHtml(cov)}</div>
     <div class="fl-row">
@@ -24030,8 +24053,7 @@ function fkRender(){
       <div class="fl-stat"><div class="k">Tackle and EWAR</div><div class="fk-ewl">${kinds || '<span class="pr-dash">none seen</span>'}</div>${kinds ? ctxHtml('farthest optimal of each kind') : ''}</div>
       ${logiStat}
       <div class="fl-stat"><div class="k">Combined EHP</div><div class="v">${saFmtK(S.ehp)}</div>${ctxHtml('uniform damage')}</div>
-    </div>` : !n ? '<div class="pr-msg fl-msg">No pilots in ships on this kill.</div>' : `${free}<div class="pr-msg fl-msg">${done === n ? `None of the ${n} could be looked up yet: retry from the pilots below.` : busy ? 'Adds up as the pilots come in…' : 'Fleet DPS, tank and EWAR need fits: <b>Load all</b> in the pilots list.'}</div>`}</div>`;
-  const failed = fk.members.filter(m => m.state === 'err').length;   // v2026.10.31.2: one Retry for the pilots who couldn't be looked up
+    </div>` : !n ? '<div class="pr-msg fl-msg">No pilots in ships on this kill.</div>' : `${free}<div class="pr-msg fl-msg">${failed && !busy && !done ? `None of the ${n} could be looked up yet (${escapeHtml(fkFailShort(fk.members.find(m => m.fail).fail))}): <b>Load all</b> in the pilots list asks again.` : busy ? 'Adds up as the pilots come in…' : 'Fleet DPS, tank and EWAR need fits: <b>Load all</b> in the pilots list.'}</div>`}</div>`;
   // v2026.11.02.1: Load all, over the Fit column: its choice of fits, the exact cost and what's left; paused at the reserve with a countdown
   const mode = fkMode(), C = fkCost(mode), left = Math.max(0, ZKB_BUDGET - zkbBudgetRead().length), later = fk.members.filter(m => m.state === 'later').length;
   const costT = mode === 'common' ? `${C.n} request${C.n === 1 ? '' : 's'}` : C.max > C.n ? `${C.n} request${C.n === 1 ? '' : 's'}, up to ${C.max}` : `${C.n} request${C.n === 1 ? '' : 's'}`;
@@ -24040,9 +24062,10 @@ function fkRender(){
   const modeSel = `<select data-fk-mode="1" aria-label="Which fits Load all uses" title="Common fits: one lookup per alliance and hull (their own loss when it's among them). Own fits: one lookup per pilot, their own loss first">${[['common', 'Common fits'], ['own', 'Own fits']].map(([v, l]) => `<option value="${v}"${v === mode ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
   const loadAll = !n ? '' : !later && !busy ? '<span class="fk-all">All loaded</span>'
     : !later && !fk.pause ? `<span class="fk-all"><span class="busy-spin" aria-hidden="true"></span>Loading ${fk.members.filter(m => ['wait', 'load', 'check'].includes(m.state)).length}…</span>`
+    : later && zkbWaitMs() > 0 && C.n > 0 ? `${modeSel}<button type="button" class="zkb-retry fk-la" data-fk-loadall="1" disabled data-zkb-at="${Date.now() + zkbWaitMs()}" data-zkb-redraw="fk" title="${escapeHtml(`${fkWaitWhy()} Then: ${costT}`)}">Load all in <span class="zkb-cd">${zkbClock(zkbWaitMs())}</span></button>`
     : pw > 0 ? `${modeSel}<button type="button" class="zkb-retry fk-la" data-fk-loadall="1" disabled data-zkb-at="${Date.now() + pw}" data-zkb-label="Load all" title="${escapeHtml(`Paused to keep ${FK_ZKB_RESERVE} zKillboard lookups for the rest of the page; carries on by itself`)}">Paused to keep ${FK_ZKB_RESERVE} lookups · continues in <span class="zkb-cd">${zkbClock(pw)}</span></button>`
     : later ? `${modeSel}<button type="button" class="fk-la" data-fk-loadall="1"${fk.checking ? ' disabled' : ''} title="${escapeHtml(`${mode === 'common' ? 'Each alliance-and-hull pair once, kept an hour' : 'Each pilot’s own losses in that hull, then their alliance’s when they have none'}; stops with ${FK_ZKB_RESERVE} of the ${ZKB_BUDGET} a page may ask in 10 minutes left`)}">Load all (${costT} · ${left} left)</button>` : '';
-  const rows = `<div class="card pr-card fk-card"><div class="pr-head"><h3>${escapeHtml(cardName('fkpilots'))}</h3>${ctxHtml(fk.order ? (fk.origin ? 'the dossier’s pilot first, then DPS' : 'most DPS first') : (fk.origin ? 'the dossier’s pilot first, then damage' : 'most damage on the kill first'))}${failed && !busy ? zkbRetryHtml('data-fk-retry="1"', `Retry ${failed}`) : ''}<span class="sa-sp"></span>${infoBtnHtml('fkpilots')}</div>
+  const rows = `<div class="card pr-card fk-card"><div class="pr-head"><h3>${escapeHtml(cardName('fkpilots'))}</h3>${ctxHtml(fk.order ? (fk.origin ? 'the dossier’s pilot first, then DPS' : 'most DPS first') : (fk.origin ? 'the dossier’s pilot first, then damage' : 'most damage on the kill first'))}<span class="sa-sp"></span>${infoBtnHtml('fkpilots')}</div>
     ${loadAll ? `<div class="fk-lab">${loadAll}</div>` : ''}
     <div class="fk-r fk-rh" aria-hidden="true"><div class="pr-cols"><span>Pilot</span><span>Ship on the kill</span><span>Damage</span><span class="r">DPS</span><span class="r">EHP</span><span>Weakest</span><span>EWAR</span><span></span></div><span class="fk-fit">Fit</span></div>
     ${shown.map(fkRowHtml).join('')}</div>`;
@@ -24234,7 +24257,6 @@ function fkClose(){
       return; }
     const pk = e.target.closest('[data-fk-pick]');   // v2026.10.31.2: another kill from the list
     if(pk){ const P = fk.picks, i = pk.dataset.fkPick, p = P && P[Number(i)]; if(p && p.id !== fk.killId){ fkOpen(p.id, p.hash, null, null, {from: fk.from, km: p.km, picks: P}); const b = el.querySelector(`[data-fk-pick="${i}"]`); if(b) b.focus({preventScroll: true}); } return; }
-    if(e.target.closest('[data-fk-retry]')){ const E = fk.members.filter(m => m.state === 'err'); for(const m of E){ m.state = 'later'; delete m.msg; } fkLoad(E, fkMode(), false); fkRender(); return; }   // v2026.10.31.2
     const r = e.target.closest('[data-fk-pilot]');
     if(r){ const pk = (fk.picks || []).find(p => p.id === fk.killId);   // the dossier on that hull, first (v2026.11.01.5), with this kill
       saOpenRow(r.dataset.fkPilot, '', 'all', r.dataset.fkType, fk.km ? {km: fk.km, hash: fk.hash, value: pk ? pk.isk : (pd.value.get(fk.killId) || 0)} : null); }

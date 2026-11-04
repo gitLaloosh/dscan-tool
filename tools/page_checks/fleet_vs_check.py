@@ -23,7 +23,7 @@ page with ESI and zKillboard answered from sa_mocks.py (Orla Fleetwood's 6-ship 
     ends, Retry can be pressed and looks the pilots up again;
   * 390 px: nothing off the page, the range said once per row; no page errors.
 """
-import sys, os
+import sys, os, re
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
 from playwright.sync_api import sync_playwright
@@ -44,7 +44,8 @@ def fleet_done(pg, timeout=120000):
     # v2026.11.02.1: nothing is looked up on open; once the fits kept from the last hour are in, Load all (when anything is left)
     pg.wait_for_function("() => fk.ready && !fk.checking", timeout=timeout)
     if pg.query_selector('#fleetPanel [data-fk-loadall]:not([disabled])'): pg.click('#fleetPanel [data-fk-loadall]')
-    pg.wait_for_function("() => { const c = document.querySelector('#fleetPanel .fk-sum .pr-head .ctx'); return c && /^(\\d+) of \\1 looked up/.test(c.textContent); }", timeout=120000)
+    # v2026.11.04.5: a failed lookup leaves the pilot unloaded (not "looked up"), so wait for nothing still being looked up
+    pg.wait_for_function("() => { const c = document.querySelector('#fleetPanel .fk-sum .pr-head .ctx'); return c && /looked up/.test(c.textContent) && !fk.members.some(m => ['check', 'wait', 'load'].includes(m.state)); }", timeout=120000)
     pg.wait_for_timeout(600)
 # Worked out here, not with the page's fkReach / fkSummary: each fit's main weapon is its range entry whose ammo does the most DPS
 # (confirmedAmmoBreakdown); a turret reaches optimal + falloff, a missile its flight; no range entry but drone or fighter DPS: drones.
@@ -138,22 +139,36 @@ with sync_playwright() as p:
     bw = pg.evaluate("() => [standIcon('bad', true).includes('<title>'), standIcon('bad', true).includes('aria-hidden=\"true\"'), standIcon('bad').includes('<title>Hostile</title>'), SIDE_MARK_BY_WORD.h.includes('<title>')]")
     check(bw == [False, True, True, False], f'an icon beside its word: no title, hidden from readers; alone: titled {bw}')
     # v2026.10.31.2 (the owner: "we need a refresh / retry icon ... even if we need to add a timer"): zKillboard not answering
-    pg.evaluate("() => { window.__fls = fetchLossesStubs; fetchLossesStubs = async () => { throw Object.assign(new Error(zkbUnavailableText()), {code: 'ZKB-01', zkbUnavailable: true}); }; zkbUnavailableUntil = Date.now() + 3000; zkbPauseSave(); }")
+    pg.evaluate("() => { window.__fls = fetchLossesStubs; fetchLossesStubs = async (c, h, f, o = {}) => { if(o.cacheOnly) return null; if(!(zkbUnavailableUntil > Date.now())){ zkbUnavailableUntil = Date.now() + 3000; zkbPauseSave(); } throw Object.assign(new Error(zkbUnavailableText()), {code: 'ZKB-01', zkbUnavailable: true}); }; lossStubCache.clear(); zkbMem.clear(); }   // v2026.11.04.5: the pause starts when a lookup fails, as zkbFetchNow does")
     pg.evaluate("() => fkOpen(fk.killId, fk.hash, null, null, {from: 'intel', km: fk.km})"); pg.wait_for_timeout(300); fleet_done(pg)
-    R1 = pg.evaluate("""() => { const b = document.querySelector('#fleetPanel .fk-card .pr-head .zkb-retry'), rows = [...document.querySelectorAll('#fleetPanel .fk-card .fk-src.err')];
-      return [b && b.disabled, b && b.textContent, (document.querySelector('#fleetPanel .fk-sum:not(.fk-vic) .pr-msg') || {}).textContent || '', rows.length, rows.map(r => r.textContent)[0], rows.map(r => r.title)[0], fk.members.length]; }""")
-    check(R1[0] and R1[1].startswith(f'↻ Retry {R1[6]} in 0:0') and R1[2].startswith(f'None of the {R1[6]} could be looked up yet') and R1[3] == R1[6]
-          and R1[4] == "zKillboard didn't answer (ZKB-01): Retry is above" and R1[5].endswith('(ZKB-01)') and 'reloading' in R1[5],
-          f'zKillboard not answering: one Retry, waiting out the pause with a countdown; the rows say it short (all of it on hover) {R1}')
+    # v2026.11.04.5 (the owner: "retry should probably be the same Load and Load All buttons ... modify the message to indicate the
+    # nature of the issue and show the retry timer on the buttons themselves"): no Retry in the head; each row says what happened and
+    # keeps its Load, Load all covers them; both count down while zKillboard can't be asked
+    LS = """() => { const rows = [...document.querySelectorAll('#fleetPanel .fk-card .fk-src.err')], ld = [...document.querySelectorAll('#fleetPanel .fk-card button.fk-ld')],
+        la = document.querySelector('#fleetPanel .fk-card button.fk-la');
+      return {head: !!document.querySelector('#fleetPanel .fk-card .pr-head .zkb-retry'), rows: rows.length, text: rows.map(r => r.textContent)[0], hover: rows.map(r => r.title)[0],
+        load: ld.map(b => [b.disabled, b.textContent.trim()]), all: la && [la.disabled, la.textContent.trim()], allLoaded: !!document.querySelector('#fleetPanel .fk-card .fk-all'),
+        sum: (document.querySelector('#fleetPanel .fk-sum:not(.fk-vic) .pr-msg') || {}).textContent || '', n: fk.members.length,
+        later: fk.members.filter(m => m.state === 'later').length, failed: fk.members.filter(m => m.state === 'later' && m.fail).length, done: fk.members.filter(m => m.state === 'done').length}; }"""
+    R1 = pg.evaluate(LS)
+    check(not R1['head'] and R1['failed'] > 0 and R1['rows'] == R1['failed'] and R1['text'] == "zKillboard isn't answering (ZKB-01)" and R1['hover'].endswith('(ZKB-01)') and 'reloading' in R1['hover'],
+          f'zKillboard not answering: no Retry in the head; each failed row says what happened, short (all of it on hover) {R1["head"]} {R1["rows"]} of {R1["failed"]} failed ({R1["done"]} loaded from what was kept) {R1["text"]!r}')
+    check(R1['load'] and all(d and re.match(r'Load in 0:0\d$', t) for d, t in R1['load']) and R1['all'] and R1['all'][0] and re.match(r'Load all in 0:0\d$', R1['all'][1])
+          and not R1['allLoaded'] and R1['later'] == R1['failed'] and (R1['done'] > 0 or R1['sum'].startswith(f'None of the {R1["n"]} could be looked up yet (zKillboard')),
+          f'... their Load and Load all wait out the pause with a countdown on the button; never "All loaded" {R1["load"][:2]} {R1["all"]} {R1["sum"][:70]!r}')
+    fs = pg.evaluate("() => [fkFailShort(zkbUnavailableText() + ' (ZKB-01)'), fkFailShort(zkbBudgetError().message + ' (ZKB-04)'), fkFailShort('Killmail 1 fetch: not found (status 404) (ESI-05)')]")
+    check(fs == ["zKillboard isn't answering (ZKB-01)", 'zKillboard limit reached in this browser (ZKB-04)', 'Killmail 1 fetch: not found (status 404) (ESI-05)'], f'a row names the issue: zKillboard down, the page\'s limit, anything else as its message says {fs}')
     pg2 = ctx.new_page(); pg2.goto('file://' + HTML); pg2.wait_for_timeout(300)
     w2 = pg2.evaluate("() => zkbWaitMs()"); pg2.close()
     check(w2 > 0, f'the pause is kept for a reload or another tab ({w2} ms left there)')
     pg.wait_for_timeout(3600)
-    R2 = pg.evaluate("() => { const b = document.querySelector('#fleetPanel .fk-card .pr-head .zkb-retry'); return [b.disabled, b.textContent]; }")
+    R2 = pg.evaluate(LS)
     pg.evaluate("() => { fetchLossesStubs = window.__fls; }")
-    pg.click('#fleetPanel .fk-card .pr-head .zkb-retry'); pg.wait_for_timeout(300); fleet_done(pg)
-    R3 = pg.evaluate("() => [fk.members.filter(m => m.state === 'done').length, fk.members.length, !!document.querySelector('#fleetPanel .zkb-retry')]")
-    check(R2[0] is False and R2[1] == f'↻ Retry {R1[6]}' and R3[0] == R3[1] and not R3[2], f'... when the pause ends it can be pressed; pressed, the pilots are looked up again {R2} {R3}')
+    pg.click('#fleetPanel .fk-card button.fk-la'); pg.wait_for_timeout(300); fleet_done(pg)
+    R3 = pg.evaluate(LS); dn = pg.evaluate("() => fk.members.filter(m => m.state === 'done').length")
+    check(all(not d and t == 'Load' for d, t in R2['load']) and R2['all'] and not R2['all'][0] and R2['all'][1].startswith('Load all (') and R2['rows'] == R1['failed']
+          and dn == R3['n'] and R3['allLoaded'] and not R3['rows'] and not pg.evaluate("() => !!document.querySelector('#fleetPanel .zkb-retry')"),
+          f'... when the pause ends Load and Load all can be pressed with their own labels; Load all looks them up, then "All loaded" {R2["load"][:2]} {R2["all"]} {dn}/{R3["n"]}')
     ctx.close()
     # phone
     ctx = new_ctx(390); pg = ctx.new_page(); open_fleet(pg)
