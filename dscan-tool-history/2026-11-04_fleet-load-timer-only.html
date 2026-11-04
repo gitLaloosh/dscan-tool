@@ -22,7 +22,7 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <h2>Checks</h2>
 <ul>
 <li><code>fleet_vs_check.py</code>: the countdown is only the time; Load and the countdown are one width at one right edge, inside the row. The old "Load in 0:41" fails both (100 px against 55 px).</li>
-<li>CHECKS_HERE</li>
-<li>Page size: SIZE_HERE</li>
+<li><code>run_checks.py --auto</code> against main picked <code>area</code> (intel, myship, pilot, system): 13 lints and 56 page checks, 0 failed (<code>system_analyzer_check</code> flaked once under load and passed on its retry).</li>
+<li>Page size: 746,862 &rarr; 746,989 bytes gzipped (<code>gzip -9</code>), +127 bytes, under the 800 KB ceiling.</li>
 </ul>
 </body></html>
