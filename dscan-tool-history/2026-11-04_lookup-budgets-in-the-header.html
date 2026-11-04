@@ -44,11 +44,11 @@ table{border-collapse:collapse; font-size:14px;} td,th{border:1px solid #ddd; pa
 <h2>Checks</h2>
 <ul>
 <li><code>budget_gauge_check.py</code> (new): the count and "Used by" from kept spends, amber at 80, full at 100, another tab sees the same; the Pilot Analyzer's lookups recorded as its own; a 503 pauses with the gauge and both messages counting down; Analyze during the pause sends no zKillboard request and doesn't move the end; the end says "can be asked again"; a second failure is 2 min with the next 4; one answer resets; ESI's error limit, a low route group, a 420 with Retry-After, and answers without headers; Kills only with Intel on, never in the zKillboard count; no tick when nothing counts down or in a hidden tab; the panel's focus and closing; amber not red; the worst case at 1440, 390 and 320 px.</li>
-<li>Mutants: MUTANTS_HERE</li>
+<li>Mutants: 14 broken copies, each caught by <code>budget_gauge_check.py</code>: Analyze sending during a pause, a press doubling the pause, a tick started on every paint, a tick that never stops, a tick starting in a hidden tab, Intel's live-kill reads counted in the zKillboard budget, red instead of amber, callers not kept, ESI's counts not kept, messages that don't count down, the gauge button replaced on every paint (focus and its handlers lost), ESI's headers ignored, no Kills part, Escape ignored. The first run missed two (a tick started on every paint, a tick in a hidden tab: both stop themselves a second later, so a check that looked after a second saw nothing); the check now looks at once. A section that crashes is a FAIL and the next one still runs.</li>
 <li><code>check_request_gates.py</code>: esiFetch is the one fetch to ESI, sends <code>fetch(url, init)</code> unchanged, and every call names ESI, sits in a listed function and gives a kind. Three broken copies, each caught: a direct ESI fetch, a call without its kind, a cache-busting esiFetch.</li>
 <li><code>close_buttons_check.py</code> covers the new panel. ZKB-01 and ZKB-04 in ERRORS.md updated.</li>
 <li>CHECKS_HERE</li>
-<li>Perf harness, before (main) and after in one session: PERF_HERE</li>
+<li>Perf harness, before (main) and after in one session (Project doc <code>roadmap/perf-harness/results-v2026.11.04.4.md</code>): Intel off 0.10% &rarr; 0.08% of a core, Intel on 3.07% &rarr; 2.71%, layouts the same, ESI requests 100 &rarr; 99. The gauge's paints: 54 in 3 minutes, 3.4 ms in all; the 1 s tick never ran.</li>
 <li>Page size: 737,319 &rarr; 746,194 bytes gzipped (<code>gzip -9</code>), +8.9 KB, under the 800 KB ceiling.</li>
 </ul>
 
