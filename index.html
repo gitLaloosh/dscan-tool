@@ -3931,9 +3931,9 @@ const ZKB_PAUSE_KEY = 'dscanZkbPause';
 // (one pause for the whole page, so every copy shows the same time). ZKB_MSG_RX must keep matching what this writes. LESSON #134
 function zkbUnavailableText(){
   const left = Math.max(0, zkbUnavailableUntil - Date.now()), next = Math.min(ZKB_COOLDOWN_MAX_MS, ZKB_COOLDOWN_MS * Math.pow(2, zkbFailStreak));
-  return `zKillboard's API isn't answering, so the page waits ${zkbClock(left)} before asking again. Pressing Analyze now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is ${Math.ceil(next / 60000)} min`;
+  return `zKillboard's API isn't answering, so the page waits ${zkbClock(left)} before asking again. Pressing Analyze or reloading now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is ${Math.ceil(next / 60000)} min`;
 }
-const ZKB_MSG_RX = /zKillboard's API isn't answering, so the page waits \d+:\d\d before asking again\. Pressing Analyze now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is \d+ min/;
+const ZKB_MSG_RX = /zKillboard's API isn't answering, so the page waits \d+:\d\d before asking again\. Pressing Analyze or reloading now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is \d+ min/;
 // v2026.10.14.81 (roadmap/local-and-fleet-plan.md D4; the owner: "should we add constraints to prevent users from flooding
 // zkillboard with requests from the tool? ... what seems reasonable?", then "sounds good, record them as D4"): one
 // zKillboard queue for the whole page. Requests go one at a time, ZKB_SPACING_MS apart; the same URL asked for while
@@ -4245,7 +4245,11 @@ function bgClosePanel(returnFocus = true){
 function bgInit(){
   if(!bgDoc()) return;
   const g = document.getElementById('bgGauge'), p = document.getElementById('bgPop');
-  g.addEventListener('click', () => bgOpen ? bgClosePanel() : bgOpenPanel());
+  // a press that closed a sheet over the gauge (the profile on a phone closes on the press) must not open it with that tap's click:
+  // only a click whose press began on the gauge counts (keyboard clicks have no press, detail 0)
+  let downOnGauge = false;
+  document.addEventListener('pointerdown', (e) => { downOnGauge = g.contains(e.target); }, true);
+  g.addEventListener('click', (e) => { if(e.detail > 0 && !downOnGauge) return; bgOpen ? bgClosePanel() : bgOpenPanel(); });
   p.querySelector('.x-close').addEventListener('click', () => bgClosePanel());
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && bgOpen){ e.stopPropagation(); bgClosePanel(); } });
   document.addEventListener('pointerdown', (e) => { if(bgOpen && !p.contains(e.target) && !g.contains(e.target)) bgClosePanel(false); });

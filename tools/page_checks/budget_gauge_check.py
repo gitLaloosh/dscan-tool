@@ -23,6 +23,7 @@ real zKillboard or ESI. Checks:
   * the panel: opens on a press with the focus on its ✕; Escape, ✕ and a press outside close it, the focus back on the gauge
     (not for the outside press); the gauge keeps the focus when its numbers change;
   * the colours: amber when near, full, paused or stopped, never the Hostile red;
+  * a phone: a tap that closes the profile's sheet over the gauge doesn't open the panel (the sheet closes on the press);
   * 1440, 390, 320 px: the worst case (paused, wait and stopped at once) fits beside the version tag, nothing scrolls sideways,
     the gauge is 44 px tall on a phone; no page errors.
 """
@@ -125,7 +126,7 @@ with sync_playwright() as p:
         who = pg.evaluate("() => [JSON.parse(localStorage.getItem('dscanZkbWho') || '[]').map(x => x[1]), JSON.parse(localStorage.getItem('dscanZkbBudget') || '[]').every(t => typeof t === 'number')]")
         check(who[0] and set(who[0]) == {'Pilot Analyzer'} and who[1], f'the lookup is recorded as the Pilot Analyzer\'s, the budget list keeps its form {who}')
         check(re.match(r'zKill paused (0:5\d|1:00)', g) and seg_cls(pg)[0] == 'stop', f'503: the gauge says paused and counts ({g!r})')
-        rx = r"waits (\d):(\d\d) before asking again\. Pressing Analyze now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is 2 min"
+        rx = r"waits (\d):(\d\d) before asking again\. Pressing Analyze or reloading now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is 2 min"
         m1, m2 = re.search(rx, st), re.search(rx, lk)
         check(bool(m1) and '(ZKB-01)' in st, f'the status line says the time and the warning ({st[:160]!r})')
         check(bool(m2) and '(ZKB-01)' in lk, f'so does the Last Kill line ({lk[:120]!r})')
@@ -223,6 +224,16 @@ with sync_playwright() as p:
             r = pg.evaluate("""() => { const g = document.getElementById('bgGauge').getBoundingClientRect(), t = document.querySelector('header.hero .build-tag').getBoundingClientRect(), h = document.querySelector('header.hero').getBoundingClientRect(), n = document.querySelector('header.hero h1').getBoundingClientRect();
                 return {gap: t.left - g.right, inside: t.right <= h.right + 0.5 && g.left >= h.left - 0.5, h: g.height, sw: document.documentElement.scrollWidth, overName: g.bottom > n.top && g.left < n.right}; }""")
             check(r['gap'] > 0 and r['inside'] and r['sw'] <= W and not r['overName'] and (W >= 600 or abs(r['h'] - 44) < 1), f'{W}: paused, wait and stopped at once fit beside the tag ({r}; {segs(pg)!r})')
+            if W < 600:
+                # the profile's sheet closes on the press: that tap's click must not open the panel under it (the gauge sits there on a phone)
+                pg.evaluate("() => { localStorage.removeItem('dscanZkbPause'); localStorage.removeItem('dscanR2Stop'); }"); pg.reload(); pg.wait_for_timeout(400)
+                pg.tap('#profileBtn', position={'x': 12, 'y': 14}); pg.wait_for_timeout(300)
+                gb = pg.evaluate("() => { const r = document.getElementById('bgGauge').getBoundingClientRect(); return [r.left + 10, r.top + r.height / 2]; }")
+                pg.tap('#sideBackdrop', position={'x': gb[0], 'y': gb[1]}); pg.wait_for_timeout(300)
+                st = pg.evaluate("() => [document.getElementById('profilePanel').hidden, document.getElementById('bgPop').hidden]")
+                pg.tap('#bgGauge'); pg.wait_for_timeout(200); t1 = pg.evaluate("() => document.getElementById('bgPop').hidden")
+                pg.keyboard.press('Escape'); pg.focus('#bgGauge'); pg.keyboard.press('Enter'); pg.wait_for_timeout(200); k1 = pg.evaluate("() => document.getElementById('bgPop').hidden")
+                check(st == [True, True] and t1 is False and k1 is False, f'{W}: a tap that closes the profile over the gauge closes only the profile; a tap or Enter on the gauge opens it {st} {t1} {k1}')
             check(not errs, f'{W}: no page errors {errs}')
             ctx.close()
     for fn, what in ((section_1, 'the zKillboard count, who used it, kept across reloads and tabs'), (section_2, 'the pause'), (section_3, "ESI's numbers"), (section_4, 'the worst case at three widths'),):
