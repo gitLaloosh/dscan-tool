@@ -211,6 +211,8 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   with why on the row (`m.fail`, `fkFailShort`); no Retry in the head; Load and Load all count down on the button while zKillboard
   can't be asked (`zkbWaitMs`; the end redraws the tab, `data-zkb-redraw`), and "All loaded" only when every pilot is.
   v2026.11.04.6 (the owner): a row's countdown is only the time ("0:41", then "Load"), one width with Load (tabular digits).
+  v2026.11.04.7 (the owner: "it's giving the impression that that tool just doesn't work"): the lookup that reached zKillboard and
+  failed is red; the ones the pause held back (`notSent` on zkbFetchNow's error, `m.held`) say "Not sent", dim, why on hover (`fkFailSum`).
   `fleet_fit_budget_check.py`, `fleet_vs_check.py`.
 - **Lookup budgets** (v2026.11.04.4, Project doc roadmap/budget-gauge-plan.md; the owner: "have these numbers visible at all times"): the
   header's gauge beside the version tag (`#bgGauge`: zKill N/100, or "full" / "paused" m:ss; ESI ok, N errors, low or wait m:ss, from

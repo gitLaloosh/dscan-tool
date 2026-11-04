@@ -2412,7 +2412,7 @@
   .fk-hulls{max-width:420px;}
   @media (max-width: 760px){ .fk-card button.pr-row > .fk-dmg{display:none;} }   /* the phone card says it in its last line */
   .fk-w, .fk-src, .fk-mis{display:block; font:400 11.5px var(--sans); color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .fk-src.ally, .fk-mis{color:var(--amber);} .fk-mis{font-weight:600;} .fk-src.unk{font-style:italic;} .fk-src.err{color:var(--danger);}
+  .fk-src.ally, .fk-mis{color:var(--amber);} .fk-mis{font-weight:600;} .fk-src.unk{font-style:italic;} .fk-src.err{color:var(--danger);} .fk-src.held{color:var(--text-dim);}   /* v2026.11.04.7: held back, not failed */
   .fk-src .busy-spin{margin-right:6px;}
   .fk-you{display:inline-block; margin-left:6px; padding:0 5px; border:1px solid var(--line); border-radius:3px; font:600 10px/14px var(--sans); color:var(--text-dim); vertical-align:1px; border-color:transparent; background:var(--tag-fill);}
   .pdk-m{display:none;}
@@ -2923,7 +2923,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.6</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.7</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -3986,7 +3986,8 @@ async function zkbFetchNow(url, o = {}){   // o.reserve: leave that many of the 
     return Object.assign(new Error(zkbUnavailableText()), {zkbUnavailable: true, code: 'ZKB-01'});
   };
   zkbPauseRead();
-  if(Date.now() < zkbUnavailableUntil){ if(timer) clearTimeout(timer); throw Object.assign(new Error(zkbUnavailableText()), {zkbUnavailable: true, code: 'ZKB-01'}); }
+  // v2026.11.04.7: notSent marks a lookup held back by the pause (never sent), apart from the one that reached zKillboard and failed
+  if(Date.now() < zkbUnavailableUntil){ if(timer) clearTimeout(timer); throw Object.assign(new Error(zkbUnavailableText()), {zkbUnavailable: true, notSent: true, code: 'ZKB-01'}); }
   if(!zkbBudgetSpend(ZKB_BUDGET - (o.reserve || 0), o.who)){ if(timer) clearTimeout(timer); throw zkbBudgetRead().length >= ZKB_BUDGET ? zkbBudgetError() : zkbReserveError(o.reserve); }
   let res;
   try{
@@ -23755,10 +23756,19 @@ async function fkOpen(killId, hash, originId, shared, opts = {}){
 function fkMode(){ return fk.mode || (fk.members.length >= FK_COMMON_FROM ? 'common' : 'own'); }
 // v2026.11.04.5 (the owner: "modify the message to indicate the nature of the issue"): a failed lookup said short on its row (the full
 // message on hover); and why Load and Load all are counting down
-function fkFailShort(msg){
+function fkFailShort(msg, held){
   const c = (/\(([A-Z]+-\d+)\)\s*$/.exec(msg || '') || [])[1];
+  // v2026.11.04.7 (the owner: "it's giving the impression that that tool just doesn't work"): one lookup reached zKillboard and
+  // failed; the ones after it were held back by the pause and never sent, and say so
+  if(held) return 'Not sent: zKillboard needs a rest (ZKB-01)';
   return c === 'ZKB-01' ? "zKillboard isn't answering (ZKB-01)" : c === 'ZKB-04' ? 'zKillboard limit reached in this browser (ZKB-04)' : msg;
 }
+function fkFailSum(n){   // v2026.11.04.7: how many reached zKillboard and failed, how many were held back (never sent)
+  const F = fk.members.filter(m => m.state === 'later' && m.fail), held = F.filter(m => m.held).length, sent = F.length - held;
+  if(held && sent <= 1 && F.every(m => /\(ZKB-01\)\s*$/.test(m.fail))) return `zKillboard isn't answering: ${sent ? '1 lookup failed and the' : 'the'} other ${held} ${held === 1 ? "wasn't" : "weren't"} sent, so your address isn't blocked. <b>Load all</b> asks again when the wait ends.`;
+  return `None of the ${n} could be looked up yet (${escapeHtml(fkFailShort(F[0].fail, F[0].held))}): <b>Load all</b> in the pilots list asks again.`;
+}
+const FK_HELD_WHY = "After one lookup fails, the page holds the rest back until zKillboard answers again, so your address isn't blocked for asking too often. Load or Load all asks again when the wait ends.";
 function fkWaitWhy(){
   zkbPauseRead();
   return zkbUnavailableUntil > Date.now() ? "zKillboard isn't answering, so the page waits before asking again; pressing now would send nothing."
@@ -23826,11 +23836,11 @@ async function fkWorker(gen){
       if(e.zkbReserve){ m.state = 'later'; fkPause(j.mode); fkRender(); continue; }
       // v2026.11.04.5 (the owner: "retry should probably be the same Load and Load All buttons"): a failed lookup leaves the pilot
       // unloaded, with why (m.fail): their Load and Load all ask again, counting down while zKillboard can't be asked
-      r = j.own ? {ownErr: withCode(e.message, errorCodeOf(e))} : {state: 'later', fail: withCode(e.message, errorCodeOf(e))};
+      r = j.own ? {ownErr: withCode(e.message, errorCodeOf(e))} : {state: 'later', fail: withCode(e.message, errorCodeOf(e)), held: !!e.notSent};
     }
     if(gen !== fk.gen) return;
     Object.assign(m, r || {}, j.own ? {ownBusy: false} : {});
-    if(m.state === 'done') delete m.fail;
+    if(m.state === 'done'){ delete m.fail; delete m.held; }
     fkRender();
   }
   if(gen === fk.gen) fk.wk--;
@@ -23955,7 +23965,7 @@ function fkRowHtml(m){
   const g = fkPair(m), grp = m.alliance ? 'alliance' : 'corporation';
   if(['later', 'check', 'wait', 'load'].includes(m.state)){
     const line = m.state === 'load' ? '<span class="fk-src"><span class="busy-spin" aria-hidden="true"></span>looking up their fit…</span>' : m.state === 'wait' ? '<span class="fk-src"><span class="busy-spin" aria-hidden="true"></span>waiting for zKillboard…</span>'
-      : m.state === 'later' && m.fail ? `<span class="fk-src err" title="${escapeHtml(m.fail)}">${escapeHtml(fkFailShort(m.fail))}</span>` : '';   // v2026.11.04.5: what went wrong, said short (all of it on hover)
+      : m.state === 'later' && m.fail ? `<span class="fk-src${m.held ? ' held' : ' err'}" title="${escapeHtml(m.held ? `Not sent. ${FK_HELD_WHY} ${m.fail}` : m.fail)}">${escapeHtml(fkFailShort(m.fail, m.held))}</span>` : '';   // v2026.11.04.5: what went wrong, said short (all of it on hover)
     // own: their losses aren't kept; pair: their group's list in that hull isn't kept and is needed (v2026.11.04.5: not when their own
     // kept losses already hold one in that hull, fkCost's rule, so the row and Load all agree on what costs a request)
     const ownL = lossStubCache.get(`${m.id}|${m.hull}`), own = !ownL, pair = g && !(ownL && ownL.length) && !zkbKept(fkPairUrl(g, m.hull));
@@ -24056,7 +24066,7 @@ function fkRender(){
       <div class="fl-stat"><div class="k">Tackle and EWAR</div><div class="fk-ewl">${kinds || '<span class="pr-dash">none seen</span>'}</div>${kinds ? ctxHtml('farthest optimal of each kind') : ''}</div>
       ${logiStat}
       <div class="fl-stat"><div class="k">Combined EHP</div><div class="v">${saFmtK(S.ehp)}</div>${ctxHtml('uniform damage')}</div>
-    </div>` : !n ? '<div class="pr-msg fl-msg">No pilots in ships on this kill.</div>' : `${free}<div class="pr-msg fl-msg">${failed && !busy && !done ? `None of the ${n} could be looked up yet (${escapeHtml(fkFailShort(fk.members.find(m => m.fail).fail))}): <b>Load all</b> in the pilots list asks again.` : busy ? 'Adds up as the pilots come in…' : 'Fleet DPS, tank and EWAR need fits: <b>Load all</b> in the pilots list.'}</div>`}</div>`;
+    </div>` : !n ? '<div class="pr-msg fl-msg">No pilots in ships on this kill.</div>' : `${free}<div class="pr-msg fl-msg">${failed && !busy && !done ? fkFailSum(n) : busy ? 'Adds up as the pilots come in…' : 'Fleet DPS, tank and EWAR need fits: <b>Load all</b> in the pilots list.'}</div>`}</div>`;
   // v2026.11.02.1: Load all, over the Fit column: its choice of fits, the exact cost and what's left; paused at the reserve with a countdown
   const mode = fkMode(), C = fkCost(mode), left = Math.max(0, ZKB_BUDGET - zkbBudgetRead().length), later = fk.members.filter(m => m.state === 'later').length;
   const costT = mode === 'common' ? `${C.n} request${C.n === 1 ? '' : 's'}` : C.max > C.n ? `${C.n} request${C.n === 1 ? '' : 's'}, up to ${C.max}` : `${C.n} request${C.n === 1 ? '' : 's'}`;
