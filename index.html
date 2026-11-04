@@ -193,6 +193,54 @@
   button.hero-refresh svg{display:block;}
   .hero-status{position:absolute; top:10px; right:0; font-size:11.5px; color:var(--text-dim); white-space:nowrap;}
   .hero-status[hidden], .build-tag[hidden]{display:none;}
+  /* v2026.11.04.4 (build queue 012, roadmap/budget-gauge-plan.md; the mockup the owner approved): the lookup budgets beside the version
+     tag. The header lets the panel out (overflow visible); the opening sweep keeps its own clipped box. Status colours: dim, the
+     clear cyan dot, amber when near, full, paused or stopped (never the Hostile red). */
+  header.hero{overflow:visible;}
+  .hero-sweep{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+  .bg-wrap{position:absolute; top:2px; right:0; display:flex; align-items:center; gap:12px; z-index:20;}
+  .bg-wrap .build-tag, .bg-wrap .hero-status{position:static;}
+  .bg-wrap .hero-status{flex:0 1 auto; min-width:0; white-space:normal; text-align:right; line-height:1.25;}   /* Refresh item data's note wraps beside the gauge, never over it */
+  button.bg-gauge{flex:none;}
+  button.bg-gauge{display:inline-flex; align-items:center; min-height:24px; padding:0 10px; border:1px solid var(--line); border-radius:4px; background:transparent;
+    font:500 11px var(--mono); letter-spacing:0; color:var(--text-dim); cursor:pointer; white-space:nowrap;}
+  button.bg-gauge:hover, button.bg-gauge[aria-expanded="true"]{background:var(--tag-fill-hover); border-color:var(--accent-edge); color:var(--text);}
+  button.bg-gauge:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .bg-segs{display:inline-flex; align-items:center;}
+  .bg-seg{display:inline-block; white-space:nowrap;}   /* inline text, so the spaces between words stay */
+  .bg-seg + .bg-seg::before{content:""; display:inline-block; vertical-align:-2px; width:1px; height:12px; background:var(--line); margin:0 9px;}
+  .bg-dot{display:inline-block; vertical-align:0; width:7px; height:7px; border-radius:50%; background:var(--st-clear); margin-right:6px;}
+  .bg-seg b{font-weight:600; color:var(--text);}
+  .bg-sh{display:none;}
+  .bg-seg.warn, .bg-seg.warn b, .bg-seg.stop, .bg-seg.stop b{color:var(--amber);}
+  .bg-seg.warn .bg-dot{background:var(--amber);}
+  .bg-seg.stop .bg-dot{background:transparent; border:2px solid var(--amber); width:8px; height:8px;}
+  .bg-pop{position:absolute; top:calc(100% + 6px); right:0; width:400px; max-width:calc(100vw - 24px); background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    padding:12px 16px; box-shadow:0 12px 32px rgba(0,0,0,.45); z-index:30; font:400 12.5px/1.5 var(--sans); color:var(--text); text-align:left; white-space:normal;}
+  .bg-pop[hidden]{display:none;}
+  .bg-head{display:flex; align-items:center; gap:8px; margin:0 0 8px;}
+  .bg-head h4{margin:0; font:600 13px var(--sans); color:var(--heading);}
+  .bg-head button.x-close{margin:-6px -8px -6px auto;}
+  .bg-sec{padding:10px 0; border-top:1px solid var(--line-soft);}
+  .bg-sec:first-child{border-top:0; padding-top:0;}
+  .bg-row{display:flex; justify-content:space-between; gap:10px; align-items:baseline;}
+  .bg-row .k{font-weight:600;} .bg-row .v{font:500 12px var(--mono); color:var(--text);}
+  .bg-bar{height:5px; border-radius:3px; background:var(--line); margin:6px 0; overflow:hidden;} .bg-bar i{display:block; height:100%; background:var(--cyan);}
+  .bg-bar.warn i{background:var(--amber);}
+  .bg-sub, .bg-foot{color:var(--text-dim); font-size:12px;}
+  .bg-foot{margin:8px 0 0; padding-top:8px; border-top:1px solid var(--line-soft); line-height:1.45;}
+  .bg-by + .bg-sub{margin-top:4px;}
+  .bg-by{display:flex; flex-wrap:wrap; gap:2px 14px; margin-top:4px; font-size:12px; color:var(--text-dim);} .bg-by span{white-space:nowrap;} .bg-by b{color:var(--text); font:600 12px var(--mono);}
+  .bg-note{margin-top:6px; padding:7px 9px; border-left:2px solid var(--amber); background:color-mix(in srgb, var(--amber) 7%, transparent); font-size:12px;}
+  @media (max-width: 599px){
+    .bg-wrap{top:0; left:0; justify-content:space-between;}
+    button.bg-gauge{min-height:44px; padding:0 7px; font-size:10px;}
+    .bg-dot{margin-right:4px;} .bg-seg + .bg-seg::before{margin:0 5px;}
+    .bg-wrap .build-tag{font-size:9.5px;}
+    .bg-pop{left:0; right:0; width:auto; max-width:none;}
+  }
+  @media (max-width: 479px){ .bg-lg{display:none;} .bg-sh{display:inline;} }
+  @media (max-width: 379px){ .bg-xw{display:none;} }
   @media (max-width: 599px){
     button.hero-refresh{width:44px; height:44px;}
     .hero-title-row{gap:8px;}
@@ -1842,7 +1890,7 @@
   /* Phones: less padding around everything so the cards get the width. */
   @media (max-width: 599px){
     body{padding:14px 10px 60px;}
-    header.hero{padding:30px 0 16px; margin-bottom:18px;}   /* v.60: the longer name runs under the version tag; 30 px puts the tag above it */
+    header.hero{padding:52px 0 16px; margin-bottom:18px;}   /* v.60: the longer name runs under the version tag; v2026.11.04.4: the lookup budgets' 44 px row above the name (was 30 px) */
     section.panel{padding:14px 12px; margin-bottom:16px;}
     .fit-summary{padding:12px 12px;}
     .tab-btn{padding-left:8px; padding-right:8px;}
@@ -2866,8 +2914,19 @@
 <div class="wrap">
 
   <header class="hero">
-    <div class="scanline"></div>
-    <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.3</span>
+    <div class="hero-sweep" aria-hidden="true"><div class="scanline"></div></div>
+    <!-- v2026.11.04.4 (build queue 012, roadmap/budget-gauge-plan.md; the owner: "have these numbers visible at all times"): the lookup
+         budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
+    <div class="bg-wrap">
+      <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.4</span>
+      <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
+      <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
+        <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
+        <div class="bg-body" id="bgBody"></div>
+        <div class="bg-foot">Counts are this browser's (all its tabs). zKillboard's limit is the page's own, to stay polite; ESI's are CCP's.</div>
+      </div>
+    </div>
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
@@ -2877,7 +2936,6 @@
       <h1>EVE Threat Assessment</h1>
       <button type="button" id="refreshCacheBtn" class="hero-refresh" aria-label="Refresh item data" title="Refresh item data. Item data comes live from ESI and is kept in your browser for a week. This fetches it again."><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg></button>
     </div>
-    <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
     <p>Who's in system, what they fly, and how to beat them.</p>
   </header>
 
@@ -3415,8 +3473,8 @@ const ERROR_CODES = {
   "title": "zKillboard's API isn't answering",
   "where": "Pilot Analyzer status line and the {card:lastkill} line",
   "trigger": "A zKillboard API call took over 20 s (ZKB_TIMEOUT_MS) or answered 5xx. Since 2026-10-22 zKillboard queues API requests and answers 503 'API result unavailable' when its worker doesn't answer within 60 s. Further zKillboard calls fail at once for 60 s (ZKB_COOLDOWN_MS); since v2026.10.14.81 the pause doubles with each failure in a row, up to 10 minutes (ZKB_COOLDOWN_MAX_MS, plan D4).",
-  "check": "Open a zkillboard.com/api/... URL in a browser. If it shows 'API result unavailable', the problem is on zKillboard's side.",
-  "why": "The page used to wait a full minute and then tell the user to check their network.",
+  "check": "Open a zkillboard.com/api/... URL in a browser. If it shows 'API result unavailable', the problem is on zKillboard's side. Since v2026.11.04.4 the message says how long the page waits and counts it down (the header's lookup budgets show it too); pressing Analyze during the wait sends nothing and doesn't lengthen it, and it says the next wait if the first lookup after it fails too.",
+  "why": "The page used to wait a full minute and then tell the user to check their network. The countdown and warning (v2026.11.04.4, the owner): 'they might mistakenly extend the wait time by constantly retrying the search if not given a warning about doing so.'",
   "since": "v2026.10.14.31",
   "doc": "2026-10-23_zkillboard-api-outage-message.html"
  },
@@ -3771,7 +3829,7 @@ const ERROR_CODES = {
   "title": "zKillboard limit reached in this browser",
   "where": "Any zKillboard lookup (Pilot Analyzer, {card:sysan}, {card:side})",
   "trigger": "The page asked zKillboard ZKB_BUDGET (100) times within 10 minutes in this browser (counted in localStorage across reloads; plan D4).",
-  "check": "Wait the minutes the message gives; anything already looked up (kept for an hour) still works.",
+  "check": "Wait the minutes the message gives (the header's lookup budgets count it down as \"zKill full\" and say what used it, v2026.11.04.4); anything already looked up (kept for an hour) still works.",
   "why": "the owner (D4): keep the tool polite to zKillboard, which asks tools not to hammer its API.",
   "since": "v2026.10.14.81",
   "doc": "2026-10-27_system-analyzer-local-and-your-side.html"
@@ -3856,7 +3914,7 @@ function errorCodeOf(e){ return (e && e.code) || 'APP-01'; }
 // {"error":"API result unavailable, please try again later"} when the worker hasn't answered within 60 s
 // (zKillboard view/api.php, commit ffc94263 "Remove race condition for api queue"). The page used to sit on
 // "Checking..." for that whole minute and then blame the network. zkbFetch gives up after
-// ZKB_TIMEOUT_MS and, on a timeout or a 5xx, throws ZKB_UNAVAILABLE_TEXT, marked e.zkbUnavailable so callers
+// ZKB_TIMEOUT_MS and, on a timeout or a 5xx, throws zkbUnavailableText() (ZKB-01), marked e.zkbUnavailable so callers
 // don't add a "check your network" hint.
 const ZKB_TIMEOUT_MS = 20000;
 // After a failure, the next zKillboard call within ZKB_COOLDOWN_MS fails at once instead of waiting another 20 s
@@ -3866,7 +3924,16 @@ let zkbUnavailableUntil = 0;
 // v2026.10.31.2 (the owner: "the user is going to try refreshing the page as a result of the 'Try again in a few' note"): the pause is
 // kept in localStorage (ZKB_PAUSE_KEY), so a reload or another tab waits it out too instead of asking again at once; the text says so.
 const ZKB_PAUSE_KEY = 'dscanZkbPause';
-const ZKB_UNAVAILABLE_TEXT = "zKillboard's API isn't answering right now. That's on zKillboard's side, not your connection, and reloading won't bring it back sooner. Try again in a few minutes";
+// v2026.11.04.4 (build queue 012, roadmap/budget-gauge-plan.md §5; the owner: "please show me how long the pause is and count it
+// down for me", and "they might mistakenly extend the wait time by constantly retrying the search if not given a warning"): the text
+// says the time left and what pressing again does (nothing: zkbFetchNow throws before any request and before the doubling). It is
+// written when the error is thrown and shown as plain text in many places, so bgMsgSweep finds it on the page and counts it down
+// (one pause for the whole page, so every copy shows the same time). ZKB_MSG_RX must keep matching what this writes. LESSON #134
+function zkbUnavailableText(){
+  const left = Math.max(0, zkbUnavailableUntil - Date.now()), next = Math.min(ZKB_COOLDOWN_MAX_MS, ZKB_COOLDOWN_MS * Math.pow(2, zkbFailStreak));
+  return `zKillboard's API isn't answering, so the page waits ${zkbClock(left)} before asking again. Pressing Analyze or reloading now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is ${Math.ceil(next / 60000)} min`;
+}
+const ZKB_MSG_RX = /zKillboard's API isn't answering, so the page waits \d+:\d\d before asking again\. Pressing Analyze or reloading now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is \d+ min/;
 // v2026.10.14.81 (roadmap/local-and-fleet-plan.md D4; the owner: "should we add constraints to prevent users from flooding
 // zkillboard with requests from the tool? ... what seems reasonable?", then "sounds good, record them as D4"): one
 // zKillboard queue for the whole page. Requests go one at a time, ZKB_SPACING_MS apart; the same URL asked for while
@@ -3881,18 +3948,19 @@ let zkbFailStreak = 0, zkbQueue = Promise.resolve(), zkbLastStart = 0;
 function zkbPauseRead(){   // the pause another load or tab of the page set (v2026.10.31.2)
   try{ const p = JSON.parse(localStorage.getItem(ZKB_PAUSE_KEY) || 'null'); if(p && p.until > zkbUnavailableUntil){ zkbUnavailableUntil = p.until; zkbFailStreak = Math.max(zkbFailStreak, p.streak || 0); } }catch(e){}
 }
-function zkbPauseSave(){ try{ localStorage.setItem(ZKB_PAUSE_KEY, JSON.stringify({until: zkbUnavailableUntil, streak: zkbFailStreak})); }catch(e){} }
+function zkbPauseSave(){ try{ localStorage.setItem(ZKB_PAUSE_KEY, JSON.stringify({until: zkbUnavailableUntil, streak: zkbFailStreak})); }catch(e){} bgPaint(); }
 const zkbInflight = new Map();   // url -> Promise<Response> (the original; callers get clones)
 function zkbBudgetRead(){
   try{ const a = JSON.parse(localStorage.getItem(ZKB_BUDGET_KEY) || '[]'); return Array.isArray(a) ? a.filter(t => typeof t === 'number' && Date.now() - t < ZKB_BUDGET_WINDOW_MS) : []; }
   catch(e){ return []; }
 }
-function zkbBudgetSpend(lim = ZKB_BUDGET){   // true when a request may go now (and counts it); lim: fewer, to keep a reserve (v2026.11.02.1)
+function zkbBudgetSpend(lim = ZKB_BUDGET, who){   // true when a request may go now (and counts it); lim: fewer, to keep a reserve (v2026.11.02.1)
   if(typeof localStorage === 'undefined') return true;
   const a = zkbBudgetRead();
   if(a.length >= lim) return false;
   a.push(Date.now());
   try{ localStorage.setItem(ZKB_BUDGET_KEY, JSON.stringify(a)); }catch(e){ /* private window: not counted */ }
+  bgZkbWho(who);   // v2026.11.04.4: who asked, kept beside the list (its own key, so this list keeps its old form)
   return true;
 }
 function zkbBudgetError(){
@@ -3905,17 +3973,17 @@ function zkbReserveError(reserve){
   return Object.assign(new Error(`Paused to keep ${reserve} zKillboard lookups for the rest of the page`), {code: 'ZKB-04', zkbReserve: true});
 }
 const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
-async function zkbFetchNow(url, o = {}){   // o.reserve: leave that many of the budget unspent (v2026.11.02.1)
+async function zkbFetchNow(url, o = {}){   // o.reserve: leave that many of the budget unspent (v2026.11.02.1); o.who: who asked (v2026.11.04.4)
   const ac = typeof AbortController === 'function' ? new AbortController() : null;
   const timer = ac ? setTimeout(() => ac.abort(), ZKB_TIMEOUT_MS) : null;
   const unavailable = () => {
     zkbUnavailableUntil = Date.now() + Math.min(ZKB_COOLDOWN_MAX_MS, ZKB_COOLDOWN_MS * Math.pow(2, zkbFailStreak));
     zkbFailStreak++; zkbPauseSave();
-    return Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true, code: 'ZKB-01'});
+    return Object.assign(new Error(zkbUnavailableText()), {zkbUnavailable: true, code: 'ZKB-01'});
   };
   zkbPauseRead();
-  if(Date.now() < zkbUnavailableUntil){ if(timer) clearTimeout(timer); throw Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {zkbUnavailable: true, code: 'ZKB-01'}); }
-  if(!zkbBudgetSpend(ZKB_BUDGET - (o.reserve || 0))){ if(timer) clearTimeout(timer); throw zkbBudgetRead().length >= ZKB_BUDGET ? zkbBudgetError() : zkbReserveError(o.reserve); }
+  if(Date.now() < zkbUnavailableUntil){ if(timer) clearTimeout(timer); throw Object.assign(new Error(zkbUnavailableText()), {zkbUnavailable: true, code: 'ZKB-01'}); }
+  if(!zkbBudgetSpend(ZKB_BUDGET - (o.reserve || 0), o.who)){ if(timer) clearTimeout(timer); throw zkbBudgetRead().length >= ZKB_BUDGET ? zkbBudgetError() : zkbReserveError(o.reserve); }
   let res;
   try{
     res = await fetch(url, ac ? {signal: ac.signal} : undefined);
@@ -3960,18 +4028,235 @@ function zkbRetryHtml(attrs, label = 'Retry'){
     ? `<button type="button" class="sa-link zkb-retry" ${attrs} disabled data-zkb-at="${Date.now() + w}" data-zkb-label="${escapeHtml(label)}" title="zKillboard didn't answer, so the page waits before asking again">↻ ${escapeHtml(label)} in <span class="zkb-cd">${zkbClock(w)}</span></button>`
     : `<button type="button" class="sa-link zkb-retry" ${attrs} title="Ask zKillboard again">↻ ${escapeHtml(label)}</button>`;
 }
-let zkbRetryTimer = 0;
-function zkbRetryTick(){   // one timer for every countdown on the page, stopped when none is left
-  if(zkbRetryTimer || typeof document === 'undefined' || !document.querySelectorAll) return;
-  zkbRetryTimer = setInterval(() => {
-    const B = [...document.querySelectorAll('button.zkb-retry[data-zkb-at]')];
-    if(!B.length){ clearInterval(zkbRetryTimer); zkbRetryTimer = 0; return; }
-    for(const b of B){
-      const w = Number(b.dataset.zkbAt) - Date.now(), cd = b.querySelector('.zkb-cd');
-      if(w > 0){ if(cd) cd.textContent = zkbClock(w); continue; }
-      b.disabled = false; b.removeAttribute('data-zkb-at'); b.title = 'Ask zKillboard again'; b.textContent = `↻ ${b.dataset.zkbLabel || 'Retry'}`;
+// v2026.11.04.4: the Retry countdowns move on the budgets block's one tick (bgTick), which also stops in a hidden tab.
+function zkbRetryTick(){ bgTickStart(); }
+function zkbRetryStep(now){   // one step of every Retry countdown; true while one is left
+  const B = [...document.querySelectorAll('button.zkb-retry[data-zkb-at]')];
+  for(const b of B){
+    const w = Number(b.dataset.zkbAt) - now, cd = b.querySelector('.zkb-cd');
+    if(w > 0){ if(cd) cd.textContent = zkbClock(w); continue; }
+    b.disabled = false; b.removeAttribute('data-zkb-at'); b.title = 'Ask zKillboard again'; b.textContent = `↻ ${b.dataset.zkbLabel || 'Retry'}`;
+  }
+  return B.some(b => b.hasAttribute('data-zkb-at'));
+}
+
+// ==== LOOKUP BUDGETS (v2026.11.04.4, build queue 012, Project doc roadmap/budget-gauge-plan.md; the owner 2026-11-03: "it would be
+// helpful (for now) to have these numbers visible at all times so i know how quickly (and which actions) my budget's being used") ====
+// The header's gauge (#bgGauge) shows zKillboard's budget (ZKB_BUDGET per ZKB_BUDGET_WINDOW_MS) or its pause, ESI's numbers from the
+// headers on its own answers, and Intel's live kills; pressing it opens the breakdown (#bgPop), who used what. Nothing here asks
+// anything: esiFetch is the page's only way to ESI and only reads what comes back (tools/check_request_gates.py).
+// Kept in this browser, shared by its tabs: zKillboard's callers in ZKB_WHO_KEY beside the budget's own list (which keeps its old
+// form, so a page from before this one still reads it); ESI's counts per minute per kind of lookup in ESI_USE_KEY, saved at most once
+// a second and when the page closes (a whole list rewritten on every request would cost the square of a busy minute; LESSON #135).
+// LESSON #120: no constant timer. The gauge's text is written only when it changed; bgTick runs only while a countdown shows or
+// the panel is open, never in a hidden tab; the zKillboard count ages out on one timeout set for the next expiry (bgAgeArm).
+// ESI is counted by kind of lookup, not by feature (the owner 2026-11-04, "let's go with your recommendation"): the calls sit in
+// helpers that every feature and Intel's background lookups share, so only the kind is known where the request is made.
+const ESI_KINDS = {types: 'Item data', names: 'Names', killmails: 'Killmails', orgs: 'Corporations and alliances', pilots: 'Pilots', systems: 'Systems and gates', status: 'Server status'};
+const ESI_USE_KEY = 'dscanEsiUse', ESI_USE_MIN = 15, ESI_ERR_LIMIT = 100, ESI_ERR_WARN = 50, ESI_GROUP_WARN = 0.2;
+const ZKB_WHO_KEY = 'dscanZkbWho', ZKB_WARN_AT = 80;   // amber from 80 of 100 (the planner's default, kept by the owner 2026-11-04)
+let bgEsiPend = null, bgEsiFlushT = 0, bgOpen = false, bgTimer = 0, bgAgeT = 0, bgRaf = 0, bgLastSegs = '', bgLastBody = '', bgR2Times = [];
+const bgDoc = () => typeof document !== 'undefined' && typeof document.querySelector === 'function' && !!document.querySelector('#bgGauge');   // LESSON #36: the suites' stub DOM has no querySelector
+function bgLsGet(k, dflt){ try{ const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? dflt : v; }catch(e){ return dflt; } }
+function bgZkbWho(who){   // a zKillboard spend's caller, beside ZKB_BUDGET_KEY's times (trimmed to the same window)
+  if(typeof localStorage === 'undefined') return;
+  const now = Date.now(), a = bgLsGet(ZKB_WHO_KEY, []).filter(x => Array.isArray(x) && now - x[0] < ZKB_BUDGET_WINDOW_MS);
+  a.push([now, who || 'Other']);
+  try{ localStorage.setItem(ZKB_WHO_KEY, JSON.stringify(a)); }catch(e){}
+  bgPaint(); bgAgeArm();
+}
+function bgZkbUse(){   // {n, by: [[who, n]...] most first, frees: ms until the oldest ages out}
+  const a = zkbBudgetRead(), now = Date.now(), by = new Map();
+  for(const [t, w] of bgLsGet(ZKB_WHO_KEY, [])) if(now - t < ZKB_BUDGET_WINDOW_MS) by.set(w, (by.get(w) || 0) + 1);
+  const named = [...by.values()].reduce((s, n) => s + n, 0);
+  if(a.length > named) by.set('Other', (by.get('Other') || 0) + a.length - named);   // spends counted before this version (or without a caller)
+  return {n: a.length, by: [...by.entries()].sort((x, y) => y[1] - x[1]), frees: a.length ? Math.max(0, a[0] + ZKB_BUDGET_WINDOW_MS - now) : 0};
+}
+// ESI's numbers: the counts per minute, and from its headers the error limit (X-ESI-Error-Limit-*), the route groups' allowance
+// (X-Ratelimit-*, e.g. 600/15m) and a wait (420/429: Retry-After, else the error limit's reset, else 60 s). Readable from the page
+// (checked 2026-11-04 on gitlaloosh.github.io; the plan). An answer without them leaves the page's own counts.
+function bgEsiNew(){ return {m: {}, err: null, grp: {}, wait: 0}; }
+function esiNote(kind, r){
+  if(typeof localStorage === 'undefined') return;
+  const now = Date.now(), min = Math.floor(now / 60000), s = r ? r.status : 0;
+  const p = bgEsiPend || (bgEsiPend = bgEsiNew()), mm = p.m[min] || (p.m[min] = {}), c = mm[kind] || (mm[kind] = [0, 0]);
+  c[0]++; if(s >= 400) c[1]++;   // a request that never reached ESI (no answer) counts as a request, not as ESI's error
+  const h = r && r.headers && typeof r.headers.get === 'function' ? r.headers : null;
+  if(h){
+    const g = h.get('x-ratelimit-group'), lim = /^(\d+)\/(\d+)([smh])$/.exec(h.get('x-ratelimit-limit') || ''), rem = h.get('x-ratelimit-remaining');
+    if(g && lim && rem !== null && rem !== '') p.grp[g] = {lim: +lim[1], win: `${lim[2]} ${{s: 's', m: 'min', h: 'h'}[lim[3]]}`, winMs: +lim[2] * {s: 1e3, m: 6e4, h: 36e5}[lim[3]], rem: +rem, at: now};
+    const er = h.get('x-esi-error-limit-remain'), rs = Number(h.get('x-esi-error-limit-reset'));
+    if(er !== null && er !== '') p.err = {remain: +er, reset: now + (rs > 0 ? rs : 60) * 1000, at: now};
+    if(s === 420 || s === 429){ const ra = Number(h.get('retry-after')); p.wait = Math.max(p.wait, now + 1000 * (ra > 0 ? ra : rs > 0 ? rs : 60)); }
+  } else if(s === 420 || s === 429) p.wait = Math.max(p.wait, now + 60000);
+  if(!bgEsiFlushT) bgEsiFlushT = setTimeout(bgEsiFlush, 1000);
+  bgPaint();
+}
+function bgEsiMerge(a, b){   // b's counts added to a; the newer header readings win
+  for(const [min, ks] of Object.entries(b.m)){ const am = a.m[min] || (a.m[min] = {}); for(const [k, [n, e]] of Object.entries(ks)){ const c = am[k] || (am[k] = [0, 0]); c[0] += n; c[1] += e; } }
+  if(b.err && (!a.err || b.err.at >= a.err.at)) a.err = b.err;
+  for(const [g, v] of Object.entries(b.grp)) if(!a.grp[g] || v.at >= a.grp[g].at) a.grp[g] = v;
+  a.wait = Math.max(a.wait || 0, b.wait || 0);
+  return a;
+}
+function bgEsiTrim(u){ const keep = Math.floor(Date.now() / 60000) - ESI_USE_MIN; for(const min of Object.keys(u.m)) if(+min <= keep) delete u.m[min]; return u; }
+function bgEsiStored(){ const u = bgLsGet(ESI_USE_KEY, null); return u && typeof u === 'object' && u.m ? Object.assign(bgEsiNew(), u) : bgEsiNew(); }
+function bgEsiFlush(){
+  clearTimeout(bgEsiFlushT); bgEsiFlushT = 0;
+  if(!bgEsiPend) return;
+  const u = bgEsiTrim(bgEsiMerge(bgEsiStored(), bgEsiPend)); bgEsiPend = null;   // read just before writing: another tab's counts stay
+  try{ localStorage.setItem(ESI_USE_KEY, JSON.stringify(u)); }catch(e){}
+}
+function bgEsiUse(){   // what the gauge and panel show: stored plus this tab's not yet saved
+  const u = bgEsiTrim(bgEsiMerge(bgEsiStored(), bgEsiPend ? JSON.parse(JSON.stringify(bgEsiPend)) : bgEsiNew())), now = Date.now(), min = Math.floor(now / 60000);
+  const by = new Map(); let own = 0;
+  for(const [m, ks] of Object.entries(u.m)) for(const [k, [n, e]] of Object.entries(ks)){ by.set(k, (by.get(k) || 0) + n); if(+m === min) own += e; }
+  const fresh = u.err && now < u.err.reset;
+  const grps = Object.entries(u.grp).filter(([, v]) => now - v.at < (v.winMs || 9e5)).map(([g, v]) => ({g, ...v})).sort((x, y) => x.rem / x.lim - y.rem / y.lim);
+  return {errs: fresh ? Math.max(0, ESI_ERR_LIMIT - u.err.remain) : own, esiCount: !!fresh, reset: fresh ? u.err.reset - now : 0,
+          low: grps[0] && grps[0].rem < grps[0].lim * ESI_GROUP_WARN ? grps[0] : null, grp: grps[0] || null,
+          by: [...by.entries()].sort((x, y) => y[1] - x[1]), wait: Math.max(0, (u.wait || 0) - now)};
+}
+// The page's one way to ESI (v2026.11.04.4): the same request as before (no added headers, no cache-busting), its answer noted.
+async function esiFetch(url, init, kind){
+  let r;
+  try{ r = await fetch(url, init); }
+  catch(e){ esiNote(kind, null); throw e; }
+  esiNote(kind, r);
+  return r;
+}
+function bgR2Note(){ const now = Date.now(); bgR2Times = bgR2Times.filter(t => now - t < 10000); bgR2Times.push(now); }   // Intel's live-kill reads, for the panel's rate
+function bgKills(){   // null while Intel is off
+  if(typeof it === 'undefined' || !it.on) return null;
+  const until = itR2Stopped(), now = Date.now();
+  return {stop: until ? until - now : 0, until, rate: bgR2Times.filter(t => now - t < 10000).length / 10};
+}
+function bgState(){
+  zkbPauseRead();
+  const now = Date.now(), z = bgZkbUse(), pause = Math.max(0, zkbUnavailableUntil - now), full = z.n >= ZKB_BUDGET ? z.frees : 0;
+  return {z, pause, full, e: bgEsiUse(), k: bgKills()};
+}
+function bgSegsHtml(S){
+  const seg = (cls, html) => `<span class="bg-seg${cls ? ' ' + cls : ''}"><span class="bg-dot" aria-hidden="true"></span>${html}</span>`;
+  // a narrow phone shows the short forms (.bg-sh): "zK", and Kills as its dot and time (the plan: checked at 320 px); the worst case
+  // (paused, wait and stopped at once) measured: the long form needs 480 px, the state words 380 px
+  const zk = '<span class="bg-lg">zKill</span><span class="bg-sh">zK</span>', w = (x) => `<span class="bg-xw">${x} </span>`;   // .bg-xw: the state's word, dropped only below 380 px
+  let h = S.pause ? seg('stop', `${zk} ${w('paused')}<b>${zkbClock(S.pause)}</b>`)
+    : S.full ? seg('warn', `${zk} ${w('full')}<b>${zkbClock(S.full)}</b>`)
+    : seg(S.z.n >= ZKB_WARN_AT ? 'warn' : '', `${zk} <b>${S.z.n}</b>/${ZKB_BUDGET}`);
+  h += S.e.wait ? seg('stop', `ESI ${w('wait')}<b>${zkbClock(S.e.wait)}</b>`)
+    : S.e.errs >= ESI_ERR_WARN ? seg('warn', `ESI <b>${S.e.errs}</b><span class="bg-xw"> errors</span>`)
+    : S.e.low ? seg('warn', 'ESI <b>low</b>') : seg('', 'ESI <b>ok</b>');
+  if(S.k) h += S.k.stop ? seg('stop', `<span class="bg-lg">Kills stopped </span><b>${zkbClock(S.k.stop)}</b>`) : seg('', '<span class="bg-lg">Kills </span><b>ok</b>');
+  return h;
+}
+function bgByHtml(list, label){ return list.length ? `<div class="bg-by">${label}: ${list.map(([a, n]) => `<span>${escapeHtml(a)} <b>${n}</b></span>`).join('')}</div>` : ''; }
+function bgBodyHtml(S){
+  const z = S.z, warn = z.n >= ZKB_WARN_AT;
+  const next = Math.ceil(Math.min(ZKB_COOLDOWN_MAX_MS, ZKB_COOLDOWN_MS * Math.pow(2, zkbFailStreak)) / 60000);
+  const zState = S.pause
+    ? `<div class="bg-note"><b>zKillboard isn't answering.</b> The page waits <b>${zkbClock(S.pause)}</b> before asking again (${zkbFailStreak} ${zkbFailStreak === 1 ? 'failure' : 'failures in a row'}). Pressing Analyze now sends nothing and <b>doesn't add time</b>, and reloading won't bring it back sooner. If the first lookup after the wait fails too, the next wait is <b>${next} min</b>.</div>`
+    : `<div class="bg-sub">zKillboard is answering.</div>`;
+  const e = S.e, eNote = e.wait ? `<div class="bg-note">ESI asked the page to wait <b>${zkbClock(e.wait)}</b>. Lookups sent before then are refused.</div>`
+    : e.errs >= ESI_ERR_WARN ? `<div class="bg-note">At ${ESI_ERR_LIMIT}, ESI refuses every request for the rest of the minute (it answers 420).</div>`
+    : e.low ? `<div class="bg-note">${escapeHtml(e.low.g)} is down to ${e.low.rem.toLocaleString()} of ${e.low.lim.toLocaleString()} per ${escapeHtml(e.low.win)}.</div>` : '';
+  const allow = e.grp && !e.low ? `Plenty left: ${escapeHtml(e.grp.g)} ${e.grp.rem.toLocaleString()} of ${e.grp.lim.toLocaleString()} per ${escapeHtml(e.grp.win)}.` : '';   // a low one has its note
+  const k = S.k, kRow = !k ? '' : `<div class="bg-sec"><div class="bg-row"><span class="k">Intel live kills</span><span class="v">${k.stop ? 'stopped' : 'reading'}</span></div>${k.stop
+    ? `<div class="bg-note">zKillboard said slow down, so live kills stop until <b>${new Date(k.until).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</b> (${zkbClock(k.stop)}). Reports from your channels carry on.</div>`
+    : `<div class="bg-sub">${k.rate.toFixed(1)} requests a second (the page's own cap is ${IT_R2_PER_S}; zKillboard's is 15).</div>`}</div>`;
+  return `<div class="bg-sec"><div class="bg-row"><span class="k">zKillboard</span><span class="v">${z.n} of ${ZKB_BUDGET} · last 10 min</span></div>
+      <div class="bg-bar${warn ? ' warn' : ''}"><i style="width:${Math.min(100, Math.round(z.n / ZKB_BUDGET * 100))}%"></i></div>
+      <div class="bg-sub">${z.n ? `Next one frees up in ${zkbClock(z.frees)}.` : 'Nothing used.'} Fleet tab keeps ${FK_ZKB_RESERVE} for the rest of the page.</div>${bgByHtml(z.by, 'Used by')}${zState}</div>
+    <div class="bg-sec"><div class="bg-row"><span class="k">ESI</span><span class="v">${e.errs} of ${ESI_ERR_LIMIT} errors · this minute</span></div>
+      <div class="bg-sub">${e.esiCount ? `ESI's own count; it starts again in ${zkbClock(e.reset)}.` : "The page's own count (no answer from ESI this minute said its number)."}${allow ? ' ' + allow : ''}</div>${bgByHtml(e.by.map(([kk, n]) => [ESI_KINDS[kk] || kk, n]), 'Last 15 min')}${eNote}</div>${kRow}`;
+}
+function bgPaint(){   // the gauge (and the open panel) on the next frame, once however many counters changed
+  if(bgRaf || !bgDoc() || document.hidden) return;   // a hidden tab paints when it is shown again (visibilitychange)
+  const go = () => { bgRaf = 0; bgPaintNow(); };
+  bgRaf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(go) : setTimeout(go, 0);
+}
+function bgPaintNow(){
+  if(!bgDoc()) return false;
+  const S = bgState(), segs = bgSegsHtml(S);
+  if(segs !== bgLastSegs){ document.getElementById('bgSegs').innerHTML = segs; bgLastSegs = segs; }   // the button stays (its focus, LESSON #119)
+  const g = document.getElementById('bgGauge'), hot = !!(S.pause || S.full || S.e.wait || (S.k && S.k.stop));
+  g.setAttribute('aria-label', `Lookup budgets: ${document.getElementById('bgSegs').textContent}`);
+  if(bgOpen) bgPanelPaint(S);
+  bgTickStart(hot);
+  return hot;
+}
+function bgPanelPaint(S){
+  const body = document.getElementById('bgBody'), h = bgBodyHtml(S || bgState());
+  if(h !== bgLastBody){ body.innerHTML = h; bgLastBody = h; }
+}
+// v2026.11.04.4: one tick for every countdown on the page (the gauge's, the open panel, the Retry buttons, the ZKB-01 messages),
+// stopped when none is left and never running in a hidden tab (the countdowns are worked out from end times, so they're right again
+// on return)
+function bgTickStart(hot){
+  if(bgTimer || typeof document === 'undefined' || !document.querySelectorAll || document.hidden) return;
+  if(!hot && !bgOpen && !document.querySelector('button.zkb-retry[data-zkb-at], span.zkb-msg') && !(zkbUnavailableUntil > Date.now())) return;
+  bgTimer = setInterval(bgTick, 1000);
+}
+function bgTick(){
+  if(typeof document === 'undefined' || document.hidden){ clearInterval(bgTimer); bgTimer = 0; return; }
+  const now = Date.now(), retry = zkbRetryStep(now), msgs = bgMsgSweep(now), hot = bgPaintNow();   // (bgTimer is set: no second tick)
+  if(!retry && !msgs && !hot && !bgOpen){ clearInterval(bgTimer); bgTimer = 0; }
+}
+// The ZKB-01 text (zkbUnavailableText) counted down wherever it is shown: found once as text (it's set with textContent or escaped
+// into HTML in many places), wrapped in span.zkb-cd, then counted from the pause's end; at 0 it says zKillboard can be asked again.
+function bgMsgSweep(now){
+  if(!document.body || !document.createTreeWalker) return false;
+  if(zkbUnavailableUntil > now){
+    const w = document.createTreeWalker(document.body, 4 /* text */, {acceptNode: (n) => n.nodeValue.indexOf("isn't answering, so the page waits") >= 0 && !n.parentNode.closest('script, style, .zkb-msg') ? 1 : 3});
+    const found = []; let n; while((n = w.nextNode())) found.push(n);
+    for(const t of found){
+      const m = ZKB_MSG_RX.exec(t.nodeValue); if(!m) continue;
+      const rest = t.splitText(m.index); rest.splitText(m[0].length);
+      const sp = document.createElement('span'); sp.className = 'zkb-msg'; sp.textContent = rest.nodeValue; rest.parentNode.replaceChild(sp, rest);
     }
-  }, 1000);
+  }
+  const S = [...document.querySelectorAll('span.zkb-msg')];
+  for(const sp of S){
+    const txt = zkbUnavailableUntil > now ? zkbUnavailableText() : 'zKillboard can be asked again';
+    if(sp.textContent !== txt) sp.textContent = txt;
+    if(!(zkbUnavailableUntil > now)) sp.classList.replace('zkb-msg', 'zkb-msg-done');
+  }
+  return zkbUnavailableUntil > now && S.length > 0;
+}
+function bgAgeArm(){   // one timeout for when the zKillboard count next goes down (Intel's age timer runs only with Intel on; LESSON #134)
+  if(!bgDoc()) return;
+  clearTimeout(bgAgeT); bgAgeT = 0;
+  if(document.hidden) return;
+  const z = bgZkbUse(), e = bgEsiUse(), next = [z.n ? z.frees : 0, e.reset].filter(x => x > 0);
+  if(next.length) bgAgeT = setTimeout(() => { bgAgeT = 0; bgPaint(); bgAgeArm(); }, Math.min(...next) + 50);
+}
+function bgOpenPanel(){
+  const p = document.getElementById('bgPop'), g = document.getElementById('bgGauge');
+  bgOpen = true; p.hidden = false; g.setAttribute('aria-expanded', 'true'); bgLastBody = '';
+  bgPanelPaint(); bgTickStart();
+  p.querySelector('.x-close').focus({preventScroll: true});
+}
+function bgClosePanel(returnFocus = true){
+  const p = document.getElementById('bgPop'), g = document.getElementById('bgGauge');
+  if(!bgOpen) return;
+  bgOpen = false; p.hidden = true; g.setAttribute('aria-expanded', 'false');
+  if(returnFocus) g.focus({preventScroll: true});
+}
+function bgInit(){
+  if(!bgDoc()) return;
+  const g = document.getElementById('bgGauge'), p = document.getElementById('bgPop');
+  // a press that closed a sheet over the gauge (the profile on a phone closes on the press) must not open it with that tap's click:
+  // only a click whose press began on the gauge counts (keyboard clicks have no press, detail 0); LESSON #137
+  let downOnGauge = false;
+  document.addEventListener('pointerdown', (e) => { downOnGauge = g.contains(e.target); }, true);
+  g.addEventListener('click', (e) => { if(e.detail > 0 && !downOnGauge) return; bgOpen ? bgClosePanel() : bgOpenPanel(); });
+  p.querySelector('.x-close').addEventListener('click', () => bgClosePanel());
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && bgOpen){ e.stopPropagation(); bgClosePanel(); } });
+  document.addEventListener('pointerdown', (e) => { if(bgOpen && !p.contains(e.target) && !g.contains(e.target)) bgClosePanel(false); });
+  document.addEventListener('visibilitychange', () => { if(document.hidden){ clearInterval(bgTimer); bgTimer = 0; clearTimeout(bgAgeT); bgAgeT = 0; } else { bgPaint(); bgAgeArm(); bgTickStart(); } });
+  window.addEventListener('storage', (e) => { if([ZKB_BUDGET_KEY, ZKB_WHO_KEY, ZKB_PAUSE_KEY, ESI_USE_KEY, IT_R2_STOP_KEY].includes(e.key)){ bgPaint(); bgAgeArm(); } });   // another tab
+  window.addEventListener('pagehide', bgEsiFlush);
+  bgPaint(); bgAgeArm();
 }
 
 function describeEsiFailure(context, status, detail){
@@ -9126,7 +9411,7 @@ const GD_VERSION_KEY = 'dscanServerVersion';   // localStorage: the last EVE ser
 const GD_VERSION_WAIT_MS = 3000;
 let gdVersionGate = null;
 async function gdServerVersion(){
-  const r = await fetch(`${ESI}/status/?datasource=tranquility`);
+  const r = await esiFetch(`${ESI}/status/?datasource=tranquility`, undefined, 'status');
   if(!r.ok) return '';
   const d = await r.json();
   return d && d.server_version ? String(d.server_version) : '';
@@ -9350,11 +9635,11 @@ async function resolveNamesToIds(names){
   if(!unique.length) return {};
   let res;
   try{
-    res = await fetch(`${ESI}/universe/ids/?datasource=tranquility&language=en`, {
+    res = await esiFetch(`${ESI}/universe/ids/?datasource=tranquility&language=en`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(unique)
-    });
+    }, 'names');
   }catch(e){
     throw codedError('ESI-01', describeEsiFailure(`Name resolution (${unique.length} name(s))`, undefined));
   }
@@ -9424,7 +9709,7 @@ async function getType(typeId){
   if(cached !== undefined){ typeCache.set(typeId, cached); return cached; }
   let res;
   try{
-    res = await fetch(`${ESI}/universe/types/${typeId}/?datasource=tranquility&language=en`);
+    res = await esiFetch(`${ESI}/universe/types/${typeId}/?datasource=tranquility&language=en`, undefined, 'types');
   }catch(e){
     throw codedError('ESI-02', describeEsiFailure(`Type ${typeId} fetch`, undefined));
   }
@@ -9447,7 +9732,7 @@ async function getGroup(groupId){
   if(cached !== undefined){ groupCache.set(groupId, cached); return cached; }
   let res;
   try{
-    res = await fetch(`${ESI}/universe/groups/${groupId}/?datasource=tranquility&language=en`);
+    res = await esiFetch(`${ESI}/universe/groups/${groupId}/?datasource=tranquility&language=en`, undefined, 'types');
   }catch(e){
     throw codedError('ESI-03', describeEsiFailure(`Group ${groupId} fetch`, undefined));
   }
@@ -9515,11 +9800,11 @@ async function resolveIdsToNames(ids){
   if(!unique.length) return [];
   let res;
   try{
-    res = await fetch(`${ESI}/universe/names/?datasource=tranquility`, {
+    res = await esiFetch(`${ESI}/universe/names/?datasource=tranquility`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(unique)
-    });
+    }, 'names');
   }catch(e){
     throw codedError('ESI-04', describeEsiFailure(`Id resolution (${unique.length} id(s))`, undefined));
   }
@@ -9715,6 +10000,7 @@ document.getElementById('refreshCacheBtn').addEventListener('click', async () =>
   await clearDscanCache();
   heroRefreshStatus('Cleared — next analysis will re-fetch from ESI.', 5000);
 });
+bgInit();   // v2026.11.04.4: the lookup budgets in the header (build queue 012)
 gdVersionCheck();   // v2026.11.04.3: asked as the page loads, so the first lookup seldom waits (section 1, game-data-update-plan.md)
 document.getElementById('analyzeBtn').addEventListener('click', () => runSystemAnalyzer(false));   // v2026.10.14.81: Local and D-Scan
 document.getElementById('debugToggle').addEventListener('click', () => {
@@ -10214,7 +10500,7 @@ async function fetchKillmail(stub){
   // the fetch instead of replaying a stale failure.
   let res;
   try{
-    res = await fetch(`${ESI}/killmails/${stub.killmail_id}/${hash}/?datasource=tranquility`);
+    res = await esiFetch(`${ESI}/killmails/${stub.killmail_id}/${hash}/?datasource=tranquility`, undefined, 'killmails');
   }catch(e){
     return {error: describeEsiFailure(`Killmail ${stub.killmail_id} fetch`, undefined), code: 'ESI-05'};
   }
@@ -11303,7 +11589,7 @@ async function renderLastKill(character, pilotName, statusEl){
   const el = document.getElementById('lastKillInfo');
   el.innerHTML = `<div class="lastkill">Checking last kill…</div>`;
   try{
-    const stubs = await fetchKillsStubs(character.id);   // v.90: one list for the Last Kill line and the dossier
+    const stubs = await fetchKillsStubs(character.id, false, {who: 'Pilot Analyzer'});   // v.90: one list for the Last Kill line and the dossier
     if(!stubs.length){
       el.innerHTML = `<div class="lastkill">No recorded kills for ${escapeHtml(pilotName)} on zKillboard.</div>`;
       return;
@@ -11539,7 +11825,7 @@ async function sharedKillmailRun(id, hash, statusEl){
   if(!hash){
     setStatus(statusEl, `Looking up killmail ${id} on zKillboard…`);
     let res;   // v.93: a network failure here was uncoded (APP-01; seen in extension_check under load)
-    try{ res = await zkbFetch(`${ZKB}/killID/${id}/`); }
+    try{ res = await zkbFetch(`${ZKB}/killID/${id}/`, {who: 'Kill link'}); }
     catch(e){ if(e.zkbUnavailable || e.code) throw e; throw codedError('SHARE-01', describeEsiFailure(`zKillboard killmail lookup (killmail ${id})`, undefined)); }
     const list = res.ok ? await res.json() : [];
     const stub = (Array.isArray(list) ? list : []).find(k => Number(k.killmail_id) === id);
@@ -11682,10 +11968,10 @@ const pd = {charId: null, d: null, mode: 'all', sel: null, character: null, stat
   kStubs: [], read: 0, older: [], open: null, shown: 10, busy: false, failed: [], names: new Map(), value: new Map(),   // v.93: the kills under a row
   pin: null, allHulls: false, extra: null};   // v2026.11.01.5: the hull asked for, first; every hull shown; the Fleet tab's kill added
 const killStubCache = new Map();
-async function fetchKillsStubs(charId, forceRefresh){
+async function fetchKillsStubs(charId, forceRefresh, o = {}){   // o.who: who asked (v2026.11.04.4, the lookup budgets)
   if(!forceRefresh && killStubCache.has(charId)) return killStubCache.get(charId);
   let res;
-  try{ res = await zkbFetch(`${ZKB}/kills/characterID/${charId}/`); }
+  try{ res = await zkbFetch(`${ZKB}/kills/characterID/${charId}/`, o); }
   catch(e){ if(e.zkbUnavailable) throw e; throw codedError('ZKB-03', describeEsiFailure(`zKillboard kills lookup (character ${charId})`, undefined)); }
   if(!res.ok) throw codedError('ZKB-03', describeEsiFailure(`zKillboard kills lookup (character ${charId})`, res.status));
   const stubs = await res.json();
@@ -11957,7 +12243,7 @@ async function pdLoad(character, statusEl, forceRefresh, quiet){
   const want = pd.want && pd.want.name === currentPilotName ? pd.want : null; pd.want = null;
   pd.mode = want ? want.mode : 'all';
   if(!quiet) setStatus(statusEl, `Reading ${currentPilotName}'s newest kills and losses…`);
-  const [kStubs, lStubs] = await Promise.all([fetchKillsStubs(charId, forceRefresh).catch(e => { if(e.zkbUnavailable) throw e; return []; }), fetchLossesStubs(charId, undefined, forceRefresh)]);
+  const [kStubs, lStubs] = await Promise.all([fetchKillsStubs(charId, forceRefresh, {who: 'Pilot Analyzer'}).catch(e => { if(e.zkbUnavailable) throw e; return []; }), fetchLossesStubs(charId, undefined, forceRefresh, {who: 'Pilot Analyzer'})]);
   const [kr, lr] = await Promise.all([analyzeChunks(kStubs.slice(0, PD_KILLS), fetchKillmail, 4), analyzeChunks(lStubs.slice(0, PD_LOSSES), fetchKillmail, 3)]);
   if(pd.charId !== charId) return null;
   const ok = (rs) => rs.filter(r => r && !r.error && r.km).map(r => r.km);
@@ -12010,7 +12296,7 @@ async function pdShowHull(character, hull, statusEl, forceRefresh){
   if(!g || isNpcCorp(g.id)){ el.innerHTML = ''; setStatus(statusEl, `No loss of ${currentPilotName}'s in a ${hull.name}, and no group to take a common fit from: fit unknown.`); return; }
   setStatus(statusEl, `No loss of theirs in a ${hull.name}: looking up their ${g.kind}'s ${hull.name} losses…`);
   let r;
-  try{ r = await saHullFits(g, hull.id); }
+  try{ r = await saHullFits(g, hull.id, {who: 'Pilot Analyzer'}); }
   catch(e){ el.innerHTML = ''; setStatus(statusEl, withCode(`No loss of theirs in a ${hull.name}, and their ${g.kind}'s losses couldn't be read: ${e.message}`, errorCodeOf(e)), true); return; }
   if(!r || r.none || !r.variants || !r.variants.length){ el.innerHTML = ''; setStatus(statusEl, `No loss of ${currentPilotName}'s in a ${hull.name}, nor of their ${g.kind}'s lately: fit unknown.`); return; }
   let gname = '';
@@ -12521,7 +12807,7 @@ async function runFitForShip(character, shipTypeId, shipName, statusEl, forceRef
   pdHullLabel(shipName, shipTypeId);   // v.90: the pilot line names the hull asked for, with its class (before the fit: it may fail)
   setStatus(statusEl, `Querying zKillboard for ${shipName} losses…`);
   try{
-    const stubs = await fetchLossesStubs(character.id, shipTypeId, forceRefresh);
+    const stubs = await fetchLossesStubs(character.id, shipTypeId, forceRefresh, {who: 'Pilot Analyzer'});
     if(!stubs.length){
       setStatus(statusEl, `No recorded losses of ${shipName} for ${currentPilotName} on zKillboard.`);
       document.getElementById('fitResults').innerHTML = '';
@@ -21918,7 +22204,7 @@ async function getOrg(kind, id){
   const p = (async () => {
     const cached = await dscanCacheGet('orgs', key);
     if(cached !== undefined) return cached;
-    const res = await fetch(`${ESI}/${kind === 'alliance' ? 'alliances' : 'corporations'}/${id}/?datasource=tranquility`);
+    const res = await esiFetch(`${ESI}/${kind === 'alliance' ? 'alliances' : 'corporations'}/${id}/?datasource=tranquility`, undefined, 'orgs');
     if(!res.ok) throw new Error(`status ${res.status}`);
     const j = await res.json(), data = {name: j.name || '', ticker: j.ticker || ''};
     dscanCacheSet('orgs', key, data);
@@ -21985,7 +22271,7 @@ async function saAffiliation(ids){
     const chunk = ids.slice(i, i + 1000);
     let res;
     try{
-      res = await fetch(`${ESI}/characters/affiliation/?datasource=tranquility`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(chunk)});
+      res = await esiFetch(`${ESI}/characters/affiliation/?datasource=tranquility`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(chunk)}, 'pilots');
     }catch(e){ throw codedError('SYS-01', describeEsiFailure(`Affiliation lookup (${chunk.length} pilot(s))`, undefined)); }
     if(!res.ok){ let d = ''; try{ d = await res.text(); }catch(e){} throw codedError('SYS-01', describeEsiFailure(`Affiliation lookup (${chunk.length} pilot(s))`, res.status, d)); }
     out.push(...await res.json());
@@ -22040,7 +22326,7 @@ function attackerKey(a){ return a.alliance_id || a.corporation_id; }
 async function saEvidence(force){
   const g = sideOwnGroup();
   if(!g) return null;
-  const {data, at} = await zkbCachedJson(`${ZKB}/losses/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'losses lookup');
+  const {data, at} = await zkbCachedJson(`${ZKB}/losses/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'losses lookup', 'array', {who: cardName('sysan')});
   const kms = await saKillmails(data);
   const byKey = new Map();
   for(const km of kms){
@@ -22057,7 +22343,7 @@ async function saEvidence(force){
 async function saSuggestions(force){
   const g = sideOwnGroup();
   if(!g) return null;
-  const {data} = await zkbCachedJson(`${ZKB}/kills/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'kills lookup');
+  const {data} = await zkbCachedJson(`${ZKB}/kills/${zkbGroupPath(g)}/pastSeconds/${SA_PAST_SECONDS}/`, force, 'kills lookup', 'array', {who: cardName('sysan')});
   const kms = await saKillmails(data);
   const sets = sideSets(), count = new Map(), kind = new Map();
   for(const km of kms){
@@ -22291,8 +22577,8 @@ function saRowTypeDps(e){
 // v.92 (pilot-dossier-plan.md D4-D6): each row reads the Pilot Dossier's data (their newest PD_KILLS kills and PD_LOSSES
 // losses, from ESI, kept for good; the same 2 zKillboard requests as before) and picks the possible ship for a gang size.
 async function saPilotData(p){
-  const kills = await zkbCachedJson(`${ZKB}/kills/characterID/${p.id}/`, false, 'kills lookup');
-  const losses = await zkbCachedJson(`${ZKB}/losses/characterID/${p.id}/`, false, 'losses lookup');
+  const kills = await zkbCachedJson(`${ZKB}/kills/characterID/${p.id}/`, false, 'kills lookup', 'array', {who: cardName('sysan')});
+  const losses = await zkbCachedJson(`${ZKB}/losses/characterID/${p.id}/`, false, 'losses lookup', 'array', {who: cardName('sysan')});
   const newest = (list, n) => [...list.data].filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, n);
   const [kk, lk] = await Promise.all([analyzeChunks(newest(kills, PD_KILLS), fetchKillmail, 3), analyzeChunks(newest(losses, PD_LOSSES), fetchKillmail, 3)]);
   const kms = {kills: kk.filter(r => r && r.km).map(r => r.km), losses: lk.filter(r => r && r.km && r.km.victim).map(r => r.km)};
@@ -22603,7 +22889,7 @@ async function saHullFitsFrom(data, hullId){
   return keep({variants: out, vary, of: take.length, from: Math.min(...times), to: Math.max(...times)});
 }
 async function saFleetGroupData(g){
-  const {data} = await zkbCachedJson(`${ZKB}/kills/${saGroupPath(g)}/`, false, 'kills lookup');
+  const {data} = await zkbCachedJson(`${ZKB}/kills/${saGroupPath(g)}/`, false, 'kills lookup', 'array', {who: cardName('sysan')});
   const kms = await (async () => {
     const take = [...data].filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id).slice(0, SA_FLEET_KILLS);
     return (await analyzeChunks(take, fetchKillmail, 5)).filter(r => r && r.km).map(r => r.km);
@@ -22621,7 +22907,7 @@ async function saFleetGroupData(g){
   for(const [id, n] of ships.slice(0, SA_FLEET_HULLS)){
     const t = await getType(id), gr = await getGroup(t.group_id);
     const h = {typeId: id, name: t.name, cls: gr.name, n, share: n / total, logi: /Logistics|Force Auxiliary/i.test(gr.name), pick: 0};
-    try{ Object.assign(h, await saHullFits(g, id)); }catch(e){ h.err = withCode(e.message, errorCodeOf(e)); }
+    try{ Object.assign(h, await saHullFits(g, id, {who: cardName('sysan')})); }catch(e){ h.err = withCode(e.message, errorCodeOf(e)); }
     hulls.push(h);
   }
   const rest = ships.slice(SA_FLEET_HULLS);
@@ -23138,7 +23424,7 @@ async function paAffEsi(path, key){
   const c = await dscanCacheGet('orgs', key, PA_AFF_TTL_MS);
   if(c !== undefined) return c;
   let res;
-  try{ res = await fetch(`${ESI}${path}?datasource=tranquility`); }
+  try{ res = await esiFetch(`${ESI}${path}?datasource=tranquility`, undefined, 'pilots'); }
   catch(e){ throw new Error(describeEsiFailure(`ESI ${path}`, undefined)); }
   if(!res.ok) throw new Error(describeEsiFailure(`ESI ${path}`, res.status));
   const j = await res.json();
@@ -23180,7 +23466,7 @@ async function paAffStats(){
   d.zk = {state: 'load'};
   paAffRender();
   try{
-    const {data} = await zkbCachedJson(`${ZKB}/stats/characterID/${id}/`, false, 'stats lookup', 'object');
+    const {data} = await zkbCachedJson(`${ZKB}/stats/characterID/${id}/`, false, 'stats lookup', 'object', {who: 'Pilot Analyzer'});
     if(token !== paAff.token) return;
     d.zk = paAffZk(data);
   }catch(e){
@@ -23550,6 +23836,7 @@ async function fkOwnFrom(m, stubs){
 // o.mode 'common': no per-pilot request, the pair's list only (a pilot who is a victim in it gets that loss, found: true);
 // o.cacheOnly: null when it can't be done without asking zKillboard; o.reserve: see zkbFetchNow.
 async function fkMemberFit(m, o = {}){
+  o = {who: 'Fleet tab', ...o};   // v2026.11.04.4: the lookup budgets' "Used by"
   const s = fk.shared && fk.shared[m.id];
   let f = null;
   if(s){
@@ -23580,7 +23867,7 @@ async function fkMemberFit(m, o = {}){
 }
 // own? on a row with their alliance's fit or none: their own losses in that hull (1 request); none found, the row stays as it is
 async function fkOwnTry(m){
-  const stubs = await fetchLossesStubs(m.id, m.hull);
+  const stubs = await fetchLossesStubs(m.id, m.hull, false, {who: 'Fleet tab'});
   const f = stubs && stubs.length ? await fkOwnFrom(m, stubs) : null;
   return f ? fkFitDone(m, f) : {ownTried: true};
 }
@@ -24856,6 +25143,7 @@ function itR2Stop(why){
   const s = {until: Date.now() + IT_R2_STOP_MS, why};
   it.r2stop = s;
   try{ localStorage.setItem(IT_R2_STOP_KEY, JSON.stringify(s)); }catch(e){ /* this tab still stops */ }
+  bgPaint();   // v2026.11.04.4: the gauge's "Kills stopped"
 }
 function itR2StopErr(){ const x = new Error('stopped'); x.r2stop = true; return x; }
 async function itR2Fetch(path){
@@ -24868,7 +25156,7 @@ async function itR2Fetch(path){
   const now = typeof at === 'number' ? at : Date.now();
   itR2Times = itR2Times.filter(x => now - x < 1000);
   if(itR2Times.length >= IT_R2_PER_S){ itR2Stop('self'); throw itR2StopErr(); }   // the tripwire: the gate above should make this impossible
-  itR2Times.push(now);
+  itR2Times.push(now); bgR2Note();   // v2026.11.04.4: the budgets panel's rate
   if(kf) kf.reqs++;
   let r;
   try{ r = await fetch(`${IT_R2Z2}${path}`); }
@@ -25039,7 +25327,7 @@ async function itGateDest(id){
   const q = (async () => {
     let d = await itKvGet(`gate:${id}`);
     if(!(Number(d) > 0)){
-      const r = await fetch(`${ESI}/universe/stargates/${id}/?datasource=tranquility`);
+      const r = await esiFetch(`${ESI}/universe/stargates/${id}/?datasource=tranquility`, undefined, 'systems');
       if(!r.ok) return null;
       d = Number(((await r.json()).destination || {}).system_id) || 0;
       if(!d) return null;
@@ -25061,7 +25349,7 @@ async function itSecFetch(ids){
   await Promise.all(ask.map(async (id) => {
     let v = await itKvGet(`sec:${id}`);
     if(typeof v !== 'number'){
-      try{ const r = await fetch(`${ESI}/universe/systems/${id}/?datasource=tranquility`); if(r.ok){ v = Number((await r.json()).security_status); if(Number.isFinite(v)) itKvSet(`sec:${id}`, v); } }catch(e){ /* the name stays uncoloured */ }
+      try{ const r = await esiFetch(`${ESI}/universe/systems/${id}/?datasource=tranquility`, undefined, 'systems'); if(r.ok){ v = Number((await r.json()).security_status); if(Number.isFinite(v)) itKvSet(`sec:${id}`, v); } }catch(e){ /* the name stays uncoloured */ }
     }
     if(typeof v === 'number' && Number.isFinite(v)){ it.sec.set(id, v); any = true; }
   }));
@@ -25249,7 +25537,7 @@ async function itStart(){
   }catch(e){ it.err = withCode(`The page can't read “${it.dirName}” (${e.message}). Choose the folder again under the gear.`, 'INTEL-02'); itRender(); return; }
   // the browser asks for notifications only after a press: this one (the slider)
   if(it.set.notify && typeof Notification !== 'undefined' && Notification.permission === 'default'){ try{ Notification.requestPermission().then(() => itRender()).catch(() => {}); }catch(e){} }
-  it.on = true; it.gen++;
+  it.on = true; it.gen++; bgPaint();   // v2026.11.04.4: the gauge shows Intel's live kills only while Intel is on
   it.feed = []; it.near = new Map(); it.alerted = new Map(); it.lastLine = 0; it.files = new Map(); it.lastScan = 0;
   it.kf = itKfNew(); it.kfNote = '';   // v.99
   itRender();
@@ -25261,7 +25549,7 @@ async function itStart(){
   itKillPump();
 }
 function itStop(){
-  it.on = false; it.gen++;
+  it.on = false; it.gen++; bgPaint();
   itTickerStop();
   itRender();
 }
@@ -26659,7 +26947,7 @@ async function saActRun(force){
   const A = sa.act = {sysId: S.id, name: S.name, from: S.from, list: null, at: 0, kms: [], next: 0, failed: 0, busy: true, err: null};
   saActDraw(true);
   try{
-    const {data, at} = await zkbCachedJson(saActUrl(S.id), force, 'system kills lookup');
+    const {data, at} = await zkbCachedJson(saActUrl(S.id), force, 'system kills lookup', 'array', {who: cardName('sysan')});
     if(gen !== saActGen) return;
     A.list = data.filter(s => s && s.killmail_id && s.zkb && s.zkb.hash).sort((a, b) => b.killmail_id - a.killmail_id); A.at = at;
   }catch(e){

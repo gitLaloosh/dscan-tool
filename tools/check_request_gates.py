@@ -21,6 +21,10 @@ Rules checked in index.html and browser-extension/*.js:
   * no batch of timers staggers zKillboard requests (setTimeout(..., i * ...) next to itKillGet / zkbFetch).
 ESI (esi.evetech.net) is listed but not gated: its calls are capped by how many run at once, not by timers, and ESI
 limits errors rather than speed. A new ESI call still has to be listed.
+  * v2026.11.04.4 (build queue 012, the lookup budgets): esiFetch is the page's one fetch() to ESI. It sends the request
+    it is given as it is (fetch(url, init): no added headers, no cache-busting) and only reads the answer. Every
+    esiFetch(...) call names ${ESI}, sits in a function listed in ESI_SITES, and says which kind of lookup it is (a key of
+    ESI_KINDS, the budgets panel's "Last 15 min"). A direct fetch() to ESI anywhere else fails the first rule.
 """
 import os, re, sys, glob
 
@@ -31,9 +35,11 @@ src = open(HTML, encoding='utf-8').read()
 # function -> host it fetches. 'zkb' and 'r2z2' must go through their gates; 'esi' is capped by concurrency.
 SITES = {
     'zkbFetchNow': 'zkb', 'itR2Fetch': 'r2z2',
-    'resolveNamesToIds': 'esi', 'getType': 'esi', 'getGroup': 'esi', 'resolveIdsToNames': 'esi', 'fetchKillmail': 'esi',
-    'getOrg': 'esi', 'saAffiliation': 'esi', 'paAffEsi': 'esi', 'itSecFetch': 'esi', 'itGateDest': 'esi', 'gdServerVersion': 'esi',   # v2026.11.04.3: gdServerVersion (ESI /status/ once per load: item data after a patch); v2026.10.31.5: itGateDest (a stargate's destination); v2026.10.29.5: itCheckBuild (ESI /status/) removed
+    'esiFetch': 'esi',   # v2026.11.04.4: the one fetch() to ESI; its callers are ESI_SITES
 }
+# function -> its esiFetch calls (v2026.11.04.4; before, each of these had its own fetch() to ESI)
+ESI_SITES = {'resolveNamesToIds', 'getType', 'getGroup', 'resolveIdsToNames', 'fetchKillmail',
+    'getOrg', 'saAffiliation', 'paAffEsi', 'itSecFetch', 'itGateDest', 'gdServerVersion'}   # v2026.11.04.3: gdServerVersion (ESI /status/ once per load: item data after a patch); v2026.10.31.5: itGateDest (a stargate's destination); v2026.10.29.5: itCheckBuild (ESI /status/) removed
 HOST_RX = {'zkb': r'\$\{ZKB\}|zkillboard\.com/api', 'r2z2': r'\$\{IT_R2Z2\}|r2z2\.zkillboard\.com', 'esi': r'\$\{ESI\}|esi\.evetech\.net'}
 problems = []
 
@@ -69,10 +75,33 @@ for m in re.finditer(r'(?<![\w.$])fetch\(', src):
     host = SITES[fn]
     if fn == 'zkbFetchNow':
         if not arg.startswith('url'): problems.append(f'index.html:{line(src, m.start())}: zkbFetchNow fetches something other than its url argument')
+    elif fn == 'esiFetch':
+        if not arg.startswith('url, init)'): problems.append(f'index.html:{line(src, m.start())}: esiFetch must send the request it was given as it is: fetch(url, init)')
     elif not re.search(HOST_RX[host], arg.split(')')[0] if host != 'esi' else arg):
         problems.append(f'index.html:{line(src, m.start())}: {fn}() is listed for {host} but this fetch() does not name it: {arg[:60]!r}')
 for fn in SITES:
     if fn not in seen: problems.append(f'{fn}() is listed but has no fetch() any more: update the list')
+
+# ESI: only through esiFetch, from the listed functions, each call with its kind (v2026.11.04.4)
+mk = re.search(r'const ESI_KINDS = \{([^}]*)\}', src)
+KINDS = set(re.findall(r'(\w+):', mk.group(1))) if mk else set()
+if not KINDS: problems.append('ESI_KINDS not found (the kinds of ESI lookup the budgets panel counts)')
+esi_seen = set()
+for m in re.finditer(r'(?<![\w.$])esiFetch\(', src):
+    if src[:m.start()].rstrip().endswith('function'): continue
+    fn = enclosing(starts, m.start()); esi_seen.add(fn)
+    # the call's arguments, to its closing parenthesis
+    i, d = m.end(), 1
+    while d and i < len(src):
+        d += {'(': 1, ')': -1}.get(src[i], 0); i += 1
+    args = src[m.end():i - 1]
+    if fn not in ESI_SITES: problems.append(f'index.html:{line(src, m.start())}: esiFetch() in {fn}(), which is not in ESI_SITES: list it')
+    if not re.match(r'\s*`\$\{ESI\}', args): problems.append(f'index.html:{line(src, m.start())}: esiFetch() for something other than ${{ESI}}: {args[:60]!r}')
+    kk = re.search(r",\s*'(\w+)'\s*$", args)
+    if not kk or kk.group(1) not in KINDS: problems.append(f'index.html:{line(src, m.start())}: esiFetch() without a kind of lookup from ESI_KINDS (the last argument): {args[-40:]!r}')
+for fn in ESI_SITES - esi_seen: problems.append(f'{fn}() is in ESI_SITES but has no esiFetch() any more: update the list')
+eb = body(src, 'esiFetch') or ''
+if re.search(r'headers|cache|Date\.now\(\)\s*\+|[?&]_=', eb.split('esiNote')[0]): problems.append('esiFetch changes the request (headers or cache-busting); it must send what it was given')
 
 # zKillboard API: only through the queue
 callers = [enclosing(starts, m.start()) for m in re.finditer(r'(?<![\w.$])zkbFetchNow\(', src) if not src[:m.start()].rstrip().endswith('function')]
@@ -83,8 +112,8 @@ if not (re.search(r'zkbLastStart\s*\+\s*ZKB_SPACING_MS\s*-\s*Date\.now\(\)', q) 
 mm = re.search(r'const ZKB_SPACING_MS = (\d+);', src)
 if not mm or int(mm.group(1)) < 1000: problems.append(f'ZKB_SPACING_MS is {mm and mm.group(1)} (at least 1000 ms)')
 # v2026.11.02.1: a caller may keep a reserve (the Fleet tab's Load all), which only ever lowers the cap, never raises it
-if not re.search(r'if\(!zkbBudgetSpend\((?:ZKB_BUDGET - \(o\.reserve \|\| 0\))?\)\)', body(src, 'zkbFetchNow') or ''): problems.append('zkbFetchNow no longer spends the ZKB_BUDGET')
-_sp = re.search(r'function zkbBudgetSpend\((lim = ZKB_BUDGET)?\)\{', src)
+if not re.search(r'if\(!zkbBudgetSpend\((?:ZKB_BUDGET - \(o\.reserve \|\| 0\)(?:, o\.who)?)?\)\)', body(src, 'zkbFetchNow') or ''): problems.append('zkbFetchNow no longer spends the ZKB_BUDGET')
+_sp = re.search(r'function zkbBudgetSpend\((lim = ZKB_BUDGET)?(?:, who)?\)\{', src)   # v2026.11.04.4: who (the budgets' "Used by")
 if not _sp or not re.search(r'if\(a\.length >= ' + ('lim' if _sp.group(1) else 'ZKB_BUDGET') + r'\) return false;', body(src, 'zkbBudgetSpend') or ''):
     problems.append('zkbBudgetSpend no longer caps at ZKB_BUDGET (or a lower limit its caller passes)')
 
@@ -120,5 +149,5 @@ for f in glob.glob(os.path.join(ROOT, 'browser-extension', '*.js')):
 
 for p in problems: print('PROBLEM', p)
 print(f'REQUEST GATES: {sum(seen.values())} fetch() calls in {len(seen)} functions ({", ".join(f"{k}: {v}" for k, v in sorted(SITES.items()) if v != "esi")} gated; '
-      f'{sum(1 for v in SITES.values() if v == "esi")} ESI functions listed); {len(problems)} problems')
+      f'ESI through esiFetch from {len(esi_seen)} listed functions); {len(problems)} problems')
 sys.exit(1 if problems else 0)

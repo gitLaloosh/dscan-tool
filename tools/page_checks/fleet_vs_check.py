@@ -138,7 +138,7 @@ with sync_playwright() as p:
     bw = pg.evaluate("() => [standIcon('bad', true).includes('<title>'), standIcon('bad', true).includes('aria-hidden=\"true\"'), standIcon('bad').includes('<title>Hostile</title>'), SIDE_MARK_BY_WORD.h.includes('<title>')]")
     check(bw == [False, True, True, False], f'an icon beside its word: no title, hidden from readers; alone: titled {bw}')
     # v2026.10.31.2 (the owner: "we need a refresh / retry icon ... even if we need to add a timer"): zKillboard not answering
-    pg.evaluate("() => { window.__fls = fetchLossesStubs; fetchLossesStubs = async () => { throw Object.assign(new Error(ZKB_UNAVAILABLE_TEXT), {code: 'ZKB-01', zkbUnavailable: true}); }; zkbUnavailableUntil = Date.now() + 3000; zkbPauseSave(); }")
+    pg.evaluate("() => { window.__fls = fetchLossesStubs; fetchLossesStubs = async () => { throw Object.assign(new Error(zkbUnavailableText()), {code: 'ZKB-01', zkbUnavailable: true}); }; zkbUnavailableUntil = Date.now() + 3000; zkbPauseSave(); }")
     pg.evaluate("() => fkOpen(fk.killId, fk.hash, null, null, {from: 'intel', km: fk.km})"); pg.wait_for_timeout(300); fleet_done(pg)
     R1 = pg.evaluate("""() => { const b = document.querySelector('#fleetPanel .fk-card .pr-head .zkb-retry'), rows = [...document.querySelectorAll('#fleetPanel .fk-card .fk-src.err')];
       return [b && b.disabled, b && b.textContent, (document.querySelector('#fleetPanel .fk-sum:not(.fk-vic) .pr-msg') || {}).textContent || '', rows.length, rows.map(r => r.textContent)[0], rows.map(r => r.title)[0], fk.members.length]; }""")

@@ -7,7 +7,8 @@ The owner: "all info and settings panels need to have their own close button in 
 cause endless scrolling"; "add isk value of a kill to the list of killmails in the fleet tab"; then "Build with my picks", "Scroll
 inside", "Close buttons only" (mockup Claude outputs/close_buttons_kill_list_mockup.html). Runs intel_kills_check.py's start
 (made-up logs and kills, R2Z2 and ESI answered by stand-ins), then:
-  * an info panel (Intel's), Intel settings (the gear), "Open zKillboard?" (leaving the site) and a Fleet tab info panel: the
+  * an info panel (Intel's), Intel settings (the gear), "Open zKillboard?" (leaving the site), the lookup budgets (v2026.11.04.4)
+    and a Fleet tab info panel: the
     shared close button shows at a wide width, 32 px, in the panel's top right corner; pressing it closes the panel and puts the
     focus back on what opened it; Esc does the same;
   * the Fleet tab's kill list with 31 kills: about six and a half rows show, the rest scroll inside, the wheel at its end moves the
@@ -55,6 +56,14 @@ _tail = r'''
     pg.click('#leaveBox button.x-close'); pg.wait_for_timeout(200)
     c3 = pg.evaluate("() => [!!document.getElementById('leaveBox'), document.activeElement && document.activeElement.matches('a.zk-ic')]")
     check(corner(x3) and c3 == [False, True], f'"Open zKillboard?": the close button top right; it closes, the focus back on the link {x3} {c3}')
+    # v2026.11.04.4: the lookup budgets' panel (press the header's gauge)
+    pg.evaluate("() => window.scrollTo(0, 0)"); pg.click('#bgGauge'); pg.wait_for_timeout(300)
+    x4 = pg.evaluate(XB, ['#bgPop'])
+    pg.click('#bgPop button.x-close'); pg.wait_for_timeout(200)
+    c4 = pg.evaluate("() => [document.getElementById('bgPop').hidden, document.activeElement && document.activeElement.id]")
+    pg.click('#bgGauge'); pg.wait_for_timeout(200); pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
+    e4 = pg.evaluate("() => [document.getElementById('bgPop').hidden, document.activeElement && document.activeElement.id]")
+    check(corner(x4) and c4 == [True, 'bgGauge'] and e4 == [True, 'bgGauge'], f'the lookup budgets: the close button top right; it closes, the focus back on the gauge; Esc the same {x4} {c4} {e4}')
     # ---- the Fleet tab's kill list: 31 kills on one badge ----
     vals = pg.evaluate("""() => { const e0 = it.feed.find(x => x.kind === 'kill' && x.kill.ships >= 2); const out = [];
       for(let i = 0; i < 30; i++){ const km = JSON.parse(JSON.stringify(e0.kill.km)); km.killmail_id += 500000 + i; const v = i === 7 ? 0 : [1.42e6, 6.4e7, 1.63e9, 2.31e8, 9.9e5][i % 5] * (1 + i / 100);
