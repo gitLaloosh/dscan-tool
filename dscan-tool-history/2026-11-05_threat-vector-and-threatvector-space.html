@@ -36,5 +36,12 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <li><code>header_check.py</code>: the new title, name and tagline at 1440, 375 and 320 px; the footer's written-in link and no <code>#siteSrc</code>; <code>CNAME</code> exactly <code>threatvector.space</code> and a newline. Five mutants, each caught: the old title, the old tagline, the span left behind, the link pointing at the old repository, CNAME without its newline.</li>
 <li><code>extension_check.py</code>: the manifest's name, short name and version; every menu title; the new default; the old default stored opens and shows the new address. Four mutants, each caught: the old default, no mapping in the background, none in the options page, an old menu title.</li>
 <li>The mockup (<code>Claude outputs/threatvector_rename_mockup.html</code>, rebuilt from this page): no page errors, no sideways scroll at 1440 or 390.</li>
+<li>The whole chain (<code>run_checks.py --auto</code> against main picked <code>all</code>): 13 lints, the pyfa chain and 70 page checks in 28 min. One failed: <code>game_data_check</code>, which has nothing to do with this change and failed the same way on main under load. Fixed in the check (below); then 8 runs passed, 6 of them side by side, and its three page mutants (no wait, a late answer used, a wait that never ends) are each caught. <code>check_pii</code>: 0 problems. Regression suite ALL PASS.</li>
+<li>Page size: 747,567 bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #138: <code>game_data_check</code> handed the next page load its /status/ delay through sessionStorage on a file:// page, and after the goto it was sometimes gone; it also timed the lookup from its own start while the page's 3 s wait runs from /status/ being sent. The delay now comes in the address (<code>?gdchk=</code>) and the timing from when /status/ is sent.</li>
 </ul>
 </body></html>
