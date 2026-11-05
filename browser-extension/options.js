@@ -1,11 +1,12 @@
 // The tool's address (chrome.storage.sync toolUrl); the default is the one in background.js.
-const DEFAULT_TOOL_URL = 'https://gitlaloosh.github.io/dscan-tool/';
+const DEFAULT_TOOL_URL = 'https://threatvector.space/';
+const OLD_DEFAULT_TOOL_URL = 'https://gitlaloosh.github.io/dscan-tool/';   // v1.1.0: shown (and used) as the new default
 const input = document.getElementById('toolUrl'), status = document.getElementById('status');
 function say(text, err){ status.textContent = text; status.className = err ? 'err' : ''; }
 function valid(u){
   try{ const x = new URL(u); return ['https:', 'http:', 'file:'].includes(x.protocol) ? x.href.split('#')[0] : null; }catch(e){ return null; }
 }
-chrome.storage.sync.get({toolUrl: DEFAULT_TOOL_URL}).then(({toolUrl}) => { input.value = toolUrl; });
+chrome.storage.sync.get({toolUrl: DEFAULT_TOOL_URL}).then(({toolUrl}) => { input.value = toolUrl === OLD_DEFAULT_TOOL_URL ? DEFAULT_TOOL_URL : toolUrl; });
 document.getElementById('save').addEventListener('click', async () => {
   const u = valid(input.value.trim());
   if(!u){ say('That isn\'t a web address (it should start with https://).', true); return; }

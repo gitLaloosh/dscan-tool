@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><!-- v2026.10.14.15: without this, phones drew the page as a ~980px desktop page shrunk to fit. LESSON #33 -->
-<title>EVE Threat Assessment (ETA)</title>
+<title>Threat Vector · EVE Online threat assessment</title>
 <style>
   /* ============================================================
      TYPE SYSTEM — "Structured HUD"
@@ -2923,7 +2923,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.04.7</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.05.1</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -2934,13 +2934,16 @@
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
+    <!-- v2026.11.05.1 (build queue 013, Project doc roadmap/threatvector-move-plan.md; the owner 2026-11-04): renamed "Threat Vector", at
+         threatvector.space, the repository renamed threatvector. Title B and tagline B, his picks from the mockup. Saved-data keys (dscan...,
+         eta-...), the database names and dscan-tool-history/ keep their old names on purpose: users never see them. -->
     <!-- v2026.10.14.63 (the owner 2026-10-25: "let's move the "refresh item data" button ... it's taking up an entire row", then option A):
          an icon button at the right of the name's row; its short status briefly takes the version tag's place (heroRefreshStatus). -->
     <div class="hero-title-row">
-      <h1>EVE Threat Assessment</h1>
+      <h1>Threat Vector</h1>
       <button type="button" id="refreshCacheBtn" class="hero-refresh" aria-label="Refresh item data" title="Refresh item data. Item data comes live from ESI and is kept in your browser for a week. This fetches it again."><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg></button>
     </div>
-    <p>Who's in system, what they fly, and how to beat them.</p>
+    <p>For EVE Online: who's in system, what they fly, and how to beat them.</p>
   </header>
 
   <div class="tabs">
@@ -3065,11 +3068,11 @@
 
   <!-- v2026.11.01.4 (the owner: "Should i add any licensing restrictions to this code?", then yes for the next delivery): the license and
        the notices. GPL v3 or later, as pyfa (whose calculations the page follows) is; CCP's notice as its Developer License Agreement
-       (section 7.1) words it; LICENSE and NOTICE.md in the repository. The source link is built from the address the page is served
-       from (owner.github.io/repo), so no account name is written here. Its links leave the site as every link does: asked first (leaveAsk),
+       (section 7.1) words it; LICENSE and NOTICE.md in the repository. v2026.11.05.1: the source link is written in (the owner, 2026-11-04,
+       "Write the repo link in"): the page has its own domain now, so it can't be built from the address any more. Its links leave the site as every link does: asked first (leaveAsk),
        then a new tab; zKillboard is named, not linked (its links are the zK icon). -->
   <footer class="site-foot" id="siteFoot">
-    <p>EVE Threat Assessment is free software under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU General Public License v3</a> or later<span id="siteSrc">; the source is on GitHub</span>. Its fitting calculations follow <a href="https://github.com/pyfa-org/Pyfa">pyfa</a> (GPL v3). Not made, endorsed or supported by CCP hf.</p>
+    <p>Threat Vector is free software under the <a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU General Public License v3</a> or later; the <a href="https://github.com/gitLaloosh/threatvector">source is on GitHub</a>. Its fitting calculations follow <a href="https://github.com/pyfa-org/Pyfa">pyfa</a> (GPL v3). Not made, endorsed or supported by CCP hf.</p>
     <p>© CCP hf. All rights reserved. “EVE”, “EVE Online”, “CCP”, and all related logos and images are trademarks or registered trademarks of CCP hf. Killmails and kill statistics from zKillboard.</p>
   </footer>
 
@@ -26920,12 +26923,7 @@ function rsBind(root){
   window.addEventListener('hashchange', go);
   go();
 })();
-// v2026.11.01.4: the footer's source link, from the address the page is served from (owner.github.io/repo/): no account name in the file
-(function siteSrc(){
-  if(typeof document === 'undefined' || !document.getElementById || typeof location === 'undefined') return;   // LESSON #36: stub DOM
-  const el = document.getElementById('siteSrc'), m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname || ''), repo = (location.pathname || '').split('/').filter(Boolean)[0];
-  if(el && m && repo && /^[A-Za-z0-9._-]+$/.test(repo)) el.innerHTML = `; the <a href="https://github.com/${m[1]}/${repo}">source is on GitHub</a>`;
-})();
+// v2026.11.05.1: the footer's source link is written in (the owner, 2026-11-04: "Write the repo link in"); siteSrc is gone
 // ==== KILLS AND LOSSES IN THE SYSTEM (v2026.11.02.3; Project doc roadmap/system-activity-plan.md) ====
 // The owner: "add combined losses and kills they've accrued in the past "N hours" in the system being analyzed (user's location or
 // system row linked from intel tab) ... provide two clickable links to losses and kills (provide total isk value of both). would be

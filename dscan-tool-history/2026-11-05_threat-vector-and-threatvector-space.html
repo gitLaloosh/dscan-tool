@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-05 — Renamed Threat Vector, moving to threatvector.space</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Renamed Threat Vector, moving to threatvector.space</h1>
+<p><span class="tag">Page</span><span class="tag">Extension</span> 2026-11-05 &middot; <code>v2026.11.05.1</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 013, Project doc <code>roadmap/threatvector-move-plan.md</code>. The owner (2026-11-04) registered threatvector.space and chose to rename the tool in the same move ("Rename in the same move (Recommended)"), the repository too ("I'd like it to be threatvector rather than dscan-tool"). From the mockup he picked title B and tagline B. Saved data: "Users re-enter it". Footer: "Write the repo link in (Recommended)".</li>
+<li>His steps on GitHub and Cloudflare are in two Project docs written for this move: a checklist and a timeline of the waits.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>The page:</b> the tab title "Threat Vector &middot; EVE Online threat assessment", the name "Threat Vector", the line "For EVE Online: who's in system, what they fly, and how to beat them." The footer's first line names Threat Vector and links the source at <code>github.com/gitLaloosh/threatvector</code>, written in. <code>siteSrc</code>, which built that link from a github.io address, is gone: the page's own domain has no account name to read.</li>
+<li><b>CNAME</b> at the root, <code>threatvector.space</code>. Merging is the moment the site moves, so the owner's DNS steps come first.</li>
+<li><b>The extension, 1.1.0:</b> "Threat Vector for zKillboard" (short name "Threat Vector"), its menus "&hellip; in Threat Vector", the default address <code>https://threatvector.space/</code>. Someone who pressed Save before has the old default stored; it now opens the new address, and the options page shows the new one. Any other saved address (a local copy) is kept.</li>
+<li><b>Repository text:</b> NOTICE.md, CLAUDE.md (the address, the repository, the names that stay), tools/README.md, ERRORS.md's intro, and the contact line in the two tools that ask CCP's servers.</li>
+<li><b>Unchanged on purpose:</b> every localStorage key (<code>dscan&hellip;</code>), the IndexedDB databases (<code>dscan-tool-cache</code>, <code>eta-intel</code>, <code>dscan-intel-sounds</code>), the extension's <code>eta-*</code> menu IDs, <code>dscan-tool-history/</code>. Browsers keep each address's saved data apart, so the new address starts empty either way; renaming the keys would only add churn.</li>
+</ul>
+
+<h2>Stored data, both ways</h2>
+<ul>
+<li>No key or store changes, so upgrading and reverting read the same data as before. At the new address storage starts empty (the owner's choice: users re-enter their data).</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>header_check.py</code>: the new title, name and tagline at 1440, 375 and 320 px; the footer's written-in link and no <code>#siteSrc</code>; <code>CNAME</code> exactly <code>threatvector.space</code> and a newline. Five mutants, each caught: the old title, the old tagline, the span left behind, the link pointing at the old repository, CNAME without its newline.</li>
+<li><code>extension_check.py</code>: the manifest's name, short name and version; every menu title; the new default; the old default stored opens and shows the new address. Four mutants, each caught: the old default, no mapping in the background, none in the options page, an old menu title.</li>
+<li>The mockup (<code>Claude outputs/threatvector_rename_mockup.html</code>, rebuilt from this page): no page errors, no sideways scroll at 1440 or 390.</li>
+</ul>
+</body></html>

@@ -1,4 +1,4 @@
-// EVE Threat Assessment for zKillboard (v1.0.0, with the tool's v2026.10.14.80). The owner: "create a google chrome extension
+// Threat Vector for zKillboard (v1.1.0, with the tool's v2026.11.05.1; was "EVE Threat Assessment for zKillboard" v1.0.0, v2026.10.14.80). The owner: "create a google chrome extension
 // that would let me right click on a pilot name or killmail in zkillboard.com and send it to the tool"; the menu items:
 // "all three" (kill links and pages, pilot links and pages, a selected pilot name).
 //
@@ -7,14 +7,17 @@
 // page's content, no network requests of its own, nothing stored but the tool's address (chrome.storage.sync).
 // Permissions: contextMenus (the items) and storage (the address set in the options page).
 
-const DEFAULT_TOOL_URL = 'https://gitlaloosh.github.io/dscan-tool/';
+const DEFAULT_TOOL_URL = 'https://threatvector.space/';
+// v1.1.0: the tool moved (build queue 013). A saved address equal to the old default opens the new one, so nobody who pressed
+// Save is left on an address that no longer works; anything else saved (a local copy) is kept as it is.
+const OLD_DEFAULT_TOOL_URL = 'https://gitlaloosh.github.io/dscan-tool/';
 const ZKB = ['*://zkillboard.com/', '*://*.zkillboard.com/'];
 const MENUS = [
-  {id: 'eta-kill-link', title: 'Open kill in EVE Threat Assessment', contexts: ['link'], targetUrlPatterns: ZKB.map(p => p + 'kill/*')},
-  {id: 'eta-kill-page', title: 'Open this kill in EVE Threat Assessment', contexts: ['page'], documentUrlPatterns: ZKB.map(p => p + 'kill/*')},
-  {id: 'eta-pilot-link', title: 'Analyze pilot in EVE Threat Assessment', contexts: ['link'], targetUrlPatterns: ZKB.map(p => p + 'character/*')},
-  {id: 'eta-pilot-page', title: 'Analyze this pilot in EVE Threat Assessment', contexts: ['page'], documentUrlPatterns: ZKB.map(p => p + 'character/*')},
-  {id: 'eta-pilot-name', title: 'Analyze "%s" in EVE Threat Assessment', contexts: ['selection']}
+  {id: 'eta-kill-link', title: 'Open kill in Threat Vector', contexts: ['link'], targetUrlPatterns: ZKB.map(p => p + 'kill/*')},
+  {id: 'eta-kill-page', title: 'Open this kill in Threat Vector', contexts: ['page'], documentUrlPatterns: ZKB.map(p => p + 'kill/*')},
+  {id: 'eta-pilot-link', title: 'Analyze pilot in Threat Vector', contexts: ['link'], targetUrlPatterns: ZKB.map(p => p + 'character/*')},
+  {id: 'eta-pilot-page', title: 'Analyze this pilot in Threat Vector', contexts: ['page'], documentUrlPatterns: ZKB.map(p => p + 'character/*')},
+  {id: 'eta-pilot-name', title: 'Analyze "%s" in Threat Vector', contexts: ['selection']}
 ];
 const KILL_RE = /zkillboard\.com\/kill\/(\d+)/i;
 const PILOT_RE = /zkillboard\.com\/character\/(\d+)/i;
@@ -43,7 +46,8 @@ function etaLinkFor(info){
 
 async function etaToolUrl(){
   const {toolUrl} = await chrome.storage.sync.get({toolUrl: DEFAULT_TOOL_URL});
-  return String(toolUrl || DEFAULT_TOOL_URL).split('#')[0];
+  const u = String(toolUrl || DEFAULT_TOOL_URL).split('#')[0];
+  return u === OLD_DEFAULT_TOOL_URL ? DEFAULT_TOOL_URL : u;
 }
 
 async function etaHandleClick(info){
@@ -61,4 +65,4 @@ function etaCreateMenus(){
 chrome.runtime.onInstalled.addListener(etaCreateMenus);
 chrome.contextMenus.onClicked.addListener((info) => { etaHandleClick(info); });
 // for tools/page_checks/extension_check.py
-self.ETA = {MENUS, DEFAULT_TOOL_URL, etaLinkFor, etaHandleClick, etaToolUrl};
+self.ETA = {MENUS, DEFAULT_TOOL_URL, OLD_DEFAULT_TOOL_URL, etaLinkFor, etaHandleClick, etaToolUrl};

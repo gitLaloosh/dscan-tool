@@ -1,19 +1,19 @@
-# EVE Threat Assessment for zKillboard (Chrome extension)
+# Threat Vector for zKillboard (Chrome extension)
 
-Right-click on zKillboard to open a kill or a pilot in EVE Threat Assessment (ETA). Version 1.0.0, made with the tool's
-v2026.10.14.80.
+Right-click on zKillboard to open a kill or a pilot in Threat Vector. Version 1.1.0, made with the tool's v2026.11.05.1
+(1.0.0, with v2026.10.14.80, was named "EVE Threat Assessment for zKillboard").
 
 ## What it adds to the right-click menu
 
 | Where you right-click | Item | What the tool opens |
 |---|---|---|
-| A link to a kill (`zkillboard.com/kill/…`) | Open kill in EVE Threat Assessment | That loss, as a shared killmail (the Pilot Analyzer on that one loss) |
-| A kill's own page | Open this kill in EVE Threat Assessment | The same |
-| A link to a pilot (`zkillboard.com/character/…`) | Analyze pilot in EVE Threat Assessment | The Pilot Analyzer for that pilot (their most-flown hull, as typing the name) |
-| A pilot's own page | Analyze this pilot in EVE Threat Assessment | The same |
-| Selected text on any page | Analyze "&lt;text&gt;" in EVE Threat Assessment | The Pilot Analyzer for that name (a selected zKillboard kill or pilot link opens that instead) |
+| A link to a kill (`zkillboard.com/kill/…`) | Open kill in Threat Vector | That loss, as a shared killmail (the Pilot Analyzer on that one loss) |
+| A kill's own page | Open this kill in Threat Vector | The same |
+| A link to a pilot (`zkillboard.com/character/…`) | Analyze pilot in Threat Vector | The Pilot Analyzer for that pilot (their most-flown hull, as typing the name) |
+| A pilot's own page | Analyze this pilot in Threat Vector | The same |
+| Selected text on any page | Analyze "&lt;text&gt;" in Threat Vector | The Pilot Analyzer for that name (a selected zKillboard kill or pilot link opens that instead) |
 
-Each opens a new tab. Chrome puts the items under "EVE Threat Assessment for zKillboard" when more than one applies.
+Each opens a new tab. Chrome puts the items under "Threat Vector for zKillboard" when more than one applies.
 
 ## Install (Chrome, Edge, Brave and other Chromium browsers)
 
@@ -26,7 +26,7 @@ After pulling a new version from the repo, press the reload icon on the extensio
 
 ## The tool's address
 
-The default is `https://gitlaloosh.github.io/dscan-tool/`. Change it in the options page, for example to test a local copy
+The default is `https://threatvector.space/` (a saved old default, `https://gitlaloosh.github.io/dscan-tool/`, opens it too). Change it in the options page, for example to test a local copy
 (`file:///…/index.html`).
 
 ## Permissions and privacy
