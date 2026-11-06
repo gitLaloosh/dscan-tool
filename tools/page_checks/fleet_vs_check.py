@@ -145,20 +145,25 @@ with sync_playwright() as p:
     # v2026.11.04.5 (the owner: "retry should probably be the same Load and Load All buttons ... modify the message to indicate the
     # nature of the issue and show the retry timer on the buttons themselves"): no Retry in the head; each row says what happened and
     # keeps its Load, Load all covers them; both count down while zKillboard can't be asked
-    LS = """() => { const rows = [...document.querySelectorAll('#fleetPanel .fk-card .fk-src.err, #fleetPanel .fk-card .fk-src.held')], held = [...document.querySelectorAll('#fleetPanel .fk-card .fk-src.held')], ld = [...document.querySelectorAll('#fleetPanel .fk-card button.fk-ld')],
-        la = document.querySelector('#fleetPanel .fk-card button.fk-la');
-      return {head: !!document.querySelector('#fleetPanel .fk-card .pr-head .zkb-retry'), rows: rows.length, text: rows.filter(r => r.classList.contains('err')).map(r => r.textContent)[0], hover: rows.filter(r => r.classList.contains('err')).map(r => r.title)[0],
-        nErr: rows.length - held.length, held: held.map(r => [r.textContent, r.title.startsWith('Not sent.') && r.title.includes("isn't blocked"), getComputedStyle(r).color]), dim: (() => { const d = document.createElement('i'); d.style.color = 'var(--text-dim)'; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c; })(),
-        load: ld.map(b => [b.disabled, b.textContent.trim()]), box: ld.map(b => { const r = b.getBoundingClientRect(), row = b.closest('.fk-row, .pr-wrap, li, tr') || b.parentElement.parentElement, q = row.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.right), r.right <= q.right + 0.5]; }), all: la && [la.disabled, la.textContent.trim()], allLoaded: !!document.querySelector('#fleetPanel .fk-card .fk-all'),
-        sum: (document.querySelector('#fleetPanel .fk-sum:not(.fk-vic) .pr-msg') || {}).textContent || '', n: fk.members.length,
+    # v2026.11.06.4 (build queue 014, the owner: "would prevent dozens of rows with repetitive text"): what went wrong is the icon after
+    # Damage, red for a lookup that failed, grey for one the pause held back; its hover is short and counts down
+    LS = """() => { const q = (k) => [...document.querySelectorAll(`#fleetPanel .fk-card button.pr-row > .fk-st.${k}`)], err = q('err'), held = q('held'), rows = [...err, ...held], ld = [...document.querySelectorAll('#fleetPanel .fk-card button.fk-ld')],
+        la = document.querySelector('#fleetPanel .fk-card button.fk-la'), d = document.createElement('i'); d.style.color = 'var(--text-dim)'; document.body.appendChild(d); const dim = getComputedStyle(d).color; d.remove();
+      return {head: !!document.querySelector('#fleetPanel .fk-card .pr-head .zkb-retry'), rows: rows.length, text: err.map(r => r.getAttribute('aria-label'))[0], hover: err.map(r => r.title)[0],
+        oldText: document.querySelectorAll('#fleetPanel .fk-card .fk-src.err, #fleetPanel .fk-card .fk-src.held').length,
+        nErr: err.length, held: held.map(r => [r.title, r.title === r.getAttribute('aria-label'), getComputedStyle(r).color]), dim,
+        load: ld.map(b => [b.disabled, b.textContent.trim()]), box: ld.map(b => { const r = b.getBoundingClientRect(), row = b.closest('.fk-row, .pr-wrap, li, tr') || b.parentElement.parentElement, q = row.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.right), r.right <= q.right + 0.5]; }), all: la && [la.disabled, la.textContent.trim()],
+        allLoaded: !!document.querySelector('#fleetPanel .fk-card .fk-all'),
+        sum: (document.querySelector('#fleetPanel .fk-sum:not(.fk-vic) .pr-msg') || {}).textContent || '', ctx: (document.querySelector('#fleetPanel .fk-sum:not(.fk-vic) .pr-head') || {}).textContent || '', n: fk.members.length,
         later: fk.members.filter(m => m.state === 'later').length, failed: fk.members.filter(m => m.state === 'later' && m.fail).length, done: fk.members.filter(m => m.state === 'done').length}; }"""
     R1 = pg.evaluate(LS)
-    check(not R1['head'] and R1['failed'] > 0 and R1['rows'] == R1['failed'] and R1['text'] == "zKillboard isn't answering (ZKB-01)" and R1['hover'].endswith('(ZKB-01)') and 'reloading' in R1['hover'],
-          f'zKillboard not answering: no Retry in the head; each failed row says what happened, short (all of it on hover) {R1["head"]} {R1["rows"]} of {R1["failed"]} failed ({R1["done"]} loaded from what was kept) {R1["text"]!r}')
+    check(not R1['head'] and R1['failed'] > 0 and R1['rows'] == R1['failed'] and not R1['oldText'] and re.match(r"zKillboard isn't responding\. Wait 0:0\d and try again\. \(ZKB-01\)$", R1['text'] or '') and R1['hover'] == R1['text'],
+          f'zKillboard not answering: no Retry in the head; each failed row has the icon, its hover short with the wait, no text under the hull {R1["head"]} {R1["rows"]} of {R1["failed"]} failed ({R1["done"]} loaded from what was kept) {R1["text"]!r}')
     # v2026.11.04.7 (the owner: "it's giving the impression that that tool just doesn't work"): one lookup reached zKillboard and
-    # failed (red); the ones held back by the pause say they weren't sent, dim, with why on hover
-    check(R1['nErr'] == 1 and len(R1['held']) == R1['failed'] - 1 and all(t == 'Not sent: zKillboard needs a rest (ZKB-01)' and w and c == R1['dim'] for t, w, c in R1['held']),
-          f'... one lookup failed (red), the rest say they were not sent (dim, why on hover) {R1["nErr"]} failed, {len(R1["held"])} held {R1["held"][:1]}')
+    # failed (red); the ones held back by the pause are grey, "Not sent" on hover
+    check(R1['nErr'] == 1 and len(R1['held']) == R1['failed'] - 1 and all(re.match(r"Not sent: zKillboard isn't responding\. Wait 0:0\d and try again\.$", t) and w and c == R1['dim'] for t, w, c in R1['held']),
+          f'... one lookup failed (red), the rest grey, not sent (why on hover) {R1["nErr"]} failed, {len(R1["held"])} held {R1["held"][:1]}')
+    check(f"{R1['failed']} not loaded: zKillboard isn't responding" in R1['ctx'], f'... the summary head says why once ({" ".join(R1["ctx"].split())[:120]!r})')
     check(R1['load'] and all(d and re.match(r'0:0\d$', t) for d, t in R1['load']) and R1['all'] and R1['all'][0] and re.match(r'Load all in 0:0\d$', R1['all'][1])
           and not R1['allLoaded'] and R1['later'] == R1['failed'] and (R1['done'] > 0 or R1['sum'].startswith(f'None of the {R1["n"]} could be looked up yet (zKillboard')),
           f'... their Load and Load all wait out the pause with a countdown on the button; never "All loaded" {R1["load"][:2]} {R1["all"]} {R1["sum"][:70]!r}')
@@ -166,10 +171,10 @@ with sync_playwright() as p:
         try{ await zkbFetchNow('https://zkillboard.com/api/losses/characterID/1/'); }catch(e){ e1 = e; } zkbUnavailableUntil = u0; zkbFailStreak = s0; zkbPauseSave();
         const keep = fk.members; fk.members = [{state: 'later', fail: 'x (ZKB-01)', held: false}, ...Array.from({length: 10}, () => ({state: 'later', fail: 'x (ZKB-01)', held: true}))];
         const sum = fkFailSum(11); fk.members = keep; return [!!(e1 && e1.notSent), e1 && e1.code, sum]; }""")
-    check(gate[0] and gate[1] == 'ZKB-01' and gate[2].startswith("zKillboard isn't answering: 1 lookup failed and the other 10 weren't sent"),
+    check(gate[0] and gate[1] == 'ZKB-01' and gate[2].startswith("zKillboard isn't responding: 1 lookup failed and the other 10 weren't sent"),
           f'the gate marks a lookup held back by the pause as not sent; with none loaded the summary says 1 failed, 10 not sent {gate}')
     fs = pg.evaluate("() => [fkFailShort(zkbUnavailableText() + ' (ZKB-01)'), fkFailShort(zkbBudgetError().message + ' (ZKB-04)'), fkFailShort('Killmail 1 fetch: not found (status 404) (ESI-05)')]")
-    check(fs == ["zKillboard isn't answering (ZKB-01)", 'zKillboard limit reached in this browser (ZKB-04)', 'Killmail 1 fetch: not found (status 404) (ESI-05)'], f'a row names the issue: zKillboard down, the page\'s limit, anything else as its message says {fs}')
+    check(fs == ["zKillboard isn't responding (ZKB-01)", 'zKillboard limit reached in this browser (ZKB-04)', 'Killmail 1 fetch: not found (status 404) (ESI-05)'], f'a row names the issue: zKillboard down, the page\'s limit, anything else as its message says {fs}')
     pg2 = ctx.new_page(); pg2.goto('file://' + HTML); pg2.wait_for_timeout(300)
     w2 = pg2.evaluate("() => zkbWaitMs()"); pg2.close()
     check(w2 > 0, f'the pause is kept for a reload or another tab ({w2} ms left there)')

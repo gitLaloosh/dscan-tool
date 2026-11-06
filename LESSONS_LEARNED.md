@@ -186,6 +186,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #100 A warning that fires on a routine event teaches people to ignore it: check the thing itself, out of their sight.
 - #105 A reader that decides a word's kind before its lookups can't use what they say: decide after. See also #88.
 - #106 A rate guard must stop at the first refusal, stay stopped, and count what it granted. See also #93, #94.
+- #140 Wait as long as the service itself waits, and let one slow item fail alone: a short timeout read as an outage stops everything. See also #106.
 
 **Delivery, privacy and the repository**
 
@@ -1046,6 +1047,23 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 140. Wait as long as the service itself waits, and let one slow item fail alone: a short timeout read as an outage stops everything
+
+- **What happened (to v2026.11.06.3; fixed in v2026.11.06.4, build queue 014):** the page gave every zKillboard lookup 20 s, but
+  zKillboard waits up to 60 s for its own worker and then answers 503 "API result unavailable". A big alliance list that took 25 s
+  was read as "zKillboard isn't answering", which paused the whole page for a minute: on a 29-pilot Load all, one request was sent
+  and nothing loaded. A retry after the pause usually missed the minute zKillboard keeps a finished list, so whether it worked
+  looked random. Meanwhile an answer the browser couldn't read (Cloudflare's refusals carry no CORS header) didn't stop the page at
+  all: each pilot asked again (22 requests in 21 s on a stand-in).
+- **How it was caught:** the owner's report ("one call timing out and preventing the rest from being done"), one live look in his
+  browser, then zKillboard's own source (view/api.php, cron/9.queueAPI.php) and a stand-in following its rule.
+- **Also caught while building it:** the Fleet tab queues a row's Load in two places (`fkLoad` and the click handler). The new
+  "ask afresh" flag was added to one; `zkb_slow_check` found the other. When a job gains a field, grep every place that builds it.
+- **Do this instead:** read the service's source for how long it waits and what it answers when it gives up; wait just past that.
+  Scope a failure to what failed (one list: retry it once, timed to what the service keeps), and pause everything only for what
+  means the service is down or refusing, including answers the browser can't read (#106). Count "in a row" per item, so one list
+  asked again isn't "the service is swamped".
 
 ## 139. A page that catches its own errors shows them on the card, not as page errors: a check must read that error line too
 

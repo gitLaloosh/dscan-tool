@@ -3954,8 +3954,8 @@ function errorCodeOf(e){ return (e && e.code) || 'APP-01'; }
 // and keeps a finished one 60 s more; the page waits just past that, so zKillboard says itself whether it finished, and a list it
 // couldn't finish is "slow" (ZKB-06) for that list only: asked once more ZKB_SLOW_RETRY_MS later (inside zKillboard's keep window),
 // shared by every caller and tab (ZKB_SLOW_KEY), never the page's pause. The pause is for real outages and refusals (LESSON #106).
-const ZKB_TIMEOUT_MS = 65000;
-// After a failure, the next zKillboard call within ZKB_COOLDOWN_MS fails at once instead of waiting another 20 s
+const ZKB_TIMEOUT_MS = 65000;   // LESSON #140
+// After a failure, the next zKillboard call within ZKB_COOLDOWN_MS fails at once instead of waiting another 65 s
 // (the Pilot Analyzer's last-kill and losses lookups run one after the other).
 const ZKB_COOLDOWN_MS = 60000;
 let zkbUnavailableUntil = 0;
@@ -3988,8 +3988,10 @@ let zkbFailStreak = 0, zkbQueue = Promise.resolve(), zkbLastStart = 0;
 // v2026.11.06.4 (build queue 014): up to ZKB_PARALLEL lookups in the air, their starts still ZKB_SPACING_MS apart (the same start rate),
 // so one slow list doesn't hold up the rest. A slow list (ZKB-06) is kept per URL in ZKB_SLOW_KEY ({url: {at, n}}, ten minutes), so every
 // caller and tab shares its one retry; ZKB_PARALLEL slow lists in a row with no good answer between is zKillboard swamped: the pause.
+const ZKB_SERVER_WAIT_MS = 60000;   // zKillboard's own wait for its worker before its 503 'API result unavailable' (view/api.php)
 const ZKB_PARALLEL = 3, ZKB_SLOW_RETRY_MS = 30000, ZKB_SLOW_KEY = 'dscanZkbSlow', ZKB_SLOW_KEEP_MS = 10 * 60 * 1000, ZKB_SLOW_NOTE_MS = 10000;
-let zkbLive = 0, zkbSlowRun = 0;
+let zkbLive = 0;
+const zkbSlowRun = new Set();   // LESSON #140: the lists slow in a row with no good answer between (each list once: one heavy list asked again isn't zKillboard swamped)
 const zkbWaiters = [];
 async function zkbSlot(){ while(zkbLive >= ZKB_PARALLEL) await new Promise(r => zkbWaiters.push(r)); zkbLive++; }
 function zkbFree(){ zkbLive--; const w = zkbWaiters.shift(); if(w) w(); }
@@ -4014,7 +4016,7 @@ function zkbSlowNote(t0, on){
     const bar = document.getElementById(BUSY_BARS[id].bar), d = bar && bar.querySelector('.busy-detail');
     if(!d) continue;
     if(zkbSlowStarts.length && !bar.hidden){
-      const at = Math.min(...zkbSlowStarts) + 60000;
+      const at = Math.min(...zkbSlowStarts) + ZKB_SERVER_WAIT_MS;
       d.innerHTML = `zKillboard is slow right now: wait <span class="zkb-cd" data-zkb-at="${at}">${zkbClock(Math.max(0, at - Date.now()))}</span>`;
       bar.dataset.zkbSlow = '1'; zkbRetryTick();
     }else if(bar.dataset.zkbSlow){
@@ -4062,11 +4064,11 @@ async function zkbFetchNow(url, o = {}){   // o.reserve: leave that many of the 
   const timer = ac ? setTimeout(() => ac.abort(), ZKB_TIMEOUT_MS) : null;
   const unavailable = () => {
     zkbUnavailableUntil = Date.now() + Math.min(ZKB_COOLDOWN_MAX_MS, ZKB_COOLDOWN_MS * Math.pow(2, zkbFailStreak));
-    zkbFailStreak++; zkbPauseSave(); zkbSlowRun = 0;
+    zkbFailStreak++; zkbPauseSave(); zkbSlowRun.clear();
     return Object.assign(new Error(zkbUnavailableText()), {zkbUnavailable: true, code: 'ZKB-01'});
   };
   const slow = () => {   // v2026.11.06.4: a list zKillboard couldn't finish in its minute: that list only, unless it keeps happening
-    if(++zkbSlowRun >= ZKB_PARALLEL) return unavailable();
+    zkbSlowRun.add(url); if(zkbSlowRun.size >= ZKB_PARALLEL) return unavailable();
     const r = zkbSlowGet(url), n = (r ? r.n : 0) + 1;
     zkbSlowPut(url, {at: Date.now(), n});
     return zkbSlowError(n >= 2);
@@ -4098,7 +4100,7 @@ async function zkbFetchNow(url, o = {}){   // o.reserve: leave that many of the 
   // refused (rate, Cloudflare, or zKillboard's own block for malformed URLs): stop, never ask again at once (LESSON #106)
   if(res.status >= 500 || res.status === 429 || res.status === 420 || res.status === 403 || (res.redirected && /blocked/.test(res.url || ''))) throw unavailable();
   if(zkbFailStreak){ zkbFailStreak = 0; zkbPauseSave(); }
-  zkbSlowRun = 0;
+  zkbSlowRun.clear();
   if(zkbSlowGet(url)) zkbSlowPut(url, null);
   return res;
 }
@@ -4112,7 +4114,7 @@ async function zkbFetch(url, o = {}){
     p = (async () => {   // up to ZKB_PARALLEL in the air; their starts one after another, ZKB_SPACING_MS apart (one chain, never a batch of timers)
       await zkbSlot();
       try{
-        const start = zkbQueue.then(async () => { const wait = zkbLastStart + ZKB_SPACING_MS - Date.now(); if(wait > 0) await sleepMs(wait); zkbLastStart = Date.now(); });
+        const start = zkbQueue.then(async () => { for(let wait; (wait = zkbLastStart + ZKB_SPACING_MS - Date.now()) > 0; ) await sleepMs(wait); zkbLastStart = Date.now(); });   // by the clock: a timer that fires early waits again
         zkbQueue = start.then(() => {}, () => {});
         await start;
         return await zkbFetchNow(url, o);
@@ -4301,7 +4303,7 @@ function bgBodyHtml(S){
   const z = S.z, warn = z.n >= ZKB_WARN_AT;
   const next = Math.ceil(Math.min(ZKB_COOLDOWN_MAX_MS, ZKB_COOLDOWN_MS * Math.pow(2, zkbFailStreak)) / 60000);
   const zState = S.pause
-    ? `<div class="bg-note"><b>zKillboard isn't answering.</b> The page waits <b>${zkbClock(S.pause)}</b> before asking again (${zkbFailStreak} ${zkbFailStreak === 1 ? 'failure' : 'failures in a row'}). Pressing Analyze now sends nothing and <b>doesn't add time</b>, and reloading won't bring it back sooner. If the first lookup after the wait fails too, the next wait is <b>${next} min</b>.</div>`
+    ? `<div class="bg-note"><b>zKillboard isn't responding.</b> The page waits <b>${zkbClock(S.pause)}</b> before asking again (${zkbFailStreak} ${zkbFailStreak === 1 ? 'failure' : 'failures in a row'}). Pressing Analyze now sends nothing and <b>doesn't add time</b>, and reloading won't bring it back sooner. If the first lookup after the wait fails too, the next wait is <b>${next} min</b>.</div>`
     : `<div class="bg-sub">zKillboard is answering.</div>`;
   const e = S.e, eNote = e.wait ? `<div class="bg-note">ESI asked the page to wait <b>${zkbClock(e.wait)}</b>. Lookups sent before then are refused.</div>`
     : e.errs >= ESI_ERR_WARN ? `<div class="bg-note">At ${ESI_ERR_LIMIT}, ESI refuses every request for the rest of the minute (it answers 420).</div>`
@@ -23910,9 +23912,9 @@ function fkFailShort(msg, held){
   const c = (/\(([A-Z]+-\d+)\)\s*$/.exec(msg || '') || [])[1];
   // v2026.11.04.7 (the owner: "it's giving the impression that that tool just doesn't work"): one lookup reached zKillboard and
   // failed; the ones after it were held back by the pause and never sent, and say so
-  if(held) return 'Not sent: zKillboard needs a rest (ZKB-01)';
+  if(held) return "Not sent: zKillboard isn't responding";
   if(c === 'ZKB-06') return "zKillboard couldn't load their list (ZKB-06)";   // v2026.11.06.4
-  return c === 'ZKB-01' ? "zKillboard isn't answering (ZKB-01)" : c === 'ZKB-04' ? 'zKillboard limit reached in this browser (ZKB-04)' : msg;
+  return c === 'ZKB-01' ? "zKillboard isn't responding (ZKB-01)" : c === 'ZKB-04' ? 'zKillboard limit reached in this browser (ZKB-04)' : msg;
 }
 // v2026.11.06.4 (build queue 014): the summary's head says why once whenever rows carry an icon (on a phone the only place it's said)
 function fkSumWhy(notIn, slowN){
@@ -23923,7 +23925,7 @@ function fkSumWhy(notIn, slowN){
 }
 function fkFailSum(n){   // v2026.11.04.7: how many reached zKillboard and failed, how many were held back (never sent)
   const F = fk.members.filter(m => m.state === 'later' && m.fail), held = F.filter(m => m.held).length, sent = F.length - held;
-  if(held && sent <= 1 && F.every(m => /\(ZKB-01\)\s*$/.test(m.fail))) return `zKillboard isn't answering: ${sent ? '1 lookup failed and the' : 'the'} other ${held} ${held === 1 ? "wasn't" : "weren't"} sent, so your address isn't blocked. <b>Load all</b> asks again when the wait ends.`;
+  if(held && sent <= 1 && F.every(m => /\(ZKB-01\)\s*$/.test(m.fail))) return `zKillboard isn't responding: ${sent ? '1 lookup failed and the' : 'the'} other ${held} ${held === 1 ? "wasn't" : "weren't"} sent, so your address isn't blocked. <b>Load all</b> asks again when the wait ends.`;
   return `None of the ${n} could be looked up yet (${escapeHtml(fkFailShort(F[0].fail, F[0].held))}): <b>Load all</b> in the pilots list asks again.`;
 }
 // v2026.11.06.4 (build queue 014): when a pilot's list is one zKillboard was slow on and its one retry is still to come: every pilot on
@@ -24275,7 +24277,8 @@ function fkRender(){
     </div>` : !n ? '<div class="pr-msg fl-msg">No pilots in ships on this kill.</div>' : `${free}<div class="pr-msg fl-msg">${failed && !busy && !done ? fkFailSum(n) : busy ? 'Adds up as the pilots come in…' : 'Fleet DPS, tank and EWAR need fits: <b>Load all</b> in the pilots list.'}</div>`}</div>`;
   // v2026.11.02.1: Load all, over the Fit column: its choice of fits, the exact cost and what's left; paused at the reserve with a countdown
   const mode = fkMode(), C = fkCost(mode), left = Math.max(0, ZKB_BUDGET - zkbBudgetRead().length), later = fk.members.filter(m => m.state === 'later').length;
-  const costT = mode === 'common' ? `${C.n} request${C.n === 1 ? '' : 's'}` : C.max > C.n ? `${C.n} request${C.n === 1 ? '' : 's'}, up to ${C.max}` : `${C.n} request${C.n === 1 ? '' : 's'}`;
+  const costT = C.max > C.n ?   // v2026.11.06.4: common fits too (D1: a hull's week first, all of history when the week is short)
+    `${C.n} request${C.n === 1 ? '' : 's'}, up to ${C.max}` : `${C.n} request${C.n === 1 ? '' : 's'}`;
   const pw = fk.pause ? fkReserveWait() : 0;
   if(pw > 0) zkbRetryTick();
   const modeSel = `<select data-fk-mode="1" aria-label="Which fits Load all uses" title="Which fits Load all uses">${[['common', 'Common fits'], ['own', 'Own fits']].map(([v, l]) => `<option value="${v}"${v === mode ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
@@ -24463,7 +24466,7 @@ function fkClose(){
     }
     // v2026.11.02.1: a row's Load and own? are a press of their own (the whole budget); Load all keeps the reserve
     const ld = e.target.closest('[data-fk-load]');
-    if(ld){ const m = fk.members.find(x => String(x.id) === ld.dataset.fkLoad); if(m && m.state === 'later'){ fk.queue.unshift({m, mode: 'own', all: false}); m.state = 'wait'; fkWork(); fkRender(); } return; }
+    if(ld){ const m = fk.members.find(x => String(x.id) === ld.dataset.fkLoad); if(m && m.state === 'later'){ fk.queue.unshift({m, mode: 'own', all: false, again: !!m.fail}); m.state = 'wait';   /* v2026.11.06.4: after a failure, asked afresh (fkLoad builds the same job: LESSON #140) */ fkWork(); fkRender(); } return; }
     const ow = e.target.closest('[data-fk-own]');
     if(ow){ const m = fk.members.find(x => String(x.id) === ow.dataset.fkOwn); if(m && m.state === 'done' && !m.ownBusy){ m.ownBusy = true; delete m.ownErr; fk.queue.unshift({m, own: true}); fkWork(); fkRender(); } return; }
     if(e.target.closest('[data-fk-loadall]')){ fkLoadAll(fkMode()); return; }

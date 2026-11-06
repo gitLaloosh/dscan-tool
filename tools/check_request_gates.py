@@ -10,8 +10,10 @@ hidden tab runs its timers late and together, so pacing built from a batch of ti
 Rules checked in index.html and browser-extension/*.js:
   * every fetch() call is listed in SITES below with the host it reaches. A new one fails this check until it is
     listed here: decide which gate it goes through before it ships;
-  * zkillboard.com/api is reached only by zkbFetchNow, and zkbFetchNow only from zkbFetch, the page's one queue: one
-    at a time, ZKB_SPACING_MS (1 s) after the last start by Date.now(), ZKB_BUDGET per 10 minutes;
+  * zkillboard.com/api is reached only by zkbFetchNow, and zkbFetchNow only from zkbFetch, the page's one queue: its
+    starts ZKB_SPACING_MS (1 s) after the last by Date.now(), ZKB_BUDGET per 10 minutes; since v2026.11.06.4 (build queue
+    014) at most ZKB_PARALLEL (3) in the air (zkbSlot), and a list zKillboard couldn't finish asked once more, no sooner
+    than ZKB_SLOW_RETRY_MS (30 s) after, then not again until the person presses (o.again);
   * r2z2.zkillboard.com is reached only by itR2Fetch (v2026.10.30.3: the one door), which waits for itKillTurn(), then
     checks the stop (itR2Stopped) and the tripwire before its fetch, and stops for an hour on 429; itKillTurn spaces
     starts by Date.now() and waits through itSleep, a worker's timer; at most IT_R2_PER_S (5) a second, a third of the
@@ -108,7 +110,14 @@ callers = [enclosing(starts, m.start()) for m in re.finditer(r'(?<![\w.$])zkbFet
 if callers != ['zkbFetch']: problems.append(f'zkbFetchNow is called from {callers}, not only from zkbFetch (the queue)')
 q = body(src, 'zkbFetch') or ''
 if not (re.search(r'zkbLastStart\s*\+\s*ZKB_SPACING_MS\s*-\s*Date\.now\(\)', q) and re.search(r'zkbLastStart\s*=\s*Date\.now\(\)', q) and re.search(r'zkbQueue\s*=', q)):
-    problems.append('zkbFetch no longer queues one at a time, ZKB_SPACING_MS after the last start by Date.now()')
+    problems.append('zkbFetch no longer starts its requests ZKB_SPACING_MS after the last start by Date.now()')
+if not re.search(r'await zkbSlot\(\);', q) or not re.search(r'zkbFree\(\)', q): problems.append('zkbFetch no longer takes a slot (ZKB_PARALLEL) for each request')
+mm = re.search(r'const ZKB_PARALLEL = (\d+)', src)
+if not mm or int(mm.group(1)) > 3: problems.append(f'ZKB_PARALLEL is {mm and mm.group(1)} (at most 3 in the air)')
+mm = re.search(r'ZKB_SLOW_RETRY_MS = (\d+)', src)
+if not mm or int(mm.group(1)) < 30000: problems.append(f'ZKB_SLOW_RETRY_MS is {mm and mm.group(1)} (at least 30000 ms)')
+if not (re.search(r'if\(sl && sl\.n >= 2\)\{ if\(!o\.again\) throw', q) and re.search(r'sl\.at \+ ZKB_SLOW_RETRY_MS - Date\.now\(\)', q)):
+    problems.append('zkbFetch no longer asks a slow list only once more, ZKB_SLOW_RETRY_MS after (and again only when pressed)')
 mm = re.search(r'const ZKB_SPACING_MS = (\d+);', src)
 if not mm or int(mm.group(1)) < 1000: problems.append(f'ZKB_SPACING_MS is {mm and mm.group(1)} (at least 1000 ms)')
 # v2026.11.02.1: a caller may keep a reserve (the Fleet tab's Load all), which only ever lowers the cap, never raises it

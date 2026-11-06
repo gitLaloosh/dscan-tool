@@ -402,6 +402,7 @@ def esi(route):
         if kid not in KM or H[kid] != m.group(2): return j({'error': 'Invalid killmail_id and/or killmail_hash'}, 422)
         return j(KM[kid])
     return esi_handle(route)
+def _dt_ts(iso): return __import__('calendar').timegm(time.strptime(iso, '%Y-%m-%dT%H:%M:%SZ'))
 def zkb(route):
     url = route.request.url
     ZKB_CALLS.append((url, time.time()))
@@ -412,7 +413,10 @@ def zkb(route):
     m = re.search(r'/losses/allianceID/(\d+)/shipTypeID/(\d+)/', url)
     if m:
         name = {v: k for k, v in byname.items()}.get(int(m.group(2)))
-        return stubs(FLEET_LOSSES.get((int(m.group(1)), name), []))
+        ids = FLEET_LOSSES.get((int(m.group(1)), name), [])
+        w = re.search(r'/pastSeconds/(\d+)/', url)   # v2026.11.06.4 (D1): zKillboard's one-week collection, by the killmail's time
+        if w: ids = [k for k in ids if time.time() - _dt_ts(KM[k]['killmail_time']) <= int(w.group(1))]
+        return stubs(ids)
     m = re.search(r'/kills/allianceID/(\d+)/$', url)
     if m and int(m.group(1)) in FLEET_KILLS: return stubs(FLEET_KILLS[int(m.group(1))])
     m = re.search(r'/losses/characterID/(\d+)/shipTypeID/(\d+)/', url)   # v.90: only that hull's losses

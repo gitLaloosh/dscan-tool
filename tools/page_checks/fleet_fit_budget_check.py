@@ -13,16 +13,16 @@ Northern Pact's Rifter, Quiet Harbor's Curse, a corporation's Sabre) and 2 pilot
   * open: no zKillboard request; every row unloaded, with the damage it did on the kill in its own column beside the ship (and the
     final blow), sorted by that damage; the summary shows what's free (48 pilots, the hulls, the damage) and asks for Load all;
     no button inside a button;
-  * Load all, common fits (the default above 10): the label says 7 requests and 100 left; pressing makes exactly the 7 pair
-    lookups; the 5 pilots who are victims in those lists get their own fit (found in alliance losses), the rest their alliance's,
+  * Load all, common fits (the default above 10): the label says 7 requests, up to 14, and 100 left; pressing makes exactly the 7
+    week lookups and the 4 all-of-history ones whose week is short (v2026.11.06.4, D1); the 5 pilots who are victims in those lists get their own fit (found in alliance losses), the rest their alliance's,
     lists with no loss and the NPC-corporation pilots unknown, those two with own?; the summary's fits line says so; once all are
     in the rows sort by DPS; own? makes exactly 1 request;
   * kept fits: a reload within the hour reopens the fleet with no request and the same fits; an hour later they're unloaded again;
     Refresh losses still asks;
-  * the reserve: with 70 of the 100 already spent, Load all stops at exactly 75 with the countdown and the button disabled; a
+  * the reserve: with 66 of the 100 already spent, Load all stops at exactly 75 with the countdown and the button disabled; a
     row's Load still asks (76); when the oldest stamps age out it carries on by itself and finishes, with no ZKB-04;
   * own fits (the default up to 10; 11 is common, and the choice can be changed): "N requests, up to M", and pressing makes no
-    more than M, N for the pilots;
+    more than M, N for the pilots (each pair's week and, when the week is short, all of history);
   * a share link: its fits load with no zKillboard request, the pilots it doesn't carry stay unloaded;
   * a row still opens the Pilot Analyzer, its Load doesn't; the focus stays on a row through redraws;
   * 390 px: nothing off the page, Load and Load all 44 px; no page errors.
@@ -70,8 +70,12 @@ ELEVENK = kill(TEN + [(qhc[0], 'Curse')], 'Thanatos')
 DMG = {a['character_id']: a['damage_done'] for a in M.KM[BIGK]['attackers'] if a.get('character_id')}
 FB = next(a['character_id'] for a in M.KM[BIGK]['attackers'] if a.get('final_blow'))
 TOT = M.KM[BIGK]['victim']['damage_taken']
-PAIR_URLS = {f"losses/allianceID/{M.ORGS[M.PILOTS[ps[0]][1]][3]}/shipTypeID/{B[h]}/" if M.ORGS[M.PILOTS[ps[0]][1]][3] else f"losses/corporationID/{M.PILOTS[ps[0]][1]}/shipTypeID/{B[h]}/" for ps, h in PAIRS}
-assert len(PAIR_URLS) == 7
+PAIR_ALL = {(ps[0], h): f"losses/allianceID/{M.ORGS[M.PILOTS[ps[0]][1]][3]}/shipTypeID/{B[h]}/" if M.ORGS[M.PILOTS[ps[0]][1]][3] else f"losses/corporationID/{M.PILOTS[ps[0]][1]}/shipTypeID/{B[h]}/" for ps, h in PAIRS}
+# v2026.11.06.4 (build queue 014, D1): each pair's week first (exactly pastSeconds/604800/), all of history only when the week has
+# fewer than 2 losses (SA_VARIANT_MIN): Crimson Tide's Vedmak (1), Northern Pact's Rifter, Quiet Harbor's Curse and the Sabre (none)
+WEEK_N = lambda ps, h: sum(1 for k in M.FLEET_LOSSES.get((M.ORGS[M.PILOTS[ps[0]][1]][3], h), []) if time.time() - M._dt_ts(M.KM[k]['killmail_time']) <= 604800)
+PAIR_URLS = {u + 'pastSeconds/604800/' for u in PAIR_ALL.values()} | {PAIR_ALL[(ps[0], h)] for ps, h in PAIRS if WEEK_N(ps, h) < 2}
+assert len(PAIR_ALL) == 7 and len(PAIR_URLS) == 11, len(PAIR_URLS)
 NAME = lambda i: M.PILOTS[i][0]
 calls = lambda: [c[0].split('/api/')[1] for c in M.ZKB_CALLS]
 
@@ -107,17 +111,17 @@ with sync_playwright() as p:
       const x = (sel) => r.querySelector(sel).getBoundingClientRect();
       return {h, fit: document.querySelector('#fleetPanel .fk-rh > .fk-fit').textContent, order: x('.pr-hull').left < x('.fk-dmg').left && x('.fk-dmg').right <= x('.pr-dps').left && x('.pr-dps').right < x('.fk-fit').left,
               nested: document.querySelectorAll('#fleetPanel button button, #fleetPanel button a').length}; }""")
-    check(H['h'][:4] == ['Pilot', 'Ship on the kill', 'Damage', 'DPS'] and H['fit'] == 'Fit' and H['order'] and H['nested'] == 0, f'the Damage column beside the ship, before DPS; Fit on the far right; no button inside a button {H}')
+    check(H['h'][:5] == ['Pilot', 'Ship on the kill', 'Damage', '', 'DPS'] and H['fit'] == 'Fit' and H['order'] and H['nested'] == 0, f'the Damage column beside the ship, then the status icon\'s (no heading), before DPS; Fit on the far right; no button inside a button {H}')
     S = pg.evaluate("() => { const s = document.querySelector('#fleetPanel .fk-sum'); return {st: [...s.querySelectorAll('.fl-stat')].map(e => [e.querySelector('.k').textContent, (e.querySelector('.v') || e.querySelector('.fk-ewl')).innerText.replace(/\\s+/g, ' ')]), msg: (s.querySelector('.fl-msg') || {}).textContent || '', ctx: s.querySelector('.pr-head .ctx').textContent}; }")
     st = dict(S['st'])
     check(st.get('Pilots in ships') == '48' and st.get('Damage on the kill') == f"{sum(DMG.values()):,}" and st.get('Hulls') == 'Curse17 Loki13 Rifter8 Vedmak6 Sabre2 Ferox2' and st.get('Logistics') == '0'
           and S['msg'] == 'Fleet DPS, tank and EWAR need fits: Load all in the pilots list.' and S['ctx'] == '0 of 48 looked up, 48 not yet', f'the summary: what the killmail gives, and Load all for the rest {S}')
     la = pg.evaluate(LA)
-    check(la == {'t': 'Load all (7 requests · 100 left)', 'dis': False, 'mode': 'common', 'all': ''}, f'Load all: common fits by default above 10, the exact cost and what is left {la}')
+    check(la == {'t': 'Load all (7 requests, up to 14 · 100 left)', 'dis': False, 'mode': 'common', 'all': ''}, f'Load all: common fits by default above 10, the exact cost and what is left {la}')
     # Load all, common fits
     pg.click('#fleetPanel [data-fk-loadall]'); all_in(pg)
     c = calls()
-    check(len(c) == 7 and set(c) == PAIR_URLS, f'Load all made exactly the 7 pair lookups ({c})')
+    check(len(c) == 11 and set(c) == PAIR_URLS, f'Load all made exactly the 7 week lookups and the 4 all-of-history ones for short weeks ({c})')
     R = pg.evaluate(ROWS); by = {r['pilot']: r for r in R}
     found = {n for n, r in by.items() if r['fs'] == 'own'}
     ally = {n for n, r in by.items() if r['fs'] == 'alliance'}
@@ -178,23 +182,26 @@ with sync_playwright() as p:
     check(pg.evaluate("() => [document.querySelector('#tabBtnPilot').classList.contains('active'), document.querySelector('#pilotName').value]") == [True, NAME(crts[12])], 'the row itself still opens the Pilot Analyzer')
     ctx.close()
 
-    # the reserve: 70 of the 100 spent; 3 of them age out about 25 s from now
+    # the reserve: 66 of the 100 spent; 3 of them age out about 25 s from now (v2026.11.06.4: 11 lookups for the fleet with D1, not 7)
     ctx = new_ctx(1440); pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(300)
-    pg.evaluate("() => { const n = Date.now(), a = []; for(let i = 0; i < 3; i++) a.push(n - ZKB_BUDGET_WINDOW_MS + 25000 + i); for(let i = 0; i < 67; i++) a.push(n - 60000); localStorage.setItem(ZKB_BUDGET_KEY, JSON.stringify(a)); }")
+    pg.evaluate("() => { const n = Date.now(), a = []; for(let i = 0; i < 3; i++) a.push(n - ZKB_BUDGET_WINDOW_MS + 25000 + i); for(let i = 0; i < 63; i++) a.push(n - 60000); localStorage.setItem(ZKB_BUDGET_KEY, JSON.stringify(a)); }")
     M.ZKB_CALLS.clear(); open_kill(pg, BIGK)
-    check(pg.evaluate(LA)['t'] == 'Load all (7 requests · 30 left)', f'with 70 spent: 30 left {pg.evaluate(LA)}')
+    check(pg.evaluate(LA)['t'] == 'Load all (7 requests, up to 14 · 34 left)', f'with 66 spent: 34 left {pg.evaluate(LA)}')
     pg.click('#fleetPanel [data-fk-loadall]')
     pg.wait_for_function("() => fk.pause && !fk.members.some(m => ['wait', 'load'].includes(m.state))", timeout=60000); pg.wait_for_timeout(300)
     la = pg.evaluate(LA); n1 = len(M.ZKB_CALLS); st1 = stamps(pg)
-    check(n1 == 5 and st1 == 75 and la['dis'] and re.match(r'^Paused to keep 25 lookups · continues in 0:[0-2]\d$', la['t']) and 'ZKB-04' not in pg.inner_text('#fleetPanel'),
+    check(n1 == 9 and st1 == 75 and la['dis'] and re.match(r'^Paused to keep 25 lookups · continues in 0:[0-2]\d$', la['t']) and 'ZKB-04' not in pg.inner_text('#fleetPanel'),
           f'Load all stops at exactly 75, paused with the countdown, disabled ({n1} calls, {st1} spent, {la})')
     t1 = pg.evaluate("() => document.querySelector('#fleetPanel [data-fk-loadall] .zkb-cd').textContent"); pg.wait_for_timeout(2100)
     t2 = pg.evaluate("() => document.querySelector('#fleetPanel [data-fk-loadall] .zkb-cd').textContent")
     check(t1 != t2, f'the countdown runs ({t1} -> {t2})')
-    pg.click(f'#fleetPanel [data-fk-load="{NPC[1]}"]'); pg.wait_for_function(f"() => fk.members.find(m => m.id === {NPC[1]}).state === 'done'", timeout=60000)
-    check(len(M.ZKB_CALLS) == 6 and stamps(pg) == 76, f'a row\'s Load still asks while Load all waits ({len(M.ZKB_CALLS)} calls, {stamps(pg)} spent)')
+    # v2026.11.06.4: Load all's workers now spread over the lists, so the pilot pressed is one still unloaded, not a fixed one
+    rid = pg.evaluate("() => { const b = document.querySelector('#fleetPanel button.fk-ld[data-fk-load]:not([disabled])'); return b && +b.dataset.fkLoad; }")
+    pg.click(f'#fleetPanel [data-fk-load="{rid}"]'); pg.wait_for_function(f"() => fk.members.find(m => m.id === {rid}).state === 'done'", timeout=60000)
+    d = len(M.ZKB_CALLS) - n1
+    check(rid and 1 <= d <= 3 and stamps(pg) == 75 + d, f'a row\'s Load still asks while Load all waits ({d} for that pilot, {len(M.ZKB_CALLS)} calls, {stamps(pg)} spent)')
     pg.wait_for_function("() => !fk.pause && !fk.members.some(m => ['later', 'wait', 'load'].includes(m.state))", timeout=60000); pg.wait_for_timeout(400)
-    check(len(M.ZKB_CALLS) == 8 and stamps(pg) <= 75 and 'ZKB-04' not in pg.inner_text('#fleetPanel') and not pg.evaluate("() => fk.members.some(m => m.state === 'err')"),
+    check(len(M.ZKB_CALLS) == 12 and stamps(pg) <= 75 and 'ZKB-04' not in pg.inner_text('#fleetPanel') and not pg.evaluate("() => fk.members.some(m => m.state === 'err')"),
           f'when the oldest stamps age out it carries on by itself: the last 2 pairs, no error ({len(M.ZKB_CALLS)} calls, {stamps(pg)} spent)')
     ctx.close()
 
@@ -204,12 +211,12 @@ with sync_playwright() as p:
     la11 = pg.evaluate(LA)
     pg.select_option('#fleetPanel select[data-fk-mode]', 'own'); pg.wait_for_timeout(200)
     la11o = pg.evaluate(LA)
-    check(la11o['mode'] == 'own' and la11o['t'] == 'Load all (11 requests, up to 14 · 100 left)', f'choosing Own fits: the label follows, 11 own lists, up to 3 pairs more {la11o}')
+    check(la11o['mode'] == 'own' and la11o['t'] == 'Load all (11 requests, up to 17 · 100 left)', f'choosing Own fits: the label follows, 11 own lists, up to 3 pairs more, each its week and all of history (D1) {la11o}')
     open_kill(pg, TENK); la = pg.evaluate(LA)
-    check(la11['mode'] == 'common' and la['mode'] == 'own' and la['t'] == 'Load all (10 requests, up to 12 · 100 left)' and not M.ZKB_CALLS, f'11 pilots: common fits; 10: own fits, "10 requests, up to 12" ({la11}, {la})')
+    check(la11['mode'] == 'common' and la['mode'] == 'own' and la['t'] == 'Load all (10 requests, up to 14 · 100 left)' and not M.ZKB_CALLS, f'11 pilots: common fits; 10: own fits, "10 requests, up to 14" ({la11}, {la})')
     pg.click('#fleetPanel [data-fk-loadall]'); all_in(pg)
     c = calls()
-    check(len(c) <= 12 and len([x for x in c if '/characterID/' in x]) == 10, f'own fits: 10 own lists and no more than 12 in all ({len(c)}: {c})')
+    check(len(c) <= 14 and len([x for x in c if '/characterID/' in x]) == 10, f'own fits: 10 own lists and no more than 14 in all ({len(c)}: {c})')
     ctx.close()
 
     # phone
