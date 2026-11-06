@@ -1881,6 +1881,9 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - **Do this instead:** serve the page the extension opens from a real local web server (the check starts one on
   127.0.0.1 and sets that address in the extension's options), and keep routing only the page's own requests. Extensions
   also need Chromium's new headless mode (`--headless=new`, with headless=False in Playwright): the old one doesn't load them.
+- **Later (v2026.11.06.1):** under load the page's first ESI request could escape the routes too (a `#pilotname=` lookup asks at
+  once: "network error"), and the extension's service worker could restart mid-check ("Service worker restarted"). It flaked in
+  three full runs. The check now reloads the opened tab once Playwright is attached, and asks the worker again after a restart.
 
 ## 71. A mock that accepts anything can't check what the feature adds
 
