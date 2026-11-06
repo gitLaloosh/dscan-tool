@@ -7,12 +7,12 @@ The owner, 2026-11-03: "add info to the page that lets the user see what their E
 changes ... so i know how quickly (and which actions) my budget's being used"; on the pause: "please show me how long the pause is
 and count it down for me" and "they might mistakenly extend the wait time by constantly retrying the search if not given a warning
 about doing so"; option A (Analyze stays pressable). ESI by kind of lookup (2026-11-04). Stand-ins only: ESI from pyfa's SDE
-(esi_from_sde.py) with made-up rate-limit headers, zKillboard answered by this script (503 or empty), a made-up pilot; never the
+(esi_from_sde.py) with made-up rate-limit headers, zKillboard answered by this script (502 or empty), a made-up pilot; never the
 real zKillboard or ESI. Checks:
   * the gauge beside the version tag: "zKill 37/100 · ESI ok" from 37 spends kept in this browser; "Used by" in order in the
     panel; amber from 80; at 100 "zKill full m:ss"; the counts survive a reload and a second page in the same browser sees them;
   * a Pilot Analyzer lookup records "Pilot Analyzer" as the caller; the zKillboard budget's own list keeps its old form (numbers);
-  * the pause: zKillboard answers 503 -> "zKill paused" counting down in the gauge, and the ZKB-01 text in the status line and on
+  * the pause: zKillboard answers 502 (an outage; its own 503 "API result unavailable" is a slow list since v2026.11.06.4, ZKB-06) -> "zKill paused" counting down in the gauge, and the ZKB-01 text in the status line and on
     the Last Kill line says the time and the warning, and counts down; pressing Analyze during the pause sends no zKillboard
     request and doesn't move the pause's end; at its end the messages say zKillboard can be asked again; a second failure ->
     a 2 min pause and the panel says the next wait is 4 min; one answer resets it;
@@ -56,7 +56,7 @@ def esi(route):
     return esi_handle(Grab(route))
 def zkb(route):
     ST['zkb_n'] += 1
-    if ST['zkb'] == '503': return route.fulfill(status=503, content_type='application/json', headers=CORS, body='{"error":"API result unavailable, please try again later"}')
+    if ST['zkb'] == '503': return route.fulfill(status=502, content_type='text/html', headers=CORS, body='<html>Bad gateway</html>')   # an outage (v2026.11.06.4: its own 503 'unavailable' is a slow list)
     return route.fulfill(status=200, content_type='application/json', headers=CORS, body='[]')
 def ctx_page(b, W=1440, ctx=None):
     ctx = ctx or b.new_context(viewport={'width': W, 'height': 800}, is_mobile=W < 600, has_touch=W < 600)
@@ -125,22 +125,22 @@ with sync_playwright() as p:
         g = segs(pg); st = pg.inner_text('#fitStatus'); lk = pg.inner_text('#lastKillInfo')
         who = pg.evaluate("() => [JSON.parse(localStorage.getItem('dscanZkbWho') || '[]').map(x => x[1]), JSON.parse(localStorage.getItem('dscanZkbBudget') || '[]').every(t => typeof t === 'number')]")
         check(who[0] and set(who[0]) == {'Pilot Analyzer'} and who[1], f'the lookup is recorded as the Pilot Analyzer\'s, the budget list keeps its form {who}')
-        check(re.match(r'zKill paused (0:5\d|1:00)', g) and seg_cls(pg)[0] == 'stop', f'503: the gauge says paused and counts ({g!r})')
-        rx = r"waits (\d):(\d\d) before asking again\. Pressing Analyze or reloading now sends nothing and doesn't add time; if it still doesn't answer after that, the next wait is 2 min"
+        check(re.match(r'zKill paused (0:5\d|1:00)', g) and seg_cls(pg)[0] == 'stop', f'502: the gauge says paused and counts ({g!r})')
+        rx = r"isn't responding\. Wait (\d):(\d\d) and try again; pressing again or reloading won't make it sooner"
         m1, m2 = re.search(rx, st), re.search(rx, lk)
         check(bool(m1) and '(ZKB-01)' in st, f'the status line says the time and the warning ({st[:160]!r})')
         check(bool(m2) and '(ZKB-01)' in lk, f'so does the Last Kill line ({lk[:120]!r})')
         pg.wait_for_timeout(2200)
         st2 = pg.inner_text('#fitStatus'); m3 = re.search(rx, st2)
         t = lambda m: int(m.group(1)) * 60 + int(m.group(2))
-        check(m1 and m3 and 1 <= t(m1) - t(m3) <= 3, f'the message counts down ({m1 and m1.group(0)[6:10]} -> {m3 and m3.group(0)[6:10]})')
+        check(m1 and m3 and 1 <= t(m1) - t(m3) <= 3, f'the message counts down ({m1 and m1.group(1)}:{m1 and m1.group(2)} -> {m3 and m3.group(1)}:{m3 and m3.group(2)})')
         until0 = pg.evaluate("() => JSON.parse(localStorage.getItem('dscanZkbPause')).until"); n0 = ST['zkb_n']
         pg.click('#fitBtn'); pg.wait_for_function("() => !document.getElementById('fitBtn').disabled", timeout=60000); pg.wait_for_timeout(300)
         until1 = pg.evaluate("() => JSON.parse(localStorage.getItem('dscanZkbPause')).until")
         check(ST['zkb_n'] == n0 and until1 == until0, f'Analyze during the pause: no zKillboard request ({ST["zkb_n"] - n0}) and the same end ({until1 - until0} ms)')
         pg.click('#bgGauge'); pg.wait_for_timeout(200)
         note = pg.inner_text('#bgBody')
-        check("isn't answering" in note and "doesn't add time" in note and 'next wait is 2 min' in note and '1 failure' in note, f'the panel\'s pause note ({" ".join(note.split())[:200]!r})')
+        check("isn't responding" in note and "doesn't add time" in note and 'next wait is 2 min' in note and '1 failure' in note, f'the panel\'s pause note ({" ".join(note.split())[:200]!r})')
         a = pg.inner_text('#bgBody'); pg.wait_for_timeout(1300); b2 = pg.inner_text('#bgBody')
         check(a != b2, 'the open panel counts down too')
         pg.keyboard.press('Escape')

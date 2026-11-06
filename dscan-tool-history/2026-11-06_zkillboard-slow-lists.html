@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-06 — zKillboard lookups that don't fail together</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>zKillboard lookups that don't fail together</h1>
+<p><span class="tag">Page</span> 2026-11-06 &middot; <code>v2026.11.06.4</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 014, Project doc <code>roadmap/zkb-slow-lists-plan.md</code>. The owner, 2026-11-05: "zkillboard calls have been failing quite often on the fleet tab when trying to use "load all" even on small fleets" and "the results are inconsistent but tend to lean toward one call timing out and preventing the rest from being done."</li>
+<li>The page gave each zKillboard lookup 20 s; zKillboard itself waits up to 60 s for its worker and then answers 503 "API result unavailable". A big alliance list that took longer was read as "zKillboard isn't answering" and paused the whole page for a minute, so one slow list stopped every other lookup. A retry after the pause usually missed the minute zKillboard keeps a finished list, which made it look random.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Slow isn't down</b> (<code>zkbFetchNow</code>, <code>zkbFetch</code>): the page waits 65 s, just past zKillboard's own minute. A list zKillboard couldn't finish (its 503 "unavailable", or the 65 s backstop) is slow for that list only (new code ZKB-06): the next ask for it waits until 30 s after, inside the minute zKillboard keeps a finished list, shared by every caller and tab (localStorage <code>dscanZkbSlow</code>); slow a second time, it stays "couldn't load" until someone presses Load or Analyze again.</li>
+<li><b>The pause is for real outages and refusals</b>: any other 5xx, 429, 420, 403, a redirect to <code>blocked.json</code>, an answer the browser can't read (Cloudflare's refusals carry no CORS header; before, each pilot asked again at once), and three different lists slow in a row.</li>
+<li><b>Up to 3 lookups in the air</b>, their starts still 1 s apart by the clock; same-URL sharing and the 100 per 10 minutes budget unchanged, every retry counted.</li>
+<li><b>Fleet tab:</b> a worker takes the next pilot whose list nobody is asking for; a slow list's pilots wait for its retry while the others load; on a pause every queued pilot is marked not sent at once. What went wrong is an icon in its own column after Damage (red failed, amber slow, grey not sent; Fleet tab only, the shape in one helper, <code>fkStHtml</code>), its hover one short sentence with when to try again, counting down; the text under each hull is gone. The Fit cell says what comes next ("Try again in 0:45", "Trying again in 0:25", Load), the summary's head says why once ("12 waiting: zKillboard is slow", "12 not loaded: ..."). Short button hovers ("Load fit", "Load all fits", "Which fits Load all uses"); the detail moved to the card's ⓘ.</li>
+<li><b>Load all's label</b> now says "7 requests, up to 14" for common fits too, since a hull's week can be short (below).</li>
+<li><b>D1, this week first:</b> common fits (Fleet tab and System Analyzer, through <code>saHullFits</code>) ask an alliance's losses in a hull this week (exactly <code>pastSeconds/604800/</code>, zKillboard's small one-week collection), and all of history only when the week has fewer than 2.</li>
+<li><b>D2, killmails from the list:</b> an entry that carries the whole killmail (an id, a time, the victim's hull and items) is used as it is; the rest are read from ESI as before.</li>
+<li><b>The Pilot Analyzer:</b> when its last-kill list comes back slow it stops there and says so (ZKB-06), instead of waiting another minute on the next step. After 10 s its busy line says "zKillboard is slow right now: wait 0:48", counting down to zKillboard's minute. ZKB-01's text everywhere else: "zKillboard isn't responding. Wait 0:45 and try again; pressing again or reloading won't make it sooner."</li>
+<li>Stored data: a new localStorage key <code>dscanZkbSlow</code> (<code>{url: {at, n}}</code>, entries dropped after 10 minutes). Older pages ignore it; this page reads every key the older page wrote, in its old form. Safe both ways.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>zkb_slow_check.py</code> (the page copied with its waits divided by 10; zKillboard's rule as a stand-in inside the page; never the real one): 3 in the air, starts 1 s apart; a 75 s list answered on its one retry; a list that never finishes: 2 requests, ZKB-06, no pause, kept for other tabs; the backstop slow, not a pause; three slow lists pause; 502, 429, 420, 403, blocked and unreadable each pause after 1 request; the budget counts every retry; the Fleet tab's icons, hovers, countdowns and summary for a 30 s, 75 s and never-finishing list, a phone's layout; D1's URL and D2's no-ESI read; the Pilot Analyzer's busy line.</li>
+<li>Mutants, each caught by the check: a retry by every caller (more than 2 requests for one list), no claim (the workers all on the slow list), an unreadable answer not stopping, the 65 s backstop pausing the page, a 4th lookup in the air (also caught by <code>check_request_gates.py</code>).</li>
+<li>Mockup <code>Claude outputs/zkb_slow_lists_mockup.html</code>: the approved prototype mockup's scenes, rebuilt from the built page (snap.py and build_mockup.py from the Project, pointed at this build).</li>
+<li>Updated for the new behaviour: <code>check_request_gates.py</code> (at most 3 in the air, the one retry), <code>request_gates_check.py</code>, <code>fleet_vs_check.py</code> (icons instead of row text), <code>fleet_fit_budget_check.py</code> (D1's requests, the reserve's numbers, a row still unloaded), <code>budget_gauge_check.py</code> and <code>zkb_outage_check.py</code> (an outage is a 502 now; zKillboard's own 503 is ZKB-06), <code>affiliation_check.py</code> (the new text), <code>fleet_kill_check.py</code>, <code>fleet_view_check.py</code> (D1), <code>shared_kill_check.py</code> (an unreadable answer pauses), <code>extension_check.py</code> (no pause carried between its loads), <code>check_sde_change_report.py</code> (case 8). <code>sa_mocks.py</code>: one made-up Curse loss moved from exactly 7 days to 6.9, inside the week. <code>sa_mocks.py</code> answers <code>pastSeconds</code> by the killmails' times.</li>
+<li>The full tier (<code>run_checks.py --auto</code> picked <code>all</code>): 13 lints, the pyfa chain and 72 page checks in 39 min. The first run caught the older checks above and two more things: in the Pilot Analyzer a hung zKillboard took 130 s (its kills list was asked again by the next step), so the analysis now stops when the last-kill list comes back slow; and the pyfa chain's patch-day report check, broken on main since the first Game data pull request (it used the real page's changed-items list), now empties that list first. The second run: <code>extension_check</code> failed under load (a tab's first, unrouted zKillboard lookup now leaves a pause for every tab); each load in that check now starts without it, and 6 copies side by side pass. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
+<li>Page size: 750,555 &rarr; 756,295 (+5.7 KB) bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #140: wait as long as the service itself waits, and let one slow item fail alone; a short timeout read as an outage stops everything. Also caught while building: a row's Load builds its job in a second place, which the new "ask afresh" flag missed at first; <code>zkb_slow_check</code> found it.</li>
+</ul>
+</body></html>

@@ -138,7 +138,8 @@ with sync_playwright() as p:
     pg.route(re.compile(r'https://zkillboard\.com/api/killID/.*'), lambda r: r.abort('failed'))
     pg.click('#tabBtnPilot'); pg.fill('#pilotName', 'https://zkillboard.com/kill/9100003/'); pg.click('#fitBtn'); pg.wait_for_timeout(400); wait_idle(pg)
     s4 = pg.inner_text('#fitStatus')
-    check('(SHARE-01)' in s4 and 'network error' in s4 and 'APP-01' not in s4, f'zKillboard not reachable for a kill link: SHARE-01 with the network cause ({s4!r})')
+    # v2026.11.06.4 (build queue 014, LESSON #106/#140): an answer the browser can't read now stops the page like an outage (ZKB-01)
+    check('(ZKB-01)' in s4 and 'Wait ' in s4 and 'APP-01' not in s4 and pg.evaluate("() => zkbUnavailableUntil > Date.now()"), f'zKillboard not reachable for a kill link: ZKB-01 with the wait, the page paused ({s4!r})')
     ctx.close()
     # ---------------- phone
     ctx, pg, errs = page(b, 390, 844, True, url=f'#kill=9100001/{H[9100001]}')

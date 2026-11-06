@@ -13,7 +13,8 @@ A build session's clone lacks it: copy it in from the Project first (build queue
 
 **Never get the user's address blocked (LESSON #93).** zKillboard blocks an address that asks too fast
 (its live feed: over 15 requests a second, for an hour). Every request to zKillboard goes through one
-of two gates: `zkbFetch` (the API: one at a time, 1 s apart) or `itR2Fetch` (the live feed, v2026.10.30.3: its
+of two gates: `zkbFetch` (the API: starts 1 s apart, at most 3 in the air since v2026.11.06.4; a list zKillboard couldn't finish
+is slow (ZKB-06), not down: asked once more 30 s later, `dscanZkbSlow`, LESSON #140) or `itR2Fetch` (the live feed, v2026.10.30.3: its
 `itKillTurn` gate, at most 5 a second by the clock, waits timed in a worker; a stop for an hour at the first 429, kept in
 localStorage for every copy of the page; a tripwire; LESSON #106). zKillboard's developer has said the limit will be cut
 further if abuse continues, so stay at a third of it. The API's pause after a failure is kept in localStorage (`dscanZkbPause`,
@@ -222,6 +223,11 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   v2026.11.04.6 (the owner): a row's countdown is only the time ("0:41", then "Load"), one width with Load (tabular digits).
   v2026.11.04.7 (the owner: "it's giving the impression that that tool just doesn't work"): the lookup that reached zKillboard and
   failed is red; the ones the pause held back (`notSent` on zkbFetchNow's error, `m.held`) say "Not sent", dim, why on hover (`fkFailSum`).
+  v2026.11.06.4 (build queue 014, roadmap/zkb-slow-lists-plan.md; the owner: "would prevent dozens of rows with repetitive text"): what
+  went wrong is an icon in its own column after Damage (`fkStHtml`, the one place its shape is drawn: red failed, amber slow, grey not
+  sent; Fleet tab only, the shape and a site-wide rule wait for their own plan), its hover one short sentence with when to try again
+  (`fkStWhy`), the summary head saying why once (`fkSumWhy`); workers claim a list so they spread over lists; common fits ask the
+  week first (`pastSeconds/604800/` exactly, D1) and read whole killmails from the list (D2). `zkb_slow_check.py`,
   `fleet_fit_budget_check.py`, `fleet_vs_check.py`.
 - **Lookup budgets** (v2026.11.04.4, Project doc roadmap/budget-gauge-plan.md; the owner: "have these numbers visible at all times"): the
   header's gauge beside the version tag (`#bgGauge`: zKill N/100, or "full" / "paused" m:ss; ESI ok, N errors, low or wait m:ss, from

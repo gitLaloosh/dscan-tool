@@ -100,7 +100,7 @@ with sync_playwright() as p:
     # (a 500 makes the zKillboard queue wait before asking again, so the ZKB-05 case goes first)
     analyze(pg, NAME); settled(pg)
     r3 = pg.evaluate(BOX)
-    check(r3['orgs'] and len(r3['msg']) == 1 and r3['msg'][0][0] == 'zKillboard stats unavailable (ZKB-01)' and "isn't answering" in r3['msg'][0][1],
+    check(r3['orgs'] and len(r3['msg']) == 1 and r3['msg'][0][0] == 'zKillboard stats unavailable (ZKB-01)' and "isn't responding" in r3['msg'][0][1],
           f"zKillboard down (500): a short line, zKillboard's outage message (ZKB-01) on hover, the rest of the box there {r3['msg']}")
     ctx.close()
     # ESI's character record failing, in a page of its own (after the 500 above the zKillboard queue would answer from its

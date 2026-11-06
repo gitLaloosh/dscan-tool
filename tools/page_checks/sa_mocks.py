@@ -166,7 +166,8 @@ FLEET_KILLS = {CRTS: [_gkill([(_crts[i], 'Curse'), (_npact, 'Ferox')], 1 + i) fo
                      + [_gkill([(_crts[9], 'Loki'), (_crts[10], 'Capsule')], 3)],
                VOIDR: [_gkill([(_void[i], 'Loki')], 1 + i) for i in range(4)]}
 AB, MWD = byname['Federation Navy 100MN Afterburner'], byname['50MN Y-T8 Compact Microwarpdrive']
-FLEET_LOSSES = {(CRTS, 'Curse'): [_gloss(_crts[i], 'Curse', 2 + i) for i in range(3)] + [_gloss(_crts[3 + i], 'Curse', 6 + i, (AB, MWD), (byname['Infiltrator II'], byname['Hammerhead II'])) for i in range(2)],
+# v2026.11.06.4 (D1): every Curse loss inside the week (the last 6.9 days, not exactly 7: zKillboard's week is pastSeconds/604800/)
+FLEET_LOSSES = {(CRTS, 'Curse'): [_gloss(_crts[i], 'Curse', 2 + i) for i in range(3)] + [_gloss(_crts[3 + i], 'Curse', 6 + i * 0.9, (AB, MWD), (byname['Infiltrator II'], byname['Hammerhead II'])) for i in range(2)],
                 (CRTS, 'Vedmak'): [_gloss(_crts[7], 'Vedmak', 4)], (CRTS, 'Loki'): [],
                 # the newest Loki loss had Scourge in its launchers: the variant's most common charge (Mjolnir Rage) is put back
                 # (made last: the page orders losses by killmail ID, as zKillboard numbers them in time)
@@ -402,6 +403,7 @@ def esi(route):
         if kid not in KM or H[kid] != m.group(2): return j({'error': 'Invalid killmail_id and/or killmail_hash'}, 422)
         return j(KM[kid])
     return esi_handle(route)
+def _dt_ts(iso): return __import__('calendar').timegm(time.strptime(iso, '%Y-%m-%dT%H:%M:%SZ'))
 def zkb(route):
     url = route.request.url
     ZKB_CALLS.append((url, time.time()))
@@ -412,7 +414,10 @@ def zkb(route):
     m = re.search(r'/losses/allianceID/(\d+)/shipTypeID/(\d+)/', url)
     if m:
         name = {v: k for k, v in byname.items()}.get(int(m.group(2)))
-        return stubs(FLEET_LOSSES.get((int(m.group(1)), name), []))
+        ids = FLEET_LOSSES.get((int(m.group(1)), name), [])
+        w = re.search(r'/pastSeconds/(\d+)/', url)   # v2026.11.06.4 (D1): zKillboard's one-week collection, by the killmail's time
+        if w: ids = [k for k in ids if time.time() - _dt_ts(KM[k]['killmail_time']) <= int(w.group(1))]
+        return stubs(ids)
     m = re.search(r'/kills/allianceID/(\d+)/$', url)
     if m and int(m.group(1)) in FLEET_KILLS: return stubs(FLEET_KILLS[int(m.group(1))])
     m = re.search(r'/losses/characterID/(\d+)/shipTypeID/(\d+)/', url)   # v.90: only that hull's losses

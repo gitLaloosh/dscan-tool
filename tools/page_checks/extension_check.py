@@ -65,6 +65,9 @@ with sync_playwright() as p:
     ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
     ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
     ctx.route(re.compile(r'https://zkillboard\.com/.*'), zkb)
+    # v2026.11.06.4 (build queue 014): a first load's unrouted zKillboard lookup (above: the tab loads before the routes hold) that the
+    # page can't read now pauses every tab, kept in this browser; each load here starts without what an earlier one kept
+    ctx.add_init_script("for(const k of ['dscanZkbPause', 'dscanZkbSlow']) try{ localStorage.removeItem(k); }catch(e){}")
     ctx.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))
     worker = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event('serviceworker', timeout=30000)
     ext_id = worker.url.split('/')[2]

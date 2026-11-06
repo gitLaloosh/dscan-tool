@@ -98,8 +98,11 @@ with sync_playwright() as p:
     per = [c for c in calls if re.match(r'losses/characterID/\d+/shipTypeID/\d+/', c)]
     grp = [c for c in calls if c.startswith('losses/allianceID/')]
     # (Orla's Curse losses were already asked by her own analysis: the page keeps them)
-    check(len(per) == 5 and len(set(per)) == 5 and not any(f'/{M.ORLA}/' in '/' + c for c in per) and len(grp) == 2 and len(calls) == 7,
-          f'one zKillboard request per pilot for their losses in that hull (none again for Orla, asked by her analysis), one per group fallback ({calls})')
+    # v2026.11.06.4 (D1): a group's week first (exactly pastSeconds/604800/), all of history only when the week has fewer than 2
+    wk = [c for c in grp if c.endswith('/pastSeconds/604800/')]
+    check(len(per) == 5 and len(set(per)) == 5 and not any(f'/{M.ORLA}/' in '/' + c for c in per) and len(wk) == 2 and len(grp) == 3
+          and all(c + 'pastSeconds/604800/' in wk for c in grp if c not in wk) and len(calls) == 8,
+          f'one zKillboard request per pilot for their losses in that hull (none again for Orla, asked by her analysis), one per group fallback: its week, then all of history for the short one ({calls})')
     S = pg.evaluate("""() => { const s = document.querySelector('#fleetPanel .fk-sum'); const st = [...s.querySelectorAll('.fl-stat')].map(e => [e.querySelector('.k').textContent, e.querySelector('.v') ? e.querySelector('.v').textContent : e.querySelector('.fk-ewl').innerText.replace(/\\s+/g, ' ')]);
       return {cov: s.querySelector('.fk-cov').textContent, st}; }""")
     total = sum(int(r['dps'].replace(',', '')) for r in R if r['dps'])
@@ -135,16 +138,17 @@ with sync_playwright() as p:
     e1 = pg.inner_text('#fleetPanel')
     check('(FLEET-01)' in e1 and pg.evaluate("() => !document.querySelector('#fleetTabWrap').hidden"), f'a cut-short link: FLEET-01 ({e1[-120:]!r})')
     ctx.close()
-    # a 21-pilot kill (v2026.11.02.1): nothing asked on open; Load all with common fits: one request for the Rifters' pair
+    # a 21-pilot kill (v2026.11.02.1): nothing asked on open; Load all with common fits: one request for the Rifters' pair (v2026.11.06.4: its week, then all of history)
     ctx = new_ctx(1440); pg = ctx.new_page(); pg.goto('file://' + HTML); analyze(pg, ORLA)
     pg.click(f'#pilotDossier [data-pd-exp="{M.byname["Curse"]}"]'); pg.wait_for_timeout(500)
     M.ZKB_CALLS.clear()
     pg.click(f'[data-pd-fleet="{M.BIG_KILL}"]'); pg.wait_for_timeout(300); pg.wait_for_function("() => fk.ready && !fk.checking", timeout=60000); pg.wait_for_timeout(300)
     mo = pg.evaluate("() => [document.querySelector('#fleetPanel [data-fk-loadall]').textContent, document.querySelector('#fleetPanel select[data-fk-mode]').value, document.querySelectorAll('#fleetPanel .fk-card button.pr-row').length, document.querySelector('#fleetPanel .fk-sum .pr-head .ctx').textContent]")
     left = pg.evaluate("() => ZKB_BUDGET - zkbBudgetRead().length")
-    check(mo == [f'Load all (1 request · {left} left)', 'common', 21, '1 of 21 looked up, 20 not yet'] and not M.ZKB_CALLS, f'a 21-pilot fleet: nothing asked on open, common fits, 1 request {mo}')
+    check(mo == [f'Load all (1 request, up to 2 · {left} left)', 'common', 21, '1 of 21 looked up, 20 not yet'] and not M.ZKB_CALLS, f'a 21-pilot fleet: nothing asked on open, common fits, 1 request {mo}')
     fleet_done(pg, 21)
-    check(len(M.ZKB_CALLS) == 1 and '/allianceID/' in M.ZKB_CALLS[0][0], f'Load all: all 21 in with 1 request ({[c[0] for c in M.ZKB_CALLS]})')
+    check(len(M.ZKB_CALLS) == 2 and M.ZKB_CALLS[0][0].endswith('/pastSeconds/604800/') and M.ZKB_CALLS[1][0] + 'pastSeconds/604800/' == M.ZKB_CALLS[0][0] and '/allianceID/' in M.ZKB_CALLS[0][0],
+          f'Load all: all 21 in with the pair\'s week, then all of history (no Rifter loss this week) ({[c[0] for c in M.ZKB_CALLS]})')
     pg.click('#tabBtnPilot'); pg.click(f'[data-pd-fleet="{M.FLEET_KILL}"]'); pg.wait_for_timeout(300); fleet_done(pg, 6)
     check(pg.evaluate("() => document.querySelectorAll('#fleetPanel .fk-card button.pr-row').length") == 6 and 'Thanatos' in pg.inner_text('#fleetPanel .fk-sub'), 'another kill replaces the fleet (one at a time)')
     ctx.close()

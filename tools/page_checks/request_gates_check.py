@@ -6,8 +6,9 @@ The owner, 2026-10-29: "if the tool were widely used and we deployed code that g
 time, this would be bad." The real page, twice: as it is, and with its timers made to fire only every 2 s, together, as
 a hidden tab's do (a tab behind the game). Each time, many zKillboard requests are asked for at once through the
 page's own functions, and every request is timed where it arrives. Checks:
-  * the zKillboard API queue (zkbFetch: Pilot Analyzer, the dossier, System Analyzer rows): 6 asked at once go one at a
-    time, at least 1 s apart (0.9 s allowing for timing noise);
+  * the zKillboard API queue (zkbFetch: Pilot Analyzer, the dossier, System Analyzer rows): 6 asked at once start one
+    after another, at least 1 s apart (0.9 s allowing for timing noise), never more than 3 in the air (v2026.11.06.4,
+    build queue 014: ZKB_PARALLEL);
   * R2Z2, the live kill feed (itKillGet, through itKillTurn): 40 asked at once, never over 12 in any second (zKillboard's
     limit is 15, then the address is blocked for an hour), and all 40 answered within 8 s with the timers bunched too
     (the gate's waits are a worker's);
@@ -53,7 +54,7 @@ with sync_playwright() as p:
         n = pg.evaluate("async () => (await Promise.all(Array.from({length: 6}, (_, i) => zkbFetch(`${ZKB}/kills/characterID/${90000100 + i}/`).then(r => r.status)))).filter(s => s === 200).length", )
         tz = time.time() - t0
         gap = min((y - x for x, y in zip(sorted(HITS['zkb']), sorted(HITS['zkb'])[1:])), default=0)
-        check(n == 6 and len(HITS['zkb']) == 6 and gap >= 0.9, f'{label}: the zKillboard API queue: 6 asked at once, {len(HITS["zkb"])} sent one at a time, the closest two {gap:.2f} s apart (1 s, less timing noise; {tz:.1f} s)')
+        check(n == 6 and len(HITS['zkb']) == 6 and gap >= 0.9, f'{label}: the zKillboard API queue: 6 asked at once, {len(HITS["zkb"])} started one after another, the closest two {gap:.2f} s apart (1 s, less timing noise; {tz:.1f} s)')
         t0 = time.time()
         n = pg.evaluate("async () => { it.kf = itKfNew(); const r = await Promise.all(Array.from({length: 40}, (_, i) => itKillGet(5000 + i))); return r.filter(Boolean).length; }")
         tk = time.time() - t0
