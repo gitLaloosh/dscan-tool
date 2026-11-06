@@ -27,6 +27,8 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <h2>Checks</h2>
 <ul>
 <li><code>intel_place_check.py</code>: the plan's made-up cases (two systems, either order, a three-word name, a ship in brackets, dragged in, the ring order, one system inside the name, and the cases that keep the system); no name looked up holds two systems; one name batch; Intel shows no error of its own. Mutants: the longer names not looked up, the pilot check after the ring, a one-system line still making a row, the capitals rule dropped, the "neighbour alone is a pilot" rule dropped, a neighbour that is a system taken in, each caught. Forcing only the system's own word changes nothing (the neighbours are already free for the pilot lookup), so that one has no case.</li>
+<li>The Intel tier (<code>run_checks.py --auto</code> against main picked <code>area (intel)</code>): 13 lints and 27 page checks in 9 min, 0 failed, 0 flaky. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
+<li>Page size: 749,323 &rarr; 750,566 bytes gzipped (<code>gzip -9</code>), +1.2 KB, under the 800 KB ceiling.</li>
 </ul>
 
 <h2>Lesson for future models</h2>
