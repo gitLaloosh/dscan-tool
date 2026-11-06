@@ -166,7 +166,8 @@ FLEET_KILLS = {CRTS: [_gkill([(_crts[i], 'Curse'), (_npact, 'Ferox')], 1 + i) fo
                      + [_gkill([(_crts[9], 'Loki'), (_crts[10], 'Capsule')], 3)],
                VOIDR: [_gkill([(_void[i], 'Loki')], 1 + i) for i in range(4)]}
 AB, MWD = byname['Federation Navy 100MN Afterburner'], byname['50MN Y-T8 Compact Microwarpdrive']
-FLEET_LOSSES = {(CRTS, 'Curse'): [_gloss(_crts[i], 'Curse', 2 + i) for i in range(3)] + [_gloss(_crts[3 + i], 'Curse', 6 + i, (AB, MWD), (byname['Infiltrator II'], byname['Hammerhead II'])) for i in range(2)],
+# v2026.11.06.4 (D1): every Curse loss inside the week (the last 6.9 days, not exactly 7: zKillboard's week is pastSeconds/604800/)
+FLEET_LOSSES = {(CRTS, 'Curse'): [_gloss(_crts[i], 'Curse', 2 + i) for i in range(3)] + [_gloss(_crts[3 + i], 'Curse', 6 + i * 0.9, (AB, MWD), (byname['Infiltrator II'], byname['Hammerhead II'])) for i in range(2)],
                 (CRTS, 'Vedmak'): [_gloss(_crts[7], 'Vedmak', 4)], (CRTS, 'Loki'): [],
                 # the newest Loki loss had Scourge in its launchers: the variant's most common charge (Mjolnir Rage) is put back
                 # (made last: the page orders losses by killmail ID, as zKillboard numbers them in time)

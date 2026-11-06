@@ -97,8 +97,11 @@ with sync_playwright() as p:
     check(S['ew'] == ['T≈32', 'D≈19', 'C≈42'] and S['v'][-1] == '≈0', f"tackle / disruption / cap warfare counts, no logistics ({S['ew']}, {S['v'][-1]})")
     calls = [c[0] for c in M.ZKB_CALLS]
     fleet = [c for c in calls if re.search(r'/kills/(alliance|corporation)ID/\d+/$', c) or '/shipTypeID/' in c]
-    check(len(fleet) == len(set(fleet)) == 4 + 2 + 3 and len([c for c in fleet if M.CRTS.__str__() in c]) == 4,
-          f'zKillboard: kills + 3 hulls for Crimson Tide (4), kills + 1 hull for Void Runners, kills for the others; none twice ({len(fleet)})')
+    # v2026.11.06.4 (D1): each hull's week first (exactly pastSeconds/604800/), all of history when the week has fewer than 2 (Crimson
+    # Tide's Vedmak and Loki)
+    ps = [c for c in fleet if '/pastSeconds/' in c]
+    check(len(fleet) == len(set(fleet)) == 6 + 2 + 3 and len([c for c in fleet if M.CRTS.__str__() in c]) == 6 and len(ps) == 4 and all(c.endswith('/pastSeconds/604800/') for c in ps),
+          f'zKillboard: kills + 3 hulls\' weeks + 2 short weeks\' all of history for Crimson Tide (6), kills + 1 week for Void Runners, kills for the others; none twice ({len(fleet)})')
     # variant 2
     pg.locator(f'#saFleet .fl-g[data-fl-g="a{M.CRTS}"] summary.fl-varbtn').first.click(); pg.wait_for_timeout(200)
     opts = pg.evaluate("() => [...document.querySelectorAll('#saFleet details.fl-pick[open] button.fl-opt')].map(b => [...b.children].map(e => e.textContent).join(' '))")

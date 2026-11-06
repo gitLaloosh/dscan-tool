@@ -139,8 +139,11 @@ try:
     # 7. the page's list is already for the newest build: nothing downloaded, nothing new
     rc, o, page2 = run('--pyfa', pa, html=page)
     check('nothing new' in o, 'the page\'s list already for the newest build: not "nothing new"')
-    # 8. a build with no item data changes at all: no download (the changes files say so)
-    shutil.copy(HTML, os.path.join(tmp, 'index.html'))
+    # 8. a build with no item data changes at all: no download (the changes files say so). The page's own list is emptied first:
+    # since the first "Game data" pull request (build 3670638) the real page's list is for a build outside this made-up chain
+    src8 = open(HTML, encoding='utf-8').read()
+    src8 = re.sub(r"^const GAME_DATA_PENDING = \{verified: (\d+), build: \d+, types: '[^']*'\};", lambda m: f"const GAME_DATA_PENDING = {{verified: {m.group(1)}, build: 0, types: ''}};", src8, count=1, flags=re.M)
+    open(os.path.join(tmp, 'index.html'), 'w', encoding='utf-8').write(src8)
     for b, last in ((NEW, MID), (MID, OLD)):
         open(os.path.join(site, 'changes', f'{b}.jsonl'), 'w').write(jl([{'_key': '_meta', 'buildNumber': b, 'lastBuildNumber': last}, {'_key': 'icons', 'added': [1]}]))
     os.remove(os.path.join(site, f'eve-online-static-data-{NEW}-jsonl.zip'))   # would fail if it were downloaded

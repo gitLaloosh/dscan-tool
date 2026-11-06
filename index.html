@@ -11846,6 +11846,7 @@ async function renderLastKill(character, pilotName, statusEl){
     }
   }catch(e){
     el.innerHTML = `<div class="lastkill">${escapeHtml(withCode(`Could not check last kill: ${e.message}.`, errorCodeOf(e)))}</div>`;
+    if(e.zkbSlow) return e;   // v2026.11.06.4: the caller stops (the same list again would be its one retry, another minute's wait)
   }
 }
 
@@ -12060,7 +12061,8 @@ async function runFitCheck(opts){
     document.getElementById('pilotHeadName').textContent = character.name || pilotName;
     sideTagForPilot(character.id);   // v2026.10.14.81: Friendly / Hostile (v.87: in the affiliation box)
     paAff.esi = paAffStart(character.id);        // v2026.10.14.87: corporation, alliance; zKillboard stats after the analysis (finally)
-    await renderLastKill(character, pilotName, statusEl);
+    const lkSlow = await renderLastKill(character, pilotName, statusEl);
+    if(lkSlow) throw lkSlow;   // v2026.11.06.4 (LESSON #140): zKillboard couldn't finish their kills: say so now, not after a second minute
 
     if(shipName){
       let shipTypeId = null;

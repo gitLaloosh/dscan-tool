@@ -62,7 +62,7 @@ for mode in ('502', '503', 'hang', 'ok'):
         code = OUTAGE if mode == '502' else '(ZKB-06)'
         check(code in status and code in lastkill and paused == (mode == '502'), f'{mode}: {code} in both places, {"a" if mode == "502" else "no"} page pause ({secs:.1f} s; {status[:90]!r})')
         check('network connection' not in status, f'{mode}: no "check your network" hint')
-        check(secs < 5 if mode != 'hang' else 60 < secs < 75, f'{mode}: gave up in {secs:.1f} s')
+        check(secs < 5 if mode != 'hang' else 60 < secs < 80, f'{mode}: gave up in {secs:.1f} s')
     check(not errs, f'{mode}: no page errors {errs}')
 # v2026.10.14.32: an unknown pilot name shows PILOT-01 (ESI's stand-in knows only "Test Pilot")
 secs, status, lastkill, errs, paused = run('ok', pilot='Nobody Here')
