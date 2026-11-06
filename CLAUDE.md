@@ -152,6 +152,10 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   Mockups size things the way the page does (LESSON #114).
   A word is a pilot only in its name's own capitals (one word typed by hand) or dragged in; report words (`IT_NOT_PILOT`) never
   otherwise (LESSON #111; `intel_words_check.py`).
+  A pilot whose surname is a system's name (v2026.11.06.3, build queue 018; roadmap/intel-surname-system-plan.md): each whole system
+  with the plain words beside it, 2-3 words, is looked up too (`p.stretch`, same batch); with 2+ systems a system inside a pilot's name
+  is that pilot, checked before the ring (`itSysPilot`); a line whose only system is inside a pilot's name makes no report, only in the
+  name's own capitals (or dragged in) and when the words beside it aren't a pilot alone (`itLonePilot`). `intel_place_check.py`.
   A word before "gate" is read among the gates of the system the line is in (LESSON #112); one tag per Near You row for a gate:
   red "Camp · X gate" from a report, orange from 2+ kills at that gate, grey a gate with no camp words (`intel_gates_check.py`).
 - **Standing icon** (v2026.10.30.4, the owner): one drawing site-wide, `standIcon` / `standMark` (EVE-style: a star for your
