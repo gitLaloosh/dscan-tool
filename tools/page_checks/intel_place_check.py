@@ -30,6 +30,10 @@ system names; you in 1DQ1-A) up to Intel turned on, then, with made-up lines and
     T5ZI-S" (not a pilot) as before. One system inside the name: "Ressa E-VKJV Sabre" and "... probably a sabre" make no row, no
     Near You change, no alert, still the last line. Kept as the system: "Varro Jita Sabre", "ressa e-vkjv Sabre" (other capitals),
     "Tovan E-VKJV Sabre" (Tovan alone a pilot, and "Tovan E-VKJV" one too), "E-VKJV", "E-VKJV clr". One /universe/ids/ batch for the lines written at once.
+  * v2026.11.06.5 (build queue 020; Project doc roadmap/intel-filler-in-name-plan.md; made-up pilots "Tavi from Ash" and "Tavi"): a
+    name with a filler word in it is looked up and read as one pilot in its own capitals or dragged in ("T5ZI-S* Tavi from Ash",
+    "... Sabre", "... (Sabre)" paired, "tavi from ash*"); other capitals, a '*' inside, a filler at an edge ("Marrek from T5ZI-S"),
+    4 words, over 37 characters and names that aren't pilots ("Varro of Ash") as before; one /universe/ids/ batch.
   * How Intel works: 3 short paragraphs, each with a bold lead, and 8 folded headings (v2026.10.31.5: Gates and camps; v2026.11.02.4:
     the map), closed; one opens on a click; no
     "slider" or "red row" left; no page errors.
@@ -129,6 +133,33 @@ _tail = r'''
     pg.evaluate("() => { it.set.feed.dist = 0; }")
     W(pg, F_INTEL, line(time.time() - 2, 'Scout Alt', 'QX-LIJ Ketter')); tick(pg, 3000)
     check(pg.evaluate("() => !!it.near.get(it.names.byLower.get('qx-lij'))"), 'Distance "any": no ring, "QX-LIJ Ketter" (4 jumps) in Near You')
+    # ---- v2026.11.06.5: a pilot whose name has a filler word in it (build queue 020; made-up names only) ----
+    ONE_WORD.update({'Tavi from Ash': 96000031, 'Tavi': 96000032})
+    FN = ['T5ZI-S* Tavi from Ash', 'T5ZI-S Tavi from Ash Sabre', 'T5ZI-S Tavi from Ash (Sabre)', 'T5ZI-S tavi from ash', 'T5ZI-S tavi from ash*',
+          'T5ZI-S Tavi* from Ash', 'QX-LIJ Marrek from T5ZI-S', 'T5ZI-S Marrek in local', 'T5ZI-S Varro of Ash', 'T5ZI-S Tavi of the Ash',
+          'T5ZI-S Abcdefghijklmnopq from Rstuvwxyzabcdefghij', 'T5ZI-S Brin* of Vale']   # the last: a '*' ends a name, so "Brin of Vale" isn't looked up
+    pg.evaluate("() => { window.__ids = 0; }")
+    W(pg, F_INTEL, ''.join(line(time.time() - 7 + i * 0.3, 'Scout Alt', m) for i, m in enumerate(FN))); tick(pg, 3000)
+    S3 = pg.evaluate("""(lines) => Object.fromEntries(lines.map(l => { const e = it.feed.find(x => x.raw === l); return [l, e ? {
+      sys: e.p.sys.map(s => [itSysName(s.id), s.role || '']), pilots: e.pilots.map(x => x.name), shape: itShape(e),
+      pairs: [...(it.near.get(e.p.sys[0].id) || {pairs: new Map()}).pairs].map(([id, s]) => [id, s.name])} : null]; }))""", FN)
+    def g3(l): return S3.get(l) or {'sys': [], 'pilots': [], 'shape': '', 'pairs': []}
+    for l in ['T5ZI-S* Tavi from Ash', 'T5ZI-S Tavi from Ash Sabre', 'T5ZI-S Tavi from Ash (Sabre)']:
+        check(g3(l)['sys'][:1] == [['T5ZI-S', '']] and g3(l)['pilots'] == ['Tavi from Ash'] and 'not placed' not in g3(l)['shape'] and g3(l)['shape'].split('  [')[0].count('PILOT') == 1,
+              f'"{l}": in T5ZI-S, the pilot "Tavi from Ash" (not the one-word "Tavi"), nothing left over {g3(l)}')
+    check([96000031, 'Sabre'] in [list(x) for x in g3('T5ZI-S Tavi from Ash (Sabre)')['pairs']], f'"T5ZI-S Tavi from Ash (Sabre)": the Sabre paired with the three-word pilot {g3("T5ZI-S Tavi from Ash (Sabre)")["pairs"]}')
+    check(g3('T5ZI-S tavi from ash')['pilots'] == [], f'"T5ZI-S tavi from ash" (other capitals, typed): no three-word pilot, as before {g3("T5ZI-S tavi from ash")}')
+    check(g3('T5ZI-S tavi from ash*')['pilots'] == ['Tavi from Ash'], f'"T5ZI-S tavi from ash*" (dragged in): the three-word pilot {g3("T5ZI-S tavi from ash*")}')
+    check(g3('T5ZI-S Tavi* from Ash')['pilots'] == ['Tavi'], f'"T5ZI-S Tavi* from Ash": a \'*\' ends a name, so the pilot is "Tavi" {g3("T5ZI-S Tavi* from Ash")}')
+    q = g3('QX-LIJ Marrek from T5ZI-S')
+    check(q['sys'] == [['QX-LIJ', ''], ['T5ZI-S', 'from']] and q['pilots'] == ['Marrek'], f'"QX-LIJ Marrek from T5ZI-S": as before, Marrek in QX-LIJ, "from T5ZI-S" {q}')
+    for l, pil in [('T5ZI-S Marrek in local', ['Marrek']), ('T5ZI-S Varro of Ash', []), ('T5ZI-S Tavi of the Ash', ['Tavi'])]:
+        check(g3(l)['sys'][:1] == [['T5ZI-S', '']] and g3(l)['pilots'] == pil, f'"{l}": as before {g3(l)}')
+    asked = sorted(n for n in IDS_ASKED if ' from ' in n or ' of ' in n or ' in ' in n or n.endswith(' from') or n.startswith('from '))
+    want = ['tavi from ash', 'varro of ash']
+    check(asked == want, f'looked up: only stretches with a filler word between two plain words, 3 words and at most 37 characters; no filler at an edge, no system, no 4 words, no \'*\' inside ({asked})')
+    ids = pg.evaluate("() => window.__ids")
+    check(ids == 1, f'... in the one /universe/ids/ batch for the lines written at once ({ids})')
     # ---- the switch ----
     SW = """() => { const s = document.querySelector('#intelSw'), c = getComputedStyle(s), k = getComputedStyle(s, '::after'), l = getComputedStyle(s.nextElementSibling);
       const u = document.querySelector('#myShipUse'), cu = getComputedStyle(u);

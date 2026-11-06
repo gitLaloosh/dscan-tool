@@ -128,6 +128,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #110 Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still.
 - #111 A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters.
 - #139 A page that catches its own errors shows them on the card, not as page errors: a check must read that error line too.
+- #141 A word the reader sets aside can sit inside a name: look names up across it, then decide by the exact spelling. See also #111.
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
@@ -1047,6 +1048,19 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 141. A word the reader sets aside can sit inside a name: look names up across it, then decide by the exact spelling
+
+- **What happened (to v2026.11.06.4; fixed in v2026.11.06.5, build queue 020):** Intel's reader marks filler words ("from", "of",
+  "the") as used before it looks for pilots, and pilots are only looked up within runs of unused words. A three-word pilot name with
+  "from" in the middle was split in two and never looked up whole; its first word alone happened to be another real character's name,
+  typed in its own capitals, so the Feed row showed the wrong person. 018 had fixed the same kind of split for system names, but
+  only around system words.
+- **How it was caught:** the owner's Feed screenshot ("system pilot").
+- **Do this instead:** when a step of a reader discards words before names are matched, ask which names those words could be part
+  of. Look the longer stretches up in the same batch (no extra request), and accept them only on the strictest evidence (the name's
+  own capitals, or dragged in), since a common word inside makes chance matches likelier. In the checks, give each new case a name
+  never looked up before on that page, or a mutant can hide behind a name some earlier line already asked for.
 
 ## 140. Wait as long as the service itself waits, and let one slow item fail alone: a short timeout read as an outage stops everything
 

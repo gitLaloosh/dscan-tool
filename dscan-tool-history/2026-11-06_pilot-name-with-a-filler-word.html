@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-06 — Intel: a pilot whose name has a filler word in it</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel: a pilot whose name has a filler word in it</h1>
+<p><span class="tag">Page</span> 2026-11-06 &middot; <code>v2026.11.06.5</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 020, Project doc <code>roadmap/intel-filler-in-name-plan.md</code>. The owner's Feed screenshot (2026-11-06): a line naming a system and a three-word pilot with "from" in the middle. The reader set "from" aside as a filler word, which split the name; its first word alone was another real character's name in its own capitals, so the row showed the wrong pilot. The real line and names stay out of the repository; the checks use made-up ones.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Looked up across a filler word:</b> each 3-word stretch of a plain word, a filler word (letters only) and a plain word, at most 37 characters, with no <code>*</code> before its last word, goes into the same <code>/universe/ids/</code> batch as the line's other names. No new request. A filler word at an edge never starts or ends one, so "from &lt;System&gt;" and "to &lt;System&gt;" keep their meaning.</li>
+<li><b>Read as one pilot only on strict evidence:</b> the name in its own capitals as typed, or its last word dragged in. Then its words, the filler word included, stay together on the second read, and the longer name wins over a shorter pilot inside it. The row shows one pilot chip and nothing "not placed".</li>
+<li>Nothing looks different; only which pilot a line names.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_place_check.py</code>, made-up pilots "Tavi from Ash" and "Tavi": the three-word pilot with a linked system, with a ship after it, with the ship in brackets (paired), dragged in in other capitals; as before for other capitals typed, a <code>*</code> inside, "Marrek from T5ZI-S", "Marrek in local", "Varro of Ash" (not a pilot), 4 words, over 37 characters; only the right stretches looked up, in one batch.</li>
+<li>Mutants, each caught: the stretches not looked up, the capitals rule dropped, a filler word at an edge taken, the shorter pilot preferred, a stretch running through a system word, a <code>*</code> inside accepted (this one needed its own case with a name never asked before on the page).</li>
+<li>The Intel tier (<code>run_checks.py --auto</code> against main picked <code>area (intel)</code>): 13 lints and 27 page checks in 9 min, 0 failed, 0 flaky. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
+<li>Page size: 756,295 &rarr; 756,781 (+0.5 KB) bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #141: a word the reader sets aside can sit inside a name. Look names up across it, then decide by the exact spelling. In checks, a new case needs a name not looked up earlier on the page, or a mutant can hide behind it.</li>
+</ul>
+</body></html>
