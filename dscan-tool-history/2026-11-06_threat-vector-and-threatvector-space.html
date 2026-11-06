@@ -38,7 +38,8 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <li><code>extension_check.py</code>: the manifest's name, short name and version; every menu title; the new default; the old default stored opens and shows the new address. Four mutants, each caught: the old default, no mapping in the background, none in the options page, an old menu title.</li>
 <li>The mockup (<code>Claude outputs/threatvector_rename_mockup.html</code>, rebuilt from this page): no page errors, no sideways scroll at 1440 or 390.</li>
 <li>The whole chain (<code>run_checks.py --auto</code> against main picked <code>all</code>): 13 lints, the pyfa chain and 70 page checks in 28 min. One failed: <code>game_data_check</code>, which has nothing to do with this change and failed the same way on main under load. Fixed in the check (below); then 8 runs passed, 6 of them side by side, and its three page mutants (no wait, a late answer used, a wait that never ends) are each caught. <code>check_pii</code>: 0 problems. Regression suite ALL PASS.</li>
-<li>Page size: 747,567 bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+<li>Page size: 747,567 bytes gzipped (<code>gzip -9</code>) as v2026.11.05.1; 749,323 as v2026.11.06.2 with the hotfix, under the 800 KB ceiling.</li>
+<li>After merging main (v2026.11.06.1) into this branch: the whole chain again (<code>all</code>): 13 lints, the pyfa chain and 71 page checks in 30 min, 0 failed, 0 flaky. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
 </ul>
 
 <h2>Lesson for future models</h2>
