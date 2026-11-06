@@ -248,8 +248,17 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   counted reads in a row with nothing the browser may read (`kf.blk`: sequence.json, or a read back's published kill; never a live
   kill file, LESSON #89), Intel on, the browser online; any readable answer clears it; never read since the page opened adds "or
   something in this browser blocking it". It also shows as Intel's Feed note (`.it-why`), "Kills down" in the gauge and on Intel's
-  status line. Nothing extra is asked; the reader's pace is unchanged. 015 adds ESI down, EVE's downtime, the zKillboard pause and
-  the feed behind to `sysSituations`. `feed_down_check.py` (a real HTTPS stand-in, so the browser checks CORS itself).
+  status line. Nothing extra is asked; the reader's pace is unchanged. `feed_down_check.py` (a real HTTPS stand-in, so the browser
+  checks CORS itself). v2026.11.06.6 (build queue 015): the other lines, most important first: ESI down (`esiDown`: a lookup with no
+  readable answer or 502/503/504, confirmed by one /status/, then /status/ once a minute only while down, `esiDownCheck`; only
+  /status/ clears it; it takes over from the unreadable feed), EVE's daily downtime (`sysDowntime`: 4 minutes ahead of 11:00 UTC, one
+  /status/ at 11:00, one clock timer `sysClockArm`), the zKillboard pause (ZKB-01's own text), the feed behind (`itFeedBehind`: fewer
+  than `IT_FEED_SLOW_MIN` (40, the owner) kills in 15 minutes by R2Z2's uploaded_at, or a median age over 30 minutes, judged once
+  the reader is at the newest; off after 5 minutes back). Each also as the Feed note (`itFeedWhy`), the status line and the gauge
+  ("ESI down", "Kills slow"). A countdown in a line is a span.zkb-cd on the sweep; the line is rewritten only when its words change.
+  v2026.11.06.6 (build queue 019, LESSON #140): a read-back keeps every readable kill; the unreadable ones are asked once more 6 s
+  later, then, if published and sequence.json reads now, read past (`kf.skipped`); three all-skipped passes count as the feed down
+  (`kf.allSkip`). `outage_check.py`.
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
   the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship

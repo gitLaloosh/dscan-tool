@@ -93,7 +93,10 @@ _tail = r'''
     pg.wait_for_timeout(12000)
     after = [q for u, q, _ in REQS if tf is not None and u > tf]
     wu = pg.evaluate("() => (it.kf.waitUntil - Date.now()) / 1000")
-    check(tf is not None and after == [] and wu > 10, f'a read that fails unreadably in a read-back: nothing more sent in that pass ({after[:5]}), the next try in {wu:.0f} s')
+    # v2026.11.06.6 (build queue 019): the failed one asked once more 6 s later, then sequence.json once (is the feed itself readable?);
+    # the whole feed unreadable here, so nothing is read past and the pass ends as before, the next try 30 s on
+    failed = [q for u, q, s_ in REQS if u == tf][:1]
+    check(tf is not None and after == failed + ['/ephemeral/sequence.json'] and wu > 10, f'a read that fails unreadably in a read-back: the rest held back; that one asked once more, then sequence.json, nothing else in that pass ({after[:5]}), the next try in {wu:.0f} s')
     SEQ['fail'] = None
     # ---- the tripwire ----
     pg.evaluate("() => { it.kf.waitUntil = Date.now() + 600000; }")   # the pump out of the way

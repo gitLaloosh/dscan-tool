@@ -114,8 +114,12 @@ def route(ctx):
     # v.99: zKillboard's live feed (R2Z2), quiet here: a sequence, then nothing new (intel_kills_check.py feeds it kills).
     # v.100: as the real one answers: sequence.json readable; a missing kill a 404 without the CORS header, which the page
     # sees as a network error (aborted here: Playwright's route.fulfill() skips the CORS check; LESSON #89)
+    # no kills: sequence.json says 1000; each kill up to it isn't there (a 404 the page may read); past it, not there yet (R2Z2's 404
+    # without the header, LESSON #89). v2026.11.06.6: before, every kill file failed unreadably, which is now "the feed's kills can't be
+    # read" (build queue 019: three such passes show the notice)
     ctx.route(re.compile(r'https://r2z2\.zkillboard\.com/.*'), lambda r: r.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body='{"sequence": 1000}')
-              if r.request.url.endswith('/sequence.json') else r.abort('failed'))
+              if r.request.url.endswith('/sequence.json') else r.fulfill(status=404, headers={'access-control-allow-origin': '*'}, body='')
+              if int(re.search(r'/(\d+)\.json', r.request.url).group(1)) <= 1000 else r.abort('failed'))
 
 # ---- a made-up Chatlogs folder, written as EVE writes it ----
 FS = r"""(() => {

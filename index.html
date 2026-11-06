@@ -2937,7 +2937,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.06.5</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.06.6</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -4248,39 +4248,98 @@ function bgEsiUse(){   // what the gauge and panel show: stored plus this tab's 
 async function esiFetch(url, init, kind){
   let r;
   try{ r = await fetch(url, init); }
-  catch(e){ esiNote(kind, null); throw e; }
+  catch(e){ esiNote(kind, null); esiFailed(); throw e; }
   esiNote(kind, r);
+  if(r.status === 502 || r.status === 503 || r.status === 504) esiFailed();   // v2026.11.06.6 (015): maybe ESI is down; /status/ says
   return r;
 }
 // ==== WHAT'S DOWN (v2026.11.06.1, build queue 016; Project doc roadmap/outage-notices-plan.md section 7) ====
 // The strip under the header, on every tab: one line per situation that is on, the most important first; written only when its text
 // changes (LESSON #120). 016 has one situation, zKillboard's kill feed can't be read (itFeedDown); 015 adds ESI down, EVE's downtime,
 // the zKillboard pause and the feed behind, in that order of importance, to sysSituations.
+// v2026.11.06.6 (build queue 015; Project doc roadmap/outage-notices-plan.md; mockup Claude outputs/outage_notices_mockup.html): the other
+// four. In order: ESI down (or EVE's daily downtime, the same failure from 11:00 UTC), downtime soon (from 4 minutes before 11:00 UTC),
+// zKillboard's kill feed can't be read (016; ESI down takes over from it), the zKillboard pause (ZKB-01's own text, 014), the feed behind.
+// A countdown in a line is a span.zkb-cd the countdown sweep keeps current; the line counts as changed only when its words do.
 let sysLastStrip = null;
+const SYS_DT_HOUR = 11, SYS_DT_WARN_MS = 4 * 60000, SYS_DT_SPAN_MS = 60 * 60000;   // EVE's daily downtime: 11:00 UTC; warned 4 minutes ahead (the owner)
+function sysDowntimeAt(now){ const d = new Date(now); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), SYS_DT_HOUR); }
+function sysDowntime(now = Date.now()){   // 'soon' (with when it starts), 'now' (11:00 to 12:00 UTC), or null
+  const at = sysDowntimeAt(now);
+  if(now >= at - SYS_DT_WARN_MS && now < at) return {k: 'soon', at};
+  if(now >= at && now < at + SYS_DT_SPAN_MS) return {k: 'now', at};
+  return null;
+}
+function sysCd(at){ return `<span class="zkb-cd" data-zkb-at="${at}">${zkbClock(Math.max(0, at - Date.now()))}</span>`; }
 function sysSituations(){
-  const out = [], fd = typeof itFeedDown === 'function' ? itFeedDown() : null;
+  const out = [], now = Date.now(), dt = sysDowntime(now), ed = esiDownNow();
+  if(ed) out.push(dt && dt.k === 'now' ? `<b>EVE's daily downtime (11:00 UTC).</b> <span>Lookups and new kills resume when it ends.</span>`
+    : `<b>EVE's ESI is down (maintenance).</b> <span>Names, fits and new kills won't load until it's back. Checking every minute.</span>`);
+  else if(dt && dt.k === 'soon') out.push(`<b>EVE's daily downtime starts in ${sysCd(dt.at)}</b> <span>(11:00 UTC). Lookups and new kills stop until it ends.</span>`);
+  const fd = typeof itFeedDown === 'function' ? itFeedDown() : null;
   if(fd) out.push(fd.strip);
+  zkbPauseRead();
+  if(zkbUnavailableUntil > now) out.push(`<b>zKillboard isn't responding.</b> <span>Wait ${sysCd(zkbUnavailableUntil)} and try again; pressing again or reloading won't make it sooner. (ZKB-01)</span>`);
+  const fb = typeof itFeedBehind === 'function' && !fd && !ed ? itFeedBehind() : null;
+  if(fb) out.push(fb.strip);
   return out;
 }
 function sysStripPaint(){
   if(!bgDoc()) return;   // LESSON #36: the suites' stub DOM
   const el = document.getElementById('sysStrip');
   if(!el) return;
-  const h = sysSituations().map(x => `<div class="sys-l">${x}</div>`).join('');
-  if(h === sysLastStrip) return;
-  sysLastStrip = h; el.innerHTML = h;
+  sysClockArm();
+  const h = sysSituations().map(x => `<div class="sys-l">${x}</div>`).join(''), key = h.replace(/(<span class="zkb-cd"[^>]*>)[^<]*/g, '$1');
+  if(key === sysLastStrip) return;
+  sysLastStrip = key; el.innerHTML = h;
+  if(/data-zkb-at/.test(h)) zkbRetryTick();   // its countdown rides the sweep
   bgPaint();   // the gauge's Kills part says the same
+}
+// One timer for the clock: the next moment the strip changes by itself (4 minutes before 11:00 UTC, 11:00, the end of the hour), never a
+// batch (LESSON #93). At 11:00 itself one /status/ asks whether ESI is down for the downtime (the plan: "if ESI is fine at 11:00,
+// nothing is shown after 11:00"); otherwise ESI is only asked when a lookup failed.
+let sysClockT = 0, sysClockAt = 0;
+function sysClockArm(){
+  if(typeof window === 'undefined') return;
+  const now = Date.now(), at = sysDowntimeAt(now), next = [at - SYS_DT_WARN_MS, at + 15000, at + SYS_DT_SPAN_MS, at + 86400000 - SYS_DT_WARN_MS].find(t => t > now);
+  if(sysClockT && sysClockAt === next) return;
+  clearTimeout(sysClockT); sysClockAt = next;
+  sysClockT = setTimeout(() => { sysClockT = 0; if(Math.abs(Date.now() - (sysDowntimeAt(Date.now()) + 15000)) < 60000 && !esiDown.on) esiDownCheck(); sysStripPaint(); }, Math.min(next - now, 2 ** 31 - 1));
+}
+// ESI down: a lookup failed with no answer the browser may read (ESI's maintenance 503 carries no CORS header) or 502 / 503 / 504, while
+// the browser is online; one /status/ confirms it, then /status/ once a minute while down, and only then (DLA 2.5). Only /status/
+// answering clears it (an answer from the browser's own cache could come while ESI is down).
+const ESI_DOWN_CHECK_MS = 60000;
+const esiDown = {on: false, since: 0, checking: false, t: 0};
+function esiDownNow(){ return esiDown.on && !(typeof navigator !== 'undefined' && navigator.onLine === false); }
+function esiFailed(){
+  if(esiDown.on || esiDown.checking || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
+  esiDownCheck();
+}
+async function esiDownCheck(){
+  if(esiDown.checking) return;
+  esiDown.checking = true;
+  let down = false;
+  try{ const r = await esiFetch(`${ESI}/status/?datasource=tranquility`, undefined, 'status'); down = r.status === 502 || r.status === 503 || r.status === 504; }
+  catch(e){ down = !(typeof navigator !== 'undefined' && navigator.onLine === false); }
+  esiDown.checking = false;
+  const was = esiDown.on;
+  esiDown.on = down; if(down && !was) esiDown.since = Date.now(); if(!down) esiDown.since = 0;
+  clearTimeout(esiDown.t); esiDown.t = down ? setTimeout(() => { esiDown.t = 0; esiDownCheck(); }, ESI_DOWN_CHECK_MS) : 0;   // one timer, only while down
+  if(was !== down){ sysStripPaint(); if(typeof itRender === 'function' && typeof it !== 'undefined' && it.on) itRender(); }
 }
 function bgR2Note(){ const now = Date.now(); bgR2Times = bgR2Times.filter(t => now - t < 10000); bgR2Times.push(now); }   // Intel's live-kill reads, for the panel's rate
 function bgKills(){   // null while Intel is off
   if(typeof it === 'undefined' || !it.on) return null;
   const until = itR2Stopped(), now = Date.now();
-  return {stop: until ? until - now : 0, until, rate: bgR2Times.filter(t => now - t < 10000).length / 10, down: typeof itFeedDown === 'function' ? itFeedDown() : null};
+  const down = typeof itFeedDown === 'function' ? itFeedDown() : null;
+  return {stop: until ? until - now : 0, until, rate: bgR2Times.filter(t => now - t < 10000).length / 10, down,
+    behind: !down && !esiDownNow() && typeof itFeedBehind === 'function' ? itFeedBehind() : null};
 }
 function bgState(){
   zkbPauseRead();
   const now = Date.now(), z = bgZkbUse(), pause = Math.max(0, zkbUnavailableUntil - now), full = z.n >= ZKB_BUDGET ? z.frees : 0;
-  return {z, pause, full, e: bgEsiUse(), k: bgKills()};
+  return {z, pause, full, e: Object.assign(bgEsiUse(), {down: esiDownNow()}), k: bgKills()};
 }
 function bgSegsHtml(S){
   const seg = (cls, html) => `<span class="bg-seg${cls ? ' ' + cls : ''}"><span class="bg-dot" aria-hidden="true"></span>${html}</span>`;
@@ -4290,11 +4349,13 @@ function bgSegsHtml(S){
   let h = S.pause ? seg('stop', `${zk} ${w('paused')}<b>${zkbClock(S.pause)}</b>`)
     : S.full ? seg('warn', `${zk} ${w('full')}<b>${zkbClock(S.full)}</b>`)
     : seg(S.z.n >= ZKB_WARN_AT ? 'warn' : '', `${zk} <b>${S.z.n}</b>/${ZKB_BUDGET}`);
-  h += S.e.wait ? seg('stop', `ESI ${w('wait')}<b>${zkbClock(S.e.wait)}</b>`)
+  h += S.e.down ? seg('stop', 'ESI <b>down</b>')   // v2026.11.06.6 (015)
+    : S.e.wait ? seg('stop', `ESI ${w('wait')}<b>${zkbClock(S.e.wait)}</b>`)
     : S.e.errs >= ESI_ERR_WARN ? seg('warn', `ESI <b>${S.e.errs}</b><span class="bg-xw"> errors</span>`)
     : S.e.low ? seg('warn', 'ESI <b>low</b>') : seg('', 'ESI <b>ok</b>');
   if(S.k) h += S.k.stop ? seg('stop', `<span class="bg-lg">Kills stopped </span><b>${zkbClock(S.k.stop)}</b>`)
     : S.k.down ? seg('stop', '<span class="bg-lg">Kills </span><b>down</b>')   // v2026.11.06.1: zKillboard's kill feed can't be read
+    : S.k.behind ? seg('warn', '<span class="bg-lg">Kills </span><b>slow</b>')   // v2026.11.06.6 (015): the feed behind
     : seg('', '<span class="bg-lg">Kills </span><b>ok</b>');
   return h;
 }
@@ -4305,13 +4366,14 @@ function bgBodyHtml(S){
   const zState = S.pause
     ? `<div class="bg-note"><b>zKillboard isn't responding.</b> The page waits <b>${zkbClock(S.pause)}</b> before asking again (${zkbFailStreak} ${zkbFailStreak === 1 ? 'failure' : 'failures in a row'}). Pressing Analyze now sends nothing and <b>doesn't add time</b>, and reloading won't bring it back sooner. If the first lookup after the wait fails too, the next wait is <b>${next} min</b>.</div>`
     : `<div class="bg-sub">zKillboard is answering.</div>`;
-  const e = S.e, eNote = e.wait ? `<div class="bg-note">ESI asked the page to wait <b>${zkbClock(e.wait)}</b>. Lookups sent before then are refused.</div>`
+  const e = S.e, eNote = e.down ? `<div class="bg-note"><b>ESI is down.</b> Names, fits and new kills won't load until it's back. The page asks its /status/ once a minute until it answers.</div>` : e.wait ? `<div class="bg-note">ESI asked the page to wait <b>${zkbClock(e.wait)}</b>. Lookups sent before then are refused.</div>`
     : e.errs >= ESI_ERR_WARN ? `<div class="bg-note">At ${ESI_ERR_LIMIT}, ESI refuses every request for the rest of the minute (it answers 420).</div>`
     : e.low ? `<div class="bg-note">${escapeHtml(e.low.g)} is down to ${e.low.rem.toLocaleString()} of ${e.low.lim.toLocaleString()} per ${escapeHtml(e.low.win)}.</div>` : '';
   const allow = e.grp && !e.low ? `Plenty left: ${escapeHtml(e.grp.g)} ${e.grp.rem.toLocaleString()} of ${e.grp.lim.toLocaleString()} per ${escapeHtml(e.grp.win)}.` : '';   // a low one has its note
-  const k = S.k, kRow = !k ? '' : `<div class="bg-sec"><div class="bg-row"><span class="k">Intel live kills</span><span class="v">${k.stop ? 'stopped' : k.down ? "can't be read" : 'reading'}</span></div>${k.stop
+  const k = S.k, kRow = !k ? '' : `<div class="bg-sec"><div class="bg-row"><span class="k">Intel live kills</span><span class="v">${k.stop ? 'stopped' : k.down ? "can't be read" : k.behind ? 'behind' : 'reading'}</span></div>${k.stop
     ? `<div class="bg-note">zKillboard said slow down, so live kills stop until <b>${new Date(k.until).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</b> (${zkbClock(k.stop)}). Reports from your channels carry on.</div>`
     : k.down ? `<div class="bg-note">${k.down.feed} The page keeps asking at its usual pace and sends nothing extra. Reports from your channels carry on. (INTEL-06)</div>`
+    : k.behind ? `<div class="bg-note">${k.behind.feed}</div>`
     : `<div class="bg-sub">${k.rate.toFixed(1)} requests a second (the page's own cap is ${IT_R2_PER_S}; zKillboard's is 15).</div>`}</div>`;
   return `<div class="bg-sec"><div class="bg-row"><span class="k">zKillboard</span><span class="v">${z.n} of ${ZKB_BUDGET} · last 10 min</span></div>
       <div class="bg-bar${warn ? ' warn' : ''}"><i style="width:${Math.min(100, Math.round(z.n / ZKB_BUDGET * 100))}%"></i></div>
@@ -4417,6 +4479,7 @@ function describeEsiFailure(context, status, detail){
   else if(status === 420 || status === 429) cause = `rate-limited (status ${status}) -- wait a moment and try again`;
   else if(status >= 500) cause = `server error (status ${status})`;
   else cause = `request rejected (status ${status})`;
+  if((status === undefined || status >= 502) && !/^zKillboard/.test(context) && typeof esiDownNow === 'function' && esiDownNow()) cause += ' (ESI is down)';   // v2026.11.06.6 (015): the row agrees with the strip
   return `${context}: ${cause}` + (detail ? ` -- ${detail.slice(0,200)}` : '');
 }
 
@@ -24593,7 +24656,7 @@ const it = {
   nearOpen: new Set(),   // v2026.10.30.1: Near You rows opened (system ids; several at once, the owner)
   gateDest: new Map(), gateAsk: new Map()   // v2026.10.31.5: stargate id -> the system it leads to (itGateDest)
 };
-function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, blk: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0, halt: false}; }   // blk (v2026.11.06.1): counted reads in a row with nothing the browser may read (itFeedDown)   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, blk: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0, halt: false, skipped: 0, allSkip: 0, ups: [], behind: false, behindOk: 0, skipMode: false, retrying: false}; }   // blk (v2026.11.06.1): counted reads in a row with nothing the browser may read (itFeedDown)   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
 function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, nearRange: null, mapReach: null, nearView: 'list', sound: true, notify: true, volume: IT_VOL_DEFAULT, soundNear: 'chime', soundHere: 'klaxon', sndPrev: {near: 'chime', here: 'klaxon'}, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}, alias: ''}; }
 function itReadSet(){
   const d = itDefaults();
@@ -25493,7 +25556,7 @@ async function itR2Fetch(path){
   if(kf) kf.reqs++;
   let r;
   try{ r = await fetch(`${IT_R2Z2}${path}`); }
-  catch(e){ if(kf && !kf.head) kf.halt = true; return IT_R2_NET; }
+  catch(e){ if(kf && !kf.head && !kf.skipMode && !kf.retrying) kf.halt = true; return IT_R2_NET; }   // v2026.11.06.6 (019): not while retrying, nor once a gap was read past
   itR2EverRead = true; if(kf) kf.blk = 0;   // v2026.11.06.1: an answer the browser may read (any status): the feed can be read
   if(IT_R2_STOP_STATUS.includes(r.status)){ itR2Stop(`status ${r.status}`); throw itR2StopErr(); }
   return r;
@@ -25507,12 +25570,37 @@ async function itR2Fetch(path){
 const IT_FEED_DOWN_AT = 3;
 let itR2EverRead = false;
 function itFeedDown(){
-  if(typeof it === 'undefined' || !it.on || !it.kf || it.kf.blk < IT_FEED_DOWN_AT) return null;
+  if(typeof it === 'undefined' || !it.on || !it.kf || (it.kf.blk < IT_FEED_DOWN_AT && (it.kf.allSkip || 0) < IT_FEED_DOWN_AT)) return null;   // v2026.11.06.6: or every kill file unreadable, 3 passes (019)
   if(typeof navigator !== 'undefined' && navigator.onLine === false) return null;
   if(itR2Stopped()) return null;   // INTEL-07 / INTEL-08 say why nothing is sent
+  if(esiDownNow()) return null;   // v2026.11.06.6 (015): ESI down takes over (the plan's order of importance)
   const why = itR2EverRead ? "a problem on zKillboard's side" : "a problem on zKillboard's side, or something in this browser blocking it";
   return {why, strip: `<b>zKillboard's kill feed can't be read right now</b> <span>${escapeHtml(withCode(`(${why}). New kills will show when it's fixed.`, 'INTEL-06'))}</span>`,
     feed: `<b>No new kills:</b> ${escapeHtml(`zKillboard's kill feed can't be read right now (${why}).`)}`};
+}
+// v2026.11.06.6 (build queue 015): zKillboard's feed behind. From what the reader already read (nothing extra asked): over the last 15
+// minutes by R2Z2's own uploaded_at, fewer than IT_FEED_SLOW_MIN kills, or their median age (uploaded_at - killmail_time) over 30 minutes.
+// Judged only once the reader has read up to the newest (a read-back covers the last 240 kills, ~15 minutes on a normal night). Off
+// again after 5 minutes back above. A stale sequence.json alone is not "behind": the reader walks forward from it.
+const IT_FEED_SLOW_MIN = 40;   // the owner, 2026-11-06: "40 per 15 min" (the page assumes ~15 kills a minute, ~225 per 15 minutes; 2026-11-05 was 7 in 27 minutes)
+const IT_FEED_WIN_MS = 15 * 60000, IT_FEED_OLD_MS = 30 * 60000, IT_FEED_CLEAR_MS = 5 * 60000;
+function itFeedNote(rec){   // a kill file read: when zKillboard published it and when the kill happened
+  const kf = it.kf, u = rec && Number(rec.uploaded_at) * 1000, k = rec && rec.esi ? Date.parse(rec.esi.killmail_time) : NaN;
+  if(!kf || !(u > 0)) return;
+  kf.ups.push({u, k}); const old = Date.now() - 2 * IT_FEED_WIN_MS; while(kf.ups.length && kf.ups[0].u < old) kf.ups.shift();
+}
+function itFeedBehind(){
+  if(typeof it === 'undefined' || !it.on || !it.kf || !it.kf.head || itR2Stopped()) return null;
+  const kf = it.kf, now = Date.now();
+  if(!kf.ups.length && !kf.behind) return null;   // nothing read with zKillboard's times: no judgement
+  const recent = kf.ups.filter(x => now - x.u <= IT_FEED_WIN_MS), ages = recent.map(x => x.u - x.k).filter(Number.isFinite).sort((a, b) => a - b);
+  const med = ages.length ? ages[ages.length >> 1] : 0, bad = recent.length < IT_FEED_SLOW_MIN || med > IT_FEED_OLD_MS;
+  if(bad){ kf.behind = true; kf.behindOk = 0; }
+  else if(kf.behind){ if(!kf.behindOk) kf.behindOk = now; if(now - kf.behindOk >= IT_FEED_CLEAR_MS) kf.behind = false; }
+  if(!kf.behind) return null;
+  const newest = kf.ups.reduce((m, x) => Number.isFinite(x.k) && x.k > m ? x.k : m, 0), ago = newest ? `, the newest from ${itAgo(newest)} ago` : '';
+  return {n: recent.length, strip: `<b>zKillboard's kill feed is behind:</b> <span>${escapeHtml(`${recent.length} kill${recent.length === 1 ? '' : 's'} in the last 15 min${ago}. Kills nearby may be missing.`)}</span>`,
+    feed: `<b>Kills may be missing:</b> ${escapeHtml(`zKillboard's kill feed is behind (${recent.length} in the last 15 min${ago}).`)}`};
 }
 async function itKillGet(n){   // kill number n; null when it isn't there (404); IT_R2_NET when the read failed; IT_R2_HALT when not sent
   const r = await itR2Fetch(`/ephemeral/${n}.json`);
@@ -25555,7 +25643,37 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
         const from = kf.seq, part = [];
         let recs = await Promise.all(Array.from({length: IT_KILL_PER_TICK_BACK}, (_, i) => gen === it.gen ? itKillGet(from + i) : null));
         if(gen !== it.gen) return;
-        const bad = recs.findIndex(x => x === IT_R2_NET || x === IT_R2_HALT);   // v2026.10.30.3: a read failed: keep what came before it, send nothing more this pass
+        // v2026.11.06.6 (build queue 019; Project doc roadmap/r2z2-unreadable-kill-plan.md; LESSON #140): one unreadable kill file no longer
+        // stalls the read-back. The readable ones are kept; the unreadable ones are asked once more, together, IT_KILL_WAIT_MS later
+        // (each through the gate). Still unreadable and published (at or below sequence.json's number, or a later one read), while the
+        // index reads fine (read once more now, one request a batch): a gap, read past (kf.skipped), and from then on an unreadable file doesn't hold the rest of a batch back
+        // (kf.skipMode). The index unreadable too: itKillSeq throws, today's "the whole feed is down" (catch below). One not published
+        // yet stays "not there yet" (LESSON #89, the owner: "Published only"). One held back (not sent) is asked later, never skipped.
+        let skippedHere = 0;
+        const net = recs.map((x, i) => x === IT_R2_NET ? i : -1).filter(i => i >= 0);
+        if(net.length){
+          await itSleep(IT_KILL_WAIT_MS);
+          if(gen !== it.gen) return;
+          const retryAt = Date.now();
+          kf.halt = false; kf.retrying = true;
+          let again;
+          try{ again = await Promise.all(net.map(i => gen === it.gen ? itKillGet(from + i) : null)); }finally{ kf.retrying = false; }
+          if(gen !== it.gen) return;
+          net.forEach((i, j) => { recs[i] = again[j]; });
+          const still = net.filter(i => recs[i] === IT_R2_NET);
+          const lastOk = recs.reduce((m, x, i) => x && x !== IT_R2_NET && x !== IT_R2_HALT ? i : m, -1);
+          const pub = still.filter(i => from + i <= kf.target || i < lastOk);
+          if(pub.length){
+            if(kf.seqAt < retryAt) await itKillSeq();   // read now, so a dead feed isn't read past as gaps; the index unreadable too: throws (the whole feed is down)
+            if(gen !== it.gen) return;
+            for(const i of pub){ recs[i] = null; kf.skipped++; skippedHere++; }
+            kf.skipMode = true;
+          }
+          for(const i of still) if(recs[i] === IT_R2_NET) recs[i] = null;   // not published yet: "not there yet", as live
+        }
+        const readHere = recs.some(x => x && x !== IT_R2_NET && x !== IT_R2_HALT);
+        if(readHere) kf.allSkip = 0; else if(skippedHere) kf.allSkip++;   // every kill file unreadable, the index fine: counted (itFeedDown)
+        const bad = recs.indexOf(IT_R2_HALT);   // held back after a failed read (not sent): asked in the next batch
         if(bad >= 0){
           recs = recs.slice(0, bad);
           if(!recs.length){ kf.waitUntil = Date.now() + IT_KILL_NET_WAIT_MS; if(from <= kf.target) kf.blk++; break; }   // v2026.11.06.1: a published kill unreadable: counted (itFeedDown)
@@ -25564,9 +25682,9 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
         while(last >= 0 && !recs[last]) last--;
         if(last >= 0) kf.lastGot = Date.now();
         last = Math.max(last, Math.min(recs.length - 1, kf.target - from));   // up to sequence.json's number every one is published: a miss there is a gap, read past
-        for(let i = 0; i <= last; i++) if(recs[i]) part.push({rec: recs[i], history: true});
+        for(let i = 0; i <= last; i++) if(recs[i]){ part.push({rec: recs[i], history: true}); itFeedNote(recs[i]); }
         kf.seq = from + last + 1;
-        if(bad >= 0 && last === recs.length - 1){ kf.waitUntil = Date.now() + IT_KILL_NET_WAIT_MS; if(part.length) await itKills(part, gen); itRender(); break; }   // v2026.10.30.3: the failed read again later
+        if(bad >= 0 && last === recs.length - 1){ kf.halt = false; if(part.length){ await itKills(part, gen); if(gen !== it.gen) return; } itRender(); continue; }   // v2026.11.06.6: the held-back ones in the next batch (their failed read was asked again above)
         if(last < recs.length - 1){ kf.head = true; kf.waitUntil = Date.now() + IT_KILL_WAIT_MS; }   // past the newest: live from here, the next one asked for in 6 s
         kf.fails = 0; it.kfNote = '';   // answering again: the note goes with this batch, not after all of them
         if(part.length){ await itKills(part, gen); if(gen !== it.gen) return; }
@@ -25576,7 +25694,7 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
       for(let n = 0; n < IT_KILL_PER_TICK && gen === it.gen; n++){
         let rec = await itKillGet(kf.seq);
         if(rec === IT_R2_NET) rec = null;   // live, one at a time: a read that failed is "not there yet" (LESSON #89), asked again in 6 s at the earliest
-        if(rec){ got.push({rec, history: false}); kf.seq++; kf.lastGot = Date.now(); continue; }
+        if(rec){ got.push({rec, history: false}); itFeedNote(rec); kf.seq++; kf.lastGot = Date.now(); kf.allSkip = 0; continue; }
         if(kf.seq <= kf.target){ kf.seq++; continue; }   // sequence.json is past it, yet it isn't there: a gap (or gone), read past it
         if(Date.now() - kf.lastGot >= IT_KILL_RESEQ_MS && Date.now() - kf.seqAt >= IT_KILL_RESEQ_MS){   // a minute without a kill: where is the feed?
           const s = await itKillSeq();
@@ -25596,6 +25714,7 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
       if(gen === it.gen && s - kf.seq >= IT_KILL_PER_TICK){ if(s + 1 - IT_KILL_BACK > kf.seq) kf.seq = s + 1 - IT_KILL_BACK; kf.head = false; }
     }
   }catch(e){
+    kf.skipMode = false;   // v2026.11.06.6: a failure: a later unreadable file holds the batch back again
     if(e.r2stop){ kf.waitUntil = itR2Stopped() || Date.now() + IT_R2_STOP_MS; it.kfNote = itR2StopNote(); }   // v2026.10.30.3: an hour, said once, nothing sent
     else {
     kf.fails++;
@@ -26332,7 +26451,13 @@ function itFeedBarHtml(){
   const f = it.set.feed, sel = (k, opts) => `<select data-it-f="${k}">${opts.map(([v, l]) => `<option value="${v}"${String(f[k]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
   return `<div class="it-fbar"><label>Types ${sel('types', IT_FEED_TYPES)}</label><label>Distance ${sel('dist', IT_FEED_DIST.map(d => [d, d ? `≤ ${d} jump${d === 1 ? '' : 's'}` : 'any']))}</label><label>Sort ${sel('sort', IT_FEED_SORT)}</label><input type="search" data-it-q placeholder="Search pilot, corp, ship, system" aria-label="Search the ${escapeHtml(cardName('itfeed'))}" value="${escapeHtml(it.q)}"></div>`;
 }
-function itFeedListHtml(){ itAnCan = new Map(); const feed = itFeedShown(), fd = it.on && itFeedDown(); return (fd ? `<div class="it-why" data-it-why>${fd.feed}</div>` : '') + (feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`); }   // v2026.11.06.1: the Feed note first
+function itFeedWhy(){   // v2026.11.06.6 (015): why no new kills come, the most important first; '' when they do
+  if(!it.on) return '';
+  if(esiDownNow()){ const dt = sysDowntime(); return dt && dt.k === 'now' ? "<b>No new kills:</b> EVE's daily downtime; zKillboard can't fetch them until it ends." : "<b>No new kills:</b> EVE's ESI is down, so zKillboard can't fetch them."; }
+  const fd = itFeedDown(); if(fd) return fd.feed;
+  const fb = itFeedBehind(); return fb ? fb.feed : '';
+}
+function itFeedListHtml(){ itAnCan = new Map(); const feed = itFeedShown(), why = itFeedWhy(); return (why ? `<div class="it-why" data-it-why>${why}</div>` : '') + (feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`); }   // v2026.11.06.1: the Feed note first
 function itNearListHtml(){ const near = itNearList(); return near.length ? near.map(itNearRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing reported in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`; }
 // Redraw only the two lists (the filter bar in use keeps its focus and caret)
 function itNotesHtml(){ return `${it.err ? `<div class="pr-msg err">${escapeHtml(it.err)}</div>` : ''}${it.note ? `<div class="pr-msg">${escapeHtml(it.note)}</div>` : ''}${it.on && it.kfNote ? `<div class="pr-msg" data-it-kfnote>${escapeHtml(it.kfNote)}</div>` : ''}`; }
@@ -26467,6 +26592,8 @@ function itAliasBoxHtml(){
 function itKillStatus(){
   const kf = it.kf;
   if(kf && itFeedDown()) return ` · <span class="it-kslow">kills: zKillboard's feed can't be read (INTEL-06)</span>`;   // v2026.11.06.1
+  if(kf && esiDownNow()) return ` · <span class="it-kslow">kills: ${sysDowntime() && sysDowntime().k === 'now' ? "EVE's daily downtime" : "EVE's ESI is down"}</span>`;   // v2026.11.06.6 (015)
+  if(kf && itFeedBehind()) return ` · <span class="it-kslow">kills: zKillboard's feed is behind</span>`;
   if(!kf || it.kfNote) return '';   // INTEL-05 says it already
   if(kf.seq === null || !kf.head) return ' · kills: catching up';
   const ago = Date.now() - kf.lastGot;
@@ -26549,7 +26676,7 @@ function itQuickKey(){
   const f = it.feed[0], sz = (m) => m ? m.size : 0;
   return [it.on, it.dirName, it.err, it.note, it.pop, it.kfNote, it.q, it.feed.length, f ? f.id : 0, it.near.size, it.me && it.me.sys, sz(it.chars), sz(it.files),
     it.chans.length, it.names ? it.names.list.length : 0, sz(it.pilots), sz(it.aff), sz(it.charNames), sz(it.sec), sz(it.gateDest), sz(orgCache),
-    sz(it.rawOpen), sz(it.nearOpen), it.shape ? it.shape.id : 0, JSON.stringify(it.set), itR2Stopped(), it.sndRev || 0, itFeedDown() ? itR2EverRead + 1 : 0].join('|');   // v2026.11.06.1   // v2026.11.01.8: your sound files
+    sz(it.rawOpen), sz(it.nearOpen), it.shape ? it.shape.id : 0, JSON.stringify(it.set), itR2Stopped(), it.sndRev || 0, itFeedDown() ? itR2EverRead + 1 : 0, itFeedWhy()].join('|');   // v2026.11.06.6: the Feed note's reason   // v2026.11.06.1   // v2026.11.01.8: your sound files
 }
 function itBuildAt(now, make){ itFrozenNow = now; try{ return make(); }finally{ itFrozenNow = null; } }
 // the status line ("last line 2 min ago · last kill read 3 s ago") is kept out of that comparison and written on its own, when its text changes
