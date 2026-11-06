@@ -51,7 +51,7 @@ back.
   fetched. Only `GET` (and `OPTIONS` for browsers). It never fetches any other host.
 - **Upstream:** `https://r2z2.zkillboard.com/ephemeral/<same>`, with a descriptive User-Agent naming the tool and its
   repository (zKillboard asks for one; a blank one is blocked), no cookies, nothing from the visitor passed on.
-- **Answers:** the upstream status (200, 404, 429) and body as they are; `Access-Control-Allow-Origin` only for `https://gitlaloosh.github.io` (and nothing for other sites);
+- **Answers:** the upstream status (200, 404, 429) and body as they are; `Access-Control-Allow-Origin` only for `https://threatvector.space` (the site's address since v2026.11.06.2; was `https://gitlaloosh.github.io`), and nothing for other sites;
   `Vary: Origin`.
 - **Short caching at the relay, never a long-kept 404** (from an nginx reverse proxy another tool's author shared in
   zKillboard's Discord, which the owner passed on): the relay may keep `sequence.json` for 4 s, a kill file for 5 minutes
