@@ -127,6 +127,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #109 A `1fr` column beside fixed and `auto` ones can shrink to nothing: sweep every width the layout spans. See also #103.
 - #110 Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still.
 - #111 A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters.
+- #139 A page that catches its own errors shows them on the card, not as page errors: a check must read that error line too.
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
@@ -1045,6 +1046,17 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 139. A page that catches its own errors shows them on the card, not as page errors: a check must read that error line too
+
+- **What happened (v2026.11.06.3, build queue 018):** a new loop in Intel's line reader looked one word before a line's start
+  (`W[-1].linked`) and threw for every line that began with a system. Intel's reader catches its errors and shows them on the
+  card ("Intel stopped reading: ... (APP-01)"), so every report vanished, yet `intel_place_check` printed "no page errors": it
+  listened only for the browser's uncaught errors.
+- **How it was caught:** every case in the check failed at once, old ones included; reading the new loop found it.
+- **Do this instead:** a check for a part of the page that catches its own errors also asserts that part's error line is empty
+  (Intel: `it.err`), not only that the browser saw none. In a loop that reads neighbours, check the index is in range before
+  reading anything from it, not in the same step as another test that only sets a flag.
 
 ## 138. A check's setting for the next page load, kept in sessionStorage on a file:// page, can be gone after the goto: put it in the address
 

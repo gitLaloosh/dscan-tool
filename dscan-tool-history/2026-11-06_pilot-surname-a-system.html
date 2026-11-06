@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-06 — Intel: a pilot whose surname is a system's name</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel: a pilot whose surname is a system's name</h1>
+<p><span class="tag">Page</span> 2026-11-06 &middot; <code>v2026.11.06.3</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 018, Project doc <code>roadmap/intel-surname-system-plan.md</code>. The owner's Feed screenshots (2026-11-06): one scout reported eight times, every row headed by a system 6 jumps away that was really the second word of the scout's name, with the first word left over as "not placed". Lines naming only the scout and his ship were placed in that system too, which can raise false alerts. The owner's answer for those: "No report now; tie-in later (Recommended)". The real names stay out of the repository; the checks use made-up ones.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Longer names looked up:</b> each whole system together with the plain, unplaced words right before and/or after it (2&ndash;3 words, at most 37 characters) goes into the same <code>/universe/ids/</code> batch as today's names. No new request.</li>
+<li><b>Two or more systems:</b> a system inside a pilot's name ("Ressa Jita T5ZI-S") is that pilot while another system is left, and this is now decided before the Feed's distance ring (the ring used to keep the wrong, nearer one). The whole name becomes the pilot chip, a ship in brackets after it pairs with it, and there's no "or Jita?" note or word left over.</li>
+<li><b>Only one system, inside a pilot's name</b> ("Ressa E-VKJV Sabre"): the line names the pilot and no system, so it makes no row, no Near You change and no alert. It still counts as the channel's last line. Only when the name is typed in its own capitals (or dragged in) and the words beside the system aren't a pilot on their own; otherwise the system stays the system, as before.</li>
+<li>Nothing looks different; only which system and pilot a line shows, and some lines no longer make a row.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>intel_place_check.py</code>: the plan's made-up cases (two systems, either order, a three-word name, a ship in brackets, dragged in, the ring order, one system inside the name, and the cases that keep the system); no name looked up holds two systems; one name batch; Intel shows no error of its own. Mutants: the longer names not looked up, the pilot check after the ring, a one-system line still making a row, the capitals rule dropped, the "neighbour alone is a pilot" rule dropped, a neighbour that is a system taken in, each caught. Forcing only the system's own word changes nothing (the neighbours are already free for the pilot lookup), so that one has no case.</li>
+<li>The Intel tier (<code>run_checks.py --auto</code> against main picked <code>area (intel)</code>): 13 lints and 27 page checks in 9 min, 0 failed, 0 flaky. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
+<li>Page size: 749,323 &rarr; 750,566 bytes gzipped (<code>gzip -9</code>), +1.2 KB, under the 800 KB ceiling.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #139: a new loop read one word before a line's start and threw for every line that began with a system; Intel caught it and showed "Intel stopped reading (APP-01)" on the card, so every report vanished while the check printed "no page errors". Checks of a part that catches its own errors now also assert its error line is empty.</li>
+</ul>
+</body></html>

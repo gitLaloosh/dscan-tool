@@ -22,6 +22,14 @@ system names; you in 1DQ1-A) up to Intel turned on, then, with made-up lines and
   * the Feed row shows the note after the system (v2026.10.31.6: among the line's tags), no second jump count;
   * the switch: on, the usual teal, still; off, an amber edge, knob and "Off", breathing (itSwBreathe); with reduced motion, still;
     "Use in assessments" (off) unchanged;
+  * v2026.11.06.3 (build queue 018; Project doc roadmap/intel-surname-system-plan.md; the owner's screenshots: one scout reported
+    eight times, in the system that is his surname): made-up pilots "Ressa Jita", "Jita Ressa", "Ressa E-VKJV", "Kel Ressa Jita" and
+    "Tovan E-VKJV". No name looked up holds two systems. Two systems: "Ressa Jita T5ZI-S", "T5ZI-S Ressa Jita", "Jita Ressa T5ZI-S" in T5ZI-S with the pilot, no note,
+    nothing left over; "(Sabre)" after the name paired with it; "Ressa Jita QX-LIJ*" in QX-LIJ; Distance 3, "Ressa E-VKJV QX-LIJ"
+    in QX-LIJ (the pilot check before the ring), Feed only, no alert; "Kel Ressa Jita T5ZI-S" a three-word name; "Varro E-VKJV
+    T5ZI-S" (not a pilot) as before. One system inside the name: "Ressa E-VKJV Sabre" and "... probably a sabre" make no row, no
+    Near You change, no alert, still the last line. Kept as the system: "Varro Jita Sabre", "ressa e-vkjv Sabre" (other capitals),
+    "Tovan E-VKJV Sabre" (Tovan alone a pilot, and "Tovan E-VKJV" one too), "E-VKJV", "E-VKJV clr". One /universe/ids/ batch for the lines written at once.
   * How Intel works: 3 short paragraphs, each with a bold lead, and 8 folded headings (v2026.10.31.5: Gates and camps; v2026.11.02.4:
     the map), closed; one opens on a click; no
     "slider" or "red row" left; no page errors.
@@ -66,6 +74,48 @@ _tail = r'''
     want = {'8WA-Z6 Marrek on 5BTK-M gate': '8WA-Z6 on 5BTK-M gate', 'Y-OMTZ Ketter -> MO-GZ5': 'Y-OMTZ → MO-GZ5', 'Ketter jumped to 5BTK-M from N-8YET': '5BTK-M from N-8YET',
             'QX-LIJ Marrek E-VKJV': 'E-VKJV or QX-LIJ?', 'FM-JK5 Ketter JP4-AA': 'JP4-AA on FM-JK5 gate?'}
     check(all(notes.get(l, ['', 9])[0] == w and notes[l][1] == 0 for l, w in want.items()), f'the Feed: the note after the system, no second jump count {[(w, notes.get(l)) for l, w in want.items()]}')
+    # ---- v2026.11.06.3: a pilot whose surname is a system's name (build queue 018) ----
+    ONE_WORD.update({'Ressa Jita': 96000021, 'Jita Ressa': 96000022, 'Ressa E-VKJV': 96000023, 'Kel Ressa Jita': 96000024, 'Tovan': 96000025, 'Tovan E-VKJV': 96000026})   # names never asked before here (a name is asked once)
+    pg.evaluate("() => { it.set.feed.dist = 0; }")
+    SN = ['Ressa Jita T5ZI-S', 'T5ZI-S Ressa Jita', 'Jita Ressa T5ZI-S', 'T5ZI-S Ressa Jita (Sabre)', 'Ressa Jita QX-LIJ*', 'Kel Ressa Jita T5ZI-S',
+          'Varro E-VKJV T5ZI-S', 'Varro Jita Sabre', 'ressa e-vkjv Sabre', 'Tovan E-VKJV Sabre', 'E-VKJV', 'E-VKJV clr']
+    LONE = ['Ressa E-VKJV Sabre', 'Ressa E-VKJV probably a sabre']
+    near0 = pg.evaluate("() => JSON.stringify([...it.near.keys()].sort())"); beeps1 = pg.evaluate("() => __fs.beeps")
+    pg.evaluate("() => { window.__ids = 0; const f = window.fetch; window.fetch = function(u, o){ if(String(u).includes('/universe/ids/')) window.__ids++; return f.apply(this, arguments); }; }")
+    t1 = time.time() - 8   # the newest lines in the log, so the last of them is the channel's last line
+    W(pg, F_INTEL, ''.join(line(t1 + i * 0.5, 'Scout Alt', m) for i, m in enumerate(SN + LONE))); tick(pg, 3000)
+    S2 = pg.evaluate("""(lines) => Object.fromEntries(lines.map(l => { const e = it.feed.find(x => x.raw === l); return [l, e ? {
+      sys: e.p.sys.map(s => [itSysName(s.id), s.role || '']), pilots: e.pilots.map(x => x.name), kind: e.kind, shape: itShape(e)} : null]; }))""", SN + LONE)
+    def g2(l): return S2.get(l) or {'sys': [], 'pilots': [], 'shape': '', 'kind': None}
+    for l in ['Ressa Jita T5ZI-S', 'T5ZI-S Ressa Jita']:
+        check(g2(l)['sys'] == [['T5ZI-S', '']] and g2(l)['pilots'] == ['Ressa Jita'] and 'not placed' not in g2(l)['shape'],
+              f'"{l}": in T5ZI-S, the pilot "Ressa Jita", no "or Jita?", nothing left over {g2(l)}')
+    check(g2('Jita Ressa T5ZI-S')['sys'] == [['T5ZI-S', '']] and g2('Jita Ressa T5ZI-S')['pilots'] == ['Jita Ressa'], f'"Jita Ressa T5ZI-S": the surname first works too {g2("Jita Ressa T5ZI-S")}')
+    pr = pg.evaluate("""() => { const e = it.feed.find(x => x.raw === 'T5ZI-S Ressa Jita (Sabre)'); return e ? [...(it.near.get(e.p.sys[0].id) || {pairs: new Map()}).pairs].map(([id, s]) => [id, s.name]) : null; }""")
+    check(g2('T5ZI-S Ressa Jita (Sabre)')['pilots'] == ['Ressa Jita'] and pr and [96000021, 'Sabre'] in [list(x) for x in pr],
+          f'"T5ZI-S Ressa Jita (Sabre)": the Sabre paired with "Ressa Jita" {g2("T5ZI-S Ressa Jita (Sabre)")} {pr}')
+    check(g2('Ressa Jita QX-LIJ*')['sys'] == [['QX-LIJ', '']] and g2('Ressa Jita QX-LIJ*')['pilots'] == ['Ressa Jita'], f'"Ressa Jita QX-LIJ*" (dragged in): in QX-LIJ {g2("Ressa Jita QX-LIJ*")}')
+    check(g2('Kel Ressa Jita T5ZI-S')['pilots'] == ['Kel Ressa Jita'] and g2('Kel Ressa Jita T5ZI-S')['sys'] == [['T5ZI-S', '']], f'"Kel Ressa Jita T5ZI-S": a three-word name {g2("Kel Ressa Jita T5ZI-S")}')
+    v = g2('Varro E-VKJV T5ZI-S')
+    check(v['sys'] == [['T5ZI-S', ''], ['E-VKJV', 'or']] and v['pilots'] == [] and 'not placed' in v['shape'], f'"Varro E-VKJV T5ZI-S" ("Varro E-VKJV" not a pilot): as before, the nearer T5ZI-S, "or E-VKJV?", Varro left over {v}')
+    for l, w, pil in [('Varro Jita Sabre', 'Jita', []), ('ressa e-vkjv Sabre', 'E-VKJV', []), ('Tovan E-VKJV Sabre', 'E-VKJV', ['Tovan']), ('E-VKJV', 'E-VKJV', []), ('E-VKJV clr', 'E-VKJV', [])]:
+        check(g2(l)['sys'][:1] == [[w, '']] and g2(l)['pilots'] == pil, f'"{l}": one system, not a pilot by the strict rules: stays in {w} {g2(l)}')
+    near1 = pg.evaluate("() => JSON.stringify([...it.near.keys()].sort())")
+    check(all(S2.get(l) is None for l in LONE) and pg.evaluate("(l) => !it.feed.some(x => x.raw === l[0] || x.raw === l[1])", LONE),
+          f'"Ressa E-VKJV Sabre", "Ressa E-VKJV probably a sabre": the only system is inside a pilot\'s name: no Feed row {[S2.get(l) for l in LONE]}')
+    last = pg.evaluate("() => it.lastLine")
+    check(abs(last / 1000 - (t1 + (len(SN) + len(LONE) - 1) * 0.5)) < 1.5, f'... and the last of them still counts as the channel\'s last line ({last / 1000:.1f} vs {t1 + (len(SN) + len(LONE) - 1) * 0.5:.1f})')
+    spans = sorted(n for n in IDS_ASKED if sum(x in n for x in ('t5zi-s', 'e-vkjv', 'jita', 'qx-lij')) >= 2 and n not in ('jita ressa', 'ressa jita'))
+    check(not spans, f'no name looked up holds two systems ({spans})')
+    ids = pg.evaluate("() => window.__ids")
+    check(ids == 1, f'the lines written at once: one /universe/ids/ batch ({ids})')
+    # the ring: the surname system inside it, the real one outside
+    pg.evaluate("() => { it.set.feed.dist = 3; it.near.delete(it.names.byLower.get('qx-lij')); }"); beeps2 = pg.evaluate("() => __fs.beeps")
+    W(pg, F_INTEL, line(time.time() - 6, 'Scout Alt', 'Ressa E-VKJV QX-LIJ')); tick(pg, 3000)
+    rg = pg.evaluate("() => { const e = it.feed.find(x => x.raw === 'Ressa E-VKJV QX-LIJ'); return e ? [itSysName(e.p.sys[0].id), e.pilots.map(x => x.name), !!it.near.get(e.p.sys[0].id), !!it.near.get(it.names.byLower.get('e-vkjv'))] : null; }")
+    check(rg and rg[:3] == ['QX-LIJ', ['Ressa E-VKJV'], False] and pg.evaluate("() => __fs.beeps") == beeps2,
+          f'Distance 3, "Ressa E-VKJV QX-LIJ": in QX-LIJ (4 jumps; the pilot check comes before the ring), Feed only, no alert {rg}')
+    pg.evaluate("() => { it.set.feed.dist = 0; }")
     # ---- the ring ----
     beeps0 = pg.evaluate("() => __fs.beeps")
     pg.evaluate("() => { it.set.feed.dist = 3; }")
@@ -104,6 +154,8 @@ _tail = r'''
           f'How Intel works: 3 short paragraphs (each with a bold lead) and 8 folded headings (v2026.11.02.4: the map), closed ({inf[4]} words shown); one opens on a click {inf[:5]} {op}')
     check('slider' not in inf[5] and 'red row' not in inf[5], 'no "slider" or "red row" left in it')
     check(not errs, f'no page errors {errs[:3]}')
+    ie = pg.evaluate("() => [it.err, it.note]")
+    check(not ie[0], f'Intel shows no error of its own (it catches its reader\'s errors and shows them, APP-01; LESSON #139) {ie}')
     b.close()
 '''
 exec(compile(_src + _tail, 'intel_place_check.py', 'exec'), _ns)

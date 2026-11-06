@@ -2932,7 +2932,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.06.2</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.06.3</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -24774,6 +24774,24 @@ function itParse(msg, mySys, force){
   // name; and a linked word ('*': dragged in from Local) the page read as an intel word, a filler word or a head count
   const alt = [];
   if(sys.length >= 2) for(const s of sys) if(!s.short) alt.push(W.slice(s.at, s.at + s.k).map(x => x.w).join(' '));
+  // v2026.11.06.3 (build queue 018; Project doc roadmap/intel-surname-system-plan.md; LESSON #139): a pilot whose surname is a system's name ("Ressa
+  // Jita"): each whole system with the plain words the reader didn't place right before and/or after it, 2-3 words in all, looked up
+  // too (the same /universe/ids/ batch). itSysPilot / itLonePilot decide what a hit means.
+  const stretch = sys.map(s => {
+    if(s.short) return [];
+    const free = (j) => j >= 0 && j < W.length && !used[j] && /^[A-Za-z0-9][A-Za-z0-9'._-]*$/.test(W[j].w), out = [];
+    for(let b = 0; b <= IT_NAME_WORDS - s.k; b++) for(let a = 0; a + b + s.k <= IT_NAME_WORDS; a++){
+      if(!a && !b) continue;
+      const from = s.at - b, to = s.at + s.k - 1 + a;
+      let ok = true;
+      if(from < 0 || to >= W.length) continue;
+      for(let j = from; j <= to && ok; j++){ if((j < s.at || j > s.at + s.k - 1) && !free(j)) ok = false; else if(j < to && W[j].linked) ok = false; }   // a '*' ends a name
+      if(!ok) continue;
+      const text = W.slice(from, to + 1).map(x => x.w).join(' ');
+      if(text.length <= IT_NAME_MAX){ out.push({from, to, text}); alt.push(text); }
+    }
+    return out.sort((x, y) => (y.to - y.from) - (x.to - x.from));   // longest first
+  });
   W.forEach((x, i) => { if(x.linked && (used[i] === 'kw' || used[i] === 'f' || used[i] === 'c') && !/^\d+$/.test(x.w)) alt.push(x.w); });
   // v2026.10.31.4 (the owner: ""linked to ESS" is a warning to let people know that the hostile is linked to the system's ESS and about
   // to rob it"): the ESS with linked / hacking / robbing in the same line
@@ -24783,7 +24801,7 @@ function itParse(msg, mySys, force){
   // hot"): the camp words; itGates decides once the gate is known
   const gateWord = W.some(x => IT_GATE_WORDS.has(x.lw));
   const campWords = gateWord && W.some(x => IT_CAMP_WORDS.has(x.lw) || (x.lw === 'hot' && gateWord));
-  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt, ess, gw: sys.gw || [], gateWord, campWords};
+  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt, stretch, ess, gw: sys.gw || [], gateWord, campWords};
 }
 // Candidate pilot names in a run: every 1-3 word stretch within EVE's 37 characters.
 function itCandidates(p){
@@ -24995,7 +25013,8 @@ async function itReports(lines, gen){
   // gets no Feed row and changes nothing in Near You, and its words are not looked up as pilots. It still counts as the
   // channel's last line.
   for(const l of lines) it.lastLine = Math.max(it.lastLine, l.t);
-  const mySys = itMySys(), parsed = lines.map(l => ({l, p: itParse(l.msg, mySys)})).filter(x => x.p.sys.length);
+  const mySys = itMySys();
+  let parsed = lines.map(l => ({l, p: itParse(l.msg, mySys)})).filter(x => x.p.sys.length);
   if(!parsed.length) return;
   const cands = new Set();
   for(const x of parsed) for(const c of itCandidates(x.p)) cands.add(c);
@@ -25003,8 +25022,10 @@ async function itReports(lines, gen){
   for(const x of parsed){   // v2026.10.30.2: a second look now that the names are known, then where they are
     const f = itForce(x.p, mySys);
     if(f.size) x.p = itParse(x.l.msg, mySys, f);
-    itPlace(x.p, mySys);
+    if(x.p.sys.length) itPlace(x.p, mySys);
   }
+  parsed = parsed.filter(x => x.p.sys.length);   // v2026.11.06.3: its only system was inside a pilot's name: no report (itLonePilot)
+  if(!parsed.length) return;
   for(const x of parsed) x.pilots = itPilotsOf(x.p);
   try{ await itAffiliate(parsed.flatMap(x => x.pilots.map(p => p.id))); }catch(e){ it.note = withCode(`Standings: ${e.message}`, e.code || 'SYS-01'); }
   if(gen !== it.gen) return;
@@ -25013,8 +25034,8 @@ async function itReports(lines, gen){
 // v2026.10.30.2 (the owner: "the tool recorded a pilot as the system name even though a valid system name was in the entry"; his
 // rules: "evaluate what they're saying", the system "inside the ring", a linked word): when a line names two or more systems,
 // which one they are in. In order: what the words around a name say ("Y gate", "-> Y", "heading Y", "from Y" are not where they
-// are; "jumped to Y" is); the ring (the Feed's Distance, or the alert range if larger; none when Distance is "any"); a name
-// that is also a pilot's, while another system is left; then the nearer one (equal or unknown: the one first or last in the
+// are; "jumped to Y" is); a name that is also a pilot's (its own words, or with the words beside it: v2026.11.06.3, itSysPilot),
+// while another system is left; the ring (the Feed's Distance, or the alert range if larger; none when Distance is "any"); then the nearer one (equal or unknown: the one first or last in the
 // line). Another system left over is a pilot when it is one, else a note on the row ("or Y?"; "on Y gate?" when the two are
 // next to each other).
 const IT_TO_WORDS = new Set(['->', '→', '>', '>>', '=>', 'heading', 'headed', 'towards', 'toward', 'going', 'to']);
@@ -25031,15 +25052,17 @@ function itChoose(p, mySys){
     if(pv && IT_TO_WORDS.has(pv.lw) && !(pv.lw === 'to' && pv2 && IT_JUMPED.has(pv2.lw))) return 'dest';
     return null;
   });
-  const J = (i) => mySys ? itJumps(mySys, S[i].id) : null, isP = (i) => !S[i].short && !!it.pilots.get(itSysText(p, S[i]).toLowerCase());
+  const J = (i) => mySys ? itJumps(mySys, S[i].id) : null, isP = (i) => !!itSysPilot(p, i);
   // v2026.10.31.5: "D-W7F0 gate camp on T5ZI-S gate": two names before "gate", one gate apart: the first named is where they are
   // (reports name the system first), the other its gate (v.2026.10.30.2 took the nearer one)
   if(S.length === 2 && role[0] === 'gate' && role[1] === 'gate' && itJumps(S[0].id, S[1].id) === 1){ const f = S[0].at < S[1].at ? 0 : 1; role[f] = null; }
   let cand = S.map((s, i) => i).filter(i => !role[i]);
   if(!cand.length) cand = S.map((s, i) => i);
+  // v2026.11.06.3: a name inside a pilot's name, while another system is left, before the ring (the surname system inside the ring and
+  // the real one outside it never got a choice)
+  if(cand.length > 1){ const np = cand.filter(i => !isP(i)); if(np.length) cand = np; }
   const ring = itRing();
   if(cand.length > 1 && ring){ const inR = cand.filter(i => { const j = J(i); return j !== null && j <= ring; }); if(inR.length) cand = inR; }
-  if(cand.length > 1){ const np = cand.filter(i => !isP(i)); if(np.length) cand = np; }
   let loc = cand[0], pair = false;
   if(cand.length > 1){
     const known = cand.filter(i => J(i) !== null), best = known.length ? Math.min(...known.map(J)) : null;
@@ -25055,9 +25078,44 @@ function itChoose(p, mySys){
 }
 // The words to read again as pilot names: the systems itChoose turned into pilots, and a linked intel, filler or count word that is a
 // pilot's name (a pilot named "Clear" dragged in from Local must not mark the system clear).
+// v2026.11.06.3: a system inside a pilot's name: its own words a pilot (v2026.10.30.2), or one of itParse's stretches around it (the
+// longest that is one). Lines with two or more systems: any capitals (another system is there to be where they are).
+function itSysPilot(p, i){
+  const s = p.sys[i];
+  if(!s || s.short) return null;
+  for(const st of (p.stretch && p.stretch[i]) || []) if(it.pilots.get(st.text.toLowerCase())) return st;   // the longest name first
+  if(it.pilots.get(itSysText(p, s).toLowerCase())) return {from: s.at, to: s.at + s.k - 1};
+  return null;
+}
+// v2026.11.06.3 (the owner: "No report now; tie-in later (Recommended)"): a line whose only system is inside a pilot's name ("Ressa
+// E-VKJV Sabre") names the pilot and no system: no report. Stricter than with two systems, since a wrong guess loses a report: the
+// stretch in the name's own capitals as typed (or dragged in), and the words beside the system not a pilot on their own ("Marrek
+// E-VKJV": Marrek is a pilot, so Marrek is in E-VKJV, as before).
+function itIsPilotWords(p, from, to){
+  const text = p.W.slice(from, to + 1).map(x => x.w).join(' '), hit = it.pilots.get(text.toLowerCase());
+  if(!hit) return false;
+  return to > from || p.W[from].linked || hit.name === text;   // one word typed by hand: the name's own capitals (LESSON #111)
+}
+function itLonePilot(p){
+  if(p.sys.length !== 1 || p.sys[0].short) return null;
+  const s = p.sys[0], e = s.at + s.k - 1;
+  for(const st of (p.stretch && p.stretch[0]) || []){
+    const hit = it.pilots.get(st.text.toLowerCase());
+    if(!hit) continue;
+    if(hit.name !== st.text && !p.W.slice(st.from, st.to + 1).some(x => x.linked)) continue;
+    const parts = [];
+    if(st.from < s.at) parts.push([st.from, s.at - 1]);
+    if(st.to > e) parts.push([e + 1, st.to]);
+    if(parts.some(([a, b]) => { for(let x = a; x <= b; x++) for(let y = x; y <= b; y++) if(itIsPilotWords(p, x, y)) return true; return false; })) continue;
+    return st;
+  }
+  return null;
+}
 function itForce(p, mySys){
   const f = new Set(), c = itChoose(p, mySys);
-  for(const i of c.pil) for(let j = 0; j < p.sys[i].k; j++) f.add(p.sys[i].at + j);
+  for(const i of c.pil){ const r = itSysPilot(p, i) || {from: p.sys[i].at, to: p.sys[i].at + p.sys[i].k - 1}; for(let j = r.from; j <= r.to; j++) f.add(j); }   // v2026.11.06.3: the whole name
+  const lone = itLonePilot(p);
+  if(lone) for(let j = lone.from; j <= lone.to; j++) f.add(j);
   p.W.forEach((x, i) => { if(x.linked && (p.used[i] === 'kw' || p.used[i] === 'f' || p.used[i] === 'c') && it.pilots.get(x.lw)) f.add(i); });
   return f;
 }
