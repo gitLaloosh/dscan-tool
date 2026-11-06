@@ -157,6 +157,9 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   with the plain words beside it, 2-3 words, is looked up too (`p.stretch`, same batch); with 2+ systems a system inside a pilot's name
   is that pilot, checked before the ring (`itSysPilot`); a line whose only system is inside a pilot's name makes no report, only in the
   name's own capitals (or dragged in) and when the words beside it aren't a pilot alone (`itLonePilot`). `intel_place_check.py`.
+  A pilot whose name has a filler word in it (v2026.11.06.5, build queue 020; roadmap/intel-filler-in-name-plan.md; LESSON #141):
+  3-word stretches <plain> <filler> <plain> are looked up too (`p.fill`, same batch; no filler at an edge, no '*' inside) and read as
+  one pilot only in the name's own capitals or dragged in (`itForce`). `intel_place_check.py`.
   A word before "gate" is read among the gates of the system the line is in (LESSON #112); one tag per Near You row for a gate:
   red "Camp · X gate" from a report, orange from 2+ kills at that gate, grey a gate with no camp words (`intel_gates_check.py`).
 - **Standing icon** (v2026.10.30.4, the owner): one drawing site-wide, `standIcon` / `standMark` (EVE-style: a star for your

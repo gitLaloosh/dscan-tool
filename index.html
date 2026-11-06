@@ -2937,7 +2937,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.06.4</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.06.5</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -24966,6 +24966,25 @@ function itParse(msg, mySys, force){
     }
     return out.sort((x, y) => (y.to - y.from) - (x.to - x.from));   // longest first
   });
+  // v2026.11.06.5 (build queue 020; Project doc roadmap/intel-filler-in-name-plan.md; LESSON #141): a pilot whose name has a filler word
+  // in it ("Tavi from Ash"): the reader marks the filler word used, which splits the name. Each stretch of 2-3 words that starts and
+  // ends with a plain word the reader didn't place, with only filler words between (letters only), no '*' before its last word, is
+  // looked up too (the same /universe/ids/ batch). No filler at an edge ("from <System>" keeps its meaning). itForce decides a hit.
+  const fill = [];
+  if(!force){
+    const plain = (j) => j >= 0 && j < W.length && !used[j] && /^[A-Za-z0-9][A-Za-z0-9'._-]*$/.test(W[j].w);
+    const filler = (j) => used[j] === 'f' && IT_FILLER.has(W[j].lw) && /^[a-z]+$/.test(W[j].lw);
+    for(let a = 0; a < W.length; a++){
+      if(!plain(a) || W[a].linked) continue;
+      for(let to = a + 2; to < a + IT_NAME_WORDS && to < W.length; to++){
+        if(!filler(to - 1) || W[to - 1].linked) break;   // only filler words between, at least one; a '*' ends a name
+        if(!plain(to)) continue;
+        const text = W.slice(a, to + 1).map(x => x.w).join(' ');
+        if(text.length <= IT_NAME_MAX){ fill.push({from: a, to, text}); alt.push(text); }
+      }
+    }
+    fill.sort((x, y) => (y.to - y.from) - (x.to - x.from));   // longest first
+  }
   W.forEach((x, i) => { if(x.linked && (used[i] === 'kw' || used[i] === 'f' || used[i] === 'c') && !/^\d+$/.test(x.w)) alt.push(x.w); });
   // v2026.10.31.4 (the owner: ""linked to ESS" is a warning to let people know that the hostile is linked to the system's ESS and about
   // to rob it"): the ESS with linked / hacking / robbing in the same line
@@ -24975,7 +24994,7 @@ function itParse(msg, mySys, force){
   // hot"): the camp words; itGates decides once the gate is known
   const gateWord = W.some(x => IT_GATE_WORDS.has(x.lw));
   const campWords = gateWord && W.some(x => IT_CAMP_WORDS.has(x.lw) || (x.lw === 'hot' && gateWord));
-  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt, stretch, ess, gw: sys.gw || [], gateWord, campWords};
+  return {W, used, sys, ships, kw, extra, count, mentions, runs: runs.filter(r => r.length), alt, stretch, fill, ess, gw: sys.gw || [], gateWord, campWords};
 }
 // Candidate pilot names in a run: every 1-3 word stretch within EVE's 37 characters.
 function itCandidates(p){
@@ -25290,6 +25309,16 @@ function itForce(p, mySys){
   for(const i of c.pil){ const r = itSysPilot(p, i) || {from: p.sys[i].at, to: p.sys[i].at + p.sys[i].k - 1}; for(let j = r.from; j <= r.to; j++) f.add(j); }   // v2026.11.06.3: the whole name
   const lone = itLonePilot(p);
   if(lone) for(let j = lone.from; j <= lone.to; j++) f.add(j);
+  // v2026.11.06.5 (build queue 020, LESSON #141): a name with a filler word in it, only as typed in the name's own capitals (or its last
+  // word dragged in): a filler word inside makes a chance match likelier, and reporters copy names exactly. The longest that hits wins.
+  const took = new Set();
+  for(const st of p.fill || []){
+    const hit = it.pilots.get(st.text.toLowerCase());
+    if(!hit || (hit.name !== st.text && !p.W[st.to].linked)) continue;
+    let free = true; for(let j = st.from; j <= st.to; j++) if(took.has(j)) free = false;
+    if(!free) continue;
+    for(let j = st.from; j <= st.to; j++){ took.add(j); f.add(j); }
+  }
   p.W.forEach((x, i) => { if(x.linked && (p.used[i] === 'kw' || p.used[i] === 'f' || p.used[i] === 'c') && it.pilots.get(x.lw)) f.add(i); });
   return f;
 }
