@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-06 — zKillboard's kill feed can't be read: said on every tab</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>zKillboard's kill feed can't be read: said on every tab</h1>
+<p><span class="tag">Page</span><span class="tag">Hotfix</span> 2026-11-06 &middot; <code>v2026.11.06.1</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>2026-11-06 zKillboard's live feed (R2Z2) sent its permission header twice (<code>Access-Control-Allow-Origin: *, *</code>), so every browser threw its answers away. Intel showed an empty feed; the reason (INTEL-06) was only in Intel's notes, in one long sentence. Build queue 016, the hotfix part of Project doc <code>roadmap/outage-notices-plan.md</code> (section 7); the owner approved the mockup scene "Kill feed can't be read" and asked for it ahead of the domain move.</li>
+<li>The build review against main found two things the owner settled ("1 yes, 2 yes"): a breakage while the page reads back would never have been reported (read back reads only kill files), so a read back's published kills that can't be read count too; and an ad blocker looks the same to the page, so when the feed was never read since the page opened the words say so.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>The strip</b> under the header, on every tab: "<b>zKillboard's kill feed can't be read right now</b> (a problem on zKillboard's side). New kills will show when it's fixed. (INTEL-06)". Never read since the page opened: "(a problem on zKillboard's side, or something in this browser blocking it)". Built to hold more lines later (build queue 015: ESI down, EVE's downtime, the zKillboard pause, the feed behind), written only when its text changes, no close button.</li>
+<li><b>When:</b> three reads in a row with nothing the browser may read: sequence.json (at the start, and while live after a minute with no kill), or while reading back a kill already published. Live, an unreadable next kill is still "not there yet" (LESSON #89) and isn't counted. Intel on, the browser online. Any answer the page can read clears it. With the reader's own waits (30 s, then 60 s) it shows about 1.5 min after the first failed read.</li>
+<li><b>Intel:</b> the Feed note "<b>No new kills:</b> zKillboard's kill feed can't be read right now (&hellip;)" at the top of the Feed, replacing the long INTEL-06 sentence; the status line says "kills: zKillboard's feed can't be read (INTEL-06)"; the profile's Intel mark shows "not working". INTEL-05, 07 and 08 are as before.</li>
+<li><b>The gauge:</b> "Kills down" (stop style, amber); its panel says the same and that nothing extra is sent.</li>
+<li>No new requests and no change to the reader's pace or waits. Nothing new is kept in the browser. INTEL-06's entry and ERRORS.md updated.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li><code>feed_down_check.py</code> (new): R2Z2 is a real HTTPS stand-in (a self-signed certificate, the browser's resolver sending r2z2.zkillboard.com to it), so the browser checks the doubled and the missing header itself; Playwright's own stand-ins skip that check. At load with the header doubled: nothing after the first and second read, everything from the third (with the blocker words), the reader's waits 30 s, 60 s, 120 s with one request each; 390 px with no sideways scroll; shown on the Pilot tab; written only on a change; offline nothing, online again shown; fixed: all of it goes. Live, then the header missing: unreadable kill files alone show nothing, three sequence.json reads do (without the blocker words); Intel off: gone, no requests. Reading back when it breaks: counted. Nine mutants, each caught: shown after one read, after two, from live kill files, left up after recovery, the reader retrying faster, read back not counted, shown offline, no blocker words, the strip written on every paint.</li>
+<li><code>intel_kills_check.py</code>: its INTEL-06 case now looks for the strip from the third read.</li>
+</ul>
+</body></html>
