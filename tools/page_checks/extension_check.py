@@ -16,6 +16,9 @@ load, so the page comes from http://127.0.0.1:<port>/; its ESI and zKillboard ca
   * the options page: the default address, a saved one is used by the next click, a bad address is refused, "Use the
     default" puts it back. No page errors.
 v2026.10.14.79 fails (the tool doesn't read #zkill= / #pilot= / #pilotname=).
+v1.1.0 (v2026.11.06.2, build queue 013): named "Threat Vector for zKillboard", the menus "... in Threat Vector", the default address
+https://threatvector.space/; a saved address equal to the old default (https://gitlaloosh.github.io/dscan-tool/) opens the new one
+and the options page shows the new one; any other saved address is kept.
 """
 import sys, os, time, re, json, tempfile, threading, http.server, functools
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -36,7 +39,8 @@ class _Quiet(http.server.SimpleHTTPRequestHandler):
 _srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), _Quiet)
 threading.Thread(target=_srv.serve_forever, daemon=True).start()
 TOOL = f'http://127.0.0.1:{_srv.server_address[1]}/'
-DEFAULT = 'https://gitlaloosh.github.io/dscan-tool/'
+DEFAULT = 'https://threatvector.space/'
+OLD_DEFAULT = 'https://gitlaloosh.github.io/dscan-tool/'   # v1.1.0: before the move
 fails = 0
 def check(ok, msg):
     global fails
@@ -45,6 +49,8 @@ def check(ok, msg):
 man = json.load(open(os.path.join(EXT, 'manifest.json')))
 check(man.get('manifest_version') == 3 and sorted(man.get('permissions', [])) == ['contextMenus', 'storage'] and not man.get('host_permissions')
       and not man.get('content_scripts') and not man.get('optional_permissions'), f"manifest: V3, contextMenus + storage only, no host permissions or content scripts ({man.get('permissions')})")
+check(man.get('name') == 'Threat Vector for zKillboard' and man.get('short_name') == 'Threat Vector' and man.get('version') == '1.1.0'
+      and 'Threat Vector' in man.get('description', '') and 'EVE Threat Assessment' not in json.dumps(man), f"manifest: the new name, version 1.1.0 ({man.get('name')}, {man.get('version')})")
 
 def wait_idle(pg):
     pg.wait_for_function("() => document.querySelector('#pilotBusy') && document.querySelector('#pilotBusy').hidden", timeout=90000); pg.wait_for_timeout(300)
@@ -99,7 +105,14 @@ with sync_playwright() as p:
              ({'menuItemId': 'eta-kill-link', 'linkUrl': 'https://zkillboard.com/related/123/'}, None)]
     got = sw.evaluate("(cases) => cases.map(c => ETA.etaLinkFor(c))", [c for c, _ in CASES])
     check(got == [w for _, w in CASES], f'the link each click makes ({got})')
-    check(sw.evaluate("() => ETA.etaToolUrl()") == DEFAULT, 'the default address is the tool on GitHub Pages')
+    titles = sw.evaluate("() => ETA.MENUS.map(m => m.title)")
+    check(all(t.endswith(' in Threat Vector') for t in titles), f'every menu item names Threat Vector ({titles})')
+    check(sw.evaluate("() => ETA.etaToolUrl()") == DEFAULT, f'the default address is {DEFAULT}')
+    # v1.1.0: someone who pressed Save before the move has the old default stored; it opens the new address
+    sw.evaluate("(u) => chrome.storage.sync.set({toolUrl: u})", OLD_DEFAULT)
+    old = sw.evaluate("() => ETA.etaToolUrl()")
+    op0 = ctx.new_page(); op0.goto(f'chrome-extension://{ext_id}/options.html'); op0.wait_for_timeout(300); old_shown = op0.input_value('#toolUrl'); op0.close()
+    check(old == DEFAULT and old_shown == DEFAULT, f'a saved old default opens, and the options page shows, the new address ({old}, {old_shown})')
     sw.evaluate("(u) => chrome.storage.sync.set({toolUrl: u})", TOOL)
     def click(info):
         with ctx.expect_page(timeout=30000) as ev:

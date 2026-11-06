@@ -1,7 +1,7 @@
-# EVE Threat Assessment: license, credits and notices
+# Threat Vector: license, credits and notices
 
-EVE Threat Assessment (`index.html`, the browser extension and the tools in this repository)
-Copyright (C) 2026 the EVE Threat Assessment contributors
+Threat Vector (`index.html`, the browser extension and the tools in this repository)
+Copyright (C) 2026 the Threat Vector contributors
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
 License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
@@ -36,5 +36,5 @@ As the EVE Developer License Agreement (section 7.1) words it:
 © CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered
 trademarks of CCP hf.
 
-EVE Threat Assessment is not made, endorsed or supported by CCP hf. It is offered for free and for non-commercial use.
+Threat Vector is not made, endorsed or supported by CCP hf. It is offered for free and for non-commercial use.
 The same notice and the license are shown in the page's footer.

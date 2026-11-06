@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "EVE Threat Assessment for zKillboard",
-  "short_name": "ETA",
-  "version": "1.0.0",
-  "description": "Right-click a zKillboard kill or pilot, or a selected pilot name, to open it in EVE Threat Assessment.",
+  "name": "Threat Vector for zKillboard",
+  "short_name": "Threat Vector",
+  "version": "1.1.0",
+  "description": "Right-click a zKillboard kill or pilot, or a selected pilot name, to open it in Threat Vector.",
   "permissions": ["contextMenus", "storage"],
   "background": {"service_worker": "background.js"},
   "options_page": "options.html",

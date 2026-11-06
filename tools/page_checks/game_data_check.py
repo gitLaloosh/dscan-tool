@@ -88,14 +88,18 @@ STORE = """async (o) => { const db = await openDscanCacheDb(); const n = {}; for
 PLANT = """async () => { await dscanCacheSet('types', 587, {type_id: 587, name: 'STALE Rifter', group_id: 25, dogma_attributes: [], dogma_effects: []});
   await dscanCacheSet('groups', 25, {group_id: 25, name: 'STALE Frigate', category_id: 6, types: [587]});
   for(const s of ['zkb', 'killmails', 'orgs']) await dscanCacheSet(s, 'gdchk', {kept: 1}); await new Promise(r => setTimeout(r, 300)); return 1; }"""
-LOOKUP = """async () => { const t0 = performance.now(); const t = await Promise.race([getType(587), new Promise(r => setTimeout(() => r({name: 'NO ANSWER IN 8 S'}), 8000))]); return [t.name, Math.round(performance.now() - t0)]; }"""
+# [name, ms the lookup took, ms from the page sending /status/ to the answer]. v2026.11.06.2 (LESSON #115): the page's 3 s wait runs
+# from /status/ being sent, as the late answer does; timing only from the lookup's own start failed under load, when the check
+# reached the page seconds after it had loaded (the 1.5 s answer already in, the 3 s wait already over).
+LOOKUP = """async () => { const t0 = performance.now(); const t = await Promise.race([getType(587), new Promise(r => setTimeout(() => r({name: 'NO ANSWER IN 8 S'}), 8000))]); const t1 = performance.now(); return [t.name, Math.round(t1 - t0), window.__gdT0 == null ? -1 : Math.round(t1 - window.__gdT0)]; }"""
 
 def section1(b):
     print('-- item data kept in the browser, and a new EVE build')
     ctx = b.new_context(viewport={'width': 1440, 'height': 1000})
-    # /status/ answers held back in the page itself (a sleep in the route handler would hold up this script too)
-    ctx.add_init_script("""(() => { const ms = Number(sessionStorage.getItem('gdchkDelay') || 0); if(!ms) return; const f = window.fetch;
-      window.fetch = (u, o) => /\\/status\\//.test(String(u && u.url || u)) ? f(u, o).then(r => new Promise(res => setTimeout(() => res(r), ms))) : f(u, o); })();""")
+    # /status/ answers held back in the page itself (a sleep in the route handler would hold up this script too). v2026.11.06.2 (LESSON #138): the
+    # delay comes in the address (?gdchk=ms); kept in sessionStorage it was sometimes gone after the next goto, and the answer came at once.
+    ctx.add_init_script("""(() => { const ms = Number(new URLSearchParams(location.search).get('gdchk') || 0); if(!ms) return; const f = window.fetch;
+      window.fetch = (u, o) => /\\/status\\//.test(String(u && u.url || u)) ? (window.__gdT0 = performance.now(), f(u, o)).then(r => new Promise(res => setTimeout(() => res(r), ms))) : f(u, o); })();""")
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg)
     st = {'v': None, 'delay': 0, 'fail': False, 'n': 0}
@@ -106,8 +110,7 @@ def section1(b):
     pg.route(re.compile(r'https://esi\.evetech\.net/.*/status/.*'), status)
     def load(v=None, delay=0, fail=False, wait=1500):
         st.update(v=v, fail=fail, n=0)
-        if pg.url.startswith('file:'): pg.evaluate("(ms) => sessionStorage.setItem('gdchkDelay', String(ms))", int(delay * 1000))
-        pg.goto('file://' + HTML); pg.wait_for_timeout(wait)
+        pg.goto('file://' + HTML + (f'?gdchk={int(delay * 1000)}' if delay else '')); pg.wait_for_timeout(wait)
     shown = lambda: pg.evaluate("() => { const e = document.getElementById('cacheStatus'); return e && !e.hidden ? e.textContent : ''; }")
     remembered = lambda: pg.evaluate("() => localStorage.getItem('dscanServerVersion')")
     # load 0: /status/ fails; a stale Rifter is kept (the store as an old visit left it)
@@ -128,7 +131,7 @@ def section1(b):
     # load 3: a new version, its answer 1.5 s late: the first lookup waits for it, then gets fresh data; only types and groups cleared
     load('3690000', delay=1.5, wait=100)
     r = pg.evaluate(LOOKUP)
-    check(r[0] == 'Rifter' and r[1] >= 800, f'new version: the first lookup waits for the check and gets fresh data, not the kept one ({r})')
+    check(r[0] == 'Rifter' and r[2] >= 1400, f'new version: the first lookup waits for the check (1.5 s after /status/ was sent) and gets fresh data, not the kept one ({r})')
     n = pg.evaluate(STORE)
     check(n['zkb'] >= 1 and n['killmails'] >= 1 and n['orgs'] >= 1, f'new version: zKillboard answers, killmails and organisations kept ({n})')
     g = pg.evaluate("async () => (await getGroup(25)).name")
@@ -142,7 +145,7 @@ def section1(b):
     pg.evaluate(PLANT)
     load('3700000', delay=6, wait=100)
     r = pg.evaluate(LOOKUP)
-    check(r[0] == 'STALE Rifter' and r[1] < 4500, f'slow /status/: the lookup went ahead with the kept data within ~3 s ({r})')
+    check(r[0] == 'STALE Rifter' and (r[1] < 1500 or 0 <= r[2] < 4500), f'slow /status/: the lookup went ahead with the kept data within ~3 s of /status/ being sent ({r})')
     pg.wait_for_timeout(6500)
     check(remembered() == '3690000' and pg.evaluate(LOOKUP)[0] == 'STALE Rifter', f'slow /status/: nothing cleared or remembered when it came late ({remembered()!r})')
     # load 5: /status/ fails: nothing cleared, carry on

@@ -61,7 +61,7 @@ def summary(text):
         with open(f, 'a', encoding='utf-8') as h: h.write(text + '\n')
 
 def fetch(url):
-    req = urllib.request.Request(url, headers={'User-Agent': 'eve-threat-assessment jump-table check (github.com/gitlaloosh/dscan-tool)'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'threat-vector jump-table check (github.com/gitlaloosh/threatvector)'})
     with urllib.request.urlopen(req, timeout=300) as r: return r.read()
 
 def latest_build(text):

@@ -22,9 +22,14 @@ a hidden tab fires them together. Every `fetch()` is listed in `tools/check_requ
 step); `tools/page_checks/request_gates_check.py` tests both gates with the timers bunched. Probing a
 live service from the owner's machine counts against his address too.
 
-EVE Threat Assessment (ETA; called D-Scan Analyzer until v2026.10.14.60, and the repo, file and
-saved-data names still say dscan) is a single-file tool (`index.html`) that estimates EVE Online
-ship stats from killmails and EFT fits. Its calculations must match **pyfa**
+Threat Vector (called D-Scan Analyzer until v2026.10.14.60, then EVE Threat Assessment (ETA) until v2026.11.06.2) is a
+single-file tool (`index.html`) that estimates EVE Online ship stats from killmails and EFT fits. It is published at
+https://threatvector.space (GitHub Pages from `main`, the `CNAME` file; build queue 013) from the repository
+`gitLaloosh/threatvector` (renamed from `dscan-tool`). The saved-data names keep the old ones on purpose (localStorage
+`dscan…`, IndexedDB `dscan-tool-cache`, `eta-intel`, `dscan-intel-sounds`), as do `dscan-tool-history/` and the extension's
+`eta-*` menu IDs: users never see them, and renaming them would lose what's saved. The footer's source link is the one
+place the account name is written into the page (the owner, 2026-11-04: "Write the repo link in"); the page no longer
+works it out from a github.io address. Its calculations must match **pyfa**
 exactly, using primary sources only: pyfa's source code and CCP's SDE / live ESI.
 
 Before any calculation work, check that pyfa hasn't moved:

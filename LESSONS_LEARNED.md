@@ -163,6 +163,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #126 A lint that finds a function's body at its first brace reads a default object parameter as the body: skip the parameters first.
 - #127 Going to the same page with only a new #fragment doesn't load it again: a check that means a fresh load opens a new page.
 - #128 A full-page screenshot resizes the window (so does a phone's address bar): a popup should move on resize, not close.
+- #138 A check's setting for the next page load, kept in sessionStorage on a file:// page, can be gone after the goto: put it in the address.
 - #129 Made-up killmails must have IDs that grow with time, as zKillboard's do: the page reads its lists newest first by ID.
 - #130 A canvas is see-through where nothing is drawn: weigh a colour read with getImageData by its alpha, or a faint glow reads as a solid colour.
 - #131 "Recent" isn't "seen": decide whether a one-time effect may still play when its event happens, from who could see it then.
@@ -1044,6 +1045,18 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 138. A check's setting for the next page load, kept in sessionStorage on a file:// page, can be gone after the goto: put it in the address
+
+- **What happened (v2026.11.06.2):** `game_data_check` holds the page's ESI /status/ answer back by a delay that an init script
+  read from sessionStorage, written by the check just before `goto`. In the full chain the setting was sometimes not there on the
+  new load, so the answer came at once and three later lines failed in a row (each load inherited the last one's state, #77). It
+  also timed the lookup from when the check asked, while the page's 3 s wait runs from /status/ being sent: on a busy machine the
+  check reached the page seconds late (#115).
+- **How it was caught:** the full chain (all tiers) on an unrelated delivery; alone it passed, then failed once alone too.
+- **Do this instead:** pass a check's per-load settings in the address (`?gdchk=1500`, read with URLSearchParams by the init
+  script), and time from the moment the page times from (the wrapper notes when /status/ is sent). Before trusting a fix for a
+  flake, run the check several times side by side, then its mutants.
 
 ## 137. A control put where a sheet's backdrop is pressed gets that tap's click when the sheet closes on the press
 
