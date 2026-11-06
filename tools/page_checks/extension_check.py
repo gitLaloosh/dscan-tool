@@ -16,7 +16,7 @@ load, so the page comes from http://127.0.0.1:<port>/; its ESI and zKillboard ca
   * the options page: the default address, a saved one is used by the next click, a bad address is refused, "Use the
     default" puts it back. No page errors.
 v2026.10.14.79 fails (the tool doesn't read #zkill= / #pilot= / #pilotname=).
-v1.1.0 (v2026.11.05.1, build queue 013): named "Threat Vector for zKillboard", the menus "... in Threat Vector", the default address
+v1.1.0 (v2026.11.06.2, build queue 013): named "Threat Vector for zKillboard", the menus "... in Threat Vector", the default address
 https://threatvector.space/; a saved address equal to the old default (https://gitlaloosh.github.io/dscan-tool/) opens the new one
 and the options page shows the new one; any other saved address is kept.
 """
@@ -66,8 +66,23 @@ with sync_playwright() as p:
     ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
     ctx.route(re.compile(r'https://zkillboard\.com/.*'), zkb)
     ctx.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))
-    sw = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event('serviceworker', timeout=30000)
-    ext_id = sw.url.split('/')[2]
+    worker = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event('serviceworker', timeout=30000)
+    ext_id = worker.url.split('/')[2]
+    # v2026.11.06.1 (LESSON #115; it flaked in three runs of the full chain): Chrome may restart an extension's service worker when it
+    # sits idle or the machine is busy (here it did while a click opened a tab), and the old handle then answers "Service worker
+    # restarted". The extension keeps nothing in the worker's memory (the menus and the address are Chrome's), so ask the new one.
+    class SW:
+        @property
+        def url(self): return worker.url
+        def evaluate(self, expr, arg=None):
+            for attempt in range(3):
+                try: return W[0].evaluate(expr, arg)
+                except Exception as e:
+                    if 'Service worker restarted' not in str(e) and 'Target closed' not in str(e) or attempt == 2: raise
+                    live = [x for x in ctx.service_workers if x.url.startswith(f'chrome-extension://{ext_id}/')]
+                    W[0] = live[-1] if live else ctx.wait_for_event('serviceworker', timeout=30000)
+    W = [worker]
+    sw = SW()
     # the menu items: chrome.contextMenus.update fails for an item that doesn't exist
     # v2026.10.14.86: the menus are made in onInstalled; on a busy machine the check could ask first (flaked once with the
     # update-check chain running alongside). Ask again for up to 15 s before judging.
@@ -102,7 +117,11 @@ with sync_playwright() as p:
     def click(info):
         with ctx.expect_page(timeout=30000) as ev:
             url = sw.evaluate("(i) => ETA.etaHandleClick(i)", info)
-        pg = ev.value; pg.wait_for_load_state(); return url, pg
+        pg = ev.value; pg.wait_for_load_state()
+        # v2026.11.06.1 (LESSON #72, #115): the tab starts loading before Playwright attaches to it, and on a busy machine its first
+        # requests to ESI could still go out unrouted (a #pilotname= lookup asks at once: "network error"). Load the same address
+        # again now that the routes hold; the address the extension opened is checked as it came (url, the hash).
+        pg.reload(); pg.wait_for_load_state(); return url, pg
     # a kill link
     url, pg = click({'menuItemId': 'eta-kill-link', 'linkUrl': 'https://zkillboard.com/kill/9100003/'})
     try: pg.wait_for_selector('#fitResults .subtab-btn', timeout=90000)

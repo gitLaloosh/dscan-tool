@@ -1,6 +1,6 @@
 # Threat Vector for zKillboard (Chrome extension)
 
-Right-click on zKillboard to open a kill or a pilot in Threat Vector. Version 1.1.0, made with the tool's v2026.11.05.1
+Right-click on zKillboard to open a kill or a pilot in Threat Vector. Version 1.1.0, made with the tool's v2026.11.06.2
 (1.0.0, with v2026.10.14.80, was named "EVE Threat Assessment for zKillboard").
 
 ## What it adds to the right-click menu

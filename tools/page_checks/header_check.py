@@ -1,4 +1,4 @@
-"""The tool's name and header (v2026.10.14.60, the rename to EVE Threat Assessment; v2026.11.05.1, to Threat Vector).
+"""The tool's name and header (v2026.10.14.60, the rename to EVE Threat Assessment; v2026.11.06.2, to Threat Vector).
 
     PYFA_SRC=/path/to/pyfa python3 -I tools/page_checks/header_check.py [index.html]   -> 'FAILURES: N' (must be 0)
 
@@ -11,7 +11,7 @@ The owner 2026-10-25: "EVE Threat Assessment", tagline A, tab title with "(ETA)"
   * v2026.10.14.63: the Refresh item data icon sits at the right of the name's row (30 px, 44 px on a phone); a press
     shows its status where the version tag is, and the tag comes back 5 s later;
   * a ship saved before the rename (localStorage "dscanMyShip", the key kept on purpose) is still there after a reload.
-v2026.11.05.1 (build queue 013, the owner 2026-11-04): title "Threat Vector · EVE Online threat assessment", the name "Threat Vector",
+v2026.11.06.2 (build queue 013, the owner 2026-11-04): title "Threat Vector · EVE Online threat assessment", the name "Threat Vector",
 the tagline "For EVE Online: ..."; the footer's source link written in (https://github.com/gitLaloosh/threatvector), no #siteSrc span
 left, and the CNAME file at the repository root is exactly "threatvector.space" and a newline.
 No page errors.
@@ -39,7 +39,7 @@ def run(b, W):
           btn: b.title, tabs: [...document.querySelectorAll('.tab-btn')].filter(t => t.checkVisibility()).map(t => t.textContent.trim())}   /* v.94: the Fleet tab is hidden until a fleet is open */; }""")
     check(h['title'] == 'Threat Vector \u00b7 EVE Online threat assessment' and h['h1'] == 'Threat Vector', f'{W}: tab title "{h["title"]}", header "{h["h1"]}"')
     check(h['p'] == ["For EVE Online: who's in system, what they fly, and how to beat them."], f'{W}: one tagline {h["p"]}')
-    # v2026.11.05.1: the footer's source link is written in; the address-built span is gone
+    # v2026.11.06.2: the footer's source link is written in; the address-built span is gone
     ft = pg.evaluate("""() => { const f = document.getElementById('siteFoot'), p = f.querySelector('p');
         return {src: [...f.querySelectorAll('a')].filter(a => /source is on GitHub/.test(a.textContent)).map(a => a.getAttribute('href')),
           span: !!document.getElementById('siteSrc'), first: p.textContent.slice(0, 60)}; }""")

@@ -88,7 +88,7 @@ STORE = """async (o) => { const db = await openDscanCacheDb(); const n = {}; for
 PLANT = """async () => { await dscanCacheSet('types', 587, {type_id: 587, name: 'STALE Rifter', group_id: 25, dogma_attributes: [], dogma_effects: []});
   await dscanCacheSet('groups', 25, {group_id: 25, name: 'STALE Frigate', category_id: 6, types: [587]});
   for(const s of ['zkb', 'killmails', 'orgs']) await dscanCacheSet(s, 'gdchk', {kept: 1}); await new Promise(r => setTimeout(r, 300)); return 1; }"""
-# [name, ms the lookup took, ms from the page sending /status/ to the answer]. v2026.11.05.1 (LESSON #115): the page's 3 s wait runs
+# [name, ms the lookup took, ms from the page sending /status/ to the answer]. v2026.11.06.2 (LESSON #115): the page's 3 s wait runs
 # from /status/ being sent, as the late answer does; timing only from the lookup's own start failed under load, when the check
 # reached the page seconds after it had loaded (the 1.5 s answer already in, the 3 s wait already over).
 LOOKUP = """async () => { const t0 = performance.now(); const t = await Promise.race([getType(587), new Promise(r => setTimeout(() => r({name: 'NO ANSWER IN 8 S'}), 8000))]); const t1 = performance.now(); return [t.name, Math.round(t1 - t0), window.__gdT0 == null ? -1 : Math.round(t1 - window.__gdT0)]; }"""
@@ -96,7 +96,7 @@ LOOKUP = """async () => { const t0 = performance.now(); const t = await Promise.
 def section1(b):
     print('-- item data kept in the browser, and a new EVE build')
     ctx = b.new_context(viewport={'width': 1440, 'height': 1000})
-    # /status/ answers held back in the page itself (a sleep in the route handler would hold up this script too). v2026.11.05.1 (LESSON #138): the
+    # /status/ answers held back in the page itself (a sleep in the route handler would hold up this script too). v2026.11.06.2 (LESSON #138): the
     # delay comes in the address (?gdchk=ms); kept in sessionStorage it was sometimes gone after the next goto, and the answer came at once.
     ctx.add_init_script("""(() => { const ms = Number(new URLSearchParams(location.search).get('gdchk') || 0); if(!ms) return; const f = window.fetch;
       window.fetch = (u, o) => /\\/status\\//.test(String(u && u.url || u)) ? (window.__gdT0 = performance.now(), f(u, o)).then(r => new Promise(res => setTimeout(() => res(r), ms))) : f(u, o); })();""")

@@ -65,7 +65,8 @@ the newest, a missing file a readable 404. Checks:
     not past it: the same number waited on, sequence.json not read again within the minute; then the kill shows;
   * 40 missing then 20 kills, sequence.json past them: read through at once; a 404 without the permission header (LESSON
     #89) still "not there yet"; a sleeping tab far behind sequence.json: only the last 240 read;
-  * R2Z2 answering 503: INTEL-05; answering nothing the page may read (CORS, sequence.json too): INTEL-06; both go when it answers;
+  * R2Z2 answering 503: INTEL-05; answering nothing the page may read (CORS, sequence.json too): INTEL-06; both go when it answers
+    (v2026.11.06.1: INTEL-06 from the third such read, in the strip under the header; feed_down_check.py has the rest);
   * a hidden tab (timers bunched): at most 12 a second, 19 in a row missing before sequence.json's number read past.
 v2026.10.29.7 fails (it reads ahead past sequence.json and looks for the newest by steps).
 """
@@ -396,18 +397,21 @@ with sync_playwright() as p:
         pg.wait_for_timeout(500)
     check(pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"), f'R2Z2 back: the note goes {pg.evaluate("() => [it.kf.busy, it.kf.head, it.kf.fails, it.kf.waitUntil - Date.now()]")}')
     # v2026.10.29.8: nothing the page may read, sequence.json too (2026-10-29: answers without the permission header): INTEL-06
+    # v2026.11.06.1 (build queue 016): from the third read in a row, in the strip under the header; the waits between are skipped here
+    STRIP = "() => (document.getElementById('sysStrip') || {}).textContent || ''"
     idle(); SEQ['fail'] = 'abort'
-    pg.evaluate("() => { it.kf.lastGot = Date.now() - 61000; it.kf.seqAt = 0; it.kf.waitUntil = 0; }")
-    for _ in range(30):
-        note = pg.evaluate(NOTE)
+    for _ in range(60):
+        note = pg.evaluate(STRIP)
         if note: break
+        pg.evaluate("() => { if(!it.kf.busy){ it.kf.lastGot = Date.now() - 61000; it.kf.seqAt = 0; it.kf.waitUntil = 0; } }")
         pg.wait_for_timeout(500)
-    check(note.endswith('(INTEL-06)') and "can't read zKillboard's live kill feed" in note, f'nothing readable from R2Z2, sequence.json too (CORS): INTEL-06 within the minute\'s check ({note!r})')
+    check(note.endswith('(INTEL-06)') and "kill feed can't be read" in note and not pg.evaluate("() => !!document.querySelector('[data-it-kfnote]')"),
+          f'nothing readable from R2Z2, sequence.json too (CORS): INTEL-06 in the strip, no long note ({note!r})')
     SEQ['fail'] = None; pg.evaluate("() => { it.kf.waitUntil = 0; }")
     for _ in range(20):
-        if pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"): break
+        if not pg.evaluate(STRIP): break
         pg.wait_for_timeout(500)
-    check(pg.evaluate("() => !document.querySelector('[data-it-kfnote]')"), 'readable again: INTEL-06 goes')
+    check(not pg.evaluate(STRIP), 'readable again: INTEL-06 goes')
     pg.click('#intelSwLabel'); pg.wait_for_timeout(500); n0 = len(REQS); pg.wait_for_timeout(8000)
     check(len(REQS) == n0, f'off: no requests to R2Z2 ({len(REQS) - n0})')
     pg.screenshot(path=os.environ.get('INTEL_SHOT', '/tmp/intel100_1440.png'), full_page=True)

@@ -231,6 +231,15 @@
   .bg-foot{margin:8px 0 0; padding-top:8px; border-top:1px solid var(--line-soft); line-height:1.45;}
   .bg-by + .bg-sub{margin-top:4px;}
   .bg-by{display:flex; flex-wrap:wrap; gap:2px 14px; margin-top:4px; font-size:12px; color:var(--text-dim);} .bg-by span{white-space:nowrap;} .bg-by b{color:var(--text); font:600 12px var(--mono);}
+  /* v2026.11.06.1 (build queue 016, Project doc roadmap/outage-notices-plan.md section 7; the owner's mockup scene e7_feed_unreadable):
+     the strip under the header on every tab, one line per situation, while it lasts; no close button (it goes when the cause does).
+     Empty: nothing drawn. Intel's Feed note (.it-why) in the same amber-edge look. */
+  .sys-strip{display:block; margin:0 0 14px; padding:9px 12px; border-left:3px solid var(--amber); background:var(--tag-fill); color:var(--text); font:400 13px/1.45 var(--sans); border-radius:3px;}
+  .sys-strip:empty{display:none;}
+  .sys-strip .sys-l + .sys-l{margin-top:4px;}
+  .sys-strip b{color:var(--amber); font-weight:600; margin-right:6px;}
+  .it-why{margin:6px 0 10px; padding:8px 10px; border-left:3px solid var(--amber); background:var(--tag-fill); color:var(--text); font:400 12.5px/1.45 var(--sans); border-radius:3px;}
+  .it-why b{color:var(--amber); font-weight:600;}
   .bg-note{margin-top:6px; padding:7px 9px; border-left:2px solid var(--amber); background:color-mix(in srgb, var(--amber) 7%, transparent); font-size:12px;}
   @media (max-width: 599px){
     .bg-wrap{top:0; left:0; justify-content:space-between;}
@@ -2923,7 +2932,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.05.1</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.06.2</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -2934,7 +2943,7 @@
     <!-- v2026.10.14.60 (the owner 2026-10-25, backlog "Rename/rebrand": "rename/rebrand the tool as Eve Threat Assessment tool (ETA for short)"; then
          spelled "EVE Threat Assessment", tagline A, tab title with "(ETA)"). Only what users see: saved-data keys (dscanMyShip ...), the cache
          database (dscan-tool-cache), the repo and file names stay, so nothing saved is lost. The D-Scan tab keeps its name. -->
-    <!-- v2026.11.05.1 (build queue 013, Project doc roadmap/threatvector-move-plan.md; the owner 2026-11-04): renamed "Threat Vector", at
+    <!-- v2026.11.06.2 (build queue 013, Project doc roadmap/threatvector-move-plan.md; the owner 2026-11-04): renamed "Threat Vector", at
          threatvector.space, the repository renamed threatvector. Title B and tagline B, his picks from the mockup. Saved-data keys (dscan...,
          eta-...), the database names and dscan-tool-history/ keep their old names on purpose: users never see them. -->
     <!-- v2026.10.14.63 (the owner 2026-10-25: "let's move the "refresh item data" button ... it's taking up an entire row", then option A):
@@ -2945,6 +2954,7 @@
     </div>
     <p>For EVE Online: who's in system, what they fly, and how to beat them.</p>
   </header>
+  <div class="sys-strip" id="sysStrip" role="status"></div><!-- v2026.11.06.1: what's down right now, on every tab (sysStripPaint) -->
 
   <div class="tabs">
     <!-- v2026.10.14.62 (the owner 2026-10-25: "let's move the d-scan analyzer tab to last of the three", then "Pilot Analyzer" as the
@@ -3068,7 +3078,7 @@
 
   <!-- v2026.11.01.4 (the owner: "Should i add any licensing restrictions to this code?", then yes for the next delivery): the license and
        the notices. GPL v3 or later, as pyfa (whose calculations the page follows) is; CCP's notice as its Developer License Agreement
-       (section 7.1) words it; LICENSE and NOTICE.md in the repository. v2026.11.05.1: the source link is written in (the owner, 2026-11-04,
+       (section 7.1) words it; LICENSE and NOTICE.md in the repository. v2026.11.06.2: the source link is written in (the owner, 2026-11-04,
        "Write the repo link in"): the page has its own domain now, so it can't be built from the address any more. Its links leave the site as every link does: asked first (leaveAsk),
        then a new tab; zKillboard is named, not linked (its links are the zK icon). -->
   <footer class="site-foot" id="siteFoot">
@@ -3723,13 +3733,13 @@ const ERROR_CODES = {
   "doc": "2026-10-30_live-feed-guard-and-plus-counts.html"
  },
  "INTEL-06": {
-  "title": "This browser can't read zKillboard's live kill feed",
-  "where": "{card:intel} tab, kills in the {card:itfeed}",
-  "trigger": "sequence.json from R2Z2 (r2z2.zkillboard.com) came back with nothing the page may read: the browser blocked the answer (zKillboard's answer lacked the header that lets other websites read it, CORS), a blocker stopped it, or there is no connection. Read at the start and after a minute with no kill. The page tries again after 30 seconds, then longer (up to 5 minutes); reports from your channels carry on.",
-  "check": "The browser's console (F12): 'blocked by CORS policy' means zKillboard's setting changed (it happened briefly on 2026-10-29); tell zKillboard. Otherwise an ad or privacy blocker, or the connection.",
+  "title": "zKillboard's kill feed can't be read right now",
+  "where": "the strip under the header (every tab), the {card:itfeed}'s note, Intel's status line, the header's Kills part (\"Kills down\")",
+  "trigger": "Three reads in a row from R2Z2 (r2z2.zkillboard.com) came back with nothing the page may read: sequence.json (read at the start and after a minute with no kill while live), or, while reading back, a kill already published. The browser blocked the answer (zKillboard's answer had a broken or missing header that lets other websites read it, CORS: on 2026-11-06 it sent 'Access-Control-Allow-Origin: *, *'), a blocker stopped it, or there is no connection (offline, nothing is shown). The page keeps trying at its usual pace (30 seconds, then longer, up to 5 minutes) and sends nothing extra; it clears at the next answer it can read. If the feed was never read since the page opened, the words add that something in this browser may be blocking it. Reports from your channels carry on.",
+  "check": "The browser's console (F12): 'blocked by CORS policy' (or 'contains multiple values') means zKillboard's setting is broken (briefly on 2026-10-29; '*, *' on 2026-11-06); nothing on this side can read around it, tell zKillboard. Otherwise an ad or privacy blocker for r2z2.zkillboard.com, or the connection.",
   "why": "On 2026-10-29 zKillboard removed the Origin from requests to fix stale copies at Cloudflare, and for a while answers came without the permission header: every browser threw them away while curl and desktop apps still read them.",
-  "since": "2026-10-29 (v2026.10.29.8)",
-  "doc": "2026-10-29_kills-read-as-documented.html"
+  "since": "2026-10-29 (v2026.10.29.8); shown on every tab after three reads since 2026-11-06 (v2026.11.06.1)",
+  "doc": "2026-11-06_kill-feed-cant-be-read.html"
  },
 
  "FLEET-01": {
@@ -4138,11 +4148,30 @@ async function esiFetch(url, init, kind){
   esiNote(kind, r);
   return r;
 }
+// ==== WHAT'S DOWN (v2026.11.06.1, build queue 016; Project doc roadmap/outage-notices-plan.md section 7) ====
+// The strip under the header, on every tab: one line per situation that is on, the most important first; written only when its text
+// changes (LESSON #120). 016 has one situation, zKillboard's kill feed can't be read (itFeedDown); 015 adds ESI down, EVE's downtime,
+// the zKillboard pause and the feed behind, in that order of importance, to sysSituations.
+let sysLastStrip = null;
+function sysSituations(){
+  const out = [], fd = typeof itFeedDown === 'function' ? itFeedDown() : null;
+  if(fd) out.push(fd.strip);
+  return out;
+}
+function sysStripPaint(){
+  if(!bgDoc()) return;   // LESSON #36: the suites' stub DOM
+  const el = document.getElementById('sysStrip');
+  if(!el) return;
+  const h = sysSituations().map(x => `<div class="sys-l">${x}</div>`).join('');
+  if(h === sysLastStrip) return;
+  sysLastStrip = h; el.innerHTML = h;
+  bgPaint();   // the gauge's Kills part says the same
+}
 function bgR2Note(){ const now = Date.now(); bgR2Times = bgR2Times.filter(t => now - t < 10000); bgR2Times.push(now); }   // Intel's live-kill reads, for the panel's rate
 function bgKills(){   // null while Intel is off
   if(typeof it === 'undefined' || !it.on) return null;
   const until = itR2Stopped(), now = Date.now();
-  return {stop: until ? until - now : 0, until, rate: bgR2Times.filter(t => now - t < 10000).length / 10};
+  return {stop: until ? until - now : 0, until, rate: bgR2Times.filter(t => now - t < 10000).length / 10, down: typeof itFeedDown === 'function' ? itFeedDown() : null};
 }
 function bgState(){
   zkbPauseRead();
@@ -4160,7 +4189,9 @@ function bgSegsHtml(S){
   h += S.e.wait ? seg('stop', `ESI ${w('wait')}<b>${zkbClock(S.e.wait)}</b>`)
     : S.e.errs >= ESI_ERR_WARN ? seg('warn', `ESI <b>${S.e.errs}</b><span class="bg-xw"> errors</span>`)
     : S.e.low ? seg('warn', 'ESI <b>low</b>') : seg('', 'ESI <b>ok</b>');
-  if(S.k) h += S.k.stop ? seg('stop', `<span class="bg-lg">Kills stopped </span><b>${zkbClock(S.k.stop)}</b>`) : seg('', '<span class="bg-lg">Kills </span><b>ok</b>');
+  if(S.k) h += S.k.stop ? seg('stop', `<span class="bg-lg">Kills stopped </span><b>${zkbClock(S.k.stop)}</b>`)
+    : S.k.down ? seg('stop', '<span class="bg-lg">Kills </span><b>down</b>')   // v2026.11.06.1: zKillboard's kill feed can't be read
+    : seg('', '<span class="bg-lg">Kills </span><b>ok</b>');
   return h;
 }
 function bgByHtml(list, label){ return list.length ? `<div class="bg-by">${label}: ${list.map(([a, n]) => `<span>${escapeHtml(a)} <b>${n}</b></span>`).join('')}</div>` : ''; }
@@ -4174,8 +4205,9 @@ function bgBodyHtml(S){
     : e.errs >= ESI_ERR_WARN ? `<div class="bg-note">At ${ESI_ERR_LIMIT}, ESI refuses every request for the rest of the minute (it answers 420).</div>`
     : e.low ? `<div class="bg-note">${escapeHtml(e.low.g)} is down to ${e.low.rem.toLocaleString()} of ${e.low.lim.toLocaleString()} per ${escapeHtml(e.low.win)}.</div>` : '';
   const allow = e.grp && !e.low ? `Plenty left: ${escapeHtml(e.grp.g)} ${e.grp.rem.toLocaleString()} of ${e.grp.lim.toLocaleString()} per ${escapeHtml(e.grp.win)}.` : '';   // a low one has its note
-  const k = S.k, kRow = !k ? '' : `<div class="bg-sec"><div class="bg-row"><span class="k">Intel live kills</span><span class="v">${k.stop ? 'stopped' : 'reading'}</span></div>${k.stop
+  const k = S.k, kRow = !k ? '' : `<div class="bg-sec"><div class="bg-row"><span class="k">Intel live kills</span><span class="v">${k.stop ? 'stopped' : k.down ? "can't be read" : 'reading'}</span></div>${k.stop
     ? `<div class="bg-note">zKillboard said slow down, so live kills stop until <b>${new Date(k.until).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</b> (${zkbClock(k.stop)}). Reports from your channels carry on.</div>`
+    : k.down ? `<div class="bg-note">${k.down.feed} The page keeps asking at its usual pace and sends nothing extra. Reports from your channels carry on. (INTEL-06)</div>`
     : `<div class="bg-sub">${k.rate.toFixed(1)} requests a second (the page's own cap is ${IT_R2_PER_S}; zKillboard's is 15).</div>`}</div>`;
   return `<div class="bg-sec"><div class="bg-row"><span class="k">zKillboard</span><span class="v">${z.n} of ${ZKB_BUDGET} · last 10 min</span></div>
       <div class="bg-bar${warn ? ' warn' : ''}"><i style="width:${Math.min(100, Math.round(z.n / ZKB_BUDGET * 100))}%"></i></div>
@@ -4190,6 +4222,7 @@ function bgPaint(){   // the gauge (and the open panel) on the next frame, once 
 }
 function bgPaintNow(){
   if(!bgDoc()) return false;
+  sysStripPaint();   // v2026.11.06.1: Intel turned on or off, another tab
   const S = bgState(), segs = bgSegsHtml(S);
   if(segs !== bgLastSegs){ document.getElementById('bgSegs').innerHTML = segs; bgLastSegs = segs; }   // the button stays (its focus, LESSON #119)
   const g = document.getElementById('bgGauge'), hot = !!(S.pause || S.full || S.e.wait || (S.k && S.k.stop));
@@ -4269,6 +4302,7 @@ function bgInit(){
   document.addEventListener('visibilitychange', () => { if(document.hidden){ clearInterval(bgTimer); bgTimer = 0; clearTimeout(bgAgeT); bgAgeT = 0; } else { bgPaint(); bgAgeArm(); bgTickStart(); } });
   window.addEventListener('storage', (e) => { if([ZKB_BUDGET_KEY, ZKB_WHO_KEY, ZKB_PAUSE_KEY, ESI_USE_KEY, IT_R2_STOP_KEY].includes(e.key)){ bgPaint(); bgAgeArm(); } });   // another tab
   window.addEventListener('pagehide', bgEsiFlush);
+  window.addEventListener('online', sysStripPaint); window.addEventListener('offline', sysStripPaint);   // v2026.11.06.1: offline isn't zKillboard's side
   bgPaint(); bgAgeArm();
 }
 
@@ -24385,7 +24419,7 @@ const it = {
   nearOpen: new Set(),   // v2026.10.30.1: Near You rows opened (system ids; several at once, the owner)
   gateDest: new Map(), gateAsk: new Map()   // v2026.10.31.5: stargate id -> the system it leads to (itGateDest)
 };
-function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0, halt: false}; }   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
+function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, blk: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0, halt: false}; }   // blk (v2026.11.06.1): counted reads in a row with nothing the browser may read (itFeedDown)   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
 function itDefaults(){ return {channels: [], me: null, range: 3, killRange: IT_KILL_RANGE_DEFAULT, nearRange: null, mapReach: null, nearView: 'list', sound: true, notify: true, volume: IT_VOL_DEFAULT, soundNear: 'chime', soundHere: 'klaxon', sndPrev: {near: 'chime', here: 'klaxon'}, forget: 15, hideFriendly: true, feed: {types: 'all', dist: 0, sort: 'new'}, alias: ''}; }
 function itReadSet(){
   const d = itDefaults();
@@ -25199,8 +25233,25 @@ async function itR2Fetch(path){
   let r;
   try{ r = await fetch(`${IT_R2Z2}${path}`); }
   catch(e){ if(kf && !kf.head) kf.halt = true; return IT_R2_NET; }
+  itR2EverRead = true; if(kf) kf.blk = 0;   // v2026.11.06.1: an answer the browser may read (any status): the feed can be read
   if(IT_R2_STOP_STATUS.includes(r.status)){ itR2Stop(`status ${r.status}`); throw itR2StopErr(); }
   return r;
+}
+// v2026.11.06.1 (build queue 016; LESSON #89 kept): zKillboard's kill feed can't be read when IT_FEED_DOWN_AT counted reads in a row
+// came back with nothing the browser may read (a doubled or missing CORS header at zKillboard, a blocker, no connection): sequence.json
+// reads (at the start, and while live after a minute with no kill), and a read back's first kill when it is at or below sequence.json's
+// number (published, so unreadable is a failure; live, an unreadable next kill is "not there yet" and isn't counted). Any readable answer
+// sets the count back to 0 (itR2Fetch). Nothing extra is asked: it counts the reader's own reads at its own pace. Offline, it isn't
+// zKillboard's side: nothing shown. Never read since the page opened: it may be a blocker in this browser, and the words say so.
+const IT_FEED_DOWN_AT = 3;
+let itR2EverRead = false;
+function itFeedDown(){
+  if(typeof it === 'undefined' || !it.on || !it.kf || it.kf.blk < IT_FEED_DOWN_AT) return null;
+  if(typeof navigator !== 'undefined' && navigator.onLine === false) return null;
+  if(itR2Stopped()) return null;   // INTEL-07 / INTEL-08 say why nothing is sent
+  const why = itR2EverRead ? "a problem on zKillboard's side" : "a problem on zKillboard's side, or something in this browser blocking it";
+  return {why, strip: `<b>zKillboard's kill feed can't be read right now</b> <span>${escapeHtml(withCode(`(${why}). New kills will show when it's fixed.`, 'INTEL-06'))}</span>`,
+    feed: `<b>No new kills:</b> ${escapeHtml(`zKillboard's kill feed can't be read right now (${why}).`)}`};
 }
 async function itKillGet(n){   // kill number n; null when it isn't there (404); IT_R2_NET when the read failed; IT_R2_HALT when not sent
   const r = await itR2Fetch(`/ephemeral/${n}.json`);
@@ -25246,7 +25297,7 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
         const bad = recs.findIndex(x => x === IT_R2_NET || x === IT_R2_HALT);   // v2026.10.30.3: a read failed: keep what came before it, send nothing more this pass
         if(bad >= 0){
           recs = recs.slice(0, bad);
-          if(!recs.length){ kf.waitUntil = Date.now() + IT_KILL_NET_WAIT_MS; break; }
+          if(!recs.length){ kf.waitUntil = Date.now() + IT_KILL_NET_WAIT_MS; if(from <= kf.target) kf.blk++; break; }   // v2026.11.06.1: a published kill unreadable: counted (itFeedDown)
         }
         let last = recs.length - 1;
         while(last >= 0 && !recs[last]) last--;
@@ -25288,8 +25339,8 @@ async function itKillPump(){   // v2026.10.29.8: R2Z2 read as documented (and as
     else {
     kf.fails++;
     kf.waitUntil = Date.now() + Math.min(300000, 30000 * 2 ** (kf.fails - 1));   // 30 s, then longer, at most 5 minutes
-    it.kfNote = e.blocked
-      ? withCode(`This browser can't read zKillboard's live kill feed: it answers nothing the page is allowed to read (a cross-site setting at zKillboard, a blocker, or no connection). Kills nearby will show again when it does; reports from your channels carry on.`, 'INTEL-06')
+    if(e.blocked) kf.blk++;   // v2026.11.06.1: the strip, the Feed note, the gauge and the status line say it from the third (itFeedDown)
+    it.kfNote = e.blocked ? ''
       : withCode(`zKillboard's live kill feed isn't answering (${e.message || 'network error'}); kills nearby will show again when it does. If this lasts, zKillboard may have blocked this address for up to an hour after too many requests.`, 'INTEL-05');
     }
   }finally{ kf.busy = false; }
@@ -26020,7 +26071,7 @@ function itFeedBarHtml(){
   const f = it.set.feed, sel = (k, opts) => `<select data-it-f="${k}">${opts.map(([v, l]) => `<option value="${v}"${String(f[k]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
   return `<div class="it-fbar"><label>Types ${sel('types', IT_FEED_TYPES)}</label><label>Distance ${sel('dist', IT_FEED_DIST.map(d => [d, d ? `≤ ${d} jump${d === 1 ? '' : 's'}` : 'any']))}</label><label>Sort ${sel('sort', IT_FEED_SORT)}</label><input type="search" data-it-q placeholder="Search pilot, corp, ship, system" aria-label="Search the ${escapeHtml(cardName('itfeed'))}" value="${escapeHtml(it.q)}"></div>`;
 }
-function itFeedListHtml(){ itAnCan = new Map(); const feed = itFeedShown(); return feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`; }
+function itFeedListHtml(){ itAnCan = new Map(); const feed = itFeedShown(), fd = it.on && itFeedDown(); return (fd ? `<div class="it-why" data-it-why>${fd.feed}</div>` : '') + (feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`); }   // v2026.11.06.1: the Feed note first
 function itNearListHtml(){ const near = itNearList(); return near.length ? near.map(itNearRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing reported in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`; }
 // Redraw only the two lists (the filter bar in use keeps its focus and caret)
 function itNotesHtml(){ return `${it.err ? `<div class="pr-msg err">${escapeHtml(it.err)}</div>` : ''}${it.note ? `<div class="pr-msg">${escapeHtml(it.note)}</div>` : ''}${it.on && it.kfNote ? `<div class="pr-msg" data-it-kfnote>${escapeHtml(it.kfNote)}</div>` : ''}`; }
@@ -26154,6 +26205,7 @@ function itAliasBoxHtml(){
 // v2026.10.29.4: whether kills are still coming in, beside "last line": a reader stuck without saying so looked like a quiet night
 function itKillStatus(){
   const kf = it.kf;
+  if(kf && itFeedDown()) return ` · <span class="it-kslow">kills: zKillboard's feed can't be read (INTEL-06)</span>`;   // v2026.11.06.1
   if(!kf || it.kfNote) return '';   // INTEL-05 says it already
   if(kf.seq === null || !kf.head) return ' · kills: catching up';
   const ago = Date.now() - kf.lastGot;
@@ -26236,7 +26288,7 @@ function itQuickKey(){
   const f = it.feed[0], sz = (m) => m ? m.size : 0;
   return [it.on, it.dirName, it.err, it.note, it.pop, it.kfNote, it.q, it.feed.length, f ? f.id : 0, it.near.size, it.me && it.me.sys, sz(it.chars), sz(it.files),
     it.chans.length, it.names ? it.names.list.length : 0, sz(it.pilots), sz(it.aff), sz(it.charNames), sz(it.sec), sz(it.gateDest), sz(orgCache),
-    sz(it.rawOpen), sz(it.nearOpen), it.shape ? it.shape.id : 0, JSON.stringify(it.set), itR2Stopped(), it.sndRev || 0].join('|');   // v2026.11.01.8: your sound files
+    sz(it.rawOpen), sz(it.nearOpen), it.shape ? it.shape.id : 0, JSON.stringify(it.set), itR2Stopped(), it.sndRev || 0, itFeedDown() ? itR2EverRead + 1 : 0].join('|');   // v2026.11.06.1   // v2026.11.01.8: your sound files
 }
 function itBuildAt(now, make){ itFrozenNow = now; try{ return make(); }finally{ itFrozenNow = null; } }
 // the status line ("last line 2 min ago · last kill read 3 s ago") is kept out of that comparison and written on its own, when its text changes
@@ -26264,11 +26316,12 @@ function itAgePeriod(){
 // so it differs by shape as well as colour. Pressing it opens the Intel tab; only the card's switch turns Intel on or off (LESSON #95).
 function itMarkState(){
   if(!it.on) return 'off';
-  if(it.err || it.kfNote || itR2Stopped()) return 'broken';
+  if(it.err || it.kfNote || itR2Stopped() || itFeedDown()) return 'broken';
   const near = itNearList().filter(x => x.j !== null && x.j <= it.set.range && itThreat(x.st));
   return near.some(x => x.j === 0) ? 'in' : near.length ? 'near' : 'clear';
 }
 function itHeaderSync(){
+  sysStripPaint();   // v2026.11.06.1: the strip on every tab (written only when it changes)
   if(typeof document === 'undefined' || !document.getElementById) return;
   const b = document.getElementById('intelNear');
   if(!b) return;
@@ -26923,7 +26976,7 @@ function rsBind(root){
   window.addEventListener('hashchange', go);
   go();
 })();
-// v2026.11.05.1: the footer's source link is written in (the owner, 2026-11-04: "Write the repo link in"); siteSrc is gone
+// v2026.11.06.2: the footer's source link is written in (the owner, 2026-11-04: "Write the repo link in"); siteSrc is gone
 // ==== KILLS AND LOSSES IN THE SYSTEM (v2026.11.02.3; Project doc roadmap/system-activity-plan.md) ====
 // The owner: "add combined losses and kills they've accrued in the past "N hours" in the system being analyzed (user's location or
 // system row linked from intel tab) ... provide two clickable links to losses and kills (provide total isk value of both). would be

@@ -1048,7 +1048,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 
 ## 138. A check's setting for the next page load, kept in sessionStorage on a file:// page, can be gone after the goto: put it in the address
 
-- **What happened (v2026.11.05.1):** `game_data_check` holds the page's ESI /status/ answer back by a delay that an init script
+- **What happened (v2026.11.06.2):** `game_data_check` holds the page's ESI /status/ answer back by a delay that an init script
   read from sessionStorage, written by the check just before `goto`. In the full chain the setting was sometimes not there on the
   new load, so the answer came at once and three later lines failed in a row (each load inherited the last one's state, #77). It
   also timed the lookup from when the check asked, while the page's 3 s wait runs from /status/ being sent: on a busy machine the
@@ -1894,6 +1894,9 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - **Do this instead:** serve the page the extension opens from a real local web server (the check starts one on
   127.0.0.1 and sets that address in the extension's options), and keep routing only the page's own requests. Extensions
   also need Chromium's new headless mode (`--headless=new`, with headless=False in Playwright): the old one doesn't load them.
+- **Later (v2026.11.06.1):** under load the page's first ESI request could escape the routes too (a `#pilotname=` lookup asks at
+  once: "network error"), and the extension's service worker could restart mid-check ("Service worker restarted"). It flaked in
+  three full runs. The check now reloads the opened tab once Playwright is attached, and asks the worker again after a restart.
 
 ## 71. A mock that accepts anything can't check what the feature adds
 

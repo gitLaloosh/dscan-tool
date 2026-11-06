@@ -1,4 +1,4 @@
-// Threat Vector for zKillboard (v1.1.0, with the tool's v2026.11.05.1; was "EVE Threat Assessment for zKillboard" v1.0.0, v2026.10.14.80). The owner: "create a google chrome extension
+// Threat Vector for zKillboard (v1.1.0, with the tool's v2026.11.06.2; was "EVE Threat Assessment for zKillboard" v1.0.0, v2026.10.14.80). The owner: "create a google chrome extension
 // that would let me right click on a pilot name or killmail in zkillboard.com and send it to the tool"; the menu items:
 // "all three" (kill links and pages, pilot links and pages, a selected pilot name).
 //

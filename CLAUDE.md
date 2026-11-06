@@ -22,7 +22,7 @@ a hidden tab fires them together. Every `fetch()` is listed in `tools/check_requ
 step); `tools/page_checks/request_gates_check.py` tests both gates with the timers bunched. Probing a
 live service from the owner's machine counts against his address too.
 
-Threat Vector (called D-Scan Analyzer until v2026.10.14.60, then EVE Threat Assessment (ETA) until v2026.11.05.1) is a
+Threat Vector (called D-Scan Analyzer until v2026.10.14.60, then EVE Threat Assessment (ETA) until v2026.11.06.2) is a
 single-file tool (`index.html`) that estimates EVE Online ship stats from killmails and EFT fits. It is published at
 https://threatvector.space (GitHub Pages from `main`, the `CNAME` file; build queue 013) from the repository
 `gitLaloosh/threatvector` (renamed from `dscan-tool`). The saved-data names keep the old ones on purpose (localStorage
@@ -228,6 +228,15 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   (`bgTick`) only while a countdown shows or the panel is open, never in a hidden tab; ZKB-01's text (`zkbUnavailableText`, matched by
   `ZKB_MSG_RX`) counts down wherever it is shown (`bgMsgSweep`). Amber when near, full, paused or stopped; never red.
   `budget_gauge_check.py`.
+- **What's down, on every tab** (v2026.11.06.1, build queue 016; Project doc roadmap/outage-notices-plan.md section 7; mockup
+  `Claude outputs/outage_notices_mockup.html`, scene "Kill feed can't be read"): the strip under the header (`#sysStrip`,
+  `sysStripPaint`, `sysSituations`: one line per situation, the most important first, written only when its text changes; no close
+  button, it goes when the cause does). 016 has one situation: zKillboard's kill feed can't be read (`itFeedDown`, INTEL-06): 3
+  counted reads in a row with nothing the browser may read (`kf.blk`: sequence.json, or a read back's published kill; never a live
+  kill file, LESSON #89), Intel on, the browser online; any readable answer clears it; never read since the page opened adds "or
+  something in this browser blocking it". It also shows as Intel's Feed note (`.it-why`), "Kills down" in the gauge and on Intel's
+  status line. Nothing extra is asked; the reader's pace is unchanged. 015 adds ESI down, EVE's downtime, the zKillboard pause and
+  the feed behind to `sysSituations`. `feed_down_check.py` (a real HTTPS stand-in, so the browser checks CORS itself).
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
   the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship
