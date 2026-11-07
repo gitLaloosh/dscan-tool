@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3/REBVi9NIfxo5u2zQwShzDwH5vsXwlYABMpkBZzYd0='; style-src 'unsafe-inline'; img-src https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kI7Vrg7U98lgtojzOxvVrl/RD5rlhLBNszHf1UkWGis='; style-src 'unsafe-inline'; img-src https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1"><!-- v2026.10.14.15: without this, phones drew the page as a ~980px desktop page shrunk to fit. LESSON #33 -->
 <title>Threat Vector · EVE Online threat assessment</title>
@@ -2970,7 +2970,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.2</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.3</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -3131,7 +3131,7 @@
 // allows no inline handlers (onerror="..." is refused), so an <img> says what to do in data-imgfail and this one listener does it.
 // Error events don't bubble: capture. hide: keep its room; remove; none: display none; next / next-block: show the fallback after
 // it (as '' / 'block'); initials: the profile portrait becomes its pilot's initials (data-initials), built as text, never HTML.
-document.addEventListener('error', (e) => {
+if(typeof document !== 'undefined' && document.addEventListener) document.addEventListener('error', (e) => {   // LESSON #36: the suites' stub DOM has none
   const t = e.target; if(!(t instanceof HTMLImageElement) || !t.dataset.imgfail) return;
   const k = t.dataset.imgfail, nx = t.nextElementSibling;
   if(k === 'hide') t.style.visibility = 'hidden';
