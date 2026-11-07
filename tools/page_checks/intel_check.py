@@ -367,9 +367,11 @@ with sync_playwright() as p:
     ctx.close()
     # ---- errors ----
     ctx = new_ctx(1440, 'window.__noFsApi = true;'); pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(300)
-    pg.click('#tabBtnIntel'); pg.click('#intelSwLabel'); pg.wait_for_timeout(300)
+    pg.click('#tabBtnIntel'); pg.wait_for_timeout(200)
+    dis = pg.evaluate("() => [document.querySelector('#intelSw').disabled, document.querySelector('#intelSw').checked]")   # v2026.11.07.8: can't be pressed here
+    pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300)
     e = pg.inner_text('#intelPanel .pr-msg.err')
-    check(e.endswith('(INTEL-01)') and not pg.evaluate("() => document.querySelector('#intelSw').checked"), f'no File System Access API: INTEL-01, the slider back off ({e!r})')
+    check(e.endswith('(INTEL-01)') and dis == [True, False], f'no File System Access API: the switch disabled (v2026.11.07.8), "Choose folder" says INTEL-01 ({e!r}) {dis}')
     ctx.close()
     ctx = new_ctx(1440); pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(300); pg.click('#tabBtnIntel')
     W(pg, 'notes.txt', 'x'); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(300)

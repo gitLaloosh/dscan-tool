@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-07 — Intel's switch waits for a folder and a channel</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Intel's switch waits for a folder and a channel</h1>
+<p><span class="tag">Page</span> 2026-11-07 &middot; <code>v2026.11.07.8</code></p>
+<h2>Why</h2>
+<ul><li>The owner, with a screenshot of a new user's Intel card after pressing the switch (the switch drawn on beside "Off", and "Choose the Chatlogs folder first (1 below)."): "we need to just disable the on/off switch until a folder is chosen and at least one channel is checked."</li></ul>
+<h2>What changed</h2>
+<ul>
+<li>Intel's on/off switch is disabled (dimmed, without the amber pulse) until the Chatlogs folder is chosen and at least one intel channel is ticked, and in a browser that can't read the folder. Its hover says what's missing ("Choose the Chatlogs folder (1 below), then tick an intel channel (2), to turn Intel on", or "Tick an intel channel (2 below) to turn Intel on"). While Intel is on it can always be turned off.</li>
+<li>After a press, the box always shows whether Intel really is on: the screenshot's case (a press that didn't start Intel, while the card's text came out the same and wasn't redrawn) left it ticked beside "Off".</li>
+<li>Nothing kept in the browser changes.</li>
+</ul>
+<h2>Checks</h2>
+<ul><li><code>intel_example_check.py</code>: disabled with no folder (a press does nothing), still disabled with a folder and no channel, pressable with a channel; a press the browser refuses (folder permission) leaves the box unticked; unticking the last channel stops Intel and disables the switch. Mutant: the switch never disabled, caught.</li></ul>
+</body></html>
