@@ -68,6 +68,7 @@
   "98838ba2c0d1f76dd42888ad7c9fcc6724fdbe2ee23b672d134f2a5222fe80d7": "dscan-tool-history/2026-10-12_td-mode-selector-modular-card.html #1: the TD mode selector, no names; reviewed 2026-10-28 (every word read by OCR checked against the made-up names: no real pilot, group, channel or path)",
   "3cb16bdd0a1bd60a34b428f293386fac961ffa3156b58589231bfdadc879f7a1": "dscan-tool-history/2026-10-12_td-mode-selector-modular-card.html #2: the TD mode selector, no names; reviewed 2026-10-28 (every word read by OCR checked against the made-up names: no real pilot, group, channel or path)",
   "b836bb7a85a3d5a90c07667fec6ba3121192c42ac5fd28b85170bb6c58aa25da": "Claude outputs/outage_notices_mockup.html: the Intel map (public EVE system names around 1DQ1-A, made-up report markers, \"YOU\" pin); reviewed 2026-11-06 by the build session (and the research session 2026-11-05)",
-  "4736e15dc2f146055e300eb845a93dbfceb97af7fef5d90ea8884f25b668eb71": "Claude outputs/outage_notices_mockup.html: the map's empty overlay canvas (nothing drawn); reviewed 2026-11-06"
+  "4736e15dc2f146055e300eb845a93dbfceb97af7fef5d90ea8884f25b668eb71": "Claude outputs/outage_notices_mockup.html: the map's empty overlay canvas (nothing drawn); reviewed 2026-11-06",
+  "b53eef624ebbb48f6346ae4f4b84b45c9192850d4bf8c0c6df33e44146d87950": "Claude outputs/intel_filters_mockup.html: the Intel map around 1DQ1-A (public EVE system names, made-up report and kill markers, 'YOU' pin); reviewed 2026-11-07 (no pilot, group, channel or path)"
  }
 }

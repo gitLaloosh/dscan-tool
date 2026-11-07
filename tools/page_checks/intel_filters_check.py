@@ -139,6 +139,10 @@ _tail = r'''
     pg.evaluate("(id) => document.querySelector(`#itNearList [data-it-fship=\"${id}\"]`).click()", VED); pg.wait_for_timeout(300)
     a7 = pg.evaluate(FS)
     check(a7['chips'] == ['ShipVedmak'], f'... and on from Near You {a7["chips"]}')
+    # every attacker's ship counts, not only the victim's or the final blow's (whose ships the row's text names)
+    mo = pg.evaluate("""() => { const e = {kind: 'kill', p: {ships: [], sys: []}, kill: {km: {victim: {ship_type_id: 11}, attackers: [{ship_type_id: 12, final_blow: true}, {ship_type_id: 13}]}}};
+      return [11, 12, 13, 14].map(id => itFlMatch(e, {kind: 'ship', id})); }""")
+    check(mo == [True, True, True, False], f'a kill matches the victim\'s ship and every attacker\'s, the final blow or not; not another ship {mo}')
     # an alliance and the ship: rows with both
     grp = pg.evaluate("() => { const b = document.querySelector('#itFeedList [data-it-grp^=\"alliance:\"]'); return b ? b.dataset.itGrp : null; }")
     pg.click(f'#itFeedList [data-it-grp="{grp}"]'); pg.wait_for_timeout(400)
