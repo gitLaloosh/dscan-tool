@@ -1728,7 +1728,7 @@
   .lk-dmg{padding:1px 6px; border-radius:3px; border:1px solid currentColor; font:600 10.5px var(--mono);}
   .lk-dmg.em{color:#9fbfee;} .lk-dmg.therm{color:#ee9a8e;} .lk-dmg.kin{color:#cdb595;} .lk-dmg.exp{color:#e6c766;}
   .lk-dmg.lk-ammo{color:var(--text-dim); border-color:var(--line);}
-  button.lk-more{margin-top:8px; min-height:30px; padding:0 8px; border:none; background:transparent; color:var(--cyan); font-size:12.5px;}
+  button.lk-more{margin-top:8px;}   /* v2026.11.07.6 (the owner: "yes" to the other show-more buttons in amber): the amber compact button below */
   .lk-att-msg{font-size:12px; color:var(--text-dim); padding:8px 0 0;}
   @media (max-width: 599px){
     .lk-body{position:fixed; left:0; right:0; bottom:0; top:auto; width:auto; max-width:none; max-height:82vh; border-radius:14px 14px 0 0;
@@ -2471,8 +2471,8 @@
   .pdk-more{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:9px 0 0; font:400 12px var(--sans); color:var(--text-dim);}
   /* v2026.11.07.5 (011; the owner: "i like the amber"): the compact "Show N more / Show fewer" button in the page's amber (was white), the same
      in the dossier's kill rows and hulls and the System Analyzer's opened groups; focus stays cyan */
-  .pdk-more button, .sa-cmore button{min-height:30px; padding:4px 12px; font:600 12px var(--sans); letter-spacing:0; border:1px solid var(--amber-dim); border-radius:6px; background:transparent; color:var(--amber); display:inline-flex; gap:6px; align-items:center;}
-  .pdk-more button:hover:not(:disabled), .sa-cmore button:hover{background:rgba(217,154,60,0.08); border-color:var(--amber);}
+  .pdk-more button, .sa-cmore button, button.lk-more, .sa-pilots button.sa-link[data-more]{min-height:30px; padding:4px 12px; font:600 12px var(--sans); letter-spacing:0; border:1px solid var(--amber-dim); border-radius:6px; background:transparent; color:var(--amber); display:inline-flex; gap:6px; align-items:center;}
+  .pdk-more button:hover:not(:disabled), .sa-cmore button:hover, button.lk-more:hover, .sa-pilots button.sa-link[data-more]:hover{background:rgba(217,154,60,0.08); border-color:var(--amber);}
   .pd-cols .r{text-align:right;}
   button.pd-row{width:100%; padding:8px 4px 8px 10px; border:none; border-bottom:1px solid var(--line-soft); border-radius:0; background:transparent; font:400 12.5px var(--sans); color:var(--text); text-align:left; letter-spacing:0; min-height:44px;}
   button.pd-row:hover{background:var(--panel-2);}
@@ -2516,7 +2516,7 @@
     .pdk > .pdk-t, .pdk > .pdk-s, .pdk > .pdk-x, .pdk > .pdk-val{display:none;}
     .pdk-m{display:inline;}
     .pdk-l a:not(.zk-ic){display:inline-flex; align-items:center; min-height:40px;}
-    .pdk-more button, .sa-cmore button{min-height:44px;}
+    .pdk-more button, .sa-cmore button, button.lk-more, .sa-pilots button.sa-link[data-more]{min-height:44px;}
     .fk-card .pr-cols{display:none;} .fk-rh{display:none;}
     .fk-card button.pr-row{grid-template-columns:minmax(0,1fr) auto;}
     .fk-r{grid-template-columns:minmax(0,1fr) auto;} .fk-r > button.pr-row{grid-area:1 / 1 / 2 / 3;}   /* the Fit cell sits at the card's bottom right, over the button's last line's room */
@@ -3008,7 +3008,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.5</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.6</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>

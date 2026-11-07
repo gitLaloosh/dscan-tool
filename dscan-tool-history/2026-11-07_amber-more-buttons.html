@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-07 — The other show-more buttons in amber</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>The other show-more buttons in amber</h1>
+<p><span class="tag">Page</span> 2026-11-07 &middot; <code>v2026.11.07.6</code></p>
+<h2>Why</h2>
+<ul><li>011 (v2026.11.07.5) made the dossier's and the System Analyzer's corporation show-more buttons amber and listed two others that were still cyan text. The owner: "yes".</li></ul>
+<h2>What changed</h2>
+<ul>
+<li>A corporation's "+N more" pilots in the System Analyzer (was a cyan text link, <code>sa-link</code>; now drawn as the amber button by <code>.sa-pilots .sa-link[data-more]</code>) and the killmail's "… N more" attackers (<code>lk-more</code>) use the same amber compact button as "Show 10 more". Their text and what they do are unchanged. Nothing kept in the browser changes.</li>
+</ul>
+<h2>Checks</h2>
+<ul><li><code>list_caps_check.py</code> and <code>last_kill_check.py</code> read each button's colour against the page's amber; mutants (the old class put back, the old cyan put back) each caught.</li></ul>
+</body></html>

@@ -21,7 +21,7 @@ Checks, at 1440 x 1000 unless said:
   5. the dossier: Sabre opened and "Show 10 more" pressed 3 times: 40 rows in a box exactly 10 rows + the heading tall
      (the 11th row starts at its edge), the heading inside it and sticky; after a press the first new row is just under the
      heading; the box's scroll survives pdRender; "Show fewer": 10 rows, no box;
-  6. the amber buttons: .pdk-more and .sa-cmore buttons in the page's amber, the same compact size;
+  6. the amber buttons: .pdk-more, .sa-cmore and (v2026.11.07.6) a corporation's "+N more" pilots in the page's amber, the same compact size;
   7. at 760 px nothing is capped: the columns and the rail have no max-height, no "+N more" line;
   no page errors. v2026.11.07.4 fails (nothing capped, no fold, the card in the rail).
 """
@@ -173,6 +173,10 @@ with sync_playwright() as p:
       const t = document.createElement('i'); t.style.color = amber; document.body.appendChild(t); const a = getComputedStyle(t).color; t.remove();
       return {color: s.color, amber: a, h: Math.round(b.getBoundingClientRect().height), font: s.fontSize}; }""")
     check(AM['color'] == AM['amber'] and 28 <= AM['h'] <= 32 and AM['font'] == '12px', f'"Show N more corporations" in the page\'s amber, compact ({AM})')
+    # v2026.11.07.6 (the owner: "yes" to the other show-more buttons): a corporation's "+N more" pilots, the same amber button
+    AP = pg.evaluate("""() => { const b = document.querySelector('.sa-pilots button.sa-link[data-more]'); if(!b) return null; const s = getComputedStyle(b), t = document.createElement('i'); t.style.color = 'var(--amber)'; document.body.appendChild(t); const a = getComputedStyle(t).color; t.remove();
+      return {color: s.color, amber: a, border: s.borderTopColor !== 'rgba(0, 0, 0, 0)' && s.borderTopStyle === 'solid', h: Math.round(b.getBoundingClientRect().height), font: s.fontSize, text: b.textContent}; }""")
+    check(AP and AP['color'] == AP['amber'] and AP['border'] and 28 <= AP['h'] <= 32 and AP['font'] == '12px' and AP['text'].startswith('+'), f'a corporation\'s "+N more" pilots: the same amber button ({AP})')
     # ---- 4. the scan rail ----
     pg.evaluate("window.scrollTo(0, document.querySelector('#saOut').getBoundingClientRect().top + scrollY - 10)"); pg.wait_for_timeout(300)
     R = pg.evaluate("() => { const r = document.querySelector('#scanRail'), b = r.getBoundingClientRect(); return {h: b.height, ch: r.clientHeight, sh: r.scrollHeight, mh: getComputedStyle(r).maxHeight}; }")

@@ -119,6 +119,8 @@ def desktop(b):
     check(by['FireMaccon']['tag'] == 'ammo' and by['james56']['tag'] == 'ammo' and by['Forbidden Hunter']['tag'] == '' and by['kimy JP']['tag'] == '' and by['Ca1ned']['tag'] not in ('', 'ammo'),
           f'attackers: damage tags (drone {by["Ca1ned"]["tag"]!r}, blaster/launcher "ammo", none for tackle or the hull)')
     check(pg.inner_text('.lk-more').startswith('… 2 more'), 'attackers: "… 2 more"')
+    lc = pg.evaluate("() => { const b = document.querySelector('.lk-more'), t = document.createElement('i'); t.style.color = 'var(--amber)'; document.body.appendChild(t); const a = getComputedStyle(t).color; t.remove(); return [getComputedStyle(b).color, a, getComputedStyle(b).borderTopStyle]; }")
+    check(lc[0] == lc[1] and lc[2] == 'solid', f'"… 2 more" is the amber show-more button (v2026.11.07.6) {lc}')
     if os.environ.get('SHOTS'): pg.screenshot(path=os.path.join(os.environ['SHOTS'], 'last_kill_panel.png'))
     pg.click('.lk-more'); pg.wait_for_timeout(100)
     check(all(not x['hidden'] for x in rows(pg)) and 'Show fewer' in pg.inner_text('.lk-more'), '"… 2 more" shows all seven')
