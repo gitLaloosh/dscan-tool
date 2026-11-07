@@ -133,6 +133,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #143 Playwright's click scrolls the page to the element first: to test whether a press scrolls the page, press with element.click().
 - #144 Escape for the place the text goes: text-node escaping isn't attribute escaping. escapeHtml escapes quotes; attributes are double-quoted. See also #104.
 - #145 A security policy the checks switch off is untested: one check runs the page with it on, every other opens with bypass_csp=True.
+- #146 Measure rows in a scroll box against the box itself: make it positioned, and never take a sticky row's offsetTop (it moves while stuck).
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
@@ -1052,6 +1053,19 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 146. Measure rows in a scroll box against the box itself: make it positioned, and never take a sticky row's offsetTop
+
+- **What happened (v2026.11.07.5, build queue 011, while building):** the dossier's kill rows past 10 scroll inside a box exactly 10
+  rows tall, its heading row inside it and sticky so the columns stay over theirs beside the scrollbar. The height was worked out as
+  the 11th row's `offsetTop` minus the heading's. Both were measured against the nearest positioned ancestor outside the box, and the
+  sticky heading's `offsetTop` includes how far it has moved while stuck: with the box scrolled 840 px the height came out 839 px off,
+  and "scroll the first new row under the heading" landed in the wrong place. At scroll 0 (the first draw) it happened to be right.
+- **How it was caught:** `list_caps_check.py` measured the box after three presses of "Show 10 more", when the box had scrolled.
+- **Do this instead:** give the scroll box `position:relative` so its children's `offsetTop` is from the box's own top, whatever it is
+  scrolled to, and measure from plain rows (`rows[10].offsetTop` is heading + 10 rows); use a sticky element's `offsetHeight`, never
+  its `offsetTop`. Test the measure with the box scrolled, not only freshly drawn. The same build's "+N more groups below" line had
+  the matching trap: shown, the line covers the column's bottom, so the count is taken again once it shows.
 
 ## 145. A security policy the checks switch off is untested: one check runs the page with it on, every other opens with bypass_csp=True
 

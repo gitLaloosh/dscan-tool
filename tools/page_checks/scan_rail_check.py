@@ -95,7 +95,7 @@ RAIL = """() => { const r = document.querySelector('#scanRail'); if(!r || r.hidd
   return {total: r.querySelector('.sr-total').textContent, sub: r.querySelector('.sr-sub').textContent, leg: [...r.querySelectorAll('.sr-leg > span')].map(s => s.textContent.replace(/\\s+/g, ' ').trim()),
     groups: [...r.querySelectorAll('.sr-grp')].map(g => ({h: g.querySelector('.sr-rh').textContent.replace(/\\s+/g, ' ').trim(), rows: [...g.querySelectorAll('button.sr-row')].map(b => ({nm: b.querySelector('.nm').textContent,
       tag: !!b.querySelector('.sr-cy'), wb: b.querySelector('.sr-wb').textContent, og: b.querySelector('.sr-og').textContent, n: b.querySelector('.sr-n').textContent}))})),
-    foot: [...r.querySelectorAll('.sr-foot > div')].map(d => d.textContent.replace(/\\s+/g, ' ').trim()), cards: document.querySelectorAll('#scanRail .sr-card, #resultsGrid').length}; }"""
+    foot: [...r.querySelectorAll('.sr-foot > div')].map(d => d.textContent.replace(/\\s+/g, ' ').trim()), cards: document.querySelectorAll('#saOut .sr-card, #resultsGrid').length}; }"""
 CARD = """() => { const c = document.querySelector('#scanCard'); if(!c || c.hidden) return null; const b = c.getBoundingClientRect();
   return {nm: c.querySelector('.sr-ct .nm').textContent, cn: c.querySelector('.sr-cn').textContent, w: c.querySelector('.sr-cw .dmg-badge').className.split(' ')[1], cw: c.querySelector('.sr-cw').textContent,
     bars: [...c.querySelectorAll('.sr-br')].map(x => [x.firstChild.textContent, x.querySelector('b').textContent, x.classList.contains('w')]),

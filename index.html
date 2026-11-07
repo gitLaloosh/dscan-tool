@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kI7Vrg7U98lgtojzOxvVrl/RD5rlhLBNszHf1UkWGis='; style-src 'unsafe-inline'; img-src 'self' https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GcjLpJG+5SaC3ImmLODrqDyvDaj1prgZTKaPbOFhpr0='; style-src 'unsafe-inline'; img-src 'self' https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
@@ -1989,9 +1989,25 @@
   .sa-chev{color:var(--text-dim); font-size:11px; text-align:center; transition:transform .15s;}
   details.sa-g[open] > summary .sa-chev{transform:rotate(90deg);}
   .sa-gbody{padding:0 2px 10px 40px;}
-  .sa-corp{display:flex; align-items:baseline; gap:8px; margin-top:6px; font:600 12px var(--sans); color:var(--text); min-width:0;}
+  /* v2026.11.07.5 (build queue 011, the owner's bug: "fix the alignment of kills/losses for corporations under an alliance"): fixed columns,
+     name · kills/losses · count, so the ▲ and ▼ line up down a group whatever the names' lengths (the name takes the ellipsis, never a number) */
+  .sa-corp{display:grid; grid-template-columns:minmax(0,1fr) auto 3ch; gap:8px; align-items:baseline; margin-top:6px; font:600 12px var(--sans); color:var(--text); min-width:0;}
   .sa-corp > span:first-child{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .sa-corp .c{margin-left:auto; font:600 12px var(--mono); color:var(--text-dim);}
+  .sa-corp .c{font:600 12px var(--mono); color:var(--text-dim); text-align:right;}
+  .sa-corp .sa-act-m{display:grid; grid-template-columns:var(--sa-act-w, 6ch) var(--sa-act-w, 6ch); gap:4px; margin:0; font-variant-numeric:tabular-nums;}
+  .sa-corp .sa-act-m > .s{text-align:right; white-space:nowrap;}
+  /* v2026.11.07.5 (011): an opened group shows SA_CORPS_SHOWN corporations, then "Show N more corporations" (the dossier's amber button) */
+  .sa-cmore{display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; padding:8px 0 2px;}
+  .sa-more{display:none;}
+  @media (min-width:761px){
+    /* v2026.11.07.5 (build queue 011; roadmap/list-caps-plan.md, the owner: "1A sounds good"): two columns, each at most the window's height,
+       scrolling inside; the heading stays in view; "+N more groups below" at the bottom (saMore, after a draw and on scroll, never a timer) */
+    .sa-cols .sa-col{max-height:calc(100vh - 24px); overflow-y:auto; overscroll-behavior:auto; scrollbar-gutter:stable;}
+    .sa-cols .sa-col > .card-head{position:sticky; top:-14px; z-index:2; background:var(--panel-2); margin-top:-14px; padding-top:14px;}
+    .sa-cols .sa-col > .sa-more{display:block; position:sticky; bottom:-6px; z-index:2; margin:0 -14px -6px; padding:6px 14px 8px; background:var(--panel-2);
+      border-top:1px solid var(--line-soft); font:400 11.5px var(--sans); color:var(--text-dim);}
+    .sa-cols .sa-col > .sa-more[hidden]{display:none;}
+  }
   .sa-pilots{display:flex; flex-wrap:wrap; gap:4px 6px; margin:5px 0 4px;}
   .sa-pilots button.sa-pilot{padding:3px 8px; min-height:28px; border:1px solid var(--line); color:var(--text); font:400 12px var(--sans); border-radius:3px; letter-spacing:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .sa-pilots button.sa-pilot:hover{border-color:var(--cyan); color:var(--cyan); background:transparent;}
@@ -2327,12 +2343,14 @@
   button.fk-vbtn .pr-chev{color:var(--text-dim); font-weight:400;}
   @media (max-width:599px){ button.fk-vbtn{min-height:32px;} }
   /* v2026.11.02.2: Ships on Scan, the scan rail beside Local's results (roadmap/scan-rail-plan.md) */
-  .sa-out{margin-top:14px;}
+  .sa-out{margin-top:14px; position:relative;}   /* v2026.11.07.5 (011): #scanCard is placed in here, outside the rail that scrolls */
   .sa-out.rail:not(.wide){display:grid; grid-template-columns:320px minmax(0,1fr); gap:16px; align-items:start;}
   .sa-out.rail:not(.wide) > #saResults > .sa-sum:first-child{margin-top:0;}
   .sr-rail[hidden]{display:none;}
   .sr-rail{position:relative; z-index:5; padding:14px 12px 10px; margin:0;}
   .sa-out.rail:not(.wide) > .sr-rail{position:sticky; top:12px;}
+  /* v2026.11.07.5 (build queue 011): over 760 px the rail is capped at the window and scrolls inside; the wheel goes on to the page at its ends (LESSON #96) */
+  @media (min-width:761px){ .sa-out.rail:not(.wide) > .sr-rail{max-height:calc(100vh - 24px); overflow-y:auto; overscroll-behavior:auto; scrollbar-gutter:stable;} }
   .sr-head{display:flex; align-items:center; gap:8px;} .sr-head h3{margin:0; font:600 15px var(--sans); color:var(--heading);}
   .sr-top{display:flex; align-items:baseline; gap:8px; margin-top:8px;}
   .sr-total{font:600 26px var(--mono); color:var(--heading); line-height:1;} .sr-total-l{font:400 13px var(--sans); color:var(--text);}
@@ -2448,8 +2466,13 @@
   .fk-you{display:inline-block; margin-left:6px; padding:0 5px; border:1px solid var(--line); border-radius:3px; font:600 10px/14px var(--sans); color:var(--text-dim); vertical-align:1px; border-color:transparent; background:var(--tag-fill);}
   .pdk-m{display:none;}
   .pdk-h{font:600 var(--label-size) var(--sans); letter-spacing:var(--label-tracking); text-transform:uppercase; color:var(--text-dim); min-height:0; padding:8px 0 5px;}
+  .pd-kl > .pdk-h{position:sticky; top:0; z-index:1; background:color-mix(in srgb, var(--panel-2) 55%, var(--panel));}
+  .pd-kl{position:relative; overflow-y:auto; overscroll-behavior:auto; scrollbar-gutter:stable; border-bottom:1px solid var(--line-soft);}   /* v2026.11.07.5 (011): max-height set by pdKlFit; the wheel goes on at its ends (LESSON #96) */
   .pdk-more{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:9px 0 0; font:400 12px var(--sans); color:var(--text-dim);}
-  .pdk-more button{min-height:30px; padding:4px 12px; font:600 12px var(--sans); letter-spacing:0; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--heading); display:inline-flex; gap:6px; align-items:center;}
+  /* v2026.11.07.5 (011; the owner: "i like the amber"): the compact "Show N more / Show fewer" button in the page's amber (was white), the same
+     in the dossier's kill rows and hulls and the System Analyzer's opened groups; focus stays cyan */
+  .pdk-more button, .sa-cmore button{min-height:30px; padding:4px 12px; font:600 12px var(--sans); letter-spacing:0; border:1px solid var(--amber-dim); border-radius:6px; background:transparent; color:var(--amber); display:inline-flex; gap:6px; align-items:center;}
+  .pdk-more button:hover:not(:disabled), .sa-cmore button:hover{background:rgba(217,154,60,0.08); border-color:var(--amber);}
   .pd-cols .r{text-align:right;}
   button.pd-row{width:100%; padding:8px 4px 8px 10px; border:none; border-bottom:1px solid var(--line-soft); border-radius:0; background:transparent; font:400 12.5px var(--sans); color:var(--text); text-align:left; letter-spacing:0; min-height:44px;}
   button.pd-row:hover{background:var(--panel-2);}
@@ -2493,7 +2516,7 @@
     .pdk > .pdk-t, .pdk > .pdk-s, .pdk > .pdk-x, .pdk > .pdk-val{display:none;}
     .pdk-m{display:inline;}
     .pdk-l a:not(.zk-ic){display:inline-flex; align-items:center; min-height:40px;}
-    .pdk-more button{min-height:40px;}
+    .pdk-more button, .sa-cmore button{min-height:44px;}
     .fk-card .pr-cols{display:none;} .fk-rh{display:none;}
     .fk-card button.pr-row{grid-template-columns:minmax(0,1fr) auto;}
     .fk-r{grid-template-columns:minmax(0,1fr) auto;} .fk-r > button.pr-row{grid-area:1 / 1 / 2 / 3;}   /* the Fit cell sits at the card's bottom right, over the button's last line's room */
@@ -2985,7 +3008,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.4</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.5</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -10516,6 +10539,7 @@ function scanRailRender(){
   if(!el || !scanData) return;
   const keep = scanCard.row ? {id: scanCard.id, pinned: scanCard.pinned} : null;   // v2026.11.02.3: an open card survives a redraw
   scanCardClose();
+  const top = el.scrollTop;
   const D = scanData, ships = D.ships, n = ships.reduce((a, s) => a + s.n, 0);
   const tot = {on: 0, off: 0, none: 0};
   for(const s of ships) for(const k in tot) tot[k] += s[k];
@@ -10545,10 +10569,11 @@ function scanRailRender(){
     <div class="sr-top"><span class="sr-total">${n}</span><span class="sr-total-l">ship${n === 1 ? '' : 's'} on scan</span></div>
     <div class="sr-sub">${escapeHtml(head)}</div>${bar}
     <div class="sr-groups">${groups || '<div class="pr-msg">No ships on this scan.</div>'}</div>
-    ${foot ? `<div class="sr-foot">${foot}</div>` : ''}
-    <div class="sr-card" id="scanCard" role="tooltip" hidden></div>`;
+    ${foot ? `<div class="sr-foot">${foot}</div>` : ''}`;
+  if(top) el.scrollTop = top;   // v2026.11.07.5 (011): the rail's own scroll survives a redraw
   el.hidden = false;
   if(out) out.classList.add('rail');
+  scanCardEl();
   if(keep){ const r = el.querySelector(`button.sr-row[data-sr="${keep.id}"]`); if(r) scanCardOpen(r, keep.pinned); }
 }
 // The hover card: one at a time, built when it opens
@@ -10571,9 +10596,18 @@ function scanCardHtml(s){
     ${cyno}
     <div class="sr-cf">${scanData.hasDist ? `${escapeHtml(scanGridText(s, true))} · ` : ''}base hull, no fit (D-Scan shows no fits)</div>`;
 }
+// v2026.11.07.5 (build queue 011): the card lives in #saOut beside the rail, not inside it, so the rail's scroll box (capped at the
+// window) can't clip it; inline under its row on a phone. Made once; put back in #saOut whenever it closes (the rail's rebuild would drop it).
+function scanCardEl(){
+  const out = document.getElementById('saOut');
+  let card = document.getElementById('scanCard');
+  if(!card && out && document.createElement){ card = document.createElement('div'); card.className = 'sr-card'; card.id = 'scanCard'; card.setAttribute('role', 'tooltip'); card.hidden = true; }
+  if(card && out && card.parentElement !== out) out.appendChild(card);
+  return card;
+}
 function scanCardOpen(row, pin){
-  const rail = document.getElementById('scanRail'), card = document.getElementById('scanCard');
-  if(!rail || !card || !scanData) return;
+  const rail = document.getElementById('scanRail'), out = document.getElementById('saOut'), card = scanCardEl();
+  if(!rail || !out || !card || !scanData) return;
   clearTimeout(scanCard.openT); clearTimeout(scanCard.closeT);
   const s = scanData.ships.find(x => String(x.typeId) === row.dataset.sr);
   if(!s) return;
@@ -10587,8 +10621,17 @@ function scanCardOpen(row, pin){
   const inline = window.matchMedia('(max-width: 760px)').matches;
   card.classList.toggle('inline', inline); card.classList.remove('up', 'left');
   if(inline){ row.after(card); card.style.left = card.style.top = ''; return; }
-  if(card.parentElement !== rail) rail.appendChild(card);
-  const R = rail.getBoundingClientRect(), r = row.getBoundingClientRect(), W = card.offsetWidth || 300, H = card.offsetHeight;
+  scanCardPlace();
+}
+// Beside its row (right, else left), flipped up when it would leave the window at the bottom; placed against #saOut. Again on the
+// rail's scroll and the page's (the rail is sticky), one frame later; closed when its row has scrolled out of the rail's view.
+function scanCardPlace(){
+  const out = document.getElementById('saOut'), rail = document.getElementById('scanRail'), card = document.getElementById('scanCard'), row = scanCard.row;
+  if(!out || !rail || !card || card.hidden || !row || card.classList.contains('inline')) return;
+  if(!row.isConnected){ scanCardClose(); return; }
+  const R = out.getBoundingClientRect(), r = row.getBoundingClientRect(), V = rail.getBoundingClientRect(), W = card.offsetWidth || 300, H = card.offsetHeight;
+  if(r.bottom <= V.top + 1 || r.top >= V.bottom - 1){ scanCardClose(); return; }
+  card.classList.remove('up', 'left');
   let left = r.right - R.left + 10;
   if(r.right + 10 + W > window.innerWidth - 8){ left = r.left - R.left - W - 10; card.classList.add('left'); }
   let top = r.top - R.top - 8;
@@ -10598,12 +10641,12 @@ function scanCardOpen(row, pin){
 function scanCardClose(){
   clearTimeout(scanCard.openT); clearTimeout(scanCard.closeT);
   const card = document.getElementById('scanCard');
-  if(card){ card.hidden = true; card.classList.remove('pinned'); }
+  if(card){ card.hidden = true; card.classList.remove('pinned', 'inline'); scanCardEl(); }
   if(scanCard.row){ scanCard.row.setAttribute('aria-expanded', 'false'); scanCard.row.classList.remove('open'); scanCard.row.removeAttribute('aria-describedby'); }
   Object.assign(scanCard, {id: null, pinned: false, row: null});
 }
 (function scanRailInit(){
-  const rail = typeof document !== 'undefined' && document.getElementById && document.getElementById('scanRail');
+  const rail = typeof document !== 'undefined' && document.getElementById && document.getElementById('saOut');   // v2026.11.07.5: #saOut holds the rail and the card
   if(!rail || !rail.addEventListener || typeof document.addEventListener !== 'function' || typeof window === 'undefined' || !window.addEventListener) return;   // LESSON #36: stub DOM
   const later = (fn, ms) => setTimeout(fn, ms);
   rail.addEventListener('mouseover', (e) => {
@@ -10630,10 +10673,13 @@ function scanCardClose(){
     if(scanCard.pinned && scanCard.row === row){ scanCardClose(); return; }
     scanCardOpen(row, true);   // a press (or a tap) keeps it open until pressed again, Esc or a press elsewhere
   });
-  rail.addEventListener('keydown', (e) => { if(e.key === 'Escape' && scanCard.row){ const r = scanCard.row; scanCardClose(); r.focus({preventScroll: true}); e.stopPropagation(); } });
+  rail.addEventListener('keydown', (e) => { if(e.key === 'Escape' && scanCard.row && e.target.closest && e.target.closest('#scanRail, #scanCard')){ const r = scanCard.row; scanCardClose(); r.focus({preventScroll: true}); e.stopPropagation(); } });
   document.addEventListener('click', (e) => { if(scanCard.pinned && !e.target.closest('#scanCard, .sr-row')) scanCardClose(); });
   // a resize (a phone's address bar hiding as you scroll, a window dragged) moves an open card with its row (LESSON #128)
   window.addEventListener('resize', () => { if(scanCard.row && scanCard.row.isConnected) scanCardOpen(scanCard.row, scanCard.pinned); });
+  // v2026.11.07.5 (011): the rail scrolls inside and is sticky, so an open card follows its row on any scroll (one frame, only while open)
+  let raf = 0;
+  document.addEventListener('scroll', () => { if(!scanCard.row || raf || typeof requestAnimationFrame !== 'function') return; raf = requestAnimationFrame(() => { raf = 0; scanCardPlace(); }); }, {capture: true, passive: true});
 })();
 
 function renderDebugRows(rows){
@@ -12408,6 +12454,12 @@ function pdKillList(h){
   return [...h.kills, ...pd.older.filter(k => k.hull === h.id)].filter(k => pd.mode === 'all' || k.size === pd.mode).sort((a, b) => b.t - a.t);
 }
 const PD_RECENT_MS = 4 * 3600 * 1000;   // v2026.10.31.3 (the owner: "timestamps in the WHEN column within the past 4 hours should be in amber")
+const PD_KHEAD = '<div class="pdk pdk-h" aria-hidden="true"><span>When</span><span>Victim</span><span title="How many pilots were on the kill">Fleet size</span><span>System</span><span>Their weapon</span><span>With them</span><span class="pdk-val">Value</span><span></span></div>';
+// v2026.11.07.5 (build queue 011): past PD_SHOW_STEP rows they scroll inside a box PD_SHOW_STEP rows tall (pdKlFit measures it), the
+// heading row inside it (sticky, so the columns stay over theirs beside the scrollbar), with "Show fewer" beside "Show 10 more"
+function pdKlOpenHtml(h, n){ return n > PD_SHOW_STEP ? `<div class="pd-kl" data-pd-kl="${Number(h.id)}">${PD_KHEAD}` : PD_KHEAD; }
+function pdKlCloseHtml(n){ return n > PD_SHOW_STEP ? '</div>' : ''; }
+function pdFewerHtml(h, total){ return pd.shown > PD_SHOW_STEP && total > PD_SHOW_STEP ? `<button type="button" data-pd-fewer="${Number(h.id)}">Show fewer</button>` : ''; }
 function pdKillsHtml(h){
   const d = pd.d, list = pdKillList(h), shown = list.slice(0, pd.shown);
   const nm = (id) => (d.info.get(id) || {}).name || '', cls = (id) => (d.info.get(id) || {}).cls || '';
@@ -12444,9 +12496,8 @@ function pdKillsHtml(h){
   const more = list.length > shown.length || unread || nf
     ? `<button type="button" data-pd-more="${h.id}"${pd.busy ? ' disabled' : ''}>${pd.busy ? '<span class="busy-spin" aria-hidden="true"></span>Reading older kills…' : label}</button>` : '';
   return `<div class="pd-kills" id="pdk-${h.id}" role="region" aria-label="Their ${escapeHtml(h.name)} kills">
-    <div class="pdk pdk-h" aria-hidden="true"><span>When</span><span>Victim</span><span title="How many pilots were on the kill">Fleet size</span><span>System</span><span>Their weapon</span><span>With them</span><span class="pdk-val">Value</span><span></span></div>
-    ${lines || `<div class="pd-msg pd-dim">No ${what} among those read.</div>`}
-    <div class="pdk-more">${more}<span>${escapeHtml(note)}${escapeHtml(fail)}</span></div></div>`;
+    ${pdKlOpenHtml(h, shown.length)}${lines || `<div class="pd-msg pd-dim">No ${what} among those read.</div>`}${pdKlCloseHtml(shown.length)}
+    <div class="pdk-more">${more}${pdFewerHtml(h, list.length)}<span>${escapeHtml(note)}${escapeHtml(fail)}</span></div></div>`;
 }
 const pdNamesAsked = new Set();
 async function pdNames(ids){
@@ -12492,8 +12543,23 @@ function pdRender(){
   if(!pd.d){ el.hidden = true; el.innerHTML = ''; return; }
   if(el.querySelector('details.info-pop[open]')) return setTimeout(pdRender, 400);
   el.hidden = false;
+  const kl = el.querySelector('.pd-kl'), klTop = kl ? [kl.dataset.pdKl, kl.scrollTop] : null;   // v2026.11.07.5 (011): the box's scroll survives a redraw
+  const fk = el.contains(document.activeElement) && document.activeElement.closest('.pd-kl') ? document.activeElement.getAttribute('data-pd-fleet') : null;
   el.innerHTML = pdHtml(pd.d);
   fillOrgTickers(el);   // v.93: the victims' corporations
+  pdKlFit(el);
+  const nk = el.querySelector('.pd-kl');
+  if(nk && klTop && nk.dataset.pdKl === klTop[0]) nk.scrollTop = klTop[1];
+  if(fk){ const f = el.querySelector('.pd-kl [data-pd-fleet="' + Number(fk) + '"]'); if(f) f.focus({preventScroll: true}); }
+}
+// The box is exactly PD_SHOW_STEP rows tall, measured (a row's height changes with the width and wrapping), so the 11th row starts at its edge
+function pdKlFit(el){
+  const kl = el.querySelector('.pd-kl');
+  if(!kl) return;
+  const rows = kl.querySelectorAll(':scope > .pdk:not(.pdk-h)');   // the heading row sits inside, sticky, so the columns line up with the scrollbar's gutter
+  if(rows.length <= PD_SHOW_STEP) return;
+  const h = rows[PD_SHOW_STEP].offsetTop;   // LESSON #146: .pd-kl is positioned, so this is from its top whatever its scroll (never the sticky heading's offsetTop)
+  if(h > 0){ const v = `${h}px`; if(kl.style.maxHeight !== v) kl.style.maxHeight = v; }
 }
 // The pilot line names the hull on screen and its class (the hull dropdown did until v.89; ship class v.74).
 function pdHullLabel(name, typeId){
@@ -12598,7 +12664,12 @@ async function pdShowHull(character, hull, statusEl, forceRefresh){
     const x = e.target.closest('[data-pd-exp]');   // v.93: one row's kills open at a time
     if(x){ const id = Number(x.dataset.pdExp); pd.open = pd.open === id ? null : id; pd.shown = PD_SHOW_STEP; pdRender(); const again = el.querySelector(`[data-pd-exp="${id}"]`); if(again) again.focus({preventScroll: true}); return; }
     const mo = e.target.closest('[data-pd-more]');
-    if(mo){ const id = Number(mo.dataset.pdMore); await pdMore(id); const again = el.querySelector(`[data-pd-more="${id}"]`) || el.querySelector(`[data-pd-exp="${id}"]`); if(again) again.focus({preventScroll: true}); return; }
+    const fw = e.target.closest('[data-pd-fewer]');   // v2026.11.07.5 (011)
+    if(fw){ const id = Number(fw.dataset.pdFewer); pd.shown = PD_SHOW_STEP; pdRender(); const again = el.querySelector('[data-pd-more="' + id + '"]') || el.querySelector('[data-pd-exp="' + id + '"]'); if(again) again.focus({preventScroll: true}); return; }
+    if(mo){ const id = Number(mo.dataset.pdMore), was = pd.shown; await pdMore(id);
+      const kl = el.querySelector('.pd-kl[data-pd-kl="' + id + '"]'), first = kl && kl.querySelectorAll(':scope > .pdk:not(.pdk-h)')[was];   // the box shows the first new row just under its heading
+      if(first) kl.scrollTop = first.offsetTop - kl.firstElementChild.offsetHeight;
+      const again = el.querySelector(`[data-pd-more="${id}"]`) || el.querySelector(`[data-pd-exp="${id}"]`); if(again) again.focus({preventScroll: true}); return; }
     const fb = e.target.closest('[data-pd-fleet]');   // v.94: the fleet on that kill, in the Fleet tab
     if(fb){ const id = Number(fb.dataset.pdFleet), st = pd.kStubs.find(x => x && x.killmail_id === id) || (pd.extra && pd.extra.killmail_id === id ? pd.extra : null); if(st && st.zkb && st.zkb.hash) fkOpen(id, st.zkb.hash, pd.charId); return; }
     const ah = e.target.closest('[data-pd-allhulls]');   // v2026.11.01.5: every hull read, or the busiest again
@@ -22432,6 +22503,7 @@ const SIDE_ROWS_DEFAULT = 15, SIDE_ROWS_MAX = 30;
 const SA_PAST_SECONDS = 604800;               // zKillboard pastSeconds: 7 days, its maximum (whole hours)
 const SA_KM_MAX = 50;                         // killmails read for the evidence and for the suggestions
 const SA_NAMES_PER_CORP = 6;                  // D7: then "+N more"
+const SA_CORPS_SHOWN = 8;                     // v2026.11.07.5 (011): an opened group's first corporations, then "Show N more corporations"
 const SA_FOLD_SIZE = 2, SA_FOLD_AFTER = 6;    // neutral groups of 1-2 pilots fold into one row past 6 groups
 const SA_SUGGEST_MIN = 2, SA_SUGGEST_MAX = 8; // a suggestion needs 2 shared kills; 8 shown at most
 const EVE_NAME_MAX = 37;
@@ -22666,7 +22738,7 @@ function localLooksWrong(text){
   return null;
 }
 
-const sa = {last: null, open: new Set(), more: new Set(), friendOpen: false, evidence: null, evidenceErr: null,
+const sa = {last: null, open: new Set(), more: new Set(), corpsAll: new Set(), friendOpen: false, evidence: null, evidenceErr: null,
   view: 'pilots', rows: new Map(), rowLimit: 0, gen: 0, scanTypes: new Set(), scanReady: Promise.resolve(), rowOrder: null, lastGroups: null};   // v.82: pilot rows (L3)
 // v.92 (pilot-dossier-plan.md D4-D6): the Pilots card's gang-size switch, kept in this browser
 const SA_SIZES = [['auto', 'Auto'], ['solo', 'Solo'], ['small', 'Small gang'], ['fleet', 'Fleet'], ['all', 'All']];
@@ -22749,6 +22821,14 @@ function saPilotsHtml(c, gkey){
   const all = sa.more.has(`${gkey}|${c.id}`), shown = all ? c.pilots : c.pilots.slice(0, SA_NAMES_PER_CORP), rest = c.pilots.length - shown.length;
   return `<div class="sa-pilots">${shown.map(({name: n, id}) => `<button type="button" class="sa-pilot" data-pilot="${escapeHtml(n)}" title="${escapeHtml(n)}: open in the Pilot Analyzer">${escapeHtml(n)}${saActMiniHtml('character', id, false)}</button>`).join('')}${rest > 0 ? `<button type="button" class="sa-link" data-more="${escapeHtml(`${gkey}|${c.id}`)}">+${rest} more</button>` : ''}</div>`;
 }
+// The row under an opened group's corporations: "Show N more corporations" (with their pilots) or, pressed, "Show fewer"
+function saCorpsMoreHtml(g, gk){
+  if(g.corps.length <= SA_CORPS_SHOWN) return '';
+  const all = sa.corpsAll.has(gk), rest = g.corps.slice(SA_CORPS_SHOWN), hidP = rest.reduce((a, c) => a + c.pilots.length, 0);
+  const label = all ? 'Show fewer' : `Show ${rest.length} more corporation${rest.length === 1 ? '' : 's'}`;
+  const ctx = all ? `the first ${SA_CORPS_SHOWN} corporations` : `${hidP} pilot${hidP === 1 ? '' : 's'}`;
+  return `<div class="sa-cmore"><button type="button" data-sa-corps="${escapeHtml(gk)}" aria-expanded="${escapeHtml(String(all))}">${escapeHtml(label)}</button><span class="ctx">${escapeHtml(ctx)}</span></div>`;
+}
 function saGroupHtml(g, colKey){
   const gk = `${colKey}:${g.key}`;
   const open = sa.open.has(gk);
@@ -22763,24 +22843,31 @@ function saGroupHtml(g, colKey){
               : ctxHtml(g.kind === 'corporation' ? 'no alliance' : `${g.corps.length} corporation${g.corps.length === 1 ? '' : 's'}`);
   }
   const title = g.npc || g.small ? escapeHtml(g.name) : `${escapeHtml(g.name)} ${orgTickerHtml(g.kind, g.id)}`;
+  // v2026.11.07.5 (build queue 011, the owner: "look good"): the first SA_CORPS_SHOWN corporations, then "Show N more corporations"
+  // (the data is in hand: no request); pressed, all of them and "Show fewer"; kept in sa.corpsAll through redraws
+  const whole = g;
+  if(g.corps.length > SA_CORPS_SHOWN && !sa.corpsAll.has(gk)) g = {...g, corps: g.corps.slice(0, SA_CORPS_SHOWN)};
   const body = `<div class="sa-gbody">${g.corps.map(c => {
       const ck = g.small ? `${c.group.kind}:${c.group.id}` : null;
       const label = g.small ? `${escapeHtml(c.group.name)} ${orgTickerHtml(c.group.kind, c.group.id)}${c.group.kind === 'alliance' ? ` · ${escapeHtml(c.name)}` : ''}`
                             : `${escapeHtml(c.name)} ${orgTickerHtml('corporation', c.id)}`;
       return `<div class="sa-corp"><span${ck ? ` data-org="${ck}"` : ''}>${label}</span>${saActMiniHtml('corporation', c.id, true)}<span class="c">${c.pilots.length}</span></div>${saPilotsHtml(c, gk)}`;
-    }).join('')}</div>`;
+    }).join('')}${saCorpsMoreHtml(whole, gk)}</div>`;
   const act = g.npc || g.small ? '' : saActGroupHtml(g.kind, g.id);   // v2026.11.02.3: no total on a fold; each group inside shows its own
   return `<details class="sa-g" data-sa-g="${escapeHtml(gk)}"${open ? ' open' : ''}><summary>${logo}<span class="sa-gname"><span class="nm">${title}</span>${sub}${act}</span><span class="sa-gn">${g.n}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>${body}</details>`;
 }
 function saColHtml(k, groups){
   const n = groups.reduce((s, g) => s + g.n, 0), key = k === 'h' ? 'hostile' : 'neutral';
   return `<div class="card sa-col" data-sa-col="${k}"><div class="card-head">${SIDE_MARK_BY_WORD[k]}<h3>${escapeHtml(cardName(key))}</h3><span class="sa-n">${n}</span>${k === 'h' ? infoBtnHtml('hostile') : infoBtnHtml('neutral')}</div>
-    ${groups.length ? groups.map(g => saGroupHtml(g, k)).join('') : `<div class="sa-empty">None in local.</div>`}</div>`;
+    ${groups.length ? groups.map(g => saGroupHtml(g, k)).join('') : `<div class="sa-empty">None in local.</div>`}<div class="sa-more" hidden></div></div>`;   // v2026.11.07.5 (011): filled by saMore
 }
 function saRender(){
   const host = document.getElementById('saResults');
   if(!host) return;
   if(!sa.last){ host.innerHTML = ''; return; }
+  // v2026.11.07.5 (build queue 011, LESSON #119): a redraw keeps each column's scroll and the focused control
+  const keepTop = {}; for(const c of host.querySelectorAll('.sa-col[data-sa-col]')) keepTop[c.dataset.saCol] = c.scrollTop;
+  const fk = host.contains(document.activeElement) ? saFocusKey(document.activeElement) : null;
   const G = saGroups(), cnt = (k) => G[k].reduce((s, g) => s + g.n, 0);
   const S = {h: cnt('h'), n: cnt('n'), f: cnt('f')}, tot = S.h + S.n + S.f, threat = S.h + S.n, rows = side.rec.rows;
   const small = threat > 0 && threat <= rows;   // v.82 (D8 "A: Pilots / Groups switch"): a small gang gets one row per pilot
@@ -22808,10 +22895,53 @@ function saRender(){
     <details class="sa-g sa-friendly" data-sa-g="friendly"${sa.friendOpen ? ' open' : ''}><summary>${SIDE_MARK.f}<span class="sa-gname"><span class="nm">${escapeHtml(cardName('friendly'))}</span><span class="ctx sa-ftk">${G.f.slice(0, 6).map(g => g.kind ? orgTickerHtml(g.kind, g.id) : '').join(' ')}</span></span><span class="sa-gn">${S.f}</span><span class="sa-chev" aria-hidden="true">▶</span></summary>
       <div class="sa-friendly-body">${G.f.length ? G.f.map(g => saGroupHtml(g, 'f')).join('') : '<div class="sa-empty">None in local.</div>'}</div></details>`;
   fillOrgTickers(host);
+  for(const c of host.querySelectorAll('.sa-col[data-sa-col]')) if(keepTop[c.dataset.saCol]) c.scrollTop = keepTop[c.dataset.saCol];
+  if(fk){ const f = host.querySelector(fk); if(f) f.focus({preventScroll: true}); }
+  saMoreSoon();
   if(small && sa.view !== 'groups') saPumpRows();
   else if(!small && threat > 0 && saFleetOn && sa.view !== 'groups') saPumpFleet();
 }
 function saAgo(ts){ const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'just now' : `from ${m} min ago`; }
+// v2026.11.07.5 (build queue 011; roadmap/list-caps-plan.md item 1): a selector for the focused control, to find it again after a redraw
+function saFocusKey(a){
+  const q = (v) => '"' + String(v).replace(/["\\]/g, '\\$&') + '"';
+  const d = a.closest && a.closest('details[data-sa-g]');
+  if(a.tagName === 'SUMMARY' && d) return 'details[data-sa-g=' + q(d.dataset.saG) + '] > summary';
+  for(const k of ['saCorps', 'more', 'pilot', 'saView', 'saAct', 'saSize']) if(a.dataset && a.dataset[k] !== undefined)
+    return '[data-' + k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()) + '=' + q(a.dataset[k]) + ']';
+  return null;
+}
+// "+N more groups below": the groups whose top is below a column's visible bottom. Only while the columns scroll (two columns, over
+// 760 px); written only when it changes; after a draw and on the column's own scroll (one frame), never on a timer (LESSON #120).
+function saMore(){
+  for(const col of document.querySelectorAll('#saResults .sa-cols .sa-col')){
+    const m = col.querySelector(':scope > .sa-more');
+    if(!m) continue;
+    const count = () => {
+      if(col.scrollHeight <= col.clientHeight + 1) return 0;
+      const b = col.getBoundingClientRect().bottom - (m.hidden ? 0 : m.offsetHeight);   // the line itself covers the column's bottom
+      let n = 0; for(const g of col.querySelectorAll(':scope > details.sa-g')) if(g.getBoundingClientRect().top >= b - 1) n++;
+      return n;
+    };
+    const put = (n) => { const t = n ? `+${n} more group${n === 1 ? '' : 's'} below` : ''; if(m.textContent !== t) m.textContent = t; if(m.hidden !== !n) m.hidden = !n; };
+    let n = count();
+    if(n && m.hidden){ put(n); n = count(); }   // shown now: counted again with the line's height (a group behind it is below too)
+    else if(!n && !m.hidden){ put(0); n = count(); }
+    put(n);
+  }
+}
+let saMoreRaf = 0;
+function saMoreSoon(){ if(saMoreRaf || typeof requestAnimationFrame !== 'function') return; saMoreRaf = requestAnimationFrame(() => { saMoreRaf = 0; saMore(); }); }
+// An opened group whose body runs past its column's bottom: the column (never the page) scrolls just enough to show it, never
+// putting the group's heading above the column's top (010's rule for Near You)
+function saShowGroup(d){
+  const col = d.closest('.sa-cols .sa-col');
+  if(!col || col.scrollHeight <= col.clientHeight + 1) return;
+  const C = col.getBoundingClientRect(), G = d.getBoundingClientRect(), head = col.querySelector(':scope > .card-head'), more = col.querySelector(':scope > .sa-more');
+  const top = C.top + (head ? head.offsetHeight : 0), bottom = C.bottom - (more && !more.hidden ? more.offsetHeight : 0);
+  if(G.bottom <= bottom) return;
+  col.scrollTop += Math.max(0, Math.min(G.bottom - bottom + 4, G.top - top));
+}
 
 // ---- L3: one row per pilot in a small gang (v2026.10.14.82; plan D8, the owner's answers to the mockup: "A: Pilots / Groups
 // switch", "Most recently seen", "Hull only, fit unknown", "Hostile first, then DPS") ----
@@ -23878,12 +24008,17 @@ async function sideTagForPilot(charId){
     const k = d.dataset.saG;
     if(k === 'friendly'){ sa.friendOpen = d.open; return; }
     if(d.open) sa.open.add(k); else sa.open.delete(k);   // kept for the next redraw (a change to Standings)
+    if(d.open) saShowGroup(d);   // v2026.11.07.5 (011): the column scrolls, never the page
+    saMoreSoon();
   }, true);
+  res.addEventListener('scroll', (e) => { if(e.target.classList && e.target.classList.contains('sa-col')) saMoreSoon(); }, {capture: true, passive: true});   // v2026.11.07.5 (011)
   res.addEventListener('click', (e) => {
     const pb = e.target.closest('button.sa-pilot');
     if(pb){ runPilotFromLink({name: pb.dataset.pilot}); return; }
     const mb = e.target.closest('[data-more]');
     if(mb){ sa.more.add(mb.dataset.more); saRender(); return; }
+    const cb = e.target.closest('[data-sa-corps]');   // v2026.11.07.5 (011): every corporation of an opened group, or the first SA_CORPS_SHOWN again
+    if(cb){ const k = cb.dataset.saCorps; if(sa.corpsAll.has(k)) sa.corpsAll.delete(k); else sa.corpsAll.add(k); cb.focus({preventScroll: true}); saRender(); return; }
     const vb = e.target.closest('[data-sa-view]');   // v.82
     if(vb){ sa.view = vb.dataset.saView; saRender(); const again = res.querySelector(`[data-sa-view="${sa.view}"]`); if(again) again.focus({preventScroll: true}); return; }
     const rb = e.target.closest('[data-pr-pilot]');
@@ -27668,13 +27803,19 @@ function saActGroupHtml(kind, id){
   return `<span class="sa-act-g">${k}${l}</span>`;
 }
 // Compact numbers for a corporation or pilot: "▲3 ▼1" (links for a corporation; text inside a pilot's button, which can't hold links)
+function saActSlotHtml(kind, id, which, e, t){   // v2026.11.07.5 (011): one slot of a corporation line, ▲ kills or ▼ losses, or nothing
+  const n = which === 'kills' ? e.k : e.l;
+  return n ? saActLink(kind, id, which, (which === 'kills' ? SA_ACT_UP : SA_ACT_DOWN) + n, t) : '';
+}
 function saActMiniHtml(kind, id, links){
   const C = saActCount();
   if(!C) return '';
   const e = (kind === 'character' ? C.p : C.c).get(id);
-  if(!e) return '';
+  const slots = kind === 'corporation' && links;   // v2026.11.07.5 (011): a corporation line's fixed columns (▲ slot, ▼ slot), empty ones too
+  if(!e) return slots ? '<span class="sa-act-m"><span class="s"></span><span class="s"></span></span>' : '';
   const t = `In ${sa.act.name}, last ${saSet.win} h: ${saActWord(e.k, 'kill', 'kills')} (${itIsk(e.ki)} ISK), ${saActWord(e.l, 'loss', 'losses')} (${itIsk(e.li)} ISK)`;
   if(!links) return `<span class="sa-act-m" title="${escapeHtml(t)}">${e.k ? `${SA_ACT_UP}${e.k}` : ''}${e.k && e.l ? ' ' : ''}${e.l ? `${SA_ACT_DOWN}${e.l}` : ''}</span>`;
+  if(slots) return `<span class="sa-act-m"><span class="s">${saActSlotHtml(kind, id, 'kills', e, t)}</span><span class="s">${saActSlotHtml(kind, id, 'losses', e, t)}</span></span>`;
   return `<span class="sa-act-m">${e.k ? saActLink(kind, id, 'kills', `${SA_ACT_UP}${e.k}`, t) : ''}${e.l ? saActLink(kind, id, 'losses', `${SA_ACT_DOWN}${e.l}`, t) : ''}</span>`;
 }
 // A hull row's second line in the scan rail ("▼ 3 lost · 120M  ▲ on 14 kills · 2.1B"), always shown when there's something
