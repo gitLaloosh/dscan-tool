@@ -169,7 +169,9 @@ with sync_playwright() as p:
         skip(pg)
         if pg.evaluate("() => it.kf.blk >= 3"): break
     r = pg.evaluate(STATE)
-    check(not r['head'] and r['blk'] >= 3 and bool(r['strip']) and not seqs(h0), f'reading back, the published kills unreadable: counted, the strip shown ({r["head"]}, {r["blk"]}, {r["strip"]!r})')
+    # v2026.11.06.6 (build queue 019): an unreadable published kill is asked once more, then sequence.json is read to tell a gap from a dead
+    # feed; here it can't be read either, so the pass counts as today (nothing read past)
+    check(not r['head'] and r['blk'] >= 3 and bool(r['strip']), f'reading back, the published kills unreadable: counted, the strip shown ({r["head"]}, {r["blk"]}, {r["strip"]!r})')
     ctx.close()
     check(not errs, f'no page errors {errs[:3]}')
     b.close()

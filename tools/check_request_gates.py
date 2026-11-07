@@ -41,7 +41,7 @@ SITES = {
 }
 # function -> its esiFetch calls (v2026.11.04.4; before, each of these had its own fetch() to ESI)
 ESI_SITES = {'resolveNamesToIds', 'getType', 'getGroup', 'resolveIdsToNames', 'fetchKillmail',
-    'getOrg', 'saAffiliation', 'paAffEsi', 'itSecFetch', 'itGateDest', 'gdServerVersion'}   # v2026.11.04.3: gdServerVersion (ESI /status/ once per load: item data after a patch); v2026.10.31.5: itGateDest (a stargate's destination); v2026.10.29.5: itCheckBuild (ESI /status/) removed
+    'getOrg', 'saAffiliation', 'paAffEsi', 'itSecFetch', 'itGateDest', 'gdServerVersion', 'esiDownCheck'}   # v2026.11.06.6: esiDownCheck (ESI /status/ once a minute only while ESI is down, build queue 015)   # v2026.11.04.3: gdServerVersion (ESI /status/ once per load: item data after a patch); v2026.10.31.5: itGateDest (a stargate's destination); v2026.10.29.5: itCheckBuild (ESI /status/) removed
 HOST_RX = {'zkb': r'\$\{ZKB\}|zkillboard\.com/api', 'r2z2': r'\$\{IT_R2Z2\}|r2z2\.zkillboard\.com', 'esi': r'\$\{ESI\}|esi\.evetech\.net'}
 problems = []
 
@@ -118,6 +118,10 @@ mm = re.search(r'ZKB_SLOW_RETRY_MS = (\d+)', src)
 if not mm or int(mm.group(1)) < 30000: problems.append(f'ZKB_SLOW_RETRY_MS is {mm and mm.group(1)} (at least 30000 ms)')
 if not (re.search(r'if\(sl && sl\.n >= 2\)\{ if\(!o\.again\) throw', q) and re.search(r'sl\.at \+ ZKB_SLOW_RETRY_MS - Date\.now\(\)', q)):
     problems.append('zkbFetch no longer asks a slow list only once more, ZKB_SLOW_RETRY_MS after (and again only when pressed)')
+# v2026.11.06.6 (build queue 015): ESI's /status/ while ESI is down: once a minute at most, one timer (cleared before it is set again)
+mm = re.search(r'const ESI_DOWN_CHECK_MS = (\d+);', src)
+if not mm or int(mm.group(1)) < 60000: problems.append(f'ESI_DOWN_CHECK_MS is {mm and mm.group(1)} (at least 60000 ms)')
+if not re.search(r'clearTimeout\(esiDown\.t\); esiDown\.t = down \? setTimeout\(', body(src, 'esiDownCheck') or ''): problems.append('esiDownCheck no longer keeps one timer, set only while ESI is down')
 mm = re.search(r'const ZKB_SPACING_MS = (\d+);', src)
 if not mm or int(mm.group(1)) < 1000: problems.append(f'ZKB_SPACING_MS is {mm and mm.group(1)} (at least 1000 ms)')
 # v2026.11.02.1: a caller may keep a reserve (the Fleet tab's Load all), which only ever lowers the cap, never raises it

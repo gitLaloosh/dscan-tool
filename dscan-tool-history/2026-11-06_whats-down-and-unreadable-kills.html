@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-06 — What's down, and one unreadable kill file</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>What's down, and one unreadable kill file</h1>
+<p><span class="tag">Page</span> 2026-11-06 &middot; <code>v2026.11.06.6</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 015, Project doc <code>roadmap/outage-notices-plan.md</code>, mockup <code>Claude outputs/outage_notices_mockup.html</code> (approved 2026-11-05 and 2026-11-06). The owner, 2026-11-05: "we need to be able to identify this and let users know when it happens so they're not just looking at an empty feed." 016 built the strip and its first line (zKillboard's kill feed can't be read); this adds the rest.</li>
+<li>Build queue 019, Project doc <code>roadmap/r2z2-unreadable-kill-plan.md</code>: after zKillboard fixed its doubled CORS header (2026-11-06), kill files published before the fix stayed unreadable, and Intel's read-back kept asking for one of them every 30 s, so live kills never came. The owner left it to the build session whether to deliver it with 015: it is here because both change the kill reader and what the strip says about it.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>ESI down:</b> a lookup that comes back with nothing the browser may read (ESI's maintenance answer carries no CORS header) or 502, 503 or 504, while the browser is online, makes one <code>/status/</code> call. If that fails too, the strip says "EVE's ESI is down (maintenance). Names, fits and new kills won't load until it's back. Checking every minute.", the gauge says "ESI down", Intel's Feed note and status line say why no kills come, and <code>/status/</code> is asked once a minute until it answers (one timer, only while down). Lookup errors that failed for this say "(ESI is down)". While ESI is down, the unreadable-feed line gives way to it.</li>
+<li><b>EVE's daily downtime:</b> from 4 minutes before 11:00 UTC the strip counts down to it; at 11:00 one <code>/status/</code> asks whether ESI is down, and if so the line says it's the daily downtime. Nothing is shown when ESI is fine.</li>
+<li><b>zKillboard's pause:</b> its line uses ZKB-01's own words (the owner's choice), counting down, gone when the pause ends.</li>
+<li><b>The feed behind:</b> from the kills the reader already read (nothing extra asked), fewer than 40 in the last 15 minutes by zKillboard's publish time (the owner: "40 per 15 min"), or a median age over 30 minutes, once the reader has caught up: the strip, "Kills slow" in the gauge and a Feed note. It goes after 5 minutes back to normal. The line says "in the last 15 min" (the mockup's example said 30) so the number matches the rule.</li>
+<li><b>One unreadable kill file:</b> a read-back keeps every readable kill. The unreadable ones are asked once more, together, 6 s later. Still unreadable, published (at or below <code>sequence.json</code>'s number, or a later one read) and with <code>sequence.json</code> readable when read again then, they are read past as gaps; from then on an unreadable file doesn't hold the rest of a batch back. A kill not published yet stays "not there yet" (the owner: "Published only"). If <code>sequence.json</code> can't be read either, the feed is down, as before. Three passes in a row with every kill file unreadable count as the feed being down (016's notice).</li>
+<li>Nothing is kept in the browser that wasn't before.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>outage_check.py</code> (Intel's own start from <code>intel_check.py</code>, on a copy of the page with shorter waits; R2Z2 and ESI as stand-ins, never the live services), all of the plans' cases: one unreadable file asked exactly twice and read past, the rest read once; 40 in a row read past within a few passes; unreadable once, then fine; the whole feed unreadable; every kill file unreadable with the index fine; zKillboard's 429 during a read-back; ESI down (one <code>/status/</code> to confirm, once a minute while down, all gone when back); one failed lookup while <code>/status/</code> answers; ESI down over the unreadable feed; two lines at once; the downtime at 10:56 and 11:02 UTC; the pause's countdown (the line written once); the feed behind, and a stale <code>sequence.json</code> that isn't.</li>
+<li>Mutants: each caught: no retry (read past on the first failure), retried without end, the readable ones after a failure thrown away, read-past kills counted toward the notice, held-back kills read past, kills not yet published read past, read past without reading <code>sequence.json</code> now (caught by <code>intel_guard_check</code>), the strip on one failed ESI lookup, <code>/status/</code> twice a second, the ESI line left up after recovery, the unreadable-feed line shown instead of ESI down, "behind" never shown, "behind" from a stale <code>sequence.json</code>.</li>
+<li>Building it: the plan's retry could never have run, since a failed read in a read-back held the rest of its batch back (they came back "not sent"); now the batch goes on once a gap has been read past, and the retry is sent. And the plan's "<code>sequence.json</code> read in the last minute" would have read a feed that had just died past as gaps (up to 300 requests in that minute); <code>sequence.json</code> is now read once when the retry fails, one request a batch.</li>
+<li>Changed for the new behaviour: <code>intel_check.py</code>'s R2Z2 stand-in (above), <code>intel_guard_check.py</code> (after a failed read in a read-back, that one is asked once more, then <code>sequence.json</code>), <code>feed_down_check.py</code> (the same pass reads <code>sequence.json</code>), <code>check_request_gates.py</code> (<code>esiDownCheck</code> listed; its one-a-minute timer checked).</li>
+<li>The full tier (<code>run_checks.py --auto</code> picked <code>all</code>): 13 lints, the pyfa chain and 73 page checks in 37 min. It caught one thing: the Intel checks' shared R2Z2 stand-in failed every kill file unreadably as a shortcut for "no kills", which 019 now rightly treats as the feed's kills being unreadable (the notice came on in <code>intel_redraw_check</code>). The stand-in now answers a readable 404 for a kill that isn't there, and the 12 checks built on it pass. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
+<li>Page size: 756,781 &rarr; 760,082 (+3.3 KB) bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #142: in a sync Playwright check the stand-ins answer only while Playwright runs, so never <code>time.sleep</code>; restart a reader the way the page does (a new generation), not by swapping its state; wait for what the user would see.</li>
+<li>LESSON #140 again: one bad item (a kill file) shouldn't stall the rest; read past it once you know the source itself is fine.</li>
+</ul>
+</body></html>

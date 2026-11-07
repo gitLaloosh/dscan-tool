@@ -129,6 +129,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #111 A lookup that ignores capitals turns ordinary words into people: match what the person typed, not just the letters.
 - #139 A page that catches its own errors shows them on the card, not as page errors: a check must read that error line too.
 - #141 A word the reader sets aside can sit inside a name: look names up across it, then decide by the exact spelling. See also #111.
+- #142 A sync Playwright check's stand-ins answer only while Playwright runs: never time.sleep, and restart a reader with a new generation.
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
@@ -1048,6 +1049,20 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 142. A sync Playwright check's stand-ins answer only while Playwright runs: never time.sleep, and restart a reader with a new generation
+
+- **What happened (v2026.11.06.6, building outage_check for 015 and 019):** two of the new check's cases failed in ways that looked
+  like page bugs. (1) The check waited with `time.sleep`; Playwright's sync API runs route handlers only while Python is inside a
+  Playwright call, so every request the page made during the sleep hung, and ESI's once-a-minute /status/ seemed never to be sent.
+  (2) Between cases the check replaced `it.kf` (the kill reader's state) while the previous case's reader was still running; that
+  reader kept going and wrote into the new state (`itR2Fetch` reads the global `it.kf`), so the new reader's requests were held back.
+  A third looked like a stuck countdown: the check read the strip 1.3 s after a change, and the page's 1 s sweep can come later.
+- **How it was caught:** debug prints of the page's own state (the reader busy with nothing sent, a pending fetch that answered at
+  once when asked from the check) instead of changing the page.
+- **Do this instead:** in a sync Playwright check, wait with `pg.wait_for_timeout` or `pg.wait_for_function`, never `time.sleep`.
+  Restart a reader the way the page does (turning Intel off and on bumps `it.gen`, so older runs stop), not by swapping its state.
+  Wait for what the user would see (the strip's text) rather than reading it a fixed time after the cause.
 
 ## 141. A word the reader sets aside can sit inside a name: look names up across it, then decide by the exact spelling
 
