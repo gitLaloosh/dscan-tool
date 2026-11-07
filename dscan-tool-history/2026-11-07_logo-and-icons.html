@@ -29,7 +29,7 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <ul>
 <li>New <code>logo_check.py</code>: the logo inline before the h1, <code>aria-hidden</code>, not focusable; its colours the tokens, no tile; the T tops within 1 px at 1440, 390 and 320 px (the mockup's <code>pxcheck.py</code> method: inked rows of a 4&times; screenshot); the title row fits on one line with no sideways scroll; the icon links point at files that exist, the PNGs 32 and 180 px. <code>csp_check.py</code>: the three icons load under the policy. <code>render_icons.py --check</code> is a quick lint. <code>check_pii.py</code> allows the two icon PNGs by name (image files are otherwise refused outside the game-icon folders).</li>
 <li>Mutants, each caught: the T offset removed (all three widths), <code>aria-hidden</code> dropped, the tile put back, an orbit in another colour, the touch icon missing, <code>'self'</code> left out of the policy (<code>csp_hash --check</code>, and <code>csp_check</code>: the icons blocked).</li>
-<li>FULLRUN</li>
+<li>Every check (<code>run_checks.py --auto</code> picked <code>all</code>: new files at the repo root): 18 lints, the pyfa chain and 77 page checks in 31 min, 0 failed, 0 flaky. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
 <li>Page size: 762,547 &rarr; 762,922 bytes gzipped (<code>gzip -9</code>).</li>
 </ul>
 </body></html>
