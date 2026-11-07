@@ -9,7 +9,7 @@ start (its made-up Chatlogs folder, ESI and groups; you in 1DQ1-A), then made-up
     Analyzer), the corporation (a button: its logo and [TICKER]), the alliance (logo and <TICKER>); none for a pilot without one;
   * hover: the whole chip gets an outline and dividers between its parts, only the part under the pointer fills, in white (no cyan);
     keyboard focus on a part does the same;
-  * a corporation pressed: the Feed's search box says [TICKER], the Feed shows only lines with that corporation (a kill too), the
+  * a corporation pressed: a filter chip says [TICKER] (v2026.11.07.1, build queue 010; before, the search box), the Feed shows only lines with that corporation (a kill too), the
     button is pressed, Near You isn't filtered; pressed again, everything; an alliance the same with <TICKER> (both of its
     corporations); a ticker typed in brackets filters the same way; the standing pressed does nothing;
   * the name pressed: the Pilot Analyzer;
@@ -68,14 +68,15 @@ _tail = r'''
     h4 = pg.evaluate(HOV, P_RLH)
     check(h4[0] != 'rgba(0, 0, 0, 0)' and h4[1][1].startswith('rgba(255, 255, 255') and clear(h4[1][2]), f'keyboard focus on the name: the chip outlined, the name filled {h4}')
     # a corporation pressed: the Feed shows only it; again: everything; Near You never filtered
-    ST = """() => [document.querySelector('[data-it-q]').value, document.querySelectorAll('#itNearList .it-nb').length,
+    # v2026.11.07.1 (build queue 010): a group pressed adds a filter chip under the bar (its ticker), not text in the search box
+    ST = """() => [[...document.querySelectorAll('#intelPanel .it-fchips .it-fc .tk')].map(t => t.textContent).join(' '), document.querySelectorAll('#itNearList .it-nb').length,
       [...document.querySelectorAll('#itFeedList .it-fd')].map(r => [r.classList.contains('kill'), ((r.querySelector('.it-raw .raw') || {}).textContent || '')]),
       [...document.querySelectorAll('#itFeedList [data-it-grp][aria-pressed="true"]')].map(b => b.textContent)]"""
     s0 = pg.evaluate(ST)
     pg.click(sel(P_RLH, 'co')); tick(pg, 400)
     s1 = pg.evaluate(ST)
     check(s1[0] == '[RLH]' and s1[1] == s0[1] and [x[1] for x in s1[2]] == [L1[0]] and s1[3] and set(s1[3]) == {'[RLH]'} and len(s0[2]) >= 4,
-          f'[RLH] pressed: the search box says [RLH], the Feed only its line, the button pressed, Near You unchanged {s1} (before {len(s0[2])} rows)')
+          f'[RLH] pressed: its chip says [RLH], the Feed only its line, the button pressed, Near You unchanged {s1} (before {len(s0[2])} rows)')
     pg.click(sel(P_RLH, 'co')); tick(pg, 400)
     s2 = pg.evaluate(ST)
     check(s2[0] == '' and len(s2[2]) == len(s0[2]) and not s2[3], f'pressed again: everything {s2[0]!r} {len(s2[2])}')
@@ -85,11 +86,11 @@ _tail = r'''
           f'<CRTS> pressed: both of its corporations\' lines and the kill its pilots made, not the Lantern Bay line {s3}')
     pg.fill('[data-it-q]', '[bldf]'); tick(pg, 400)
     s4 = pg.evaluate(ST)
-    check(sorted(x[1] for x in s4[2] if not x[0]) == [L1[1]] and sum(1 for x in s4[2] if x[0]) == 1 and set(s4[3]) == {'[BLDF]'}, f'[bldf] typed: that corporation exactly, its button pressed {s4}')
-    pg.fill('[data-it-q]', ''); tick(pg, 400)
-    q0 = pg.evaluate("() => [document.querySelector('[data-it-q]').value, document.getElementById('tabIntel').style.display]")
+    check(sorted(x[1] for x in s4[2] if not x[0]) == [L1[1]] and sum(1 for x in s4[2] if x[0]) == 1 and set(s4[3]) == {'<CRTS>'}, f'[bldf] typed, the <CRTS> chip on: both apply (that corporation exactly, in that alliance); the pressed buttons follow the chips {s4}')
+    pg.fill('[data-it-q]', ''); pg.evaluate("() => { it.fl = []; itRender(true); }"); tick(pg, 400)
+    q0 = pg.evaluate("() => [[...document.querySelectorAll('#intelPanel .it-fchips .it-fc .tk')].map(t => t.textContent).join(' '), document.getElementById('tabIntel').style.display]")
     pg.click(sel(P_RLH, 'st')); tick(pg, 400)
-    q1 = pg.evaluate("() => [document.querySelector('[data-it-q]').value, document.getElementById('tabIntel').style.display]")
+    q1 = pg.evaluate("() => [[...document.querySelectorAll('#intelPanel .it-fchips .it-fc .tk')].map(t => t.textContent).join(' '), document.getElementById('tabIntel').style.display]")
     check(q0 == q1 == ['', q0[1]], f'the standing pressed: nothing happens {q0} {q1}')
     # reduced motion: no transitions
     pg.emulate_media(reduced_motion='reduce'); tick(pg, 100)
@@ -99,14 +100,14 @@ _tail = r'''
     # without hover: first tap shows the parts, the second acts, elsewhere puts it back
     pg.set_viewport_size({'width': 390, 'height': 900}); pg.evaluate("() => { window.__nh = itNoHover; window.itNoHover = () => true; itRenderLists(); }"); tick(pg, 300)
     pg.click(sel(P_RLH, 'co')); tick(pg, 300)
-    p1 = pg.evaluate("(name) => [document.querySelector('[data-it-q]').value, [...document.querySelectorAll('#itFeedList .it-chip.p')].find(x => x.querySelector('.nm').textContent === name).classList.contains('armed'), getComputedStyle([...document.querySelectorAll('#itFeedList .it-chip.p')].find(x => x.querySelector('.nm').textContent === name)).outlineColor]", P_RLH)
+    p1 = pg.evaluate("(name) => [[...document.querySelectorAll('#intelPanel .it-fchips .it-fc .tk')].map(t => t.textContent).join(' '), [...document.querySelectorAll('#itFeedList .it-chip.p')].find(x => x.querySelector('.nm').textContent === name).classList.contains('armed'), getComputedStyle([...document.querySelectorAll('#itFeedList .it-chip.p')].find(x => x.querySelector('.nm').textContent === name)).outlineColor]", P_RLH)
     pg.evaluate("() => itRenderLists()"); tick(pg, 200)   # the lists redraw as lines arrive: the chip stays shown
     pr = pg.evaluate("(name) => { const c = [...document.querySelectorAll('#itFeedList .it-chip.p')].find(x => x.querySelector('.nm').textContent === name); return [c.classList.contains('armed'), getComputedStyle(c).outlineColor]; }", P_RLH)
     pg.click(sel(P_RLH, 'co')); tick(pg, 400)
-    p2 = pg.evaluate("() => document.querySelector('[data-it-q]').value")
+    p2 = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-fchips .it-fc .tk')].map(t => t.textContent).join(' ')")
     pg.click(sel(P_RLH, 'co')); tick(pg, 400)   # still shown (kept across the redraw): off at once
     pg.click(sel(P_BLDF, 'co')); tick(pg, 200); pg.click('#itFeedList', position={'x': 3, 'y': 3}); tick(pg, 200)
-    p3 = pg.evaluate("() => [document.querySelector('[data-it-q]').value, document.querySelectorAll('#itFeedList .it-chip.armed').length]")
+    p3 = pg.evaluate("() => [[...document.querySelectorAll('#intelPanel .it-fchips .it-fc .tk')].map(t => t.textContent).join(' '), document.querySelectorAll('#itFeedList .it-chip.armed').length]")
     ow = pg.evaluate("() => document.documentElement.scrollWidth")
     nh = pg.evaluate("() => Math.max(...[...document.querySelectorAll('#itFeedList .it-chip .nm')].map(n => Math.round(n.getBoundingClientRect().height / (parseFloat(getComputedStyle(n).fontSize) * 1.25))))   // lines (a flex item's text gives one rect however many lines)")
     check(p1[:2] == ['', True] and p1[2] != 'rgba(0, 0, 0, 0)' and pr[0] and pr[1] != 'rgba(0, 0, 0, 0)' and p2 == '[RLH]' and p3 == ['', 0] and ow <= 390 and nh == 1,

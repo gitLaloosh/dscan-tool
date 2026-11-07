@@ -132,9 +132,18 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   mark lives on it (off, clear cyan, not working hollow, near amber, in system the Hostile red + pulse); the tokens --st-clear,
   --st-near, --st-in. "My Fit", never "My Ship", in what users read. `profile_check.py`.
   Intel's pilot chip (v2026.11.01.2, the owner's B2): standing (a tip only: standings aren't changed from a chip), name (Pilot
-  Analyzer), corporation (logo + [TICKER]) and alliance (logo + <TICKER>) as separate parts; a group pressed filters the Feed by its
-  ticker (`[CORP]` / `<ALLIANCE>` in the search box); hover: outline + dividers, the part under the pointer filled white; without
-  hover the first tap shows the parts. `pilot_chip_check.py`.
+  Analyzer), corporation (logo + [TICKER]) and alliance (logo + <TICKER>) as separate parts; a group pressed filters the Feed by it
+  (a filter chip since v2026.11.07.1; the search box stays the user's); hover: outline + dividers, the part under the pointer filled
+  white; without hover the first tap shows the parts. `pilot_chip_check.py`.
+  Feed filter chips (v2026.11.07.1, build queue 010; roadmap/near-you-height-plan.md "Additions"; mockup `Claude outputs/
+  intel_filters_mockup.html`): pressing a system, corporation, alliance or ship (ship chips in the Feed, ship names in Near You's rows)
+  adds a chip (`it.fl`, `itFlToggle`) on its own line under the filter bar ("Only" · chips · "Clear all" with 2+); pressed again
+  removes it; a second system replaces the first; every chip and the typed text must match (`itFlMatch`; a kill matches a ship that
+  died or killed). Near You is never filtered; the map reads the system chip (`itFlSys`). Chips aren't saved. Near You's kill badges
+  add up their kills' ISK (zKillboard's values, `itIsk`). Near You's height (over 900 px): as tall as the map column, never under
+  `IT_NEAR_FLOOR` (the map's smallest box + heading), the list scrolls inside (`contain: size`), "+N more systems below"
+  (`itNearMore`, after a draw and on its scroll, never a timer); opening a row or a map press that keeps a route scrolls the list
+  (`itNearShow`, never the page); a redraw keeps its scroll and focus. `intel_filters_check.py`.
   One close button (v2026.11.01.3): every info and settings panel (role="dialog") has the shared `button.x-close`, 32 px in its top
   right (44 px on a phone), at every width; Esc and a press outside still close, the focus back on the opener. Menus (⋮ fit actions,
   hull variants, slot menus, the My Fit picker on a wide window) have none. `check_ui_rules.py` (5), `close_buttons_check.py`.

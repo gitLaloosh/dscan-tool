@@ -130,6 +130,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #139 A page that catches its own errors shows them on the card, not as page errors: a check must read that error line too.
 - #141 A word the reader sets aside can sit inside a name: look names up across it, then decide by the exact spelling. See also #111.
 - #142 A sync Playwright check's stand-ins answer only while Playwright runs: never time.sleep, and restart a reader with a new generation.
+- #143 Playwright's click scrolls the page to the element first: to test whether a press scrolls the page, press with element.click().
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
@@ -1049,6 +1050,17 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 143. Playwright's click scrolls the page to the element first: to test whether a press scrolls the page, press with element.click()
+
+- **What happened (v2026.11.07.1, building intel_filters_check for 010):** the plan says opening a Near You row scrolls only the
+  list, never the page. The check pressed the row's toggle with `pg.click()` and read `window.scrollY` before and after; it moved
+  every time, so the page looked wrong. Playwright's `click` scrolls the element into view before it presses (actionability), so the
+  page had been moved by the check, not by the page.
+- **How it was caught:** the same press from `element.click()` in the page left `scrollY` at 0, and the page's own code has no
+  `scrollIntoView` or `window.scroll` on that path.
+- **Do this instead:** when a check asks "did this scroll the page?", press with a JS `element.click()` (or dispatch the event), and
+  bring the element into view yourself beforehand if the case needs it. Use `pg.click()` where scrolling doesn't matter. See also #142.
 
 ## 142. A sync Playwright check's stand-ins answer only while Playwright runs: never time.sleep, and restart a reader with a new generation
 

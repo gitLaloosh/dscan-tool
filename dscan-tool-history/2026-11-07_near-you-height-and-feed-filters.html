@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-07 — Near You as tall as the map; Feed filter chips; ISK on kill badges</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Near You as tall as the map; Feed filter chips; ISK on kill badges</h1>
+<p><span class="tag">Page</span> 2026-11-07 &middot; <code>v2026.11.07.1</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 010, Project doc <code>roadmap/near-you-height-plan.md</code>. The owner, 2026-11-03: a longer Near You list "pushes the feed further down the page"; Near You should be capped at the map side's height. Mockups <code>near_you_height_mockup.html</code> (approved 2026-11-03) and <code>Claude outputs/intel_filters_mockup.html</code> (the additions, approved 2026-11-06: "1. yes, 2. OK, 3. yes, 4. yes, 5. yes").</li>
+<li>The additions (2026-11-06, "do it"): the rest of the backlog item "open a Near You row; system names filter the Feed" as filter chips, ship names as filters, and the backlog item "ISK totals next to killmail badges in the near you list".</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Near You's height (over 900 px):</b> the list is as tall as the map column and scrolls inside it; it is never shorter than the map's smallest box and its heading (<code>IT_NEAR_FLOOR</code>, 430 px), so the Feed starts right under the two. 900 px and under is unchanged. "+N more systems below" says how many rows are out of view, written after a draw and on the list's scroll (never on a timer). Opening a row low in the list scrolls the list to show it, and pressing a system on the map that keeps its route scrolls the list to its row; hovering and un-pinning never scroll, and nothing scrolls the page. A redraw keeps the list's scroll and the focus.</li>
+<li><b>Feed filter chips (every width):</b> pressing a system, a corporation or alliance on a pilot chip, or a ship adds a chip on its own line under the filter bar ("Only" &middot; chips &middot; "Clear all" with two or more). The same press again, or the chip's &times;, removes it. A second system replaces the first. Every chip and the typed search must match. The search box stays the user's (a group press used to write its ticker there). Near You is never filtered; the map reads the system chip. Chips aren't kept after a reload.</li>
+<li><b>Ship names as buttons:</b> the ship chips in the Feed and the ship names in Near You's rows. A kill matches a ship that died or was among the attackers.</li>
+<li><b>ISK on Near You's kill badges:</b> each badge adds up its kills' values in amber ("2 friendlies lost 194.0M"); the hover has the exact total and how many of the kills had a value. From the kills already read; nothing new is asked.</li>
+<li>Nothing new is kept in the browser.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>intel_filters_check.py</code> (Intel's start from <code>intel_kills_check.py</code>, stand-ins only): the height at 1440 and 1024 px, the "+N" line and its count, the floor, 800 px unchanged, the wheel not trapped, a row opened, the map press, scroll and focus through a redraw; every filter case (one system, a second replacing it, pressed again, system + ship, &times; and the focus, Clear all, a group chip, typed text with chips, Near You unchanged, the map's system, the quick key); 390 px; the badges' ISK per badge.</li>
+<li>Changed for the new behaviour: <code>pilot_chip_check.py</code> (a group press adds a chip instead of writing the search box), <code>intel_rows_check.py</code>, <code>intel_map_check.py</code>.</li>
+<li>MUTANTS</li>
+<li>FULLRUN</li>
+<li>PERF</li>
+<li>Page size: 760,082 &rarr; SIZE bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #143: Playwright's <code>click</code> scrolls the page to the element first, so a check asking whether a press scrolls the page has to press with <code>element.click()</code>.</li>
+</ul>
+</body></html>
