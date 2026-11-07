@@ -121,7 +121,7 @@ def km_text(r):
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     # ---------------- desktop
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1100}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1100}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.route(re.compile(r'https://images\.evetech\.net/.*'), icon_route)
     pg.goto('file://' + HTML); pg.evaluate("localStorage.clear(); localStorage.setItem('dscanFitView', 'ring')"); pg.reload(); pg.click('#tabBtnFit')
@@ -223,7 +223,7 @@ with sync_playwright() as p:
     ctx.close()
     # ---------------- phone
     for w in (390, 320):
-        ctx = b.new_context(viewport={'width': w, 'height': 844}, is_mobile=True, has_touch=True); pg = ctx.new_page()
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 844}, is_mobile=True, has_touch=True); pg = ctx.new_page()
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg); pg.route(re.compile(r'https://images\.evetech\.net/.*'), icon_route)
         pg.goto('file://' + HTML); pg.evaluate("localStorage.clear(); localStorage.setItem('dscanFitView', 'ring')"); pg.reload(); pg.click('#tabBtnFit')

@@ -66,7 +66,7 @@ HEAD = """() => { const card = document.querySelector('#fitAnalyzerResults .fl-d
 
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     pg.click('#tabBtnFit')

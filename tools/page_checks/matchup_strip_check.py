@@ -73,7 +73,7 @@ def settle(pg, ms=400):
     pg.wait_for_timeout(ms); pg.wait_for_function("() => !document.querySelector('.fit-card-busy')", timeout=60000); pg.wait_for_timeout(ms)
 
 def desktop(b):
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
@@ -147,7 +147,7 @@ def desktop(b):
 
 def phone(b):
     W = 375
-    ctx = b.new_context(viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     pg.tap('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles')

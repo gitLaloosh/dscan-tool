@@ -83,7 +83,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs = []
     def new_ctx(w):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx); return ctx
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx); return ctx
     def open_fleet(pg, ship=True):
         pg.goto('file://' + HTML); pg.evaluate("(s) => localStorage.setItem('dscanSide', JSON.stringify(s))", SIDE); pg.reload(); pg.wait_for_timeout(400)
         if ship:

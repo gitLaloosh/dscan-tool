@@ -52,7 +52,7 @@ ROWS = f"""() => Object.fromEntries([...document.querySelectorAll('{R} .ammo-dps
 
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     pg.click('#tabBtnFit'); paste(pg, NERGAL)

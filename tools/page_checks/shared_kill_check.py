@@ -40,7 +40,7 @@ def tabs_shown(pg, ms=60000):
 def wait_idle(pg):
     pg.wait_for_function("() => document.querySelector('#pilotBusy').hidden", timeout=90000); pg.wait_for_timeout(250)
 def page(b, w, h, mobile=False, url=''):
-    ctx = b.new_context(viewport={'width': w, 'height': h}, is_mobile=mobile, has_touch=mobile)
+    ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': h}, is_mobile=mobile, has_touch=mobile)
     try: ctx.grant_permissions(['clipboard-read', 'clipboard-write'])
     except Exception: pass
     pg = ctx.new_page()

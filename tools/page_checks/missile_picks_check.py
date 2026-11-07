@@ -110,7 +110,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     seen = {}
     for vw in (1440, 390, 320):
-        pg = b.new_page(viewport={'width': vw, 'height': 1000})
+        pg = b.new_page(bypass_csp=True, viewport={'width': vw, 'height': 1000})
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
         pg.click('#tabBtnFit')

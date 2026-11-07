@@ -3,6 +3,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3/REBVi9NIfxo5u2zQwShzDwH5vsXwlYABMpkBZzYd0='; style-src 'unsafe-inline'; img-src https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1"><!-- v2026.10.14.15: without this, phones drew the page as a ~980px desktop page shrunk to fit. LESSON #33 -->
 <title>Threat Vector · EVE Online threat assessment</title>
 <style>
@@ -3125,6 +3127,19 @@
 </div>
 
 <script>
+// v2026.11.07.3 (build queue 023; Project doc roadmap/sso-hardening-plan.md; LESSON #145): an image that can't load. The page's CSP
+// allows no inline handlers (onerror="..." is refused), so an <img> says what to do in data-imgfail and this one listener does it.
+// Error events don't bubble: capture. hide: keep its room; remove; none: display none; next / next-block: show the fallback after
+// it (as '' / 'block'); initials: the profile portrait becomes its pilot's initials (data-initials), built as text, never HTML.
+document.addEventListener('error', (e) => {
+  const t = e.target; if(!(t instanceof HTMLImageElement) || !t.dataset.imgfail) return;
+  const k = t.dataset.imgfail, nx = t.nextElementSibling;
+  if(k === 'hide') t.style.visibility = 'hidden';
+  else if(k === 'remove') t.remove();
+  else if(k === 'none') t.style.display = 'none';
+  else if(k === 'next' || k === 'next-block'){ t.style.display = 'none'; if(nx) nx.style.display = k === 'next' ? '' : 'block'; }
+  else if(k === 'initials'){ const sp = document.createElement('span'); sp.className = 'pf-ini'; sp.textContent = t.dataset.initials || ''; t.replaceWith(sp); }
+}, true);
 const ESI = 'https://esi.evetech.net/latest';
 const ZKB = 'https://zkillboard.com/api';
 
@@ -10497,7 +10512,7 @@ function scanRailRender(){
   const row = (s) => {
     const w = scanHullInfo(s).weakest;
     return `<button type="button" class="sr-row" data-sr="${s.typeId}" aria-expanded="false" title="${escapeHtml(`${s.name}: ${s.n} on scan; hover, focus or press for its resists, ammo and drones`)}">`
-      + `<img class="sr-ico" src="https://images.evetech.net/types/${s.typeId}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
+      + `<img class="sr-ico" src="https://images.evetech.net/types/${s.typeId}/icon?size=32" alt="" loading="lazy" data-imgfail="hide">`
       + `<span class="sr-nm"><span class="nm">${escapeHtml(s.name)}</span>${s.tag ? '<span class="sr-cy">cyno</span>' : ''}</span>`
       + `<span class="dmg-badge ${w} sr-wb" title="${escapeHtml(`Weakest to ${DMG_FULL[w]}`)}">${DMG_LABEL[w]}</span>`
       + `<span class="sr-og">${D.hasDist && s.on ? `${s.on} on grid` : ''}</span><span class="sr-n">${s.n}</span></button>`;
@@ -10530,7 +10545,7 @@ function scanCardHtml(s){
   const tur = (sys) => ammo(sys[0].toUpperCase() + sys.slice(1), t[sys] ? `${t[sys].name}${t[sys].fallbackTo ? ` (${DMG_LABEL[t[sys].fallbackTo]})` : ''}` : 'no good charge', turretRecText(t[sys], w, I.second));
   const dr = I.drones;
   const cyno = s.cyno.length ? `<div class="sr-ccy"><span class="sr-cy">cyno</span>Can fit ${s.cyno.map(k => CYNO_WORD[k]).join(' or ')} (CCP's fitting rules; D-Scan can't say if one is fitted)</div>` : '';
-  return `<div class="sr-ct"><img class="sr-ico" src="https://images.evetech.net/types/${s.typeId}/icon?size=32" alt="" onerror="this.style.visibility='hidden'"><span class="nm">${escapeHtml(s.name)}</span><span class="sr-cn">×${s.n}</span></div>
+  return `<div class="sr-ct"><img class="sr-ico" src="https://images.evetech.net/types/${s.typeId}/icon?size=32" alt="" data-imgfail="hide"><span class="nm">${escapeHtml(s.name)}</span><span class="sr-cn">×${s.n}</span></div>
     <div class="sr-cm">${escapeHtml(s.group.name)} · ${sz.label}${sz.note || ''}</div>
     ${gdHullNoteHtml(s.typeId, s.name)}
     <div class="sr-cw"><span class="dmg-badge ${w}">${DMG_FULL[w]}</span><span>weakest, then ${DMG_FULL[I.second]}</span></div>
@@ -10985,7 +11000,7 @@ function layerIconHtml(layer, extraClass, titleText){
 function eveTypeIconHtml(typeId, title, extraClass, fallbackSvg){
   const t = escapeHtml(title || '');
   const fb = fallbackSvg ? fallbackSvg.replace('<svg', '<svg style="display:none"') : '';
-  return `<span class="eve-icon-wrap${extraClass ? ' ' + extraClass : ''}" title="${t}"><img class="eve-icon" src="https://images.evetech.net/types/${typeId}/icon?size=64" alt="${t}" loading="lazy" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='';">${fb}</span>`;
+  return `<span class="eve-icon-wrap${extraClass ? ' ' + extraClass : ''}" title="${t}"><img class="eve-icon" src="https://images.evetech.net/types/${typeId}/icon?size=64" alt="${t}" loading="lazy" data-imgfail="next">${fb}</span>`;
 }
 function repairsHeaderIconsHtml(){
   // v.24: in-game item icons (see EVE_ICON_TYPE); the SVGs below are the fallbacks.
@@ -18255,7 +18270,7 @@ function nextModuleState(item, from, items){
   return {to: from, skipped};
 }
 function moduleStateRowHtml(item, copyIdx, state, items, chip = '', unloaded = false){
-  const icon = `<img class="ms-icon" src="https://images.evetech.net/types/${item.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
+  const icon = `<img class="ms-icon" src="https://images.evetech.net/types/${item.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" data-imgfail="hide">`;
   // v2026.10.14.76: a weapon's row carries its charge (chip: a button that opens the Charges list at that weapon)
   const name = chip ? `<span class="ms-name ms-name-col"><span>${escapeHtml(item.name)}</span>${chip}</span>` : `<span class="ms-name">${escapeHtml(item.name)}</span>`;
   const fixed = item.slot === 'rig' || item.slot === 'subsystem';
@@ -18282,7 +18297,7 @@ function moduleListWithStatesHtml(f, idToName, opts = {}){
     if(!charges.has(item.typeId)) return '';
     const c = charges.get(item.typeId)[k];
     const off = c && away.has(c.id);
-    return `<button type="button" class="ms-chg${off ? ' chg-away' : ''}" data-weapon="${item.typeId}" title="${escapeHtml(c ? `${c.name}${off ? ', not on board' : ''}: open the Charges list to change it` : 'No charge loaded: open the Charges list')}">${c ? `<img src="https://images.evetech.net/types/${c.id}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span>${escapeHtml(c.name)}</span>` : '<span>no charge</span>'}${off ? '<b>not on board</b>' : ''}<span class="ms-chg-caret" aria-hidden="true">▾</span></button>`;
+    return `<button type="button" class="ms-chg${off ? ' chg-away' : ''}" data-weapon="${item.typeId}" title="${escapeHtml(c ? `${c.name}${off ? ', not on board' : ''}: open the Charges list to change it` : 'No charge loaded: open the Charges list')}">${c ? `<img src="https://images.evetech.net/types/${c.id}/icon?size=32" alt="" loading="lazy" data-imgfail="hide"><span>${escapeHtml(c.name)}</span>` : '<span>no charge</span>'}${off ? '<b>not on board</b>' : ''}<span class="ms-chg-caret" aria-hidden="true">▾</span></button>`;
   };
   const groupOrder = ['High slots','Mid slots','Low slots','Rigs','Subsystems','Drone bay','Fighter bay','Implants','Boosters','Fleet hangar','Cargo'];
   let html = '';
@@ -18396,7 +18411,7 @@ function droneBayStatesHtml(f, idToName){
     // space); the full line is on hover.
     const meta = ctxHtml(`${n} in bay · ${it.bandwidthEach} Mbit/s${it.dpsEach ? ` · ${it.dpsEach} DPS each` : ''}`, 'ds-meta',
       `${it.active} in space · ${n} in bay · ${it.bandwidthEach} Mbit/s each${it.dpsEach ? ` · ${it.dpsEach} DPS each` : ''}`);
-    html += `<div class="fititem ds-row${it.active ? '' : ' ds-none'}"><img class="ms-icon" src="https://images.evetech.net/types/${it.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="ms-name">${escapeHtml(name)}</span>${meta}<span class="ds-pips" style="--pips:${pipCols}">${pips}</span></div>`;
+    html += `<div class="fititem ds-row${it.active ? '' : ' ds-none'}"><img class="ms-icon" src="https://images.evetech.net/types/${it.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" data-imgfail="hide"><span class="ms-name">${escapeHtml(name)}</span>${meta}<span class="ds-pips" style="--pips:${pipCols}">${pips}</span></div>`;
   }
   if(ds.refused.length) html += `<div class="ms-msg">${ds.refused.map(r => `${escapeHtml(r.name)}: only ${r.granted} of ${r.requested} in space — ${escapeHtml(r.reason)}.`).join(' ')}</div>`;
   return html + `</div>`;
@@ -18483,9 +18498,9 @@ function fighterBayStatesHtml(f, idToName){
       const [short] = FIGHTER_ABILITY_LABEL[ab.name] || [ab.name];
       const tip = fighterAbilityTip(ab, it);
       const icon = icons[String(ab.effectId)];
-      return `<button type="button" class="fb-ab${ab.on ? ' on' : ''}${icon ? '' : ' fb-noicon'}" data-type-id="${it.typeId}" data-effect="${ab.effectId}" aria-pressed="${ab.on}" title="${escapeHtml(tip)}" aria-label="${escapeHtml(name)}: ${escapeHtml(tip)}">${icon ? `<img src="img/fighter-abilities/${icon}.png" alt="" width="22" height="22" loading="lazy" onerror="this.remove()">` : ''}${escapeHtml(short)}</button>`;
+      return `<button type="button" class="fb-ab${ab.on ? ' on' : ''}${icon ? '' : ' fb-noicon'}" data-type-id="${it.typeId}" data-effect="${ab.effectId}" aria-pressed="${ab.on}" title="${escapeHtml(tip)}" aria-label="${escapeHtml(name)}: ${escapeHtml(tip)}">${icon ? `<img src="img/fighter-abilities/${icon}.png" alt="" width="22" height="22" loading="lazy" data-imgfail="remove">` : ''}${escapeHtml(short)}</button>`;
     }).join('');
-    html += `<div class="fititem ds-row fb-row${it.active ? '' : ' ds-none'}"><img class="ms-icon" src="https://images.evetech.net/types/${it.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="ms-name">${escapeHtml(name)}</span>${meta}<span class="ds-pips" style="--pips:${pipCols}">${pips}</span><div class="fb-ab-row">${abs}</div></div>`;
+    html += `<div class="fititem ds-row fb-row${it.active ? '' : ' ds-none'}"><img class="ms-icon" src="https://images.evetech.net/types/${it.typeId}/icon?size=32" width="20" height="20" alt="" loading="lazy" data-imgfail="hide"><span class="ms-name">${escapeHtml(name)}</span>${meta}<span class="ds-pips" style="--pips:${pipCols}">${pips}</span><div class="fb-ab-row">${abs}</div></div>`;
   }
   if(fs.refused.length) html += `<div class="ms-msg">${fs.refused.map(r => `${escapeHtml(r.name)}: only ${r.granted} of ${r.requested} squadron${r.requested === 1 ? '' : 's'} in space — ${escapeHtml(r.reason)}.`).join(' ')}</div>`;
   return html + `</div>`;
@@ -18544,8 +18559,8 @@ function moduleStateTileHtml(item, copyIdx, state, items, x, y, opts = {}){
   const tr = (opts.turn || 0) * Math.PI / 180, fit = 1 / (Math.abs(Math.cos(tr)) + Math.abs(Math.sin(tr)));
   const pos = `left:${x.toFixed(2)}%;top:${y.toFixed(2)}%;--turn:${(opts.turn || 0).toFixed(1)}deg;--fit:${fit.toFixed(3)};`;
   const ch = opts.charge, big = ch && !opts.badge ? ch : null;   // v.78: opts.badge, the charge in a corner (option B)
-  const img = `<img src="https://images.evetech.net/types/${big ? big.id : item.typeId}/icon?size=64" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><span class="ms-tile-abbr">${escapeHtml(moduleTileAbbr(big ? big.name : item.name))}</span><span class="ms-dot"></span>`
-    + (ch && opts.badge ? `<span class="ms-badge" aria-hidden="true"><img src="https://images.evetech.net/types/${ch.id}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></span>` : '');
+  const img = `<img src="https://images.evetech.net/types/${big ? big.id : item.typeId}/icon?size=64" alt="" loading="lazy" data-imgfail="next-block"><span class="ms-tile-abbr">${escapeHtml(moduleTileAbbr(big ? big.name : item.name))}</span><span class="ms-dot"></span>`
+    + (ch && opts.badge ? `<span class="ms-badge" aria-hidden="true"><img src="https://images.evetech.net/types/${ch.id}/icon?size=32" alt="" loading="lazy" data-imgfail="hide"></span>` : '');
   const label = ch ? `${item.name} · ${ch.name}${opts.away ? ' (not on board)' : ''}` : item.name;
   const fixed = item.slot === 'rig' || item.slot === 'subsystem';
   if(fixed){
@@ -18609,7 +18624,7 @@ function fitRingHtml(f, idToName){
   }
   const shipId = f.input && f.input.shipTypeId;
   const shipName = (shipId && idToName.get(shipId)) || 'ship';
-  const ship = shipId ? `<img src="https://images.evetech.net/types/${shipId}/render?size=512" alt="${escapeHtml(shipName)}" loading="lazy" onerror="this.style.display='none';">` : '';
+  const ship = shipId ? `<img src="https://images.evetech.net/types/${shipId}/render?size=512" alt="${escapeHtml(shipName)}" loading="lazy" data-imgfail="none">` : '';
   const loadedHtml = loaded.length ? `<div class="fit-ring-loaded"><span>Loaded</span> ${loaded.map(e => `${escapeHtml(e.name)}${e.qty > 1 ? ' ×' + e.qty : ''}${away.has(e.id) ? ' <b class="chg-away-note">· not on board</b>' : ''}`).join(' · ')}${f.chargePicks ? ` <button type="button" class="chg-own">Use original charges</button>` : ''}</div>`
     : (f.chargePicks ? `<div class="fit-ring-loaded"><span>Loaded</span> no charges <button type="button" class="chg-own">Use original charges</button></div>` : '');   // v.77: every weapon unloaded
   // the dark track under the tiles and the ship inside it (radii in % of the ring's half width, for the gradient)
@@ -20722,7 +20737,7 @@ function chgPanelHtml(f){
   // the filter rather than text ... use hover to display the name"): an icon, a count in its corner for several copies.
   const wf = data && data.length > 1 ? (data.some(w => w.weaponTypeId === f.chgWeaponFilter) ? f.chgWeaponFilter : null) : null;
   const wchips = data && data.length > 1 ? [`<button type="button" class="chg-chip chg-wchip chg-wall${wf ? '' : ' on'}" data-chg-weapon="" aria-pressed="${!wf}" title="Every module">All</button>`,
-    ...data.map(w => `<button type="button" class="chg-chip chg-wchip chg-ichip${wf === w.weaponTypeId ? ' on' : ''}" data-chg-weapon="${w.weaponTypeId}" aria-pressed="${wf === w.weaponTypeId}" title="${escapeHtml(w.name)}${w.copies.length > 1 ? ` ×${w.copies.length}` : ''}" aria-label="${escapeHtml(w.name)}${w.copies.length > 1 ? `, ${w.copies.length} fitted` : ''}"><img src="https://images.evetech.net/types/${w.weaponTypeId}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'">${w.copies.length > 1 ? `<b>${w.copies.length}</b>` : ''}</button>`)].join('') : '';
+    ...data.map(w => `<button type="button" class="chg-chip chg-wchip chg-ichip${wf === w.weaponTypeId ? ' on' : ''}" data-chg-weapon="${w.weaponTypeId}" aria-pressed="${wf === w.weaponTypeId}" title="${escapeHtml(w.name)}${w.copies.length > 1 ? ` ×${w.copies.length}` : ''}" aria-label="${escapeHtml(w.name)}${w.copies.length > 1 ? `, ${w.copies.length} fitted` : ''}"><img src="https://images.evetech.net/types/${w.weaponTypeId}/icon?size=32" alt="" loading="lazy" data-imgfail="hide">${w.copies.length > 1 ? `<b>${w.copies.length}</b>` : ''}</button>`)].join('') : '';
   let body = '';
   if(!data){
     const p = f.chgProgress || [0, 0];
@@ -20743,7 +20758,7 @@ function chgPanelHtml(f){
         const tip = `${o.name}: ${nums(o)}. ${o.onBoard ? '' : 'Not on board this fit. '}${how('load it into')}`;
         const hide = fires && filter !== 'all' && o.dmg !== filter;
         return `<button type="button" class="chg-row${fires ? ' chg-dmgrow' : ''}${o.inUse ? ' is-cur' : ''}${o.onBoard ? '' : ' is-away'}" data-weapon="${w.weaponTypeId}" data-charge="${o.id}" data-dmg="${fires ? o.dmg || '' : ''}"${hide ? ' hidden' : ''} title="${escapeHtml(tip)}">
-          <img src="https://images.evetech.net/types/${o.id}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'">${fires && o.dmg ? `<i class="chg-dot ${o.dmg}"></i>` : ''}
+          <img src="https://images.evetech.net/types/${o.id}/icon?size=32" alt="" loading="lazy" data-imgfail="hide">${fires && o.dmg ? `<i class="chg-dot ${o.dmg}"></i>` : ''}
           <span class="chg-n">${escapeHtml(o.name)}</span><span class="chg-v">${escapeHtml(o.a || '')}</span>${h2 ? `<span class="chg-v">${escapeHtml(o.b || '')}</span>` : ''}
           <span class="chg-tag${o.onBoard || o.inUse ? '' : ' is-away'}">${tag}</span></button>`;
       };
@@ -20758,7 +20773,7 @@ function chgPanelHtml(f){
         : `No charge: ${w.name} ${CHG_NONE_TEXT[w.kind] || 'works without one'} (${nums(nn)}). ${how('unload')}`;
       const none = `<button type="button" class="chg-row chg-none${empty ? ' is-cur' : ''}" data-weapon="${w.weaponTypeId}" data-charge="0" data-dmg="" title="${escapeHtml(noneTip)}"><span class="chg-none-ic" aria-hidden="true"></span><span class="chg-n">No charge</span><span class="chg-v">${escapeHtml(nn.a || '')}</span>${h2 ? `<span class="chg-v">${escapeHtml(nn.b || '')}</span>` : ''}${empty ? `<span class="chg-tag">empty ×${empty}</span>` : ''}</button>`;
       body += `<section class="chg-w k-${w.kind}" data-weapon="${w.weaponTypeId}" data-kind="${w.kind}"${wf && wf !== w.weaponTypeId ? ' hidden' : ''}>
-        <div class="chg-wh"><img src="https://images.evetech.net/types/${w.weaponTypeId}/icon?size=32" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b>${escapeHtml(w.name)}</b> ×${w.copies.length}<span class="chg-now">${now}</span></div>
+        <div class="chg-wh"><img src="https://images.evetech.net/types/${w.weaponTypeId}/icon?size=32" alt="" loading="lazy" data-imgfail="hide"><b>${escapeHtml(w.name)}</b> ×${w.copies.length}<span class="chg-now">${now}</span></div>
         <div class="chg-cols" aria-hidden="true"><span></span><span>${escapeHtml(h1)}</span>${h2 ? `<span>${escapeHtml(h2)}</span>` : ''}</div>
         ${none}
         ${on.length ? `<div class="chg-sec">On board</div>${on.map(row).join('')}` : ''}
@@ -21527,8 +21542,10 @@ function profileState(){
 }
 function profileEl(){ return typeof document !== 'undefined' && document.getElementById ? document.getElementById('profilePanel') : null; }
 function profileIsOpen(){ const p = profileEl(); return !!(p && !p.hidden); }
+// v2026.11.07.3 (build queue 023): the initials shown when the portrait can't load, as the inline handler built them before
+function profileInitials(name){ return String(name || '').split(/\s+/).map(w => w.replace(/[^A-Za-z0-9]/g, '')[0] || '').join('').slice(0, 2).toUpperCase(); }
 function profileAvHtml(r, size){
-  return r && r.pilot ? `<img src="https://images.evetech.net/characters/${Number(r.pilot.id)}/portrait?size=${size}" alt="" width="${size}" height="${size}" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'pf-ini', textContent: '${r.pilot.name.split(/\s+/).map(w => w.replace(/[^A-Za-z0-9]/g, '')[0] || '').join('').slice(0, 2).toUpperCase()}'}))">` : PF_SIL;
+  return r && r.pilot ? `<img src="https://images.evetech.net/characters/${Number(r.pilot.id)}/portrait?size=${size}" alt="" width="${size}" height="${size}" data-imgfail="initials" data-initials="${escapeHtml(profileInitials(r.pilot.name))}">` : PF_SIL;
 }
 function profileProgHtml(n){ return `<span class="pf-prog" aria-hidden="true">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`; }
 function renderProfile(){
@@ -21543,7 +21560,7 @@ function renderProfile(){
   const use = document.getElementById('myShipUse'), lab = document.getElementById('myShipUseLabel');
   use.disabled = !f; use.checked = !!(f && f.use);
   lab.hidden = !f; document.getElementById('profileAddFit').hidden = !!f;
-  document.getElementById('myShipUseTxt').innerHTML = f ? `${f.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(f.shipTypeId)}/icon?size=32" alt="" width="16" height="16" onerror="this.remove()">` : ''}<b>${escapeHtml(f.shipName)}</b>${f.fitName ? `<span class="pf-fsw-fit">· ${escapeHtml(f.fitName)}</span>` : ''}` : '';
+  document.getElementById('myShipUseTxt').innerHTML = f ? `${f.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(f.shipTypeId)}/icon?size=32" alt="" width="16" height="16" data-imgfail="remove">` : ''}<b>${escapeHtml(f.shipName)}</b>${f.fitName ? `<span class="pf-fsw-fit">· ${escapeHtml(f.fitName)}</span>` : ''}` : '';
   use.setAttribute('aria-label', f ? `Use ${myShipLabel()} in assessments` : 'Use my fit in assessments');
   lab.title = !f ? '' : f.use ? `On: the Pilot and Fit Analyzers show the ${cardName('board')} with ${myShipLabel()}, to switch between the ${cardName('perspective.threat')} and the ${cardName('perspective.mine')}` : `Off: assessments leave ${myShipLabel()} out`;
   const btn = document.getElementById('profileBtn');
@@ -21671,7 +21688,7 @@ function renderMyShipPanel(){
   const inUse = !!r && sel.id === r.id;
   const rows = myShipSorted().map(s => {
     const cur = r && s.id === r.id, on = s.id === sel.id;
-    const icon = `${MY_SHIP_HULL_SVG(18)}${s.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(s.shipTypeId)}/icon?size=64" alt="" loading="lazy" onerror="this.remove();">` : ''}`;
+    const icon = `${MY_SHIP_HULL_SVG(18)}${s.shipTypeId ? `<img src="https://images.evetech.net/types/${Number(s.shipTypeId)}/icon?size=64" alt="" loading="lazy" data-imgfail="remove">` : ''}`;
     return `<div class="mys-row${on ? ' is-sel' : ''}" data-id="${escapeHtml(s.id)}">
         <button type="button" class="mys-row-main" data-act="view" data-id="${escapeHtml(s.id)}" aria-current="${on ? 'true' : 'false'}" title="Show ${escapeHtml(myShipLabel(s))}">
           <span class="mys-row-icon">${icon}</span>
@@ -22725,7 +22742,7 @@ function saGroupHtml(g, colKey){
   else if(g.small){ logo = `<span class="sa-logo corp" aria-hidden="true"><span>+${g.corps.length}</span></span>`; sub = ctxHtml(`${SA_FOLD_SIZE === 2 ? '1 or 2' : `up to ${SA_FOLD_SIZE}`} pilots each`); }
   else{
     const k = `${g.kind}:${g.id}`, path = g.kind === 'alliance' ? 'alliances' : 'corporations';
-    logo = `<span class="sa-logo${g.kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span data-tk-for="${k}"></span><img src="https://images.evetech.net/${path}/${g.id}/logo?size=64" alt="" loading="lazy" onerror="this.remove()"></span>`;
+    logo = `<span class="sa-logo${g.kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span data-tk-for="${k}"></span><img src="https://images.evetech.net/${path}/${g.id}/logo?size=64" alt="" loading="lazy" data-imgfail="remove"></span>`;
     const why = saWhyText(g);
     sub = why ? `<span class="sa-why ${g.why}" title="${escapeHtml(why)}">${escapeHtml(why)}</span>`
               : ctxHtml(g.kind === 'corporation' ? 'no alliance' : `${g.corps.length} corporation${g.corps.length === 1 ? '' : 's'}`);
@@ -22970,7 +22987,7 @@ function saRowHtml(x){
   const sizeTag = r.tag ? `<span class="pr-size ${r.tag}">${SA_SIZE_TAG[r.tag]}</span>` : '';   // v.92: the size it was picked for
   const dsize = r.tag || (r.mode === 'all' ? 'all' : '');
   return `<button type="button" class="pr-row" ${open(r.fitUnknown ? '' : r.hull)}${dsize ? ` data-pr-size="${dsize}" data-pr-type="${r.typeId}"` : ''}>${pilot}
-    <span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${r.typeId}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(r.hull)}<span class="cls">${escapeHtml(r.cls)}</span>${sizeTag}</span>${ctxHtml(r.basis, '', r.title ? `${r.basis}. ${r.title}` : '')}</span></span>
+    <span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${r.typeId}/render?size=64" alt="" loading="lazy" data-imgfail="hide"><span class="pr-hn"><span class="nm">${escapeHtml(r.hull)}<span class="cls">${escapeHtml(r.cls)}</span>${sizeTag}</span>${ctxHtml(r.basis, '', r.title ? `${r.basis}. ${r.title}` : '')}</span></span>
     <span class="pr-dps">${dps ? `<span class="pr-num">${dps.text}</span>${bar}` : `<span class="pr-fu" title="No loss of this hull among their recent losses, so no fit to read">fit unknown</span>`}</span>
     <span class="pr-num pr-ehp" title="${escapeHtml(ehpTitle)}">${saFmtK(e.totalHP)}</span>
     <span class="pr-weak">${weak}</span>
@@ -23200,7 +23217,7 @@ function saFleetHullHtml(g, gr, h){
   const v = h.variants && h.variants[h.pick];
   const est = Math.round(h.share * g.n), scanN = lastScanCounts.get(h.typeId) || 0;
   const share = `<span class="fl-share"><b>${Math.round(h.share * 100)}% <span class="fl-est" title="An estimate: this share of their ${g.n} pilots in local">≈${est}</span></b><span class="fl-sbar"><i style="width:${Math.round(h.share * 100)}%"></i></span></span>`;
-  const hull = `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${h.typeId}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(h.name)}<span class="cls">${escapeHtml(h.cls)}</span></span>${scanN ? `<span class="ctx fl-onscan">✓ ${scanN} on scan</span>` : ctxHtml('none on scan')}</span></span>`;
+  const hull = `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${h.typeId}/render?size=64" alt="" loading="lazy" data-imgfail="hide"><span class="pr-hn"><span class="nm">${escapeHtml(h.name)}<span class="cls">${escapeHtml(h.cls)}</span></span>${scanN ? `<span class="ctx fl-onscan">✓ ${scanN} on scan</span>` : ctxHtml('none on scan')}</span></span>`;
   if(h.err) return `<div class="fl-h">${hull}${share}<span class="pr-msg err">${escapeHtml(h.err)}</span></div>`;
   if(h.none || !v) return `<div class="fl-h">${hull}${share}<span class="pr-msg">No losses of it: fit unknown</span></div>`;
   const e = v.est, dps = saRowDps(e), td = saRowTypeDps(e);
@@ -23225,7 +23242,7 @@ function saFleetGroupHtml(x){
   const g = x.g, r = sa.fleet.get(g.key) || {state: 'wait'};
   const why = saWhyText(g) || (x.side === 'n' ? 'Neutral' : '');
   const k = `${g.kind}:${g.id}`, path = g.kind === 'alliance' ? 'alliances' : 'corporations';
-  const logo = `<span class="sa-logo${g.kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span data-tk-for="${k}"></span><img src="https://images.evetech.net/${path}/${g.id}/logo?size=64" alt="" loading="lazy" onerror="this.remove()"></span>`;
+  const logo = `<span class="sa-logo${g.kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span data-tk-for="${k}"></span><img src="https://images.evetech.net/${path}/${g.id}/logo?size=64" alt="" loading="lazy" data-imgfail="remove"></span>`;
   const span = r.state === 'done' && r.kills ? `from its last ${r.kills} kill${r.kills === 1 ? '' : 's'}, ${saMonthDay(r.from)} – ${saMonthDay(r.to)}` : '';
   const head = `<div class="fl-gh" data-sa-g="${escapeHtml(x.side)}:${escapeHtml(g.key)}">${SIDE_MARK[x.side]}${logo}<span class="fl-gt"><span class="nm">${escapeHtml(g.name)} ${orgTickerHtml(g.kind, g.id)}</span>${ctxHtml([why, span].filter(Boolean).join(' · '))}</span><span class="fl-cnt"><b>${g.n}</b><span class="ctx">in local</span></span></div>`;
   let body;
@@ -23751,7 +23768,7 @@ function paSec(v){ const r = Math.round(v * 10) / 10; return (r === 0 ? 0 : r).t
 function paAffOrgHtml(kind, id, o){
   const path = kind === 'alliance' ? 'alliances' : 'corporations';
   const tk = o && o.ticker ? (kind === 'alliance' ? `<${o.ticker}>` : `[${o.ticker}]`) : '';
-  return `<div class="pa-org" data-pa-org="${kind}"><span class="sa-logo${kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span>${escapeHtml(((o && o.ticker) || '').slice(0, 5))}</span><img src="https://images.evetech.net/${path}/${Number(id)}/logo?size=64" alt="" loading="lazy" onerror="this.remove()"></span>`
+  return `<div class="pa-org" data-pa-org="${kind}"><span class="sa-logo${kind === 'corporation' ? ' corp' : ''}" aria-hidden="true"><span>${escapeHtml(((o && o.ticker) || '').slice(0, 5))}</span><img src="https://images.evetech.net/${path}/${Number(id)}/logo?size=64" alt="" loading="lazy" data-imgfail="remove"></span>`
     + `<span class="nm">${escapeHtml((o && o.name) || `${kind === 'alliance' ? 'Alliance' : 'Corporation'} ${id}`)}${tk ? `<span class="tk">${escapeHtml(tk)}</span>` : ''}</span></div>`;
 }
 function paAffHtml(d){
@@ -24254,7 +24271,7 @@ function fkRowHtml(m){
   const pilot = `<span class="pr-pilot">${standMark(s, m.corp, m.alliance)}<span class="pr-pn"><span class="nm std-n ${s}" title="${escapeHtml(nm)}">${escapeHtml(nm)}${m.id === fk.origin ? '<span class="fk-you">dossier</span>' : ''}</span><span class="ctx">${ally} ${escapeHtml(fk.info.get(m.corp) || '')}</span></span></span>`;
   const open = `data-fk-pilot="${escapeHtml(nm)}" data-fk-type="${m.hull}" title="${escapeHtml(`${nm}: open in the Pilot Analyzer, on the ${hull}`)}"`;
   const weapon = m.weapon ? (fk.info.get(m.weapon) || `type ${m.weapon}`) : '';
-  const hullCell = (src) => `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${m.hull}/render?size=64" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span class="pr-hn"><span class="nm">${escapeHtml(hull)}${gdHullMarkHtml(m.hull, hull)}<span class="cls">${escapeHtml(m.cls || '')}</span></span>${weapon ? `<span class="fk-w" title="${escapeHtml(`The weapon the killmail credits them with: ${weapon}`)}">on the kill: ${escapeHtml(weapon)}</span>` : ''}${src}</span></span>`;
+  const hullCell = (src) => `<span class="pr-hull"><img class="pr-ico" src="https://images.evetech.net/types/${m.hull}/render?size=64" alt="" loading="lazy" data-imgfail="hide"><span class="pr-hn"><span class="nm">${escapeHtml(hull)}${gdHullMarkHtml(m.hull, hull)}<span class="cls">${escapeHtml(m.cls || '')}</span></span>${weapon ? `<span class="fk-w" title="${escapeHtml(`The weapon the killmail credits them with: ${weapon}`)}">on the kill: ${escapeHtml(weapon)}</span>` : ''}${src}</span></span>`;
   // the damage they did on this kill (the killmail's own number), its share of the ship's, and the final blow
   const tot = (fk.km && fk.km.victim && fk.km.victim.damage_taken) || 0, pct = tot ? Math.round((m.dmg || 0) / tot * 100) : 0;
   const dmgT = `${(m.dmg || 0).toLocaleString()} damage on this kill${tot ? `, ${pct}% of the ${tot.toLocaleString()} the ${fk.victim ? fk.victim.name : 'ship'} took` : ''}${m.fb ? '; the final blow' : ''}`;
@@ -24474,7 +24491,7 @@ function fkHullsHtml(g){
   const many = H.list.length > 4, show = H.list.slice(0, 4);
   const tip = `${H.list.map(h => `${h.name}${h.cls ? ` (${h.cls})` : ''} ×${h.c}`).join('\n')}\n${H.inShips} of ${H.pilots} pilot${H.pilots === 1 ? '' : 's'} in ships. ${FK_KG_HULLS_TIP}`;
   const more = [4, 3, 2, 1].filter(n => H.list.length > n).map(n => `<span class="fk-kg-more" data-n="${n}">+${H.list.length - n} more</span>`).join('');   // one per number of hulls shown; the CSS shows the right one
-  return `<span class="fk-kg-hulls" title="${escapeHtml(tip)}">${show.map((h, k) => `<span class="fk-kg-hl" data-k="${k + 1}"><img src="https://images.evetech.net/types/${h.t}/icon?size=32" alt="${escapeHtml(h.name)}" loading="lazy" onerror="this.style.visibility='hidden'"><b>×${h.c}</b></span>`).join('')}${more}</span>`;
+  return `<span class="fk-kg-hulls" title="${escapeHtml(tip)}">${show.map((h, k) => `<span class="fk-kg-hl" data-k="${k + 1}"><img src="https://images.evetech.net/types/${h.t}/icon?size=32" alt="${escapeHtml(h.name)}" loading="lazy" data-imgfail="hide"><b>×${h.c}</b></span>`).join('')}${more}</span>`;
 }
 function fkGroups(){
   const P = fk.picks;
@@ -26114,7 +26131,7 @@ function itTkHtml(kind, id){
   if(v && typeof v.then !== 'function' && v.ticker) return `<span class="tk">${escapeHtml(kind === 'alliance' ? `<${v.ticker}>` : `[${v.ticker}]`)}</span>`;
   return orgTickerHtml(kind, id);
 }
-function itLogo(kind, id){ return id ? `<span class="it-lg${kind === 'corporation' ? ' c' : ''}"><img src="https://images.evetech.net/${kind === 'corporation' ? 'corporations' : 'alliances'}/${id}/logo?size=32" alt="" loading="lazy" onerror="this.remove()"></span>` : ''; }
+function itLogo(kind, id){ return id ? `<span class="it-lg${kind === 'corporation' ? ' c' : ''}"><img src="https://images.evetech.net/${kind === 'corporation' ? 'corporations' : 'alliances'}/${id}/logo?size=32" alt="" loading="lazy" data-imgfail="remove"></span>` : ''; }
 // v2026.11.01.2 (the owner, from Claude outputs/pilot_chip_hover_mockup.html: "Go with B2"; "i would prefer that alliance and corp were
 // not grouped. should be able to filter by either. also remove the ability to change standing from there. once we move to SSO,
 // standing is set by the corp and alliance"): one chip, four parts: the standing (a tip only), the name (the Pilot Analyzer), the
@@ -26165,7 +26182,7 @@ async function itGrpPress(b, root){
 }
 function itShipChip(s){   // v2026.11.07.1: a button: only this ship in the Feed
   const on = itFlHas('ship', s.id), t = on ? 'Take this filter off the Feed' : `Show only ${s.name} in the Feed (reports naming it, kills where it died or killed)`;
-  return `<button type="button" class="it-chip ship" data-it-fship="${s.id}" data-it-fsn="${escapeHtml(s.name)}" aria-pressed="${on}" title="${escapeHtml(t)}"><img src="https://images.evetech.net/types/${s.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(itShipText(s))}</button>`;
+  return `<button type="button" class="it-chip ship" data-it-fship="${s.id}" data-it-fsn="${escapeHtml(s.name)}" aria-pressed="${on}" title="${escapeHtml(t)}"><img src="https://images.evetech.net/types/${s.id}/icon?size=32" alt="" loading="lazy" data-imgfail="remove">${escapeHtml(itShipText(s))}</button>`;
 }
 function itShipText(s){ return `${s.name}${s.n > 1 ? ` ×${s.n}` : ''}`; }
 // v2026.10.31.7: the analyze icon (radar rings; always the System Analyzer: the owner, "always system for now"), in Near You and the Feed
@@ -26480,7 +26497,7 @@ function itFlMatch(e, c){
 function itFlChipHtml(c, i){
   let body;
   if(c.kind === 'sys') body = `<span class="k">System</span><span class="${itSecClass(c.id)}">${escapeHtml(itSysName(c.id))}</span>`;
-  else if(c.kind === 'ship') body = `<span class="k">Ship</span><img src="https://images.evetech.net/types/${c.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(c.label)}`;
+  else if(c.kind === 'ship') body = `<span class="k">Ship</span><img src="https://images.evetech.net/types/${c.id}/icon?size=32" alt="" loading="lazy" data-imgfail="remove">${escapeHtml(c.label)}`;
   else { const v = itGrpTk(c.kind, c.id); body = `<span class="k">${c.kind === 'alliance' ? 'Alliance' : 'Corp'}</span>${itLogo(c.kind, c.id)}<span class="tk">${escapeHtml(v ? itGrpTok(c.kind, v.ticker) : c.label)}</span>`; }
   return `<span class="it-fc">${body}<button type="button" class="it-fc-x" data-it-fcx="${i}" aria-label="Remove this filter" title="Remove this filter">×</button></span>`;
 }

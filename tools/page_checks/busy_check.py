@@ -79,7 +79,7 @@ def shown_hull(pg):
 
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=os.environ.get('CHROMIUM', '/opt/pw-browsers/chromium'))
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.add_init_script(DELAY)
     pg.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
@@ -151,7 +151,7 @@ with sync_playwright() as p:
     check(not errs, f'Fit Analyzer: no page errors {errs}')
     ctx.close()
     # reduced motion
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900}, reduced_motion='reduce'); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 900}, reduced_motion='reduce'); pg = ctx.new_page()
     pg.route(re.compile(r'https://.*'), lambda r: r.fulfill(status=404, body=''))
     pg.goto('file://' + HTML)
     an = pg.evaluate("() => { const b = document.getElementById('pilotBusy'); b.hidden = false; return getComputedStyle(b.querySelector('.busy-spin')).animationName; }")

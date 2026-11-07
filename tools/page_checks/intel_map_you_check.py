@@ -152,7 +152,7 @@ _tail = r'''
     check(not errs, f'no page errors {errs[:3]}')
     # ---- reduced motion: no beacon ever ----
     old = {'channels': ['region.intel'], 'me': MAIN, 'range': 3, 'killRange': 10, 'forget': 15}
-    ctx3 = b.new_context(viewport={'width': 1440, 'height': 1000}, reduced_motion='reduce'); ctx3.on('page', lambda q: q.on('pageerror', lambda e: errs.append(str(e))))
+    ctx3 = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000}, reduced_motion='reduce'); ctx3.on('page', lambda q: q.on('pageerror', lambda e: errs.append(str(e))))
     ctx3.add_init_script(FS); route(ctx3); r = ctx3.new_page(); r.goto('file://' + HTML)
     r.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); }", SIDE)
     r.evaluate("(o) => localStorage.setItem('dscanIntel', JSON.stringify(o))", old); r.reload(); r.wait_for_timeout(400)
@@ -163,7 +163,7 @@ _tail = r'''
     check(rm0 == [True, 0] and rm1 == ['8WA-Z6', 0], f'reduced motion: no beacon on the first draw or on a jump {rm0} {rm1}')
     ctx3.close()
     # ---- a phone ----
-    ctx2 = b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True, device_scale_factor=2); ctx2.on('page', lambda q: q.on('pageerror', lambda e: errs.append(str(e))))
+    ctx2 = b.new_context(bypass_csp=True, viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True, device_scale_factor=2); ctx2.on('page', lambda q: q.on('pageerror', lambda e: errs.append(str(e))))
     ctx2.add_init_script(FS); route(ctx2); m = ctx2.new_page(); m.goto('file://' + HTML)
     m.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); }", SIDE)
     m.evaluate("(o) => localStorage.setItem('dscanIntel', JSON.stringify(o))", old); m.reload(); m.wait_for_timeout(400)

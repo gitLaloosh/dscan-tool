@@ -114,6 +114,7 @@ if '--run' in sys.argv:
         ('LESSONS_LEARNED.md index lists every entry once', 'python3 -I tools/check_lessons_index.py', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.30.2
         ('every page check has an area (run_checks.py)', 'python3 -I tools/run_checks.py --check-tags', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.30.2
         ('UI rules (one tag, one switch, one slider, one text field)', 'python3 -I tools/check_ui_rules.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.29.7
+        ('CSP script hash (the page\'s policy names its script; LESSON #145)', 'python3 -I tools/csp_hash.py --check index.html', lambda o: o.strip().splitlines()[-1].endswith(': 0 problems')),  # v2026.11.07.3
         ('requests to zKillboard go through its gates (LESSON #93)', 'python3 -I tools/check_request_gates.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.104
         ('pasted names, either apostrophe', env + 'python3 -I tools/independent_checks/check_apostrophe_names.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 misses')),
     ]

@@ -77,7 +77,7 @@ NAME.update(PILOTS)
 def wait_idle(pg):
     pg.wait_for_function("() => document.querySelector('#pilotBusy').hidden", timeout=60000); pg.wait_for_timeout(150)
 def start(b, w, h, mobile=False):
-    ctx = b.new_context(viewport={'width': w, 'height': h}, is_mobile=mobile, has_touch=mobile); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': h}, is_mobile=mobile, has_touch=mobile); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
     pg.route(re.compile(r'https://zkillboard\.com/.*'), zkb)

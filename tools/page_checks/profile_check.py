@@ -61,7 +61,7 @@ HEAD = """() => { const h = document.querySelector('#intelPanel .it-head'), R = 
 
 with sync_playwright() as p:
     b = p.chromium.launch()
-    ctx = b.new_context(viewport={'width': 1280, 'height': 800})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1280, 'height': 800})
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg)
     pg.route('**/characters/*/portrait*', lambda r: r.abort())   # no portrait: the initials
@@ -157,7 +157,7 @@ with sync_playwright() as p:
     check(not errs, f'no page errors {errs[:3]}')
     ctx.close()
     # ---- 390 px ----
-    ctx = b.new_context(viewport={'width': 390, 'height': 800}, is_mobile=True, has_touch=True)
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 390, 'height': 800}, is_mobile=True, has_touch=True)
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload(); pg.wait_for_timeout(400)
     pg.tap('#profileAddFit'); pg.fill('#myShipEft', VEXOR); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000)

@@ -91,7 +91,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs = []
     def new_ctx(w):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx); return ctx
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx); return ctx
     ctx = new_ctx(1440); pg = setup(ctx)
     # Auto, alone from her alliance: solo
     analyze(pg, [VESNA])

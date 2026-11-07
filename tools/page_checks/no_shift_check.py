@@ -98,7 +98,7 @@ def actions(pg):
 with sync_playwright() as p:
     b = p.chromium.launch()
     for W in (1440, 1100, 375):
-        pg = b.new_context(viewport={'width': W, 'height': 1000}, is_mobile=W < 600, has_touch=W < 600).new_page()
+        pg = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 1000}, is_mobile=W < 600, has_touch=W < 600).new_page()
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
         pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', M.HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); M.settle(pg)

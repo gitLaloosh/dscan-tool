@@ -180,7 +180,7 @@ _tail = r'''
     ld2 = pg.evaluate("() => [itNearReach(), RS.nearRange.note()]")
     check(ld2[0] == 10 and 'held at the Feed' in ld2[1], f'an alert range of 10 with the Feed at 10: Near You\'s default (alert + 5) held at 10, and it says so {ld2}')
     # ---- a phone ----
-    ctx2 = b.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True, device_scale_factor=2); ctx2.on('page', lambda q: q.on('pageerror', lambda e: errs.append(str(e))))
+    ctx2 = b.new_context(bypass_csp=True, viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True, device_scale_factor=2); ctx2.on('page', lambda q: q.on('pageerror', lambda e: errs.append(str(e))))
     ctx2.add_init_script(FS); route(ctx2); m = ctx2.new_page(); m.goto('file://' + HTML)
     m.evaluate("(s) => { localStorage.setItem('dscanSide', JSON.stringify(s)); }", SIDE)
     m.evaluate("(o) => localStorage.setItem('dscanIntel', JSON.stringify(o))", old); m.reload(); m.wait_for_timeout(400)

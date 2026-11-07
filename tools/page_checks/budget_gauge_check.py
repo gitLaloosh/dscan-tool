@@ -59,7 +59,7 @@ def zkb(route):
     if ST['zkb'] == '503': return route.fulfill(status=502, content_type='text/html', headers=CORS, body='<html>Bad gateway</html>')   # an outage (v2026.11.06.4: its own 503 'unavailable' is a slow list)
     return route.fulfill(status=200, content_type='application/json', headers=CORS, body='[]')
 def ctx_page(b, W=1440, ctx=None):
-    ctx = ctx or b.new_context(viewport={'width': W, 'height': 800}, is_mobile=W < 600, has_touch=W < 600)
+    ctx = ctx or b.new_context(bypass_csp=True, viewport={'width': W, 'height': 800}, is_mobile=W < 600, has_touch=W < 600)
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
     pg.route(re.compile(r'https://zkillboard\.com/.*'), zkb)

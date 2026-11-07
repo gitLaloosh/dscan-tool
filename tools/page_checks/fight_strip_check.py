@@ -75,7 +75,7 @@ def load(pg):
     pg.wait_for_function(f"() => {{ const b = document.querySelector('{R} .mys-board'); return b && !/…/.test(b.textContent); }}", timeout=60000); settle(pg, 600)
 
 def desktop(b, W):
-    pg = b.new_page(viewport={'width': W, 'height': 900}); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg = b.new_page(bypass_csp=True, viewport={'width': W, 'height': 900}); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     load(pg)
     bb = pg.locator(f'{R} .mys-board').bounding_box(); sb = pg.locator(S).bounding_box()
     th, mid, mine = (pg.locator(f'{R} .mys-board {s}').bounding_box() for s in ('.mys-half.is-threat', '.mys-mid', '.mys-half.is-mine'))
@@ -190,7 +190,7 @@ def desktop(b, W):
 
 def phone(b):
     W = 375
-    pg = b.new_context(viewport={'width': W, 'height': 800}, is_mobile=True, has_touch=True).new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 800}, is_mobile=True, has_touch=True).new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     load(pg)
     board_panel(pg, W)
     pg.evaluate("window.scrollTo(0, 0)")

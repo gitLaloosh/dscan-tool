@@ -77,7 +77,7 @@ def titles(pg, sel):
 
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
-    pg = b.new_page(viewport={'width': 1440, 'height': 1000})
+    pg = b.new_page(bypass_csp=True, viewport={'width': 1440, 'height': 1000})
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     pg.click('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', NYX); pg.click('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000); pg.keyboard.press('Escape')
@@ -120,7 +120,7 @@ with sync_playwright() as p:
     check(not errs, f'no page errors {errs[:2]}')
     pg.close()
     # phone
-    pg = b.new_page(viewport={'width': 390, 'height': 900}, is_mobile=True, has_touch=True, device_scale_factor=2)
+    pg = b.new_page(bypass_csp=True, viewport={'width': 390, 'height': 900}, is_mobile=True, has_touch=True, device_scale_factor=2)
     errs2 = []; pg.on('pageerror', lambda e: errs2.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     pg.tap('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', NYX); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles', timeout=60000); pg.keyboard.press('Escape')

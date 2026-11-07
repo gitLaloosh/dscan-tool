@@ -114,7 +114,7 @@ SEEN = {}
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': _ns['CHROMIUM']} if _ns.get('CHROMIUM') else {}))
     for w in (1440, 390, 320):
-        pg = b.new_page(viewport={'width': w, 'height': 1000})
+        pg = b.new_page(bypass_csp=True, viewport={'width': w, 'height': 1000})
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg); pg.route(re.compile(r'https://images\.evetech\.net/.*'), icon_route)   # the icons load (their own turn is checked)
         pg.goto('file://' + HTML); pg.evaluate("localStorage.clear(); localStorage.setItem('dscanFitView', 'ring')"); pg.reload()

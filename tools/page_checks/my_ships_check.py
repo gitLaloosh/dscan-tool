@@ -103,7 +103,7 @@ EXPECT = """(scope) => { const host = document.querySelector(scope + ' .mys-swit
   const m = mysMatchup(tf, myShip.f, tf.dmg || dmgDefaults(tf.estimate.application)); return Object.fromEntries(m.cells.map(c => [c.key, c.value])); }"""
 
 def desktop(b):
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
     # a ship saved by v.33-.64 (one record under dscanMyShip) is the first saved fit
@@ -211,7 +211,7 @@ def desktop(b):
 
 def phone(b):
     W = 375
-    ctx = b.new_context(viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("() => { localStorage.removeItem('dscanMyShips'); localStorage.removeItem('dscanMyShip'); }"); pg.reload()
     pg.tap('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', VEXOR); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-list'); wait_tiles(pg)

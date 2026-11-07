@@ -134,7 +134,7 @@ def no_overlap(pg, W):
     check(not hits, f'{W}: scrolling through the layout, the sticky Fit column covers nothing {hits[:4]}')
 
 def tablet(b):
-    ctx = b.new_context(viewport={'width': 1100, 'height': 900})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1100, 'height': 900})
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
     pg.evaluate("localStorage.removeItem('dscanMyShip'); localStorage.removeItem('dscanDmgPreset')"); pg.reload()
@@ -150,7 +150,7 @@ def tablet(b):
     ctx.close()
 
 def desktop(b):
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 900})
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
     pg.evaluate("localStorage.removeItem('dscanMyShip'); localStorage.removeItem('dscanDmgPreset')"); pg.reload()
@@ -355,7 +355,7 @@ def expected_zones(i):
     return sorted([t for t in z if t[0] > 0], key=lambda t: t[0])
 
 def markers_at(b, W):
-    ctx = b.new_context(viewport={'width': W, 'height': 1000}, is_mobile=W < 600, has_touch=W < 600)
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 1000}, is_mobile=W < 600, has_touch=W < 600)
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
     pg.evaluate("localStorage.removeItem('dscanMyShip'); localStorage.removeItem('dscanDmgPreset')"); pg.reload()
@@ -464,7 +464,7 @@ def markers_at(b, W):
 
 def phone(b):
     W = 375
-    ctx = b.new_context(viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True)
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True)
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
     pg.evaluate("localStorage.removeItem('dscanMyShip'); localStorage.removeItem('dscanDmgPreset')"); pg.reload()

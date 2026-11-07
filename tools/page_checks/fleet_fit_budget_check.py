@@ -95,7 +95,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs = []
     def new_ctx(w, clip=False):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx)
         if clip: ctx.grant_permissions(['clipboard-read', 'clipboard-write'])
         return ctx
     ctx = new_ctx(1440, True); pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(500)

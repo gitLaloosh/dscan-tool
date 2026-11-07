@@ -95,7 +95,7 @@ LOOKUP = """async () => { const t0 = performance.now(); const t = await Promise.
 
 def section1(b):
     print('-- item data kept in the browser, and a new EVE build')
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000})
     # /status/ answers held back in the page itself (a sleep in the route handler would hold up this script too). v2026.11.06.2 (LESSON #138): the
     # delay comes in the address (?gdchk=ms); kept in sessionStorage it was sometimes gone after the next goto, and the answer came at once.
     ctx.add_init_script("""(() => { const ms = Number(new URLSearchParams(location.search).get('gdchk') || 0); if(!ms) return; const f = window.fetch;
@@ -157,7 +157,7 @@ def section1(b):
 
 def section3(b):
     print('-- the note on changed items (made-up list)')
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000})
     ctx.add_init_script("""(() => { const now = new Date().toISOString(); try{ localStorage.setItem('dscanMyShips', JSON.stringify({v: 2, inUse: 'gd1', use: true,
       fits: [{v: 1, id: 'gd1', eft: %s, shipName: 'Drake', fitName: 'My Drake', savedAt: now, usedAt: now, use: true}]})); }catch(e){} })();""" % json.dumps(DRAKE))
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
@@ -221,7 +221,7 @@ def section3(b):
 
 def shipped(b):
     print('-- the page as shipped (an empty list)')
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page(); M.route(ctx)
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page(); M.route(ctx)
     pg.goto('file://' + HTML); pg.wait_for_timeout(800)
     pg.evaluate("(t) => { switchTab('fit'); document.getElementById('fitAnalyzerInput').value = t; document.getElementById('fitAnalyzerBtn').click(); }", FEROX)
     pg.wait_for_selector('#fitAnalyzerResults .fit-layout', timeout=60000)

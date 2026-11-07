@@ -38,7 +38,7 @@ def run(mode, pilot='Test Pilot'):
         return route.fulfill(status=200, content_type='application/json', headers=cors, body='[]')
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path=os.environ.get('CHROMIUM', '/opt/pw-browsers/chromium'))
-        pg = b.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+        pg = b.new_page(bypass_csp=True); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
         pg.route(re.compile(r'https://zkillboard\.com/.*'), zkb)
         pg.route(re.compile(r'https://(images\.evetech\.net|fonts\.).*'), lambda r: r.fulfill(status=404, body=''))

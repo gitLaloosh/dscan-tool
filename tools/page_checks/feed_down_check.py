@@ -69,7 +69,7 @@ with sync_playwright() as p:
         proxy={'server': os.environ.get('HTTPS_PROXY') or 'http://127.0.0.1:9', 'bypass': 'r2z2.zkillboard.com'})
     errs = []
     def start(w):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}, ignore_https_errors=True)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}, ignore_https_errors=True)
         ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
         ctx.add_init_script(FS)
         ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), esi2)

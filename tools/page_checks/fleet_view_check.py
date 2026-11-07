@@ -49,7 +49,7 @@ def wait_done(pg, n, timeout=150000):
 E = M.expected_fleet()
 with sync_playwright() as p:
     b = p.chromium.launch()
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000})
     errs = []
     ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
     M.route(ctx)
