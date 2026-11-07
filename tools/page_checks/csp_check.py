@@ -12,6 +12,7 @@ behave as they will live); ESI, zKillboard, R2Z2 and EVE's images are the page c
     browser reports a script-src-attr violation;
   * each data-imgfail kind does what its inline handler did (hide, remove, none, next, next-block, initials), with EVE's
     images answering 404; the initials are text, never HTML;
+  * the site's own icons load under the policy ('self' in img-src, v2026.11.07.4);
   * no request carries a Referer (<meta name="referrer" content="no-referrer">);
   * a copy with Windows line endings (CRLF) still runs: the browser hashes the script after HTML's newline normalization, and
     so does tools/csp_hash.py.
@@ -99,6 +100,11 @@ try:
               f'each data-imgfail kind as its handler did: hide, remove, none, next, next-block, initials (as text) {k}')
         v3 = [x for x in pg.evaluate("() => window.__csp") if not x.startswith('script-src-attr')]
         check(not v3, f'... and none of them is a violation {v3[:3]}')
+        # v2026.11.07.4 (build queue 022): the site's own icons load under the policy ('self' in img-src)
+        ic = pg.evaluate("""async () => { const one = (h) => new Promise((ok) => { const i = new Image(); i.onload = () => ok([h, i.naturalWidth]); i.onerror = () => ok([h, 0]); i.src = h; });
+          return Promise.all(['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png'].map(one)); }""")
+        v4 = [x for x in pg.evaluate("() => window.__csp") if x.startswith('img-src')]
+        check(all(n > 0 for _, n in ic) and not v4, f'the site\'s icons (favicon.svg, favicon-32.png, apple-touch-icon.png) load under the policy {ic} {v4[:2]}')
         sent = [r for r in REFERERS if r]
         check(REFERERS and not sent, f'no request carries a Referer ({len(REFERERS)} requests, {len(sent)} with one: {sent[:2]})')
         check(not errs, f'no page errors {errs[:3]}')

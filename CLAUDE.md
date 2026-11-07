@@ -194,6 +194,12 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   one pilot only in the name's own capitals or dragged in (`itForce`). `intel_place_check.py`.
   A word before "gate" is read among the gates of the system the line is in (LESSON #112); one tag per Near You row for a gate:
   red "Camp · X gate" from a report, orange from 2+ kills at that gate, grey a gate with no camp words (`intel_gates_check.py`).
+- **The logo** (v2026.11.07.4, build queue 022; Project doc roadmap/logo-header-plan.md; mockup `Claude outputs/logo_header_mockup.html`):
+  R37 "Orbit Contact", inline left of the title in `.hero-title-row` (`.hero-brand`, `.hero-logo`, aria-hidden), 1.6em of the title's
+  size, its T's top on the title's T's top (`--logo-nudge`, -0.19em / -0.16em under 600 px; re-tune if the title's font or size
+  changes); colours by class from the tokens, no tile (the owner: "No tile"). Tab icon `favicon.svg` + `favicon-32.png`, home screen
+  `apple-touch-icon.png`, rendered from `img/logo/` by `tools/render_icons.py` (standalone images: hex values of the tokens; the CSP's
+  img-src has `'self'` for them). `logo_check.py`.
 - **Standing icon** (v2026.10.30.4, the owner): one drawing site-wide, `standIcon` / `standMark` (EVE-style: a star for your
   corporation and alliance, + friendly, = neutral, − hostile); never drawn again elsewhere. Beside its own word it is decoration:
   `standIcon(k, true)` / `SIDE_MARK_BY_WORD` (LESSON #107).
