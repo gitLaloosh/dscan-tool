@@ -178,7 +178,7 @@ _tail = r'''
     # ---- How Intel works ----
     pg.click('#intelPanel .it-head .info-btn'); pg.wait_for_timeout(200)
     inf = pg.evaluate("""() => { const b = document.querySelector('#intelPanel .it-head .info-body'), ds = [...b.querySelectorAll('details.info-more')];
-      return [[...b.children].filter(x => x.tagName === 'P').length, b.querySelectorAll(':scope > p b').length, ds.length, ds.filter(d => d.open).length, b.innerText.split(/\\s+/).length, b.textContent]; }""")
+      return [[...b.children].filter(x => x.tagName === 'P').length, b.querySelectorAll(':scope > p b').length, ds.length, ds.filter(d => d.open).length, b.innerText.split(/\\s+/).length - ((b.querySelector('.info-ex') || {}).innerText || '').split(/\\s+/).filter(Boolean).length, b.textContent]; }""")   # v2026.11.07.7: the "See an example" line is a control, not text to read
     pg.evaluate("() => { const s = document.querySelector('#intelPanel .it-head .info-body details.info-more summary'); if(s) s.click(); }"); pg.wait_for_timeout(100)
     op = pg.evaluate("() => [...document.querySelectorAll('#intelPanel .it-head .info-body details.info-more')].map(d => d.open)")
     check(inf[:4] == [3, 3, 8, 0] and inf[4] < 110 and op[0] and not any(op[1:]),

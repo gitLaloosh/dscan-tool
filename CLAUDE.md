@@ -194,6 +194,18 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   one pilot only in the name's own capitals or dragged in (`itForce`). `intel_place_check.py`.
   A word before "gate" is read among the gates of the system the line is in (LESSON #112); one tag per Near You row for a gate:
   red "Camp · X gate" from a report, orange from 2+ kills at that gate, grey a gate with no camp words (`intel_gates_check.py`).
+- **Intel's example for new users** (v2026.11.07.7, build queue 017; Project docs roadmap/intel-example-plan.md and
+  roadmap/intel-example-build-review.md; mockup `Claude outputs/intel_example_mockup.html`): under the setup steps (and below the empty
+  lists on a quiet start), a framed, `inert` example: the page's own Map (a picture, `itExMapPic`: the map's code on a canvas of its own,
+  `itm` set aside and put back), Near You and the Feed's first 5 rows, drawn once from `IT_EXAMPLE` by the real builders inside
+  `itExSandbox` (Intel's state, Standings and the map's pins set aside and put back; entries are history, so no alert); five markers placed
+  after the draw and on a width change (`itExPlace`, one ResizeObserver), never a timer. Made-up pilots and groups with negative ids:
+  nothing about them is asked of anyone (`itExOrg` answers itLogo / itTkHtml / itGrpTk with inline emblems); `tools/check_example_names.py`
+  (offline lint; `--live` once by hand, the owner checks the tickers on zKillboard). Gone once a real report or kill arrives, remembered in
+  `dscanItExGone` only while the folder is linked (`it.dir`); "See an example" in Intel's info panel brings it back with the shared close
+  button. A browser without the folder picker gets an amber note above the steps (`itNoFsHtml`; Brave, by `navigator.brave` only, the
+  flag's address as text); INTEL-01 says the same (`itNoFsText`). The switch stays off until a channel is ticked, and unticking the last
+  one stops Intel (the owner, at the review). `intel_example_check.py`.
 - **The logo** (v2026.11.07.4, build queue 022; Project doc roadmap/logo-header-plan.md; mockup `Claude outputs/logo_header_mockup.html`):
   R37 "Orbit Contact", inline left of the title in `.hero-title-row` (`.hero-brand`, `.hero-logo`, aria-hidden), 1.6em of the title's
   size, its T's top on the title's T's top (`--logo-nudge`, -0.19em / -0.16em under 600 px; re-tune if the title's font or size

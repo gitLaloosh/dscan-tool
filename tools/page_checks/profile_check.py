@@ -124,7 +124,7 @@ with sync_playwright() as p:
         dot: tc.display, dotBg: tc.backgroundColor, dotShadow: tc.boxShadow, w: Math.round(b.getBoundingClientRect().width)}; }"""
     def state(js):
         pg.evaluate("(js) => { (new Function(js))(); itHeaderSync(); }", js); pg.wait_for_timeout(100); return pg.evaluate(MARK)
-    pg.evaluate("() => { window.__nl = []; window.itNearList = () => window.__nl; window.itThreat = () => true; window.itNearCount = () => window.__nl.filter(x => x.j <= it.set.range).length; }")
+    pg.evaluate("() => { window.__orig = [itNearList, itThreat, itNearCount]; window.__nl = []; window.itNearList = () => window.__nl; window.itThreat = () => true; window.itNearCount = () => window.__nl.filter(x => x.j <= it.set.range).length; }")
     cyan, amber, red = 'rgb(79, 195, 217)', 'rgb(217, 154, 60)', 'rgb(198, 91, 78)'
     m = state("it.on = false;")
     check(m['s'] == 'off' and m['hidden'] and m['dot'] == 'none', f'Intel off: no mark, no dot {m}')
@@ -141,7 +141,8 @@ with sync_playwright() as p:
     pg.emulate_media(reduced_motion='no-preference')
     pg.click('#tabBtnPilot'); pg.click('#intelNear'); pg.wait_for_timeout(200)
     check(pg.evaluate("() => [document.getElementById('tabIntel').style.display, it.on]") == ['block', True], 'pressing the mark opens the Intel tab and leaves Intel on')
-    pg.evaluate("() => { it.on = false; itHeaderSync(); itRender(true); }")
+    # v2026.11.07.7: the stand-ins go before the card is drawn again (the Intel example, shown with Intel off, builds its rows with the real itNearList)
+    pg.evaluate("() => { [window.itNearList, window.itThreat, window.itNearCount] = window.__orig; it.on = false; itHeaderSync(); itRender(true); }")
     # ---- the Intel card's head: the switch, the gear, the info button at the top right ----
     for w in (1280, 860, 390):
         pg.set_viewport_size({'width': w, 'height': 800}); pg.wait_for_timeout(300); pg.evaluate("() => itRender(true)"); pg.wait_for_timeout(150)

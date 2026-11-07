@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GcjLpJG+5SaC3ImmLODrqDyvDaj1prgZTKaPbOFhpr0='; style-src 'unsafe-inline'; img-src 'self' https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-uXfW+qvWsIMj/VWuiUGdIGmz/tDOs8nbXZltcNd8FKU='; style-src 'unsafe-inline'; img-src 'self' https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
@@ -2563,6 +2563,26 @@
   button.it-gear:hover, button.it-gear[aria-expanded="true"]{color:var(--heading); border-color:var(--text-dim);}
   .it-sub{color:var(--text-dim); font:400 12.5px var(--sans); margin-top:8px;} .it-sub b{color:var(--text); font-weight:600;}
   .it-warn{color:var(--amber);}
+  /* v2026.11.07.7 (build queue 017; roadmap/intel-example-plan.md): a browser without the folder picker is told before the steps */
+  .it-nofs{margin-top:12px; padding:8px 12px; border-left:3px solid var(--amber); border-radius:0 4px 4px 0; background:rgba(217,154,60,.07); font:400 12.5px var(--sans); color:var(--text);}
+  .it-nofs b{color:var(--amber); font-weight:600;} .it-nofs code{font:500 12px var(--mono); color:var(--heading); overflow-wrap:anywhere; user-select:all;}
+  /* the example of Intel at work: the page's own rows from IT_EXAMPLE, inert, five numbered markers and their notes */
+  .itx{position:relative; margin-top:16px; border:1px dashed var(--line); border-radius:8px; padding:14px 16px 12px;}
+  .itx-h{display:flex; align-items:center; gap:6px 10px; flex-wrap:wrap; margin-bottom:12px; padding-right:36px;}
+  .itx-tag{display:inline-block; padding:1px 7px; border-radius:3px; background:var(--tag-fill); color:var(--cyan); font:700 10.5px/17px var(--sans); letter-spacing:.6px;}
+  .itx-t{font:600 15px var(--sans); color:var(--heading);}
+  .itx > button.x-close{position:absolute; top:10px; right:10px; margin:0;}
+  .itx-wrap{position:relative;}
+  .itx .it-top .it-nearcol{contain:none; min-height:0;}
+  .itx-map img{display:block; width:100%; height:auto;}
+  .itx-mk{position:absolute; z-index:3; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; background:var(--cyan); color:#0b0f13; font:700 11.5px/20px var(--sans); text-align:center; box-shadow:0 0 0 2px var(--panel); pointer-events:none;}
+  .itx-mk[hidden]{display:none;}
+  .itx-notes{margin:14px 0 0; padding:0; list-style:none; display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:8px 18px; font:400 12.5px/1.45 var(--sans); color:var(--text);}
+  .itx-notes li{display:flex; gap:8px; align-items:flex-start;} .itx-notes b{color:var(--heading); font-weight:600;}
+  .itx-notes .n{flex:none; width:18px; height:18px; border-radius:50%; background:var(--cyan); color:#0b0f13; font:700 10.5px/18px var(--sans); text-align:center; margin-top:1px;}
+  .itx-foot{margin-top:10px; font:400 12px var(--sans); color:var(--text-dim);}
+  @media (max-width:599px){ .itx{padding:12px;} .itx-notes{grid-template-columns:1fr;} }
+  .info-body .info-ex{margin-top:10px;}
   .it-kslow{color:var(--amber);}   /* v2026.10.29.4: no kill read for 5 minutes */
   .it-setup{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px; margin-top:14px;}
   .it-box{border:1px solid var(--line); border-radius:8px; padding:12px; min-width:0;}
@@ -3008,7 +3028,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.6</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.7</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -3507,13 +3527,14 @@ function infoParaHtml(s){
   if(m) return `<p><b>${escapeHtml(m[1])}</b> ${escapeHtml(m[2])}</p>`;
   return `<p>${escapeHtml(t)}</p>`;
 }
+function infoExtraHtml(key){ return key === 'intel' ? IT_EX_INFO : ''; }   // v2026.11.07.7: Intel's "See an example"
 function infoBtnHtml(key){
   const paras = CARD_INFO[key];
   if(!paras) throw new Error(`infoBtnHtml: no CARD_INFO for "${key}"`);
   const title = INFO_TITLE[key] || `How ${cardName(key.split('#')[0])} works`;
   return `<details class="info-pop" data-info="${key}"><summary class="info-btn" aria-label="${escapeHtml(title)}" title="${escapeHtml(title)}">${INFO_SVG}</summary>
     <div class="info-body" role="dialog" aria-label="${escapeHtml(title)}"><div class="info-head"><span>${escapeHtml(title)}</span><button type="button" class="x-close info-close" aria-label="Close" title="Close (Esc)">×</button></div>
-    ${paras.map(infoParaHtml).join('')}</div></details>`;
+    ${paras.map(infoParaHtml).join('')}${infoExtraHtml(key)}</div></details>`;
 }
 
 // v2026.10.14.32 (the owner: "should we have identifiers for custom error codes that point back to why we implemented
@@ -3744,8 +3765,8 @@ const ERROR_CODES = {
  "INTEL-01": {
   "title": "This browser can't read the chat logs",
   "where": "{card:intel} tab",
-  "trigger": "The browser has no File System Access API (showDirectoryPicker): Firefox, Safari, or a page not served over https.",
-  "check": "Use Chrome or Edge on the GitHub Pages address.",
+  "trigger": "The browser has no File System Access API (showDirectoryPicker): Firefox, Safari, a phone, Brave with its folder picker off (its default), or a page not served over https.",
+  "check": "Use Chrome or Edge on a computer. In Brave: open brave://flags/#file-system-access-api, set it to Enabled and restart Brave (v2026.11.07.7). Since v2026.11.07.7 a note above Intel's setup steps says the same before anything is pressed.",
   "why": "",
   "since": "2026-10-28 (v2026.10.14.96)",
   "doc": "2026-10-28_intel-feed.html"
@@ -26199,8 +26220,11 @@ async function itStart(){
   if(it.on) return;
   if(it.set.sound) itAudioWake();   // v2026.11.01.8: the switch is a press: the first real alert isn't silent
   it.err = ''; it.note = '';
-  if(!it.supported){ it.err = withCode('Intel reads EVE\'s chat log files, which needs Chrome or Edge (the File System Access API). This browser can\'t.', 'INTEL-01'); itRender(); return; }
+  if(!it.supported){ it.err = withCode(itNoFsText(), 'INTEL-01'); itRender(); return; }
   if(!it.dir){ it.note = 'Choose the Chatlogs folder first (1 below).'; itRender(); return; }
+  // v2026.11.07.7 (the owner, at 017's review: "why would we allow intel to be turned out if no intel channels have been linked and
+  // chosen?"): the switch stays off until a channel is ticked (it used to turn on and watch nothing)
+  if(!it.set.channels.length){ it.note = 'Choose your intel channels first (2 below).'; itRender(); return; }
   try{
     let p = it.dir.queryPermission ? await it.dir.queryPermission({mode: 'read'}) : 'granted';
     if(p !== 'granted' && it.dir.requestPermission) p = await it.dir.requestPermission({mode: 'read'});
@@ -26214,7 +26238,6 @@ async function itStart(){
   itRender();
   try{ await itLoadNames(); }catch(e){ it.err = withCode(e.message, e.code || 'INTEL-03'); itStop(); return; }
   try{ it.lastScan = Date.now(); await itScan(); }catch(e){ it.err = withCode(`The page can't read “${it.dirName}” (${e.message}). Choose the folder again under the gear.`, 'INTEL-02'); itStop(); return; }
-  if(!it.set.channels.length){ it.pop = true; }
   itTickerStart();
   itTick();
   itKillPump();
@@ -26229,7 +26252,7 @@ function itStop(){
 // .github/workflows/jump-table.yml compares the table with CCP's published stargates twice a day and opens a pull request
 // when a gate changed (tools/jump_table_update.py). LESSON #99
 async function itChooseFolder(){
-  if(!it.supported){ it.err = withCode('Intel reads EVE\'s chat log files, which needs Chrome or Edge (the File System Access API). This browser can\'t.', 'INTEL-01'); itRender(); return; }
+  if(!it.supported){ it.err = withCode(itNoFsText(), 'INTEL-01'); itRender(); return; }
   let h;
   try{ h = await window.showDirectoryPicker({id: 'eve-chatlogs', mode: 'read'}); }catch(e){ return; }   // cancelled
   it.dir = h; it.dirName = h.name; it.chans = []; it.chars = new Map(); it.files = new Map(); it.err = '';
@@ -26277,18 +26300,21 @@ function itStandKind(x){ const o = itOrgOf(x); return standKind(x.side, o.corp, 
 function itOrgOf(x){ const a = it.aff.get(x.id); return {corp: x.corp || (a && a.corp) || null, alliance: x.alliance || (a && a.alliance) || null}; }
 function itTkHtml(kind, id){
   if(!id) return '';
+  const x = itExOrg && itExOrg.get(id); if(x) return `<span class="tk">${escapeHtml(kind === 'alliance' ? `<${x.ticker}>` : `[${x.ticker}]`)}</span>`;   // v2026.11.07.7: the example's own
   const v = orgCache.get(`${kind}:${id}`);
   if(v && typeof v.then !== 'function' && v.ticker) return `<span class="tk">${escapeHtml(kind === 'alliance' ? `<${v.ticker}>` : `[${v.ticker}]`)}</span>`;
   return orgTickerHtml(kind, id);
 }
-function itLogo(kind, id){ return id ? `<span class="it-lg${kind === 'corporation' ? ' c' : ''}"><img src="https://images.evetech.net/${kind === 'corporation' ? 'corporations' : 'alliances'}/${id}/logo?size=32" alt="" loading="lazy" data-imgfail="remove"></span>` : ''; }
+function itLogo(kind, id){
+  const x = itExOrg && itExOrg.get(id); if(x) return `<span class="${escapeHtml(kind === 'corporation' ? 'it-lg c' : 'it-lg')}"><img src="${escapeHtml(x.logo)}" alt=""></span>`;   // v2026.11.07.7: the example's emblem, no request
+  return id ? `<span class="it-lg${kind === 'corporation' ? ' c' : ''}"><img src="https://images.evetech.net/${kind === 'corporation' ? 'corporations' : 'alliances'}/${id}/logo?size=32" alt="" loading="lazy" data-imgfail="remove"></span>` : ''; }
 // v2026.11.01.2 (the owner, from Claude outputs/pilot_chip_hover_mockup.html: "Go with B2"; "i would prefer that alliance and corp were
 // not grouped. should be able to filter by either. also remove the ability to change standing from there. once we move to SSO,
 // standing is set by the corp and alliance"): one chip, four parts: the standing (a tip only), the name (the Pilot Analyzer), the
 // corporation (its logo and [TICKER]) and the alliance (logo and <TICKER>). Pressing a group shows only it in the Feed: a filter chip
 // (v2026.11.07.1, build queue 010; was its ticker in the search box); pressed again, or the chip's ×, that filter off. On hover (or focus) the whole chip gets an outline and dividers; the part under the pointer fills.
 // Without hover (a phone) the first tap shows the parts and the second does what the part says (itChipTap).
-function itGrpTk(kind, id){ const v = id && orgCache.get(`${kind}:${id}`); return v && typeof v.then !== 'function' && v.ticker ? v : null; }
+function itGrpTk(kind, id){ const x = itExOrg && itExOrg.get(id); if(x) return x; const v = id && orgCache.get(`${kind}:${id}`); return v && typeof v.then !== 'function' && v.ticker ? v : null; }
 function itGrpTok(kind, tk){ return kind === 'alliance' ? `<${tk}>` : `[${tk}]`; }
 function itGrpBtn(kind, id){
   if(!id) return '';
@@ -26884,6 +26910,229 @@ function itStatusLine(){
   const last = it.lastLine ? `last line ${itAgo(it.lastLine)} ago` : 'no lines yet';
   return `${escapeHtml(me)} · ${ch} · ${last}${itKillStatus()}`;
 }
+// ---- v2026.11.07.7 (build queue 017; Project docs roadmap/intel-example-plan.md and roadmap/intel-example-build-review.md; mockup
+// Claude outputs/intel_example_mockup.html; the owner: "Still picture with callouts", "Below the setup steps", "looks good") ----
+// An example of Intel at work, for a new user: the page's own Map, Near You and Feed (its first 5 rows) drawn from IT_EXAMPLE, inert,
+// with five numbered markers and their notes. Shown until the first real report or kill arrives; then gone for good, remembered in
+// dscanItExGone only while the chat log folder is linked (the owner: "only if the user currently has their chat logs linked"). The
+// Intel info panel's "See an example" brings it back. Made-up pilots, corporations and alliances on real systems ([stated] "make sure
+// none of the pilot names or tickers match a real pilot name"; tools/check_example_names.py); their ids are negative: ESI never hands
+// one out, and nothing about them is ever asked of anyone (itExOrg answers for their names, tickers and emblems).
+const IT_EXAMPLE = {
+  home: 30004759, range: 3, nearRange: 8, mapReach: 10, forget: 15,
+  sys: {30004759: '1DQ1-A', 30004764: '3-DMQT', 30004716: '4K-TRB', 30004028: 'E-VKJV', 30004017: 'K4-RFZ', 30004772: 'KEE-N6', 30004030: 'B-7DFU', 30004798: 'C3N-3S'},
+  you: {pilot: -101, corp: -201, alliance: -301}, hostile: [-302],
+  orgs: [   // id, kind, name, ticker, alliance, emblem colour, emblem letter
+    [-301, 'alliance', 'Brightwater Covenant', 'BWCVN', null, '#4f8fe0', 'B'], [-201, 'corporation', 'Kestrel Moor Wardens', 'KMWD', -301, '#3b78b8', 'K'],
+    [-302, 'alliance', 'Corvid Lantern Compact', 'CVLC', null, '#c65b4e', 'C'], [-202, 'corporation', 'Duskmere Breakers', 'DSKMB', -302, '#a8483d', 'D'],
+    [-203, 'corporation', 'Halloway Spire Works', 'HSPW', -302, '#b8623f', 'H'],
+    [-303, 'alliance', 'Saltreach Concord', 'SLTRC', null, '#8f9aa3', 'S'], [-204, 'corporation', 'Gannet Row Haulage', 'GNRH', -303, '#6f8290', 'G']
+  ],
+  pilots: [   // id, name, corporation
+    [-101, 'Annick Solberay', -201], [-102, 'Calloway Vintress', -201], [-103, 'Tobiah Quenelle', -201], [-104, 'Brannagh Ostley', -201],
+    [-111, 'Vexlin Odrassa', -202], [-112, 'Torrik Malvane', -202], [-113, 'Quorra Feldane', -203], [-114, 'Ismet Varrowgast', -203],
+    [-115, 'Ysolt Carvaine', -202], [-116, 'Pellam Strohnecker', -203],
+    [-121, 'Ossian Brakeholt', -204], [-122, 'Merenwy Tasque', -204], [-123, 'Liesl Varnhagen', -204]
+  ],
+  lines: [   // seconds ago, who typed it, the line (the mockup's spread: reports at 2-7 jumps, two inside the alert range, a clear, neutrals)
+    [600, -104, 'C3N-3S Pellam Strohnecker Hurricane +2'], [420, -102, 'KEE-N6 Merenwy Tasque'], [330, -104, 'B-7DFU Ismet Varrowgast Ferox +12'],
+    [260, -102, 'E-VKJV clr'], [180, -104, 'K4-RFZ Ossian Brakeholt Cheetah'], [95, -102, '4K-TRB Quorra Feldane Muninn +6 nv'],
+    [40, -104, '3-DMQT Vexlin Odrassa Torrik Malvane Sabre +3']
+  ],
+  kills: [   // seconds ago, system, victim [pilot, ship], attackers [[pilot, ship], ...] (final blow first), ISK
+    [300, 30004017, [-123, 'Venture'], [[-114, 'Ferox']], 3.4e6],
+    [140, 30004764, [-103, 'Stabber'], [[-111, 'Sabre'], [-112, 'Muninn'], [-113, 'Muninn'], [-115, 'Scimitar']], 182e6],
+    [100, 30004764, [-103, 'Capsule'], [[-111, 'Sabre'], [-112, 'Muninn']], 12e6]
+  ]
+};
+const IT_EX_NOTES = [
+  ['A report from your intel channel', 'read as your scouts type it: who, what they fly, where.'],
+  ['How far, in jumps', '{near} lists everything within reach, nearest first.'],
+  ['The map', 'reports and kills around you; hover one for its route to you.'],
+  ['Inside your alert range', 'a sound, a desktop notice, and an amber mark on your profile, from any tab.'],
+  ['Kills nearby', 'from zKillboard as they happen; press one to see the attacking fleet and its fits.']
+];
+const IT_EX_NOTE3_PHONE = 'switch {near} to Map to see reports and kills around you.';   // {near}: cardName('itnear')
+const IT_EX_INFO = '<div class="info-ex"><button type="button" class="sa-link" data-it-act="example">See an example</button>: what Intel shows once it’s running.</div>';
+const IT_EX_KEY = 'dscanItExGone';   // '1' once a real report or kill has arrived; new in v2026.11.07.7 (an older page never reads it)
+let itExOrg = null;   // id -> {kind, name, ticker, logo}: set only while the example is built
+const itEx = {gone: false, view: false, html: null, htmlKey: '', map: null, mapKey: '', ro: null, roW: 0};
+try{ itEx.gone = typeof localStorage !== 'undefined' && localStorage.getItem(IT_EX_KEY) === '1'; }catch(e){}
+// The emblem: a shield in the group's colour with its letter, an inline SVG (no request); colours as the tokens' hex (it's an image)
+function itExEmblem(c, l){
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#0d1115"/><path d="M16 4l10 4v7c0 6.5-4.2 11-10 13C10.2 26 6 21.5 6 15V8z" fill="${escapeHtml(c)}"/><text x="16" y="20.5" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#0d1115" text-anchor="middle">${escapeHtml(l)}</text></svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+// What the browser says when it can't read the folder: Brave has the folder picker but turns it off (navigator.brave only; no UA sniffing)
+function itIsBrave(){ return typeof navigator !== 'undefined' && !!navigator.brave; }
+function itNoFsText(){
+  return itIsBrave() ? 'Brave turns off the folder picker Intel needs. To turn it on: open brave://flags/#file-system-access-api, set it to Enabled, and restart Brave.'
+    : 'Intel reads EVE\'s chat log files, which needs Chrome or Edge on a computer (the File System Access API). This browser can\'t.';
+}
+function itNoFsHtml(){
+  if(it.supported) return '';
+  return itIsBrave() ? '<div class="it-nofs" role="note"><b>Brave turns off the folder picker Intel needs.</b> To turn it on: open <code>brave://flags/#file-system-access-api</code> (copy it into the address bar), set it to Enabled, and restart Brave. Below is what you’d see.</div>'
+    : '<div class="it-nofs" role="note"><b>Intel needs Chrome or Edge on a computer.</b> This browser can’t read EVE’s chat log folder, so the steps above won’t work here. Below is what you’d see.</div>';
+}
+// Shown: nothing real yet (and not remembered as gone while the folder is linked), or asked for from the info panel
+function itExAuto(){ return !it.feed.length && !(itEx.gone && it.dir); }
+function itExShown(){ return itEx.view || itExAuto(); }
+function itExMarkGone(){
+  if(itEx.gone || !it.feed.length || !it.dir) return;
+  itEx.gone = true;
+  try{ localStorage.setItem(IT_EX_KEY, '1'); }catch(e){}
+}
+function itExOpen(on){
+  itEx.view = !!on;
+  const d = document.querySelector('#intelPanel details.info-pop[open]'); if(d) d.removeAttribute('open');
+  itRender(true);
+  const f = document.querySelector('#intelPanel .itx');
+  if(on && f){ if(f.scrollIntoView) f.scrollIntoView({block: 'nearest'}); const x = f.querySelector('button.x-close'); (x || f).focus({preventScroll: true}); }
+  if(!on){ const b = document.querySelector('#intelPanel .it-head summary.info-btn'); if(b) b.focus({preventScroll: true}); }
+}
+function itExPhone(){ return typeof matchMedia === 'function' && matchMedia('(max-width: 599px)').matches; }
+// Builds the example's rows with the real builders while real Intel's state is set aside, then puts every bit of it back. The entries
+// are history (itNearAdd's alert is skipped for history), the kill reader is never touched, nothing is written or asked.
+function itExSandbox(fn){
+  const keys = ['feed', 'near', 'me', 'set', 'fl', 'rawOpen', 'nearOpen', 'armed', 'aff', 'names', 'sec', 'pilots', 'shape', 'charNames', 'lastLine', 'q', 'gateDest', 'alerted', 'alerts'];
+  const has = {}, save = {};
+  for(const k of keys){ has[k] = Object.prototype.hasOwnProperty.call(it, k); save[k] = it[k]; }
+  const rec = side.rec, eid = itEntryId, can = itAnCan, fz = itFrozenNow, pins = itm.pinned, hov = [itm.hover, itm.rowHover];
+  const X = IT_EXAMPLE, now = Date.now(), byLower = new Map(), byId = new Map(), T = itMapTable(), g = itGraphGet();
+  try{
+    for(const [id, n] of Object.entries(X.sys)){ byLower.set(n.toLowerCase(), Number(id)); byId.set(Number(id), n); }
+    it.names = {byLower, byId, list: [...byLower.keys()], heads: new Map()};
+    it.sec = new Map(Object.keys(X.sys).map(id => { const i = g.at.get(Number(id)); return [Number(id), T && i !== undefined ? T.sec[i] / 100 : -0.5]; }));
+    it.set = {...itDefaults(), range: X.range, nearRange: X.nearRange, mapReach: X.mapReach, forget: X.forget, channels: ['example'], sound: false, notify: false, alias: '', hideFriendly: false};
+    it.set.feed = {...(itDefaults().feed || {}), dist: 0};
+    it.me = {sys: X.sys[X.home]}; it.fl = []; it.rawOpen = new Set(); it.nearOpen = new Set(); it.armed = null; it.q = ''; it.shape = null; it.gateDest = new Map();
+    it.feed = []; it.near = new Map(); it.lastLine = 0;
+    const org = new Map(X.orgs.map(([id, kind, name, ticker, al, c, l]) => [id, {kind, name, ticker, alliance: al, logo: itExEmblem(c, l)}]));
+    itExOrg = org;
+    const corpOf = new Map(X.pilots.map(([id, , corp]) => [id, corp]));
+    it.aff = new Map(X.pilots.map(([id, , corp]) => [id, {corp, alliance: org.get(corp).alliance}]));
+    it.pilots = new Map(X.pilots.map(([id, name]) => [name.toLowerCase(), {id, name}]));
+    it.charNames = new Map(X.pilots.map(([id, name]) => [id, name]));
+    const nm = (id) => it.charNames.get(id);
+    side.rec = {...(rec || sideEmpty()), pilot: {id: X.you.pilot, name: nm(X.you.pilot)}, corp: {id: X.you.corp, name: org.get(X.you.corp).name, kind: 'corporation'},
+      alliance: {id: X.you.alliance, name: org.get(X.you.alliance).name, kind: 'alliance'}, friendly: [], hostile: X.hostile.map(id => ({kind: 'alliance', id, name: org.get(id).name}))};
+    const my = itMySys(), ships = itShips(), ev = [];
+    for(const [ago, who, msg] of X.lines) ev.push({t: now - ago * 1000, line: {t: now - ago * 1000, who: nm(who), chan: '', msg, history: true}});
+    X.kills.forEach(([ago, sys, [vid, vship], att, isk], k) => {
+      const o = (id, ship) => ({character_id: id, corporation_id: corpOf.get(id), alliance_id: org.get(corpOf.get(id)).alliance || undefined, ship_type_id: (ships.get(ship.toLowerCase()) || {}).id});
+      const km = {killmail_id: -501 - k, solar_system_id: sys, victim: o(vid, vship), attackers: att.map(([id, sh], i) => ({...o(id, sh), final_blow: i === 0, damage_done: 1000 - i * 100}))};
+      ev.push({t: now - ago * 1000, kill: {km, z: {totalValue: isk, attackerCount: att.length, hash: 'example'}, t: now - ago * 1000, history: true}});
+    });
+    ev.sort((a, b) => a.t - b.t);
+    for(const x of ev){
+      if(x.kill){ itAddKill(x.kill); continue; }
+      let pr = itParse(x.line.msg, my); const f = itForce(pr, my); if(f.size) pr = itParse(x.line.msg, my, f);
+      if(!pr.sys.length) continue;
+      itPlace(pr, my); itAddReport(x.line, pr, itPilotsOf(pr));
+    }
+    itm.pinned = new Set(); itm.hover = -1; itm.rowHover = -1;
+    return fn();
+  }finally{
+    for(const k of keys){ if(has[k]) it[k] = save[k]; else delete it[k]; }
+    side.rec = rec; itEntryId = eid; itAnCan = can; itFrozenNow = fz; itm.pinned = pins; [itm.hover, itm.rowHover] = hov; itExOrg = null;
+  }
+}
+// The example's frame (cached: the rows don't change, and their ages were worked out once when drawn); its map picture and markers
+// are put in by itExMount after the card is drawn
+function itExampleHtml(){
+  if(!itExShown()) return '';
+  const phone = itExPhone(), key = phone ? 'p' : 'w';
+  if(!itEx.html || itEx.htmlKey !== key){
+    itEx.htmlKey = key;
+    itEx.html = itExSandbox(() => {
+      itFrozenNow = Date.now(); itAnCan = new Map();
+      return `<div class="it-top v-list itx-top"><div class="it-mapcol"><div class="it-h"><h3>${escapeHtml(cardName('itmap'))}</h3><span class="ctx">around you, ${Number(IT_EXAMPLE.mapReach)} jumps</span></div><div class="it-map-box itx-map"><img alt="The example's map: reports and kills around 1DQ1-A"></div><div class="it-map-leg">${itExLegendHtml()}</div></div>`
+        + `<div class="it-nearcol"><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3><span class="ctx">last ${Number(IT_EXAMPLE.forget)} min, within ${Number(IT_EXAMPLE.nearRange)} jumps</span></div><div class="itx-near">${itExNearHtml()}</div></div></div>`
+        + `<div class="it-feedcol"><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3><span class="ctx">first 5 rows</span></div><div class="itx-feed">${itExFeedHtml()}</div></div>`;
+    }).replace(/ data-it-(sys|cap)="/g, ' data-itx-$1="');   // the card's own fetchers and fitters look for these: the example's are its own
+  }
+  return `<div class="itx" role="region" aria-label="Example: what Intel shows once it’s running">${itExCloseHtml()}<div class="itx-h"><span class="itx-tag">EXAMPLE</span><span class="itx-t">What Intel looks like once it’s running</span>${ctxHtml('made-up pilots on real systems')}</div>`
+    + `<div class="itx-wrap"><div class="itx-body" inert>${itExRowsHtml()}</div>${itExMarksHtml()}</div>`
+    + `<ol class="itx-notes">${itExNotesHtml(phone)}</ol><div class="itx-foot">Your own reports replace this example as soon as the first one arrives.</div></div>`;
+}
+function itExRowsHtml(){ return itEx.html; }   // built above, from the real builders
+function itExLegendHtml(){   // the map's own legend, drawn by itMapLegend into a box of its own (inside itExSandbox only)
+  const el0 = itm.el, box = document.createElement('div'); box.innerHTML = '<div class="it-map-leg"></div>';
+  try{ itm.el = box; itMapLegend(); return box.firstChild.innerHTML; }finally{ itm.el = el0; }
+}
+function itExNearHtml(){ return itNearList().map(itNearRowHtml).join(''); }   // inside itExSandbox only
+function itExFeedHtml(){ return itFeedShown().slice(0, 5).map(itFeedRowHtml).join(''); }
+function itExCloseHtml(){ return itEx.view && !itExAuto() ? '<button type="button" class="x-close" data-it-act="exclose" aria-label="Close the example" title="Close the example">×</button>' : ''; }
+function itExMarksHtml(){ return [1, 2, 3, 4, 5].map(n => `<span class="itx-mk" data-itx-mk="${Number(n)}" hidden aria-hidden="true">${Number(n)}</span>`).join(''); }
+function itExNotesHtml(phone){ return IT_EX_NOTES.map(([b, t], i) => `<li><span class="n">${Number(i + 1)}</span><span><b>${escapeHtml(b)}:</b> ${escapeHtml((i === 2 && phone ? IT_EX_NOTE3_PHONE : t).replace('{near}', cardName('itnear')))}</span></li>`).join(''); }
+// The map, drawn once into a picture by the map's own code on a canvas of its own (itm's state set aside and put back), at the width of
+// its column; again only when that width changes
+function itExMapPic(w){
+  const key = `${w}|${itFontEpoch}`;
+  if(itEx.map && itEx.mapKey === key) return itEx.map;
+  let url = null;
+  itExSandbox(() => {
+    const keep = {...itm}, T = itMapTable(), g = itGraphGet(), home = T ? g.at.get(IT_EXAMPLE.home) : undefined;
+    if(home === undefined) return;
+    const cv = document.createElement('canvas'), you = document.createElement('span'), dpr = window.devicePixelRatio || 1, h = Math.round(Math.max(IT_MAP_MIN_H, Math.min(560, w * 0.72)));
+    you.innerHTML = '<svg></svg>';
+    try{
+      Object.assign(itm, {cv, you, W: w, H: h, reach: IT_EXAMPLE.mapReach, home, hover: -1, rowHover: -1, pinned: new Set()});
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+      itMapBfs(home); itMapLayout(); itm.rep = itMapReports(); itMapDraw();
+      url = cv.toDataURL('image/png');
+    }finally{ for(const k of Object.keys(itm)) if(!(k in keep)) delete itm[k]; Object.assign(itm, keep); }
+  });
+  itEx.map = url; itEx.mapKey = key;
+  return url;
+}
+// After the card is drawn: the map picture, the system columns' widths, then the markers on their targets; again when the frame's width
+// changes (one ResizeObserver, one frame), never on a timer (LESSON #120)
+function itExMount(root){
+  const f = root && root.querySelector && root.querySelector('.itx');
+  if(itEx.ro && itEx.roEl !== f){ itEx.ro.disconnect(); itEx.ro = null; itEx.roEl = null; }
+  if(!f) return;
+  itExFill(f);
+  if(!itEx.ro && typeof ResizeObserver === 'function'){
+    let raf = 0;
+    itEx.ro = new ResizeObserver(() => { const w = Math.round(f.clientWidth); if(w === itEx.roW || raf) return; raf = requestAnimationFrame(() => { raf = 0; itEx.roW = Math.round(f.clientWidth); itExFill(f); }); });
+    itEx.roEl = f; itEx.roW = Math.round(f.clientWidth); itEx.ro.observe(f);
+  }
+}
+function itExFill(f){
+  const phone = itExPhone();
+  if(phone !== (itEx.htmlKey === 'p')){ itEx.html = null; itRender(true); return; }   // the phone's note 3 and layout: drawn again once
+  const top = f.querySelector('.itx-top');
+  if(top) top.classList.toggle('v-list', phone);
+  const img = f.querySelector('.itx-map img'), col = f.querySelector('.itx-map');
+  const place = () => itExPlace(f);
+  if(img && col && !phone){
+    const w = Math.round(col.clientWidth), url = w > 0 ? itExMapPic(w) : null;
+    if(url && img.getAttribute('src') !== url){ img.addEventListener('load', place, {once: true}); img.src = url; }
+  }
+  itExWidths(f);
+  if(!img || phone || img.complete) place();
+}
+function itExWidths(f){   // the system and jump columns as wide as the example's own widest (the card's itSysWidths measures the real lists)
+  const w = (sel) => Math.ceil(Math.max(0, ...[...f.querySelectorAll(sel)].map(x => x.scrollWidth)));
+  const a = w('.itx-near .it-nb .sys'), b = w('.itx-feed .it-fh .it-sn'), j = w('.itx-near .it-nb .j, .itx-feed .it-fh .fj');
+  if(a) f.style.setProperty('--it-sys-w', `${a + 2}px`); if(b) f.style.setProperty('--it-fsys-w', `${b + 2}px`); if(j) f.style.setProperty('--it-jw', `${Math.max(j, 54)}px`);
+}
+function itExPlace(f){
+  const W = f.querySelector('.itx-wrap'); if(!W) return;
+  const R = W.getBoundingClientRect(), phone = itExPhone();
+  const at = (n, el, dx = 0, dy = 0) => { const m = f.querySelector('[data-itx-mk="' + Number(n) + '"]'); if(!m) return; if(!el || !el.getClientRects().length){ m.hidden = true; return; }
+    const r = el.getBoundingClientRect(); m.style.left = `${Math.round(r.left - R.left + dx)}px`; m.style.top = `${Math.round(r.top - R.top + dy)}px`; m.hidden = false; };
+  const alerts = f.querySelectorAll('.itx-near .it-nb.alert');
+  at(1, f.querySelector('.itx-feed .it-fd.rep'), 0, 14);
+  at(2, f.querySelector('.itx-near .it-nb'), 0, 14);
+  const nh = f.querySelector('.it-nearcol > .it-h .ctx');
+  if(phone && nh){ const r = nh.getBoundingClientRect(), m = f.querySelector('[data-itx-mk="3"]'); if(m){ m.style.left = `${Math.round(r.right - R.left + 14)}px`; m.style.top = `${Math.round(r.top - R.top + r.height / 2)}px`; m.hidden = false; } }
+  else at(3, f.querySelector('.itx-map img[src]'), 14, 14);
+  at(4, alerts[1] || alerts[0], 0, 14);
+  const kl = f.querySelector('.itx-near .it-kl');
+  if(kl) at(5, kl, kl.getBoundingClientRect().width + 16, 7); else at(5, null);   // the mockup's place: just past the badge's right end
+}
 function itRender(force){   // force: a press that changes what is open (the gear, Escape) redraws even with focus inside
   itHeaderSync();
   const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('intelPanel');
@@ -26908,9 +27157,10 @@ function itRender(force){   // force: a press that changes what is open (the gea
   // info button, as every other card ends its head with its info button), at the top right at every width
   const sw = `<span class="it-sw">${onoff}<button type="button" class="it-gear" data-it-act="gear" aria-label="Intel settings" title="Intel settings" aria-expanded="${it.pop ? 'true' : 'false'}">${IT_GEAR}</button>${infoBtnHtml('intel')}</span>`;
   const setup = !itReady() || (!it.on && !it.feed.length);
+  itExMarkGone();   // v2026.11.07.7
   let body = '';
   if(setup){
-    body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The switch beside the gear starts and stops it; closing the page stops it too. While it runs, a mark on your profile at the top shows from any tab: cyan when all is clear, an amber “N near” when a hostile is within your alert range, red “In system” in your own system.</div>${itSettingsHtml(true)}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
+    body = `<div class="it-sub">Reads your intel channels’ chat logs as EVE writes them. Nothing leaves your browser except the names the page looks up on ESI. The switch beside the gear starts and stops it; closing the page stops it too. While it runs, a mark on your profile at the top shows from any tab: cyan when all is clear, an amber “N near” when a hostile is within your alert range, red “In system” in your own system.</div>${itNoFsHtml()}${itSettingsHtml(true)}${itExampleHtml()}<div class="it-sub">In EVE: Settings → Chat → <b>Log Chat to File</b> must be on.</div>`;
   } else {
     // v.98 (the owner: "the feed keeps growing ... drop entries older than 15 minutes"): the Feed keeps the same time as Near You
     body = `${it.on ? `<div class="it-sub" data-it-status></div>` : `<div class="it-sub">Stopped. The switch beside the gear starts it again.</div>`}
@@ -26919,7 +27169,7 @@ function itRender(force){   // force: a press that changes what is open (the gea
         <div class="it-mapcol"><div class="it-h"><h3>${escapeHtml(cardName('itmap'))}</h3><span class="ctx" data-it-mapctx>${escapeHtml(itMapCtx())}</span></div><div id="itMapSlot"></div></div>
         <div class="it-nearcol"><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3><span class="ctx" data-it-nearctx title="${escapeHtml(itMySys() ? `Systems within ${itNearReach()} jumps (under the gear); farther reports are in the ${cardName('itfeed')}` : '')}">${escapeHtml(itNearCtx())}</span><span class="it-nv" role="group" aria-label="${escapeHtml(cardName('itnear'))}: list or map"><button type="button" data-it-nv="list" aria-pressed="${it.set.nearView !== 'map'}">List</button><button type="button" data-it-nv="map" aria-pressed="${it.set.nearView === 'map'}">${escapeHtml(cardName('itmap'))}</button></span></div><div id="itNearList">${itNearListHtml()}</div><div class="it-more" hidden></div></div>
       </div>
-      <div class="it-feedcol"><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3>${ctxHtml(`last ${it.set.forget} min, reports and kills`)}</div>${itFeedBarHtml()}<div id="itFeedList">${itFeedListHtml()}</div></div>`;
+      <div class="it-feedcol"><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3>${ctxHtml(`last ${it.set.forget} min, reports and kills`)}</div>${itFeedBarHtml()}<div id="itFeedList">${itFeedListHtml()}</div></div>${itExampleHtml()}`;
   }
   const pop = it.pop && !setup ? `<div class="it-pop" role="dialog" aria-label="Intel settings"><div class="it-h"><h3>Intel settings</h3><span class="sa-sp"></span><button type="button" class="x-close info-close" data-it-act="gear" aria-label="Close" title="Close (Esc)">×</button></div>${itSettingsHtml(false)}</div>` : '';
   return `<div class="card it-card"><div class="it-head"><h2>${escapeHtml(cardName('intel'))}</h2>${sw}</div>
@@ -26948,6 +27198,7 @@ function itRender(force){   // force: a press that changes what is open (the gea
   const nl1 = el.querySelector('#itNearList'); if(nl1 && nTop) nl1.scrollTop = nTop;
   if(lf){ const f = el.querySelector(lf); if(f) f.focus({preventScroll: true}); }
   itMapMount(el); rsPaint(el);
+  itExMount(el);   // v2026.11.07.7
   itStatusPaint(el, true);
   if(hf){ const f = el.querySelector(hf); if(f) f.focus({preventScroll: true}); }
   if(mf && mf.isConnected) mf.focus({preventScroll: true});
@@ -27530,7 +27781,9 @@ function rsBind(root){
     if(t.dataset.itChan !== undefined){
       const c = t.dataset.itChan;
       it.set.channels = t.checked ? [...new Set([...it.set.channels, c])] : it.set.channels.filter(x => x !== c);
-      itWriteSet(); it.lastScan = 0; if(it.on) itTick(); else itRender();
+      itWriteSet(); it.lastScan = 0;
+      if(it.on && !it.set.channels.length){ it.note = 'Intel stopped: no intel channel is ticked.'; itStop(); itRender(true); return; }   // v2026.11.07.7: nothing to watch (drawn even with the settings in use)
+      if(it.on) itTick(); else itRender();
       return;
     }
     if(t.dataset.itAlias !== undefined){   // v2026.10.31.5: for new lines; only the list under the box is redrawn (change comes on blur, maybe from a click elsewhere)
@@ -27627,6 +27880,7 @@ function rsBind(root){
     if(!a) return;
     if(a.dataset.itAct === 'gear'){ it.pop = !it.pop; itRender(true); if(!it.pop) itGearFocus(); return; }   // v2026.11.01.3: closed: the focus back on the gear
     if(a.dataset.itAct === 'leaveask'){ leaveSave([]); itRender(true); return; }   // v2026.10.31.3: links outside the site ask again
+    if(a.dataset.itAct === 'example' || a.dataset.itAct === 'exclose'){ itExOpen(a.dataset.itAct === 'example'); return; }   // v2026.11.07.7
     if(a.dataset.itAct === 'folder') itChooseFolder();
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && it.pop){ it.pop = false; itRender(true); itGearFocus(); } });
