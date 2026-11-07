@@ -78,6 +78,8 @@ def fast(html):
         ('UI rules', q('check_ui_rules.py'), lambda l: l.endswith(' 0 problems')),
         ('CSP script hash (LESSON #145)', q('csp_hash.py') + ' --check', lambda l: l.endswith(': 0 problems')),
         ('CSP hash tool self-test', q('csp_hash.py') + ' --self-test', lambda l: l.endswith(': ok')),
+        ('no new unescaped HTML (LESSON #144)', q('check_html_sinks.py'), lambda l: l.endswith(' 0 problems')),
+        ('HTML-sink lint self-test', q('check_html_sinks.py') + ' --self-test', lambda l: l.endswith(': ok')),
         ('subtext rule', q('check_subtext.py'), lambda l: l.endswith(' 0 problems')),
         ('card names', q('check_card_names.py'), lambda l: l.endswith(' 0 problems')),
         ('zKillboard request gates', q('check_request_gates.py'), lambda l: l.endswith(' 0 problems')),
