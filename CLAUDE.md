@@ -306,7 +306,7 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   `sa.corpsAll`). A corporation line is a grid: name, the ▲ and ▼ slots (`saActSlotHtml`, empty ones too), the count. `#scanCard`
   lives in `#saOut`, not the rail (`scanCardEl`, `scanCardPlace`: follows its row on any scroll, closes when the row leaves the
   rail's view). The dossier's kill rows past 10 scroll in a box exactly 10 rows + its sticky heading tall (`pdKlFit`, LESSON #146),
-  "Show fewer" beside "Show 10 more"; its scroll survives `pdRender`. Show-more buttons there are amber (`.pdk-more`, `.sa-cmore`).
+  "Show fewer" beside "Show 10 more"; its scroll survives `pdRender`. Show-more buttons there are amber (`.pdk-more`, `.sa-cmore`; v2026.11.07.6 also a corporation's "+N more" pilots `.sa-pilots .sa-link[data-more]` and the killmail's attackers `.lk-more`).
   760 px and under: unchanged. `list_caps_check.py`.
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
