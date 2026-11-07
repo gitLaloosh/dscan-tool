@@ -28,8 +28,8 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <ul>
 <li>New <code>html_escape_check.py</code>: a harmless marker (<code>"'&gt;&lt;b data-pwn=...&gt;x&lt;/b&gt;</code>, which adds a <code>data-pwn</code> attribute or element if it gets out) through every route the review found or tried: Intel (pilot, corporation and alliance names and tickers from the ESI stand-in, a report's text and its reporter, every line shown as typed), the Fleet tab opened from those kills, the Fit Analyzer (name, module and cargo lines), My Fits (after a save and after a reload, hovering every row: the <code>onmouseover</code> fit runs nothing), Local, D-Scan and a <code>#pilotname=</code> link. Then a made-up "Kiera O'Brien" of "O'Brien &amp; Sons Corp" [O'B&amp;S] and a fit "O'Brien &amp; Sons brawl": shown as written, and no attribute or visible text with a literal <code>&amp;#39;</code>, <code>&amp;amp;</code> or <code>&amp;quot;</code> (escaped twice).</li>
 <li>Caught: the page before (7 failures: the marker out in Intel's group buttons, the Fit Analyzer, My Fits, and the hover ran the script), <code>escapeHtml</code> put back as it was (9), one corporation title escaped twice (2).</li>
-<li>FULLRUN</li>
-<li>Page size: SIZE bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+<li>Every check (<code>run_checks.py --auto</code> picked <code>all</code>: shared code): 13 lints, the pyfa chain and 75 page checks in 30 min, 0 failed, 0 flaky. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
+<li>Page size: 763,620 &rarr; 763,839 bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
 </ul>
 
 <h2>Lesson for future models</h2>
