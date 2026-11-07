@@ -64,7 +64,7 @@ LINES = """(hid) => [...document.querySelectorAll(`#pdk-${hid} .pdk[data-pdk]`)]
   cls: e.querySelector('.pdk-v > span:first-child .pd-dim').textContent, who: e.querySelector('.pdk-v > span:last-child').innerText.replace(/\\s+/g, ' ').trim(),
   g: e.querySelector('.pdk-g').childNodes[1].textContent, sys: e.querySelector('.pdk-s').textContent, w: e.querySelector('.pdk-w').childNodes[0].textContent,
   x: e.querySelector('.pdk-x').textContent, val: e.querySelector('.pdk-val').textContent, href: e.querySelector('.pdk-l a').getAttribute('href')}))"""
-MORE = """(hid) => { const m = document.querySelector(`#pdk-${hid} .pdk-more`); return m ? [!!m.querySelector('button'), m.querySelector('span:last-child').textContent] : null; }"""
+MORE = """(hid) => { const m = document.querySelector(`#pdk-${hid} .pdk-more`); return m ? [!!m.querySelector('[data-pd-more]'), m.querySelector('span:last-child').textContent] : null; }"""
 def idle(pg):
     pg.wait_for_function("() => !document.querySelector('#fitBtn').disabled && document.querySelector('#pilotBusy').hidden", timeout=120000); pg.wait_for_timeout(400)
 def analyze(pg, name):

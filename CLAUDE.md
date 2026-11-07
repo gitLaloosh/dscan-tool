@@ -297,6 +297,17 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   v2026.11.06.6 (build queue 019, LESSON #140): a read-back keeps every readable kill; the unreadable ones are asked once more 6 s
   later, then, if published and sequence.json reads now, read past (`kf.skipped`); three all-skipped passes count as the feed down
   (`kf.allSkip`). `outage_check.py`.
+- **Long lists stay in their box** (v2026.11.07.5, build queue 011; Project doc roadmap/list-caps-plan.md, mockup approved from
+  list_caps_mockup.html): over 760 px the System Analyzer's Hostile and Neutral columns and the Ships on Scan rail are capped at the
+  window (less 24 px) and scroll inside (`overscroll-behavior:auto`, LESSON #96); the columns' headings are sticky and "+N more groups
+  below" (`saMore`, an empty `.sa-more` in the built markup, filled after a draw and on the column's scroll, never a timer); opening a
+  group scrolls its column, never the page (`saShowGroup`); `saRender` keeps each column's scroll and the focus (`saFocusKey`). An
+  opened group shows `SA_CORPS_SHOWN` (8) corporations, then "Show N more corporations" / "Show fewer" (`saCorpsMoreHtml`,
+  `sa.corpsAll`). A corporation line is a grid: name, the ▲ and ▼ slots (`saActSlotHtml`, empty ones too), the count. `#scanCard`
+  lives in `#saOut`, not the rail (`scanCardEl`, `scanCardPlace`: follows its row on any scroll, closes when the row leaves the
+  rail's view). The dossier's kill rows past 10 scroll in a box exactly 10 rows + its sticky heading tall (`pdKlFit`, LESSON #146),
+  "Show fewer" beside "Show 10 more"; its scroll survives `pdRender`. Show-more buttons there are amber (`.pdk-more`, `.sa-cmore`).
+  760 px and under: unchanged. `list_caps_check.py`.
 - **No time to kill for a whole fleet** (v2026.10.31.1, the owner: "given the fluidity of ranges in fleet battles ... we probably
   should not be giving a time to kill numbers"): a fleet's fits are guesses and each ship picks its own range, so the Fleet tab and
   the System Analyzer show what a fleet brings and how far it reaches, never how long you or they last (LESSON #108). One ship

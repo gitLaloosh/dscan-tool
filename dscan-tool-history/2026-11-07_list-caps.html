@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-07 — Long lists stay in their box</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Long lists stay in their box</h1>
+<p><span class="tag">Page</span> 2026-11-07 &middot; <code>v2026.11.07.5</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 011, Project doc <code>roadmap/list-caps-plan.md</code>, mockup approved from <code>list_caps_mockup.html</code> (the owner: "look good"). With a big Local, the System Analyzer's columns, an opened alliance's corporations, the Ships on Scan rail and a dossier's kill rows pushed the rest of the page far down.</li>
+<li>The owner liked the amber buttons ("i like the amber"), and folded in the bug that the &#9650;/&#9660; kills and losses on corporation lines started right after each name, so they didn't line up ("sure").</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>Hostile and Neutral columns</b> (over 760 px): each no taller than the window less 24 px, scrolling inside; the heading stays at the top; a "+N more groups below" line at the bottom while groups are hidden there. Opening a group scrolls its column to show it, never the page. A redraw (a change to Standings, the kills arriving) keeps each column's scroll and the focus. The wheel at a column's end goes on to the page.</li>
+<li><b>An opened group</b> shows its first 8 corporations, then "Show N more corporations" with their pilots counted; pressed, all of them and "Show fewer". Nothing is asked of any server: the data is already in hand.</li>
+<li><b>Corporation lines</b> are three columns: the name, the &#9650; kills and &#9660; losses each in a right-aligned slot of its own, and the pilot count.</li>
+<li><b>Ships on Scan</b> (over 760 px, beside Local): capped at the window like the columns, scrolling inside. Its hover card now sits outside the rail so the rail's box can't cut it off; it follows its row as the rail or the page scrolls and closes when the row scrolls out of view.</li>
+<li><b>Pilot dossier:</b> past 10 kill rows, the rows scroll inside a box 10 rows tall with the heading row on top; "Show fewer" sits beside "Show 10 more", and after "Show 10 more" the box shows the first new row. Its scroll survives a redraw.</li>
+<li><b>Buttons:</b> "Show 10 more", "Show N more hulls" and the new "Show N more corporations" use the page's amber, compact size.</li>
+<li>760 px and under: unchanged. Nothing kept in the browser changes.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>list_caps_check.py</code> (made-up data: 80 neutral corporations, a 40-corporation hostile alliance, 30 small hostile alliances, a 46-hull scan, a pilot with 42 kills in one hull): every item above, the alignment measured with 1-, 2- and 3-digit counts, the card on top of Local's cards at its corners, and 760 px uncapped.</li>
+<li>Two older checks read the new markup: <code>scan_rail_check.py</code> counts the card in <code>#saOut</code>, and <code>dossier_kills_check.py</code> looks for the "Show 10 more" button itself (a "Show fewer" button is there now too).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #146: measure rows in a scroll box against the box itself. A sticky heading's <code>offsetTop</code> moves while it is stuck, so a height worked out from it was right at the first draw and 839 px off once the box had scrolled. The box is <code>position:relative</code> now and the measure uses plain rows.</li>
+</ul>
+</body></html>
