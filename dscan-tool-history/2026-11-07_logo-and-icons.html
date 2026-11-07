@@ -32,4 +32,9 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <li>Every check (<code>run_checks.py --auto</code> picked <code>all</code>: new files at the repo root): 18 lints, the pyfa chain and 77 page checks in 31 min, 0 failed, 0 flaky. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
 <li>Page size: 762,547 &rarr; 762,922 bytes gzipped (<code>gzip -9</code>).</li>
 </ul>
+
+<h2>Publishing</h2>
+<ul>
+<li>The merge (pull request #18) built fine, but GitHub Pages' deploy step stalled four times on that commit: the first attempt stuck after copying the files ("finished_file_sync") for about 28 minutes, and every retry of the same commit then got no status from Pages at all until it timed out. Pages names a deployment after its commit, so the retries looked stuck on the cancelled first one. This note went out as a page-unchanged pull request so Pages would publish a new commit. GitHub's status page showed no incident that night; it had listed Pages and Actions trouble on Nov 4, 5 and 6.</li>
+</ul>
 </body></html>
