@@ -10,7 +10,7 @@ Run --write after the last edit to index.html (CLAUDE.md's delivery steps); run_
 It fails when:
   * the hash in the meta tag isn't the hash of the script as the browser hashes it;
   * there isn't exactly one <script>, or the CSP meta tag doesn't come before it, or there's no referrer meta tag;
-  * the policy isn't EXPECTED below (a change to the policy is a change to this file, reviewed with it), or script-src
+  * the policy isn't EXPECTED below ('self' in img-src since v2026.11.07.4: the tab icon, build queue 022) (a change to the policy is a change to this file, reviewed with it), or script-src
     has 'unsafe-inline' or 'unsafe-eval'.
 
 How the browser hashes it: the element's text, UTF-8. HTML parsing first turns CR LF and a lone CR into LF, so a copy checked
@@ -19,7 +19,7 @@ serves. This tool does the same; hashing the raw CRLF bytes would write a hash t
 """
 import sys, os, re, hashlib, base64
 
-EXPECTED = ("default-src 'none'; script-src 'sha256-{hash}'; style-src 'unsafe-inline'; img-src https://images.evetech.net data: blob:; "
+EXPECTED = ("default-src 'none'; script-src 'sha256-{hash}'; style-src 'unsafe-inline'; img-src 'self' https://images.evetech.net data: blob:; "
             "connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; "
             "worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'")
 META_RX = re.compile(r'<meta http-equiv="Content-Security-Policy" content="([^"]*)">')

@@ -14,8 +14,8 @@ data (including screen shots)" must be called out or refused. This check fails o
     token, "Bearer <token>", api_key / client_secret / refresh_token / access_token / password set to a value, or (v2026.11.07.3)
     any token / code_verifier / refresh... key set to a long opaque value. Made-up test tokens start with "madeUp" and pass;
     the two public Client IDs of the EVE apps pass by name (ALLOWED);
-  * an image file anywhere but the two folders of game icons (img/fighter-abilities/, browser-extension/icons/): a
-    screenshot never goes in the repository;
+  * an image file anywhere but the two folders of game icons (img/fighter-abilities/, browser-extension/icons/) and the site's
+    two icons rendered from the logo (favicon-32.png, apple-touch-icon.png): a screenshot never goes in the repository;
   * an image embedded in a page or document (a data: URI of 2 KB or more) that nobody has reviewed. Mockups show the
     real page with MADE-UP data; after looking at each picture (no real pilot, corporation, alliance, channel or chat
     text, no desktop or file paths), add its SHA-256 to tools/pii_reviewed_images.json with what it shows;
@@ -32,6 +32,7 @@ STAGED = '--staged' in sys.argv
 SKIP_DIRS = {'.git', '__pycache__', 'node_modules'}
 IMAGE_EXT = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tif', '.tiff', '.heic')
 IMAGE_DIRS = ('img/fighter-abilities/', 'browser-extension/icons/')
+IMAGE_FILES = ('favicon-32.png', 'apple-touch-icon.png')   # v2026.11.07.4 (022): the site's icons, rendered from the logo by tools/render_icons.py
 TEXT_EXT = ('.html', '.htm', '.md', '.txt', '.json', '.js', '.mjs', '.py', '.css', '.eft', '.csv', '.yml', '.yaml', '.sh', '.sha256', '')
 TERMS_FILE = os.environ.get('PII_TERMS') or os.path.join(ROOT, 'tools', 'pii_terms.local.txt')
 REVIEWED = os.path.join(ROOT, 'tools', 'pii_reviewed_images.json')
@@ -80,7 +81,7 @@ def main():
         if rel in SELF or '.local.' in os.path.basename(rel) or rel.startswith('todo-inbox/') or not os.path.isfile(p): continue   # git-ignored: stays on this computer
         low = rel.lower()
         if low.endswith(IMAGE_EXT):
-            if not low.startswith(IMAGE_DIRS): problems.append(f'{rel}: an image file outside the game-icon folders (a screenshot never goes in the repository)')
+            if not low.startswith(IMAGE_DIRS) and low not in IMAGE_FILES: problems.append(f'{rel}: an image file outside the game-icon folders (a screenshot never goes in the repository)')
             continue
         if not low.endswith(TEXT_EXT): continue
         try: s = open(p, encoding='utf-8').read()

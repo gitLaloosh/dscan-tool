@@ -3,8 +3,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kI7Vrg7U98lgtojzOxvVrl/RD5rlhLBNszHf1UkWGis='; style-src 'unsafe-inline'; img-src https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-kI7Vrg7U98lgtojzOxvVrl/RD5rlhLBNszHf1UkWGis='; style-src 'unsafe-inline'; img-src 'self' https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1"><!-- v2026.10.14.15: without this, phones drew the page as a ~980px desktop page shrunk to fit. LESSON #33 -->
 <title>Threat Vector · EVE Online threat assessment</title>
 <style>
@@ -188,6 +191,17 @@
   /* v2026.10.14.63: the name's row holds the refresh icon at its right; the icon's status shows where the version tag is */
   .hero-title-row{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 6px;}
   .hero-title-row h1{margin:0;}
+  /* v2026.11.07.4 (build queue 022): the logo left of the title, sized and offset in em of the title, so the top of the logo's T meets the
+     top of the title's T at every width (the owner: "align the top of the T in Threat Vector with the top of the T in the logo");
+     colours are the page's tokens; no tile (the owner, 2026-11-07: "No tile"): the halo and the dot's ring are the background */
+  .hero-brand{display:flex; align-items:flex-start; gap:0.42em; min-width:0; font-size:26px;}
+  .hero-logo{flex:none; width:1.6em; height:1.6em; display:block; margin-top:var(--logo-nudge, -0.19em);}
+  .hero-logo .lg-orbit{fill:none; stroke:var(--cyan); stroke-width:3.2;}
+  .hero-logo .lg-halo{fill:var(--bg); stroke:var(--bg); stroke-width:7; stroke-linejoin:round;}
+  .hero-logo .lg-v, .hero-logo .lg-dot{fill:var(--amber);}
+  .hero-logo .lg-dot{stroke:var(--bg); stroke-width:2;}
+  .hero-logo .lg-shade{fill:var(--bg); opacity:.2;}
+  .hero-logo .lg-t{fill:var(--text);}
   button.hero-refresh{flex:none; width:30px; height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center;
     border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--text-dim); cursor:pointer;}
   button.hero-refresh:hover{border-color:var(--cyan); color:var(--cyan); background:#0f2a31;}
@@ -255,7 +269,8 @@
   @media (max-width: 599px){
     button.hero-refresh{width:44px; height:44px;}
     .hero-title-row{gap:8px;}
-    header.hero .hero-title-row h1{font-size:clamp(20px, 6.2vw, 26px);}   /* the name stays on one line beside the 44 px icon, down to 320 px */
+    header.hero .hero-title-row h1{font-size:clamp(20px, 6.2vw, 26px);}
+    .hero-brand{font-size:clamp(20px, 6.2vw, 26px); gap:0.32em; --logo-nudge:-0.16em;}   /* v2026.11.07.4: the logo follows the title's size */   /* the name stays on one line beside the 44 px icon, down to 320 px */
   }
   header.hero p{
     margin:0;
@@ -2970,7 +2985,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.3</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.4</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -2987,7 +3002,7 @@
     <!-- v2026.10.14.63 (the owner 2026-10-25: "let's move the "refresh item data" button ... it's taking up an entire row", then option A):
          an icon button at the right of the name's row; its short status briefly takes the version tag's place (heroRefreshStatus). -->
     <div class="hero-title-row">
-      <h1>Threat Vector</h1>
+      <span class="hero-brand"><!-- v2026.11.07.4 (build queue 022; roadmap/logo-header-plan.md): the R37 logo, decoration only; the h1 carries the name --><svg class="hero-logo" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><ellipse class="lg-orbit" rx="42" ry="14" transform="translate(50 52) rotate(-30)"/><ellipse class="lg-orbit" rx="42" ry="14" transform="translate(50 52) rotate(30)"/><g class="lg-halo" transform="translate(50 50) scale(.9) translate(-50 -57)"><path d="M24 41 H38 L50 70 L62 41 H76 L50 86 Z"/><path d="M12 28 H88 L76 46 L69 38 H55 V54 L50 60 L45 54 V38 H31 L24 46 Z"/></g><g transform="translate(50 50) scale(.9) translate(-50 -57)"><path class="lg-v" d="M24 41 H38 L50 70 L62 41 H76 L50 86 Z"/><path class="lg-shade" d="M50 70 L62 41 H76 L50 86 Z"/><path class="lg-t" d="M12 28 H88 L76 46 L69 38 H55 V54 L50 60 L45 54 V38 H31 L24 46 Z"/></g><circle class="lg-dot" r="5" transform="translate(50 52) rotate(30) translate(38 5.9)"/></svg><h1>Threat Vector</h1></span>
       <button type="button" id="refreshCacheBtn" class="hero-refresh" aria-label="Refresh item data" title="Refresh item data. Item data comes live from ESI and is kept in your browser for a week. This fetches it again."><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg></button>
     </div>
     <p>For EVE Online: who's in system, what they fly, and how to beat them.</p>
