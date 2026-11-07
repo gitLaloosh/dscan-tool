@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-07 — Quote marks escaped: a crafted fit name could run script</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Quote marks escaped: a crafted fit name could run script</h1>
+<p><span class="tag">Page</span> 2026-11-07 &middot; <code>v2026.11.07.2</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 021, Project doc <code>roadmap/sso-security-review.md</code> ("Present today: quote marks aren't escaped in attributes"); Phase 0 step 6a of the SSO plan, shipped on its own because the bug is live today. The owner, 2026-11-07: "Queue as 021, next".</li>
+<li>Found by the SSO security review, in a local copy of the page with made-up data and no network: <code>escapeHtml</code> escaped <code>&amp; &lt; &gt;</code> but not <code>"</code> or <code>'</code>, and its output sits inside double-quoted attributes about 150 times. A fit named <code>Brawl" onmouseover="..." x="</code>, pasted into the Fit Analyzer, gave a page element its own event handler, and hovering it ran the script. Saved in My Fits, it ran again on every load. Fit names are shared on Discord, forums and wikis.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b><code>escapeHtml</code></b> is a plain replace of <code>&amp; &lt; &gt; " '</code> (to <code>&amp;amp; &amp;lt; &amp;gt; &amp;quot; &amp;#39;</code>). Null and undefined still give an empty string, other values their <code>String()</code>, as before. Text looks the same; names with quote marks show as written.</li>
+<li>The eight places that patched quotes after <code>escapeHtml</code> (LESSON #104's workaround) no longer need it and are plain <code>escapeHtml</code> calls.</li>
+<li>Fits already saved with such a name are safe: they're escaped when drawn. Nothing kept in the browser changes.</li>
+</ul>
+
+<h2>Checks</h2>
+<ul>
+<li>New <code>html_escape_check.py</code>: a harmless marker (<code>"'&gt;&lt;b data-pwn=...&gt;x&lt;/b&gt;</code>, which adds a <code>data-pwn</code> attribute or element if it gets out) through every route the review found or tried: Intel (pilot, corporation and alliance names and tickers from the ESI stand-in, a report's text and its reporter, every line shown as typed), the Fleet tab opened from those kills, the Fit Analyzer (name, module and cargo lines), My Fits (after a save and after a reload, hovering every row: the <code>onmouseover</code> fit runs nothing), Local, D-Scan and a <code>#pilotname=</code> link. Then a made-up "Kiera O'Brien" of "O'Brien &amp; Sons Corp" [O'B&amp;S] and a fit "O'Brien &amp; Sons brawl": shown as written, and no attribute or visible text with a literal <code>&amp;#39;</code>, <code>&amp;amp;</code> or <code>&amp;quot;</code> (escaped twice).</li>
+<li>Caught: the page before (7 failures: the marker out in Intel's group buttons, the Fit Analyzer, My Fits, and the hover ran the script), <code>escapeHtml</code> put back as it was (9), one corporation title escaped twice (2).</li>
+<li>FULLRUN</li>
+<li>Page size: SIZE bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #144 (supersedes #104): escape for the place the text goes. Text-node escaping isn't attribute escaping; <code>escapeHtml</code> now escapes quotes, and attributes are double-quoted. When one place needs a workaround for a shared helper, fix the helper.</li>
+</ul>
+</body></html>
