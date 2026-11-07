@@ -122,7 +122,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #95 Put a control where people look for it, and don't let a number say something it doesn't.
 - #97 A limit the user can't see reads as a bug: name it where they set things.
 - #101 A component's border shorthand quietly cancels the site's focus rule: measure each state, then write the rule down and check it.
-- #104 escapeHtml() doesn't escape quotes: a value in an attribute needs `&quot;`.
+- #104 escapeHtml() doesn't escape quotes: a value in an attribute needs `&quot;`. **Superseded by #144** (escapeHtml escapes quotes itself now).
 - #107 One meaning drawn twice drifts: draw it once and use it everywhere. See also #42.
 - #109 A `1fr` column beside fixed and `auto` ones can shrink to nothing: sweep every width the layout spans. See also #103.
 - #110 Don't make people pick from a list that is still moving: freeze what they choose from, in a place that holds still.
@@ -131,6 +131,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #141 A word the reader sets aside can sit inside a name: look names up across it, then decide by the exact spelling. See also #111.
 - #142 A sync Playwright check's stand-ins answer only while Playwright runs: never time.sleep, and restart a reader with a new generation.
 - #143 Playwright's click scrolls the page to the element first: to test whether a press scrolls the page, press with element.click().
+- #144 Escape for the place the text goes: text-node escaping isn't attribute escaping. escapeHtml escapes quotes; attributes are double-quoted. See also #104.
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
@@ -1051,6 +1052,21 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
 
+## 144. Escape for the place the text goes: text-node escaping isn't attribute escaping
+
+- **What happened (to v2026.11.07.1; fixed in v2026.11.07.2, build queue 021):** `escapeHtml` set a div's `textContent` and read back
+  its `innerHTML`. That is what text needs (`&`, `<`, `>`), not what an attribute needs: `"` and `'` came back as they were. The page
+  put its output inside double-quoted attributes about 150 times (`title`, `aria-label`, `value`, `data-*`). A fit name with a `"` in
+  it, pasted into the Fit Analyzer, closed a `title="..."` and added its own attributes, an `onmouseover` included, and a fit saved
+  in My Fits did it again on every load. Fit names are shared on Discord, forums and wikis. LESSON #104 had met the same gap and
+  worked around it at one place (`.replace(/"/g, '&quot;')`) instead of fixing the function, so every other attribute stayed open.
+- **How it was caught:** the SSO security review (Project doc roadmap/sso-security-review.md) fed a harmless marker,
+  `"'><b data-pwn=...>x</b>`, through the outside text a local copy of the page draws, with made-up data and no network.
+- **Do this instead:** escape for where the text goes. `escapeHtml` now escapes `& < > " '`, so it is right for both text and
+  double-quoted attributes; build every attribute from outside text as `attr="${escapeHtml(x)}"`, never single-quoted or unquoted.
+  When one place needs a workaround for a shared helper, fix the helper and look for every other place it's used. Escape once:
+  never escape text that is already HTML (`html_escape_check.py` checks for `&#39;` / `&amp;` showing as text).
+
 ## 143. Playwright's click scrolls the page to the element first: to test whether a press scrolls the page, press with element.click()
 
 - **What happened (v2026.11.07.1, building intel_filters_check for 010):** the plan says opening a Near You row scrolls only the
@@ -1530,6 +1546,8 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   make the mock answer for the ambiguous word (here made-up pilots named "Jita" and "Clear"), so a reader that decides early fails.
 
 ## 104. escapeHtml() doesn't escape quotes: a value in an attribute needs `&quot;`
+
+> **Superseded by #144** (v2026.11.07.2): escapeHtml now escapes `"` and `'` itself; the `.replace(/"/g, '&quot;')` workarounds are gone.
 
 - **What happened (v2026.10.30.1):** Near You's 3-line cap keeps each row's pilots and ships in a `data-it-cap` attribute as JSON,
   written with `escapeHtml(JSON.stringify(...))`. `escapeHtml` (a text node's innerHTML) escapes `&`, `<` and `>`, not `"`, so the
