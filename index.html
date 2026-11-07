@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-uXfW+qvWsIMj/VWuiUGdIGmz/tDOs8nbXZltcNd8FKU='; style-src 'unsafe-inline'; img-src 'self' https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-seInrCTX8relxasuf2x62omUBSsHCln2cEq+L/Tt+Cg='; style-src 'unsafe-inline'; img-src 'self' https://images.evetech.net data: blob:; connect-src https://esi.evetech.net https://login.eveonline.com https://r2z2.zkillboard.com https://zkillboard.com; worker-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
@@ -3028,7 +3028,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.7</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.8</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -27133,6 +27133,18 @@ function itExPlace(f){
   const kl = f.querySelector('.itx-near .it-kl');
   if(kl) at(5, kl, kl.getBoundingClientRect().width + 16, 7); else at(5, null);   // the mockup's place: just past the badge's right end
 }
+// v2026.11.07.8 (the owner: "we need to just disable the on/off switch until a folder is chosen and at least one channel is checked"):
+// the switch can't be pressed until both are done (or in a browser that can't read the folder); its hover says what's missing. Intel
+// already on stays pressable, so it can always be turned off.
+function itSwLocked(){ return !it.on && (!it.supported || !itReady()); }
+function itSwLockHtml(what){ return itSwLocked() ? escapeHtml(what) : ''; }   // ' disabled' / ' is-off' (fixed words)
+function itSwTitle(){
+  if(it.on) return it.set.channels.length ? `Watching ${it.set.channels.length} intel channel${it.set.channels.length === 1 ? '' : 's'} (named under the gear)` : 'Watching no channel yet';
+  if(!it.supported) return 'Intel needs Chrome or Edge on a computer';
+  if(!it.dir) return 'Choose the Chatlogs folder (1 below), then tick an intel channel (2), to turn Intel on';
+  if(!it.set.channels.length) return 'Tick an intel channel (2 below) to turn Intel on';
+  return 'Intel is off';
+}
 function itRender(force){   // force: a press that changes what is open (the gear, Escape) redraws even with focus inside
   itHeaderSync();
   const el = typeof document !== 'undefined' && document.getElementById && document.getElementById('intelPanel');
@@ -27152,7 +27164,7 @@ function itRender(force){   // force: a press that changes what is open (the gea
   // v2026.10.14.97 (the owner: "shouldn't one slider control it?" -> "keep the intel slider"): one on/off switch. v2026.10.29.1 (the
   // owner, from other users: "they didn't see how to turn intel on while on the intel tab"): that switch is here, beside the
   // gear (#intelSw); the header keeps only the "N near" pill
-  const onoff = `<label class="mys-use it-onoff" id="intelSwLabel" title="${it.on ? (it.set.channels.length ? `Watching ${it.set.channels.length} intel channel${it.set.channels.length === 1 ? '' : 's'} (named under the gear)` : 'Watching no channel yet') : 'Intel is off'}"><input type="checkbox" class="mys-sw" id="intelSw" aria-label="Watch the intel channels"${it.on ? ' checked' : ''}><span>${it.on ? 'On' : 'Off'}</span></label>`;
+  const onoff = `<label class="mys-use it-onoff${itSwLockHtml(' is-off')}" id="intelSwLabel" title="${escapeHtml(itSwTitle())}"><input type="checkbox" class="mys-sw" id="intelSw" aria-label="Watch the intel channels"${it.on ? ' checked' : ''}${itSwLockHtml(' disabled')}><span>${it.on ? 'On' : 'Off'}</span></label>`;
   // v2026.11.01.1 (the owner: "move the intel tab's info button to the right of the on/off switch", then B: the switch, the gear, the
   // info button, as every other card ends its head with its info button), at the top right at every width
   const sw = `<span class="it-sw">${onoff}<button type="button" class="it-gear" data-it-act="gear" aria-label="Intel settings" title="Intel settings" aria-expanded="${it.pop ? 'true' : 'false'}">${IT_GEAR}</button>${infoBtnHtml('intel')}</span>`;
@@ -27271,7 +27283,14 @@ function itHeaderSync(){
     if(!tab.querySelector('.tb')){ const d = document.createElement('span'); d.className = 'tb'; d.setAttribute('aria-hidden', 'true'); tab.appendChild(d); }
   }
 }
-function itToggle(on){ if(on) itStart(); else itStop(); }
+function itToggle(on){ Promise.resolve(on ? itStart() : itStop()).then(itSwSync, itSwSync); }
+// v2026.11.07.8: the box always shows whether Intel is on (a press that didn't start it, a folder the browser refused, could leave it
+// ticked when the card's text came out the same and wasn't redrawn)
+function itSwSync(){
+  const sw = typeof document !== 'undefined' && document.getElementById && document.getElementById('intelSw');
+  if(!sw || sw.checked === it.on) return;
+  sw.checked = it.on; if(sw.nextElementSibling) sw.nextElementSibling.textContent = it.on ? 'On' : 'Off';
+}
 // ---- v2026.11.02.4: the Intel map (roadmap/intel-map-plan.md; the owner chose layout B, then mockup v3 Claude outputs/intel_map_mockup_v3.html)
 // The systems around you on one canvas, laid out from CCP's flat map (INTEL_MAP, derived by tools/jump_table_update.py) and spread apart
 // a little; your reports and kills on it as rings (colour = standing, size = gang size: the owner, "standing color with gang-size rings");

@@ -205,7 +205,9 @@ stub DOM (LESSON #36). Check: `tools/page_checks/my_ship_check.py`.
   `dscanItExGone` only while the folder is linked (`it.dir`); "See an example" in Intel's info panel brings it back with the shared close
   button. A browser without the folder picker gets an amber note above the steps (`itNoFsHtml`; Brave, by `navigator.brave` only, the
   flag's address as text); INTEL-01 says the same (`itNoFsText`). The switch stays off until a channel is ticked, and unticking the last
-  one stops Intel (the owner, at the review). `intel_example_check.py`.
+  one stops Intel (the owner, at the review). v2026.11.07.8 (the owner: "disable the on/off switch until a folder is chosen and at least one
+  channel is checked"): `#intelSw` is disabled (`itSwLocked`, dimmed, no amber breathing) with a hover saying what's missing (`itSwTitle`);
+  `itSwSync` keeps the box in step with `it.on` after a press. `intel_example_check.py`.
 - **The logo** (v2026.11.07.4, build queue 022; Project doc roadmap/logo-header-plan.md; mockup `Claude outputs/logo_header_mockup.html`):
   R37 "Orbit Contact", inline left of the title in `.hero-title-row` (`.hero-brand`, `.hero-logo`, aria-hidden), 1.6em of the title's
   size, its T's top on the title's T's top (`--logo-nudge`, -0.19em / -0.16em under 600 px; re-tune if the title's font or size

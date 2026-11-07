@@ -12,6 +12,7 @@ intel_check.py's stand-ins (its made-up Chatlogs folder, ESI and system names, t
   * inert: Tab never lands inside it, a press on its kill badge or a pilot opens nothing; every chip's corporation and alliance has
     its emblem (an inline image, no empty logo box) and ticker;
   * 390 px: no sideways scroll, Near You as a list (no map), note 3's phone wording;
+  * v2026.11.07.8: the switch is disabled (its hover says what's missing) until a folder is chosen and a channel ticked;
   * the bug found at 017's review (the owner: "why would we allow intel to be turned out if no intel channels have been linked and
     chosen?"): the folder chosen, no channel ticked, the switch: Intel stays off and says to choose the channels; on with a channel,
     unticking the last one stops it;
@@ -106,16 +107,29 @@ with sync_playwright() as p:
     pg.close()
 
     # ---- the bug: no channel, no Intel ----
-    pg = fresh(ctx); pg.click('#tabBtnIntel'); setup_logs(pg); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(500)
-    pg.click('#intelSwLabel'); pg.wait_for_timeout(600)
-    off = pg.evaluate("() => [it.on, document.querySelector('#intelSw').checked, document.querySelector('#itNotes').textContent]")
-    check(off[0] is False and off[1] is False and 'Choose your intel channels first (2 below).' in off[2], f'the folder chosen, no channel ticked: the switch leaves Intel off and says why {off}')
+    # v2026.11.07.8 (the owner: "disable the on/off switch until a folder is chosen and at least one channel is checked")
+    SW = "() => { const s = document.querySelector('#intelSw'), l = document.querySelector('#intelSwLabel'); return [it.on, s.checked, s.disabled, l.title, l.classList.contains('is-off')]; }"
+    pg = fresh(ctx); pg.click('#tabBtnIntel'); pg.wait_for_timeout(300)
+    s0 = pg.evaluate(SW); pg.click('#intelSwLabel', force=True); pg.wait_for_timeout(400); s0b = pg.evaluate(SW)
+    check(s0[:3] == [False, False, True] and 'Choose the Chatlogs folder' in s0[3] and s0[4] and s0b[:3] == [False, False, True],
+          f'no folder: the switch is disabled (dimmed), its hover says what to do, a press does nothing {s0} {s0b[:3]}')
+    setup_logs(pg); pg.click('[data-it-act="folder"]'); pg.wait_for_timeout(500)
+    off = pg.evaluate(SW)
+    check(off[:3] == [False, False, True] and 'Tick an intel channel' in off[3], f'the folder chosen, no channel ticked: still disabled, the hover says to tick a channel {off}')
+    pg.evaluate("() => { it.on = false; itStart().then(() => itSwSync()); }"); pg.wait_for_timeout(400)
+    g = pg.evaluate("() => [it.on, document.querySelector('#itNotes').textContent]")
+    check(g[0] is False and 'Choose your intel channels first' in g[1], f'... and itStart itself still refuses with no channel {g}')
     pg.check('[data-it-chan="region.intel"]'); pg.check(f'[data-it-me="{MAIN}"]'); pg.wait_for_timeout(100)
+    en = pg.evaluate(SW)
+    check(en[:3] == [False, False, False] and en[3] == 'Intel is off' and not en[4], f'a channel ticked: the switch can be pressed {en}')
+    pg.evaluate("() => { __fs.perm = 'denied'; }"); pg.click('#intelSwLabel'); pg.wait_for_timeout(800)
+    dn = pg.evaluate(SW); pg.evaluate("() => { __fs.perm = 'granted'; }")
+    check(dn[:2] == [False, False] and pg.inner_text('#intelSwLabel span').strip() == 'Off', f'pressed, the browser refuses the folder: Intel stays off and the box shows it (not left ticked) {dn}')
     pg.click('#intelSwLabel'); pg.wait_for_timeout(2500)
     on = pg.evaluate("() => it.on")
     pg.click('[data-it-act="gear"]'); pg.wait_for_timeout(300); pg.evaluate("() => document.querySelector('.it-pop [data-it-chan=\"region.intel\"]').click()"); pg.wait_for_timeout(500)   # a click: the box is redrawn away as it stops
-    st = pg.evaluate("() => [it.on, document.querySelector('#itNotes').textContent]")
-    check(on is True and st[0] is False and 'no intel channel is ticked' in st[1], f'on with a channel, then the last one unticked: Intel stops and says why {on} {st}')
+    st = pg.evaluate("() => [it.on, document.querySelector('#itNotes').textContent, document.querySelector('#intelSw').disabled]")
+    check(on is True and st[0] is False and 'no intel channel is ticked' in st[1] and st[2] is True, f'on with a channel, then the last one unticked: Intel stops and says why {on} {st}')
     pg.close()
 
     # ---- a quiet start, then the first real report ----

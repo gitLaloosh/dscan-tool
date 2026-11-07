@@ -578,7 +578,6 @@
   "make␟it.on && it.me && !itMySys() ? `<div class=\"it-sub it-warn\">Your system isn’t known yet (it’s read from your Local log when you jump), so no jumps and no alerts until then.</div>` : ''": 1,
   "make␟it.on ? ' checked' : ''": 1,
   "make␟it.on ? 'On' : 'Off'": 1,
-  "make␟it.on ? (it.set.channels.length ? `Watching ${it.set.channels.length} intel channel${it.set.channels.length === 1 ? '' : 's'} (named under the gear)` : 'Watching no channel yet') : 'Intel is off'": 1,
   "make␟it.on ? `<div class=\"it-sub\" data-it-status></div>` : `<div class=\"it-sub\">Stopped. The switch beside the gear starts it again.</div>`": 1,
   "make␟it.pop ? 'true' : 'false'": 1,
   "make␟it.set.nearView !== 'map'": 1,
