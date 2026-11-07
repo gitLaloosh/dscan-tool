@@ -30,10 +30,10 @@ code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
 <ul>
 <li>New <code>intel_filters_check.py</code> (Intel's start from <code>intel_kills_check.py</code>, stand-ins only): the height at 1440 and 1024 px, the "+N" line and its count, the floor, 800 px unchanged, the wheel not trapped, a row opened, the map press, scroll and focus through a redraw; every filter case (one system, a second replacing it, pressed again, system + ship, &times; and the focus, Clear all, a group chip, typed text with chips, Near You unchanged, the map's system, the quick key); 390 px; the badges' ISK per badge.</li>
 <li>Changed for the new behaviour: <code>pilot_chip_check.py</code> (a group press adds a chip instead of writing the search box), <code>intel_rows_check.py</code>, <code>intel_map_check.py</code>.</li>
-<li>MUTANTS</li>
-<li>FULLRUN</li>
-<li>PERF</li>
-<li>Page size: 760,082 &rarr; SIZE bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
+<li>Mutants, each caught: the list setting the row's height, no floor, the wheel trapped, the page scrolled into view, hover scrolling, "+N" on a timer, the cap at every width, Near You filtered, chips matched with "or", a second system added, only the victim's ship (caught after a case with a ship flown by an attacker who wasn't the final blow), a press writing the search box, the chips left out of Intel's quick key, ISK added across badges. One isn't: removing <code>contain: size</code> changes nothing in Chromium; it stays because the plan asks for it and other engines may size the column from its content.</li>
+<li>The checks <code>run_checks.py --auto</code> picked (area: intel, layout): 13 lints and 34 page checks in 12 min, 0 failed, 0 flaky. Regression suite ALL PASS; <code>check_pii</code> 0 problems (the mockup's map picture looked at and listed).</li>
+<li>Perf harness (<code>roadmap/perf-harness/</code>, before and after back to back, 14 min of Intel): main thread 1.97% &rarr; 2.02% of one core, the same requests, heap at most 7.1 MB both; Intel's draws 1016 &rarr; 1159 ms over 3 min (118 draws).</li>
+<li>Page size: 760,082 &rarr; 763,620 bytes gzipped (<code>gzip -9</code>), under the 800 KB ceiling.</li>
 </ul>
 
 <h2>Lesson for future models</h2>
