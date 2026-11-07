@@ -30,7 +30,7 @@ PC = os.path.join(ROOT, 'tools', 'page_checks')
 AREAS = {
     'affiliation_check': ['pilot'], 'assumed_charge_check': ['fit', 'calc'], 'busy_check': ['pilot'],
     'card_width_check': ['layout'], 'charges_check': ['fit', 'calc'], 'damage_chart_check': ['myship', 'calc'],
-    'dossier_check': ['pilot'], 'list_caps_check': ['pilot', 'system', 'layout'], 'dossier_kills_check': ['pilot'], 'dossier_pin_check': ['pilot', 'system'], 'kill_groups_check': ['intel', 'pilot', 'system'], 'fleet_hulls_check': ['intel', 'pilot', 'system', 'layout'], 'game_data_check': ['calc', 'fit', 'myship', 'pilot', 'system', 'intel', 'layout'], 'alert_sound_check': ['intel', 'layout'], 'fleet_fit_budget_check': ['pilot', 'system', 'intel'], 'budget_gauge_check': ['pilot', 'system', 'intel', 'layout'], 'scan_rail_check': ['system', 'layout'], 'system_activity_check': ['system', 'intel'], 'extension_check': ['pilot', 'extension'],
+    'dossier_check': ['pilot'], 'intel_example_check': ['intel', 'layout'], 'list_caps_check': ['pilot', 'system', 'layout'], 'dossier_kills_check': ['pilot'], 'dossier_pin_check': ['pilot', 'system'], 'kill_groups_check': ['intel', 'pilot', 'system'], 'fleet_hulls_check': ['intel', 'pilot', 'system', 'layout'], 'game_data_check': ['calc', 'fit', 'myship', 'pilot', 'system', 'intel', 'layout'], 'alert_sound_check': ['intel', 'layout'], 'fleet_fit_budget_check': ['pilot', 'system', 'intel'], 'budget_gauge_check': ['pilot', 'system', 'intel', 'layout'], 'scan_rail_check': ['system', 'layout'], 'system_activity_check': ['system', 'intel'], 'extension_check': ['pilot', 'extension'],
     'fight_strip_check': ['myship', 'calc'], 'fighter_application_check': ['fit', 'calc'], 'fighter_bay_check': ['fit', 'calc'],
     'fighter_bombs_check': ['fit', 'calc'], 'fighter_picks_check': ['myship', 'calc'], 'fighter_tile_check': ['myship', 'calc'],
     'fleet_kill_check': ['pilot', 'system'], 'fleet_view_check': ['system'], 'header_check': ['layout', 'intel'],
@@ -81,6 +81,7 @@ def fast(html):
         ('the site icons rendered (022)', 'python3 -I tools/render_icons.py --check', lambda l: l.endswith(' 0 problems')),
         ('no new unescaped HTML (LESSON #144)', q('check_html_sinks.py'), lambda l: l.endswith(' 0 problems')),
         ('HTML-sink lint self-test', q('check_html_sinks.py') + ' --self-test', lambda l: l.endswith(': ok')),
+        ('the Intel example\'s made-up names (offline)', q('check_example_names.py'), lambda l: l.endswith(' 0 problems')),
         ('subtext rule', q('check_subtext.py'), lambda l: l.endswith(' 0 problems')),
         ('card names', q('check_card_names.py'), lambda l: l.endswith(' 0 problems')),
         ('zKillboard request gates', q('check_request_gates.py'), lambda l: l.endswith(' 0 problems')),

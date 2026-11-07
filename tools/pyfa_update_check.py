@@ -116,6 +116,7 @@ if '--run' in sys.argv:
         ('UI rules (one tag, one switch, one slider, one text field)', 'python3 -I tools/check_ui_rules.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.29.7
         ('CSP script hash (the page\'s policy names its script; LESSON #145)', 'python3 -I tools/csp_hash.py --check index.html', lambda o: o.strip().splitlines()[-1].endswith(': 0 problems')),  # v2026.11.07.3
         ('no new unescaped HTML (tools/check_html_sinks.py; LESSON #144)', 'python3 -I tools/check_html_sinks.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.11.07.3
+        ('the Intel example\'s made-up names (tools/check_example_names.py, offline)', 'python3 -I tools/check_example_names.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),
         ('requests to zKillboard go through its gates (LESSON #93)', 'python3 -I tools/check_request_gates.py index.html', lambda o: o.strip().splitlines()[-1].endswith(' 0 problems')),  # v2026.10.14.104
         ('pasted names, either apostrophe', env + 'python3 -I tools/independent_checks/check_apostrophe_names.py index.html', lambda o: o.strip().splitlines()[-1].startswith('0 misses')),
     ]
