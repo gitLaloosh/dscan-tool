@@ -82,7 +82,7 @@ def open_card(pg, scope):
     pg.wait_for_selector(f'{scope} .fl-dmg .dmg-card [data-out="head"]:not(:empty)', timeout=60000)
 
 def desktop(b, W):
-    ctx = b.new_context(viewport={'width': W, 'height': 1000}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 1000}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
@@ -203,7 +203,7 @@ def desktop(b, W):
 
 def pilot(b):
     W = 1440
-    ctx = b.new_context(viewport={'width': W, 'height': 1000}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 1000}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     save_ship(pg); settle(pg, 300)
@@ -234,7 +234,7 @@ def pilot(b):
 
 def phone(b):
     W = 375
-    ctx = b.new_context(viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.clear()"); pg.reload()
     pg.tap('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.tap('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)

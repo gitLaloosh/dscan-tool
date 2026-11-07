@@ -125,7 +125,7 @@ def fit(b, w):
 def no_group(b):
     """ESI can't return the Strategic Cruiser group: the Loki's class is left out, nothing else breaks."""
     gid = types['29990']['groupID']
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 900}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     def esi(route):
         if f'/universe/groups/{gid}/' in route.request.url: return route.fulfill(status=404, body='{"error":"Group not found"}')

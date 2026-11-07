@@ -96,7 +96,7 @@ def router(ctx):
     ctx.route(re.compile(r'https://(?!esi\.evetech\.net|zkillboard\.com).*'), lambda r: r.abort())
 print('---- html_escape_check: the Fit Analyzer, My Fits, Local, D-Scan, #pilotname= ----')
 with sync_playwright() as p:
-    b = p.chromium.launch(); ctx = b.new_context(viewport={'width': 1440, 'height': 1000}); router(ctx); errs = []
+    b = p.chromium.launch(); ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000}); router(ctx); errs = []
     pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)[:160]))
     pg.goto(PAGE); pg.wait_for_function("() => typeof escapeHtml === 'function' && typeof switchTab === 'function'"); pg.wait_for_timeout(1500)
     # escapeHtml itself

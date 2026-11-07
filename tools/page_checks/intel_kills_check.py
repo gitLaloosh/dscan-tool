@@ -158,7 +158,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs = []
     def new_ctx(w):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
         ctx.add_init_script(FS)
         # v2026.10.29.5: each R2Z2 request's start, timed in the page (the route handler's own times can bunch under load)
         ctx.add_init_script("(() => { const f = window.fetch; window.__r2t = []; window.fetch = function(u, o){ if(String(u).includes('r2z2.zkillboard.com')) window.__r2t.push(Date.now()); return f.apply(this, arguments); }; })();")

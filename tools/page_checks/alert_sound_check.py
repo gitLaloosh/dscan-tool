@@ -72,7 +72,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs, reqs = [], []
     def new_ctx(w):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.add_init_script(STAND_IN)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}); ctx.add_init_script(STAND_IN)
         ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx)
         ctx.on('request', lambda r: reqs.append(r.url) if r.url.startswith('http') and 'images.evetech' not in r.url and 'fonts.' not in r.url else None)
         return ctx

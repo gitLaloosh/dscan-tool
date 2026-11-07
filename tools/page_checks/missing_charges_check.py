@@ -34,7 +34,7 @@ def check(c, msg):
     if not c: bad.append(msg)
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
-    pg = b.new_page(viewport={'width': 1440, 'height': 900}); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg = b.new_page(bypass_csp=True, viewport={'width': 1440, 'height': 900}); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg)
     pg.goto('file://' + html); pg.click('#tabBtnFit')
     def paste(text):

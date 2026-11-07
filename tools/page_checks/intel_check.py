@@ -176,7 +176,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs = []
     def new_ctx(w, init=''):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
         if init: ctx.add_init_script(init)
         ctx.add_init_script(FS); route(ctx); return ctx
     ctx = new_ctx(1440)

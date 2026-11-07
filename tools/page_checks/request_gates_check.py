@@ -40,7 +40,7 @@ def per_s(ts): return max((sum(1 for u in ts if t <= u < t + 1) for t in ts), de
 with sync_playwright() as p:
     b = p.chromium.launch(); errs = []
     for label, init in (('a shown tab', None), ('a hidden tab (timers every 2 s, together)', COALESCE)):
-        ctx = b.new_context(viewport={'width': 1280, 'height': 900})
+        ctx = b.new_context(bypass_csp=True, viewport={'width': 1280, 'height': 900})
         if init: ctx.add_init_script(init)
         ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), M.esi)
         ctx.route(re.compile(r'https://zkillboard\.com/.*'), zkb)

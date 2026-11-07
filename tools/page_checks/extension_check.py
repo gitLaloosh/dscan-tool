@@ -59,7 +59,7 @@ HEAD = """() => ({name: (document.querySelector('#pilotHeadName') || {}).textCon
   tabs: document.querySelectorAll('#fitResults .subtab-btn').length, status: (document.querySelector('#fitStatus') || {}).textContent || '', hash: location.hash})"""
 
 with sync_playwright() as p:
-    ctx = p.chromium.launch_persistent_context(tempfile.mkdtemp(), headless=False, viewport={'width': 1440, 'height': 1000},
+    ctx = p.chromium.launch_persistent_context(bypass_csp=True, user_data_dir=tempfile.mkdtemp(), headless=False, viewport={'width': 1440, 'height': 1000},
                                                args=['--headless=new', f'--disable-extensions-except={EXT}', f'--load-extension={EXT}'])
     errs = []
     ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))

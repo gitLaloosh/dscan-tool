@@ -42,7 +42,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs, outside = [], []
     def new_ctx(w):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx)
         ctx.route('https://zkillboard.com/kill/**', lambda r: (outside.append(r.request.url), r.fulfill(status=200, content_type='text/html', body='<p>stand-in</p>')))
         ctx.route('https://zkillboard.com/character/**', lambda r: (outside.append(r.request.url), r.fulfill(status=200, content_type='text/html', body='<p>stand-in</p>')))
         return ctx

@@ -23,6 +23,11 @@ Rules checked in index.html and browser-extension/*.js:
   * no batch of timers staggers zKillboard requests (setTimeout(..., i * ...) next to itKillGet / zkbFetch).
 ESI (esi.evetech.net) is listed but not gated: its calls are capped by how many run at once, not by timers, and ESI
 limits errors rather than speed. A new ESI call still has to be listed.
+  * v2026.11.07.3 (build queue 023, the SSO plan's Phase 0 hardening; roadmap/sso-hardening-plan.md step 5): an `Authorization`
+    header may appear only in esiFetch (there are none today, so this catches Phase 1 mistakes); login.eveonline.com may be
+    named in code only by functions in SSO_SITES (empty until Phase 1 lists its login functions). Comments don't count.
+    Phase 1 (TODO, when the code exists): esiFetch adds Authorization only for ${ESI} URLs; a 401 from ESI ends that feature's
+    calls (no esiFetch retried in a loop that ignores the status); a token answer is parsed only after its content-type is JSON.
   * v2026.11.04.4 (build queue 012, the lookup budgets): esiFetch is the page's one fetch() to ESI. It sends the request
     it is given as it is (fetch(url, init): no added headers, no cache-busting) and only reads the answer. Every
     esiFetch(...) call names ${ESI}, sits in a function listed in ESI_SITES, and says which kind of lookup it is (a key of
@@ -154,6 +159,21 @@ for rx, what in ((r'new\s+XMLHttpRequest', 'XMLHttpRequest'), (r'sendBeacon\(', 
 for m in re.finditer(r'setTimeout\([^;\n]*\bi\s*\*[^;\n]*', src):
     ctx = src[m.start() - 200:m.end() + 200]
     if re.search(r'itKillGet|itKillSeq|itR2Fetch|zkbFetch', ctx): problems.append(f'index.html:{line(src, m.start())}: timers staggered by index next to a zKillboard request: in a hidden tab they fire together')
+
+# v2026.11.07.3 (build queue 023): tokens go only to CCP. An Authorization header only in esiFetch; login.eveonline.com only from SSO_SITES.
+SSO_SITES = set()   # Phase 1 lists its login functions here (the metadata, token and revoke requests)
+def code_only(s):   # the script with // and /* */ comments blanked (same length, so positions and lines still match)
+    out = re.sub(r'/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), s, flags=re.S)
+    return re.sub(r'(^|[^:\\\'"`])//[^\n]*', lambda m: m.group(1) + ' ' * (len(m.group(0)) - len(m.group(1))), out)
+_sc = re.search(r'<script\b[^>]*>(.*?)</script', src, re.S)
+_off = _sc.start(1) if _sc else 0
+code = (' ' * _off + code_only(_sc.group(1))) if _sc else ''
+for m in re.finditer(r'(?<![\w-])[\'"]?authorization[\'"]?\s*[:,]', code, re.I):   # a header: Authorization: ... or set('Authorization', ...)
+    fn = enclosing(starts, m.start())
+    if fn != 'esiFetch': problems.append(f'index.html:{line(src, m.start())}: an Authorization header in {fn}(): tokens go only to ESI, through esiFetch')
+for m in re.finditer(r'login\.eveonline\.com', code):
+    fn = enclosing(starts, m.start())
+    if fn not in SSO_SITES: problems.append(f'index.html:{line(src, m.start())}: login.eveonline.com in {fn}(), which is not in SSO_SITES (the login functions, Phase 1)')
 
 for f in glob.glob(os.path.join(ROOT, 'browser-extension', '*.js')):
     t = open(f, encoding='utf-8').read()

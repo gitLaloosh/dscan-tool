@@ -116,7 +116,7 @@ def setwin(pg, n):
     gear(pg); pg.select_option('#saPop select[data-sa-set="win"]', str(n)); pg.wait_for_timeout(200); wait_act(pg)
 SEED = """(n) => { const byId = new Map(Object.entries(n).map(([k, v]) => [Number(k), v])); it.names = {byId, byLower: new Map([...byId].map(([k, v]) => [v.toLowerCase(), k]))}; }"""
 def fresh(b, w=1440, h=1000, sett=None):
-    ctx = b.new_context(viewport={'width': w, 'height': h}); M.route(ctx); ctx.route(re.compile(r'https://zkillboard\.com/api/kills/systemID/.*'), sysroute)
+    ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': h}); M.route(ctx); ctx.route(re.compile(r'https://zkillboard\.com/api/kills/systemID/.*'), sysroute)
     ctx.route(re.compile(r'https://esi\.evetech\.net/.*/killmails/.*'), kmroute)
     pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('file://' + HTML)

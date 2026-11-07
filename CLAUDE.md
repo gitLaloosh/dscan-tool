@@ -93,6 +93,7 @@ Before changing any calculation:
    - The owner reads the diff and merges; GitHub Pages publishes only after his merge. The reply links the pull request.
    - A session without write access delivers as before: the files into the owner's folder, and a commit message in the
      reply (Summary + Description as above) for him to commit himself (the owner, 2026-10-30).
+   After the last edit to index.html: `python3 -I tools/csp_hash.py --write` (v2026.11.07.3; the CSP names the script by hash).
 6. Report index.html's gzipped size in every delivery (`gzip -9 -c index.html | wc -c`). Past 800 KB, stop and ask
    the owner before delivering (the owner, 2026-11-03: "At 800 KB"); the planned answer is a publish step that strips
    comments (about 38% of the gzipped page), not moving tables out of the page.
@@ -108,7 +109,24 @@ it instead), shown with `withCode()` / `codedError()`. Then run
 **Outside text in HTML** (v2026.11.07.2, build queue 021; LESSON #144): text from outside the page (fit names, pilot, corporation
 and alliance names, intel lines, pastes, links) goes into HTML only through `escapeHtml`, which escapes `& < > " '`; an attribute is
 always double-quoted (`title="${escapeHtml(x)}"`). Escape once: never escape text that is already HTML. `html_escape_check.py`
-feeds a harmless marker through every route and fails on anything out of place or escaped twice.
+feeds a harmless marker through every route and fails on anything out of place or escaped twice. Since v2026.11.07.3 (build
+queue 023) `tools/check_html_sinks.py` holds it: a `${...}` in a template that builds HTML is `escapeHtml(...)`, a number, an
+ALL_CAPS constant or a builder (a `...Html(` function or its `BUILDERS`); the rest that was there on 2026-11-07 is in
+`tools/html_sinks_baseline.json`, which only shrinks (`--shrink`; adding to it needs the owner's OK in the pull request).
+
+**The page's Content-Security-Policy** (v2026.11.07.3, build queue 023, the SSO plan's Phase 0 hardening; Project doc
+roadmap/sso-hardening-plan.md; LESSON #145): a meta tag before the script allows only the page's one inline script, by its sha256,
+and only the hosts the page uses (connect: ESI, login.eveonline.com, R2Z2, zKillboard; images: images.evetech.net, data:, blob:;
+workers: blob:); `<meta name="referrer" content="no-referrer">`. So:
+- **Run `python3 -I tools/csp_hash.py --write` after the last edit to index.html**, before committing (run_checks, the chain and
+  the pre-commit hook run `--check`; a stale hash stops the live page from running at all). The tool hashes as the browser does
+  (CRLF to LF first), so a Windows checkout is fine. A new host or directive is a change to `EXPECTED` in that tool.
+- **No inline event handlers** (`onerror="..."`, `onclick="..."`): the policy refuses them. An image that may fail to load gets
+  `data-imgfail="hide|remove|none|next|next-block|initials"` (one capturing listener at the top of the script); anything else uses
+  `addEventListener`. No `eval`, `new Function` or string timers.
+- **Page checks open the page with `bypass_csp=True`** (they need `eval` through `run_async`, modified copies and mutants);
+  `tools/page_checks/csp_check.py` is the only one with the policy on, and it is where the policy is tested. A new page check
+  uses `bypass_csp=True` too; never turn the policy off in csp_check.
 
 **My Ship** (v2026.10.14.33, `roadmap/my-ship-plan.md`): the user's own fit, saved in
 the browser (`localStorage` `dscanMyShip`: EFT text, module states, the switch; never the

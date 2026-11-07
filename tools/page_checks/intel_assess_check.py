@@ -48,7 +48,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs = []
     def new_ctx(w):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
         ctx.add_init_script(FS); route(ctx); ctx.grant_permissions(['clipboard-read', 'clipboard-write']); return ctx
     def start(w):
         ctx = new_ctx(w); pg = ctx.new_page(); pg.goto('file://' + HTML)

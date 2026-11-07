@@ -111,7 +111,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs = []
     def page(w, h=1000):
-        ctx = b.new_context(viewport={'width': w, 'height': h}); M.route(ctx); pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); pg.goto('file://' + HTML); return ctx, pg
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': h}); M.route(ctx); pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e))); pg.goto('file://' + HTML); return ctx, pg
     ctx, pg = page(1440)
     run(pg, LOCAL, SCAN)
     R = pg.evaluate(RAIL)

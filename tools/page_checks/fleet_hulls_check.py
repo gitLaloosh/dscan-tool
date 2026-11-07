@@ -113,11 +113,11 @@ with sync_playwright() as p:
     def new_ctx(w, phone=False):
         kw = dict(viewport={'width': w, 'height': 1000})
         if phone: kw = dict(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True, device_scale_factor=2)
-        ctx = b.new_context(**kw); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
+        ctx = b.new_context(bypass_csp=True, **kw); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
         ctx.on('request', lambda r: zk.append(r.url) if 'zkillboard.com' in r.url else None)
         M.route(ctx); return ctx
     # ---- types held back: nothing first, then the strip, the focus kept
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx)
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000}); ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx)
     pg = ctx.new_page(); pg.goto('file://' + HTML); pg.wait_for_timeout(600)
     pg.evaluate("""() => { const f = window.fetch; window.__hold = true; window.fetch = function(u){ if(window.__hold && /\\/universe\\/(types|groups)\\//.test(String(u))) return new Promise(r => setTimeout(() => r(f.apply(this, arguments)), 2500)); return f.apply(this, arguments); }; }""")
     pg.evaluate(OPEN, [BATTLE, 'intel']); pg.wait_for_timeout(500)

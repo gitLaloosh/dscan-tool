@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026-11-07 — Content-Security-Policy and the Phase 0 hardening</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif; max-width:960px; margin:40px auto; padding:0 20px; line-height:1.55; color:#1a1a1a;}
+h1{font-size:22px;} h2{font-size:17px; margin-top:30px; border-bottom:1px solid #ddd; padding-bottom:4px;}
+code{background:#f0f0f0; padding:2px 5px; border-radius:3px; font-size:0.92em;}
+.tag{display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:2px 8px; border-radius:3px; background:#eef; color:#334; margin-right:6px;}
+</style></head>
+<body>
+<h1>Content-Security-Policy and the Phase 0 hardening</h1>
+<p><span class="tag">Page</span> 2026-11-07 &middot; <code>v2026.11.07.3</code></p>
+
+<h2>Why</h2>
+<ul>
+<li>Build queue 023, Project doc <code>roadmap/sso-hardening-plan.md</code>: the EVE SSO plan's Phase 0 step 6b. The owner, 2026-11-07: "is 6b planned and in the queue? if not, let's do that right now." No login code is included.</li>
+<li>The SSO security review (Project doc <code>roadmap/sso-security-review.md</code>, made-up data, local only) found that a crafted fit name could run script in the page; 021 (v2026.11.07.2) fixed that hole. Once a login exists, any script that gets into the page could read the tab's login, so this makes the next hole much harder to use (a policy that refuses injected script) and much harder to create (a lint on how markup is built), and keeps tokens from ever going anywhere but CCP.</li>
+</ul>
+
+<h2>What changed</h2>
+<ul>
+<li><b>A Content-Security-Policy</b> as a meta tag before the script: only the page's one inline script runs, named by its sha256; requests only to ESI, login.eveonline.com (for Phase 1), R2Z2 and zKillboard; images only from EVE's image server, <code>data:</code> and <code>blob:</code>; workers from <code>blob:</code>; no plugins, forms or <code>&lt;base&gt;</code>. Injected handlers and scripts are refused by the browser. A meta tag can't set <code>frame-ancestors</code> or reporting; GitHub Pages can't send headers.</li>
+<li><b>No referrer</b>: <code>&lt;meta name="referrer" content="no-referrer"&gt;</code>. Nothing the page calls needs one.</li>
+<li><b>The 27 inline <code>onerror</code> handlers</b> on images (which the policy would refuse) became <code>data-imgfail</code> kinds read by one capturing listener: hide (14), remove (9), none, next, next-block and initials. The profile portrait's initials are now worked out in <code>profileInitials</code> and put in as text; before, the pilot's name was built into a script string inside the attribute.</li>
+<li>Nothing users see changes. Nothing kept in the browser changes.</li>
+</ul>
+
+<h2>Tools and checks</h2>
+<ul>
+<li><b><code>tools/csp_hash.py</code></b>: <code>--write</code> puts the script's hash in the policy after an edit; <code>--check</code> (in <code>run_checks.py</code>, the pyfa chain and the pre-commit hook, on the staged copy) fails on a stale hash, a second script, the meta after the script, no referrer meta, <code>'unsafe-inline'</code>/<code>'unsafe-eval'</code>, or a policy other than the one written in the tool. It hashes as the browser does: HTML turns CRLF into LF first, so a Windows checkout (<code>.gitattributes</code> <code>text=auto</code>) gets the hash of the page GitHub Pages serves, rather than writing one that would stop the live page.</li>
+<li><b>Page checks open the page with <code>bypass_csp=True</code></b> (95 calls in 63 files): they test behaviour and need <code>eval</code>, modified copies and mutants, which the policy rightly refuses. <b><code>tools/page_checks/csp_check.py</code></b> is the one check with the policy on: the page served over HTTP from its folder, a tour of every tab, the Fit and Pilot Analyzers, Local, the profile and My Fits, and Intel with its worker, with 0 violations; an injected <code>&lt;img onerror&gt;</code> refused; each <code>data-imgfail</code> kind as its old handler (the initials as text); no Referer on 214 requests; a CRLF copy runs.</li>
+<li><b><code>tools/check_html_sinks.py</code></b>: a <code>${...}</code> in a template that builds HTML must be <code>escapeHtml(...)</code>, a number, a constant or a builder (a <code>...Html(</code> function, or its short list). Its own tokenizer reads strings, comments, nested templates and regex literals: 794 HTML templates, 2,480 <code>${...}</code>. The 1,691 that pass none of the rules today are in <code>tools/html_sinks_baseline.json</code>, which only shrinks (adding to it needs the owner's OK in a pull request). It also fails on inline <code>on...=</code> handlers, single-quoted attributes built from <code>${...}</code>, and <code>innerHTML =</code> a bare variable not in the baseline. Builders ending in <code>Html</code> (133 of them) pass by the page's naming convention rather than one by one. To close the gap that leaves (the owner, asked: "yes"), two more rules: a builder may not return one of its own arguments unchanged in any branch, and markup glued with <code>+</code> must add only escaped text, numbers, constants, builders or literals. Today's page has one such <code>+</code> (a piece of a builder's own output, in the baseline: 1,692 entries) and no builder returning its argument.</li>
+<li><b><code>check_request_gates.py</code></b>: an <code>Authorization</code> header only in <code>esiFetch</code>; <code>login.eveonline.com</code> only from functions in <code>SSO_SITES</code> (empty until Phase 1). Comments don't count. The Phase 1 rules (a 401 not retried, token answers parsed only as JSON) are written as TODOs in its docstring until the code exists.</li>
+<li><b><code>check_pii.py</code></b>: the tool's public contact address (the SSO plan's D4) and the two public Client IDs allowed by name; JWT-shaped strings with any payload, and long opaque values set on a token / code_verifier / refresh key, flagged; made-up test tokens start <code>madeUp</code>.</li>
+<li><b>Mutants</b>, each caught: a stale hash (nothing runs), no policy (the injected handler runs), zKillboard dropped from <code>connect-src</code> (a violation in the Pilot Analyzer), <code>'unsafe-inline'</code> in <code>script-src</code>, no referrer meta (a Referer on every request), the initials only removing the image (<code>csp_check</code> and <code>profile_check</code>), the initials as HTML, the hash tool without the CRLF step (its self-test); in the lint, an unescaped title, an <code>onclick=</code> in a template, a single-quoted attribute, a builder returning its argument and markup glued around an unescaped name; in the gates, a login request in an unlisted function and an <code>Authorization</code> header outside <code>esiFetch</code> (plain <code>fetch</code>, and <code>headers.set</code>); in the personal-data check, a fake JWT, a second address, a token value.</li>
+<li>Every check (<code>run_checks.py --auto</code> picked <code>all</code>): 17 lints, the pyfa chain and 76 page checks in 29 min, 0 failed, 0 flaky; the quick checks again after the lint's last two rules, 0 problems. Regression suite ALL PASS; <code>check_pii</code> 0 problems.</li>
+<li>Page size: 763,839 &rarr; 762,547 bytes gzipped (<code>gzip -9</code>): the handlers' text was longer than the listener and the meta tags.</li>
+</ul>
+
+<h2>Not in this delivery</h2>
+<ul>
+<li><code>X-User-Agent</code> on ESI calls (Phase 1: a custom header makes every ESI request preflighted; measure that first) and any login code.</li>
+<li>022 (the logo) comes after this, at the owner's choice: its tab icon is served from the site itself, so it will add <code>'self'</code> to the image sources (noted in its queue file).</li>
+</ul>
+
+<h2>Lesson for future models</h2>
+<ul>
+<li>LESSON #145: a security policy the checks switch off is untested. One check runs the page with it on; every other opens with <code>bypass_csp=True</code>. Never turn it off in that one check to make it pass, and hash the script the way the browser does.</li>
+</ul>
+</body></html>

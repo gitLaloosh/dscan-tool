@@ -1,11 +1,18 @@
 #!/bin/sh
 # Refuses a commit that would put personal data in this public repository: tools/check_pii.py on the staged files
 # (paths with a user name, e-mail addresses, keys and tokens, screenshots, unreviewed embedded images, and the names
-# in the git-ignored tools/pii_terms.local.txt). LESSON #90.
+# in the git-ignored tools/pii_terms.local.txt). LESSON #90. Since v2026.11.07.3 it also refuses a stale CSP script hash
+# in the staged index.html (tools/csp_hash.py, LESSON #145).
 # Turn it on once, in the repository folder:   git config core.hooksPath tools/git-hooks
 root="$(git rev-parse --show-toplevel)"
 for py in py python3 python; do
   if "$py" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" >/dev/null 2>&1; then
+    # v2026.11.07.3 (build queue 023): the page's CSP names its script by hash; refuse a commit whose staged index.html has a stale one
+    if git diff --cached --name-only | grep -qx 'index.html'; then
+      tmp="$(mktemp)"; git show :index.html > "$tmp"
+      if ! "$py" -I "$root/tools/csp_hash.py" --check "$tmp"; then rm -f "$tmp"; echo "pre-commit: run python3 -I tools/csp_hash.py --write, then stage index.html again." >&2; exit 1; fi
+      rm -f "$tmp"
+    fi
     exec "$py" -I "$root/tools/check_pii.py" "$root" --staged
   fi
 done

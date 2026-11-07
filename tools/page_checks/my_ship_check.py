@@ -81,7 +81,7 @@ def wait_tiles(pg):
     pg.wait_for_function("() => { const v = document.querySelector('#myShipPanel .mys-tile-v'); return v && !/^[…—]$/.test(v.textContent); }", timeout=60000)
 
 def main_desktop(b):
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 900})
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     esi_calls = []; pg.on('request', lambda r: esi_calls.append(r.url) if 'esi.evetech.net' in r.url else None)
     route_all(pg)
@@ -217,7 +217,7 @@ def main_desktop(b):
     ctx.close()
 
 def storage_blocked(b):
-    ctx = b.new_context(viewport={'width': 1280, 'height': 900})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1280, 'height': 900})
     ctx.add_init_script("Storage.prototype.setItem = function(){ throw new DOMException('blocked', 'SecurityError'); };")
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
@@ -231,7 +231,7 @@ def storage_blocked(b):
     ctx.close()
 
 def unloadable(b):
-    ctx = b.new_context(viewport={'width': 1280, 'height': 900})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1280, 'height': 900})
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
     pg.evaluate("""localStorage.setItem('dscanMyShip', JSON.stringify({v: 1, eft: '[Notaship Xyz, gone]\\nDamage Control II', shipName: 'Notaship Xyz', fitName: 'gone', use: true, savedAt: '2026-10-23T00:00:00Z'}))""")
@@ -247,7 +247,7 @@ def unloadable(b):
 
 def phone(b):
     W = 375
-    ctx = b.new_context(viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True)
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 740}, is_mobile=True, has_touch=True)
     pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML)
     chip, tab = pg.locator('#profile').bounding_box(), pg.locator('.tab-btn').first.bounding_box()   # v.62: the first tab; v2026.11.01.1: the profile

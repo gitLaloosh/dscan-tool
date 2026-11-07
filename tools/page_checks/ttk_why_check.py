@@ -84,7 +84,7 @@ def layout(pg):
 SETUP_RANGE = f"() => {{ const h = document.querySelector('{HOST}'); mysFightSet(h, 'range', 48900, false); }}"
 
 def desktop(b):
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', ORTHRUS); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
@@ -158,7 +158,7 @@ def aar(b):
     """v2026.10.14.61: an Ancillary Armor Repairer with paste (fits/vexor_aar_paste_loaded.eft) as my ship: the panel's
     words are the page's own and say what the repairer did with its paste (the times: check_matchup.py)."""
     vex = open(os.path.join(FITS, 'vexor_aar_paste_loaded.eft'), encoding='utf-8').read()
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000}); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', ORTHRUS); pg.click('#fitAnalyzerBtn'); pg.wait_for_selector(f'{R} .fit-layout'); settle(pg)
@@ -175,7 +175,7 @@ def aar(b):
 
 def phone(b):
     W = 375
-    ctx = b.new_context(viewport={'width': W, 'height': 760}, is_mobile=True, has_touch=True); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 760}, is_mobile=True, has_touch=True); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     pg.tap('#profileBtn', position={'x': 12, 'y': 14}); pg.fill('#myShipEft', OSPREY); pg.tap('#myShipPanel [data-act="save"]'); pg.wait_for_selector('#myShipPanel .mys-tiles')

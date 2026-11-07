@@ -53,7 +53,7 @@ def rows_done(pg, n, timeout=120000):
 E = M.expected_rows()
 with sync_playwright() as p:
     b = p.chromium.launch()
-    ctx = b.new_context(viewport={'width': 1440, 'height': 1000})
+    ctx = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000})
     errs = []
     ctx.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e))))
     M.route(ctx)
@@ -102,7 +102,7 @@ with sync_playwright() as p:
     check(pa == ['block', nm(M.SMALL_RED[1]), 'Vedmak'], f'a row opens the Pilot Analyzer on that pilot and hull {pa}')
     # past 15: load more
     side20 = dict(SIDE, rows=20)
-    ctx2 = b.new_context(viewport={'width': 1440, 'height': 1000}); ctx2.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx2)
+    ctx2 = b.new_context(bypass_csp=True, viewport={'width': 1440, 'height': 1000}); ctx2.on('page', lambda pg: pg.on('pageerror', lambda e: errs.append(str(e)))); M.route(ctx2)
     pg2 = setup(ctx2, side20)   # its own browser storage: nothing kept from the first paste
     many = [v[0] for k, v in M.PILOTS.items() if v[1] == 98000007][:17]
     M.ZKB_CALLS.clear()

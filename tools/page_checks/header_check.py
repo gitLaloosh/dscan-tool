@@ -31,7 +31,7 @@ def check(ok, msg):
     print(('OK   ' if ok else 'FAIL ') + msg); fails += not ok
 
 def run(b, W):
-    ctx = b.new_context(viewport={'width': W, 'height': 800}, is_mobile=W < 600, has_touch=W < 600); pg = ctx.new_page()
+    ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 800}, is_mobile=W < 600, has_touch=W < 600); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     route_all(pg); pg.goto('file://' + HTML); pg.evaluate("localStorage.removeItem('dscanMyShip')"); pg.reload()
     h = pg.evaluate("""() => { const hero = document.querySelector('header.hero'), b = document.getElementById('refreshCacheBtn');

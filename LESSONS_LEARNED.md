@@ -132,6 +132,7 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
 - #142 A sync Playwright check's stand-ins answer only while Playwright runs: never time.sleep, and restart a reader with a new generation.
 - #143 Playwright's click scrolls the page to the element first: to test whether a press scrolls the page, press with element.click().
 - #144 Escape for the place the text goes: text-node escaping isn't attribute escaping. escapeHtml escapes quotes; attributes are double-quoted. See also #104.
+- #145 A security policy the checks switch off is untested: one check runs the page with it on, every other opens with bypass_csp=True.
 - #112 Read a short name against what the line is about, not the whole map: a gate word means one of that system's gates.
 - #113 Judge a layout at its worst, at the real width: every tag, badge and name at once, in a frame as wide as the window.
 - #114 Size a mockup the way the page sizes it, and test with names as long as the real ones: short made-up names hide gaps.
@@ -1051,6 +1052,23 @@ comments point at them); `tools/check_lessons_index.py` (a chain step) checks ev
   attribute after its own charge / script and self effects (here `ewarAttrsFor(m, script)`), per copy, scripted
   copies first. When building golden fits for a handler table, give every module that takes a script one scripted
   copy.
+
+## 145. A security policy the checks switch off is untested: one check runs the page with it on, every other opens with bypass_csp=True
+
+- **What happened (v2026.11.07.3, build queue 023):** the page got a Content-Security-Policy that allows only its own inline script,
+  by sha256. Most page checks can't run under it: `esi_from_sde.run_async` runs page functions through `eval`, which the policy
+  refuses, and checks that write a modified copy of the page, and every mutant, change the script and so its hash. The plan's
+  answer, taken here, is `bypass_csp=True` on every page check's browser context (95 calls in 63 files). The danger in that is
+  quiet: with the policy off everywhere, a policy that blocks something the page needs (a host, a worker, an image fallback), or
+  a policy that lets an injected handler through, would pass every check.
+- **How it was caught:** the plan's prototype (Project doc roadmap/sso-hardening-plan.md) showed both sides before the build: 11
+  checks broke under the policy, and the page itself ran under it with zero violations.
+- **Do this instead:** keep exactly one check with the policy on (`tools/page_checks/csp_check.py`): the unmodified page served
+  over HTTP, a tour that reaches every host and the worker, 0 `securitypolicyviolation` events, an injected `<img onerror>` refused,
+  every image fallback kind working, no Referer sent, a CRLF copy still running. Every other page check opens with
+  `bypass_csp=True` because it tests behaviour, not the policy. Never turn the policy off in csp_check to make it pass: change
+  the policy (`EXPECTED` in tools/csp_hash.py) or the page. And hash the script the way the browser does (HTML turns CRLF into LF
+  before hashing), or a Windows checkout writes a hash that stops the live page.
 
 ## 144. Escape for the place the text goes: text-node escaping isn't attribute escaping
 

@@ -92,7 +92,7 @@ INFO_PANELS = """async (W) => {
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 1100, 375):
-        ctx = b.new_context(viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg)
         pg.goto('file://' + html); pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn')
@@ -259,7 +259,7 @@ INFO_PANELS = """async (W) => {
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 1100, 375):
-        ctx = b.new_context(viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg)
         def run(text):
@@ -303,7 +303,7 @@ CARD_KEYS = ['weak', 'ewar', 'fp', 'rs', 'nav', 'cp', 'dmg']   # dmg: Damage App
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 375):
-        ctx = b.new_context(viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg)
         pg.goto('file://' + html); pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE.replace('Warp Scrambler II', 'Warp Scrambler II\nStasis Webifier II')); pg.click('#fitAnalyzerBtn')
@@ -458,7 +458,7 @@ INFO_PANELS = """async (W) => {
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 1100, 375):
-        ctx = b.new_context(viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg)
         for label, name in (('long fit name', LONG_FIT_NAME), ('unbroken fit name', UNBROKEN)):
@@ -499,7 +499,7 @@ with sync_playwright() as p:
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 375):
-        ctx = b.new_context(viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg)
         pg.goto('file://' + html); pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', long_eft('bay test')); pg.click('#fitAnalyzerBtn')
@@ -528,7 +528,7 @@ with sync_playwright() as p:
 with sync_playwright() as p:
     b = p.chromium.launch(**({'executable_path': CHROMIUM} if CHROMIUM else {}))
     for W in (1440, 375):
-        ctx = b.new_context(viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 900}, is_mobile=W < 600, has_touch=W < 600)
         pg = ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         route_all(pg)
         pg.goto('file://' + html); pg.click('#tabBtnFit'); pg.fill('#fitAnalyzerInput', HECATE); pg.click('#fitAnalyzerBtn')

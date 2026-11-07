@@ -29,7 +29,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     errs = []
     for W in (1440, 390):
-        ctx = b.new_context(viewport={'width': W, 'height': 1000}); M.route(ctx)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': W, 'height': 1000}); M.route(ctx)
         pg = ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.goto('file://' + HTML); pg.click('#tabBtnDscan'); pg.fill('#dscanInput', SCAN); pg.click('#analyzeBtn')
         pg.wait_for_function("() => document.querySelectorAll('#scanRail button.sr-row').length >= 1 && !document.querySelector('#analyzeBtn').disabled", timeout=60000); pg.wait_for_timeout(300)

@@ -8,9 +8,12 @@ data (including screen shots)" must be called out or refused. This check fails o
 
   * a home folder with a real user name in it: C:\\Users\\<name>\\..., /Users/<name>/..., /home/<name>/... (a placeholder
     such as "...", "<user>" or %USERNAME% is fine);
-  * an e-mail address (example.com / example.org and noreply addresses are fine);
-  * something that looks like a credential: a private-key block, an EVE SSO / JWT token, a GitHub token, "Bearer <token>",
-    or api_key / client_secret / refresh_token / access_token / password set to a value;
+  * an e-mail address (example.com / example.org and noreply addresses are fine, and the tool's own public contact,
+    threatvectorapp@gmail.com, by name: v2026.11.07.3, the SSO plan's D4);
+  * something that looks like a credential: a private-key block, an EVE SSO / JWT token (eyJ... with two dots), a GitHub
+    token, "Bearer <token>", api_key / client_secret / refresh_token / access_token / password set to a value, or (v2026.11.07.3)
+    any token / code_verifier / refresh... key set to a long opaque value. Made-up test tokens start with "madeUp" and pass;
+    the two public Client IDs of the EVE apps pass by name (ALLOWED);
   * an image file anywhere but the two folders of game icons (img/fighter-abilities/, browser-extension/icons/): a
     screenshot never goes in the repository;
   * an image embedded in a page or document (a data: URI of 2 KB or more) that nobody has reviewed. Mockups show the
@@ -40,12 +43,15 @@ RULES = [
     ('a home folder with a user name', re.compile(r'(?<![\w.])/(?:Users|home)/' + PLACEHOLDER + r'[A-Za-z0-9._-]+')),
     ('an e-mail address', re.compile(r'\b[A-Za-z0-9._%+-]+@(?!example\.(?:com|org)\b)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b')),
     ('a private key', re.compile(r'-----BEGIN [A-Z ]*PRIVATE KEY-----')),
-    ('a token (JWT / EVE SSO)', re.compile(r'\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}')),
+    ('a token (JWT / EVE SSO)', re.compile(r'\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}')),   # v2026.11.07.3: any payload, not only eyJ...
+    ('a token', re.compile(r'(?i)\b\w*(?:token|code_verifier|refresh)\w*["\']?\s*[:=]\s*["\'](?!madeUp)[A-Za-z0-9._~+/=-]{20,}["\']')),   # v2026.11.07.3 (023): test tokens start madeUp
     ('a GitHub token', re.compile(r'\bgh[pousr]_[A-Za-z0-9]{30,}|\bgithub_pat_[A-Za-z0-9_]{30,}')),
     ('a bearer token', re.compile(r'\bBearer\s+[A-Za-z0-9._~+/-]{20,}')),
     ('a credential', re.compile(r'(?i)\b(?:api[_-]?key|client[_-]?secret|refresh[_-]?token|access[_-]?token|password|passwd)\b["\']?\s*[:=]\s*["\'][^"\'\s]{8,}["\']')),
 ]
 NOREPLY = re.compile(r'noreply|no-reply', re.I)
+# v2026.11.07.3 (build queue 023): public by design, so allowed by name: the tool's contact (the SSO plan's D4) and the two EVE apps' Client IDs
+ALLOWED = {'threatvectorapp@gmail.com', 'eff6eec96b2e44cbb6a594f5e160a2e1', '659bdd63a604458e95c419de3373fdc3'}
 
 def files():
     if STAGED:
@@ -91,6 +97,8 @@ def main():
         for why, rx in RULES:
             for m in rx.finditer(text):
                 if why == 'an e-mail address' and NOREPLY.search(m.group(0)): continue
+                if m.group(0) in ALLOWED or any(a in m.group(0) for a in ALLOWED if why == 'a token'): continue
+                if why in ('a credential', 'a token') and re.search(r'["\']madeUp', m.group(0)): continue   # made-up test tokens (023)
                 problems.append(f'{rel}:{text.count(chr(10), 0, m.start()) + 1}: {why}: {m.group(0)[:60]!r}')
         if terms:
             for m in terms.finditer(text):

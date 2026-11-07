@@ -115,7 +115,7 @@ ST = """() => { const r = [...document.querySelectorAll('#fleetPanel .fk-card .f
 with sync_playwright() as p:
     b = p.chromium.launch(); errs = []
     def new_page(w=1440):
-        ctx = b.new_context(viewport={'width': w, 'height': 1000}, is_mobile=w < 600, has_touch=w < 600)
+        ctx = b.new_context(bypass_csp=True, viewport={'width': w, 'height': 1000}, is_mobile=w < 600, has_touch=w < 600)
         ctx.add_init_script(STAND_IN)
         ctx.route(re.compile(r'https://esi\.evetech\.net/.*'), esi)
         ctx.route(re.compile(r'https://zkillboard\.com/.*'), M.zkb)
