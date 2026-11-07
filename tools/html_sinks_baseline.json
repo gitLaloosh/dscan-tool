@@ -859,6 +859,7 @@
   "renderProfile␟tk": 1,
   "renderSidePanel␟s.id": 1,
   "renderSidePanel␟s.kind": 1,
+  "repairsHeaderIconsHtml␟+ x": 1,
   "resistanceCardHtml␟DMG.map(d => `<span class=\"resistance-collabel\" style=\"color:var(--${d});\">${DMG_LABEL[d]}</span>`).join('')": 1,
   "resistanceCardHtml␟DMG_LABEL[d]": 1,
   "resistanceCardHtml␟TACTICAL_MODE_LABEL[f.activeMode]": 1,

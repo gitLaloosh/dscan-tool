@@ -12,6 +12,10 @@ expression passes on its own when it is:
   * an ALL_CAPS constant;
   * a call to a function on BUILDERS below, or one whose name ends in `Html` (the page's convention: such a function returns HTML it
     built under these same rules; a new one is checked here like any other code).
+Markup glued together with + (a plain string with a tag in it): what's added on either side must pass the same rules, be a string,
+or be a template (whose own ${...} are checked where it is written). And a builder (a ...Html function or BUILDERS) must not return
+one of its own arguments unchanged, in any branch: its callers pass this lint by its name, so it must build what it returns. (The
+owner, 2026-11-07, "yes" to closing that gap in the name rule.)
 Everything else that was in the page when this lint was written is in tools/html_sinks_baseline.json, keyed by the enclosing
 function's name and the expression's text (not line numbers, so it survives edits). **The baseline only shrinks:**
   * a new ${...} that passes none of the above fails: escape it, or give it a builder;
@@ -30,8 +34,6 @@ BUILDERS = {   # functions that return HTML they built, whose names don't end in
     'standIcon': 'the standing icon: a fixed SVG per standing kind (CLAUDE.md "Standing icon")',
     'standMark': 'the standing mark: a fixed SVG per standing kind',
     'zkLinkHtml': 'the zKillboard link (ends in Html; listed for the record)',
-    'withCode': 'an error text with its code: callers pass escaped text or constants (ERRORS.md)',
-    'codedError': 'as withCode',
 }
 NUM_RX = re.compile(r'^(Math\.\w+\(|Number\(|\d[\d_.]*$|[\w.$\[\]()]+\.length$)|\.toFixed\(\d*\)$|toLocaleString\([^)]*\)$|\|\s*0\)?$')
 KEYWORD_BEFORE_REGEX = {'return', 'typeof', 'case', 'do', 'else', 'in', 'of', 'new', 'delete', 'void', 'throw', 'instanceof', 'yield', 'await'}
@@ -163,7 +165,127 @@ def scan(html):
             found[(enclosing(src, a.start(), fn_starts), 'innerHTML = ' + v)] += 1
     for a in re.finditer(r'\.insertAdjacentHTML\(\s*[^,]+,\s*([A-Za-z_$][\w$.]*)\s*\)', src):
         found[(enclosing(src, a.start(), fn_starts), 'insertAdjacentHTML ' + a.group(1))] += 1
+    # (the owner, 2026-11-07, to closing the name rule's gap: "yes") markup glued with + : a plain string with a tag in it, and
+    # what's added to it must pass the same rules as a ${...} (escapeHtml, a number, a constant, a builder) or be in the baseline
+    code = blank_strings_and_comments(src)
+    for a in re.finditer(r"""(['"])(?:(?!\1)[^\\\n]|\\.)*<[a-zA-Z/](?:(?!\1)[^\\\n]|\\.)*\1""", code):
+        for side, e in (('after', operand_after(code, a.end())), ('before', operand_before(code, a.start()))):
+            if e is None or passes_value(e): continue
+            found[(enclosing(src, a.start(), fn_starts), f'+ {norm(e)}')] += 1
+    # a builder (a ...Html function, or BUILDERS) must not hand back one of its own arguments unchanged: whatever the caller passed
+    # would go into the page as markup, and the call would pass this lint by its name
+    for m in re.finditer(r'\bfunction\s+([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{', src):
+        name = m.group(1)
+        if not (name.endswith('Html') or name in BUILDERS): continue
+        params = {p.strip().split('=')[0].strip(' .') for p in m.group(2).split(',') if p.strip()}
+        body = brace_body(src, m.end() - 1)
+        for r in re.finditer(r'\breturn\s+([^;\n]+)', body):
+            for x in results(r.group(1).strip().rstrip(';')):
+                if x in params: hard.append(f'{name}(): returns its argument {x!r} unchanged: a builder must build its markup (escapeHtml what it was given)')
     return found, hard
+
+
+def split_top(e, seps):
+    """Splits e at the first top-level separator from seps (not inside brackets, strings or templates): (left, sep, right) or None."""
+    d = 0; q = None; i = 0
+    while i < len(e):
+        c = e[i]
+        if q:
+            if c == '\\': i += 2; continue
+            if c == q: q = None
+        elif c in '\'"`': q = c
+        elif c in '([{': d += 1
+        elif c in ')]}': d -= 1
+        elif d == 0:
+            for sp in seps:
+                if e.startswith(sp, i): return e[:i], sp, e[i + len(sp):]
+        i += 1
+    return None
+
+
+def strip_parens(e):
+    e = e.strip()
+    while e.startswith('(') and e.endswith(')') and split_top(e[1:-1], [')']) is None and e.count('(') == e.count(')'):
+        inner = e[1:-1]; d = 0; ok = True
+        for c in inner:
+            d += c == '('; d -= c == ')'
+            if d < 0: ok = False; break
+        if not ok: break
+        e = inner.strip()
+    return e
+
+
+def results(e):
+    """The sub-expressions a value can come from: both results of a ternary, both sides of ||, the right of && (its left only
+    gives a falsy value), recursively."""
+    e = strip_parens(e)
+    t = split_top(e, [' ? '])
+    if t:
+        r = split_top(t[2], [' : '])
+        return results(r[0]) + results(r[2]) if r else [e]
+    o = split_top(e, [' || '])
+    if o: return results(o[0]) + results(o[2])
+    a = split_top(e, [' && '])
+    if a: return results(a[2])
+    return [e]
+
+
+def passes_value(e):
+    """A value added to markup passes when every result it can come from passes, or is a string or template literal (a template's
+    own ${...} are checked where it is written)."""
+    return all(passes(x) or re.match(r"""^['"`]""", x) or x in ("''", '""') for x in results(e))
+
+
+def blank_strings_and_comments(src):
+    """The source with comments blanked to spaces (same length), strings and templates kept: used to skip a "string" that is
+    really inside a comment."""
+    return re.sub(r'/\*.*?\*/|(?<![:\\\'"`])//[^\n]*', lambda m: ' ' * len(m.group(0)), src, flags=re.S)
+
+
+def operand_after(src, i):
+    """The expression added after a string: ` + expr` up to the next + , ; ) ] } at depth 0; None when no + follows."""
+    m = re.match(r'\s*\+\s*', src[i:])
+    if not m: return None
+    j = i + m.end(); d = 0; k = j
+    while k < len(src):
+        c = src[k]
+        if c in '([{': d += 1
+        elif c in ')]}':
+            if d == 0: break
+            d -= 1
+        elif c in '\'"`' and k == j: return src[j:j + 1]   # another literal
+        elif d == 0 and (c in ',;+\n' or src.startswith('?', k) or src.startswith(' : ', k)): break
+        k += 1
+    return src[j:k].strip() or None
+
+
+def operand_before(src, i):
+    """The expression added before a string: `expr + ` back to the previous + = ( , ; return at depth 0; None when no + precedes."""
+    m = re.search(r'\+\s*$', src[max(0, i - 200):i])
+    if not m: return None
+    k = i - (len(src[max(0, i - 200):i]) - m.start()) - 1; d = 0; j = k
+    while j >= 0:
+        c = src[j]
+        if c in ')]}': d += 1
+        elif c in '([{':
+            if d == 0: break
+            d -= 1
+        elif d == 0 and c in ',;+=\n?:': break
+        j -= 1
+    e = src[j + 1:k + 1].strip()
+    e = re.sub(r'^(?:return\s+|>\s*)', '', e)   # after return, or after an arrow's =>
+    return e or None
+
+
+def brace_body(src, i):
+    """The text of the {...} block starting at src[i] == '{'."""
+    d = 0
+    for j in range(i, len(src)):
+        if src[j] == '{': d += 1
+        elif src[j] == '}':
+            d -= 1
+            if not d: return src[i:j + 1]
+    return src[i:]
 
 
 def load_baseline():
@@ -206,6 +328,12 @@ def self_test():
         ('function a(el, h){ el.innerHTML = h; }', 1, 'innerHTML = a bare variable'),
         ('function a(x){ return "<img src=x onerror=boom()>"; }', 1, 'an onerror= in a plain string'),
         ('function a(x){ return `plain text ${x}`; }', 0, 'a template with no markup'),
+        ("function a(n){ return '<b>' + n + '</b>'; }", 1, 'markup glued with + around an unescaped name (both sides: one problem, 2 new)'),
+        ("function a(n){ return '<b>' + escapeHtml(n) + '</b>'; }", 0, 'markup glued with + around escaped text'),
+        ("function a(n, k){ return '<i>' + (k ? `<b>${escapeHtml(n)}</b>` : '') + rowHtml(n); }", 0, 'a choice of templates and a builder after +'),
+        ('function nameHtml(n){ return n; }', 1, 'a builder that hands back its argument'),
+        ('function nameHtml(n, ok){ return ok ? `<b>${escapeHtml(n)}</b>` : n; }', 1, 'a builder that hands back its argument in one branch'),
+        ('function nameHtml(r){ return r ? `<b>${escapeHtml(r.name)}</b>` : ""; }', 0, 'a builder whose argument is only the condition'),
     ]
     bad = []
     for body, want, what in cases:
