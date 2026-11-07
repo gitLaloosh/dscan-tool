@@ -2707,6 +2707,37 @@
   .rs-n{font-size:11.5px; color:var(--text-dim);}
   .rs-live{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
   @media (max-width: 900px){ .it-top{grid-template-columns:minmax(0,1fr);} }
+  /* v2026.11.07.1 (build queue 010; the owner: "implement a max hight on the "near you" list to match the height of the map side"): beside
+     the map (over 900 px) the map column sets the row's height (contain:size on Near You) and Near You's list scrolls inside it; its floor
+     is the map's smallest box and heading (--it-near-floor, from IT_NEAR_FLOOR); "+N more systems below" under it (itNearMore). The wheel
+     moves the page on at the list's ends (LESSON #96). 900 px and under: unchanged. */
+  .it-more{display:none;}
+  @media (min-width: 901px){
+    .it-top{align-items:stretch;}
+    .it-top .it-nearcol{contain:size; display:flex; flex-direction:column; min-height:var(--it-near-floor);}
+    .it-top .it-nearcol > #itNearList{flex:1 1 0; min-height:0; overflow-y:auto; overscroll-behavior:auto; scrollbar-gutter:stable; padding-right:2px;}
+    .it-top .it-nearcol > .it-more{display:block; flex:none; padding:5px 2px 0; font:400 11.5px var(--sans); color:var(--text-dim); border-top:1px solid var(--line-soft);}
+    .it-top .it-nearcol > .it-more[hidden]{display:none;}
+  }
+  /* v2026.11.07.1 (build queue 010, the additions; mockup Claude outputs/intel_filters_mockup.html): the Feed's filter chips, on their own
+     line under the bar; ship names as filter buttons; ISK on Near You's kill badges */
+  .it-fchips{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:-2px 0 8px;}
+  .it-fchips .lb{font:600 11.5px var(--sans); color:var(--text-dim); margin-right:2px;}
+  .it-fc{display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:0 2px 0 8px; border-radius:3px; background:var(--tag-on); color:var(--heading); font:600 12px var(--sans);}
+  .it-fc .k{font:600 10.5px var(--sans); color:var(--text-dim); text-transform:uppercase; letter-spacing:.4px;}
+  .it-fc img{width:16px; height:16px; border-radius:2px;}
+  .it-fc .tk{font:500 11.5px var(--mono); color:var(--text);}
+  button.it-fc-x{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; min-height:0; padding:0; border:1px solid transparent; border-radius:3px; background:transparent; color:var(--text-dim); font:400 16px/1 var(--sans); cursor:pointer;}
+  button.it-fc-x:hover, button.it-fc-x:focus-visible{color:var(--heading); border-color:var(--line);}
+  button.it-fc-all{background:none; border:none; padding:0 4px; min-height:28px; color:var(--cyan); font:600 12px var(--sans); cursor:pointer;}
+  button.it-chip.ship{border:none; font-family:inherit; font-size:inherit; line-height:inherit; cursor:pointer; outline:1px solid transparent; transition:background .12s, outline-color .12s;}
+  button.it-chip.ship:hover, button.it-chip.ship:focus-visible{background:rgba(79,195,217,.16); outline-color:rgba(79,195,217,.45);}
+  button.it-chip.ship[aria-pressed="true"]{background:var(--tag-on); outline-color:var(--cyan);}
+  button.it-shb{background:none; border:none; padding:0; margin:0; min-height:0; font:inherit; color:inherit; cursor:pointer;}
+  button.it-shb:hover, button.it-shb:focus-visible, button.it-shb[aria-pressed="true"]{text-decoration:underline; text-underline-offset:3px; color:var(--heading);}
+  .it-kl .isk{font:600 10px var(--mono); color:var(--amber); margin-left:6px; letter-spacing:0; text-transform:none;}
+  @media (prefers-reduced-motion: reduce){ button.it-chip.ship{transition:none;} }
+  @media (max-width: 599px){ .it-fc{min-height:36px;} button.it-fc-x{width:36px; height:36px;} button.it-fc-all{min-height:36px;} }
   @media (max-width: 599px){
     .it-top .it-nearcol > .it-h{flex-wrap:wrap;}
     .it-top .it-nv{display:inline-flex; margin-left:auto; align-self:center; border:1px solid var(--line); border-radius:4px; overflow:hidden;}
@@ -2937,7 +2968,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.06.6</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.1</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -3307,7 +3338,7 @@ const CARD_INFO = {
   "[{card:itnear} and alerts] Everyone and every ship reported in a system in the time set under the gear (15 minutes unless you change it), until someone reports it clear. A hostile or neutral within your alert range plays a sound and notifies, once per system every 30 seconds; friendlies never alert. Two sounds under the gear: {card:itnear} (1 jump up to your alert range) and In system (your own system, kills too), each one of five or your own file (MP3, WAV or OGG, up to 1 MB, kept only in this browser, played at most 5 seconds), with one volume; ▶ Test plays it. The desktop notification stays silent when the page plays its sound. With the Feed's Distance set, a report beyond both it and your alert range stays out of {card:itnear}.",
   "[{card:itmap}] The systems around you, laid out from CCP's own flat map. A ring marks a system with a report: its colour is the standing (hostile red, neutral grey, friendly blue), its size the gang (solo, 2–10, 11 or more); ✕ counts its kills. Hover a system, or a row in {card:itnear} or the {card:itfeed}, for its route to you; press it to keep the route. Drag or two fingers move it, the wheel or a pinch zooms it; on a phone, List | Map in {card:itnear} switches between the two. {card:itnear}'s range under the gear: from your alert range to the Feed's kill range, alert + 5 unless you set it. Jumps shown under the map: from {card:itnear}'s range up to the Feed's largest kill range (30); it follows the Feed's range until you change it. Systems past {card:itnear} are faded; past the Feed's range a system's kills aren't read. A route is the shortest one by stargates (one for each system, always the same); jump bridges, cynos, filaments and wormholes aren't in CCP's data. Over the map the mouse wheel zooms instead of scrolling the page.",
   "[Jumps and your system] Your system comes from your character's Local log. Jumps are gate jumps from EVE's published stargate data (no jump bridges or wormholes); the table is checked against each new EVE build every day.",
-  "[Buttons] A pilot's name opens them in the Pilot Analyzer, in their ship when the line says it. A system's name shows only that system in the Feed (press it again for everything); the radar icon beside it in {card:itnear} sends its pilots and ships to the {card:sysan}; Restore my paste puts yours back.",
+  "[Buttons] A pilot's name opens them in the Pilot Analyzer, in their ship when the line says it. Press a system, corp, alliance or ship to show only it in the Feed; the chips under the filters say what's on (× removes one; press it again for everything). {card:itnear} itself is never filtered; beside the map it scrolls, and the count below says how many systems are out of view. A kill badge there shows its kills' value together. The radar icon beside it in {card:itnear} sends its pilots and ships to the {card:sysan}; Restore my paste puts yours back.",
   "[Privacy and the folder] Nothing from your logs leaves the browser except the words looked up on ESI, and nothing is kept after you close the page. Chrome or Edge read the folder once you choose it (after a browser restart, turning Intel on asks once more); the logs are read every 2 seconds, also in a hidden tab."
  ],
  "onscan": [
@@ -24654,6 +24685,7 @@ const it = {
   kf: null, kfNote: '', charNames: new Map(), sec: new Map(), secAsk: new Set(), q: '',   // v.99: kills, names on kills, security, the Feed's search
   rawOpen: new Set(),   // v.100: Feed rows showing the line as typed
   nearOpen: new Set(),   // v2026.10.30.1: Near You rows opened (system ids; several at once, the owner)
+  fl: [],   // v2026.11.07.1 (build queue 010): the Feed's filter chips, {kind: 'sys'|'corporation'|'alliance'|'ship', id, label}; not kept across reloads
   gateDest: new Map(), gateAsk: new Map()   // v2026.10.31.5: stargate id -> the system it leads to (itGateDest)
 };
 function itKfNew(){ return {seq: null, busy: false, waitUntil: 0, head: false, fails: 0, blk: 0, seen: new Set(), reqs: 0, lastGot: 0, target: 0, seqAt: 0, halt: false, skipped: 0, allSkip: 0, ups: [], behind: false, behindOk: 0, skipMode: false, retrying: false}; }   // blk (v2026.11.06.1): counted reads in a row with nothing the browser may read (itFeedDown)   // seq = the next number to read; head = at the live end; lastGot = when a kill was last read; target = sequence.json's newest number (every one up to it is published); seqAt = when sequence.json was last read (v2026.10.29.8)
@@ -25461,7 +25493,7 @@ function itNearAdd(e, sys){
     if(e.kind !== 'kill' && (e.p.gate || e.p.camp)) st.gates.push({t: e.t, gate: e.p.gate || null, camp: !!e.p.camp, src: 'rep', who: e.who});   // v2026.10.31.5
     if(e.kind === 'kill' && e.kill.gate) st.gates.push({t: e.t, gate: e.kill.gate, camp: false, src: 'kill', id: e.kill.id});
     for(const [id, sh] of e.pairs) st.pairs.set(id, {...sh, t: e.t, who: e.who});
-    if(e.kind === 'kill') st.kills.push({t: e.t, id: e.kill.id, v: e.kill.victim.side || 'n'});   // v.100: the victim's standing, for the badges
+    if(e.kind === 'kill') st.kills.push({t: e.t, id: e.kill.id, v: e.kill.victim.side || 'n', isk: e.kill.value || 0});   // v.100: the victim's standing, for the badges; v2026.11.07.1: its value
   }
   it.near.set(sys, st);
   if(!e.history) itAlert(st, e);
@@ -26083,17 +26115,16 @@ function itLogo(kind, id){ return id ? `<span class="it-lg${kind === 'corporatio
 // v2026.11.01.2 (the owner, from Claude outputs/pilot_chip_hover_mockup.html: "Go with B2"; "i would prefer that alliance and corp were
 // not grouped. should be able to filter by either. also remove the ability to change standing from there. once we move to SSO,
 // standing is set by the corp and alliance"): one chip, four parts: the standing (a tip only), the name (the Pilot Analyzer), the
-// corporation (its logo and [TICKER]) and the alliance (logo and <TICKER>). Pressing a group shows only it in the Feed: its ticker goes
-// in the Feed's search box as [CORP] or <ALLIANCE> (an exact ticker match, as a system's name does for a system); pressed again, or
-// the box cleared, everything. On hover (or focus) the whole chip gets an outline and dividers; the part under the pointer fills.
+// corporation (its logo and [TICKER]) and the alliance (logo and <TICKER>). Pressing a group shows only it in the Feed: a filter chip
+// (v2026.11.07.1, build queue 010; was its ticker in the search box); pressed again, or the chip's ×, that filter off. On hover (or focus) the whole chip gets an outline and dividers; the part under the pointer fills.
 // Without hover (a phone) the first tap shows the parts and the second does what the part says (itChipTap).
 function itGrpTk(kind, id){ const v = id && orgCache.get(`${kind}:${id}`); return v && typeof v.then !== 'function' && v.ticker ? v : null; }
 function itGrpTok(kind, tk){ return kind === 'alliance' ? `<${tk}>` : `[${tk}]`; }
 function itGrpBtn(kind, id){
   if(!id) return '';
   const v = itGrpTk(kind, id), word = kind === 'alliance' ? 'alliance' : 'corporation';
-  const on = !!v && it.q.trim().toLowerCase() === itGrpTok(kind, v.ticker).toLowerCase();
-  const t = `${v ? `${v.name} ${itGrpTok(kind, v.ticker)}. ` : ''}${on ? 'Show everything in the Feed again' : `Show only this ${word} in the Feed`}`;
+  const on = itFlHas(kind, Number(id));   // v2026.11.07.1: its chip is on
+  const t = `${v ? `${v.name} ${itGrpTok(kind, v.ticker)}. ` : ''}${on ? 'Take this filter off the Feed' : `Show only this ${word} in the Feed`}`;
   return `<button type="button" class="it-seg grp ${kind === 'alliance' ? 'al' : 'co'}" data-it-grp="${kind}:${Number(id)}" aria-pressed="${on}" title="${escapeHtml(t)}">${itLogo(kind, id)}${itTkHtml(kind, id)}</button>`;
 }
 function itWhoHtml(x, e){
@@ -26123,15 +26154,16 @@ async function itGrpPress(b, root){
   let v = itGrpTk(kind, Number(id));
   if(!v){ try{ v = await getOrg(kind, Number(id)); }catch(err){ v = null; } }
   if(!v || !v.ticker) return;   // no ticker to filter by (ESI didn't answer): nothing happens; the tip says what it would do
-  const tok = itGrpTok(kind, v.ticker);
-  it.q = it.q.trim().toLowerCase() === tok.toLowerCase() ? '' : tok;
-  const q = root.querySelector('[data-it-q]'); if(q) q.value = it.q;
-  itRenderLists();
+  itFlToggle(kind, Number(id), itGrpTok(kind, v.ticker));   // v2026.11.07.1: a chip, not the search box
+  itRender(true);
   const again = root.querySelector(`${near ? '#itNearList' : '#itFeedList'} [data-it-grp="${kind}:${Number(id)}"]`); if(again) again.focus({preventScroll: true});
   const f = root.querySelector('#itFeedList');   // a phone (the lists stacked): the Feed is below, so go to it, as a system's name does
   if(near && f && typeof window !== 'undefined' && window.innerWidth < 600 && f.scrollIntoView) f.scrollIntoView({block: 'start', behavior: 'smooth'});
 }
-function itShipChip(s){ return `<span class="it-chip ship"><img src="https://images.evetech.net/types/${s.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(itShipText(s))}</span>`; }
+function itShipChip(s){   // v2026.11.07.1: a button: only this ship in the Feed
+  const on = itFlHas('ship', s.id), t = on ? 'Take this filter off the Feed' : `Show only ${s.name} in the Feed (reports naming it, kills where it died or killed)`;
+  return `<button type="button" class="it-chip ship" data-it-fship="${s.id}" data-it-fsn="${escapeHtml(s.name)}" aria-pressed="${on}" title="${escapeHtml(t)}"><img src="https://images.evetech.net/types/${s.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(itShipText(s))}</button>`;
+}
 function itShipText(s){ return `${s.name}${s.n > 1 ? ` ×${s.n}` : ''}`; }
 // v2026.10.31.7: the analyze icon (radar rings; always the System Analyzer: the owner, "always system for now"), in Near You and the Feed
 function itAnalyzeHtml(sys, what){
@@ -26162,7 +26194,7 @@ function itNearRowHtml({st, j}){
   let who, cap = '';
   if(st.kind === 'clear') who = escapeHtml(`reported clear by ${st.who}`);
   else {
-    const P = L.pilots.filter(x => !x.by).map(pl), B = L.pilots.filter(x => x.by).map(pl), S = L.ships.map(itShipText);
+    const P = L.pilots.filter(x => !x.by).map(pl), B = L.pilots.filter(x => x.by).map(pl), S = L.ships.map(x => ({id: x.id, name: x.name, t: itShipText(x)}));
     const E = L.extra || 0;   // "+N" as reported
     who = itNearWho(P, B, S, P.length, S.length, E) || escapeHtml(`reported by ${st.who}`);
     if(P.length + B.length + S.length > 2) cap = ` data-it-cap="${escapeHtml(JSON.stringify({P, B, S, E})).replace(/"/g, '&quot;')}"`;   // escapeHtml leaves quotes: an attribute needs them escaped
@@ -26199,11 +26231,11 @@ function itNearTagsHtml(st, now = Date.now()){
   if(bub) out.push(`<span class="it-gtag gt it-bub" title="${escapeHtml(`A bubble: ${by(bub)}`)}">Bubble</span>`);
   return out.join('');
 }
-// v2026.10.31.6: a system's name as the button that shows only it in the Feed (the Feed's search box gets its name; pressed again, or the
-// box cleared, everything); the same in Near You and on Feed rows (the owner: "we dont filter the Near You list though")
+// v2026.10.31.6: a system's name as the button that shows only it in the Feed (a filter chip since v2026.11.07.1; pressed again, or the chip's
+// ×, that filter off); the same in Near You and on Feed rows (the owner: "we dont filter the Near You list though")
 function itSysBtnHtml(sys, cls){
-  const name = itSysName(sys), on = it.q.trim().toLowerCase() === name.toLowerCase();
-  return `<button type="button" class="${cls} it-sysb ${itSecClass(sys)}" data-it-fsys="${escapeHtml(name)}" aria-pressed="${on}" title="${escapeHtml(`${on ? 'Show everything in the Feed again' : `Show only ${name} in the Feed`} (${itSysTitle(sys)})`)}">${escapeHtml(name)}</button>`;
+  const name = itSysName(sys), on = itFlHas('sys', sys);   // v2026.11.07.1: its chip is on
+  return `<button type="button" class="${cls} it-sysb ${itSecClass(sys)}" data-it-fsys="${escapeHtml(name)}" aria-pressed="${on}" title="${escapeHtml(`${on ? 'Take this filter off the Feed' : `Show only ${name} in the Feed`} (${itSysTitle(sys)})`)}">${escapeHtml(name)}</button>`;
 }
 // v2026.10.31.6 (the owner: "let's go with option 5 for now"; candidate 3 "still looks like a target at smaller sizes"): radar rings
 const IT_ANALYZE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="1.6" fill="currentColor" stroke="none"/><path d="M4.7 4.7a4.7 4.7 0 0 0 0 6.6M11.3 4.7a4.7 4.7 0 0 1 0 6.6"/><path d="M2.4 2.4a7.9 7.9 0 0 0 0 11.2M13.6 2.4a7.9 7.9 0 0 1 0 11.2" opacity=".6"/></svg>';
@@ -26240,7 +26272,9 @@ function itGateTagHtml(st, now = Date.now()){
 function itNearWho(P, B, S, np, ns, E = 0){
   const p = P.slice(0, np).join(', ') + (np < P.length ? ` <span class="more">+${P.length - np} more</span>` : '') + (E ? `${np ? ' ' : ''}+${E}` : '');
   const b = B.length ? `by ${B.slice(0, 3).join(', ')}${B.length > 3 ? ` <span class="more">+${B.length - 3} more</span>` : ''}` : '';
-  const sh = escapeHtml(S.slice(0, ns).join(', ')) + (ns < S.length ? ` <span class="more">+${S.length - ns} more types</span>` : '');
+  const shb = (x) => typeof x === 'string' ? escapeHtml(x)   // v2026.11.07.1: a ship's name a button (quiet, as the system names)
+    : `<button type="button" class="it-shb" data-it-fship="${x.id}" data-it-fsn="${escapeHtml(x.name)}" aria-pressed="${itFlHas('ship', x.id)}" title="${escapeHtml(itFlHas('ship', x.id) ? 'Take this filter off the Feed' : `Show only ${x.name} in the Feed`)}">${escapeHtml(x.t)}</button>`;
+  const sh = S.slice(0, ns).map(shb).join(', ') + (ns < S.length ? ` <span class="more">+${S.length - ns} more types</span>` : '');
   return [[p, b].filter(Boolean).join(' · '), sh].filter(Boolean).join(' · ');
 }
 // v2026.10.30.1 (the owner: "cap it at three rows for the pilot and ship list in near you. some of these fights can have hundreds or
@@ -26262,7 +26296,7 @@ function itNearCap(el){
   if(!el || !el.querySelectorAll) return;
   for(const w of el.querySelectorAll('#itNearList .who[data-it-cap]')){
     if(typeof w.getBoundingClientRect !== 'function') return;   // LESSON #36: the suites' stub DOM
-    const key = `${w.clientWidth}|${w.dataset.itCap}`, kept = IT_CAP.get(key);
+    const key = `${w.clientWidth}|${it.fl.filter(c => c.kind === 'ship').map(c => c.id).join(',')}|${w.dataset.itCap}`, kept = IT_CAP.get(key);   // v2026.11.07.1: the pressed ships too
     if(kept !== undefined){ if(kept) w.innerHTML = kept; continue; }
     if(IT_CAP.size > 400) IT_CAP.clear();
     const lh = parseFloat(getComputedStyle(w).lineHeight) || 17, fits = () => w.getBoundingClientRect().height <= lh * IT_WHO_LINES + 1;
@@ -26326,14 +26360,17 @@ function itJumpsHtml(j){ return j === null ? '–' : j === 0 ? '<span class="it-
 const IT_KILL_WORD = {f: ['kf', 'Friendly lost', 'friendly lost', 'friendlies lost'], h: ['kh', 'Hostile killed', 'hostile killed', 'hostiles killed'], n: ['kn', 'Neutral killed', 'neutral killed', 'neutrals killed']};
 function itKillWord(e){ return IT_KILL_WORD[e.kill.victim.side] || IT_KILL_WORD.n; }
 function itKillBadges(ks, sys){
-  const by = {f: 0, h: 0, n: 0};
-  for(const k of ks) by[IT_KILL_WORD[k.v] ? k.v : 'n']++;
+  // v2026.11.07.1 (build queue 010; the owner: "should combine the value of those kills"): each badge with its kills' zKillboard values together
+  const by = {f: 0, h: 0, n: 0}, isk = {f: 0, h: 0, n: 0}, valued = {f: 0, h: 0, n: 0};
+  for(const k of ks){ const v = IT_KILL_WORD[k.v] ? k.v : 'n'; by[v]++; if(k.isk > 0){ isk[v] += k.isk; valued[v]++; } }
   // v2026.10.30.4 (the owner: "kill badges to link to a fleet tab that assesses the killing fleet"; several kills: option A): a badge in
   // Near You is a button; v2026.10.31.2: its kills open in the Fleet tab, the newest first, the others to pick from there (fkPicksHtml)
   return ['f', 'h', 'n'].filter(v => by[v]).map(v => {
-    const label = `${by[v]} ${IT_KILL_WORD[v][by[v] === 1 ? 2 : 3]}`;
+    const money = isk[v] ? `<span class="isk">${itIsk(isk[v])}</span>` : '';
+    const label = `${by[v]} ${IT_KILL_WORD[v][by[v] === 1 ? 2 : 3]}${money}`;
     if(!sys) return ` <span class="it-kl ${IT_KILL_WORD[v][0]}">${label}</span>`;
-    const title = by[v] === 1 ? `Open this kill in the ${cardName('fleet')} tab` : `Open these ${by[v]} kills in the ${cardName('fleet')} tab, the newest first`;
+    const worth = isk[v] ? `. Together ${Math.round(isk[v]).toLocaleString('en-US')} ISK (zKillboard's values${valued[v] < by[v] ? `; ${valued[v]} of ${by[v]} kills have a value` : ''})` : '';
+    const title = (by[v] === 1 ? `Open this kill in the ${cardName('fleet')} tab` : `Open these ${by[v]} kills in the ${cardName('fleet')} tab, the newest first`) + worth;
     return ` <button type="button" class="it-kl ${IT_KILL_WORD[v][0]}" data-it-kb="${sys}:${v}" title="${escapeHtml(title)}">${label}</button>`;
   }).join('');
 }
@@ -26375,8 +26412,8 @@ function itFeedRowHtml(e){
   const s0 = e.p.sys[0], j0 = s0 ? itJumps(my, s0.id) : null;
   let sysB = '';
   if(s0){
-    const name = itSysName(s0.id), on = it.q.trim().toLowerCase() === name.toLowerCase();
-    sysB = `<button type="button" class="it-chip sys it-sysb" data-it-fsys="${escapeHtml(name)}" aria-pressed="${on}" title="${escapeHtml(`${on ? 'Show everything in the Feed again' : `Show only ${name} in the Feed`} (${itSysTitle(s0.id)}${s0.short ? `, read from “${e.p.W[s0.at].w}”` : ''})`)}"><span class="it-sn ${itSecClass(s0.id)}">${escapeHtml(name)}</span></button>`;
+    const name = itSysName(s0.id), on = itFlHas('sys', s0.id);   // v2026.11.07.1
+    sysB = `<button type="button" class="it-chip sys it-sysb" data-it-fsys="${escapeHtml(name)}" aria-pressed="${on}" title="${escapeHtml(`${on ? 'Take this filter off the Feed' : `Show only ${name} in the Feed`} (${itSysTitle(s0.id)}${s0.short ? `, read from “${e.p.W[s0.at].w}”` : ''})`)}"><span class="it-sn ${itSecClass(s0.id)}">${escapeHtml(name)}</span></button>`;
   }
   const kw = e.kind === 'kill' ? itKillWord(e) : null;
   if(kw) tags.push(itKillBtn(e, 'it-ty kill'));
@@ -26415,6 +26452,39 @@ function itFeedRowHtml(e){
   return `<div class="it-fd fe ${kind}${chips.length ? '' : ' noc'}${open ? ' open' : ''}${inr ? ' inr' : ''}">${hd}${chips.length ? `<div class="it-chips c1">${chips.join('')}</div>` : ''}${toast}${raw}</div>`;
 }
 // v.99 (the owner: "Add it"): the Feed's filters: Types, Distance, Sort and Search
+// v2026.11.07.1 (build queue 010; Project doc roadmap/near-you-height-plan.md "Additions"; mockup Claude outputs/intel_filters_mockup.html;
+// the owner: "Chips beside the search", "1. yes, 2. OK, 3. yes, 4. yes, 5. yes"): pressing a system, a corporation or alliance on a pilot
+// chip, or a ship adds a filter chip (pressed again, it goes); a second system replaces the first, the others add up; a Feed row must
+// match every chip and the typed text. Near You is never filtered (the owner, 2026-10-31).
+function itFlHas(kind, id){ return it.fl.some(c => c.kind === kind && c.id === id); }
+function itFlSys(){ const c = it.fl.find(x => x.kind === 'sys'); return c ? c.id : undefined; }
+function itFlToggle(kind, id, label){
+  const i = it.fl.findIndex(c => c.kind === kind && c.id === id);
+  if(i >= 0){ it.fl.splice(i, 1); return false; }
+  if(kind === 'sys') it.fl = it.fl.filter(c => c.kind !== 'sys');   // a row has one system: two would match nothing
+  it.fl.push({kind, id, label: label || ''}); return true;
+}
+function itShipsOf(e){   // a report: the ships it names; a kill: the victim's and every attacker's (it died or killed)
+  const s = new Set(e.p.ships.map(x => x.id)), km = e.kill && e.kill.km;
+  if(km){ if(km.victim && km.victim.ship_type_id) s.add(km.victim.ship_type_id); for(const a of km.attackers || []) if(a.ship_type_id) s.add(a.ship_type_id); }
+  return s;
+}
+function itFlMatch(e, c){
+  if(c.kind === 'sys') return !!e.p.sys[0] && e.p.sys[0].id === c.id;
+  if(c.kind === 'ship') return itShipsOf(e).has(c.id);
+  const v = itGrpTk(c.kind, c.id); return !!v && itGrpIn(e, {kind: c.kind, tk: v.ticker.toLowerCase()});
+}
+function itFlChipHtml(c, i){
+  let body;
+  if(c.kind === 'sys') body = `<span class="k">System</span><span class="${itSecClass(c.id)}">${escapeHtml(itSysName(c.id))}</span>`;
+  else if(c.kind === 'ship') body = `<span class="k">Ship</span><img src="https://images.evetech.net/types/${c.id}/icon?size=32" alt="" loading="lazy" onerror="this.remove()">${escapeHtml(c.label)}`;
+  else { const v = itGrpTk(c.kind, c.id); body = `<span class="k">${c.kind === 'alliance' ? 'Alliance' : 'Corp'}</span>${itLogo(c.kind, c.id)}<span class="tk">${escapeHtml(v ? itGrpTok(c.kind, v.ticker) : c.label)}</span>`; }
+  return `<span class="it-fc">${body}<button type="button" class="it-fc-x" data-it-fcx="${i}" aria-label="Remove this filter" title="Remove this filter">×</button></span>`;
+}
+function itFlBarHtml(){
+  if(!it.fl.length) return '';
+  return `<div class="it-fchips" role="group" aria-label="Feed filters"><span class="lb">Only</span>${it.fl.map(itFlChipHtml).join('')}${it.fl.length > 1 ? '<button type="button" class="it-fc-all" data-it-fca>Clear all</button>' : ''}</div>`;
+}
 function itFeedShown(){
   const keepT = Date.now() - it.set.forget * 60000, f = it.set.feed, q = it.q.trim().toLowerCase(), my = itMySys();
   const jOf = (e) => { const s = e.p.sys[0]; return s ? itJumps(my, s.id) : null; };
@@ -26422,7 +26492,8 @@ function itFeedShown(){
   if(f.types === 'reports') L = L.filter(e => e.kind !== 'kill');
   if(f.types === 'kills') L = L.filter(e => e.kind === 'kill');
   if(f.dist) L = L.filter(e => { const j = jOf(e); return j !== null && j <= f.dist; });
-  const g = itGrpQ(q);   // v2026.11.01.2: [CORP] or <ALLIANCE>: that group's ticker exactly (a group pressed on a chip)
+  for(const c of it.fl) L = L.filter(e => itFlMatch(e, c));   // v2026.11.07.1: every chip
+  const g = itGrpQ(q);   // v2026.11.01.2: [CORP] or <ALLIANCE> typed: that group's ticker exactly
   if(g) L = L.filter(e => itGrpIn(e, g));
   else if(q) L = L.filter(e => itSearchText(e).includes(q));
   L.sort(f.sort === 'near' ? (a, b) => ((jOf(a) ?? 999) - (jOf(b) ?? 999)) || b.t - a.t : (a, b) => b.t - a.t);
@@ -26449,15 +26520,16 @@ function itSearchText(e){
 }
 function itFeedBarHtml(){
   const f = it.set.feed, sel = (k, opts) => `<select data-it-f="${k}">${opts.map(([v, l]) => `<option value="${v}"${String(f[k]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
-  return `<div class="it-fbar"><label>Types ${sel('types', IT_FEED_TYPES)}</label><label>Distance ${sel('dist', IT_FEED_DIST.map(d => [d, d ? `≤ ${d} jump${d === 1 ? '' : 's'}` : 'any']))}</label><label>Sort ${sel('sort', IT_FEED_SORT)}</label><input type="search" data-it-q placeholder="Search pilot, corp, ship, system" aria-label="Search the ${escapeHtml(cardName('itfeed'))}" value="${escapeHtml(it.q)}"></div>`;
+  return itFlBarAfter(`<div class="it-fbar"><label>Types ${sel('types', IT_FEED_TYPES)}</label><label>Distance ${sel('dist', IT_FEED_DIST.map(d => [d, d ? `≤ ${d} jump${d === 1 ? '' : 's'}` : 'any']))}</label><label>Sort ${sel('sort', IT_FEED_SORT)}</label><input type="search" data-it-q placeholder="Search pilot, corp, ship, system" aria-label="Search the ${escapeHtml(cardName('itfeed'))}" value="${escapeHtml(it.q)}"></div>`);
 }
+function itFlBarAfter(bar){ return bar + itFlBarHtml(); }   // v2026.11.07.1: the chips on their own line under the bar
 function itFeedWhy(){   // v2026.11.06.6 (015): why no new kills come, the most important first; '' when they do
   if(!it.on) return '';
   if(esiDownNow()){ const dt = sysDowntime(); return dt && dt.k === 'now' ? "<b>No new kills:</b> EVE's daily downtime; zKillboard can't fetch them until it ends." : "<b>No new kills:</b> EVE's ESI is down, so zKillboard can't fetch them."; }
   const fd = itFeedDown(); if(fd) return fd.feed;
   const fb = itFeedBehind(); return fb ? fb.feed : '';
 }
-function itFeedListHtml(){ itAnCan = new Map(); const feed = itFeedShown(), why = itFeedWhy(); return (why ? `<div class="it-why" data-it-why>${why}</div>` : '') + (feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`); }   // v2026.11.06.1: the Feed note first
+function itFeedListHtml(){ itAnCan = new Map(); const feed = itFeedShown(), why = itFeedWhy(); return (why ? `<div class="it-why" data-it-why>${why}</div>` : '') + (feed.length ? feed.map(itFeedRowHtml).join('') : `<div class="pr-msg">${!it.on ? 'Nothing yet.' : it.q || it.fl.length || it.set.feed.types !== 'all' || it.set.feed.dist ? 'Nothing matches the filters.' : 'Nothing in the last ' + it.set.forget + ' minutes.'}</div>`); }   // v2026.11.06.1: the Feed note first
 function itNearListHtml(){ const near = itNearList(); return near.length ? near.map(itNearRowHtml).join('') : `<div class="pr-msg">${it.on ? 'Nothing reported in the last ' + it.set.forget + ' minutes.' : 'Nothing yet.'}</div>`; }
 // Redraw only the two lists (the filter bar in use keeps its focus and caret)
 function itNotesHtml(){ return `${it.err ? `<div class="pr-msg err">${escapeHtml(it.err)}</div>` : ''}${it.note ? `<div class="pr-msg">${escapeHtml(it.note)}</div>` : ''}${it.on && it.kfNote ? `<div class="pr-msg" data-it-kfnote>${escapeHtml(it.kfNote)}</div>` : ''}`; }
@@ -26476,8 +26548,41 @@ function itRenderLists(){
   it.lastHtml = null; it.drawNow = Date.now();   // the card no longer matches the last full build: the next itRender draws it whole
   itAfterDraw(el);
 }
+// v2026.11.07.1 (build queue 010): beside the map Near You is as tall as the map column (CSS) and its list scrolls; its floor, when the map
+// can't draw, is the map's smallest box and its heading (one number, from the map's own height rule)
+const IT_MAP_MIN_H = 380, IT_NEAR_FLOOR = IT_MAP_MIN_H + 50;
+function itNearCapped(){ return typeof matchMedia === 'function' && matchMedia('(min-width: 901px)').matches; }
+// "+N more systems below" (the owner: "keep it"): the rows whose top is below the list's bottom; after a draw and on the list's own
+// scroll (one frame), never on a timer (LESSON #120); the line is in the built markup, filled here (the built-text compare stays exact)
+let itMoreRaf = 0;
+function itNearMore(){
+  itMoreRaf = 0;
+  const col = typeof document !== 'undefined' && document.querySelector && document.querySelector('#intelPanel .it-top .it-nearcol');
+  const L = col && col.querySelector('#itNearList'), m = col && col.querySelector('.it-more');
+  if(!L || !m || typeof L.getBoundingClientRect !== 'function') return;
+  let n = 0;
+  if(itNearCapped() && L.scrollHeight > L.clientHeight + 1){
+    const bottom = L.getBoundingClientRect().bottom;
+    for(const r of L.querySelectorAll(':scope > .it-nb')) if(r.getBoundingClientRect().top >= bottom - 4) n++;
+  }
+  const t = n ? `+${n} more system${n === 1 ? '' : 's'} below` : '';
+  if(m.textContent !== t) m.textContent = t;
+  if(m.hidden !== !n) m.hidden = !n;
+}
+function itNearMoreSoon(){ if(!itMoreRaf && typeof requestAnimationFrame === 'function') itMoreRaf = requestAnimationFrame(itNearMore); }
+// a row's top and bottom inside the list, by the list's own scroll (never scrollIntoView, which can move the page); the row's top is
+// never pushed above the list's top
+function itNearShow(row){
+  const L = row && row.closest && row.closest('#itNearList');
+  if(!L || !itNearCapped() || L.scrollHeight <= L.clientHeight + 1) return;
+  const lr = L.getBoundingClientRect(), rr = row.getBoundingClientRect();
+  if(rr.top < lr.top) L.scrollTop -= lr.top - rr.top + 2;
+  else if(rr.bottom > lr.bottom) L.scrollTop += Math.min(rr.bottom - lr.bottom + 6, rr.top - lr.top);
+  itNearMoreSoon();
+}
 function itAfterDraw(el){
   itSysWidths(el); itNearFit(el); itNearCap(el);   // v2026.10.30.1; v2026.10.31.1: the word never squeezed
+  itNearMoreSoon();   // v2026.11.07.1
   fillOrgTickers(el);
   itSecFetch([...el.querySelectorAll('[data-it-sys]')].map(x => Number(x.dataset.itSys)).concat(it.feed.slice(0, IT_FEED_SHOWN).map(e => e.p.sys[0] && e.p.sys[0].id)));
   itMapRefresh();   // v2026.11.02.4: redrawn only when what it shows changed
@@ -26640,9 +26745,9 @@ function itRender(force){   // force: a press that changes what is open (the gea
     // v.98 (the owner: "the feed keeps growing ... drop entries older than 15 minutes"): the Feed keeps the same time as Near You
     body = `${it.on ? `<div class="it-sub" data-it-status></div>` : `<div class="it-sub">Stopped. The switch beside the gear starts it again.</div>`}
       ${it.on && it.me && !itMySys() ? `<div class="it-sub it-warn">Your system isn’t known yet (it’s read from your Local log when you jump), so no jumps and no alerts until then.</div>` : ''}
-      <div class="it-top v-${it.set.nearView === 'map' ? 'map' : 'list'}">
+      <div class="it-top v-${it.set.nearView === 'map' ? 'map' : 'list'}" style="--it-near-floor:${IT_NEAR_FLOOR}px">
         <div class="it-mapcol"><div class="it-h"><h3>${escapeHtml(cardName('itmap'))}</h3><span class="ctx" data-it-mapctx>${escapeHtml(itMapCtx())}</span></div><div id="itMapSlot"></div></div>
-        <div class="it-nearcol"><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3><span class="ctx" data-it-nearctx title="${escapeHtml(itMySys() ? `Systems within ${itNearReach()} jumps (under the gear); farther reports are in the ${cardName('itfeed')}` : '')}">${escapeHtml(itNearCtx())}</span><span class="it-nv" role="group" aria-label="${escapeHtml(cardName('itnear'))}: list or map"><button type="button" data-it-nv="list" aria-pressed="${it.set.nearView !== 'map'}">List</button><button type="button" data-it-nv="map" aria-pressed="${it.set.nearView === 'map'}">${escapeHtml(cardName('itmap'))}</button></span></div><div id="itNearList">${itNearListHtml()}</div></div>
+        <div class="it-nearcol"><div class="it-h"><h3>${escapeHtml(cardName('itnear'))}</h3><span class="ctx" data-it-nearctx title="${escapeHtml(itMySys() ? `Systems within ${itNearReach()} jumps (under the gear); farther reports are in the ${cardName('itfeed')}` : '')}">${escapeHtml(itNearCtx())}</span><span class="it-nv" role="group" aria-label="${escapeHtml(cardName('itnear'))}: list or map"><button type="button" data-it-nv="list" aria-pressed="${it.set.nearView !== 'map'}">List</button><button type="button" data-it-nv="map" aria-pressed="${it.set.nearView === 'map'}">${escapeHtml(cardName('itmap'))}</button></span></div><div id="itNearList">${itNearListHtml()}</div><div class="it-more" hidden></div></div>
       </div>
       <div class="it-feedcol"><div class="it-h"><h3>${escapeHtml(cardName('itfeed'))}</h3>${ctxHtml(`last ${it.set.forget} min, reports and kills`)}</div>${itFeedBarHtml()}<div id="itFeedList">${itFeedListHtml()}</div></div>`;
   }
@@ -26665,16 +26770,28 @@ function itRender(force){   // force: a press that changes what is open (the gea
   // panel closed, the switch, the info button), instead of dropping it to the page
   const hf = act && el.contains(act) && act.closest('.it-head') ? (act.matches('.it-gear') ? '.it-head .it-gear' : act.matches('summary.info-btn') ? '.it-head summary.info-btn' : act.id ? `#${act.id}` : null) : null;
   const mf = act && itm.el && itm.el.contains(act) ? act : null;   // v2026.11.02.4: the map's own controls keep the focus across a redraw
+  // v2026.11.07.1 (build queue 010, LESSON #119): Near You's list keeps where it was scrolled to, and a focused control in a list (a row's
+  // toggle, a name, a ship, a chip) keeps the focus
+  const nl0 = el.querySelector('#itNearList'), nTop = nl0 ? nl0.scrollTop : 0;
+  const lf = act && el.contains(act) && !hf && !mf ? itFocusKey(act) : null;
   el.innerHTML = html;
+  const nl1 = el.querySelector('#itNearList'); if(nl1 && nTop) nl1.scrollTop = nTop;
+  if(lf){ const f = el.querySelector(lf); if(f) f.focus({preventScroll: true}); }
   itMapMount(el); rsPaint(el);
   itStatusPaint(el, true);
   if(hf){ const f = el.querySelector(hf); if(f) f.focus({preventScroll: true}); }
   if(mf && mf.isConnected) mf.focus({preventScroll: true});
   itAfterDraw(el);
 }
+function itFocusKey(a){   // a selector that finds the same control again after a redraw, or null
+  const sel = ['data-it-nbo', 'data-it-fsys', 'data-it-fship', 'data-it-grp', 'data-it-fcx', 'data-it-pilot', 'data-it-kb', 'data-it-raw'].find(k => a.hasAttribute && a.hasAttribute(k));
+  if(sel === undefined){ if(a.matches && a.matches('[data-it-q]')) return '[data-it-q]'; return a.matches && a.matches('[data-it-fca]') ? '[data-it-fca]' : null; }
+  const where = a.closest('#itNearList') ? '#itNearList ' : a.closest('#itFeedList') ? '#itFeedList ' : a.closest('.it-fchips') ? '.it-fchips ' : '';
+  return `${where}[${sel}="${String(a.getAttribute(sel)).replace(/["\\]/g, '\\$&')}"]`;
+}
 function itQuickKey(){
   const f = it.feed[0], sz = (m) => m ? m.size : 0;
-  return [it.on, it.dirName, it.err, it.note, it.pop, it.kfNote, it.q, it.feed.length, f ? f.id : 0, it.near.size, it.me && it.me.sys, sz(it.chars), sz(it.files),
+  return [it.on, it.dirName, it.err, it.note, it.pop, it.kfNote, it.q, JSON.stringify(it.fl), it.feed.length, f ? f.id : 0, it.near.size, it.me && it.me.sys, sz(it.chars), sz(it.files),
     it.chans.length, it.names ? it.names.list.length : 0, sz(it.pilots), sz(it.aff), sz(it.charNames), sz(it.sec), sz(it.gateDest), sz(orgCache),
     sz(it.rawOpen), sz(it.nearOpen), it.shape ? it.shape.id : 0, JSON.stringify(it.set), itR2Stopped(), it.sndRev || 0, itFeedDown() ? itR2EverRead + 1 : 0, itFeedWhy()].join('|');   // v2026.11.06.6: the Feed note's reason   // v2026.11.06.1   // v2026.11.01.8: your sound files
 }
@@ -26833,7 +26950,7 @@ function itMapRefresh(force){
   const mc = document.querySelector('[data-it-mapctx]'); if(mc) mc.textContent = itMapCtx();
   if(why){ itm.home = -1; itm.you.hidden = true; return; }
   const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 599px)').matches;
-  const w = itm.box.clientWidth, h = Math.round(phone ? Math.min(460, Math.max(320, w * 1.1)) : Math.max(380, Math.min(560, w * 0.72)));
+  const w = itm.box.clientWidth, h = Math.round(phone ? Math.min(460, Math.max(320, w * 1.1)) : Math.max(IT_MAP_MIN_H, Math.min(560, w * 0.72)));
   const reach = itMapReach();
   let laid = false;
   // v2026.11.04.1: a jump (a new system of yours after one before it) keeps your zoom and centers on the new system; the first draw, a
@@ -26850,7 +26967,7 @@ function itMapRefresh(force){
   }
   if(beacon){ itm.beaconDone = true; itm.beaconPending = true; }
   itm.rep = itMapReports();
-  const fq = it.q && it.names ? it.names.byLower.get(it.q.trim().toLowerCase()) : undefined;
+  const fq = itFlSys();   // v2026.11.07.1: the system chip
   const key = [...itm.rep].map(([i, r]) => `${i}:${r.side}:${r.n}:${r.kills}`).join(',') + `|${[...itm.pinned].join(',')}|${it.set.range}|${itNearReach()}|${fq || ''}|${itSysNamesReady()}`;
   if(force || laid || itm.stale || key !== itm.key){ itm.key = key; itm.stale = false; itMapDraw(); }
   if(itm.beaconPending){ itm.beaconPending = false; itMapBeacon(); }
@@ -26985,7 +27102,7 @@ function itMapDraw(){
     }
     c.fillStyle = IT_MAP_SEC[itMapSecClass(T.sec[i])]; c.beginPath(); c.arc(X(i), Y(i), 4.5, 0, 6.283); c.fill();
   }
-  const fq = it.q && it.names ? g.at.get(it.names.byLower.get(it.q.trim().toLowerCase())) : undefined;
+  const fq = itFlSys() !== undefined ? g.at.get(itFlSys()) : undefined;   // v2026.11.07.1: the system chip
   if(fq !== undefined && on(fq)){ c.strokeStyle = C.cyan; c.lineWidth = 2; c.beginPath(); c.arc(X(fq), Y(fq), 19, 0, 6.283); c.stroke(); }
   if(focus >= 0 && on(focus)){ c.strokeStyle = C.cyan; c.lineWidth = 1.5; c.beginPath(); c.arc(X(focus), Y(focus), 21, 0, 6.283); c.stroke(); }
   // v2026.11.04.1: your system, drawn last so nothing covers it: its security dot, and a white pin standing on it (was a white ring, drawn
@@ -27085,9 +27202,13 @@ function itMapLight(i){
   if(i >= 0) for(const r of itMapRows(itGraphGet().ids[i])) r.classList.add('it-map-lit');
 }
 function itMapPin(id){
-  if(itm.pinned.has(id)) itm.pinned.delete(id); else itm.pinned.add(id);
+  const keep = !itm.pinned.has(id);
+  if(!keep) itm.pinned.delete(id); else itm.pinned.add(id);
   itm.el.querySelector('.it-map-clr').hidden = !itm.pinned.size;
   itRenderLists(); itMapRefresh(true);   // the rows' "Route shown" tag (itMapPinTag)
+  // v2026.11.07.1 (the owner: "scroll the list"): a press that keeps a route brings its Near You row into view inside the list; hover and a
+  // press that drops the route don't
+  if(keep){ const row = document.querySelector(`#itNearList > .it-nb[data-it-sys="${id}"]`); if(row) itNearShow(row); }
 }
 function itMapPinTag(id){ return itm.pinned.has(id) ? '<span class="it-map-rtag" title="Its route is kept on the map: press the row again to hide it">Route shown</span>' : ''; }
 // a row (Near You or the Feed) for the map: its system id, or null
@@ -27279,14 +27400,30 @@ function rsBind(root){
     const sx = e.target.closest('[data-it-sndx]');
     if(sx){ const sl = sx.dataset.itSndx; itSndRemove(sl); const again = el.querySelector(`[data-it-snd="${sl}"]`); if(again) again.focus({preventScroll: true}); return; }
     if(itChipTap(e, el)) return;   // v2026.11.01.2: without hover, the first tap on a pilot chip shows its parts
+    const fcx = e.target.closest('[data-it-fcx]');   // v2026.11.07.1: a chip's ×: that filter off; the focus to the next chip, or the search box
+    if(fcx){
+      const i = Number(fcx.dataset.itFcx); it.fl.splice(i, 1); itRender(true);
+      const nx = el.querySelectorAll('[data-it-fcx]'), to = nx[Math.min(i, nx.length - 1)] || el.querySelector('[data-it-q]'); if(to) to.focus({preventScroll: true});
+      return;
+    }
+    if(e.target.closest('[data-it-fca]')){ it.fl = []; itRender(true); const q = el.querySelector('[data-it-q]'); if(q) q.focus({preventScroll: true}); return; }
+    const fsh = e.target.closest('[data-it-fship]');   // v2026.11.07.1: a ship's name (the Feed's chips, Near You's ship list): only that ship in the Feed
+    if(fsh){
+      const sid = Number(fsh.dataset.itFship), near = !!fsh.closest('#itNearList');
+      itFlToggle('ship', sid, fsh.dataset.itFsn || ''); itRender(true);
+      const again = el.querySelector(`${near ? '#itNearList' : '#itFeedList'} [data-it-fship="${sid}"]`); if(again) again.focus({preventScroll: true});
+      const f = el.querySelector('#itFeedList');
+      if(near && f && typeof window !== 'undefined' && window.innerWidth < 600 && f.scrollIntoView) f.scrollIntoView({block: 'start', behavior: 'smooth'});
+      return;
+    }
     const grp = e.target.closest('[data-it-grp]');   // v2026.11.01.2: a corporation or alliance on a chip: the Feed shows only it
     if(grp){ itGrpPress(grp, el); return; }
     const fsb = e.target.closest('[data-it-fsys]');   // v2026.10.31.6: a system's name: the Feed shows only it; pressed again, everything
     if(fsb){
-      const nm = fsb.dataset.itFsys, near = !!fsb.closest('#itNearList');
-      it.q = it.q.trim().toLowerCase() === nm.toLowerCase() ? '' : nm;
-      const q = el.querySelector('[data-it-q]'); if(q) q.value = it.q;
-      itRenderLists();
+      const nm = fsb.dataset.itFsys, near = !!fsb.closest('#itNearList'), sid = it.names && it.names.byLower.get(nm.toLowerCase());
+      if(!sid) return;
+      itFlToggle('sys', sid, nm);   // v2026.11.07.1: a chip, not the search box
+      itRender(true);
       const again = el.querySelector(`${near ? '#itNearList' : '#itFeedList'} [data-it-fsys="${nm.replace(/["\\]/g, '\\$&')}"]`); if(again) again.focus({preventScroll: true});
       const f = el.querySelector('#itFeedList');   // a phone (the lists stacked): the Feed is below, so go to it (decided 2026-10-29)
       if(near && f && typeof window !== 'undefined' && window.innerWidth < 600 && f.scrollIntoView) f.scrollIntoView({block: 'start', behavior: 'smooth'});
@@ -27313,7 +27450,7 @@ function rsBind(root){
       itOpenKills(it.feed.filter(x => x.kind === 'kill' && ids.has(x.kill.id)));
       return;
     }
-    if(nbo){ const id = Number(nbo.dataset.itNbo); if(it.nearOpen.has(id)) it.nearOpen.delete(id); else it.nearOpen.add(id); itRenderLists(); const b = el.querySelector(`[data-it-nbo="${id}"]`); if(b) b.focus(); return; }
+    if(nbo){ const id = Number(nbo.dataset.itNbo), opening = !it.nearOpen.has(id); if(!opening) it.nearOpen.delete(id); else it.nearOpen.add(id); itRenderLists(); const b = el.querySelector(`[data-it-nbo="${id}"]`); if(b) b.focus({preventScroll: true}); if(b && opening) itNearShow(b.closest('.it-nb')); else itNearMoreSoon(); return; }   // v2026.11.07.1: an opened row kept in view inside the list
     const rw = e.target.closest('[data-it-raw]');   // v.100: show or hide the line as typed
     if(rw){ const id = Number(rw.dataset.itRaw); if(it.rawOpen.has(id)) it.rawOpen.delete(id); else it.rawOpen.add(id); itRenderLists(); const b = el.querySelector(`[data-it-raw="${id}"]`); if(b) b.focus(); return; }
     const a = e.target.closest('[data-it-act]');
@@ -27325,6 +27462,8 @@ function rsBind(root){
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && it.pop){ it.pop = false; itRender(true); itGearFocus(); } });
   setInterval(() => { if(it.on && itShown()) itStatusPaint(el); }, 1000);   // v2026.11.01.4: only while it can be seen, and only when its text changed
   document.addEventListener('visibilitychange', itShowAgain);   // v2026.11.01.4: the browser tab shown again: draw what came in meanwhile
+  // v2026.11.07.1 (build queue 010): the "+N more systems below" count follows Near You's own scroll (one frame a scroll; passive)
+  el.addEventListener('scroll', (e) => { if(e.target && e.target.id === 'itNearList') itNearMoreSoon(); }, {capture: true, passive: true});
   if(typeof window !== 'undefined' && window.addEventListener){ let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if(it.on || it.near.size){ for(const x of el.querySelectorAll('#itNearList, #itFeedList, #itNotes')) x._h = null; itRenderLists(); } }, 200); }); }   // v2026.11.01.4: redrawn though the text is the same: the widths changed   // v2026.10.30.1: the 3-line cap follows the width
   itKvGet('dir').then(async (h) => {   // the folder chosen before; read it now if the browser still allows it (else the slider asks)
     if(h && !it.dir){

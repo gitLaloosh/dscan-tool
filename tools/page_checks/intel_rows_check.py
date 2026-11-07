@@ -67,12 +67,13 @@ _tail = r'''
     # a system's name: the Feed shows only it; again: everything; Near You never filtered
     n0, f0 = len(nb), len(fd)
     pg.evaluate("() => [...document.querySelectorAll('#itNearList .it-nb .sys')].find(b => b.textContent === '8WA-Z6').click()"); tick(pg, 300)
-    S1 = pg.evaluate("""() => [document.querySelector('[data-it-q]').value, document.querySelectorAll('#itNearList .it-nb').length, [...document.querySelectorAll('#itFeedList .it-fd')].map(r => (r.querySelector('.it-chip.sys') || {}).textContent),
+    # v2026.11.07.1 (build queue 010): a chip under the filter bar says so, not the search box (left as typed)
+    S1 = pg.evaluate("""() => [(document.querySelector('#intelPanel .it-fchips .it-fc') || {}).textContent || '', document.querySelectorAll('#itNearList .it-nb').length, [...document.querySelectorAll('#itFeedList .it-fd')].map(r => (r.querySelector('.it-chip.sys') || {}).textContent),
       [...document.querySelectorAll('#itNearList .it-nb .sys')].find(b => b.textContent === '8WA-Z6').getAttribute('aria-pressed')]""")
     pg.evaluate("() => [...document.querySelectorAll('#itFeedList .it-chip.sys')].find(b => b.textContent === '8WA-Z6').click()"); tick(pg, 300)
-    S2 = pg.evaluate("() => [document.querySelector('[data-it-q]').value, document.querySelectorAll('#itFeedList .it-fd').length, document.querySelectorAll('#itNearList .it-nb').length]")
-    check(S1[0] == '8WA-Z6' and S1[1] == n0 and S1[2] and set(S1[2]) == {'8WA-Z6'} and S1[3] == 'true' and S2 == ['', f0, n0],
-          f'a system\'s name: the Feed shows only it (the search box says so), pressed again (here on the Feed) everything; Near You unchanged {S1} {S2} ({n0}, {f0})')
+    S2 = pg.evaluate("() => [document.querySelectorAll('#intelPanel .it-fchips').length ? 'chip' : '', document.querySelectorAll('#itFeedList .it-fd').length, document.querySelectorAll('#itNearList .it-nb').length]")
+    check(S1[0] == 'System8WA-Z6×' and S1[1] == n0 and S1[2] and set(S1[2]) == {'8WA-Z6'} and S1[3] == 'true' and S2 == ['', f0, n0],
+          f'a system\'s name: the Feed shows only it (its chip says so), pressed again (here on the Feed) everything; Near You unchanged {S1} {S2} ({n0}, {f0})')
     # the analyze icon: the System Analyzer
     pg.evaluate("() => [...document.querySelectorAll('#itNearList .it-nb')].find(r => r.querySelector('.sys').textContent === 'N-8YET').querySelector('.it-an').click()"); tick(pg, 600)
     A = pg.evaluate("() => [document.getElementById('tabDscan').style.display !== 'none' && document.getElementById('tabIntel').style.display === 'none', !!sa.intel, (document.querySelector('#localInput') || {}).value || '']")

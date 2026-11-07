@@ -113,8 +113,8 @@ _tail = r'''
     check(pg.evaluate('itm.view.k') > k0 * 1.3 and pg.evaluate('scrollY') == sy0, f'the wheel over the map zooms it ({k0} -> {pg.evaluate("itm.view.k")}); the page doesn\'t scroll')
     pg.click('.it-map-zoom [data-im-z="fit"]'); tick(pg, 100)
     pg.click('#itNearList .it-nb[data-it-sys="%d"] [data-it-fsys]' % SYSID[SA]); tick(pg, 300)
-    fq = pg.evaluate("() => [it.q, itm.pinned.size]")
-    check(fq == [SA, 0], f'a system\'s name in a row filters the Feed, as before, and keeps no route {fq}')
+    fq = pg.evaluate("() => [itFlSys(), itm.pinned.size]")   # v2026.11.07.1: a system chip (build queue 010), not the search box
+    check(fq == [SYSID[SA], 0], f'a system\'s name in a row filters the Feed (its chip), as before, and keeps no route {fq}')
     pg.click('#itNearList .it-nb[data-it-sys="%d"] [data-it-fsys]' % SYSID[SA]); tick(pg, 300)
     # ---- drawn only on a change ----
     pg.mouse.move(5, 5); tick(pg, 300); d1 = pg.evaluate('itm.draws'); tick(pg, 12000); d2 = pg.evaluate('itm.draws')
