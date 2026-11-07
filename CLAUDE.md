@@ -105,6 +105,11 @@ it instead), shown with `withCode()` / `codedError()`. Then run
 `python3 -I tools/gen_errors_md.py --write`. Owner reports quote the code: look it up in
 `ERRORS.md` first.
 
+**Outside text in HTML** (v2026.11.07.2, build queue 021; LESSON #144): text from outside the page (fit names, pilot, corporation
+and alliance names, intel lines, pastes, links) goes into HTML only through `escapeHtml`, which escapes `& < > " '`; an attribute is
+always double-quoted (`title="${escapeHtml(x)}"`). Escape once: never escape text that is already HTML. `html_escape_check.py`
+feeds a harmless marker through every route and fails on anything out of place or escaped twice.
+
 **My Ship** (v2026.10.14.33, `roadmap/my-ship-plan.md`): the user's own fit, saved in
 the browser (`localStorage` `dscanMyShip`: EFT text, module states, the switch; never the
 numbers, which are recomputed from the text). Code: the `MY SHIP` block at the end of the

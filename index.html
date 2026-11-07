@@ -2968,7 +2968,7 @@
          budgets beside the version tag; Refresh item data's status still takes the tag's place, never the gauge's. -->
     <div class="bg-wrap">
       <button type="button" class="bg-gauge" id="bgGauge" aria-haspopup="dialog" aria-expanded="false" aria-controls="bgPop" title="How much of zKillboard's and ESI's allowance this browser has used. Press for who used it."><span class="bg-segs" id="bgSegs"></span></button>
-      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.1</span>
+      <span class="build-tag" title="Tool version — reference this when troubleshooting or reporting an issue, so it's clear exactly which build is being discussed">v2026.11.07.2</span>
       <span class="hero-status" id="cacheStatus" role="status" aria-live="polite" hidden></span>
       <div class="bg-pop" id="bgPop" role="dialog" aria-label="Lookup budgets" hidden>
         <div class="bg-head"><h4>Lookup budgets</h4><button type="button" class="x-close" aria-label="Close" title="Close (Esc)">×</button></div>
@@ -10636,10 +10636,13 @@ function populateShipSelect(){
   }
 }
 
+// v2026.11.07.2 (build queue 021; Project doc roadmap/sso-security-review.md; LESSON #144, superseding #104): escaped for an attribute as well
+// as for text. The old version (textContent -> innerHTML) left " and ', so a fit name with a " in it closed a title="..." and added its
+// own attributes, an onmouseover included, and a fit saved in My Fits did it again on every load. Every attribute built from outside text
+// is double-quoted and goes through here. null and undefined give '' as before; anything else its String().
+const HTML_ESC = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
 function escapeHtml(str){
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
+  return String(str ?? '').replace(/[&<>"']/g, (c) => HTML_ESC[c]);
 }
 
 // Hulls that can show up as a "loss" on a pilot's zKillboard history but
@@ -10980,7 +10983,7 @@ function layerIconHtml(layer, extraClass, titleText){
   return eveTypeIconHtml(id, titleText, 'layer-eve-icon' + (extraClass ? ' ' + extraClass : ''), resistanceLayerIconSvg(layer, extraClass, titleText));
 }
 function eveTypeIconHtml(typeId, title, extraClass, fallbackSvg){
-  const t = escapeHtml(title || '').replace(/"/g, '&quot;');
+  const t = escapeHtml(title || '');
   const fb = fallbackSvg ? fallbackSvg.replace('<svg', '<svg style="display:none"') : '';
   return `<span class="eve-icon-wrap${extraClass ? ' ' + extraClass : ''}" title="${t}"><img class="eve-icon" src="https://images.evetech.net/types/${typeId}/icon?size=64" alt="${t}" loading="lazy" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='';">${fb}</span>`;
 }
@@ -18264,7 +18267,7 @@ function moduleStateRowHtml(item, copyIdx, state, items, chip = '', unloaded = f
   tips.push(nxt.to !== state ? `Click to set ${MODULE_STATE_LABEL[nxt.to].toLowerCase()}.` : 'No other state is allowed right now.');
   for(const sk of nxt.skipped) tips.push(`Can't be ${sk.to}: ${sk.reason}.`);
   for(const note of item.notes || []) tips.push(note + '.');
-  const title = escapeHtml(tips.join(' ')).replace(/"/g, '&quot;');
+  const title = escapeHtml(tips.join(' '));
   return `<div class="fititem ms-row ms-${state}">${icon}${name}<button type="button" class="ms-state ms-${state}" data-type-id="${item.typeId}" data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${escapeHtml(item.name)}: ${title}"${nxt.to === state ? ' disabled' : ''}><span class="ms-dot"></span>${MODULE_STATE_LABEL[state]}</button></div>`;
 }
 function moduleListWithStatesHtml(f, idToName, opts = {}){
@@ -18387,7 +18390,7 @@ function droneBayStatesHtml(f, idToName){
       const locked = !on && k > max;
       const target = on && k === it.active ? k - 1 : k;
       const tip = locked ? `Can't put ${k} in space: ${reason}.` : (on && k === it.active ? `Take one back (${k - 1} in space)` : `Put ${k} in space`);
-      pips += `<button type="button" class="ds-pip${on ? ' on' : ''}${locked ? ' locked' : ''}" data-type-id="${it.typeId}" data-target="${target}"${locked ? ' aria-disabled="true"' : ''} title="${escapeHtml(tip).replace(/"/g, '&quot;')}" aria-label="${escapeHtml(name)}: ${escapeHtml(tip).replace(/"/g, '&quot;')}"></button>`;
+      pips += `<button type="button" class="ds-pip${on ? ' on' : ''}${locked ? ' locked' : ''}" data-type-id="${it.typeId}" data-target="${target}"${locked ? ' aria-disabled="true"' : ''} title="${escapeHtml(tip)}" aria-label="${escapeHtml(name)}: ${escapeHtml(tip)}"></button>`;
     }
     // v2026.10.14.49 (subtext rule 1): one line that doesn't change as drones go out (the squares show how many are in
     // space); the full line is on hover.
@@ -18468,7 +18471,7 @@ function fighterBayStatesHtml(f, idToName){
       const target = on && k === it.active ? k - 1 : k;
       const why = it.squadronsAvailable < k ? `${n} in bay, ${it.squadronsAvailable} full squadron${it.squadronsAvailable === 1 ? '' : 's'} of ${it.squadronSize}` : reason;
       const tip = locked ? `Can't put ${k} squadron${k === 1 ? '' : 's'} in space: ${why}.` : (on && k === it.active ? `Take one back (${k - 1} in space)` : `Put ${k} squadron${k === 1 ? '' : 's'} in space`);
-      pips += `<button type="button" class="ds-pip fb-pip${on ? ' on' : ''}${locked ? ' locked' : ''}" data-type-id="${it.typeId}" data-target="${target}"${locked ? ' aria-disabled="true"' : ''} title="${escapeHtml(tip).replace(/"/g, '&quot;')}" aria-label="${escapeHtml(name)}: ${escapeHtml(tip).replace(/"/g, '&quot;')}"></button>`;
+      pips += `<button type="button" class="ds-pip fb-pip${on ? ' on' : ''}${locked ? ' locked' : ''}" data-type-id="${it.typeId}" data-target="${target}"${locked ? ' aria-disabled="true"' : ''} title="${escapeHtml(tip)}" aria-label="${escapeHtml(name)}: ${escapeHtml(tip)}"></button>`;
     }
     const support = it.abilities.filter(a => FIGHTER_SUPPORT_WORD[a.name]).map(a => FIGHTER_SUPPORT_WORD[a.name]);
     const what = it.abilities.some(a => a.damage) ? `${it.dpsEach.toLocaleString()} DPS each` : support.join(', ');
@@ -18555,7 +18558,7 @@ function moduleStateTileHtml(item, copyIdx, state, items, x, y, opts = {}){
   if(opts.unloaded) tips.push("Can't be active with no charge.");
   for(const sk of nxt.skipped) tips.push(`Can't be ${sk.to}: ${sk.reason}.`);
   for(const note of item.notes || []) tips.push(note + '.');
-  const title = escapeHtml(tips.join(' ')).replace(/"/g, '&quot;');
+  const title = escapeHtml(tips.join(' '));
   return `<button type="button" class="ms-state ms-tile ms-${state}${ch ? ' has-charge' : ''}${opts.away ? ' chg-away' : ''}" style="${pos}" data-type-id="${item.typeId}"${ch ? ` data-charge-id="${ch.id}"` : ''}${opts.unloaded ? ' data-unloaded="1"' : ''} data-copy="${copyIdx}" data-from="${state}" data-to="${nxt.to}" title="${title}" aria-label="${title}"${nxt.to === state ? ' disabled' : ''}>${img}</button>`;
 }
 function fitRingHtml(f, idToName){
@@ -26197,7 +26200,7 @@ function itNearRowHtml({st, j}){
     const P = L.pilots.filter(x => !x.by).map(pl), B = L.pilots.filter(x => x.by).map(pl), S = L.ships.map(x => ({id: x.id, name: x.name, t: itShipText(x)}));
     const E = L.extra || 0;   // "+N" as reported
     who = itNearWho(P, B, S, P.length, S.length, E) || escapeHtml(`reported by ${st.who}`);
-    if(P.length + B.length + S.length > 2) cap = ` data-it-cap="${escapeHtml(JSON.stringify({P, B, S, E})).replace(/"/g, '&quot;')}"`;   // escapeHtml leaves quotes: an attribute needs them escaped
+    if(P.length + B.length + S.length > 2) cap = ` data-it-cap="${escapeHtml(JSON.stringify({P, B, S, E}))}"`;   // v2026.11.07.2: escapeHtml escapes quotes itself now
   }
   const can = st.kind !== 'clear' && (L.pilots.length || L.ships.length);
   const open = it.nearOpen.has(st.sys);
